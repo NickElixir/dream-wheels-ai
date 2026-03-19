@@ -66,34 +66,36 @@ async def download_telegram_file(file_id: str, save_path: str):
                 f.write(await resp.read())
 
 async def process_jobs_loop():
-    """Бесконечный цикл, который опрашивает очередь Redis (BLPOP)."""
-    logger.info("Воркер запущен и ждет задачи...")
+    """Надежный цикл опроса очереди без блокировки соединения."""
+    logger.info("Воркер запущен и ждет задачи (LPOP)...")
     
     while True:
+        job_id = None # Инициализируем до блока try
         try:
-            # BLPOP блокирует выполнение до появления задачи в списке 
-            # Возвращает кортеж: (имя_очереди, данные)
-            result = await redis_client.blpop("image_processing_queue", timeout=5)
+            # Используем неблокирующий LPOP
+            result = await redis_client.lpop("image_processing_queue")
+            
+            # Если очередь пуста, спим 2 секунды и идем на новый круг
             if not result:
+                await asyncio.sleep(2)
                 continue
                 
-            queue_name, job_data_bytes = result
-            job_data = json.loads(job_data_bytes)
+            job_data = json.loads(result)
             job_id = job_data["job_id"]
             
             logger.info(f"Воркер взял задачу: {job_id}")
             
-            # Обновляем статус в БД на 'processing' 
+            # Обновляем статус в БД на 'processing'
             async with db_pool.acquire() as connection:
-                await connection.execute("UPDATE jobs SET status = 'processing' WHERE id = $1", job_id)
+                await connection.execute("UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id)
             
-            # 1. Скачиваем картинки из Telegram 
+            # 1. Скачиваем картинки из Telegram
             car_path = f"static/car_{job_id}.jpg"
             wheel_path = f"static/wheel_{job_id}.jpg"
             await download_telegram_file(job_data["car_file_id"], car_path)
             await download_telegram_file(job_data["wheel_file_id"], wheel_path)
             
-            # 2. Подготовка и отправка в Reve v1.1 API 
+            # 2. Подготовка и отправка в Reve v1.1 API (ЖДУ ВАШИХ ДАННЫХ ДЛЯ ЭТОГО БЛОКА)
             with open(car_path, "rb") as f:
                 car_b64 = base64.b64encode(f.read()).decode('utf-8')
             with open(wheel_path, "rb") as f:
@@ -112,6 +114,7 @@ async def process_jobs_loop():
             }
             
             async with aiohttp.ClientSession() as session:
+                # ВНИМАНИЕ: Здесь сейчас стоит заглушка!
                 async with session.post("https://api.reve.com/v1/image/remix", json=reve_payload, headers=reve_headers) as resp:
                     if resp.status != 200:
                         err = await resp.text()
@@ -128,33 +131,30 @@ async def process_jobs_loop():
             with open(output_path, "wb") as f:
                 f.write(base64.b64decode(result_b64))
                 
-            # Формируем URL. На Render ваш домен будет храниться в переменной RENDER_EXTERNAL_URL
             base_url = os.getenv("RENDER_EXTERNAL_URL", "http://127.0.0.1:8000")
             output_url = f"{base_url}/static/{output_filename}"
             
-            # 4. Обновляем статус на 'completed' 
+            # 4. Обновляем статус на 'completed'
             async with db_pool.acquire() as connection:
                 await connection.execute(
                     """
                     UPDATE jobs 
                     SET status = 'completed', output_image_url = $1, completed_at = CURRENT_TIMESTAMP 
-                    WHERE id = $2
+                    WHERE id = $2::uuid
                     """, 
                     output_url, job_id
                 )
             logger.info(f"Задача {job_id} успешно завершена!")
             
-            # Удаляем временные файлы-исходники, чтобы не забивать диск
             os.remove(car_path)
             os.remove(wheel_path)
 
         except Exception as e:
             logger.error(f"Ошибка в воркере: {e}")
-            # В случае ошибки ставим статус 'failed' и записываем текст ошибки [cite: 11, 12, 13]
-            if 'job_id' in locals():
+            if job_id:
                 async with db_pool.acquire() as connection:
                     await connection.execute(
-                        "UPDATE jobs SET status = 'failed', error_message = $1 WHERE id = $2", 
+                        "UPDATE jobs SET status = 'failed', error_message = $1 WHERE id = $2::uuid", 
                         str(e), job_id
                     )
 
