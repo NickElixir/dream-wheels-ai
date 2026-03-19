@@ -90,39 +90,55 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def poll_job_status(update: Update, status_msg, job_id: str):
     """Опрашивает GET /jobs/{job_id} каждые 3 секунды """
+    # Защита от бесконечного цикла (максимум 5 минут)
+    max_retries = 100 
+    retries = 0
+
     async with aiohttp.ClientSession() as session:
-        while True:
-            await asyncio.sleep(3) # Задержка 3 секунды 
+        while retries < max_retries:
+            await asyncio.sleep(3) 
+            retries += 1
             
             try:
                 async with session.get(f"{API_BASE_URL}/jobs/{job_id}") as resp:
-                    if resp.status == 200:
-                        status_data = await resp.json()
-                        current_status = status_data["status"]
-                        
-                        if current_status == "completed":
-                            # Задача выполнена, получаем URL картинки [cite: 5, 15]
-                            result_url = status_data["output_image_url"]
+                    if resp.status != 200:
+                        logger.error(f"Сервер вернул ошибку {resp.status}")
+                        continue
+
+                    status_data = await resp.json()
+                    current_status = status_data["status"]
+                    
+                    if current_status == "completed":
+                        result_url = status_data.get("output_image_url")
+                        if not result_url:
+                            await status_msg.edit_text("❌ Сервер вернул пустую картинку.")
+                            return
                             
-                            # Отправляем фото пользователю в Telegram 
-                            await update.message.reply_photo(
-                                photo=result_url, 
-                                caption="Готово! Твой автомобиль на новых дисках 🔥"
-                            )
-                            # Удаляем сервисное сообщение "Ожидаем результат..."
-                            await status_msg.delete()
-                            break
-                            
-                        elif current_status == "failed":
-                            # Задача завершилась ошибкой
-                            await status_msg.edit_text("❌ Произошла ошибка при генерации изображения. Попробуй еще раз.")
-                            break
+                        await update.message.reply_photo(
+                            photo=result_url, 
+                            caption="Готово! Твой автомобиль на новых дисках 🔥"
+                        )
+                        await status_msg.delete()
+                        return # Выходим из функции
                         
-                        # Если статус 'queued' или 'processing', цикл просто пойдет на следующий круг
+                    elif current_status == "failed":
+                        await status_msg.edit_text("❌ Произошла ошибка при генерации изображения. Попробуй еще раз.")
+                        return # Выходим из функции
+                    
+                    elif current_status in ["queued", "processing"]:
+                        # Задача еще в работе. Просто ждем следующий цикл.
+                        continue
+                    else:
+                        logger.warning(f"Неизвестный статус: {current_status}")
+                        continue
+                        
             except Exception as e:
                 logger.error(f"Polling error: {e}")
                 # Если сервер моргнул, просто продолжаем опрос
                 continue
+                
+    # Если цикл завершился по лимиту попыток
+    await status_msg.edit_text("❌ Превышено время ожидания сервера. Попробуйте позже.")
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка случайного текста"""
