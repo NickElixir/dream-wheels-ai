@@ -29,8 +29,8 @@ worker_task = None
 
 class JobCreateRequest(BaseModel):
     telegram_user_id: int
-    car_file_id: str
-    wheel_file_id: str
+    car_url: str      # Изменили car_file_id на car_url
+    wheel_url: str    # Изменили wheel_file_id на wheel_url
 
 class JobCreateResponse(BaseModel):
     job_id: str
@@ -40,17 +40,10 @@ class JobStatusResponse(BaseModel):
     status: str
     output_image_url: str | None = None
 
-async def download_telegram_file(file_id: str, save_path: str):
+async def download_image(url: str, save_path: str):
+    """Простое скачивание по прямой ссылке без обращения к API Telegram"""
     async with aiohttp.ClientSession() as session:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
         async with session.get(url) as resp:
-            data = await resp.json()
-            if not data.get("ok"):
-                raise Exception(f"Ошибка получения файла из Telegram: {data}")
-            file_path = data["result"]["file_path"]
-            
-        download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
-        async with session.get(download_url) as resp:
             with open(save_path, "wb") as f:
                 f.write(await resp.read())
 
@@ -66,6 +59,7 @@ async def process_jobs_loop():
                 await asyncio.sleep(2)
                 continue
                 
+            # ... (начало воркера)
             job_data = json.loads(result)
             job_id = job_data["job_id"]
             
@@ -76,8 +70,10 @@ async def process_jobs_loop():
             
             car_path = f"static/car_{job_id}.jpg"
             wheel_path = f"static/wheel_{job_id}.jpg"
-            await download_telegram_file(job_data["car_file_id"], car_path)
-            await download_telegram_file(job_data["wheel_file_id"], wheel_path)
+            
+            # Используем новую функцию и новые ключи
+            await download_image(job_data["car_url"], car_path)
+            await download_image(job_data["wheel_url"], wheel_path)
             
             with open(car_path, "rb") as f:
                 car_b64 = base64.b64encode(f.read()).decode('utf-8')
