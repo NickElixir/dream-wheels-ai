@@ -166,8 +166,8 @@ async def create_job(request: JobCreateRequest):
     job_payload = {
         "job_id": job_id_str,
         "telegram_user_id": request.telegram_user_id,
-        "car_file_id": request.car_file_id,
-        "wheel_file_id": request.wheel_file_id
+        "car_url": request.car_url,
+        "wheel_url": request.wheel_url
     }
     
     await redis_client.rpush("image_processing_queue", json.dumps(job_payload))
