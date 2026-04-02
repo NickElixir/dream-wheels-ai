@@ -101,7 +101,8 @@ async def process_jobs_loop():
                     # ВНИМАНИЕ: Если Reve API требует другие названия ключей (не car_image_url), измените их здесь
                     reve_payload = {
                         "car_image_base64": car_b64, 
-                        "wheel_image_base64": wheel_b64
+                        "wheel_image_base64": wheel_b64,
+                        "prompt": "Replace the wheels of the car in the first image with the wheel design provided in the second image. Maintain realistic perspective, lighting, shadows, and scale. Do not change the car body, color, or the background."
                     }
                     
                     # ВНИМАНИЕ: Подставьте точный URL эндпоинта Reve API
@@ -164,10 +165,20 @@ async def shutdown():
 # ==========================================
 # API ЭНДПОИНТЫ (MVP) [cite: 14, 15]
 # ==========================================
-@app.api_route("/", methods=["GET", "HEAD"])
-@app.api_route("/health", methods=["GET", "HEAD"])
-async def health_check():
-    """Единый и безопасный маршрут, исключающий раздвоение потоков"""
+@app.get("/")
+async def root_get():
+    return {"status": "ok"}
+
+@app.head("/")
+async def root_head():
+    return {"status": "ok"}
+
+@app.get("/health")
+async def health_get():
+    return {"status": "ok"}
+
+@app.head("/health")
+async def health_head():
     return {"status": "ok"}
 
 @app.post("/jobs", response_model=JobCreateResponse)
