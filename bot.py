@@ -101,17 +101,8 @@ async def poll_job_status(update: Update, status_msg, job_id: str):
 
 if __name__ == "__main__":
     logger.info("Запуск Telegram-бота...")
-    
-    # Инициализация без дополнительных параметров билдера
+    # Чистый запуск без конфликтов
     application = Application.builder().token(BOT_TOKEN).build()
-    
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    
-    # Жесткий контроль HTTP-клиента для предотвращения самоперекрытия (Conflict 409)
-    application.run_polling(
-        poll_interval=1.0,         # Пауза между запросами
-        timeout=10,                # Сервер Telegram ждет максимум 10 секунд
-        read_timeout=20,           # Наш клиент ждет 20 секунд (строго больше, чем timeout!)
-        drop_pending_updates=True  # Сбрасываем зависшие очереди при старте
-    )
+    application.run_polling()
