@@ -7,6 +7,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import asyncpg
 import redis.asyncio as redis
+import base64
+import aiohttp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,6 +38,16 @@ class JobStatusResponse(BaseModel):
 # ==========================================
 # ФОНОВЫЙ ВОРКЕР
 # ==========================================
+async def download_image(url: str, save_path: str):
+    """Скачивает изображение по ссылке и сохраняет на диск"""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                with open(save_path, "wb") as f:
+                    f.write(await resp.read())
+            else:
+                raise Exception(f"Не удалось скачать файл: {resp.status}")
+                
 async def process_jobs_loop():
     logger.info("🟢 Воркер запущен и ждет задачи...")
     while True:
@@ -56,37 +68,62 @@ async def process_jobs_loop():
             async with db_pool.acquire() as conn:
                 await conn.execute("UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id)
 
-            # --- ИНТЕГРАЦИЯ REVE API ---
-            logger.info(f"🚀 Отправка задачи {job_id} в Reve API")
+            # ==================================================
+            # ИНТЕГРАЦИЯ REVE API (БАЗА 64)
+            # ==================================================
+            logger.info(f"🚀 Подготовка файлов для задачи {job_id}")
             
-            # Увеличенный таймаут (60с), так как генерация занимает время
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as api_session:
+            os.makedirs("static", exist_ok=True)
+            car_path = f"static/car_{job_id}.jpg"
+            wheel_path = f"static/wheel_{job_id}.jpg"
+            result_url = None
+            
+            try:
+                # 1. Скачиваем картинки на сервер
+                await download_image(job_data["car_url"], car_path)
+                await download_image(job_data["wheel_url"], wheel_path)
                 
-                # ВАЖНО: Вставьте ваши реальные ключи авторизации Reve
-                headers = {
-                    "Authorization": f"Bearer {os.getenv('REVE_API_KEY', 'ВАШ_ТОКЕН')}",
-                    "Content-Type": "application/json"
-                }
+                # 2. Кодируем в Base64
+                with open(car_path, "rb") as f:
+                    car_b64 = base64.b64encode(f.read()).decode('utf-8')
+                with open(wheel_path, "rb") as f:
+                    wheel_b64 = base64.b64encode(f.read()).decode('utf-8')
+
+                logger.info(f"🧠 Отправка Base64 в Reve API для задачи {job_id}")
                 
-                # ВАЖНО: Скорректируйте ключи payload под документацию Reve API
-                reve_payload = {
-                    "car_image_url": job_data["car_url"],
-                    "wheel_image_url": job_data["wheel_url"]
-                }
-                
-                # Замените URL на настоящий эндпоинт Reve
-                async with api_session.post("https://api.reve.com/v1/image/remix", json=reve_payload, headers=headers) as reve_resp:
-                    if reve_resp.status != 200:
-                        error_text = await reve_resp.text()
-                        raise Exception(f"Ошибка Reve API ({reve_resp.status}): {error_text}")
+                # 3. Отправляем в ИИ
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as api_session:
+                    headers = {
+                        "Authorization": f"Bearer {os.getenv('REVE_API_KEY', 'ВАШ_ТОКЕН')}",
+                        "Content-Type": "application/json"
+                    }
                     
-                    reve_data = await reve_resp.json()
+                    # ВНИМАНИЕ: Если Reve API требует другие названия ключей (не car_image_url), измените их здесь
+                    reve_payload = {
+                        "car_image_base64": car_b64, 
+                        "wheel_image_base64": wheel_b64
+                    }
                     
-                    # Убедитесь, что ключ "output_image_url" совпадает с тем, что возвращает Reve
-                    result_url = reve_data.get("output_image_url")
-                    if not result_url:
-                        raise Exception("Reve API не вернул ссылку на изображение")
-            # --- КОНЕЦ БЛОКА REVE API ---
+                    # ВНИМАНИЕ: Подставьте точный URL эндпоинта Reve API
+                    api_url = "https://api.reve.com/v1/image/remix" 
+                    
+                    async with api_session.post(api_url, json=reve_payload, headers=headers) as reve_resp:
+                        if reve_resp.status != 200:
+                            error_text = await reve_resp.text()
+                            raise Exception(f"Ошибка Reve API ({reve_resp.status}): {error_text}")
+                        
+                        reve_data = await reve_resp.json()
+                        result_url = reve_data.get("output_image_url") # Убедитесь, что ключ совпадает с ответом Reve
+                        
+                        if not result_url:
+                            raise Exception("Reve API ответил 200 OK, но не вернул output_image_url")
+                            
+            finally:
+                # 4. ОЧИСТКА: Удаляем тяжелые файлы с диска в любом случае (даже при ошибке)
+                for file_path in [car_path, wheel_path]:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+            # ==================================================
 
             # 3. Меняем статус на completed и сохраняем URL [cite: 13, 15]
             async with db_pool.acquire() as conn:
