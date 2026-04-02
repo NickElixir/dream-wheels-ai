@@ -9,6 +9,7 @@ import asyncpg
 import redis.asyncio as redis
 import base64
 import aiohttp
+from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,7 +17,9 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
 
-app = FastAPI(title="Dream Wheels API")
+app = FastAPI(title="Dream Wheels MVP")
+os.makedirs("static", exist_ok=True) # Создаем папку, если ее нет
+app.mount("/static", StaticFiles(directory="static"), name="static")
 db_pool = None
 redis_client = None
 worker_task = None
@@ -68,40 +71,62 @@ async def process_jobs_loop():
             async with db_pool.acquire() as conn:
                 await conn.execute("UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id)
 
-            # --- ИНТЕГРАЦИЯ REVE API ---
-            logger.info(f"🚀 Конвертация файлов и отправка в Reve API для задачи {job_id}")
-            
-            # 1. Мгновенно кодируем картинки прямо в памяти
-            car_b64 = await get_base64_from_url(job_data["car_url"])
-            wheel_b64 = await get_base64_from_url(job_data["wheel_url"])
+           # --- ИНТЕГРАЦИЯ REVE API (ОФИЦИАЛЬНАЯ ДОКУМЕНТАЦИЯ) ---
+            try:
+                logger.info(f"📥 [Задача {job_id}] Скачиваем картинки в Base64...")
+                car_b64 = await fetch_image_as_base64(job_data["car_url"])
+                wheel_b64 = await fetch_image_as_base64(job_data["wheel_url"])
 
-            # 2. Отправляем запрос (таймаут 60 сек, чтобы дождаться генерации)
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as api_session:
-                headers = {
-                    "Authorization": f"Bearer {os.getenv('REVE_API_KEY', 'ВАШ_ТОКЕН')}",
-                    "Content-Type": "application/json"
-                }
+                logger.info(f"🚀 [Задача {job_id}] Отправляем запрос в Reve API...")
                 
-                reve_payload = {
-                    "car_image_base64": car_b64,
-                    "wheel_image_base64": wheel_b64,
-                    "prompt": "Replace the wheels of the car in the first image with the wheel design provided in the second image. Maintain realistic perspective, lighting, shadows, and scale. Do not change the car body, color, or the background."
-                }
-                
-                # ВНИМАНИЕ: Подставьте точный URL эндпоинта Reve API
-                reve_endpoint = "https://api.reve.com/v1/image/remix"
-                
-                async with api_session.post(reve_endpoint, json=reve_payload, headers=headers) as reve_resp:
-                    if reve_resp.status != 200:
-                        error_text = await reve_resp.text()
-                        raise Exception(f"Ошибка Reve API ({reve_resp.status}): {error_text}")
+                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=90)) as api_session:
+                    headers = {
+                        "Authorization": f"Bearer {os.getenv('REVE_API_KEY', 'ВАШ_ТОКЕН')}",
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
                     
-                    reve_data = await reve_resp.json()
+                    # Точно по документации Reve:
+                    payload = {
+                        "prompt": "Replace the wheels of the car in <img>0</img> with the wheel design provided in <img>1</img>. Maintain realistic perspective, lighting, shadows, and scale.",
+                        "reference_images": [car_b64, wheel_b64],
+                        "aspect_ratio": "16:9",
+                        "version": "latest"
+                    }
                     
-                    # Получаем итоговую ссылку
-                    result_url = reve_data.get("output_image_url")
-                    if not result_url:
-                        raise Exception("Reve API ответил успешно, но не вернул ссылку на картинку")
+                    api_url = "https://api.reve.com/v1/image/remix" 
+                    
+                    async with api_session.post(api_url, json=payload, headers=headers) as reve_resp:
+                        response_text = await reve_resp.text()
+                        
+                        if reve_resp.status != 200:
+                            raise Exception(f"Reve API error (HTTP {reve_resp.status}): {response_text}")
+                        
+                        import json
+                        result = json.loads(response_text)
+                        
+                        if result.get('content_violation'):
+                            raise Exception("Reve API: Сработало предупреждение о нарушении контента (content_violation)")
+                            
+                        # Достаем готовую картинку из ответа
+                        b64_result = result.get('image')
+                        if not b64_result:
+                            raise Exception(f"Reve API не вернул 'image'. Ответ: {response_text}")
+                            
+                        # Декодируем и сохраняем файл на диск бэкенда
+                        output_filename = f"result_{job_id}.jpg"
+                        output_path = os.path.join("static", output_filename)
+                        
+                        import base64
+                        with open(output_path, "wb") as f:
+                            f.write(base64.b64decode(b64_result))
+                            
+                        # Создаем локальный URL, который бот сможет запросить и переслать пользователю
+                        result_url = f"http://127.0.0.1:10000/static/{output_filename}"
+                        logger.info(f"🎨 [Задача {job_id}] Успех! Картинка сохранена: {result_url}")
+
+            except asyncio.TimeoutError:
+                raise Exception("Таймаут: Reve API не ответил за 90 секунд")
             # --- КОНЕЦ БЛОКА REVE API ---
 
             # 3. Меняем статус на completed и сохраняем URL [cite: 13, 15]
