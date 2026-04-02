@@ -56,10 +56,37 @@ async def process_jobs_loop():
             async with db_pool.acquire() as conn:
                 await conn.execute("UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id)
 
-            # 2. Имитация работы Reve v1.1 API 
-            # Ждем 3 секунды, затем берем URL машины и назначаем его как результат
-            await asyncio.sleep(3)
-            mock_output_url = job_data["car_url"] 
+            # --- ИНТЕГРАЦИЯ REVE API ---
+            logger.info(f"🚀 Отправка задачи {job_id} в Reve API")
+            
+            # Увеличенный таймаут (60с), так как генерация занимает время
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as api_session:
+                
+                # ВАЖНО: Вставьте ваши реальные ключи авторизации Reve
+                headers = {
+                    "Authorization": f"Bearer {os.getenv('REVE_API_KEY', 'ВАШ_ТОКЕН')}",
+                    "Content-Type": "application/json"
+                }
+                
+                # ВАЖНО: Скорректируйте ключи payload под документацию Reve API
+                reve_payload = {
+                    "car_image_url": job_data["car_url"],
+                    "wheel_image_url": job_data["wheel_url"]
+                }
+                
+                # Замените URL на настоящий эндпоинт Reve
+                async with api_session.post("https://api.reve.com/v1/image/remix", json=reve_payload, headers=headers) as reve_resp:
+                    if reve_resp.status != 200:
+                        error_text = await reve_resp.text()
+                        raise Exception(f"Ошибка Reve API ({reve_resp.status}): {error_text}")
+                    
+                    reve_data = await reve_resp.json()
+                    
+                    # Убедитесь, что ключ "output_image_url" совпадает с тем, что возвращает Reve
+                    result_url = reve_data.get("output_image_url")
+                    if not result_url:
+                        raise Exception("Reve API не вернул ссылку на изображение")
+            # --- КОНЕЦ БЛОКА REVE API ---
 
             # 3. Меняем статус на completed и сохраняем URL [cite: 13, 15]
             async with db_pool.acquire() as conn:
@@ -142,7 +169,8 @@ async def create_job(request: JobCreateRequest):
     await redis_client.rpush("job_queue", json.dumps({
         "job_id": job_id,
         "telegram_user_id": request.telegram_user_id,
-        "car_url": request.car_url
+        "car_url": request.car_url,
+        "wheel_url": request.wheel_url  # <-- ДОБАВЛЕНО
     }))
     return JobCreateResponse(job_id=job_id, status="queued")
     
