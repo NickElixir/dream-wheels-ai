@@ -20,6 +20,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://dream-wheels-ai-tg.onrender.com").rstrip("/")
 
 app = FastAPI(title="Dream Wheels MVP")
 os.makedirs("static", exist_ok=True) # Создаем папку, если ее нет
@@ -102,7 +103,7 @@ async def process_jobs_loop():
                     with open(path, "wb") as f:
                         f.write(base64.b64decode(b64_output))
                     
-                    output_url = f"https://dream-wheels-ai-tg.onrender.com/static/{filename}"
+                    output_url = f"{PUBLIC_BASE_URL}/static/{filename}"
 
             # 4. ФИНАЛЬНОЕ ОБНОВЛЕНИЕ БАЗЫ
             async with db_pool.acquire() as conn:
