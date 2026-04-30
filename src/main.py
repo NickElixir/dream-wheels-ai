@@ -7,10 +7,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from src import db, redis_client
 from src.config import PUBLIC_BASE_URL
+from src.rate_limit import enforce_rate_limit
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
 
 logging.basicConfig(
@@ -49,10 +50,22 @@ os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+TELEGRAM_FILE_PREFIX = "https://api.telegram.org/file/"
+
+
 class JobCreateRequest(BaseModel):
     telegram_user_id: int
     car_url: str
     wheel_url: str
+
+    @field_validator("car_url", "wheel_url")
+    @classmethod
+    def validate_telegram_url(cls, v: str) -> str:
+        # Защита от arbitrary URL: воркер скачивает контент по этому URL и шлёт
+        # в Reve API. Без проверки можно подставить любой http-эндпоинт.
+        if not v.startswith(TELEGRAM_FILE_PREFIX):
+            raise ValueError(f"URL должен начинаться с {TELEGRAM_FILE_PREFIX}")
+        return v
 
 
 class JobCreateResponse(BaseModel):
@@ -127,8 +140,20 @@ async def health_check():
     return {"status": "ok"}
 
 
+JOBS_RATE_LIMIT = 5  # запросов
+JOBS_RATE_WINDOW_SEC = 60  # за окно
+
+
 @app.post("/jobs", response_model=JobCreateResponse)
 async def create_job(request: JobCreateRequest):
+    # Лимит на пользователя, чтобы один человек не выжег квоту Reve API.
+    await enforce_rate_limit(
+        scope="jobs",
+        identifier=request.telegram_user_id,
+        limit=JOBS_RATE_LIMIT,
+        window_sec=JOBS_RATE_WINDOW_SEC,
+    )
+
     logger.info(
         f"📥 Получен запрос на создание задачи. Авто: {request.car_url}, Диск: {request.wheel_url}"
     )
