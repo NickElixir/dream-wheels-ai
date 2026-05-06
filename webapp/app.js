@@ -6,7 +6,24 @@
 // вместе. Пока fetch заменён на mock-задержку с заглушкой результата.
 
 const tg = window.Telegram?.WebApp;
-const HAS_TG = Boolean(tg && typeof tg.expand === "function");
+// SDK-скрипт выставляет window.Telegram.WebApp даже в обычном браузере, но
+// репортит platform="unknown". В этом режиме MainButton/BackButton не
+// рендерятся (нет Telegram-чрома) — переключаемся на fallback-кнопку.
+const HAS_TG = Boolean(
+    tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown"
+);
+
+// BackButton, HapticFeedback и пр. появились в Bot API 6.1.
+// В Telegram-клиентах старых версий SDK сообщает 6.0 — вызовы работают
+// с warning'ами в консоли, поэтому гейтим по версии.
+function tgSupports(version) {
+    if (!HAS_TG) return false;
+    if (typeof tg.isVersionAtLeast !== "function") return false;
+    return tg.isVersionAtLeast(version);
+}
+
+const SUPPORTS_BACK_BUTTON = tgSupports("6.1");
+const SUPPORTS_HAPTIC = tgSupports("6.1");
 
 const SCREENS = ["car", "wheel", "result"];
 const state = {
@@ -31,7 +48,7 @@ function initTelegram() {
 }
 
 function haptic(type) {
-    if (!HAS_TG) return;
+    if (!SUPPORTS_HAPTIC) return;
     const h = tg.HapticFeedback;
     if (!h) return;
     if (type === "success") h.notificationOccurred("success");
@@ -95,14 +112,15 @@ let backButtonHandler = null;
 
 function setBackButton(onClick) {
     backButtonHandler = onClick;
-    if (HAS_TG && tg.BackButton) {
-        tg.BackButton.offClick();
-        if (onClick) {
-            tg.BackButton.onClick(onClick);
-            tg.BackButton.show();
-        } else {
-            tg.BackButton.hide();
-        }
+    // На старых клиентах (или в браузере для дебага) BackButton отсутствует —
+    // молча игнорируем. Юзер вернётся через стандартную кнопку Telegram-чата.
+    if (!SUPPORTS_BACK_BUTTON) return;
+    tg.BackButton.offClick();
+    if (onClick) {
+        tg.BackButton.onClick(onClick);
+        tg.BackButton.show();
+    } else {
+        tg.BackButton.hide();
     }
 }
 
