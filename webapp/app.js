@@ -243,32 +243,27 @@ function setDownloadButtonState({ disabled = false, text = "Скачать из�
     downloadButton.textContent = text;
 }
 
+function openResultUrl(url) {
+    if (HAS_TG && typeof tg.openLink === "function") {
+        tg.openLink(url);
+        return;
+    }
+
+    window.open(url, "_blank", "noopener");
+}
+
 async function downloadResult() {
     if (!state.resultUrl || state.downloading) return;
 
     state.downloading = true;
-    setDownloadButtonState({ disabled: true, text: "Скачиваем..." });
+    setDownloadButtonState({ disabled: true, text: "Открываем файл..." });
 
     try {
-        const response = await fetch(state.resultUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = `dream-wheels-${state.jobId || "result"}.jpg`;
-        link.rel = "noopener";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        openResultUrl(state.resultUrl);
         haptic("success");
     } catch (error) {
         console.error("[DW] download failed", error);
-        setDownloadButtonState({ disabled: false, text: "Скачать не удалось" });
+        setDownloadButtonState({ disabled: false, text: "Не удалось открыть" });
         setTimeout(() => {
             setDownloadButtonState();
         }, 1800);
