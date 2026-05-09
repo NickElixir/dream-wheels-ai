@@ -26,6 +26,7 @@ const state = {
     files: { car: null, wheel: null },
     jobId: null,
     resultUrl: null,
+    downloading: false,
     submitting: false,
 };
 
@@ -161,6 +162,7 @@ function refreshButtonsForScreen() {
 }
 
 function resetFlow() {
+    state.downloading = false;
     state.submitting = false;
     state.files = { car: null, wheel: null };
     state.jobId = null;
@@ -172,7 +174,10 @@ function resetFlow() {
         if (zone) zone.hidden = false;
     });
     const downloadButton = document.querySelector("[data-download-result]");
-    if (downloadButton) downloadButton.hidden = true;
+    if (downloadButton) {
+        downloadButton.hidden = true;
+        setDownloadButtonState();
+    }
     document.querySelectorAll("input[data-input]").forEach((i) => (i.value = ""));
     showScreen("upload");
 }
@@ -231,24 +236,49 @@ function handleFileSelected(kind, file) {
     haptic("light");
 }
 
-function downloadResult() {
-    if (!state.resultUrl) return;
+function setDownloadButtonState({ disabled = false, text = "Скачать изображение" } = {}) {
+    const downloadButton = document.querySelector("[data-download-result]");
+    if (!downloadButton) return;
+    downloadButton.disabled = disabled;
+    downloadButton.textContent = text;
+}
 
-    const link = document.createElement("a");
-    link.href = state.resultUrl;
-    link.download = `dream-wheels-${state.jobId || "result"}.png`;
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+async function downloadResult() {
+    if (!state.resultUrl || state.downloading) return;
 
-    // Telegram WebView может игнорировать download-атрибут. Если вкладка не
-    // начала скачивание, у юзера хотя бы откроется сама картинка отдельным tap.
-    setTimeout(() => {
-        if (document.visibilityState === "visible") {
-            window.open(state.resultUrl, "_blank", "noopener");
+    state.downloading = true;
+    setDownloadButtonState({ disabled: true, text: "Скачиваем..." });
+
+    try {
+        const response = await fetch(state.resultUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-    }, 400);
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = `dream-wheels-${state.jobId || "result"}.jpg`;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        haptic("success");
+    } catch (error) {
+        console.error("[DW] download failed", error);
+        setDownloadButtonState({ disabled: false, text: "Скачать не удалось" });
+        setTimeout(() => {
+            setDownloadButtonState();
+        }, 1800);
+        haptic("warning");
+        state.downloading = false;
+        return;
+    }
+
+    state.downloading = false;
+    setDownloadButtonState();
 }
 
 function attachResultHandlers() {
@@ -256,7 +286,6 @@ function attachResultHandlers() {
     if (!downloadButton) return;
     downloadButton.addEventListener("click", () => {
         downloadResult();
-        haptic("success");
     });
 }
 
@@ -426,6 +455,7 @@ async function submitJob() {
             }
             const downloadButton = document.querySelector("[data-download-result]");
             if (downloadButton) {
+                setDownloadButtonState();
                 downloadButton.hidden = !state.resultUrl;
             }
             resultBlock.hidden = false;
