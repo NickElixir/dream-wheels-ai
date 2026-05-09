@@ -25,6 +25,7 @@ const state = {
     screen: "upload",
     files: { car: null, wheel: null },
     jobId: null,
+    submitting: false,
 };
 
 /* ---------- Telegram bootstrap ---------- */
@@ -140,20 +141,26 @@ function refreshButtonsForScreen() {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
         setMainButton({
             text: "Создать рендер",
-            enabled: ready,
-            onClick: ready ? submitJob : null,
+            enabled: ready && !state.submitting,
+            onClick: ready && !state.submitting ? submitJob : null,
         });
     } else if (state.screen === "result") {
-        setBackButton(() => resetFlow());
-        setMainButton({
-            text: "Сделать ещё один",
-            enabled: true,
-            onClick: resetFlow,
-        });
+        if (state.submitting) {
+            setBackButton(null);
+            hideMainButton();
+        } else {
+            setBackButton(() => resetFlow());
+            setMainButton({
+                text: "Сделать ещё один",
+                enabled: true,
+                onClick: resetFlow,
+            });
+        }
     }
 }
 
 function resetFlow() {
+    state.submitting = false;
     state.files = { car: null, wheel: null };
     state.jobId = null;
     ["car", "wheel"].forEach((s) => {
@@ -231,6 +238,8 @@ function sleep(ms) {
 }
 
 async function submitJob() {
+    if (state.submitting) return;
+    state.submitting = true;
     showScreen("result");
     haptic("light");
 
@@ -249,10 +258,12 @@ async function submitJob() {
     statusSub.textContent = "Первый запуск может занять до 40 секунд";
 
     function showError(msg) {
+        state.submitting = false;
         statusBlock.hidden = true;
         resultBlock.hidden = true;
         errorBlock.hidden = false;
         if (errorText) errorText.textContent = msg;
+        refreshButtonsForScreen();
         haptic("error");
     }
 
@@ -321,12 +332,14 @@ async function submitJob() {
         }
 
         if (statusData.status === "completed") {
+            state.submitting = false;
             statusBlock.hidden = true;
             if (resultImg && statusData.result_url) {
                 resultImg.src = statusData.result_url;
                 resultImg.hidden = false;
             }
             resultBlock.hidden = false;
+            refreshButtonsForScreen();
             haptic("success");
             return;
         }
