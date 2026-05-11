@@ -47,3 +47,11 @@ ignore = ["E501", "RUF001", "RUF002", "RUF003", "ASYNC230", "B904", "W291"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
+
+# ============================================================
+# Pytest config — кастомные маркеры
+# ============================================================
+[tool.pytest.ini_options]
+markers = [
+    "integration: integration tests requiring external resources (skipped by default in unit run)",
+]
