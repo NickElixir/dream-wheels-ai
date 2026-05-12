@@ -35,7 +35,7 @@ DEFAULT_MODELS = (
     "tire-model-5c5yg-k1wqh/1",
     "disk-segmentation/2",
 )
-DEFAULT_CLASSES = ("wheel", "tire")
+DEFAULT_CLASSES = ("wheel",)
 DEFAULT_OUTPUT_DIR = Path("tmp/roboflow-benchmark")
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 

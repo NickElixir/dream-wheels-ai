@@ -23,10 +23,10 @@ import httpx
 from PIL import Image, ImageDraw
 
 DEFAULT_MODEL_ID = "wheels-tires-body/1"
-DEFAULT_CLASSES = ("wheel", "tire")
+DEFAULT_CLASSES = ("wheel",)
 DEFAULT_OUTPUT_DIR = Path("tmp/roboflow")
 DEFAULT_MIN_AREA_RATIO = 0.002
-DEFAULT_TOP_N = 4
+DEFAULT_TOP_N = 2
 
 
 def _parse_model_id(model_id: str) -> tuple[str, str]:
