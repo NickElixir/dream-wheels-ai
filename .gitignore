@@ -216,3 +216,6 @@ __marimo__/
 # Wheel segmentation models — большие бинарники, скачиваются через scripts/download_yolo_seg.py
 models/
 *.onnx
+
+# Local Roboflow probes and generated masks.
+tmp/
