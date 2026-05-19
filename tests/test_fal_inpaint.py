@@ -17,6 +17,13 @@ def test_estimate_cost_uses_conservative_model_price(tmp_path: Path):
 
     assert estimate_cost_usd(image_path=image_path, config=RUN_CONFIGS["z-default"]) == 0.005
     assert estimate_cost_usd(image_path=image_path, config=RUN_CONFIGS["flux-default"]) == 0.0175
+    assert (
+        estimate_cost_usd(image_path=image_path, config=RUN_CONFIGS["reve-remix-rim-mask"]) == 0.01
+    )
+    assert (
+        estimate_cost_usd(image_path=image_path, config=RUN_CONFIGS["gemini-3-pro-rim-mask"])
+        == 0.15
+    )
 
 
 def test_build_flux_arguments_include_reference_and_mask():
@@ -106,6 +113,45 @@ def test_build_qwen_image_edit_arguments_use_mask_url():
     assert "reference_image_url" not in args
     assert args["strength"] == 0.75
     assert args["guidance_scale"] == 3.5
+
+
+def test_build_reve_remix_arguments_use_car_reference_and_mask_urls():
+    args = build_arguments(
+        config=RUN_CONFIGS["reve-remix-rim-mask"],
+        car_url="https://example.com/car.png",
+        mask_url="https://example.com/mask.png",
+        reference_url="https://example.com/rim.png",
+        prompt="replace wheels",
+        output_format="png",
+    )
+
+    assert args["image_urls"] == [
+        "https://example.com/car.png",
+        "https://example.com/rim.png",
+        "https://example.com/mask.png",
+    ]
+    assert args["num_images"] == 1
+    assert args["sync_mode"] is False
+
+
+def test_build_gemini_edit_arguments_use_car_reference_and_mask_urls():
+    args = build_arguments(
+        config=RUN_CONFIGS["gemini-3-pro-rim-mask"],
+        car_url="https://example.com/car.png",
+        mask_url="https://example.com/mask.png",
+        reference_url="https://example.com/rim.png",
+        prompt="replace wheels",
+        output_format="png",
+    )
+
+    assert args["image_urls"] == [
+        "https://example.com/car.png",
+        "https://example.com/rim.png",
+        "https://example.com/mask.png",
+    ]
+    assert args["aspect_ratio"] == "auto"
+    assert args["resolution"] == "1K"
+    assert args["limit_generations"] is True
 
 
 def test_build_sdxl_arguments_include_base_model_name():

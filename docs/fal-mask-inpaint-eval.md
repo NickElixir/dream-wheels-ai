@@ -373,3 +373,60 @@ Current visual read:
   needs stricter visual review before it can replace Flux Kontext.
 - `flux-s085-g25` remains the safest all-around production candidate.
 - `flux-s075-g25` remains the best night readability fallback.
+
+## Frontier Edit Sweep Notes
+
+The frontier edit sweep compared the current Flux/Qwen candidates against Gemini
+and direct Reve remix on the same three cases:
+
+- `ivan-C1` - white car, daylight.
+- `ivan-C2` - dark gray SUV, daylight.
+- `ivan-N2` - dark car, night.
+
+fal.ai command:
+
+```bash
+.venv/bin/python scripts/fal_inpaint_eval.py \
+  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
+  --preset frontier-edit \
+  --output-dir tmp/fal-inpaint-eval/results-frontier-edit-3cases \
+  --max-estimated-cost 0.80 \
+  --execute \
+  --client-timeout 300
+```
+
+Direct Reve command:
+
+```bash
+.venv/bin/python scripts/reve_image_edit_eval.py \
+  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
+  --limit 3 \
+  --output-dir tmp/reve-image-edit-eval/ivan-vlm-3cases-direct \
+  --execute \
+  --timeout 240
+```
+
+Observed outputs:
+
+- fal frontier sweep: 8/12 completed.
+- `flux-s085-g25`: 3/3 completed.
+- `qwen-edit-default`: 3/3 completed.
+- `gemini-3-pro-rim-mask`: 2/3 completed; `ivan-N2` timed out at 300 seconds.
+- `reve-remix-rim-mask` through fal initially failed validation because the
+  endpoint expected `image_urls`; the local config was corrected afterward.
+- direct Reve: 3/3 completed after retrying one transient SSL failure.
+- Local comparison sheets:
+  - `tmp/reve-image-edit-eval/frontier-comparison-3cases/frontier_comparison_contact_sheet.jpg`
+  - `tmp/reve-image-edit-eval/frontier-comparison-3cases/frontier_comparison_zoom_sheet.jpg`
+
+Current visual read:
+
+- `flux-s085-g25` remains the best all-around candidate in this comparison.
+- `qwen-edit-default` keeps the car framing, but tends to make rim structure too
+  bright/greenish and is less faithful to the black reference rim.
+- `gemini-3-pro-rim-mask` is not usable as a masked wheel-edit baseline in this
+  setup: one output became a two-image collage, and another inserted a standalone
+  product-style wheel instead of editing only the masked rims.
+- Direct Reve technically works and preserves the car framing, but the outputs
+  often become flat black wheels with weak spoke detail; the night case also
+  shows reddish artifacts.

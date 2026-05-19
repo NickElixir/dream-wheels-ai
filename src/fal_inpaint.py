@@ -12,7 +12,9 @@ FalModelId = Literal[
     "flux-kontext",
     "flux-lora",
     "flux-general",
+    "gemini-3-pro-image-edit",
     "qwen-image-edit",
+    "reve-remix",
     "sdxl-inpaint",
     "z-image",
 ]
@@ -24,7 +26,8 @@ class FalModelSpec:
 
     model_id: FalModelId
     endpoint: str
-    price_per_megapixel_usd: float
+    price_per_megapixel_usd: float | None
+    price_per_image_usd: float | None
     supports_reference_image: bool
 
 
@@ -52,6 +55,7 @@ MODEL_SPECS: dict[FalModelId, FalModelSpec] = {
         model_id="flux-kontext",
         endpoint="fal-ai/flux-kontext-lora/inpaint",
         price_per_megapixel_usd=0.035,
+        price_per_image_usd=None,
         supports_reference_image=True,
     ),
     "z-image": FalModelSpec(
@@ -60,31 +64,50 @@ MODEL_SPECS: dict[FalModelId, FalModelSpec] = {
         # fal pages currently show both $0.005/MP and $0.01/MP. Use the
         # conservative value so the budget guard errs on the expensive side.
         price_per_megapixel_usd=0.01,
+        price_per_image_usd=None,
         supports_reference_image=False,
     ),
     "flux-lora": FalModelSpec(
         model_id="flux-lora",
         endpoint="fal-ai/flux-lora/inpainting",
         price_per_megapixel_usd=0.035,
+        price_per_image_usd=None,
         supports_reference_image=False,
     ),
     "flux-general": FalModelSpec(
         model_id="flux-general",
         endpoint="fal-ai/flux-general/inpainting",
         price_per_megapixel_usd=0.035,
+        price_per_image_usd=None,
         supports_reference_image=False,
+    ),
+    "gemini-3-pro-image-edit": FalModelSpec(
+        model_id="gemini-3-pro-image-edit",
+        endpoint="fal-ai/gemini-3-pro-image-preview/edit",
+        price_per_megapixel_usd=None,
+        price_per_image_usd=0.15,
+        supports_reference_image=True,
     ),
     "qwen-image-edit": FalModelSpec(
         model_id="qwen-image-edit",
         endpoint="fal-ai/qwen-image-edit/inpaint",
         price_per_megapixel_usd=0.03,
+        price_per_image_usd=None,
         supports_reference_image=False,
+    ),
+    "reve-remix": FalModelSpec(
+        model_id="reve-remix",
+        endpoint="fal-ai/reve/fast/remix",
+        price_per_megapixel_usd=None,
+        price_per_image_usd=0.01,
+        supports_reference_image=True,
     ),
     "sdxl-inpaint": FalModelSpec(
         model_id="sdxl-inpaint",
         endpoint="fal-ai/inpaint",
         # Conservative local planning estimate for the generic SDXL inpaint endpoint.
         price_per_megapixel_usd=0.02,
+        price_per_image_usd=None,
         supports_reference_image=False,
     ),
 }
@@ -210,6 +233,16 @@ RUN_CONFIGS: dict[str, FalRunConfig] = {
         num_inference_steps=30,
         acceleration="regular",
     ),
+    "reve-remix-rim-mask": FalRunConfig(
+        name="reve-remix-rim-mask",
+        model_id="reve-remix",
+        strength=0.0,
+    ),
+    "gemini-3-pro-rim-mask": FalRunConfig(
+        name="gemini-3-pro-rim-mask",
+        model_id="gemini-3-pro-image-edit",
+        strength=0.0,
+    ),
     "sdxl-default": FalRunConfig(
         name="sdxl-default",
         model_id="sdxl-inpaint",
@@ -255,6 +288,12 @@ DEFAULT_REFERENCE_CANDIDATE_CONFIGS = (
     "flux-general-reference-rim",
     "qwen-edit-default",
 )
+DEFAULT_FRONTIER_EDIT_CONFIGS = (
+    "flux-s085-g25",
+    "qwen-edit-default",
+    "reve-remix-rim-mask",
+    "gemini-3-pro-rim-mask",
+)
 
 
 def image_megapixels(path: Path) -> float:
@@ -269,6 +308,10 @@ def estimate_cost_usd(*, image_path: Path, config: FalRunConfig) -> float:
     """Estimate fal.ai generation cost for one request."""
 
     spec = MODEL_SPECS[config.model_id]
+    if spec.price_per_image_usd is not None:
+        return spec.price_per_image_usd
+    if spec.price_per_megapixel_usd is None:
+        raise ValueError(f"No price estimate configured for {config.model_id}")
     return image_megapixels(image_path) * spec.price_per_megapixel_usd
 
 
@@ -348,6 +391,32 @@ def build_arguments(
             "output_format": output_format,
             "acceleration": config.acceleration,
             "enable_safety_checker": True,
+        }
+
+    if config.model_id == "reve-remix":
+        if not reference_url:
+            raise ValueError("reve-remix requires reference_url")
+        return {
+            "prompt": prompt,
+            "image_urls": [car_url, reference_url, mask_url],
+            "num_images": 1,
+            "sync_mode": False,
+        }
+
+    if config.model_id == "gemini-3-pro-image-edit":
+        if not reference_url:
+            raise ValueError("gemini-3-pro-image-edit requires reference_url")
+        return {
+            "prompt": prompt,
+            "image_urls": [car_url, reference_url, mask_url],
+            "num_images": 1,
+            "aspect_ratio": "auto",
+            "output_format": output_format,
+            "safety_tolerance": "4",
+            "sync_mode": False,
+            "resolution": "1K",
+            "limit_generations": True,
+            "enable_web_search": False,
         }
 
     if config.model_id == "z-image":

@@ -38,6 +38,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.fal_inpaint import (  # noqa: E402
     DEFAULT_FLUX_SWEEP_CONFIGS,
+    DEFAULT_FRONTIER_EDIT_CONFIGS,
     DEFAULT_MODEL_CANDIDATE_CONFIGS,
     DEFAULT_NIGHT_FLUX_CONFIGS,
     DEFAULT_REFERENCE_CANDIDATE_CONFIGS,
@@ -150,6 +151,8 @@ def _configs_for_args(args: argparse.Namespace) -> list[FalRunConfig]:
         names = list(DEFAULT_NIGHT_FLUX_CONFIGS)
     elif args.preset == "reference-candidates":
         names = list(DEFAULT_REFERENCE_CANDIDATE_CONFIGS)
+    elif args.preset == "frontier-edit":
+        names = list(DEFAULT_FRONTIER_EDIT_CONFIGS)
     else:
         raise SystemExit(f"Unknown preset: {args.preset}")
 
@@ -363,6 +366,7 @@ def main() -> int:
             "model-candidates",
             "night-flux",
             "reference-candidates",
+            "frontier-edit",
         ],
         default="wide",
     )
