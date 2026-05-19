@@ -28,9 +28,9 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://dream-wheels-ai-tg.onren
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:10000").rstrip("/")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://dream-wheels-ai-webapp.vercel.app").rstrip("/")
 
-# Wheel segmentation (Stage 1) — путь к ONNX-модели YOLOv11n-seg и id
+# Wheel segmentation (Stage 1) — путь к ONNX-модели YOLO11n-seg и id
 # класса «колесо» в этой модели. Модель ожидается экспортированной из
-# wheel-fine-tuned YOLOv11n-seg; для bootstrap-теста подойдёт и COCO-модель,
+# wheel-fine-tuned YOLO11n-seg; для bootstrap-теста подойдёт и COCO-модель,
 # но wheel-классов в ней нет — маска будет пустая.
-WHEEL_SEG_MODEL_PATH = os.getenv("WHEEL_SEG_MODEL_PATH", "models/yolov11n-seg.onnx")
+WHEEL_SEG_MODEL_PATH = os.getenv("WHEEL_SEG_MODEL_PATH", "models/yolo11n-seg.onnx")
 WHEEL_SEG_CLASS_ID = int(os.getenv("WHEEL_SEG_CLASS_ID", "0"))

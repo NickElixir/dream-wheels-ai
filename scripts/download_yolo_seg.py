@@ -1,4 +1,4 @@
-"""Подготовка YOLOv11n-seg ONNX-модели для src.wheel_seg.
+"""Подготовка YOLO11n-seg ONNX-модели для src.wheel_seg.
 
 Сценарии:
 1. Файл уже на месте → выходим без действия.
@@ -9,7 +9,7 @@
     python scripts/download_yolo_seg.py
 
 Переменные окружения:
-    WHEEL_SEG_MODEL_PATH     путь, куда положить .onnx (default: models/yolov11n-seg.onnx)
+    WHEEL_SEG_MODEL_PATH     путь, куда положить .onnx (default: models/yolo11n-seg.onnx)
     YOLO_SEG_DOWNLOAD_URL    прямая ссылка на готовый .onnx (опционально)
 """
 
@@ -20,7 +20,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-DEFAULT_PATH = "models/yolov11n-seg.onnx"
+DEFAULT_PATH = "models/yolo11n-seg.onnx"
 
 
 def main() -> int:
@@ -48,13 +48,13 @@ def main() -> int:
         "Варианты:\n"
         "  A) Экспорт из ultralytics (нужен torch + ultralytics):\n"
         "     pip install ultralytics\n"
-        "     yolo export model=yolov11n-seg.pt format=onnx imgsz=640\n"
-        f"     mv yolov11n-seg.onnx {target}\n"
+        "     yolo export model=yolo11n-seg.pt format=onnx imgsz=640\n"
+        f"     mv yolo11n-seg.onnx {target}\n"
         "\n"
         "  B) Указать прямой URL и перезапустить:\n"
         "     YOLO_SEG_DOWNLOAD_URL=https://... python scripts/download_yolo_seg.py\n"
         "\n"
-        "Замечание: COCO-pretrained YOLOv11n-seg не имеет класса «колесо».\n"
+        "Замечание: COCO-pretrained YOLO11n-seg не имеет класса «колесо».\n"
         "Для production нужен fine-tuned на wheel-датасете (Roboflow Universe etc.)\n"
         "и WHEEL_SEG_CLASS_ID, выставленный под id класса колеса в этой модели."
     )

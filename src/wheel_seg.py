@@ -1,4 +1,4 @@
-"""Wheel-region segmentation через YOLOv11n-seg (ONNX runtime).
+"""Wheel-region segmentation через YOLO11n-seg (ONNX runtime).
 
 Stage 1: модуль изолирован, не интегрирован в воркер. Готовит маску
 области колеса для будущего inpainting-режима Reve API (Stage 2).
@@ -18,7 +18,7 @@ Public API:
 
 Модель ожидается по пути `WHEEL_SEG_MODEL_PATH` (см. src.config).
 Получить можно через `scripts/download_yolo_seg.py` или вручную
-(`yolo export model=yolov11n-seg.pt format=onnx`).
+(`yolo export model=yolo11n-seg.pt format=onnx`).
 """
 
 from __future__ import annotations
@@ -51,12 +51,12 @@ def _get_session() -> ort.InferenceSession:
         path = Path(WHEEL_SEG_MODEL_PATH)
         if not path.exists():
             raise FileNotFoundError(
-                f"YOLOv11n-seg модель не найдена: {path}. "
+                f"YOLO11n-seg модель не найдена: {path}. "
                 "Запусти `python scripts/download_yolo_seg.py` или экспортни вручную: "
-                "`yolo export model=yolov11n-seg.pt format=onnx`."
+                "`yolo export model=yolo11n-seg.pt format=onnx`."
             )
         _session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
-        logger.info(f"🟢 YOLOv11n-seg загружена: {path}")
+        logger.info(f"🟢 YOLO11n-seg загружена: {path}")
     return _session
 
 
@@ -76,7 +76,7 @@ def _letterbox(
     """
     h, w = img.shape[:2]
     scale = min(new_size / h, new_size / w)
-    new_h, new_w = int(round(h * scale)), int(round(w * scale))
+    new_h, new_w = round(h * scale), round(w * scale)
 
     resized = np.array(Image.fromarray(img).resize((new_w, new_h), Image.BILINEAR))
 
@@ -154,12 +154,15 @@ def _decode_masks(
     combined = np.zeros((INPUT_SIZE, INPUT_SIZE), dtype=np.float32)
     for mask_low, box in zip(masks_low, boxes_xyxy_input, strict=False):
         # Resize маску с прото-разрешения → INPUT_SIZE
-        mask_full = np.array(
-            Image.fromarray((mask_low * 255).astype(np.uint8)).resize(
-                (INPUT_SIZE, INPUT_SIZE), Image.BILINEAR
-            ),
-            dtype=np.float32,
-        ) / 255.0
+        mask_full = (
+            np.array(
+                Image.fromarray((mask_low * 255).astype(np.uint8)).resize(
+                    (INPUT_SIZE, INPUT_SIZE), Image.BILINEAR
+                ),
+                dtype=np.float32,
+            )
+            / 255.0
+        )
 
         # Зануляем всё за пределами bbox — чтобы прототипы не «текли» в фон
         x1, y1, x2, y2 = box
