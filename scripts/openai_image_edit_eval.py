@@ -13,6 +13,12 @@ Paid inference requires an explicit flag:
     OPENAI_API_KEY=... .venv/bin/python scripts/openai_image_edit_eval.py cases.jsonl \
       --limit 6 \
       --execute
+
+OpenAI-compatible AITUNNEL gateway:
+    AITUNNEL_API_KEY=... .venv/bin/python scripts/openai_image_edit_eval.py cases.jsonl \
+      --provider aitunnel \
+      --limit 3 \
+      --execute
 """
 
 from __future__ import annotations
@@ -36,18 +42,21 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.openai_image_edit import (  # noqa: E402
+    DEFAULT_OPENAI_API_BASE_URL,
     DEFAULT_OPENAI_IMAGE_MODEL,
     DEFAULT_OPENAI_IMAGE_QUALITY,
     DEFAULT_OPENAI_IMAGE_SIZE,
     DEFAULT_OPENAI_OUTPUT_FORMAT,
     build_openai_edit_prompt,
+    build_openai_image_edit_url,
     first_b64_image,
     make_openai_alpha_mask,
+    make_openai_edit_source_png,
     response_without_b64,
 )
 
 DEFAULT_OUTPUT_DIR = Path("tmp/openai-image-edit-eval")
-OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits"
+AITUNNEL_DEFAULT_BASE_URL = "https://api.aitunnel.ru/v1"
 
 
 def _load_dotenv(path: Path = Path(".env")) -> None:
@@ -139,13 +148,16 @@ def _make_plan(
     selected_cases = cases[:limit] if limit else cases
     plan: list[dict[str, Any]] = []
     mask_input_dir = output_dir / "openai_masks"
+    source_input_dir = output_dir / "openai_sources"
     for case in selected_cases:
         car_path = Path(case["car_image"])
         mask_path = Path(case["mask_image"])
         stats = _mask_stats(car_path=car_path, mask_path=mask_path)
         openai_mask_path = mask_input_dir / f"{case['id']}.openai-alpha-mask.png"
+        openai_source_path = source_input_dir / f"{case['id']}.source.png"
         if stats["ok"]:
             make_openai_alpha_mask(binary_mask_path=mask_path, output_path=openai_mask_path)
+            make_openai_edit_source_png(source_image_path=car_path, output_path=openai_source_path)
 
         plan.append(
             {
@@ -162,6 +174,7 @@ def _make_plan(
                 "mask_is_binary": stats.get("mask_is_binary"),
                 "car_image": str(car_path),
                 "mask_image": str(mask_path),
+                "openai_source_image": str(openai_source_path),
                 "openai_mask_image": str(openai_mask_path),
                 "reference_image": case["reference_image"],
                 "wheel_description": case.get("wheel_description") or "",
@@ -193,12 +206,50 @@ def _mime_type(path: Path) -> str:
     return mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 
 
-def _call_openai_edit(*, row: dict[str, Any], prompt: str, timeout: float) -> dict[str, Any]:
+def _resolve_api_settings(provider: str) -> tuple[str, str, str]:
+    """Resolve provider label, API key, and OpenAI-compatible base URL."""
+
+    if provider == "aitunnel" or (provider == "auto" and os.getenv("AITUNNEL_API_KEY")):
+        api_key = os.getenv("AITUNNEL_API_KEY")
+        if not api_key:
+            raise RuntimeError("AITUNNEL_API_KEY is not set")
+        return (
+            "aitunnel",
+            api_key,
+            os.getenv("AITUNNEL_BASE_URL") or AITUNNEL_DEFAULT_BASE_URL,
+        )
+
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not set")
+    return "openai", api_key, os.getenv("OPENAI_BASE_URL") or DEFAULT_OPENAI_API_BASE_URL
 
-    car_path = Path(row["car_image"])
+
+def _read_streaming_image_edit_response(response: httpx.Response) -> dict[str, Any]:
+    events: list[dict[str, Any]] = []
+    last_b64: str | None = None
+    for line in response.iter_lines():
+        if not line.startswith("data:"):
+            continue
+        payload = line.removeprefix("data:").strip()
+        if not payload or payload == "[DONE]":
+            continue
+        event = json.loads(payload)
+        events.append(event)
+        if isinstance(event.get("b64_json"), str):
+            last_b64 = event["b64_json"]
+
+    if last_b64:
+        return {"data": [{"b64_json": last_b64}], "stream_events": events}
+    return {"data": [], "stream_events": events}
+
+
+def _call_openai_edit(
+    *, row: dict[str, Any], prompt: str, timeout: float, provider: str, stream: bool
+) -> dict[str, Any]:
+    resolved_provider, api_key, base_url = _resolve_api_settings(provider)
+
+    car_path = Path(row.get("openai_source_image") or row["car_image"])
     reference_path = Path(row["reference_image"])
     mask_path = Path(row["openai_mask_image"])
     data = {
@@ -209,6 +260,9 @@ def _call_openai_edit(*, row: dict[str, Any], prompt: str, timeout: float) -> di
         "output_format": row["output_format"],
         "n": "1",
     }
+    if stream:
+        data["stream"] = "true"
+        data["partial_images"] = "1"
     # The API accepts multiple input images. The first image is the edited image;
     # later images are references for the prompt.
     with (
@@ -221,20 +275,43 @@ def _call_openai_edit(*, row: dict[str, Any], prompt: str, timeout: float) -> di
             ("image[]", (reference_path.name, reference_handle, _mime_type(reference_path))),
             ("mask", (mask_path.name, mask_handle, "image/png")),
         ]
+        if stream:
+            with httpx.stream(
+                "POST",
+                build_openai_image_edit_url(base_url),
+                headers={"Authorization": f"Bearer {api_key}"},
+                data=data,
+                files=files,
+                timeout=timeout,
+            ) as response:
+                if response.status_code >= 400:
+                    raise RuntimeError(
+                        f"{resolved_provider} image edit failed "
+                        f"{response.status_code}: {response.read().decode('utf-8', 'replace')}"
+                    )
+                return _read_streaming_image_edit_response(response)
         response = httpx.post(
-            OPENAI_IMAGE_EDIT_URL,
+            build_openai_image_edit_url(base_url),
             headers={"Authorization": f"Bearer {api_key}"},
             data=data,
             files=files,
             timeout=timeout,
         )
     if response.status_code >= 400:
-        raise RuntimeError(f"OpenAI image edit failed {response.status_code}: {response.text}")
+        raise RuntimeError(
+            f"{resolved_provider} image edit failed {response.status_code}: {response.text}"
+        )
     return response.json()
 
 
 def _execute_plan(
-    *, rows: list[dict[str, Any]], output_dir: Path, results_jsonl: Path, timeout: float
+    *,
+    rows: list[dict[str, Any]],
+    output_dir: Path,
+    results_jsonl: Path,
+    timeout: float,
+    provider: str,
+    stream: bool,
 ) -> list[dict[str, Any]]:
     completed: list[dict[str, Any]] = []
     outputs_dir = output_dir / "outputs"
@@ -254,7 +331,13 @@ def _execute_plan(
         prompt = build_openai_edit_prompt(wheel_description=row.get("wheel_description") or None)
         started_at = datetime.now(UTC).isoformat()
         try:
-            result = _call_openai_edit(row=row, prompt=prompt, timeout=timeout)
+            result = _call_openai_edit(
+                row=row,
+                prompt=prompt,
+                timeout=timeout,
+                provider=provider,
+                stream=stream,
+            )
             image_b64 = first_b64_image(result)
             output_path = outputs_dir / f"{row['case_id']}__{row['config']}.png"
             if image_b64:
@@ -295,7 +378,20 @@ def main() -> int:
     parser.add_argument("--size", default=DEFAULT_OPENAI_IMAGE_SIZE)
     parser.add_argument("--quality", default=DEFAULT_OPENAI_IMAGE_QUALITY)
     parser.add_argument("--output-format", default=DEFAULT_OPENAI_OUTPUT_FORMAT)
+    parser.add_argument(
+        "--provider",
+        choices=["auto", "openai", "aitunnel"],
+        default="auto",
+        help=(
+            "API provider. auto prefers AITUNNEL_API_KEY when present, otherwise " "OPENAI_API_KEY."
+        ),
+    )
     parser.add_argument("--timeout", type=float, default=240.0)
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="Use image edit streaming events; useful for gateways with short idle timeouts.",
+    )
     parser.add_argument(
         "--execute",
         action="store_true",
@@ -329,13 +425,21 @@ def main() -> int:
     print("estimated paid requests cost: unknown; OpenAI image costs are usage/model dependent")
     print(f"plan jsonl: {plan_jsonl}")
     print(f"plan csv: {plan_csv}")
+    try:
+        resolved_provider, _, resolved_base_url = _resolve_api_settings(args.provider)
+        print(f"provider: {resolved_provider}")
+        print(f"image edit url: {build_openai_image_edit_url(resolved_base_url)}")
+    except RuntimeError as exc:
+        print(f"provider: unresolved ({exc})")
 
     if not args.execute:
         print("dry-run only. Add --execute to run paid OpenAI image edits.")
         return 0
 
-    if not os.getenv("OPENAI_API_KEY"):
-        raise SystemExit("OPENAI_API_KEY is not set")
+    try:
+        _resolve_api_settings(args.provider)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
 
     results_jsonl = args.output_dir / "openai_image_edit_results.jsonl"
     completed = _execute_plan(
@@ -343,6 +447,8 @@ def main() -> int:
         output_dir=args.output_dir,
         results_jsonl=results_jsonl,
         timeout=args.timeout,
+        provider=args.provider,
+        stream=args.stream,
     )
     results_csv = args.output_dir / "openai_image_edit_results.csv"
     _write_csv(results_csv, completed)

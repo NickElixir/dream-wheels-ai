@@ -7,10 +7,23 @@ from typing import Any
 
 from PIL import Image
 
+DEFAULT_OPENAI_API_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_OPENAI_IMAGE_MODEL = "gpt-image-2"
 DEFAULT_OPENAI_IMAGE_SIZE = "auto"
 DEFAULT_OPENAI_IMAGE_QUALITY = "medium"
 DEFAULT_OPENAI_OUTPUT_FORMAT = "png"
+
+
+def normalize_openai_base_url(base_url: str) -> str:
+    """Normalize an OpenAI-compatible API base URL without a trailing slash."""
+
+    return base_url.rstrip("/")
+
+
+def build_openai_image_edit_url(base_url: str) -> str:
+    """Build the image edits endpoint URL for OpenAI-compatible providers."""
+
+    return f"{normalize_openai_base_url(base_url)}/images/edits"
 
 
 def build_openai_edit_prompt(*, wheel_description: str | None = None) -> str:
@@ -42,6 +55,14 @@ def make_openai_alpha_mask(*, binary_mask_path: Path, output_path: Path) -> Path
     mask.putalpha(alpha)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     mask.save(output_path)
+    return output_path
+
+
+def make_openai_edit_source_png(*, source_image_path: Path, output_path: Path) -> Path:
+    """Convert the source image to PNG for mask-compatible image edits."""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    Image.open(source_image_path).convert("RGBA").save(output_path)
     return output_path
 
 

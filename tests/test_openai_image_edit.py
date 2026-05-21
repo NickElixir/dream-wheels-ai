@@ -5,8 +5,11 @@ from PIL import Image
 
 from src.openai_image_edit import (
     build_openai_edit_prompt,
+    build_openai_image_edit_url,
     first_b64_image,
     make_openai_alpha_mask,
+    make_openai_edit_source_png,
+    normalize_openai_base_url,
     response_without_b64,
 )
 
@@ -44,3 +47,24 @@ def test_first_b64_image_and_sanitized_response():
         "data": [{"revised_prompt": "x"}],
         "usage": {"total_tokens": 1},
     }
+
+
+def test_openai_compatible_base_url_helpers():
+    assert normalize_openai_base_url("https://api.aitunnel.ru/v1/") == "https://api.aitunnel.ru/v1"
+    assert (
+        build_openai_image_edit_url("https://api.aitunnel.ru/v1/")
+        == "https://api.aitunnel.ru/v1/images/edits"
+    )
+
+
+def test_make_openai_edit_source_png_converts_source_image(tmp_path: Path):
+    source = tmp_path / "source.jpg"
+    Image.new("RGB", (2, 2), (10, 20, 30)).save(source)
+
+    output = make_openai_edit_source_png(
+        source_image_path=source,
+        output_path=tmp_path / "source.png",
+    )
+
+    assert output.suffix == ".png"
+    assert Image.open(output).format == "PNG"

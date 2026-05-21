@@ -1,693 +1,180 @@
-# Masked Wheel Replacement Evaluation
+---
+geometry: landscape,margin=0.35in
+fontsize: 11pt
+header-includes:
+  - \usepackage{graphicx}
+---
 
-This document describes the budgeted image-generation evaluation layer after the
-mask pipeline:
+# Silver Wheel Replacement: Corrected Eval
 
-```text
-Roboflow / YOLO candidates
-  -> Qwen VLM keep/reject
-  -> final binary wheel mask
-  -> masked/reference-guided wheel replacement model
-```
+## Short Answer
 
-The evaluation runner is intentionally dry-run first. Paid generation only happens when
-`--execute` is passed.
+**For the corrected silver-wheel test, Reve production is the best visual result
+right now.**
 
-## Executive Summary
+Flux was useful as a strict masked inpaint control, but it is not the visual
+winner here: it darkens the silver rim, especially on `C2` and `N2`. The first
+corrected comparison makes this obvious: Reve copies the target silver wheel
+more directly.
 
-The practical question for this experiment was:
+What changed from the previous report:
 
-> Given a car photo, a reference rim photo, and a Stage 2 wheel mask, which model
-> can replace only the rims while preserving the car, tires, background,
-> perspective, and low-light detail?
+- Removed Qwen generation examples. The current `fal-ai/qwen-image-edit/inpaint`
+  path does not receive the wheel reference image, so it is not relevant for
+  "copy this exact wheel".
+- Removed the old wide model matrix from the main story. It mixed a flawed
+  matte-black prompt with a silver reference image.
+- Added the original wheels for `C1`, `C2`, and `N2`, so it is clear what was
+  replaced.
+- Added a clean Reve production vs Reve masked eval comparison.
+- Left a clear slot for the next experiment: **OpenAI GPT Image**.
 
-Important correction: the original 3-case frontier visual report is useful as a
-record of what happened, but it is **not a valid comparison of who best copied
-the silver target rim**. The manifest pointed at a silver reference image while
-`wheel_description` said `the reference matte black multi-spoke wheel rim design`.
-Text and image contradicted each other, so black-wheel outputs should not be
-treated as faithful silver-rim copying.
+Current demo recommendation:
 
-Corrected 3-case sweep status:
+1. Show **Reve production** as the best result for tomorrow's stakeholder demo.
+2. Keep **Reve masked eval** as a controlled experiment, not the production
+   path.
+3. Keep **Flux** as the strict-mask baseline, not as the visual winner.
+4. Add **OpenAI GPT Image** next using the same three-case layout.
 
-- Corrected manifest: `tmp/fal-inpaint-eval/ivan-corrected-silver-3cases.jsonl`
-- Prompt now says: `Use the exact wheel design, color, finish, spoke pattern, center cap, and material from the reference image`
-- `studio lighting` was removed; prompt now says `Preserve original scene lighting`
-- Qwen is excluded from the honest main comparison because the current
-  `fal-ai/qwen-image-edit/inpaint` config receives only `image_url`, `mask_url`,
-  and `prompt`, not the reference wheel image.
-- Direct Reve now has a `--mode production` eval path that sends exactly
-  `[car, wheel]` and no mask, matching the current production Reve request shape.
+\newpage
 
-Corrected short answer: **Reve production-equivalent is currently the best
-silver-rim visual copy in the 3-case corrected sweep, while Flux remains the
-strongest strict masked editor.** Flux keeps the edit localized through the mask,
-but still darkens the silver target on `ivan-C2` and `ivan-N2`.
+## Inputs
 
-![Corrected silver comparison](assets/fal-mask-inpaint-eval/corrected/corrected-silver-flux-vs-reve-production.jpg){width=100%}
+All corrected runs use the same target wheel: the silver multi-spoke rim below.
+The left side shows the original wheels on each source car.
 
-### Who Receives The Wheel Reference?
+\begin{center}
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{docs/assets/fal-mask-inpaint-eval/presentation/input-wheels-and-target.jpg}
+\end{center}
 
-| Model / path | Receives car | Receives mask | Receives wheel reference image | Main comparison status |
-| --- | ---: | ---: | ---: | --- |
-| Flux Kontext via fal, `flux-s085-g25` | yes | yes | yes, `reference_image_url` | valid corrected masked comparison |
-| Reve direct API, `--mode production` | yes | no | yes, second `reference_images` item | valid production-equivalent comparison |
-| Reve direct API, masked mode | yes | yes, as third reference image | yes | experimental, not production-equivalent |
-| Gemini via fal | yes | yes, as one of `image_urls` | yes | optional/secondary; previous run had timeout/instability |
-| Qwen via fal, `qwen-edit-default` | yes | yes | no | excluded from honest wheel-copy comparison |
-| Z-Image / SDXL inpaint | yes | yes | no | prompt+mask baselines only |
-
-What was actually generated:
-
-| Family | Config / endpoint | Paid outputs? | Cases | Result |
-| --- | --- | ---: | --- | --- |
-| Flux Kontext | `fal-ai/flux-kontext-lora/inpaint`, `flux-s085-g25` | yes | `C1`, `C2`, `N2` plus wider sweeps | Best strict masked editor; corrected silver run completed |
-| Flux tuning variants | `flux-s075`, `s080`, `s085`, guidance variants | yes | daylight + night sweeps | Useful for tuning; `s075` helps night readability |
-| Qwen Image Edit | `fal-ai/qwen-image-edit/inpaint` | yes | `C1`, `C2`, `N2` | Historical only; did not receive wheel reference image |
-| Gemini image edit | `fal-ai/gemini-3-pro-image-preview/edit` | partial | `C1`, `C2`; `N2` timeout | Not usable in this masked setup |
-| Reve direct API, masked | `https://api.reve.com/v1/image/remix` with `[car,wheel,mask]` | yes | `C1`, `C2`, `N2` | Historical only; not production-equivalent |
-| Reve direct API, production-equivalent | `https://api.reve.com/v1/image/remix` with `[car,wheel]` | yes | `C1`, `C2`, `N2` | Best corrected silver-rim visual copy so far |
-| Reve via fal.ai | `fal-ai/reve/fast/remix` | attempted | `C1`, `C2`, `N2` | Initial schema failed; config corrected afterward |
-| Z-Image | `fal-ai/z-image/turbo/inpaint` | yes | wider comparison | Often drifts from black rim target |
-| SDXL inpaint | `fal-ai/inpaint` | yes | model candidate sweep | Weak due to framing/aspect changes |
-| OpenAI image edit | `gpt-image-2` runner | no paid outputs yet | dry-run only | Runner exists, but no generation examples yet |
-
-So to answer the coverage question directly: paid outputs exist for Flux, Qwen,
-Gemini, and Reve, but only Flux and production-equivalent Reve are in the
-current honest main comparison for copying the silver reference wheel. Qwen paid
-outputs are excluded because that endpoint did not receive the wheel image.
-
-## Visual TL;DR
-
-The three comparison cases were:
-
-- `ivan-C1` - white car, daylight.
-- `ivan-C2` - dark gray SUV, daylight.
-- `ivan-N2` - dark car, night.
-
-Each case uses a car source image, a Qwen VLM-filtered binary mask, and the same
-rim reference image.
-
-![Input cars, candidate overlays, and final VLM masks](assets/fal-mask-inpaint-eval/sheets/inputs-and-masks.jpg){width=100%}
-
-Reference rim used by the runs:
-
-![Reference rim](assets/fal-mask-inpaint-eval/inputs/reference-rim1.jpg){width=35%}
-
-Historical frontier comparison from the flawed prompt/image mismatch run:
-
-![Frontier comparison contact sheet](assets/fal-mask-inpaint-eval/sheets/frontier-comparison-contact.jpg){width=100%}
-
-Zoomed wheel regions:
-
-![Frontier comparison zoom sheet](assets/fal-mask-inpaint-eval/sheets/frontier-comparison-zoom.jpg){width=100%}
-
-Reading the historical matrix:
-
-- **Flux** edits the intended wheel areas most reliably.
-- **Qwen** keeps framing, but it did not receive the wheel reference image in
-  this setup, so it cannot be judged as a faithful target-wheel copy.
-- **Gemini** is unstable for this task: one daylight case became a two-image
-  collage, and another inserted a standalone product wheel instead of editing
-  the car.
-- **Reve direct masked** preserves the car framing, but this path was
-  experimental and not production-equivalent.
-
-## Inputs And Masks
-
-The masks below are the exact Stage 2 VLM-filtered wheel masks used for the
-frontier comparison. White pixels indicate editable wheel areas; black pixels
-should be preserved.
-
-### `ivan-C1`
-
-![ivan-C1 source](assets/fal-mask-inpaint-eval/inputs/ivan-C1-source.jpg){width=48%}
-![ivan-C1 mask](assets/fal-mask-inpaint-eval/inputs/ivan-C1-mask.png){width=48%}
-
-![ivan-C1 VLM candidate overlay](assets/fal-mask-inpaint-eval/inputs/ivan-C1-candidates-overlay.jpg){width=70%}
-
-### `ivan-C2`
-
-![ivan-C2 source](assets/fal-mask-inpaint-eval/inputs/ivan-C2-source.jpg){width=48%}
-![ivan-C2 mask](assets/fal-mask-inpaint-eval/inputs/ivan-C2-mask.png){width=48%}
-
-![ivan-C2 VLM candidate overlay](assets/fal-mask-inpaint-eval/inputs/ivan-C2-candidates-overlay.jpg){width=70%}
-
-### `ivan-N2`
-
-![ivan-N2 source](assets/fal-mask-inpaint-eval/inputs/ivan-N2-source.jpg){width=48%}
-![ivan-N2 mask](assets/fal-mask-inpaint-eval/inputs/ivan-N2-mask.png){width=48%}
-
-![ivan-N2 VLM candidate overlay](assets/fal-mask-inpaint-eval/inputs/ivan-N2-candidates-overlay.jpg){width=70%}
-
-## Generation Examples By Case
-
-These rows show the source, mask, and generated outputs from the historical
-frontier comparison. They are kept for auditability, but the run had the
-silver-reference / matte-black-text mismatch described above. `Gemini` is
-missing on `ivan-N2` because that paid request timed out at 300 seconds.
-
-### `ivan-C1`
-
-![ivan-C1 generation row](assets/fal-mask-inpaint-eval/sheets/ivan-C1-case-row.jpg){width=100%}
-
-Visual notes:
-
-- Flux produces the most direct masked replacement.
-- Qwen changes the wheels, but the rim color/detail drifts away from the black
-  reference.
-- Gemini returned a two-image collage-like result, which is unusable for the
-  product flow.
-- Reve keeps the car image intact, but the wheels are closer to flat black disks
-  than readable multi-spoke rims.
-
-### `ivan-C2`
-
-![ivan-C2 generation row](assets/fal-mask-inpaint-eval/sheets/ivan-C2-case-row.jpg){width=100%}
-
-Visual notes:
-
-- Flux is again the strongest masked replacement.
-- Qwen makes the wheel structure too bright/greenish.
-- Gemini inserts a standalone product-style wheel instead of editing the masked
-  wheels on the car.
-- Reve preserves the car and background, but the wheels are too dark and lose
-  reference-rim detail.
-
-### `ivan-N2`
-
-![ivan-N2 generation row](assets/fal-mask-inpaint-eval/sheets/ivan-N2-case-row.jpg){width=100%}
-
-Visual notes:
-
-- Flux is dark, but still the best current default for the black-rim target.
-- Qwen preserves more spoke brightness, but drifts strongly from the black rim
-  target.
-- Gemini timed out.
-- Reve completed, but shows reddish wheel artifacts and still loses spoke
-  readability.
-
-## Manifest
-
-Create a JSONL manifest where each line is one case:
-
-```json
-{"id":"case-001","car_image":"data/cars/001.jpg","mask_image":"tmp/masks/001.png","reference_image":"data/rims/ref.png","wheel_description":"the exact wheel design, color, finish, spoke pattern, center cap, and material from the reference image"}
-```
-
-Required fields:
-
-- `id`
-- `car_image`
-- `mask_image`
-- `reference_image`
-
-Optional field:
-
-- `wheel_description` - used in the text prompt. Keep this neutral unless it is
-  machine-checked against target-wheel metadata. `flux-kontext` also receives the
-  reference image directly; `z-image` uses prompt + mask only.
-
-## Prepare From Wheel-Labeling Dataset
-
-For the local dataset:
+Corrected prompt principle:
 
 ```text
-/Users/nikolai/Downloads/wheel_labeling_nikolai_70/images
-```
-
-and wheel references:
-
-```text
-/Users/nikolai/Documents/Dream Wheel AI/Ivan's Dataset/cars/rim1.jpg
-```
-
-build a budget-friendly 50-case manifest:
-
-```bash
-.venv/bin/python scripts/prepare_fal_eval_manifest.py \
-  "/Users/nikolai/Downloads/wheel_labeling_nikolai_70/images" \
-  "/Users/nikolai/Documents/Dream Wheel AI/Ivan's Dataset/cars/rim1.jpg" \
-  --limit 50 \
-  --max-long-edge 1024 \
-  --output-dir tmp/fal-inpaint-eval/cases-rim1-1024 \
-  --manifest tmp/fal-inpaint-eval/cases-rim1-1024.jsonl \
-  --wheel-description "the exact wheel design, color, finish, spoke pattern, center cap, and material from the reference image"
-```
-
-This creates free proxy masks from XML wheel boxes. These masks are not the final
-Roboflow/Qwen masks, but the manifest format is identical, so generated masks can
-be swapped in later.
-
-Review before inference:
-
-```text
-tmp/fal-inpaint-eval/cases-rim1-1024/contact_sheet.jpg
-```
-
-## Dry Run
-
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py cases.jsonl \
-  --preset wide \
-  --limit 50 \
-  --max-estimated-cost 2.50
-```
-
-Outputs:
-
-- `tmp/fal-inpaint-eval/fal_inpaint_plan.jsonl`
-- `tmp/fal-inpaint-eval/fal_inpaint_plan.csv`
-
-The script checks:
-
-- mask image exists;
-- mask size equals car image size;
-- mask is not empty;
-- mask does not cover more than 35% of the image;
-- estimated cost is under `--max-estimated-cost`.
-
-Current dry-run numbers for `cases-rim1-1024.jsonl`:
-
-- `wide`, 50 cases, `z-default + flux-s085-g25`: 100 planned requests, 2 skipped
-  by preflight, estimated cost `$1.7075`.
-- `tuning`, first 5 cases: 25 planned requests, estimated cost `$0.4177`.
-
-## Paid Inference
-
-```bash
-FAL_KEY=... .venv/bin/python scripts/fal_inpaint_eval.py cases.jsonl \
-  --preset wide \
-  --limit 50 \
-  --max-estimated-cost 2.50 \
-  --execute
-```
-
-Results are written to:
-
-- `tmp/fal-inpaint-eval/fal_inpaint_results.jsonl`
-- `tmp/fal-inpaint-eval/fal_inpaint_results.csv`
-
-## Presets
-
-`wide`:
-
-- `z-default`
-- `flux-s085-g25`
-
-Use this for 50-case coverage.
-
-`flux-sweep`:
-
-- `flux-s075-g25`
-- `flux-s080-g25`
-- `flux-s085-g25`
-- `flux-s080-g35`
-- `flux-default`
-
-Use this for a focused Flux parameter sweep on a small set of real VLM masks.
-
-`model-candidates`:
-
-- `flux-s085-g25`
-- `flux-dev-s085-g35`
-- `flux-general-s085-g35`
-- `z-default`
-- `sdxl-default`
-
-Use this for a small cross-model smoke comparison. `flux-s085-g25` is the only
-candidate in this preset that receives the wheel reference image directly.
-
-`night-flux`:
-
-- `flux-s075-g25`
-- `flux-s080-g25`
-- `flux-s085-g25`
-- `flux-s080-g35`
-- `flux-s085-g35`
-
-Use this for night-only tuning where wheel readability competes with black-rim
-style adherence.
-
-`frontier-edit`:
-
-- `flux-s085-g25`
-- `qwen-edit-default`
-- `reve-remix-rim-mask`
-- `gemini-3-pro-rim-mask`
-
-Use this only for a small comparison set. It includes expensive/slow image edit
-models and does not have the same strict mask semantics as Flux inpainting.
-
-`tuning`:
-
-- `z-default`
-- `z-strong`
-- `flux-default`
-- `flux-guidance-45`
-- `flux-quality`
-
-Use this only on a small subset, usually 5 cases.
-
-## Budget Notes
-
-The runner estimates cost from car image megapixels.
-
-- `fal-ai/flux-kontext-lora/inpaint`: `$0.035/MP`
-- `fal-ai/z-image/turbo/inpaint`: `$0.01/MP`
-- `fal-ai/qwen-image-edit/inpaint`: `$0.03/MP`
-- `fal-ai/reve/fast/remix`: local planning estimate `$0.01/image`
-- `fal-ai/gemini-3-pro-image-preview/edit`: local planning estimate `$0.15/image`
-
-The Z-Image estimate is conservative because fal pages currently show both
-`$0.005/MP` and `$0.01/MP` in different places.
-
-## Flux Parameter Sweep Notes
-
-The first paid Flux sweep used three real VLM-mask cases:
-
-- `ivan-C1` - white car, daylight.
-- `ivan-C2` - dark gray SUV, daylight.
-- `ivan-N2` - dark car, night.
-
-Command shape:
-
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py \
-  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
-  --preset flux-sweep \
-  --output-dir tmp/fal-inpaint-eval/results-flux-param-tune-real-masks \
-  --max-estimated-cost 0.40 \
-  --execute
-```
-
-Observed outputs:
-
-- 15/15 requests completed.
-- Total estimated cost: `$0.3021`.
-- Local comparison sheets:
-  - `tmp/fal-inpaint-eval/results-flux-param-tune-real-masks/flux_param_tune_contact_sheet.jpg`
-  - `tmp/fal-inpaint-eval/results-flux-param-tune-real-masks/flux_param_tune_zoom_sheet_scaled.jpg`
-
-Current visual read:
-
-- `flux-default` is a useful baseline, but not the best production candidate.
-  It tends to make night wheels too dark/empty.
-- `flux-s080-g25` preserves more bright spoke detail, but often drifts away from
-  the black reference rim.
-- `flux-s080-g35` and `flux-default` are darker and more prompt-adherent, but can
-  lose rim structure in low light.
-- `flux-s085-g25` is the best current compromise across the three cases: black
-  rim style, enough spoke structure, and fewer night-case failures than
-  `flux-default`.
-
-Important integration caveat: `fal-ai/flux-kontext-lora/inpaint` may return a
-different output resolution than the input image. In the first sweep, a
-`1024x594` input produced `1328x800` outputs. Any production integration should
-either request/verify exact sizing if the endpoint supports it or resize the
-final image back to the original dimensions before handing it to downstream code.
-
-## Model Candidate Sweep Notes
-
-The first cross-model sweep used the same three real VLM-mask cases and initially
-tested:
-
-- `flux-s085-g25`
-- `flux-dev-s085-g35`
-- `flux-krea-s085-g35`
-- `flux-general-s085-g35`
-- `z-default`
-- `sdxl-default`
-
-Observed status:
-
-- 15/18 requests completed.
-- `flux-krea-s085-g35` timed out on all three cases, so it was removed from the
-  `model-candidates` preset.
-- Current no-Krea dry-run: 3 cases, 15 planned requests, estimated `$0.2331`.
-- Local comparison sheet:
-  - `tmp/fal-inpaint-eval/results-model-candidates-3cases/model_candidates_contact_sheet_no_krea.jpg`
-
-Early visual read:
-
-- `flux-s085-g25` remains the best reference-driven candidate.
-- `flux-dev-s085-g35` and `flux-general-s085-g35` are viable prompt+mask
-  baselines, but they do not receive the wheel reference image.
-- `z-default` often preserves/creates brighter spokes and can drift from the
-  black rim target.
-- `sdxl-default` changes framing/aspect enough that it is a weak production
-  candidate without additional sizing controls.
-
-## OpenAI Image Edit Baseline
-
-OpenAI image edits are tracked as a separate managed baseline because the API
-returns base64 image data and uses a different mask convention than fal.ai.
-
-Runner:
-
-```bash
-.venv/bin/python scripts/openai_image_edit_eval.py \
-  tmp/fal-inpaint-eval/ivan-cars-rim1-1024-vlm-masks-selected.jsonl \
-  --limit 6 \
-  --output-dir tmp/openai-image-edit-eval/ivan-vlm-6cases
-```
-
-Paid run:
-
-```bash
-OPENAI_API_KEY=... .venv/bin/python scripts/openai_image_edit_eval.py \
-  tmp/fal-inpaint-eval/ivan-cars-rim1-1024-vlm-masks-selected.jsonl \
-  --limit 6 \
-  --output-dir tmp/openai-image-edit-eval/ivan-vlm-6cases \
-  --execute
-```
-
-The runner sends:
-
-- first input image: the car image to edit;
-- second input image: the rim reference image;
-- `mask`: an RGBA alpha mask derived from the Stage 2 binary wheel mask.
-
-Mask convention: Stage 2 masks are white where wheels should be edited. OpenAI
-image edits use transparent alpha pixels as editable regions, so the runner
-converts white wheel pixels to transparent and keeps all other pixels opaque.
-
-Outputs:
-
-- `openai_image_edit_plan.jsonl`
-- `openai_image_edit_plan.csv`
-- `openai_masks/*.openai-alpha-mask.png`
-- `openai_image_edit_results.jsonl`
-- `openai_image_edit_results.csv`
-- `outputs/*.png`
-
-Current local status: runner and dry-run path are implemented; paid execution
-requires `OPENAI_API_KEY`. Default model is `gpt-image-2`.
-
-## Night Flux Sweep Notes
-
-The night-only Flux sweep used `ivan-N1`, `ivan-N2`, and `ivan-N3` with real VLM
-masks:
-
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py \
-  tmp/fal-inpaint-eval/ivan-vlm-night-3cases.jsonl \
-  --preset night-flux \
-  --output-dir tmp/fal-inpaint-eval/results-flux-night-sweep \
-  --max-estimated-cost 0.40 \
-  --execute
-```
-
-Observed outputs:
-
-- 15/15 requests completed.
-- Total estimated cost: `$0.3097`.
-- Local comparison sheets:
-  - `tmp/fal-inpaint-eval/results-flux-night-sweep/night_sweep_contact_sheet.jpg`
-  - `tmp/fal-inpaint-eval/results-flux-night-sweep/night_sweep_zoom_sheet.jpg`
-
-Current visual read:
-
-- `flux-s075-g25` is the best night readability candidate. It keeps more spoke
-  detail visible, especially on `ivan-N2`, where stronger settings can collapse
-  into a black disk.
-- `flux-s085-g25` remains the better all-around/default candidate because it
-  adheres more strongly to the black reference rim style on daylight cases.
-- `flux-s080-g35` can improve contrast on some night wheels, but it is less
-  stable and produced an obviously wrong steel-wheel-like result on `ivan-N1`.
-- `flux-s085-g35` is usually too dark for night cases.
-
-## Reference Candidate Sweep Notes
-
-The short reference-conditioning sweep used the same three cases as the model
-candidate sweep:
-
-- `ivan-C1` - white car, daylight.
-- `ivan-C2` - dark gray SUV, daylight.
-- `ivan-N2` - dark car, night.
-
-It compared the current Flux Kontext candidates against two fal.ai reference
-alternatives:
-
-- `flux-general-reference-rim` - `fal-ai/flux-general/inpainting` with
-  `reference_image_url`.
-- `qwen-edit-default` - `fal-ai/qwen-image-edit/inpaint`.
-
-Command:
-
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py \
-  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
-  --preset reference-candidates \
-  --output-dir tmp/fal-inpaint-eval/results-reference-candidates-3cases \
-  --max-estimated-cost 0.40 \
-  --execute \
-  --client-timeout 240
-```
-
-Observed outputs:
-
-- 12/12 requests completed.
-- Total estimated cost: `$0.2331`.
-- Local comparison sheets:
-  - `tmp/fal-inpaint-eval/results-reference-candidates-3cases/reference_candidates_contact_sheet.jpg`
-  - `tmp/fal-inpaint-eval/results-reference-candidates-3cases/reference_candidates_zoom_sheet.jpg`
-
-Current visual read:
-
-- `qwen-edit-default` is fast and inexpensive, but it appears weaker for
-  faithful rim replacement in this masked workflow.
-- `flux-general-reference-rim` accepts the built-in reference parameter and is a
-  useful experiment, but its output resolution differs from the input and still
-  needs stricter visual review before it can replace Flux Kontext.
-- `flux-s085-g25` remains the safest all-around production candidate.
-- `flux-s075-g25` remains the best night readability fallback.
-
-## Frontier Edit Sweep Notes
-
-The frontier edit sweep compared the current Flux/Qwen candidates against Gemini
-and direct Reve remix on the same three cases:
-
-- `ivan-C1` - white car, daylight.
-- `ivan-C2` - dark gray SUV, daylight.
-- `ivan-N2` - dark car, night.
-
-fal.ai command:
-
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py \
-  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
-  --preset frontier-edit \
-  --output-dir tmp/fal-inpaint-eval/results-frontier-edit-3cases \
-  --max-estimated-cost 0.80 \
-  --execute \
-  --client-timeout 300
-```
-
-Direct Reve command:
-
-```bash
-.venv/bin/python scripts/reve_image_edit_eval.py \
-  tmp/fal-inpaint-eval/ivan-flux-param-tune-3cases.jsonl \
-  --limit 3 \
-  --output-dir tmp/reve-image-edit-eval/ivan-vlm-3cases-direct \
-  --execute \
-  --timeout 240
-```
-
-Observed outputs:
-
-- fal frontier sweep: 8/12 completed.
-- `flux-s085-g25`: 3/3 completed.
-- `qwen-edit-default`: 3/3 completed.
-- `gemini-3-pro-rim-mask`: 2/3 completed; `ivan-N2` timed out at 300 seconds.
-- `reve-remix-rim-mask` through fal initially failed validation because the
-  endpoint expected `image_urls`; the local config was corrected afterward.
-- direct Reve: 3/3 completed after retrying one transient SSL failure.
-- Local comparison sheets:
-  - `tmp/reve-image-edit-eval/frontier-comparison-3cases/frontier_comparison_contact_sheet.jpg`
-  - `tmp/reve-image-edit-eval/frontier-comparison-3cases/frontier_comparison_zoom_sheet.jpg`
-
-Historical visual read, before the silver-reference prompt mismatch was found:
-
-- `flux-s085-g25` remains the best all-around candidate in this comparison.
-- `qwen-edit-default` keeps the car framing, but tends to make rim structure too
-  bright/greenish. This is not a valid target-wheel-copy judgment because Qwen
-  did not receive the wheel reference image.
-- `gemini-3-pro-rim-mask` is not usable as a masked wheel-edit baseline in this
-  setup: one output became a two-image collage, and another inserted a standalone
-  product-style wheel instead of editing only the masked rims.
-- Direct Reve technically works and preserves the car framing, but the outputs
-  from this masked experimental path are not production-equivalent.
-
-## Corrected Silver Sweep Notes
-
-This is the corrected follow-up sweep for the silver `rim1.jpg` reference. It
-removes the matte-black text mismatch and uses a neutral wheel description:
-
-```text
-the exact wheel design, color, finish, spoke pattern, center cap, and material from the reference image
-```
-
-Adapted universal prompt principle:
-
-```text
-Replace the existing wheels on the car with the provided alloy wheel design.
-
 Use the exact wheel design, color, finish, spoke pattern, center cap, and material from the reference image.
-Match correct perspective, scale, and alignment with the car hub.
-Preserve original scene lighting, realistic reflections, and shadows.
-Keep brake disc and wheel depth physically plausible.
-Match tire profile and maintain correct wheel size relative to the car.
+Preserve original scene lighting.
 Do not alter car body, color, or background.
-
-Photorealistic, ultra detailed, automotive photography, high resolution, natural reflections, physically accurate shadows.
 ```
 
-Corrected manifest:
+Important: the old prompt said `matte black` while the reference image was
+silver. That earlier visual report is useful only as a record of what happened,
+not as a fair silver-wheel comparison.
+
+\newpage
+
+## Reve Production vs Reve Masked Eval
+
+This is the key Reve comparison.
+
+- **Reve production** receives `car + wheel reference`, no mask. This matches the
+  current production request shape.
+- **Reve masked eval** receives `car + wheel reference + mask`. This is an eval
+  experiment, not the current production path.
+
+\begin{center}
+\includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{docs/assets/fal-mask-inpaint-eval/presentation/reve-production-vs-masked.jpg}
+\end{center}
+
+\newpage
+
+\begin{center}
+\includegraphics[width=\textwidth,height=0.94\textheight,keepaspectratio]{docs/assets/fal-mask-inpaint-eval/presentation/ivan-C1-case-card.jpg}
+\end{center}
+
+\newpage
+
+\begin{center}
+\includegraphics[width=\textwidth,height=0.94\textheight,keepaspectratio]{docs/assets/fal-mask-inpaint-eval/presentation/ivan-C2-case-card.jpg}
+\end{center}
+
+\newpage
+
+\begin{center}
+\includegraphics[width=\textwidth,height=0.94\textheight,keepaspectratio]{docs/assets/fal-mask-inpaint-eval/presentation/ivan-N2-case-card.jpg}
+\end{center}
+
+\newpage
+
+## Model Status
+
+Case takeaways:
+
+- `C1`: **Reve production wins visually.** Reve masked eval is close. Flux keeps
+  the edit localized but makes the target darker and less faithful.
+- `C2`: **Reve production is the cleanest result.** Reve masked eval is usable
+  but less clean. Flux loses the silver wheel identity.
+- `N2`: **Reve production is still the best demo candidate.** It keeps the wheel
+  silver and readable in low light. Flux collapses too far toward a dark rim.
+
+| Path | Gets car | Gets wheel reference | Gets mask | Use in this report |
+| --- | ---: | ---: | ---: | --- |
+| Reve production | yes | yes | no | Main visual winner |
+| Reve masked eval | yes | yes | yes | Side-by-side control |
+| Flux Kontext inpaint | yes | yes | yes | Strict-mask baseline |
+| Qwen current fal inpaint | yes | no | yes | Excluded |
+| OpenAI GPT Image via official API | planned | planned | planned | Ready to run with `OPENAI_API_KEY` |
+| OpenAI GPT Image via AITUNNEL | yes | partial | partial | Blocked for honest masked reference test |
+
+Why Qwen is out:
+
+The current Qwen fal config receives only `image_url`, `mask_url`, and `prompt`.
+It does not receive the wheel reference image. That means it cannot honestly
+copy this exact silver rim.
+
+Why Flux is not the winner:
+
+Flux is better when the goal is "edit only inside this mask". But the demo goal
+is "make the car look like it has this exact silver target wheel". On the
+corrected examples, Reve production does that more clearly.
+
+\newpage
+
+## Next: OpenAI GPT Image
+
+Add OpenAI GPT Image as the next row in the same layout:
 
 ```text
-tmp/fal-inpaint-eval/ivan-corrected-silver-3cases.jsonl
+source car + target wheel reference + alpha mask
 ```
 
-Flux corrected command:
+Do not change the cases, prompt intent, or visual layout. The next comparison
+should answer only one question:
 
-```bash
-.venv/bin/python scripts/fal_inpaint_eval.py \
-  tmp/fal-inpaint-eval/ivan-corrected-silver-3cases.jsonl \
-  --config flux-s085-g25 \
-  --output-dir tmp/fal-inpaint-eval/results-corrected-silver-flux \
-  --max-estimated-cost 0.10 \
-  --execute
-```
+> Does OpenAI GPT Image beat Reve production on the same silver wheel target?
 
-Reve production-equivalent corrected command:
+Suggested first run:
 
-```bash
-.venv/bin/python scripts/reve_image_edit_eval.py \
-  tmp/fal-inpaint-eval/ivan-corrected-silver-3cases.jsonl \
-  --mode production \
-  --output-dir tmp/reve-image-edit-eval/results-corrected-silver-production \
-  --execute
-```
+- `C1`, `C2`, `N2`
+- same corrected target rim
+- same adapted prompt
+- medium quality first
+- one high-quality retry only if the medium result is close
 
-Observed status:
+If GPT Image wins, it becomes the new demo candidate. If not, keep Reve
+production as the current best visual path.
 
-- Flux corrected: 3/3 completed, estimated cost `$0.0604`.
-- Reve production-equivalent corrected: 3/3 completed.
-- Visual sheet:
-  - `docs/assets/fal-mask-inpaint-eval/corrected/corrected-silver-flux-vs-reve-production.jpg`
+AITUNNEL implementation status:
 
-Current visual read:
+- The local runner now supports OpenAI-compatible AITUNNEL via
+  `AITUNNEL_API_KEY` and `AITUNNEL_BASE_URL`.
+- AITUNNEL `/v1/images/generations` works with `gpt-image-2`.
+- AITUNNEL `/v1/images/edits` works for `image + mask` when the source image is
+  sent as PNG.
+- AITUNNEL `/v1/images/edits` also works for multiple `image[]` inputs without
+  a mask.
+- The required honest test shape, `image[] + mask`, currently fails through
+  AITUNNEL before returning a JSON API error. Mixing `image` and `image[]`
+  returns a normal 400 parameter error.
 
-- Reve production-equivalent copies the silver target wheel color and spoke
-  pattern more directly across the three corrected cases.
-- Flux remains the better strict masked-edit candidate, but it still darkens the
-  silver wheel on `ivan-C2` and especially `ivan-N2`.
-- The fastest path to a good demo today is to show the corrected Reve
-  production-equivalent result as the best visual silver-wheel transfer, while
-  keeping Flux as the safer masked/inpaint control.
-- Qwen should stay out of the main result unless a different Qwen endpoint is
-  chosen that can receive the car image and wheel reference image. The available
-  multi-image Qwen edit endpoint can be tested separately, but without a hard
-  mask it would be another experimental path rather than the same comparison.
+Conclusion: use the official OpenAI API for the controlled
+`car + wheel reference + alpha mask` GPT Image row, or ask AITUNNEL support to
+enable/fix `image[] + mask` passthrough for GPT Image edits.
+
+## Run References
+
+- Manifest: `tmp/fal-inpaint-eval/ivan-corrected-silver-3cases.jsonl`
+- Reve production outputs: `tmp/reve-image-edit-eval/results-corrected-silver-production`
+- Reve masked eval outputs: `tmp/reve-image-edit-eval/results-corrected-silver-masked`
+- Flux masked baseline outputs: `tmp/fal-inpaint-eval/results-corrected-silver-flux`
+- OpenAI/AITUNNEL runner: `scripts/openai_image_edit_eval.py`
+- Presentation assets: `docs/assets/fal-mask-inpaint-eval/presentation`
