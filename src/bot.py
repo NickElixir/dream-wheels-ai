@@ -40,8 +40,18 @@ POLL_INTERVAL_SEC = 3
 POLL_MAX_RETRIES = 60  # 60 * 3 = 3 минуты ожидания результата
 
 FEEDBACK_KEYBOARD = {
-    "en": {"like": "👍 Like", "dislike": "👎 Dislike", "voted_like": "✅ 👍 Liked", "voted_dislike": "✅ 👎 Disliked"},
-    "ru": {"like": "👍 Нравится", "dislike": "👎 Не нравится", "voted_like": "✅ 👍 Понравилось", "voted_dislike": "✅ 👎 Не понравилось"},
+    "en": {
+        "like": "👍 Like",
+        "dislike": "👎 Dislike",
+        "voted_like": "✅ 👍 Liked",
+        "voted_dislike": "✅ 👎 Disliked",
+    },
+    "ru": {
+        "like": "👍 Нравится",
+        "dislike": "👎 Не нравится",
+        "voted_like": "✅ 👍 Понравилось",
+        "voted_dislike": "✅ 👎 Не понравилось",
+    },
 }
 
 MESSAGES = {
@@ -149,10 +159,19 @@ async def poll_job_status(update: Update, status_msg, job_id: str):
                         if status == "completed":
                             lang = _locale(update)
                             fb = FEEDBACK_KEYBOARD[lang]
-                            feedback_markup = InlineKeyboardMarkup([[
-                                InlineKeyboardButton(fb["like"], callback_data=f"feedback:like:{job_id}"),
-                                InlineKeyboardButton(fb["dislike"], callback_data=f"feedback:dislike:{job_id}"),
-                            ]])
+                            feedback_markup = InlineKeyboardMarkup(
+                                [
+                                    [
+                                        InlineKeyboardButton(
+                                            fb["like"], callback_data=f"feedback:like:{job_id}"
+                                        ),
+                                        InlineKeyboardButton(
+                                            fb["dislike"],
+                                            callback_data=f"feedback:dislike:{job_id}",
+                                        ),
+                                    ]
+                                ]
+                            )
                             await update.message.reply_photo(
                                 photo=data["output_image_url"],
                                 caption=_t(update, "done_caption"),
@@ -196,7 +215,9 @@ async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     voted_label = fb["voted_like"] if vote == "like" else fb["voted_dislike"]
     try:
         await query.edit_message_reply_markup(
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(voted_label, callback_data="noop")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton(voted_label, callback_data="noop")]]
+            )
         )
     except Exception:
         pass
