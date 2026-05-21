@@ -43,6 +43,9 @@ select = ["E", "W", "F", "I", "B", "UP", "ASYNC", "RUF"]
 # ASYNC230 — open() в async функции (требует aiofiles; для MVP с одной записью — ок)
 ignore = ["E501", "RUF001", "RUF002", "RUF003", "ASYNC230", "B904", "W291"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
 [tool.ruff.format]
 # Стиль форматирования: совместимый с black
 quote-style = "double"
