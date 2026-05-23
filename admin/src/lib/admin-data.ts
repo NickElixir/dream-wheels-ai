@@ -38,6 +38,7 @@ export type RecentJob = {
   completed_at: string | null;
   processing_seconds: number | null;
   telegram_user_id: string | null;
+  username: string | null;
 };
 
 type SummaryRow = Record<keyof SummaryMetric, string | number | null>;
@@ -127,7 +128,8 @@ export async function getDashboardData(filters: DashboardFilters) {
         j.completed_at::text,
         ROUND(EXTRACT(EPOCH FROM (j.completed_at - j.created_at)))::int
           AS processing_seconds,
-        u.telegram_user_id::text
+        u.telegram_user_id::text,
+        u.username
       FROM jobs j
       LEFT JOIN users u ON u.id = j.user_id
       WHERE ${whereSql}
