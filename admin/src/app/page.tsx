@@ -5,6 +5,7 @@ type SearchParams = Promise<{
   status?: string;
   feedback?: string;
   days?: string;
+  user?: string;
 }>;
 
 const statusOptions = ["all", "queued", "processing", "completed", "failed"];
@@ -115,6 +116,11 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
   const status = resolvedSearchParams.status || "all";
   const feedback = resolvedSearchParams.feedback || "all";
   const days = resolvedSearchParams.days || "14";
+  const user = resolvedSearchParams.user?.trim() || "";
+  const clearUserParams = new URLSearchParams();
+  for (const [key, existingValue] of Object.entries(resolvedSearchParams)) {
+    if (existingValue && key !== "user") clearUserParams.set(key, existingValue);
+  }
   let dashboardData: Awaited<ReturnType<typeof getDashboardData>>;
 
   try {
@@ -122,6 +128,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
       status,
       feedback,
       days: Number(days),
+      user,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown dashboard error";
@@ -162,11 +169,47 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
             <h1 className="text-3xl font-semibold text-white">Admin Stats</h1>
           </div>
           <div className="text-sm text-neutral-500">
-            Last {days} days · {new Date().toLocaleString("en-US")}
+            Last {days} days
+            {user ? ` · User ${user}` : ""} · {new Date().toLocaleString("en-US")}
           </div>
         </header>
 
         <section className="flex flex-col gap-4 border border-neutral-800 bg-neutral-950 p-4">
+          <form className="flex flex-col gap-2 sm:flex-row sm:items-center" action="/">
+            <input type="hidden" name="status" value={status} />
+            <input type="hidden" name="feedback" value={feedback} />
+            <input type="hidden" name="days" value={days} />
+            <label className="w-20 text-sm text-neutral-500" htmlFor="user-filter">
+              User
+            </label>
+            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+              <input
+                id="user-filter"
+                name="user"
+                type="search"
+                defaultValue={user}
+                placeholder="@username or Telegram ID"
+                className="min-h-10 min-w-0 flex-1 border border-neutral-700 bg-black px-3 text-sm text-white outline-white placeholder:text-neutral-600"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="min-h-10 border border-white bg-white px-4 text-sm text-black transition hover:bg-neutral-200"
+                >
+                  Apply
+                </button>
+                {user ? (
+                  <Link
+                    className="flex min-h-10 items-center border border-neutral-700 px-4 text-sm text-neutral-300 transition hover:border-neutral-500"
+                    href={`/?${clearUserParams.toString()}`}
+                  >
+                    Clear
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          </form>
+
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-20 text-sm text-neutral-500">Status</span>
             {statusOptions.map((option) => (

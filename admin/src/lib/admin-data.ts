@@ -7,6 +7,7 @@ export type DashboardFilters = {
   status?: string;
   feedback?: string;
   days?: number;
+  user?: string;
 };
 
 export type SummaryMetric = {
@@ -52,12 +53,13 @@ function normalizeFilters(filters: DashboardFilters) {
   const days = [7, 14, 30, 90].includes(normalizedDays) ? normalizedDays : 14;
   const status = filters.status && filters.status !== "all" ? filters.status : null;
   const feedback = filters.feedback && filters.feedback !== "all" ? filters.feedback : null;
+  const user = filters.user?.trim().replace(/^@/, "") || null;
 
-  return { days, status, feedback };
+  return { days, status, feedback, user };
 }
 
 function buildWhere(filters: DashboardFilters) {
-  const { days, status, feedback } = normalizeFilters(filters);
+  const { days, status, feedback, user } = normalizeFilters(filters);
   const clauses = ["j.created_at >= NOW() - ($1::int * INTERVAL '1 day')"];
   const params: unknown[] = [days];
 
@@ -71,6 +73,19 @@ function buildWhere(filters: DashboardFilters) {
   } else if (feedback) {
     params.push(feedback);
     clauses.push(`j.feedback = $${params.length}`);
+  }
+
+  if (user) {
+    params.push(`%${user}%`);
+    clauses.push(
+      `EXISTS (
+        SELECT 1
+        FROM users uf
+        WHERE uf.id = j.user_id
+          AND (uf.telegram_user_id::text ILIKE $${params.length}
+            OR uf.username ILIKE $${params.length})
+      )`,
+    );
   }
 
   return {
