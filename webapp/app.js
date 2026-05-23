@@ -201,6 +201,7 @@ const state = {
     pasteTarget: "car",
     jobId: null,
     resultUrl: null,
+    shareUrl: null,
     resultDownloadUrl: null,
     resultFileName: null,
     downloading: false,
@@ -349,6 +350,7 @@ function resetFlow() {
     state.pasteTarget = "car";
     state.jobId = null;
     state.resultUrl = null;
+    state.shareUrl = null;
     state.resultDownloadUrl = null;
     state.resultFileName = null;
     ["car", "wheel"].forEach((s) => {
@@ -571,7 +573,7 @@ async function downloadResult() {
 }
 
 function buildTelegramShareUrl() {
-    return `https://t.me/share/url?url=${encodeURIComponent(state.resultUrl)}&text=${encodeURIComponent(t("share.text"))}`;
+    return `https://t.me/share/url?url=${encodeURIComponent(state.shareUrl || state.resultUrl)}&text=${encodeURIComponent(t("share.text"))}`;
 }
 
 function openTelegramShareUrl() {
@@ -595,7 +597,7 @@ async function copyResultUrl() {
     if (!navigator.clipboard?.writeText) {
         throw new Error("Clipboard API unavailable");
     }
-    await navigator.clipboard.writeText(state.resultUrl);
+    await navigator.clipboard.writeText(state.shareUrl || state.resultUrl);
 }
 
 async function shareResult() {
@@ -608,7 +610,7 @@ async function shareResult() {
         const shareData = {
             title: "Dream Wheels AI",
             text: t("share.text"),
-            url: state.resultUrl,
+            url: state.shareUrl || state.resultUrl,
         };
 
         if (HAS_TG) {
@@ -877,6 +879,7 @@ async function submitJob() {
             statusBlock.hidden = true;
             if (resultImg && statusData.result_url) {
                 state.resultUrl = statusData.result_url;
+                state.shareUrl = statusData.share_url || `${API_BASE_URL}/s/${jobId.slice(0, 8)}`;
                 state.resultDownloadUrl = `${API_BASE_URL}/jobs/${jobId}/download`;
                 state.resultFileName = `dream-wheels-${jobId}.jpg`;
                 resultImg.src = statusData.result_url;

@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src import db, jobs_api, redis_client, storage
+from src import db, jobs_api, redis_client, share_api, storage
 from src.config import WEBAPP_URL
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
 
@@ -62,6 +62,7 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(jobs_api.router)
+app.include_router(share_api.router)
 
 
 async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:

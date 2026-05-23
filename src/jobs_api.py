@@ -20,6 +20,7 @@ from src import db, redis_client, storage
 from src.auth import InitDataInvalid, parse_init_data
 from src.config import API_INTERNAL_TOKEN
 from src.rate_limit import enforce_rate_limit
+from src.share_api import share_url_for_job
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ class JobStatusDetailedResponse(BaseModel):
     job_id: str
     status: str
     result_url: str | None = None
+    share_url: str | None = None
     error: str | None = None
 
 
@@ -378,6 +380,7 @@ async def get_job_status_detailed(job_id: str):
         job_id=job_id,
         status=row["status"],
         result_url=row["output_image_url"],
+        share_url=share_url_for_job(job_id) if row["output_image_url"] else None,
         error=row["error_message"],
     )
 
