@@ -1,0 +1,10 @@
+case_id,case_label,model,provider,status,output,error
+rain-flood-bmw,flooded road / water splash,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,completed,tmp/rain-wheel-eval/results-aitunnel-gpt-image-15/outputs/rain-flood-bmw__openai-gpt-image-1.5.png,
+rain-flood-bmw,flooded road / water splash,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,tmp/rain-wheel-eval/results-gemini/downloaded/rain-flood-bmw__gemini-3-pro-rim-mask.png,
+rain-flood-bmw,flooded road / water splash,Reve Direct masked corrected,Reve API / image remix,completed,tmp/rain-wheel-eval/results-reve-masked/outputs/rain-flood-bmw__reve-direct-masked.png,
+night-heavy-rain-sedan,night heavy rain,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,failed,,failed twice: Server disconnected without sending a response.
+night-heavy-rain-sedan,night heavy rain,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,tmp/rain-wheel-eval/results-gemini/downloaded/night-heavy-rain-sedan__gemini-3-pro-rim-mask.png,
+night-heavy-rain-sedan,night heavy rain,Reve Direct masked corrected,Reve API / image remix,completed,tmp/rain-wheel-eval/results-reve-masked/outputs/night-heavy-rain-sedan__reve-direct-masked.png,
+istock-rain-splash,rain splash / watermark stress-case,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,completed,tmp/rain-wheel-eval/results-aitunnel-gpt-image-15/outputs/istock-rain-splash__openai-gpt-image-1.5.png,
+istock-rain-splash,rain splash / watermark stress-case,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,tmp/rain-wheel-eval/results-gemini/downloaded/istock-rain-splash__gemini-3-pro-rim-mask.png,
+istock-rain-splash,rain splash / watermark stress-case,Reve Direct masked corrected,Reve API / image remix,completed,tmp/rain-wheel-eval/results-reve-masked/outputs/istock-rain-splash__reve-direct-masked.png,
