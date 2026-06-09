@@ -1063,7 +1063,52 @@ function attachFeedbackHandlers() {
 
 /* ---------- Submit ---------- */
 
-const API_BASE_URL = "https://dream-wheels-ai-tg.onrender.com";
+const API_BASE_URLS = {
+    prod: "https://dream-wheels-ai-tg.onrender.com",
+    staging: "https://dream-wheels-ai-robokassa-staging.onrender.com",
+};
+const API_ENV_STORAGE_KEY = "dw_api_env";
+
+function getStoredApiEnv() {
+    try {
+        return localStorage.getItem(API_ENV_STORAGE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+function setStoredApiEnv(value) {
+    try {
+        if (value) localStorage.setItem(API_ENV_STORAGE_KEY, value);
+        else localStorage.removeItem(API_ENV_STORAGE_KEY);
+    } catch {
+        // Storage can be unavailable in some embedded browser modes.
+    }
+}
+
+function resolveApiBaseUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedEnv = params.get("api");
+    if (requestedEnv === "prod" || requestedEnv === "staging") {
+        setStoredApiEnv(requestedEnv);
+        return API_BASE_URLS[requestedEnv];
+    }
+    if (requestedEnv === "reset") {
+        setStoredApiEnv(null);
+    }
+
+    const storedEnv = getStoredApiEnv();
+    if (storedEnv === "prod" || storedEnv === "staging") {
+        return API_BASE_URLS[storedEnv];
+    }
+
+    if (window.location.hostname.includes("staging")) {
+        return API_BASE_URLS.staging;
+    }
+    return API_BASE_URLS.prod;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 110000; // Reve timeout 90s + margin
 

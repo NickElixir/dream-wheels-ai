@@ -74,6 +74,32 @@ CLI спросит:
 
 После этого каждый push в `main` автоматически передеплоит prod. Каждый push в feature-branch создаст preview-URL для PR-ревью.
 
+## Staging backend
+
+По умолчанию Mini App ходит в prod API:
+
+```text
+https://dream-wheels-ai-tg.onrender.com
+```
+
+Для проверки staging backend открой Mini App с query-параметром:
+
+```text
+https://<vercel-preview-or-prod-url>/?api=staging
+```
+
+Выбор сохранится в `localStorage`. Вернуть prod:
+
+```text
+https://<vercel-preview-or-prod-url>/?api=prod
+```
+
+Сбросить сохраненный выбор:
+
+```text
+https://<vercel-preview-or-prod-url>/?api=reset
+```
+
 ## Что дальше — не в этом PR
 
 - Backend endpoint `POST /jobs/upload` (multipart, Supabase Storage)
