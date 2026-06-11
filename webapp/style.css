@@ -543,6 +543,12 @@ h1 {
     background: rgba(232, 255, 0, 0.06);
 }
 
+.topup-card:disabled,
+.custom-topup-button:disabled {
+    cursor: progress;
+    opacity: 0.55;
+}
+
 .topup-icon {
     display: grid;
     width: 34px;
@@ -600,7 +606,19 @@ h1 {
     font-weight: 700;
 }
 
-.custom-topup-row input:focus {
+.topup-email {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 0 12px;
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--text);
+    font: inherit;
+}
+
+.custom-topup-row input:focus,
+.topup-email:focus {
     border-color: var(--accent);
     outline: none;
 }
@@ -619,6 +637,50 @@ h1 {
 .custom-topup-preview {
     color: var(--text-muted);
     font-size: 12px;
+}
+
+.payment-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 159, 67, 0.32);
+    border-radius: 14px;
+    background: rgba(255, 159, 67, 0.08);
+}
+
+.payment-card[data-status="paid"] {
+    border-color: rgba(0, 229, 160, 0.32);
+    background: rgba(0, 229, 160, 0.07);
+}
+
+.payment-card[data-status="failed"] {
+    border-color: rgba(255, 68, 68, 0.32);
+    background: rgba(255, 68, 68, 0.07);
+}
+
+.payment-card-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.payment-card-meta {
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.payment-card-action {
+    min-height: 36px;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .history-list {

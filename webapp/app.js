@@ -97,6 +97,7 @@ const I18N = {
             generationFailed: "Generation failed",
             timeout: "Timed out after 110 seconds",
             requestFailed: "Request failed. Please try again.",
+            creditsRequired: "Top up your balance to create a render.",
         },
         share: {
             text: "My Dream Wheels AI render",
@@ -118,20 +119,36 @@ const I18N = {
             topUp: "Top up balance",
             customAmount: "Custom amount",
             pay: "Pay",
+            paymentHistory: "Payment history",
             history: "Render history",
             latest: "latest 10",
             support: "Support",
-            paymentReady: "Payments pending setup",
+            paymentReady: "Ready",
+            paymentCreating: "Creating payment",
             paymentPending: "Payment pending",
             paymentPaid: "Paid",
             paymentFailed: "Payment failed",
+            paymentChecking: "Checking payment",
             paymentNote: "Payment opens through Robokassa. Credits are added after confirmation.",
             paymentSetup: "Robokassa checkout will be enabled after store activation.",
+            email: "Email for receipt",
+            emailInvalid: "Enter a valid email",
             topupMeta: "{credits} credits · 30 days",
             topupPreview: "{credits} credits for {amount} ₽ · valid for 30 days",
             topupRange: "Enter {min}–{max} ₽",
             emptyHistory: "Completed renders will appear here.",
+            emptyPaymentHistory: "Payments will appear here.",
             openCabinet: "Open cabinet",
+            refreshPayment: "Refresh",
+            pendingInvoice: "Invoice #{invoiceId} · {amount} ₽ · {credits} credits",
+            paidInvoice: "Paid invoice #{invoiceId}",
+            failedInvoice: "Invoice #{invoiceId} is not paid",
+            openPaymentFailed: "Could not open payment page",
+            createPaymentFailed: "Could not create payment",
+            statusCheckFailed: "Could not check payment status",
+            paidHistory: "{amount} ₽ · {credits} credits",
+            pendingHistory: "{amount} ₽ · pending",
+            failedHistory: "{amount} ₽ · failed",
         },
         packages: {
             start: "Start",
@@ -211,6 +228,7 @@ const I18N = {
             generationFailed: "Ошибка генерации",
             timeout: "Превышено время ожидания (>110 с)",
             requestFailed: "Запрос не удался. Попробуйте ещё раз.",
+            creditsRequired: "Пополните баланс, чтобы создать рендер.",
         },
         share: {
             text: "Мой рендер в Dream Wheels AI",
@@ -232,20 +250,36 @@ const I18N = {
             topUp: "Пополнить баланс",
             customAmount: "Своя сумма",
             pay: "Оплатить",
+            paymentHistory: "История платежей",
             history: "История рендеров",
             latest: "последние 10",
             support: "Поддержка",
-            paymentReady: "Оплата настраивается",
+            paymentReady: "Готово",
+            paymentCreating: "Создаем оплату",
             paymentPending: "Ожидаем оплату",
             paymentPaid: "Оплачено",
             paymentFailed: "Оплата не прошла",
+            paymentChecking: "Проверяем оплату",
             paymentNote: "Оплата откроется через Robokassa. Credits начисляются после подтверждения.",
             paymentSetup: "Robokassa checkout включим после активации магазина.",
+            email: "Email для чека",
+            emailInvalid: "Введите корректный email",
             topupMeta: "{credits} credits · 30 дней",
             topupPreview: "{credits} credits за {amount} ₽ · срок действия 30 дней",
             topupRange: "Введите {min}–{max} ₽",
             emptyHistory: "Завершенные рендеры появятся здесь.",
+            emptyPaymentHistory: "Платежи появятся здесь.",
             openCabinet: "Открыть кабинет",
+            refreshPayment: "Обновить",
+            pendingInvoice: "Счет #{invoiceId} · {amount} ₽ · {credits} credits",
+            paidInvoice: "Оплачен счет #{invoiceId}",
+            failedInvoice: "Счет #{invoiceId} не оплачен",
+            openPaymentFailed: "Не удалось открыть страницу оплаты",
+            createPaymentFailed: "Не удалось создать оплату",
+            statusCheckFailed: "Не удалось проверить оплату",
+            paidHistory: "{amount} ₽ · {credits} credits",
+            pendingHistory: "{amount} ₽ · ожидает оплаты",
+            failedHistory: "{amount} ₽ · не прошла",
         },
         packages: {
             start: "Старт",
@@ -302,6 +336,7 @@ function localizeErrorMessage(message) {
 }
 
 const STORAGE_KEY = "dream-wheels-ai-cabinet-v1";
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const SCREENS = ["upload", "result", "cabinet"];
 const state = {
@@ -322,6 +357,11 @@ const state = {
     balance: 0,
     paymentStatus: "ready",
     lastTopUpIntent: null,
+    pendingPayment: null,
+    paymentHistory: [],
+    topUpEmail: "",
+    checkingPayment: false,
+    paymentError: "",
     history: [],
 };
 
@@ -359,6 +399,12 @@ function loadCabinetState() {
         const parsed = JSON.parse(raw);
         state.balance = Number(parsed.balance || 0);
         state.history = Array.isArray(parsed.history) ? parsed.history.slice(0, 10) : [];
+        state.paymentHistory = Array.isArray(parsed.paymentHistory)
+            ? parsed.paymentHistory.slice(0, 10)
+            : [];
+        state.pendingPayment = parsed.pendingPayment || null;
+        state.topUpEmail = typeof parsed.topUpEmail === "string" ? parsed.topUpEmail : "";
+        if (state.pendingPayment?.status) state.paymentStatus = state.pendingPayment.status;
     } catch (error) {
         console.warn("[DW] cabinet state load failed", error);
     }
@@ -371,6 +417,9 @@ function saveCabinetState() {
             JSON.stringify({
                 balance: state.balance,
                 history: state.history.slice(0, 10),
+                paymentHistory: state.paymentHistory.slice(0, 10),
+                pendingPayment: state.pendingPayment,
+                topUpEmail: state.topUpEmail,
             })
         );
     } catch (error) {
@@ -379,6 +428,8 @@ function saveCabinetState() {
 }
 
 function paymentStatusText() {
+    if (state.paymentStatus === "creating") return t("cabinet.paymentCreating");
+    if (state.paymentStatus === "checking") return t("cabinet.paymentChecking");
     if (state.paymentStatus === "pending") return t("cabinet.paymentPending");
     if (state.paymentStatus === "paid") return t("cabinet.paymentPaid");
     if (state.paymentStatus === "failed") return t("cabinet.paymentFailed");
@@ -408,12 +459,215 @@ function buildTopUpIntent(amount, credits, sourceScreen = "cabinet") {
     };
 }
 
+function getTelegramUserIdForDevFallback() {
+    const id = tg?.initDataUnsafe?.user?.id;
+    if (Number.isFinite(Number(id))) return Number(id);
+    return 123456789;
+}
+
+function getTopUpEmail() {
+    const input = document.querySelector("[data-topup-email]");
+    const email = (input?.value || state.topUpEmail || "").trim().toLowerCase();
+    return email;
+}
+
+function setTopUpError(message) {
+    state.paymentError = message;
+    state.paymentStatus = "failed";
+    renderCabinet();
+    haptic("error");
+}
+
+function clearTopUpError() {
+    state.paymentError = "";
+}
+
+function buildTopUpPayload(intent) {
+    const payload = {
+        amount_rub: String(intent.amount_rub.toFixed ? intent.amount_rub.toFixed(2) : intent.amount_rub),
+        pricing_version: intent.pricing_version,
+        source_screen: intent.source_screen,
+        email: state.topUpEmail,
+    };
+    if (HAS_TG && tg.initData) {
+        payload.init_data = tg.initData;
+    } else {
+        payload.telegram_user_id = getTelegramUserIdForDevFallback();
+    }
+    return payload;
+}
+
+function addPaymentHistoryItem(item) {
+    if (!item?.invoiceId) return;
+    state.paymentHistory = [
+        {
+            ...item,
+            updatedAt: new Date().toISOString(),
+        },
+        ...state.paymentHistory.filter((entry) => entry.invoiceId !== item.invoiceId),
+    ].slice(0, 10);
+    saveCabinetState();
+}
+
+function normalizePayment(raw) {
+    const status = raw.status === "paid" || raw.status === "failed" ? raw.status : "pending";
+    return {
+        paymentId: raw.payment_id || raw.paymentId,
+        invoiceId: Number(raw.invoice_id || raw.invoiceId),
+        status,
+        amount: Number(raw.amount),
+        credits: Number(raw.credits_granted || raw.credits || 0),
+        taxReceiptStatus: raw.tax_receipt_status || raw.taxReceiptStatus,
+        confirmationUrl: raw.confirmation_url || raw.confirmationUrl,
+        pricingVersion: raw.pricing_version || raw.pricingVersion,
+        createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
+        updatedAt: raw.paid_at || raw.updatedAt || raw.created_at || raw.createdAt || new Date().toISOString(),
+    };
+}
+
+function getIdentityQuery() {
+    const params = new URLSearchParams();
+    if (HAS_TG && tg.initData) {
+        params.set("init_data", tg.initData);
+    } else {
+        params.set("telegram_user_id", String(getTelegramUserIdForDevFallback()));
+    }
+    return params.toString();
+}
+
+async function loadPaymentCabinet({ silent = true } = {}) {
+    if (!silent) {
+        state.paymentStatus = "checking";
+        renderCabinet();
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/payments/cabinet?${getIdentityQuery()}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        state.balance = Number(data.balance || 0);
+        state.paymentHistory = Array.isArray(data.payments)
+            ? data.payments.map(normalizePayment).slice(0, 10)
+            : [];
+        state.pendingPayment = state.paymentHistory[0]?.status === "pending" ? state.paymentHistory[0] : null;
+        if (state.pendingPayment) {
+            state.paymentStatus = "pending";
+        } else if (state.paymentHistory[0]?.status === "paid") {
+            state.paymentStatus = "paid";
+        } else {
+            state.paymentStatus = "ready";
+        }
+        saveCabinetState();
+        renderCabinet();
+    } catch (error) {
+        console.warn("[DW] cabinet load failed", error);
+        if (!silent) setTopUpError(t("cabinet.statusCheckFailed"));
+    }
+}
+
+async function fetchPaymentStatus(invoiceId) {
+    const response = await fetch(`${API_BASE_URL}/payments/${invoiceId}/status`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.detail || `HTTP ${response.status}`);
+    }
+    return data;
+}
+
+function applyPaymentStatus(data) {
+    const status = data.status === "paid" || data.status === "failed" ? data.status : "pending";
+    state.paymentStatus = status;
+    if (Number.isFinite(Number(data.balance))) {
+        state.balance = Number(data.balance);
+    }
+    const payment = normalizePayment(data);
+    state.pendingPayment = status === "pending" ? payment : null;
+    addPaymentHistoryItem(payment);
+    saveCabinetState();
+    renderCabinet();
+    if (status === "paid") haptic("success");
+    if (status === "failed") haptic("error");
+    return payment;
+}
+
+async function checkPendingPayment({ silent = false } = {}) {
+    if (!state.pendingPayment?.invoiceId || state.checkingPayment) return null;
+    state.checkingPayment = true;
+    if (!silent) {
+        state.paymentStatus = "checking";
+        renderCabinet();
+    }
+    try {
+        const data = await fetchPaymentStatus(state.pendingPayment.invoiceId);
+        return applyPaymentStatus(data);
+    } catch (error) {
+        console.warn("[DW] payment status check failed", error);
+        if (!silent) setTopUpError(t("cabinet.statusCheckFailed"));
+        return null;
+    } finally {
+        state.checkingPayment = false;
+        renderCabinet();
+    }
+}
+
+async function pollPaymentStatus(invoiceId) {
+    const deadline = Date.now() + PAYMENT_POLL_TIMEOUT_MS;
+    let lastPayment = null;
+
+    while (Date.now() < deadline) {
+        const data = await fetchPaymentStatus(invoiceId);
+        lastPayment = applyPaymentStatus(data);
+        if (lastPayment.status !== "pending") return lastPayment;
+        await sleep(PAYMENT_POLL_INTERVAL_MS);
+    }
+
+    return lastPayment;
+}
+
+async function handlePaymentRedirectParams() {
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = Number(params.get("InvId") || params.get("inv_id"));
+    if (!Number.isFinite(invoiceId) || invoiceId <= 0) return false;
+
+    state.pendingPayment = state.pendingPayment || {
+        invoiceId,
+        status: "pending",
+        amount: Number(params.get("OutSum") || params.get("out_summ") || 0),
+        credits: 0,
+        createdAt: new Date().toISOString(),
+    };
+    state.paymentStatus = "checking";
+    showScreen("cabinet");
+    try {
+        await pollPaymentStatus(invoiceId);
+        await loadPaymentCabinet({ silent: true });
+    } catch (error) {
+        console.warn("[DW] payment redirect status check failed", error);
+        setTopUpError(t("cabinet.statusCheckFailed"));
+    }
+    return true;
+}
+
+function openPaymentUrl(url) {
+    if (!url) throw new Error("payment_url missing");
+    if (HAS_TG && typeof tg.openLink === "function") {
+        tg.openLink(url, { try_instant_view: false });
+        return;
+    }
+    window.location.href = url;
+}
+
 function renderCustomTopUpPreview() {
     const input = document.querySelector("[data-custom-topup]");
     const preview = document.querySelector("[data-custom-topup-preview]");
     if (!input || !preview) return;
 
     const rawAmount = Number(input.value);
+    if (state.paymentError) {
+        preview.textContent = state.paymentError;
+        return;
+    }
     if (!Number.isFinite(rawAmount) || rawAmount < TOPUP_MIN_AMOUNT || rawAmount > TOPUP_MAX_AMOUNT) {
         preview.textContent = formatTemplate("cabinet.topupRange", {
             min: TOPUP_MIN_AMOUNT,
@@ -427,21 +681,59 @@ function renderCustomTopUpPreview() {
     preview.textContent = formatTemplate("cabinet.topupPreview", { amount, credits });
 }
 
-function startTopUp(intent) {
-    state.paymentStatus = "pending";
+async function startTopUp(intent) {
+    clearTopUpError();
+    const email = getTopUpEmail();
+    if (!EMAIL_RE.test(email)) {
+        setTopUpError(t("cabinet.emailInvalid"));
+        return;
+    }
+    state.topUpEmail = email;
+    state.paymentStatus = "creating";
     state.lastTopUpIntent = intent;
     renderCabinet();
     haptic("light");
-    setTimeout(() => {
-        if (state.screen !== "cabinet") return;
-        state.paymentStatus = "ready";
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/payments/topups`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildTopUpPayload(intent)),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        const payment = {
+            paymentId: data.payment_id,
+            invoiceId: Number(data.invoice_id),
+            status: "pending",
+            amount: Number(data.amount),
+            credits: Number(data.credits_granted),
+            paymentUrl: data.payment_url,
+            pricingVersion: data.pricing_version,
+            createdAt: new Date().toISOString(),
+        };
+        state.pendingPayment = payment;
+        state.paymentStatus = "pending";
+        addPaymentHistoryItem(payment);
+        saveCabinetState();
         renderCabinet();
-    }, 1800);
+        openPaymentUrl(data.payment_url);
+    } catch (error) {
+        console.warn("[DW] topup create failed", error);
+        setTopUpError(t("cabinet.createPaymentFailed"));
+    }
 }
 
 function renderCabinet() {
     const balanceValue = document.querySelector("[data-balance-value]");
     if (balanceValue) balanceValue.textContent = String(state.balance);
+
+    const emailInput = document.querySelector("[data-topup-email]");
+    if (emailInput && emailInput.value !== state.topUpEmail) {
+        emailInput.value = state.topUpEmail;
+    }
 
     const paymentStatus = document.querySelector("[data-payment-status]");
     if (paymentStatus) {
@@ -456,25 +748,70 @@ function renderCabinet() {
         const meta = button.querySelector("[data-topup-meta]");
         if (name) name.textContent = `${amount} ₽`;
         if (meta) meta.textContent = formatTemplate("cabinet.topupMeta", { credits });
+        button.disabled = state.paymentStatus === "creating" || state.checkingPayment;
     });
+
+    const customButton = document.querySelector("[data-custom-topup-button]");
+    if (customButton) {
+        customButton.disabled = state.paymentStatus === "creating" || state.checkingPayment;
+    }
 
     renderCustomTopUpPreview();
 
-    const historyList = document.querySelector("[data-history-list]");
-    if (!historyList) return;
+    const paymentCard = document.querySelector("[data-payment-card]");
+    const paymentCardTitle = document.querySelector("[data-payment-card-title]");
+    const paymentCardMeta = document.querySelector("[data-payment-card-meta]");
+    if (paymentCard && paymentCardTitle && paymentCardMeta) {
+        const payment = state.pendingPayment || state.paymentHistory[0];
+        paymentCard.hidden = !payment;
+        if (payment) {
+            paymentCard.dataset.status = payment.status;
+            paymentCardTitle.textContent =
+                payment.status === "paid"
+                    ? formatTemplate("cabinet.paidInvoice", { invoiceId: payment.invoiceId })
+                    : payment.status === "failed"
+                      ? formatTemplate("cabinet.failedInvoice", { invoiceId: payment.invoiceId })
+                      : formatTemplate("cabinet.pendingInvoice", {
+                            invoiceId: payment.invoiceId,
+                            amount: payment.amount,
+                            credits: payment.credits,
+                        });
+            paymentCardMeta.textContent =
+                payment.status === "paid"
+                    ? formatTemplate("cabinet.paidHistory", {
+                          amount: payment.amount,
+                          credits: payment.credits,
+                      })
+                    : payment.status === "failed"
+                      ? formatTemplate("cabinet.failedHistory", { amount: payment.amount })
+                      : formatTemplate("cabinet.pendingHistory", { amount: payment.amount });
+        }
+    }
 
+    const historyList = document.querySelector("[data-history-list]");
+    if (historyList) renderRenderHistory(historyList);
+
+    const paymentHistoryList = document.querySelector("[data-payment-history-list]");
+    if (paymentHistoryList) renderPaymentHistory(paymentHistoryList);
+}
+
+function renderEmptyHistory(container, textKey, iconText) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    const icon = document.createElement("span");
+    icon.className = "history-empty-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = iconText;
+    const text = document.createElement("span");
+    text.textContent = t(textKey);
+    empty.append(icon, text);
+    container.appendChild(empty);
+}
+
+function renderRenderHistory(historyList) {
     historyList.innerHTML = "";
     if (state.history.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "history-empty";
-        const icon = document.createElement("span");
-        icon.className = "history-empty-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.textContent = "🖼️";
-        const text = document.createElement("span");
-        text.textContent = t("cabinet.emptyHistory");
-        empty.append(icon, text);
-        historyList.appendChild(empty);
+        renderEmptyHistory(historyList, "cabinet.emptyHistory", "🖼️");
         return;
     }
 
@@ -496,6 +833,47 @@ function renderCabinet() {
         const title = document.createElement("div");
         title.className = "history-title";
         title.textContent = item.jobId ? `#${item.jobId.slice(0, 8)}` : "Dream Wheels AI";
+
+        row.append(title, meta);
+        historyList.appendChild(row);
+    });
+}
+
+function renderPaymentHistory(historyList) {
+    historyList.innerHTML = "";
+    if (state.paymentHistory.length === 0) {
+        renderEmptyHistory(historyList, "cabinet.emptyPaymentHistory", "🧾");
+        return;
+    }
+
+    state.paymentHistory.slice(0, 10).forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "history-item payment-history-item";
+
+        const meta = document.createElement("div");
+        meta.className = "history-meta";
+        const date = document.createElement("span");
+        date.textContent = new Date(item.updatedAt || item.createdAt).toLocaleString(
+            locale === "ru" ? "ru-RU" : "en-US"
+        );
+        const status = document.createElement("span");
+        status.textContent =
+            item.status === "paid"
+                ? t("cabinet.paymentPaid")
+                : item.status === "failed"
+                  ? t("cabinet.paymentFailed")
+                  : t("cabinet.paymentPending");
+        meta.append(date, status);
+
+        const title = document.createElement("div");
+        title.className = "history-title";
+        title.textContent = `#${item.invoiceId} · ${
+            item.status === "paid"
+                ? formatTemplate("cabinet.paidHistory", { amount: item.amount, credits: item.credits })
+                : item.status === "failed"
+                  ? formatTemplate("cabinet.failedHistory", { amount: item.amount })
+                : formatTemplate("cabinet.pendingHistory", { amount: item.amount })
+        }`;
 
         row.append(title, meta);
         historyList.appendChild(row);
@@ -534,7 +912,20 @@ function attachCabinetHandlers() {
 
     const customInput = document.querySelector("[data-custom-topup]");
     if (customInput) {
-        customInput.addEventListener("input", renderCustomTopUpPreview);
+        customInput.addEventListener("input", () => {
+            clearTopUpError();
+            renderCustomTopUpPreview();
+        });
+    }
+
+    const emailInput = document.querySelector("[data-topup-email]");
+    if (emailInput) {
+        emailInput.addEventListener("input", () => {
+            state.topUpEmail = emailInput.value.trim().toLowerCase();
+            clearTopUpError();
+            saveCabinetState();
+            renderCabinet();
+        });
     }
 
     const customButton = document.querySelector("[data-custom-topup-button]");
@@ -544,6 +935,16 @@ function attachCabinetHandlers() {
             customInput.value = String(amount);
             const credits = calculateTopUpCredits(amount);
             startTopUp(buildTopUpIntent(amount, credits, "cabinet_custom_amount"));
+        });
+    }
+
+    const refreshPaymentButton = document.querySelector("[data-payment-refresh]");
+    if (refreshPaymentButton) {
+        refreshPaymentButton.addEventListener("click", async () => {
+            if (state.pendingPayment?.invoiceId) {
+                await checkPendingPayment({ silent: false });
+            }
+            await loadPaymentCabinet({ silent: false });
         });
     }
 }
@@ -628,6 +1029,7 @@ function showScreen(name) {
     if (name === "cabinet") {
         indicator.textContent = t("steps.cabinet");
         renderCabinet();
+        loadPaymentCabinet({ silent: true });
     } else {
         indicator.textContent = name === "result" ? t("steps.result") : t("steps.upload");
     }
@@ -658,13 +1060,17 @@ function refreshButtonsForScreen() {
         }
     } else if (state.screen === "cabinet") {
         setBackButton(() => showScreen(state.previousScreen || "upload"));
-        setMainButton({
-            text: t("actions.createRender"),
-            enabled: true,
-            onClick: () => {
-                resetFlow();
-            },
-        });
+        if (HAS_TG) {
+            setMainButton({
+                text: t("actions.createRender"),
+                enabled: true,
+                onClick: () => {
+                    resetFlow();
+                },
+            });
+        } else {
+            hideMainButton();
+        }
     }
 }
 
@@ -1097,6 +1503,10 @@ function resolveApiBaseUrl() {
         setStoredApiEnv(null);
     }
 
+    if (["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)) {
+        return API_BASE_URLS.staging;
+    }
+
     const storedEnv = getStoredApiEnv();
     if (storedEnv === "prod" || storedEnv === "staging") {
         return API_BASE_URLS[storedEnv];
@@ -1109,6 +1519,8 @@ function resolveApiBaseUrl() {
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
+const PAYMENT_POLL_INTERVAL_MS = 2500;
+const PAYMENT_POLL_TIMEOUT_MS = 30000;
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 110000; // Reve timeout 90s + margin
 
@@ -1234,6 +1646,15 @@ async function submitJob() {
         const data = await resp.json().catch(() => ({}));
         pushDebug("upload:body", JSON.stringify(data));
         if (!resp.ok) {
+            if (resp.status === 402 || data.detail === "credits required") {
+                state.submitting = false;
+                state.paymentStatus = "ready";
+                state.paymentError = t("errors.creditsRequired");
+                await loadPaymentCabinet({ silent: true });
+                showScreen("cabinet");
+                haptic("warning");
+                return;
+            }
             const detail = Array.isArray(data.detail)
                 ? data.detail.map((e) => e.msg).join("; ")
                 : (data.detail || `HTTP ${resp.status}`);
@@ -1315,7 +1736,7 @@ async function submitJob() {
 
 /* ---------- Boot ---------- */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     applyTranslations();
     loadCabinetState();
     initTelegram();
@@ -1323,5 +1744,6 @@ document.addEventListener("DOMContentLoaded", () => {
     attachResultHandlers();
     attachFeedbackHandlers();
     attachCabinetHandlers();
-    showScreen("upload");
+    const openedFromPayment = await handlePaymentRedirectParams();
+    if (!openedFromPayment) showScreen("upload");
 });

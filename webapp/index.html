@@ -150,6 +150,18 @@
                     </button>
                 </div>
                 <div class="custom-topup">
+                    <label class="custom-topup-label" for="topup-email" data-i18n="cabinet.email">
+                        Email for receipt
+                    </label>
+                    <input
+                        id="topup-email"
+                        class="topup-email"
+                        type="email"
+                        inputmode="email"
+                        autocomplete="email"
+                        placeholder="name@example.com"
+                        data-topup-email
+                    />
                     <label class="custom-topup-label" for="custom-topup-amount" data-i18n="cabinet.customAmount">
                         Custom amount
                     </label>
@@ -173,6 +185,23 @@
                 <p class="panel-note" data-i18n="cabinet.paymentNote">
                     Payment opens through Robokassa. Credits are added after confirmation.
                 </p>
+                <div class="payment-card" data-payment-card hidden>
+                    <div>
+                        <div class="payment-card-title" data-payment-card-title>—</div>
+                        <div class="payment-card-meta" data-payment-card-meta>—</div>
+                    </div>
+                    <button type="button" class="payment-card-action" data-payment-refresh>
+                        <span data-i18n="cabinet.refreshPayment">Refresh</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <h2 data-i18n="cabinet.paymentHistory">Payment history</h2>
+                    <span class="panel-sub" data-i18n="cabinet.latest">latest 10</span>
+                </div>
+                <div class="history-list" data-payment-history-list></div>
             </section>
 
             <section class="panel">
@@ -211,6 +240,6 @@
         </footer>
     </main>
 
-    <script src="app.js?v=20260609-cabinet" type="module"></script>
+    <script src="app.js?v=20260611-payments" type="module"></script>
 </body>
 </html>
