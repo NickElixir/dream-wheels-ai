@@ -86,3 +86,16 @@ def test_payment_cabinet_requires_telegram_identity():
     r = client.get("/payments/cabinet")
     assert r.status_code == 422
     assert r.json()["detail"] == "init_data or telegram_user_id is required"
+
+
+def test_cors_allows_local_webapp_dev_origin():
+    """Локальный static-server фронта должен иметь доступ к staging API."""
+    r = client.options(
+        "/payments/topups",
+        headers={
+            "Origin": "http://127.0.0.1:4174",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == "http://127.0.0.1:4174"

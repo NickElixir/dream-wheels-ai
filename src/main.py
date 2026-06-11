@@ -56,7 +56,7 @@ app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[WEBAPP_URL, "https://web.telegram.org"],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.vercel\.app|http://(127\.0\.0\.1|localhost):\d+",
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,
