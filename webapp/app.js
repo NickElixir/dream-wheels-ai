@@ -362,6 +362,7 @@ const state = {
     topUpEmail: "",
     checkingPayment: false,
     paymentError: "",
+    paymentErrorField: "",
     history: [],
 };
 
@@ -473,19 +474,25 @@ function getTopUpEmail() {
 
 function setTopUpError(message) {
     state.paymentError = message;
+    state.paymentErrorField = "general";
     state.paymentStatus = "failed";
     renderCabinet();
     haptic("error");
 }
 
-function setTopUpValidationError(message) {
+function setTopUpValidationError(message, field = "general") {
     state.paymentError = message;
+    state.paymentErrorField = field;
     renderCabinet();
+    if (field === "email") {
+        window.setTimeout(() => document.querySelector("[data-topup-email]")?.focus(), 0);
+    }
     haptic("warning");
 }
 
 function clearTopUpError() {
     state.paymentError = "";
+    state.paymentErrorField = "";
 }
 
 function buildTopUpPayload(intent) {
@@ -558,6 +565,7 @@ async function loadPaymentCabinet({ silent = true } = {}) {
             : [];
         state.pendingPayment = state.paymentHistory[0]?.status === "pending" ? state.paymentHistory[0] : null;
         state.paymentError = "";
+        state.paymentErrorField = "";
         if (state.pendingPayment) {
             state.paymentStatus = "pending";
         } else if (state.paymentHistory[0]?.status === "paid") {
@@ -671,7 +679,7 @@ function renderCustomTopUpPreview() {
     if (!input || !preview) return;
 
     const rawAmount = Number(input.value);
-    if (state.paymentError) {
+    if (state.paymentError && state.paymentErrorField !== "email") {
         preview.textContent = state.paymentError;
         return;
     }
@@ -692,7 +700,7 @@ async function startTopUp(intent) {
     clearTopUpError();
     const email = getTopUpEmail();
     if (!EMAIL_RE.test(email)) {
-        setTopUpValidationError(t("cabinet.emailInvalid"));
+        setTopUpValidationError(t("cabinet.emailInvalid"), "email");
         return;
     }
     state.topUpEmail = email;
@@ -740,6 +748,13 @@ function renderCabinet() {
     const emailInput = document.querySelector("[data-topup-email]");
     if (emailInput && emailInput.value !== state.topUpEmail) {
         emailInput.value = state.topUpEmail;
+    }
+
+    const emailError = document.querySelector("[data-topup-email-error]");
+    if (emailError) {
+        const isEmailError = Boolean(state.paymentError && state.paymentErrorField === "email");
+        emailError.hidden = !isEmailError;
+        emailError.textContent = isEmailError ? state.paymentError : "";
     }
 
     const paymentStatus = document.querySelector("[data-payment-status]");

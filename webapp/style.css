@@ -618,6 +618,13 @@ h1 {
     font: inherit;
 }
 
+.topup-email-error {
+    margin-top: -2px;
+    color: #ff7a7a;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .custom-topup-row input:focus,
 .topup-email:focus {
     border-color: var(--accent);
