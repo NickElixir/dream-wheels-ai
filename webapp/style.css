@@ -584,8 +584,9 @@ h1 {
 }
 
 .custom-topup-label {
-    color: var(--text-muted);
+    color: var(--text);
     font-size: 12px;
+    font-weight: 600;
 }
 
 .custom-topup-row {

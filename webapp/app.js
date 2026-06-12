@@ -478,6 +478,12 @@ function setTopUpError(message) {
     haptic("error");
 }
 
+function setTopUpValidationError(message) {
+    state.paymentError = message;
+    renderCabinet();
+    haptic("warning");
+}
+
 function clearTopUpError() {
     state.paymentError = "";
 }
@@ -685,7 +691,7 @@ async function startTopUp(intent) {
     clearTopUpError();
     const email = getTopUpEmail();
     if (!EMAIL_RE.test(email)) {
-        setTopUpError(t("cabinet.emailInvalid"));
+        setTopUpValidationError(t("cabinet.emailInvalid"));
         return;
     }
     state.topUpEmail = email;
