@@ -14,7 +14,7 @@
             <div class="logo">DREAM<span>WHEELS</span> AI</div>
             <div class="topbar-actions">
                 <div class="step-indicator" data-step-indicator data-i18n="steps.upload">Upload</div>
-                <button type="button" class="icon-button" data-open-cabinet aria-label="Cabinet" data-i18n-title="cabinet.title">☰</button>
+                <button type="button" class="icon-button" data-open-cabinet aria-label="Menu" data-i18n-title="cabinet.menuButton">☰</button>
             </div>
         </header>
 
@@ -114,82 +114,125 @@
                 </div>
             </div>
 
+            <section class="panel" id="wallet">
+                <div class="panel-heading">
+                    <h2 data-i18n="cabinet.lastPayment">Last invoice</h2>
+                    <span class="payment-status" data-payment-status>—</span>
+                </div>
+                <p class="panel-sub" data-i18n="cabinet.lastPaymentHint">Track the most recent payment attempt.</p>
+                <p class="topup-general-error" data-last-payment-error hidden></p>
+                <div class="payment-card" data-payment-card hidden>
+                    <div>
+                        <div class="payment-card-title" data-payment-card-title>—</div>
+                        <div class="payment-card-meta" data-payment-card-meta>—</div>
+                    </div>
+                    <button type="button" class="payment-card-action" data-payment-refresh>
+                        <span data-i18n="cabinet.refreshPayment">Refresh</span>
+                    </button>
+                </div>
+                <div class="payment-card payment-card-grant" data-payment-card-empty>
+                    <div>
+                        <div class="payment-card-title" data-i18n="cabinet.registrationGrantTitle">Registration grant</div>
+                        <div class="payment-card-meta" data-i18n="cabinet.registrationGrantMeta">3 credits are added to the balance after the first start.</div>
+                    </div>
+                    <div class="payment-card-badge" data-registration-grant-badge data-i18n="cabinet.registrationGrantBadge">3 credits</div>
+                </div>
+            </section>
+
             <section class="panel">
                 <div class="panel-heading">
                     <h2 data-i18n="cabinet.topUp">Top up balance</h2>
-                    <span class="payment-status" data-payment-status>—</span>
-                </div>
-                <div class="topup-mode-switch" role="tablist" aria-label="Top up mode">
-                    <button
-                        type="button"
-                        class="topup-mode-button"
-                        data-topup-mode-button="package"
-                        data-i18n="cabinet.modePackage"
-                    >
-                        Package
-                    </button>
-                    <button
-                        type="button"
-                        class="topup-mode-button"
-                        data-topup-mode-button="custom"
-                        data-i18n="cabinet.modeCustom"
-                    >
-                        Custom amount
-                    </button>
                 </div>
                 <p class="topup-general-error" data-topup-general-error hidden></p>
-                <div class="topup-island topup-packages-island" data-topup-panel="package">
-                    <div class="topup-grid" data-topup-grid>
-                        <button type="button" class="topup-card" data-topup-amount="100" data-topup-credits="3">
-                            <span class="topup-icon" aria-hidden="true">⚡</span>
-                            <span class="package-main">
-                                <span class="package-name">100 ₽</span>
-                                <span class="package-meta" data-topup-meta>3 credits · 30 days</span>
-                            </span>
-                        </button>
-                        <button type="button" class="topup-card" data-topup-amount="200" data-topup-credits="7">
-                            <span class="topup-icon" aria-hidden="true">🏁</span>
-                            <span class="package-main">
-                                <span class="package-name">200 ₽</span>
-                                <span class="package-meta" data-topup-meta>7 credits · 30 days</span>
-                            </span>
-                        </button>
-                        <button type="button" class="topup-card" data-topup-amount="500" data-topup-credits="20">
-                            <span class="topup-icon" aria-hidden="true">💎</span>
-                            <span class="package-main">
-                                <span class="package-name">500 ₽</span>
-                                <span class="package-meta" data-topup-meta>20 credits · 30 days</span>
-                            </span>
-                        </button>
-                        <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45">
-                            <span class="topup-icon" aria-hidden="true">👑</span>
-                            <span class="package-main">
-                                <span class="package-name">1000 ₽</span>
-                                <span class="package-meta" data-topup-meta>45 credits · 30 days</span>
-                            </span>
-                        </button>
-                    </div>
-                </div>
-                <div class="custom-topup" data-topup-panel="custom">
-                    <div class="topup-island topup-custom-island">
-                        <label class="custom-topup-label" for="custom-topup-amount" data-i18n="cabinet.customAmount">
-                            Custom amount
-                        </label>
-                        <div class="custom-topup-row">
-                            <input
-                                id="custom-topup-amount"
-                                type="number"
-                                inputmode="numeric"
-                                min="100"
-                                max="3000"
-                                step="50"
-                                value="200"
-                                data-custom-topup
-                            />
+                <div class="topup-wizard">
+                    <div class="topup-island topup-step-island">
+                        <div class="topup-step-head">
+                            <span class="topup-step-index">1</span>
+                            <div>
+                                <div class="topup-step-title" data-i18n="cabinet.stepChooseTitle">Choose amount</div>
+                                <div class="topup-step-sub" data-i18n="cabinet.stepChooseSub">Select a package or switch to custom amount.</div>
+                            </div>
                         </div>
-                        <p class="custom-topup-preview" data-custom-topup-preview>—</p>
+                        <div class="topup-mode-switch" role="tablist" aria-label="Top up mode">
+                            <button
+                                type="button"
+                                class="topup-mode-button"
+                                data-topup-mode-button="package"
+                                data-i18n="cabinet.modePackage"
+                            >
+                                Package
+                            </button>
+                            <button
+                                type="button"
+                                class="topup-mode-button"
+                                data-topup-mode-button="custom"
+                                data-i18n="cabinet.modeCustom"
+                            >
+                                Custom amount
+                            </button>
+                        </div>
+                        <div class="topup-island topup-packages-island" data-topup-panel="package">
+                            <div class="topup-grid" data-topup-grid>
+                                <button type="button" class="topup-card" data-topup-amount="100" data-topup-credits="3">
+                                    <span class="topup-icon" aria-hidden="true">⚡</span>
+                                    <span class="package-main">
+                                        <span class="package-name">100 ₽</span>
+                                        <span class="package-meta" data-topup-meta>3 credits · 30 days</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="topup-card" data-topup-amount="200" data-topup-credits="7">
+                                    <span class="topup-icon" aria-hidden="true">🏁</span>
+                                    <span class="package-main">
+                                        <span class="package-name">200 ₽</span>
+                                        <span class="package-meta" data-topup-meta>7 credits · 30 days</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="topup-card" data-topup-amount="500" data-topup-credits="20">
+                                    <span class="topup-icon" aria-hidden="true">💎</span>
+                                    <span class="package-main">
+                                        <span class="package-name">500 ₽</span>
+                                        <span class="package-meta" data-topup-meta>20 credits · 30 days</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45">
+                                    <span class="topup-icon" aria-hidden="true">👑</span>
+                                    <span class="package-main">
+                                        <span class="package-name">1000 ₽</span>
+                                        <span class="package-meta" data-topup-meta>45 credits · 30 days</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="custom-topup" data-topup-panel="custom">
+                            <div class="topup-island topup-custom-island">
+                                <label class="custom-topup-label" for="custom-topup-amount" data-i18n="cabinet.customAmount">
+                                    Custom amount
+                                </label>
+                                <div class="custom-topup-row">
+                                    <input
+                                        id="custom-topup-amount"
+                                        type="number"
+                                        inputmode="numeric"
+                                        min="100"
+                                        max="3000"
+                                        step="50"
+                                        value="200"
+                                        data-custom-topup
+                                    />
+                                </div>
+                                <p class="custom-topup-preview" data-custom-topup-preview>—</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="topup-island">
+
+                    <div class="topup-island topup-step-island">
+                        <div class="topup-step-head">
+                            <span class="topup-step-index">2</span>
+                            <div>
+                                <div class="topup-step-title" data-i18n="cabinet.stepEmailTitle">Receipt email</div>
+                                <div class="topup-step-sub" data-i18n="cabinet.stepEmailSub">We use it for the receipt and payment confirmation.</div>
+                            </div>
+                        </div>
                         <label class="custom-topup-label" for="topup-email" data-i18n="cabinet.email">
                             Email for receipt
                         </label>
@@ -204,35 +247,40 @@
                         />
                         <p class="topup-email-error" data-topup-email-error hidden></p>
                     </div>
-                    <div class="topup-island topup-action-island">
+
+                    <div class="topup-island topup-step-island topup-action-island">
+                        <div class="topup-step-head">
+                            <span class="topup-step-index">3</span>
+                            <div>
+                                <div class="topup-step-title" data-i18n="cabinet.stepPayTitle">Confirm payment</div>
+                                <div class="topup-step-sub" data-i18n="cabinet.stepPaySub">Check the selected amount before opening Robokassa.</div>
+                            </div>
+                        </div>
+                        <div class="topup-summary">
+                            <div class="topup-summary-title" data-topup-summary-title data-i18n="cabinet.summaryEmptyTitle">Choose an amount</div>
+                            <div class="topup-summary-meta" data-topup-summary-meta data-i18n="cabinet.summaryEmptyMeta">Package or custom amount will appear here.</div>
+                        </div>
                         <button type="button" class="custom-topup-button" data-custom-topup-button>
                             <span data-i18n="cabinet.pay">Pay</span>
                         </button>
+                        <p class="panel-note" data-i18n="cabinet.paymentNote">
+                            Payment opens through Robokassa. Credits are added after confirmation.
+                        </p>
                     </div>
-                </div>
-                <p class="panel-note" data-i18n="cabinet.paymentNote">
-                    Payment opens through Robokassa. Credits are added after confirmation.
-                </p>
-                <div class="payment-card" data-payment-card hidden>
-                    <div>
-                        <div class="payment-card-title" data-payment-card-title>—</div>
-                        <div class="payment-card-meta" data-payment-card-meta>—</div>
-                    </div>
-                    <button type="button" class="payment-card-action" data-payment-refresh>
-                        <span data-i18n="cabinet.refreshPayment">Refresh</span>
-                    </button>
                 </div>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="payment-history">
                 <div class="panel-heading">
                     <h2 data-i18n="cabinet.paymentHistory">Payment history</h2>
-                    <span class="panel-sub" data-i18n="cabinet.latest">latest 10</span>
+                    <button type="button" class="panel-toggle" data-payment-history-toggle>
+                        <span data-i18n="cabinet.showPaymentHistory">Show list</span>
+                    </button>
                 </div>
-                <div class="history-list" data-payment-history-list></div>
+                <div class="history-list" data-payment-history-list hidden></div>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="render-history">
                 <div class="panel-heading">
                     <h2 data-i18n="cabinet.history">Render history</h2>
                     <span class="panel-sub" data-i18n="cabinet.latest">latest</span>
@@ -240,11 +288,44 @@
                 <div class="history-list" data-history-list></div>
             </section>
 
-            <section class="panel">
-                <h2 data-i18n="cabinet.support">Support</h2>
+            <section class="panel" id="settings">
+                <div class="panel-heading">
+                    <h2 data-i18n="cabinet.settings">Settings</h2>
+                    <span class="panel-sub" data-i18n="cabinet.settingsSoon">coming soon</span>
+                </div>
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <span class="settings-label" data-i18n="cabinet.settingsLocale">Interface language</span>
+                        <span class="settings-value" data-settings-locale>Telegram</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-label" data-i18n="cabinet.settingsPayments">Payments</span>
+                        <span class="settings-value">Robokassa</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-label" data-i18n="cabinet.settingsNotifications">Notifications</span>
+                        <span class="settings-value" data-i18n="cabinet.settingsSoonShort">soon</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" id="support">
+                <div class="panel-heading">
+                    <h2 data-i18n="cabinet.support">Support</h2>
+                    <span class="panel-sub" data-i18n="cabinet.supportSub">Contacts for payment and product questions.</span>
+                </div>
                 <div class="support-grid">
                     <a href="https://t.me/dreamwheelsai" target="_blank" rel="noreferrer"><span aria-hidden="true">💬</span> Telegram</a>
                     <a href="mailto:venus.mike@yandex.ru"><span aria-hidden="true">✉️</span> Email</a>
+                </div>
+            </section>
+
+            <section class="panel" id="documents">
+                <div class="panel-heading">
+                    <h2 data-i18n="cabinet.documents">Documents</h2>
+                    <span class="panel-sub" data-i18n="cabinet.documentsSub">Legal and service terms.</span>
+                </div>
+                <div class="support-grid">
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noreferrer"><span aria-hidden="true">📄</span> <span data-i18n="legal.offer">Offer</span></a>
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/refund" target="_blank" rel="noreferrer"><span aria-hidden="true">↩️</span> <span data-i18n="legal.refund">Refunds</span></a>
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" target="_blank" rel="noreferrer"><span aria-hidden="true">🔒</span> <span data-i18n="legal.privacy">Privacy</span></a>
@@ -252,6 +333,17 @@
                 </div>
             </section>
         </section>
+
+        <div class="cabinet-menu" data-cabinet-menu hidden>
+            <button type="button" class="cabinet-menu-backdrop" data-close-menu aria-label="Close menu"></button>
+            <div class="cabinet-menu-sheet" role="dialog" aria-modal="true" aria-label="Cabinet menu">
+                <button type="button" class="cabinet-menu-item" data-menu-target="wallet" data-i18n="cabinet.menuWallet">Wallet</button>
+                <button type="button" class="cabinet-menu-item" data-menu-target="render-history" data-i18n="cabinet.menuRenderHistory">Render history</button>
+                <button type="button" class="cabinet-menu-item" data-menu-target="settings" data-i18n="cabinet.menuSettings">Settings</button>
+                <button type="button" class="cabinet-menu-item" data-menu-target="support" data-i18n="cabinet.menuSupport">Support</button>
+                <button type="button" class="cabinet-menu-item" data-menu-target="documents" data-i18n="cabinet.menuDocuments">Documents</button>
+            </div>
+        </div>
 
         <footer class="footer">
             <div class="footer-row">
@@ -268,6 +360,6 @@
         </footer>
     </main>
 
-    <script src="app.js?v=20260611-payments" type="module"></script>
+    <script src="app.js?v=20260612-cabinet-menu" type="module"></script>
 </body>
 </html>

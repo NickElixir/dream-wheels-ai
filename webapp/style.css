@@ -558,6 +558,48 @@ h1 {
     line-height: 1.35;
 }
 
+.topup-wizard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.topup-step-island {
+    gap: 12px;
+}
+
+.topup-step-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.topup-step-index {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(232, 255, 0, 0.35);
+    border-radius: 999px;
+    background: rgba(232, 255, 0, 0.08);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.topup-step-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.topup-step-sub {
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
 .topup-island[data-topup-panel] {
     overflow: hidden;
     transform-origin: top;
@@ -676,11 +718,6 @@ h1 {
     gap: 0;
 }
 
-.topup-action-island[data-selected="true"] {
-    border-color: rgba(232, 255, 0, 0.65);
-    background: rgba(232, 255, 0, 0.08);
-}
-
 .custom-topup-label {
     color: var(--text);
     font-size: 12px;
@@ -746,8 +783,49 @@ h1 {
     font-size: 12px;
 }
 
+.topup-summary {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.topup-summary-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.topup-summary-meta {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
 .topup-action-island {
     align-items: stretch;
+}
+
+.panel-toggle {
+    min-height: 32px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        border-color 180ms ease,
+        background 180ms ease,
+        color 180ms ease;
+}
+
+.panel-toggle:hover {
+    border-color: rgba(232, 255, 0, 0.3);
+    background: rgba(232, 255, 0, 0.06);
 }
 
 .payment-card {
@@ -769,6 +847,26 @@ h1 {
 .payment-card[data-status="failed"] {
     border-color: rgba(255, 68, 68, 0.32);
     background: rgba(255, 68, 68, 0.07);
+}
+
+.payment-card-grant {
+    border-color: rgba(232, 255, 0, 0.28);
+    background: rgba(232, 255, 0, 0.06);
+}
+
+.payment-card-badge {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border: 1px solid rgba(232, 255, 0, 0.3);
+    border-radius: 999px;
+    background: rgba(232, 255, 0, 0.12);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .payment-card-title {
@@ -871,6 +969,92 @@ h1 {
 .support-grid a:active {
     border-color: var(--accent);
     background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-label {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.settings-value {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: right;
+}
+
+.cabinet-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+}
+
+.cabinet-menu[hidden] {
+    display: none;
+}
+
+.cabinet-menu-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(5, 5, 5, 0.48);
+}
+
+.cabinet-menu-sheet {
+    position: absolute;
+    top: calc(64px + var(--safe-top));
+    right: 16px;
+    display: flex;
+    width: min(240px, calc(100vw - 32px));
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    background: rgba(22, 22, 24, 0.96);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
+}
+
+.cabinet-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+}
+
+.cabinet-menu-item:active {
+    border-color: rgba(232, 255, 0, 0.3);
+    background: rgba(232, 255, 0, 0.08);
+    color: var(--accent);
 }
 
 .footer {

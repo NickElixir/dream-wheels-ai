@@ -119,9 +119,17 @@ const I18N = {
             topUp: "Top up balance",
             modePackage: "Package",
             modeCustom: "Custom amount",
+            stepChooseTitle: "Choose amount",
+            stepChooseSub: "Select a package or switch to custom amount.",
+            stepEmailTitle: "Receipt email",
+            stepEmailSub: "We use it for the receipt and payment confirmation.",
+            stepPayTitle: "Confirm payment",
+            stepPaySub: "Check the selected amount before opening Robokassa.",
             customAmount: "Custom amount",
             pay: "Pay",
             paymentHistory: "Payment history",
+            showPaymentHistory: "Show list",
+            hidePaymentHistory: "Hide list",
             history: "Render history",
             latest: "latest 10",
             support: "Support",
@@ -133,6 +141,21 @@ const I18N = {
             paymentChecking: "Checking payment",
             paymentNote: "Payment opens through Robokassa. Credits are added after confirmation.",
             paymentSetup: "Robokassa checkout will be enabled after store activation.",
+            menuButton: "Menu",
+            menuWallet: "Wallet",
+            menuRenderHistory: "Render history",
+            menuSettings: "Settings",
+            menuSupport: "Support",
+            menuDocuments: "Documents",
+            settings: "Settings",
+            settingsSoon: "basic preferences and payment configuration",
+            settingsSoonShort: "soon",
+            settingsLocale: "Interface language",
+            settingsPayments: "Payments",
+            settingsNotifications: "Notifications",
+            supportSub: "Contacts for payment and product questions.",
+            documents: "Documents",
+            documentsSub: "Legal and service terms.",
             email: "Email for receipt",
             emailInvalid: "Enter a valid email",
             topupMeta: "{credits} credits · 30 days",
@@ -145,10 +168,21 @@ const I18N = {
             pendingInvoice: "Invoice #{invoiceId} · {amount} ₽ · {credits} credits",
             paidInvoice: "Paid invoice #{invoiceId}",
             failedInvoice: "Invoice #{invoiceId} is not paid",
+            lastPayment: "Last invoice",
+            lastPaymentHint: "Track the most recent payment attempt.",
+            noLastPayment: "There is no recent invoice yet.",
+            registrationGrantTitle: "Registration grant",
+            registrationGrantMeta: "3 credits are added to the balance after the first start.",
+            registrationGrantBadge: "3 credits",
             openPaymentFailed: "Could not open payment page",
             createPaymentFailed: "Could not create payment",
             statusCheckFailed: "Could not check payment status",
             packageRequired: "Choose a package first",
+            summaryEmptyTitle: "Choose an amount",
+            summaryEmptyMeta: "Package or custom amount will appear here.",
+            summaryPackageTitle: "Selected package",
+            summaryCustomTitle: "Custom amount selected",
+            summaryLine: "{amount} ₽ · {credits} credits · 30 days",
             paidHistory: "{amount} ₽ · {credits} credits",
             pendingHistory: "{amount} ₽ · pending",
             failedHistory: "{amount} ₽ · failed",
@@ -253,9 +287,17 @@ const I18N = {
             topUp: "Пополнить баланс",
             modePackage: "Пакет",
             modeCustom: "Своя сумма",
+            stepChooseTitle: "Выберите сумму",
+            stepChooseSub: "Выберите пакет или переключитесь на свою сумму.",
+            stepEmailTitle: "Email для чека",
+            stepEmailSub: "Используем его для чека и подтверждения оплаты.",
+            stepPayTitle: "Подтвердите оплату",
+            stepPaySub: "Проверьте сумму перед переходом в Robokassa.",
             customAmount: "Своя сумма",
             pay: "Оплатить",
             paymentHistory: "История платежей",
+            showPaymentHistory: "Показать список",
+            hidePaymentHistory: "Скрыть список",
             history: "История рендеров",
             latest: "последние 10",
             support: "Поддержка",
@@ -267,6 +309,21 @@ const I18N = {
             paymentChecking: "Проверяем оплату",
             paymentNote: "Оплата откроется через Robokassa. Credits начисляются после подтверждения.",
             paymentSetup: "Robokassa checkout включим после активации магазина.",
+            menuButton: "Меню",
+            menuWallet: "Кошелек",
+            menuRenderHistory: "История рендеров",
+            menuSettings: "Настройки",
+            menuSupport: "Поддержка",
+            menuDocuments: "Документы",
+            settings: "Настройки",
+            settingsSoon: "базовые параметры и платежная конфигурация",
+            settingsSoonShort: "скоро",
+            settingsLocale: "Язык интерфейса",
+            settingsPayments: "Платежи",
+            settingsNotifications: "Уведомления",
+            supportSub: "Контакты по оплате и вопросам по продукту.",
+            documents: "Документы",
+            documentsSub: "Юридическая информация и условия сервиса.",
             email: "Email для чека",
             emailInvalid: "Введите корректный email",
             topupMeta: "{credits} credits · 30 дней",
@@ -279,10 +336,21 @@ const I18N = {
             pendingInvoice: "Счет #{invoiceId} · {amount} ₽ · {credits} credits",
             paidInvoice: "Оплачен счет #{invoiceId}",
             failedInvoice: "Счет #{invoiceId} не оплачен",
+            lastPayment: "Последний счет",
+            lastPaymentHint: "Статус последней попытки оплаты.",
+            noLastPayment: "Пока нет недавних счетов.",
+            registrationGrantTitle: "Стартовый грант",
+            registrationGrantMeta: "После первого запуска на баланс начисляются 3 credits.",
+            registrationGrantBadge: "3 credits",
             openPaymentFailed: "Не удалось открыть страницу оплаты",
             createPaymentFailed: "Не удалось создать оплату",
             statusCheckFailed: "Не удалось проверить оплату",
             packageRequired: "Сначала выберите пакет",
+            summaryEmptyTitle: "Выберите сумму",
+            summaryEmptyMeta: "Здесь появится пакет или своя сумма перед оплатой.",
+            summaryPackageTitle: "Выбран пакет",
+            summaryCustomTitle: "Выбрана своя сумма",
+            summaryLine: "{amount} ₽ · {credits} credits · 30 дней",
             paidHistory: "{amount} ₽ · {credits} credits",
             pendingHistory: "{amount} ₽ · ожидает оплаты",
             failedHistory: "{amount} ₽ · не прошла",
@@ -365,12 +433,15 @@ const state = {
     lastTopUpIntent: null,
     selectedTopUpIntent: null,
     topUpMode: "package",
+    paymentHistoryExpanded: false,
+    menuOpen: false,
     pendingPayment: null,
     paymentHistory: [],
     topUpEmail: "",
     checkingPayment: false,
     paymentError: "",
     paymentErrorField: "",
+    lastPaymentError: "",
     history: [],
 };
 
@@ -414,6 +485,7 @@ function loadCabinetState() {
         state.pendingPayment = parsed.pendingPayment || null;
         state.topUpEmail = typeof parsed.topUpEmail === "string" ? parsed.topUpEmail : "";
         state.topUpMode = parsed.topUpMode === "custom" ? "custom" : "package";
+        state.paymentHistoryExpanded = Boolean(parsed.paymentHistoryExpanded);
         if (state.pendingPayment?.status) state.paymentStatus = state.pendingPayment.status;
     } catch (error) {
         console.warn("[DW] cabinet state load failed", error);
@@ -431,6 +503,7 @@ function saveCabinetState() {
                 pendingPayment: state.pendingPayment,
                 topUpEmail: state.topUpEmail,
                 topUpMode: state.topUpMode,
+                paymentHistoryExpanded: state.paymentHistoryExpanded,
             })
         );
     } catch (error) {
@@ -503,6 +576,11 @@ function setTopUpValidationError(message, field = "general") {
 function clearTopUpError() {
     state.paymentError = "";
     state.paymentErrorField = "";
+}
+
+function setLastPaymentError(message) {
+    state.lastPaymentError = message;
+    renderCabinet();
 }
 
 function selectTopUpIntent(intent) {
@@ -602,6 +680,7 @@ async function loadPaymentCabinet({ silent = true } = {}) {
         state.pendingPayment = state.paymentHistory[0]?.status === "pending" ? state.paymentHistory[0] : null;
         state.paymentError = "";
         state.paymentErrorField = "";
+        state.lastPaymentError = "";
         if (state.pendingPayment) {
             state.paymentStatus = "pending";
         } else if (state.paymentHistory[0]?.status === "paid") {
@@ -613,7 +692,7 @@ async function loadPaymentCabinet({ silent = true } = {}) {
         renderCabinet();
     } catch (error) {
         console.warn("[DW] cabinet load failed", error);
-        if (!silent) setTopUpError(t("cabinet.statusCheckFailed"));
+        if (!silent) setLastPaymentError(t("cabinet.statusCheckFailed"));
     }
 }
 
@@ -651,10 +730,11 @@ async function checkPendingPayment({ silent = false } = {}) {
     }
     try {
         const data = await fetchPaymentStatus(state.pendingPayment.invoiceId);
+        state.lastPaymentError = "";
         return applyPaymentStatus(data);
     } catch (error) {
         console.warn("[DW] payment status check failed", error);
-        if (!silent) setTopUpError(t("cabinet.statusCheckFailed"));
+        if (!silent) setLastPaymentError(t("cabinet.statusCheckFailed"));
         return null;
     } finally {
         state.checkingPayment = false;
@@ -695,7 +775,7 @@ async function handlePaymentRedirectParams() {
         await loadPaymentCabinet({ silent: true });
     } catch (error) {
         console.warn("[DW] payment redirect status check failed", error);
-        setTopUpError(t("cabinet.statusCheckFailed"));
+        setLastPaymentError(t("cabinet.statusCheckFailed"));
     }
     return true;
 }
@@ -715,10 +795,6 @@ function renderCustomTopUpPreview() {
     if (!input || !preview) return;
 
     const rawAmount = Number(input.value);
-    if (state.paymentError && state.paymentErrorField !== "email") {
-        preview.textContent = state.paymentError;
-        return;
-    }
     if (!Number.isFinite(rawAmount) || rawAmount < TOPUP_MIN_AMOUNT || rawAmount > TOPUP_MAX_AMOUNT) {
         preview.textContent = formatTemplate("cabinet.topupRange", {
             min: TOPUP_MIN_AMOUNT,
@@ -753,6 +829,26 @@ function getSelectedTopUpIntent() {
     const amount = normalizeTopUpAmount(rawAmount);
     const credits = calculateTopUpCredits(amount);
     return buildTopUpIntent(amount, credits, "cabinet_custom_amount");
+}
+
+function renderTopUpSummary() {
+    const title = document.querySelector("[data-topup-summary-title]");
+    const meta = document.querySelector("[data-topup-summary-meta]");
+    if (!title || !meta) return;
+
+    const intent = getSelectedTopUpIntent();
+    if (!intent) {
+        title.textContent = t("cabinet.summaryEmptyTitle");
+        meta.textContent = t("cabinet.summaryEmptyMeta");
+        return;
+    }
+
+    title.textContent =
+        state.topUpMode === "custom" ? t("cabinet.summaryCustomTitle") : t("cabinet.summaryPackageTitle");
+    meta.textContent = formatTemplate("cabinet.summaryLine", {
+        amount: normalizeTopUpAmount(intent.amount_rub),
+        credits: intent.credits_granted,
+    });
 }
 
 async function startTopUp(intent) {
@@ -804,6 +900,16 @@ function renderCabinet() {
     const balanceValue = document.querySelector("[data-balance-value]");
     if (balanceValue) balanceValue.textContent = String(state.balance);
 
+    const settingsLocale = document.querySelector("[data-settings-locale]");
+    if (settingsLocale) {
+        settingsLocale.textContent = locale === "ru" ? "Русский" : "English";
+    }
+
+    const cabinetMenu = document.querySelector("[data-cabinet-menu]");
+    if (cabinetMenu) {
+        cabinetMenu.hidden = !state.menuOpen;
+    }
+
     const emailInput = document.querySelector("[data-topup-email]");
     if (emailInput && emailInput.value !== state.topUpEmail) {
         emailInput.value = state.topUpEmail;
@@ -821,6 +927,12 @@ function renderCabinet() {
         const isGeneralError = Boolean(state.paymentError && state.paymentErrorField !== "email");
         generalError.hidden = !isGeneralError;
         generalError.textContent = isGeneralError ? state.paymentError : "";
+    }
+
+    const lastPaymentError = document.querySelector("[data-last-payment-error]");
+    if (lastPaymentError) {
+        lastPaymentError.hidden = !state.lastPaymentError;
+        lastPaymentError.textContent = state.lastPaymentError || "";
     }
 
     const paymentStatus = document.querySelector("[data-payment-status]");
@@ -860,17 +972,24 @@ function renderCabinet() {
 
     const customButton = document.querySelector("[data-custom-topup-button]");
     if (customButton) {
-        customButton.disabled = state.paymentStatus === "creating" || state.checkingPayment;
+        customButton.disabled =
+            state.paymentStatus === "creating" || state.checkingPayment || !getSelectedTopUpIntent();
     }
 
     renderCustomTopUpPreview();
+    renderTopUpSummary();
 
     const paymentCard = document.querySelector("[data-payment-card]");
     const paymentCardTitle = document.querySelector("[data-payment-card-title]");
     const paymentCardMeta = document.querySelector("[data-payment-card-meta]");
+    const paymentCardEmpty = document.querySelector("[data-payment-card-empty]");
+    const grantBadge = document.querySelector("[data-registration-grant-badge]");
+    const hasAnyInvoice = state.paymentHistory.length > 0 || Boolean(state.pendingPayment);
     if (paymentCard && paymentCardTitle && paymentCardMeta) {
-        const payment = state.pendingPayment || state.paymentHistory[0];
+        const payment = state.paymentHistory[0] || state.pendingPayment;
         paymentCard.hidden = !payment;
+        if (paymentCardEmpty) paymentCardEmpty.hidden = Boolean(payment) || hasAnyInvoice;
+        if (grantBadge) grantBadge.textContent = t("cabinet.registrationGrantBadge");
         if (payment) {
             paymentCard.dataset.status = payment.status;
             paymentCardTitle.textContent =
@@ -891,15 +1010,46 @@ function renderCabinet() {
                       })
                     : payment.status === "failed"
                       ? formatTemplate("cabinet.failedHistory", { amount: payment.amount })
-                      : formatTemplate("cabinet.pendingHistory", { amount: payment.amount });
+                          : formatTemplate("cabinet.pendingHistory", { amount: payment.amount });
         }
+    } else if (paymentCardEmpty) {
+        paymentCardEmpty.hidden = hasAnyInvoice;
+        if (grantBadge) grantBadge.textContent = t("cabinet.registrationGrantBadge");
     }
 
     const historyList = document.querySelector("[data-history-list]");
     if (historyList) renderRenderHistory(historyList);
 
     const paymentHistoryList = document.querySelector("[data-payment-history-list]");
-    if (paymentHistoryList) renderPaymentHistory(paymentHistoryList);
+    if (paymentHistoryList) {
+        paymentHistoryList.hidden = !state.paymentHistoryExpanded;
+        renderPaymentHistory(paymentHistoryList);
+    }
+
+    const paymentHistoryToggle = document.querySelector("[data-payment-history-toggle]");
+    if (paymentHistoryToggle) {
+        paymentHistoryToggle.hidden = state.paymentHistory.length === 0;
+        paymentHistoryToggle.textContent = state.paymentHistoryExpanded
+            ? t("cabinet.hidePaymentHistory")
+            : t("cabinet.showPaymentHistory");
+    }
+}
+
+function openCabinetMenu() {
+    state.menuOpen = true;
+    renderCabinet();
+}
+
+function closeCabinetMenu() {
+    if (!state.menuOpen) return;
+    state.menuOpen = false;
+    renderCabinet();
+}
+
+function scrollToCabinetSection(targetId) {
+    const section = document.getElementById(targetId);
+    if (!section) return;
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderEmptyHistory(container, textKey, iconText) {
@@ -1004,10 +1154,31 @@ function attachCabinetHandlers() {
     const openCabinetButton = document.querySelector("[data-open-cabinet]");
     if (openCabinetButton) {
         openCabinetButton.addEventListener("click", () => {
-            state.previousScreen = state.screen === "cabinet" ? state.previousScreen : state.screen;
-            showScreen("cabinet");
+            if (state.screen !== "cabinet") {
+                state.previousScreen = state.screen;
+                showScreen("cabinet");
+                return;
+            }
+            if (state.menuOpen) {
+                closeCabinetMenu();
+            } else {
+                openCabinetMenu();
+            }
         });
     }
+
+    document.querySelectorAll("[data-close-menu]").forEach((button) => {
+        button.addEventListener("click", () => {
+            closeCabinetMenu();
+        });
+    });
+
+    document.querySelectorAll("[data-menu-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+            closeCabinetMenu();
+            scrollToCabinetSection(button.dataset.menuTarget);
+        });
+    });
 
     document.querySelectorAll("[data-topup-amount]").forEach((button) => {
         button.addEventListener("click", () => {
@@ -1078,6 +1249,15 @@ function attachCabinetHandlers() {
                 await checkPendingPayment({ silent: false });
             }
             await loadPaymentCabinet({ silent: false });
+        });
+    }
+
+    const paymentHistoryToggle = document.querySelector("[data-payment-history-toggle]");
+    if (paymentHistoryToggle) {
+        paymentHistoryToggle.addEventListener("click", () => {
+            state.paymentHistoryExpanded = !state.paymentHistoryExpanded;
+            saveCabinetState();
+            renderCabinet();
         });
     }
 }
@@ -1153,6 +1333,7 @@ function setBackButton(onClick) {
 
 function showScreen(name) {
     state.screen = name;
+    state.menuOpen = false;
     SCREENS.forEach((s) => {
         const el = document.querySelector(`[data-screen="${s}"]`);
         el.hidden = s !== name;
