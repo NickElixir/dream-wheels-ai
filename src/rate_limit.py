@@ -30,7 +30,7 @@ async def enforce_rate_limit(
     identifier: telegram_user_id, IP, и т.п.
     """
     rds = redis_client.get_client()
-    key = f"rl:{scope}:{identifier}"
+    key = redis_client.key(f"rl:{scope}:{identifier}")
 
     count = await rds.incr(key)
     if count == 1:

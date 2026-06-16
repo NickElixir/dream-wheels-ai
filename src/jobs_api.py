@@ -18,7 +18,7 @@ from pydantic import BaseModel, field_validator
 
 from src import db, redis_client, storage
 from src.auth import InitDataInvalid, parse_init_data
-from src.config import API_INTERNAL_TOKEN
+from src.config import API_INTERNAL_TOKEN, REDIS_JOB_QUEUE, WORKER_ENABLED
 from src.credits_service import InsufficientCreditsError, reserve_job_credit
 from src.rate_limit import enforce_rate_limit
 from src.share_api import share_url_for_job
@@ -44,6 +44,20 @@ ALLOWED_UPLOAD_MIME = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 # Идемпотентность: ключ живёт 1 час. Юзер с ретраем (плохой коннект)
 # получит тот же job_id вместо дубля рендера.
 IDEMPOTENCY_TTL_SEC = 60 * 60
+
+
+def _get_render_queue_client(endpoint: str, telegram_user_id: int) -> object:
+    """Uploads create billable render jobs, so queue availability is mandatory."""
+    if not WORKER_ENABLED:
+        logger.warning(f"⛔ Render queue disabled: endpoint={endpoint} tg_user={telegram_user_id}")
+        raise HTTPException(status_code=503, detail="Render worker disabled")
+    try:
+        return redis_client.get_client()
+    except RuntimeError as exc:
+        logger.exception(
+            f"❌ Render queue unavailable: endpoint={endpoint} tg_user={telegram_user_id}: {exc}"
+        )
+        raise HTTPException(status_code=503, detail="Render queue unavailable") from exc
 
 
 class JobCreateRequest(BaseModel):
@@ -141,6 +155,7 @@ def _download_filename(job_id: str, content_type: str | None) -> str:
 @router.post("", response_model=JobCreateResponse)
 async def create_job(request: JobCreateRequest):
     """Создание задачи из бота — приходят Telegram file URL'ы."""
+    rds = _get_render_queue_client("/jobs", request.telegram_user_id)
     await enforce_rate_limit(
         scope="jobs",
         identifier=request.telegram_user_id,
@@ -153,7 +168,6 @@ async def create_job(request: JobCreateRequest):
     )
     job_id = str(uuid.uuid4())
     pool = db.get_pool()
-    rds = redis_client.get_client()
 
     try:
         async with pool.acquire() as conn:
@@ -185,7 +199,7 @@ async def create_job(request: JobCreateRequest):
         raise HTTPException(status_code=500, detail="Database insert failed") from db_err
 
     await rds.rpush(
-        "job_queue",
+        redis_client.key(REDIS_JOB_QUEUE),
         json.dumps(
             {
                 "job_id": job_id,
@@ -229,6 +243,7 @@ async def upload_job(
     username_raw = user.get("username")
     username = username_raw if isinstance(username_raw, str) else None
 
+    rds = _get_render_queue_client("/jobs/upload", telegram_user_id)
     await enforce_rate_limit(
         scope="jobs_upload",
         identifier=telegram_user_id,
@@ -236,8 +251,7 @@ async def upload_job(
         window_sec=UPLOAD_RATE_WINDOW_SEC,
     )
 
-    rds = redis_client.get_client()
-    idem_redis_key = f"idem:jobs_upload:{telegram_user_id}:{idempotency_key}"
+    idem_redis_key = redis_client.key(f"idem:jobs_upload:{telegram_user_id}:{idempotency_key}")
     existing_job_id = await rds.get(idem_redis_key)
     if existing_job_id:
         logger.info(
@@ -312,7 +326,7 @@ async def upload_job(
         raise HTTPException(status_code=500, detail="Database insert failed") from db_err
 
     await rds.rpush(
-        "job_queue",
+        redis_client.key(REDIS_JOB_QUEUE),
         json.dumps(
             {
                 "job_id": job_id,

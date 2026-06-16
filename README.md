@@ -54,12 +54,12 @@ Telegram → bot.py (long polling)
                             ├─ rate_limit (5 req/min на user)
                             ├─ Pydantic validation (URL prefix)
                             ├─ Postgres INSERT users + jobs
-                            └─ Redis RPUSH job_queue
+                            └─ Redis RPUSH {REDIS_KEY_PREFIX}{REDIS_JOB_QUEUE}
                                                 │
                                                 ▼
                             worker (asyncio task в lifespan)
                             │
-                            ├─ BLPOP job_queue
+                            ├─ BLPOP {REDIS_KEY_PREFIX}{REDIS_JOB_QUEUE}
                             ├─ download images → base64
                             ├─ Reve API remix
                             ├─ save static/res_<id>.jpg
@@ -178,6 +178,16 @@ git revert <bad_sha>
 ## Env vars
 
 См. [.env.example](.env.example) — список всех переменных с пояснениями. На Render задаются через Dashboard → Environment.
+
+### Redis policy for staging/prod
+
+Upstash free tier in this setup effectively gives us one Redis database, so staging and prod must share the same DB and stay isolated by namespace:
+
+- `REDIS_KEY_PREFIX=staging:` on staging, empty on prod;
+- `REDIS_JOB_QUEUE=staging:job_queue` on staging, `job_queue` on prod;
+- bot session keys, rate-limit counters, idempotency keys, and worker queue all go through the prefix helper.
+
+If we need full staging image generation, staging must have `REDIS_URL` configured and `WORKER_ENABLED=true`. If we only need API smoke tests, worker can stay disabled and the app will return 503 for render submission instead of crashing on startup.
 
 ## Документация
 

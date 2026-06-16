@@ -13,7 +13,14 @@ from telegram.ext import (
     filters,
 )
 
-from src.config import API_BASE_URL, API_INTERNAL_TOKEN, BOT_TOKEN, REDIS_URL, WEBAPP_URL
+from src.config import (
+    API_BASE_URL,
+    API_INTERNAL_TOKEN,
+    BOT_TOKEN,
+    REDIS_KEY_PREFIX,
+    REDIS_URL,
+    WEBAPP_URL,
+)
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,6 +40,10 @@ def _get_redis() -> redis.Redis:
     if _redis_client is None:
         _redis_client = redis.from_url(REDIS_URL, decode_responses=True)
     return _redis_client
+
+
+def _redis_key(name: str) -> str:
+    return f"{REDIS_KEY_PREFIX}{name}"
 
 
 SESSION_TTL_SEC = 600
@@ -114,7 +125,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo_file_id = update.message.photo[-1].file_id
 
     rds = _get_redis()
-    session_key = f"session:{user_id}:car_url"
+    session_key = _redis_key(f"session:{user_id}:car_url")
     cached_car_url = await rds.get(session_key)
 
     telegram_file = await context.bot.get_file(photo_file_id)
