@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src import db, jobs_api, payments_api, redis_client, share_api, storage
-from src.config import WEBAPP_URL
+from src.config import WEBAPP_URL, WORKER_ENABLED
 from src.credits_service import finalize_job_credit, refund_job_credit
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
 
@@ -34,15 +34,19 @@ async def lifespan(app: FastAPI):
     global worker_task
 
     await db.init_pool()
-    redis_client.init_client()
-    worker_task = asyncio.create_task(process_jobs_loop())
+    if WORKER_ENABLED:
+        redis_client.init_client()
+        worker_task = asyncio.create_task(process_jobs_loop())
+    else:
+        logger.info("🟢 ВОРКЕР ОТКЛЮЧЕН (WORKER_ENABLED=false)")
 
     yield
 
     if worker_task:
         worker_task.cancel()
     await db.close_pool()
-    await redis_client.close_client()
+    if WORKER_ENABLED:
+        await redis_client.close_client()
 
 
 app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)

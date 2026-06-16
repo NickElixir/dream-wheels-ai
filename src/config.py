@@ -11,6 +11,7 @@ import os
 # Storage
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
+WORKER_ENABLED = os.getenv("WORKER_ENABLED", "true").lower() == "true"
 
 # External APIs
 REVE_API_KEY = os.getenv("REVE_API_KEY")
