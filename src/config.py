@@ -34,6 +34,7 @@ WEBAPP_URL = os.getenv("WEBAPP_URL", "https://dream-wheels-ai-webapp.vercel.app"
 STARTER_GRANT_CREDITS = int(os.getenv("STARTER_GRANT_CREDITS", "3"))
 JOB_CREDIT_COST = int(os.getenv("JOB_CREDIT_COST", "1"))
 PAYMENTS_ENABLED = os.getenv("PAYMENTS_ENABLED", "true").lower() == "true"
+WEBAPP_DEV_AUTH_ENABLED = os.getenv("WEBAPP_DEV_AUTH_ENABLED", "false").lower() == "true"
 
 # Robokassa
 ROBOKASSA_MERCHANT_LOGIN = os.getenv("ROBOKASSA_MERCHANT_LOGIN", "")

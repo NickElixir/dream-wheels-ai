@@ -18,7 +18,7 @@ from pydantic import BaseModel, field_validator
 
 from src import db, redis_client, storage
 from src.auth import InitDataInvalid, parse_init_data
-from src.config import API_INTERNAL_TOKEN
+from src.config import API_INTERNAL_TOKEN, WEBAPP_DEV_AUTH_ENABLED
 from src.credits_service import InsufficientCreditsError, reserve_job_credit
 from src.rate_limit import enforce_rate_limit
 from src.share_api import share_url_for_job
@@ -205,6 +205,7 @@ async def upload_job(
     wheel_image: Annotated[UploadFile, File()],
     idempotency_key: Annotated[str, Form()],
     init_data: Annotated[str, Form()] = "",
+    telegram_user_id: Annotated[int | None, Form()] = None,
 ):
     """Создание задачи из webapp — приходят бинарники car/wheel + Telegram initData.
 
@@ -215,18 +216,25 @@ async def upload_job(
     4. Льём оба файла в Storage `raw`.
     5. Создаём job в БД, кидаем в Redis-очередь воркеру.
     """
+    username_raw = None
     try:
         parsed = parse_init_data(init_data)
+        user = parsed.get("user") or {}
+        parsed_telegram_user_id = user.get("id")
+        if not parsed_telegram_user_id:
+            raise HTTPException(status_code=401, detail="initData без user.id")
+        telegram_user_id = int(parsed_telegram_user_id)
+        username_raw = user.get("username")
     except InitDataInvalid as exc:
-        logger.warning(f"⛔ initData отклонён: {exc}")
-        raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
-
-    user = parsed.get("user") or {}
-    telegram_user_id = user.get("id")
-    if not telegram_user_id:
-        raise HTTPException(status_code=401, detail="initData без user.id")
-    telegram_user_id = int(telegram_user_id)
-    username_raw = user.get("username")
+        if not WEBAPP_DEV_AUTH_ENABLED or telegram_user_id is None:
+            logger.warning(f"⛔ initData отклонён: {exc}")
+            raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
+        logger.warning(
+            "⚠️ WEBAPP_DEV_AUTH_ENABLED fallback: tg_user=%s accepted without valid initData (%s)",
+            telegram_user_id,
+            exc,
+        )
+        telegram_user_id = int(telegram_user_id)
     username = username_raw if isinstance(username_raw, str) else None
 
     await enforce_rate_limit(

@@ -779,6 +779,10 @@ async function submitJob() {
     formData.append("car_image", state.files.car.blob, state.files.car.name);
     formData.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
     formData.append("init_data", HAS_TG ? tg.initData : "");
+    const telegramUserId = HAS_TG ? tg.initDataUnsafe?.user?.id : null;
+    if (telegramUserId != null) {
+        formData.append("telegram_user_id", String(telegramUserId));
+    }
     const idempotencyKey = makeIdempotencyKey();
     formData.append("idempotency_key", idempotencyKey);
     pushDebug("upload:key", idempotencyKey);
