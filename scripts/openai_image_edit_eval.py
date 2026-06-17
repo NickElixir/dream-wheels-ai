@@ -225,6 +225,14 @@ def _resolve_api_settings(provider: str) -> tuple[str, str, str]:
     return "openai", api_key, os.getenv("OPENAI_BASE_URL") or DEFAULT_OPENAI_API_BASE_URL
 
 
+def _resolve_stream_mode(*, resolved_provider: str, stream_requested: bool) -> bool:
+    """Default direct OpenAI image edits to streaming for transport stability."""
+
+    if stream_requested:
+        return True
+    return resolved_provider == "openai"
+
+
 def _read_streaming_image_edit_response(response: httpx.Response) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
     last_b64: str | None = None
@@ -427,19 +435,29 @@ def main() -> int:
     print(f"plan csv: {plan_csv}")
     try:
         resolved_provider, _, resolved_base_url = _resolve_api_settings(args.provider)
+        effective_stream = _resolve_stream_mode(
+            resolved_provider=resolved_provider,
+            stream_requested=args.stream,
+        )
         print(f"provider: {resolved_provider}")
         print(f"image edit url: {build_openai_image_edit_url(resolved_base_url)}")
+        print(f"stream mode: {'on' if effective_stream else 'off'}")
     except RuntimeError as exc:
         print(f"provider: unresolved ({exc})")
+        effective_stream = args.stream
 
     if not args.execute:
         print("dry-run only. Add --execute to run paid OpenAI image edits.")
         return 0
 
     try:
-        _resolve_api_settings(args.provider)
+        resolved_provider, _, _ = _resolve_api_settings(args.provider)
     except RuntimeError as exc:
         raise SystemExit(str(exc)) from exc
+    effective_stream = _resolve_stream_mode(
+        resolved_provider=resolved_provider,
+        stream_requested=args.stream,
+    )
 
     results_jsonl = args.output_dir / "openai_image_edit_results.jsonl"
     completed = _execute_plan(
@@ -448,7 +466,7 @@ def main() -> int:
         results_jsonl=results_jsonl,
         timeout=args.timeout,
         provider=args.provider,
-        stream=args.stream,
+        stream=effective_stream,
     )
     results_csv = args.output_dir / "openai_image_edit_results.csv"
     _write_csv(results_csv, completed)

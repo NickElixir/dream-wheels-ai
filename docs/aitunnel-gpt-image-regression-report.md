@@ -77,12 +77,47 @@ Corrected rerun status:
 | Model | Cases | Status | Read |
 | --- | --- | --- | --- |
 | `gpt-image-1.5` via AITUNNEL | `C1`, `N1`, `N2` | 3/3 completed after one `N2` retry | best current OpenAI-compatible fallback through AITUNNEL |
+| `gpt-image-2` via official OpenAI API | `C1`, `N1`, `N2` | 3/3 completed with streaming default | official masked wheel-edit baseline; now added into the same visual comparison pages |
 | Gemini 3 Pro Image Edit via fal.ai | `C1`, `N1`, `N2` | 3/3 completed | no longer black, but often fails the edit task by cropping or generating product-wheel style outputs |
 | Reve Direct masked corrected | `C1`, `N1`, `N2` | 3/3 completed | stable masked baseline |
 
 `gpt-image-1.5` note: the first `N2` request failed with
 `Server disconnected without sending a response`; a single retry completed.
 This means AITUNNEL edits are usable but still have transport-level instability.
+
+\newpage
+
+## Direct OpenAI GPT Image 2 Baseline
+
+After the AITUNNEL `gpt-image-2` failures, the same masked wheel-copy path was
+retested against the official OpenAI API using the same corrected silver
+reference prompt and the same `image[] + image[] + mask` request shape.
+
+What was tested:
+
+- non-stream `gpt-image-2` on `ivan-C1`, `quality=medium`: failed with
+  `Server disconnected without sending a response`
+- non-stream `gpt-image-2` on `ivan-C1`, `quality=low`: failed with
+  `Server disconnected without sending a response`
+- stream-enabled `gpt-image-2` on corrected local cases `ivan-C1`, `ivan-N1`,
+  `ivan-N2`, `quality=low`: 3/3 completed
+
+Direct OpenAI read:
+
+| Model | Cases | Status | Read |
+| --- | --- | --- | --- |
+| `gpt-image-2` via official OpenAI API | `C1`, `N1`, `N2` | 3/3 completed with streaming default | official baseline now confirmed for `source image + wheel reference + alpha mask` |
+| `gpt-image-2` via official OpenAI API | `C1` non-stream checks | 0/2 completed | plain non-stream response path still disconnected in this runner |
+
+Interpretation:
+
+- `gpt-image-2` is API-accessible and does support the required wheel-edit
+  workflow on the official OpenAI endpoint.
+- The earlier blocker was not model availability.
+- In this repo's current runner, streaming is the stable transport path for
+  direct OpenAI image edits.
+- Those successful direct OpenAI outputs are now inserted into the same
+  corrected rerun comparison pages as the AITUNNEL, Gemini, and Reve examples.
 
 \newpage
 
@@ -133,6 +168,7 @@ Current corrected rerun:
 | Model | Cases | Status | Result |
 | --- | --- | --- | --- |
 | `gpt-image-1.5` via AITUNNEL | `C1`, `N1`, `N2` | completed after one `N2` retry | usable OpenAI-compatible fallback |
+| `gpt-image-2` via official OpenAI API | `C1`, `N1`, `N2` | completed with streaming default | confirmed official baseline for masked wheel edits |
 | Gemini 3 Pro Image Edit via fal.ai | `C1`, `N1`, `N2` | completed | still not reliable for masked car edits |
 | Reve Direct masked | `C1`, `N1`, `N2` | completed | stable masked baseline |
 | `gpt-image-1.5` via AITUNNEL | rain stress cases | 2/3 completed; one case failed twice | transport instability remains |
@@ -149,13 +185,23 @@ AITUNNEL endpoint diagnostics:
 | `gpt-image-1-mini` | `/v1/images/edits` with `image[] + image[] + mask` | works |
 | `gpt-image-1` | `/v1/images/edits` | fails: `Server disconnected without sending a response.` |
 
+Official OpenAI endpoint diagnostics:
+
+| Model | Endpoint | Status |
+| --- | --- | --- |
+| `gpt-image-2` | `/v1/images/edits` non-stream | failed twice on `ivan-C1`: `Server disconnected without sending a response.` |
+| `gpt-image-2` | `/v1/images/edits` with streaming events | works for `ivan-C1`, `ivan-C2`, `ivan-N2` |
+
 Conclusion:
 
 - AITUNNEL now supports the required `image[] + mask` request shape for
   `gpt-image-1.5` and `gpt-image-1-mini`.
 - `gpt-image-2` still fails on `/v1/images/edits`, including simpler edit
   control requests.
-- For the current wheel-copy eval, `gpt-image-1.5` is the usable AITUNNEL model.
+- On the official OpenAI API, `gpt-image-2` is a confirmed masked wheel-edit
+  baseline when streaming is enabled.
+- For the current wheel-copy eval, `gpt-image-1.5` remains the usable AITUNNEL
+  fallback while `gpt-image-2` is tested directly on OpenAI.
 
 ## GPT Image 2 Decision
 
@@ -173,11 +219,22 @@ Current AITUNNEL status:
 - `gpt-image-2` still fails for `/v1/images/edits`.
 - The failure is transport-level disconnect, not a JSON validation error.
 
+Current official OpenAI status:
+
+- `gpt-image-2` works for `/v1/images/edits` on the exact masked wheel-copy
+  request shape used by this project.
+- In this repo's runner, the stable direct path is streaming mode; two
+  non-stream checks on `ivan-C1` disconnected before a response body arrived.
+
 Operational decision:
 
-- Do not block the report on `gpt-image-2`.
+- Do not block the model evaluation on `gpt-image-2` availability.
+- Treat official OpenAI `gpt-image-2` as a confirmed baseline for masked wheel
+  edits.
+- Keep stream mode enabled by default for direct OpenAI image-edit runs in this
+  repo.
 - Use AITUNNEL `gpt-image-1.5` as the current OpenAI-compatible fallback for
-  demos and regression checks.
+  AITUNNEL demos and gateway regression checks.
 - Do not call `gpt-image-1.5` a full Reve replacement yet; it needs more cases
   and stability checks.
 - Keep asking AITUNNEL support to fix `/v1/images/edits` for `gpt-image-2`.
@@ -195,6 +252,8 @@ Operational decision:
 
 - Corrected rerun summary CSV:
   `docs/assets/aitunnel-gpt-image-regression/corrected-rerun-c1-n1-n2-summary.csv`
+- Official OpenAI baseline summary CSV:
+  `docs/assets/aitunnel-gpt-image-regression/official-openai-gpt-image-2-summary.csv`
 - Rain stress summary CSV:
   `docs/assets/aitunnel-gpt-image-regression/rain-rerun-summary.csv`
 
@@ -202,6 +261,10 @@ Operational decision:
 
 - `tmp/openai-image-edit-eval/results-aitunnel-gpt-image-15-corrected-c1-n1-n2/openai_image_edit_results.csv`
 - `tmp/openai-image-edit-eval/results-aitunnel-gpt-image-15-corrected-n2-retry/openai_image_edit_results.csv`
+- `tmp/openai-image-edit-eval/direct-openai-gpt-image-2-c1-medium-corrected/openai_image_edit_results.csv`
+- `tmp/openai-image-edit-eval/direct-openai-gpt-image-2-c1-low-corrected/openai_image_edit_results.csv`
+- `tmp/openai-image-edit-eval/direct-openai-gpt-image-2-corrected-local-3cases-stream-default/openai_image_edit_results.csv`
+- `tmp/openai-image-edit-eval/direct-openai-gpt-image-2-n1-low-corrected-stream-default/openai_image_edit_results.csv`
 - `tmp/fal-inpaint-eval/results-corrected-silver-gemini-c1-n1-n2/fal_inpaint_results.csv`
 - `tmp/reve-image-edit-eval/results-corrected-silver-masked-c1-n1-n2/reve_image_edit_results.csv`
 - `tmp/rain-wheel-eval/results-aitunnel-gpt-image-15/openai_image_edit_results.csv`

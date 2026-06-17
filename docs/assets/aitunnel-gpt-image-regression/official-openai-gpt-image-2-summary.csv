@@ -1,0 +1,4 @@
+case_id,condition,model,provider,status,transport_mode,notes,output_image
+ivan-C1,daylight control,OpenAI gpt-image-2,Official OpenAI API,completed,stream default low,"official API edit succeeded with source image + wheel reference + alpha mask",tmp/openai-image-edit-eval/direct-openai-gpt-image-2-corrected-local-3cases-stream-default/outputs/ivan-C1__openai-gpt-image-2.png
+ivan-N1,night,OpenAI gpt-image-2,Official OpenAI API,completed,stream default low,"official API edit succeeded with source image + wheel reference + alpha mask",tmp/openai-image-edit-eval/direct-openai-gpt-image-2-n1-low-corrected-stream-default/outputs/ivan-N1__openai-gpt-image-2.png
+ivan-N2,night wet-looking,OpenAI gpt-image-2,Official OpenAI API,completed,stream default low,"official API edit succeeded with source image + wheel reference + alpha mask",tmp/openai-image-edit-eval/direct-openai-gpt-image-2-corrected-local-3cases-stream-default/outputs/ivan-N2__openai-gpt-image-2.png

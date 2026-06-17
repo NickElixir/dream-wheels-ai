@@ -17,6 +17,7 @@ repos:
       - id: check-toml                   # валидирует TOML
       - id: check-added-large-files      # блокирует случайный коммит больших бинарников
         args: ["--maxkb=500"]
+        exclude: ^docs/.*\.pdf$
       - id: detect-private-key           # ловит SSH/PGP-ключи
       - id: check-merge-conflict         # ловит маркеры <<<<<< в коде
 

@@ -1,10 +1,13 @@
 case_id,case_label,model,provider,status,ref_passed,mask_passed,output
 ivan-C1,daylight control,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,completed,yes,yes,tmp/openai-image-edit-eval/results-aitunnel-gpt-image-15-corrected-c1-n1-n2/outputs/ivan-C1__openai-gpt-image-1.5.png
+ivan-C1,daylight control,OpenAI gpt-image-2,Official OpenAI API,completed,yes,yes,tmp/openai-image-edit-eval/direct-openai-gpt-image-2-corrected-local-3cases-stream-default/outputs/ivan-C1__openai-gpt-image-2.png
 ivan-C1,daylight control,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,yes,yes,tmp/fal-inpaint-eval/results-corrected-silver-gemini-c1-n1-n2/downloaded/ivan-C1__gemini-3-pro-rim-mask.png
 ivan-C1,daylight control,Reve Direct masked corrected,Reve API / image remix,completed,yes,yes,tmp/reve-image-edit-eval/results-corrected-silver-masked-c1-n1-n2/outputs/ivan-C1__reve-direct-masked.png
 ivan-N1,night,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,completed,yes,yes,tmp/openai-image-edit-eval/results-aitunnel-gpt-image-15-corrected-c1-n1-n2/outputs/ivan-N1__openai-gpt-image-1.5.png
+ivan-N1,night,OpenAI gpt-image-2,Official OpenAI API,completed,yes,yes,tmp/openai-image-edit-eval/direct-openai-gpt-image-2-n1-low-corrected-stream-default/outputs/ivan-N1__openai-gpt-image-2.png
 ivan-N1,night,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,yes,yes,tmp/fal-inpaint-eval/results-corrected-silver-gemini-c1-n1-n2/downloaded/ivan-N1__gemini-3-pro-rim-mask.png
 ivan-N1,night,Reve Direct masked corrected,Reve API / image remix,completed,yes,yes,tmp/reve-image-edit-eval/results-corrected-silver-masked-c1-n1-n2/outputs/ivan-N1__reve-direct-masked.png
 ivan-N2,night wet-looking,AITUNNEL gpt-image-1.5,AITUNNEL / OpenAI-compatible edits,completed,yes,yes,tmp/openai-image-edit-eval/results-aitunnel-gpt-image-15-corrected-n2-retry/outputs/ivan-N2__openai-gpt-image-1.5.png
+ivan-N2,night wet-looking,OpenAI gpt-image-2,Official OpenAI API,completed,yes,yes,tmp/openai-image-edit-eval/direct-openai-gpt-image-2-corrected-local-3cases-stream-default/outputs/ivan-N2__openai-gpt-image-2.png
 ivan-N2,night wet-looking,Gemini 3 Pro Image Edit corrected,fal.ai / gemini-3-pro-image-preview/edit,completed,yes,yes,tmp/fal-inpaint-eval/results-corrected-silver-gemini-c1-n1-n2/downloaded/ivan-N2__gemini-3-pro-rim-mask.png
 ivan-N2,night wet-looking,Reve Direct masked corrected,Reve API / image remix,completed,yes,yes,tmp/reve-image-edit-eval/results-corrected-silver-masked-c1-n1-n2/outputs/ivan-N2__reve-direct-masked.png
