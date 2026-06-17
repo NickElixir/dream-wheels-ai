@@ -353,9 +353,9 @@ async def mark_payment_paid(
             'purchase_grant',
             $2,
             $3,
-            $4,
+            $4::uuid,
             $5,
-            jsonb_build_object('invoice_id', $6, 'out_sum', $7, 'is_test', $8)
+            jsonb_build_object('invoice_id', $6::bigint, 'out_sum', $7::text, 'is_test', $8::boolean)
         )
         ON CONFLICT (idempotency_key) DO NOTHING
         """,

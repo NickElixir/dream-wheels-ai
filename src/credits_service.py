@@ -145,7 +145,7 @@ async def reserve_job_credit(
             $3,
             $4::uuid,
             $5,
-            jsonb_build_object('credit_cost', $6)
+            jsonb_build_object('credit_cost', $6::int)
         )
         ON CONFLICT (idempotency_key) DO NOTHING
         """,
@@ -273,7 +273,7 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
             $3,
             $4::uuid,
             $5,
-            jsonb_build_object('credit_cost', $6)
+            jsonb_build_object('credit_cost', $6::int)
         )
         ON CONFLICT (idempotency_key) DO NOTHING
         """,
