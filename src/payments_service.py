@@ -128,8 +128,6 @@ def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) 
         password1,
         f"Shp_payment_id={payment_id}",
     ]
-    if ROBOKASSA_IS_TEST:
-        signature_parts.append("IsTest=1")
     signature_value = _robokassa_digest(":".join(signature_parts))
 
     params = {
@@ -270,8 +268,6 @@ def verify_result_signature(
         password2,
         f"Shp_payment_id={payment_id}",
     ]
-    if is_test:
-        expected_parts.append("IsTest=1")
     expected = _robokassa_digest(":".join(expected_parts))
     return hmac.compare_digest(expected.lower(), signature_value.lower())
 
