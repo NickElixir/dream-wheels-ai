@@ -35,8 +35,8 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 class TopUpCreateRequest(BaseModel):
     amount_rub: str
-    pricing_version: str
-    source_screen: str
+    pricing_version: str = "credits-v1"
+    source_screen: str = "cabinet"
     email: str
     init_data: str | None = None
     telegram_user_id: int | None = None
