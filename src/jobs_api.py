@@ -17,7 +17,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, field_validator
 
 from src import db, redis_client, storage
-from src.auth import InitDataInvalid, parse_init_data
+from src.auth import InitDataInvalid, get_init_data_debug_context, parse_init_data
 from src.config import API_INTERNAL_TOKEN, WEBAPP_DEV_AUTH_ENABLED
 from src.credits_service import InsufficientCreditsError, reserve_job_credit
 from src.rate_limit import enforce_rate_limit
@@ -111,6 +111,11 @@ def _telegram_user_id_from_feedback_request(
         try:
             parsed = parse_init_data(request.init_data)
         except InitDataInvalid as exc:
+            logger.warning(
+                "⛔ feedback auth failed reason=%s debug=%s",
+                exc,
+                get_init_data_debug_context(request.init_data),
+            )
             raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
         user = parsed.get("user") or {}
         telegram_user_id = user.get("id")
@@ -227,7 +232,11 @@ async def upload_job(
         username_raw = user.get("username")
     except InitDataInvalid as exc:
         if not WEBAPP_DEV_AUTH_ENABLED or telegram_user_id is None:
-            logger.warning(f"⛔ initData отклонён: {exc}")
+            logger.warning(
+                "⛔ jobs upload auth failed reason=%s debug=%s",
+                exc,
+                get_init_data_debug_context(init_data),
+            )
             raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
         logger.warning(
             "⚠️ WEBAPP_DEV_AUTH_ENABLED fallback: tg_user=%s accepted without valid initData (%s)",

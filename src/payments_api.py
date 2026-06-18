@@ -10,7 +10,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, field_validator
 
 from src import db
-from src.auth import InitDataInvalid, parse_init_data
+from src.auth import InitDataInvalid, get_init_data_debug_context, parse_init_data
 from src.config import PAYMENTS_ENABLED
 from src.credits_service import get_balance
 from src.payments_service import (
@@ -69,6 +69,11 @@ def _resolve_identity(
         try:
             parsed = parse_init_data(init_data)
         except InitDataInvalid as exc:
+            logger.warning(
+                "⛔ payments auth failed reason=%s debug=%s",
+                exc,
+                get_init_data_debug_context(init_data),
+            )
             raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
         user = parsed.get("user") or {}
         resolved_user_id = user.get("id")
