@@ -124,7 +124,7 @@ def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) 
         ROBOKASSA_MERCHANT_LOGIN,
         f"{intent.amount_rub:.2f}",
         str(invoice_id),
-        encoded_receipt,
+        receipt_json,
         password1,
         f"Shp_payment_id={payment_id}",
     ]
