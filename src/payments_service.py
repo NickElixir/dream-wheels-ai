@@ -124,7 +124,7 @@ def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) 
         ROBOKASSA_MERCHANT_LOGIN,
         f"{intent.amount_rub:.2f}",
         str(invoice_id),
-        receipt_json,
+        encoded_receipt,
         password1,
         f"Shp_payment_id={payment_id}",
     ]
@@ -135,14 +135,15 @@ def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) 
         "OutSum": f"{intent.amount_rub:.2f}",
         "InvId": str(invoice_id),
         "Description": "Dream Wheels AI credits",
-        "Receipt": encoded_receipt,
         "Email": intent.receipt_email,
         "Shp_payment_id": payment_id,
         "SignatureValue": signature_value,
     }
     if ROBOKASSA_IS_TEST:
         params["IsTest"] = "1"
-    return f"https://auth.robokassa.ru/Merchant/Index.aspx?{urlencode(params)}"
+    query_string = urlencode(params)
+    query_string += f"&Receipt={encoded_receipt}"
+    return f"https://auth.robokassa.ru/Merchant/Index.aspx?{query_string}"
 
 
 async def create_topup_payment(
