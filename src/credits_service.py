@@ -83,6 +83,7 @@ async def _insert_starter_grant_ledger_entry(
                 delta_credits,
                 amount_value,
                 currency,
+                idempotency_key,
                 metadata
             )
             VALUES (
@@ -91,11 +92,14 @@ async def _insert_starter_grant_ledger_entry(
                 $2,
                 NULL,
                 'RUB',
+                $3,
                 jsonb_build_object('kind', 'starter_grant')
             )
+            ON CONFLICT (idempotency_key) DO NOTHING
             """,
             user_id,
             STARTER_GRANT_CREDITS,
+            f"starter_grant:{user_id}",
         )
     except asyncpg.PostgresError:
         logger.exception(f"❌ legacy starter grant ledger insert failed for user_id={user_id}")
