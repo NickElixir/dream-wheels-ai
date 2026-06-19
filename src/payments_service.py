@@ -216,6 +216,30 @@ async def list_payments_for_user(conn: asyncpg.Connection, *, user_id: int) -> l
     return [serialize_payment_row(row) for row in rows]
 
 
+async def get_starter_grant_for_user(
+    conn: asyncpg.Connection,
+    *,
+    user_id: int,
+) -> dict[str, Any] | None:
+    row = await conn.fetchrow(
+        """
+        SELECT credits_delta, created_at
+        FROM credit_ledger
+        WHERE user_id = $1
+          AND event_type = 'trial_grant'
+        ORDER BY created_at ASC
+        LIMIT 1
+        """,
+        user_id,
+    )
+    if row is None:
+        return None
+    return {
+        "credits": int(row["credits_delta"]),
+        "created_at": row["created_at"].isoformat(),
+    }
+
+
 def serialize_payment_row(row: asyncpg.Record) -> dict[str, Any]:
     updated_at = row["paid_at"] or row["failed_at"] or row["updated_at"] or row["created_at"]
     return {
@@ -224,6 +248,7 @@ def serialize_payment_row(row: asyncpg.Record) -> dict[str, Any]:
         "status": row["status"],
         "amount": float(row["amount_rub"]),
         "credits_granted": int(row["credits_granted"]),
+        "receipt_email": row["receipt_email"],
         "pricing_version": row["pricing_version"],
         "confirmation_url": None,
         "created_at": row["created_at"].isoformat(),

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0a0b0e">
     <title>Dream Wheels AI</title>
-    <link rel="stylesheet" href="/style.css?v=20260618-4">
+    <link rel="stylesheet" href="/style.css?v=20260619-1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -120,14 +120,14 @@
                     <p class="eyebrow" data-i18n="wallet.eyebrow">Кабинет</p>
                     <h1 data-i18n="wallet.title">Мой Dream Wheels AI</h1>
                     <p class="lede" data-i18n="wallet.lede">
-                        Здесь видны баланс, последний счет и быстрый платежный flow в три шага.
+                        Здесь видны баланс, последний счет и быстрый платежный flow в три шага
                     </p>
                 </div>
                 <section class="balance-tile">
                     <div class="balance-badge">💎</div>
                     <div class="balance-value"><span data-balance-value>3</span></div>
                     <div class="balance-unit">credits</div>
-                    <div class="balance-note" data-balance-note data-i18n="wallet.starterGrant">Стартовый грант</div>
+                    <div class="balance-note" data-balance-note hidden></div>
                 </section>
             </section>
 
@@ -137,15 +137,14 @@
                         <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последний счет</p>
                         <h2 data-i18n="wallet.lastInvoiceTitle">Статус виден сразу после оплаты</h2>
                     </div>
-                    <span class="status-pill neutral" data-payment-status>Стартовый грант</span>
+                    <span class="status-pill neutral" data-payment-status>Нет платежей</span>
                 </div>
                 <p class="panel-note warning-note" data-last-payment-error hidden></p>
                 <div class="payment-card payment-card-grant" data-last-invoice-empty>
                     <div>
-                        <div class="payment-card-title" data-i18n="wallet.registrationGrantTitle">Стартовый грант</div>
-                        <div class="payment-card-meta" data-i18n="wallet.registrationGrantMeta">После первого запуска на баланс начисляются 3 credits.</div>
+                        <div class="payment-card-title" data-i18n="wallet.noPaymentsTitle">Платежей пока нет</div>
+                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Первый подарок появится в истории платежей</div>
                     </div>
-                    <div class="payment-card-badge" data-registration-grant-badge data-i18n="wallet.registrationGrantBadge">3 credits</div>
                 </div>
                 <div class="payment-card" data-last-invoice-card hidden>
                     <div>
@@ -198,7 +197,7 @@
                             <span class="topup-step-index">1</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.stepChooseTitle">Выберите пакет</div>
-                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Пакетный режим активен по умолчанию.</div>
+                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Пакетный режим активен по умолчанию</div>
                             </div>
                         </div>
                         <div class="topup-mode-switch" hidden>
@@ -253,7 +252,7 @@
                             <span class="topup-step-index">2</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.emailLabel">Email для чека</div>
-                                <div class="topup-step-sub" data-i18n="wallet.emailHint">Используем его для чека и подтверждения оплаты.</div>
+                                <div class="topup-step-sub" data-i18n="wallet.emailHint">Используем его для чека и подтверждения оплаты</div>
                             </div>
                         </div>
                         <label class="custom-topup-label" for="wallet-email" data-i18n="wallet.emailLabel">Email для чека</label>
@@ -266,7 +265,7 @@
                             <span class="topup-step-index">3</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.stepConfirm">Подтверждение</div>
-                                <div class="topup-step-sub" data-i18n="wallet.confirmHint">Проверьте пакет перед переходом в Robokassa.</div>
+                                <div class="topup-step-sub" data-i18n="wallet.confirmHint">Проверьте пакет перед переходом в Robokassa</div>
                             </div>
                         </div>
                         <div class="topup-summary">
@@ -283,9 +282,7 @@
                 <summary>
                     <span>
                         <strong data-i18n="wallet.paymentHistory">История платежей</strong>
-                        <span class="summary-hint" data-i18n="wallet.paymentHistoryHint">
-                            Скрыта по умолчанию
-                        </span>
+                        <span class="summary-hint" data-i18n="wallet.paymentHistoryHint">Скрыта по умолчанию</span>
                     </span>
                     <span class="summary-action" data-i18n="wallet.openHistory">Открыть</span>
                 </summary>
@@ -387,6 +384,6 @@
         </section>
     </main>
 
-    <script src="/app.js?v=20260618-4" type="module"></script>
+    <script src="/app.js?v=20260619-1" type="module"></script>
 </body>
 </html>

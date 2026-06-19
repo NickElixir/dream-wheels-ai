@@ -19,6 +19,7 @@ from src.payments_service import (
     PaymentValidationError,
     TopUpIntent,
     create_topup_payment,
+    get_starter_grant_for_user,
     get_payment_status_by_invoice,
     list_payments_for_user,
     mark_payment_paid,
@@ -100,7 +101,8 @@ async def get_payment_cabinet(
             user_id = await ensure_user(conn, resolved_tg_user_id, username)
             balance = await get_balance(conn, user_id)
             payments = await list_payments_for_user(conn, user_id=user_id)
-    return {"balance": balance, "payments": payments}
+            starter_grant = await get_starter_grant_for_user(conn, user_id=user_id)
+    return {"balance": balance, "payments": payments, "starter_grant": starter_grant}
 
 
 @router.get("/{invoice_id}/status")

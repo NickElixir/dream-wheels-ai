@@ -114,11 +114,11 @@ const I18N = {
         wallet: {
             eyebrow: "Кабинет",
             title: "Мой Dream Wheels AI",
-            lede: "Здесь видны баланс, последний счет и быстрый платежный flow в три шага.",
-            starterGrant: "Стартовый грант",
+            lede: "Здесь видны баланс, последний счет и быстрый платежный flow в три шага",
+            gift: "Подарок",
             lastInvoiceLabel: "Последний счет",
             lastInvoiceTitle: "Статус виден сразу после оплаты",
-            lastInvoiceEmpty: "Оплат еще не было. После первой покупки здесь появится последний счет.",
+            lastInvoiceEmpty: "Оплат еще не было. После первой покупки здесь появится последний счет",
             invoiceAmount: "Сумма",
             invoiceNumber: "Счет",
             invoiceEmail: "Email",
@@ -131,41 +131,43 @@ const I18N = {
             stepEmail: "Email",
             stepConfirm: "Подтверждение",
             stepChooseTitle: "Выберите пакет",
-            stepChooseSub: "Пакетный режим активен по умолчанию.",
+            stepChooseSub: "Пакетный режим активен по умолчанию",
             chooseAmount: "Выбор суммы",
             nextToEmail: "Продолжить",
             modePackage: "Пакет",
             modeCustom: "Своя сумма",
             customAmountLabel: "Своя сумма",
             emailLabel: "Email для чека",
-            emailHint: "Используем его для чека и подтверждения оплаты.",
+            emailHint: "Используем его для чека и подтверждения оплаты",
             back: "Назад",
             nextToConfirm: "Продолжить",
             confirmAmount: "Сумма",
             confirmEmail: "Email",
             confirmCredits: "Начисление",
-            confirmHint: "Проверьте пакет перед переходом в Robokassa.",
+            confirmHint: "Проверьте пакет перед переходом в Robokassa",
             pay: "Оплатить",
-            paymentNote: "Оплата откроется через Robokassa. Credits начисляются после подтверждения.",
+            paymentNote: "Оплата откроется через Robokassa. Credits начисляются после подтверждения",
             paymentHistory: "История платежей",
             paymentHistoryHint: "Скрыта по умолчанию",
             openHistory: "Открыть",
             emptyHistory: "Платежей пока нет",
+            noPaymentsTitle: "Платежей пока нет",
+            noPaymentsMeta: "Первый подарок появится в истории платежей",
             loading: "Загружаем кабинет...",
             refreshInvoice: "Обновить счет",
             refreshingInvoice: "Обновляем статус счета...",
             openingPayment: "Открываем Robokassa...",
             paymentSuccess: "Оплата подтверждена. Обновляем баланс.",
             paymentFail: "Платеж не завершен.",
-            pendingFresh: "Счет создан. Если вы вернулись из Robokassa, обновите его через несколько секунд.",
-            pendingStale: "Счет все еще ждет подтверждения. Если оплата не прошла, он останется в ожидании, пока мы не получим финальный статус. Обновите счет позже.",
-            authRequired: "Откройте Mini App в Telegram или добавьте ?tgUser=123456 для staging fallback.",
-            fallbackDisabled: "Web fallback выключен на backend.",
-            registrationGrantTitle: "Стартовый грант",
-            registrationGrantMeta: "После первого запуска на баланс начисляются 3 credits.",
-            registrationGrantBadge: "3 credits",
+            pendingFresh: "Счет создан. Если вы вернулись из Robokassa, обновите его через несколько секунд",
+            pendingStale: "Счет все еще ждет подтверждения. Если оплата не прошла, он останется в ожидании, пока мы не получим финальный статус. Обновите счет позже",
+            authRequired: "Откройте Mini App в Telegram или добавьте ?tgUser=123456 для staging fallback",
+            fallbackDisabled: "Web fallback выключен на backend",
+            starterGrantTitle: "Первый подарок",
+            starterGrantMeta: "{credits} credits · начислено при первом входе",
+            starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
-            summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой.",
+            summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
             pendingInvoice: "Счет #{invoiceId} · {amount}",
@@ -301,11 +303,11 @@ const I18N = {
         wallet: {
             eyebrow: "Cabinet",
             title: "My Dream Wheels AI",
-            lede: "Balance, last invoice, and a three-step payment flow in one place.",
-            starterGrant: "Starter grant",
+            lede: "Balance, last invoice, and a three-step payment flow in one place",
+            gift: "Gift",
             lastInvoiceLabel: "Last invoice",
             lastInvoiceTitle: "Status appears immediately after payment",
-            lastInvoiceEmpty: "No payments yet. The first purchase will show up here as the last invoice.",
+            lastInvoiceEmpty: "No payments yet. The first purchase will show up here as the last invoice",
             invoiceAmount: "Amount",
             invoiceNumber: "Invoice",
             invoiceEmail: "Email",
@@ -318,41 +320,43 @@ const I18N = {
             stepEmail: "Email",
             stepConfirm: "Confirm",
             stepChooseTitle: "Choose a package",
-            stepChooseSub: "Package mode stays enabled by default.",
+            stepChooseSub: "Package mode stays enabled by default",
             chooseAmount: "Amount selection",
             nextToEmail: "Continue",
             modePackage: "Package",
             modeCustom: "Custom",
             customAmountLabel: "Custom amount",
             emailLabel: "Receipt email",
-            emailHint: "Used for the receipt and payment confirmation.",
+            emailHint: "Used for the receipt and payment confirmation",
             back: "Back",
             nextToConfirm: "Continue",
             confirmAmount: "Amount",
             confirmEmail: "Email",
             confirmCredits: "Credits",
-            confirmHint: "Review the package before opening Robokassa.",
+            confirmHint: "Review the package before opening Robokassa",
             pay: "Pay",
-            paymentNote: "Robokassa opens on tap. Credits are applied after confirmation.",
+            paymentNote: "Robokassa opens on tap. Credits are applied after confirmation",
             paymentHistory: "Payment history",
             paymentHistoryHint: "Collapsed by default",
             openHistory: "Open",
             emptyHistory: "No payments yet",
+            noPaymentsTitle: "No payments yet",
+            noPaymentsMeta: "The first gift will appear in payment history",
             loading: "Loading cabinet...",
             refreshInvoice: "Refresh invoice",
             refreshingInvoice: "Refreshing invoice status...",
             openingPayment: "Opening Robokassa...",
             paymentSuccess: "Payment confirmed. Refreshing balance.",
             paymentFail: "Payment was not completed.",
-            pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds.",
-            pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later.",
-            authRequired: "Open the Mini App in Telegram or add ?tgUser=123456 for staging fallback.",
-            fallbackDisabled: "Web fallback is disabled on the backend.",
-            registrationGrantTitle: "Starter grant",
-            registrationGrantMeta: "Your first launch credits are added to the balance automatically.",
-            registrationGrantBadge: "3 credits",
+            pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds",
+            pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later",
+            authRequired: "Open the Mini App in Telegram or add ?tgUser=123456 for staging fallback",
+            fallbackDisabled: "Web fallback is disabled on the backend",
+            starterGrantTitle: "Starter gift",
+            starterGrantMeta: "{credits} credits · added on first launch",
+            starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
-            summaryEmptyMeta: "The selected package will appear here before payment.",
+            summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
             pendingInvoice: "Invoice #{invoiceId} · {amount}",
@@ -478,6 +482,7 @@ const state = {
     email: "",
     balance: null,
     payments: [],
+    starterGrant: null,
     walletBusy: false,
     walletMessage: "",
     paymentReturnState: "",
@@ -708,6 +713,18 @@ function getLastInvoice() {
     return state.payments[0] || null;
 }
 
+function getHistoryItems() {
+    const items = [];
+    if (state.starterGrant) {
+        items.push({
+            type: "starter_grant",
+            credits: state.starterGrant.credits,
+            createdAt: state.starterGrant.createdAt,
+        });
+    }
+    return items.concat(state.payments);
+}
+
 function formatPaymentStatus(status) {
     if (status === "paid") return t("paid");
     if (status === "pending") return t("pending");
@@ -766,18 +783,19 @@ function renderWallet() {
     const statusPill = document.querySelector("[data-last-invoice-status]");
     const headingStatus = document.querySelector("[data-payment-status]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
-    const grantBadge = document.querySelector("[data-registration-grant-badge]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
-    if (balanceNote) balanceNote.textContent = t("wallet.starterGrant");
-    if (grantBadge) grantBadge.textContent = t("wallet.registrationGrantBadge");
+    if (balanceNote) {
+        balanceNote.hidden = true;
+        balanceNote.textContent = "";
+    }
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
         if (cardBlock) cardBlock.hidden = true;
         if (cardDetails) cardDetails.hidden = true;
         if (headingStatus) {
-            headingStatus.textContent = state.balance === null ? t("wallet.loading") : t("starter");
+            headingStatus.textContent = state.balance === null ? t("wallet.loading") : t("wallet.noPaymentsTitle");
             headingStatus.className = "status-pill neutral";
         }
         if (refreshButton) refreshButton.hidden = true;
@@ -820,19 +838,33 @@ function renderWallet() {
     }
 
     if (!history) return;
-    if (!state.payments.length) {
+    const historyItems = getHistoryItems();
+    if (!historyItems.length) {
         history.innerHTML = `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">🧾</span><span>${t("wallet.emptyHistory")}</span></div>`;
     } else {
-        history.innerHTML = state.payments
-            .map((payment) => `
-                <div class="history-item payment-history-item">
-                    <div>
-                        <strong>#${String(payment.invoiceId).padStart(6, "0")} · ${formatRub(payment.amount)}</strong>
-                        <div class="meta">${payment.email || "—"} · ${payment.createdAt} · ${payment.credits} ${t("credits")}</div>
+        history.innerHTML = historyItems
+            .map((item) => {
+                if (item.type === "starter_grant") {
+                    return `
+                        <div class="history-item payment-history-item grant-history-item">
+                            <div>
+                                <strong>${t("wallet.starterGrantTitle")}</strong>
+                                <div class="meta">${formatTemplate("wallet.starterGrantMeta", { credits: item.credits })}</div>
+                            </div>
+                            <span class="status-pill success">${t("wallet.gift")}</span>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="history-item payment-history-item">
+                        <div>
+                            <strong>#${String(item.invoiceId).padStart(6, "0")} · ${formatRub(item.amount)}</strong>
+                            <div class="meta">${item.email || "—"} · ${item.createdAt} · ${item.credits} ${t("credits")}</div>
+                        </div>
+                        <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
-                    <span class="status-pill ${statusTone(payment.status)}">${formatPaymentStatus(payment.status)}</span>
-                </div>
-            `)
+                `;
+            })
             .join("");
     }
 
@@ -930,13 +962,21 @@ async function loadCabinet({ silent = false } = {}) {
         state.payments = (cabinet.payments || []).map((payment) => ({
             invoiceId: payment.invoice_id,
             amount: payment.amount,
-            email: payment.email || "",
+            email: payment.receipt_email || payment.email || "",
             credits: payment.credits_granted || 0,
             createdAtIso: payment.created_at,
             createdAtMs: Date.parse(payment.created_at),
             createdAt: new Date(payment.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
             status: payment.status,
         }));
+        state.starterGrant = cabinet.starter_grant
+            ? {
+                credits: Number(cabinet.starter_grant.credits || 0),
+                createdAtIso: cabinet.starter_grant.created_at,
+                createdAtMs: Date.parse(cabinet.starter_grant.created_at),
+                createdAt: new Date(cabinet.starter_grant.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
+            }
+            : null;
         const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
         if (rememberedEmail && !state.email) {
             state.email = rememberedEmail;
