@@ -39,6 +39,7 @@ async def ensure_credit_account(conn: asyncpg.Connection, user_id: int) -> int:
         """,
         user_id,
     )
+    has_trial_used_at_column = True
     try:
         account = await conn.fetchrow(
             """
@@ -51,6 +52,7 @@ async def ensure_credit_account(conn: asyncpg.Connection, user_id: int) -> int:
         )
         trial_used_at = account["trial_used_at"] if account is not None else None
     except asyncpg.UndefinedColumnError:
+        has_trial_used_at_column = False
         account = await conn.fetchrow(
             """
             SELECT balance
@@ -69,17 +71,29 @@ async def ensure_credit_account(conn: asyncpg.Connection, user_id: int) -> int:
         if await _has_starter_grant_ledger_entry(conn, user_id):
             return balance
         balance_after = balance + STARTER_GRANT_CREDITS
-        await conn.execute(
-            """
-            UPDATE user_credit_accounts
-            SET balance = $2,
-                trial_used_at = CURRENT_TIMESTAMP,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $1
-            """,
-            user_id,
-            balance_after,
-        )
+        if has_trial_used_at_column:
+            await conn.execute(
+                """
+                UPDATE user_credit_accounts
+                SET balance = $2,
+                    trial_used_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $1
+                """,
+                user_id,
+                balance_after,
+            )
+        else:
+            await conn.execute(
+                """
+                UPDATE user_credit_accounts
+                SET balance = $2,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $1
+                """,
+                user_id,
+                balance_after,
+            )
         await conn.execute(
             """
             INSERT INTO credit_ledger (
