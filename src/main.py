@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src import db, jobs_api, payments_api, redis_client, share_api, storage
-from src.config import WEBAPP_URL, WORKER_ENABLED
+from src.config import WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
 from src.credits_service import finalize_job_credit, refund_job_credit
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
 
@@ -33,6 +33,7 @@ async def lifespan(app: FastAPI):
     """Startup/shutdown приложения. Заменяет устаревшие @app.on_event с FastAPI 0.93+."""
     global worker_task
 
+    logger.info("🟢 Runtime env summary: %s", runtime_env_summary())
     await db.init_pool()
     if WORKER_ENABLED:
         redis_client.init_client()

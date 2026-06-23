@@ -18,6 +18,7 @@ from src.config import (
     ROBOKASSA_MERCHANT_LOGIN,
     ROBOKASSA_PASSWORD1,
     ROBOKASSA_PASSWORD2,
+    ROBOKASSA_PAYMENT_URL,
     ROBOKASSA_TEST_PASSWORD1,
     ROBOKASSA_TEST_PASSWORD2,
 )
@@ -100,24 +101,30 @@ def _receipt_payload(intent: TopUpIntent) -> dict[str, Any]:
     }
 
 
-def _require_payment_config() -> None:
-    password1, password2 = _active_passwords()
+def _require_payment_config(*, is_test: bool | None = None) -> None:
+    password1, password2 = _active_passwords(is_test=is_test)
     if not ROBOKASSA_MERCHANT_LOGIN or not password1 or not password2:
         raise PaymentConfigError("Robokassa credentials are not configured")
 
 
-def _active_passwords() -> tuple[str, str]:
-    if ROBOKASSA_IS_TEST:
-        return (
-            ROBOKASSA_TEST_PASSWORD1 or ROBOKASSA_PASSWORD1,
-            ROBOKASSA_TEST_PASSWORD2 or ROBOKASSA_PASSWORD2,
-        )
-    return ROBOKASSA_PASSWORD1, ROBOKASSA_PASSWORD2
+def _active_passwords(*, is_test: bool | None = None) -> tuple[str, str]:
+    use_test_mode = ROBOKASSA_IS_TEST if is_test is None else is_test
+    if use_test_mode:
+        password1 = ROBOKASSA_TEST_PASSWORD1
+        password2 = ROBOKASSA_TEST_PASSWORD2
+        mode = "test"
+    else:
+        password1 = ROBOKASSA_PASSWORD1
+        password2 = ROBOKASSA_PASSWORD2
+        mode = "live"
+    if not password1 or not password2:
+        raise PaymentConfigError(f"Robokassa {mode} credentials are not configured")
+    return password1, password2
 
 
 def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) -> str:
-    _require_payment_config()
-    password1, _ = _active_passwords()
+    _require_payment_config(is_test=ROBOKASSA_IS_TEST)
+    password1, _ = _active_passwords(is_test=ROBOKASSA_IS_TEST)
     receipt_json = json.dumps(_receipt_payload(intent), ensure_ascii=False, separators=(",", ":"))
     encoded_receipt = quote(receipt_json, safe="")
     signature_parts = [
@@ -143,7 +150,7 @@ def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) 
         params["IsTest"] = "1"
     query_string = urlencode(params)
     query_string += f"&Receipt={encoded_receipt}"
-    return f"https://auth.robokassa.ru/Merchant/Index.aspx?{query_string}"
+    return f"{ROBOKASSA_PAYMENT_URL}?{query_string}"
 
 
 async def create_topup_payment(
@@ -243,10 +250,7 @@ async def get_starter_grant_for_user(
                 SELECT delta_credits AS credits_delta, created_at
                 FROM credit_ledger
                 WHERE user_id = $1
-                  AND (
-                      operation_type = 'manual_adjustment'
-                      OR metadata->>'kind' = 'starter_grant'
-                  )
+                  AND metadata->>'kind' = 'starter_grant'
                 ORDER BY created_at ASC
                 LIMIT 1
                 """,
@@ -290,15 +294,21 @@ async def get_payment_status_by_invoice(
     conn: asyncpg.Connection,
     *,
     invoice_id: int,
+    user_id: int | None = None,
 ) -> dict[str, Any]:
-    row = await conn.fetchrow(
-        """
+    query = """
         SELECT p.*, a.balance
         FROM payments p
         LEFT JOIN user_credit_accounts a ON a.user_id = p.user_id
         WHERE p.invoice_id = $1
-        """,
-        invoice_id,
+    """
+    params: list[Any] = [invoice_id]
+    if user_id is not None:
+        query += " AND p.user_id = $2"
+        params.append(user_id)
+    row = await conn.fetchrow(
+        query,
+        *params,
     )
     if row is None:
         raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
@@ -313,9 +323,24 @@ def verify_result_signature(
     invoice_id: int,
     signature_value: str,
     payment_id: str,
-    is_test: bool,
+    is_test: bool | None,
 ) -> bool:
-    _, password2 = _active_passwords()
+    if is_test is not None and is_test != ROBOKASSA_IS_TEST:
+        logger.warning(
+            "❌ Robokassa callback mode mismatch invoice_id=%s callback_is_test=%s env_is_test=%s",
+            invoice_id,
+            is_test,
+            ROBOKASSA_IS_TEST,
+        )
+        return False
+    try:
+        _, password2 = _active_passwords(is_test=ROBOKASSA_IS_TEST)
+    except PaymentConfigError:
+        logger.warning(
+            "❌ Robokassa callback rejected because credentials are not configured for is_test=%s",
+            is_test,
+        )
+        return False
     expected_parts = [
         out_sum,
         str(invoice_id),

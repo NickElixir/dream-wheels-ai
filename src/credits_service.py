@@ -13,6 +13,10 @@ class InsufficientCreditsError(Exception):
     """Недостаточно credits для запуска рендера."""
 
 
+def _starter_grant_idempotency_key(user_id: int) -> str:
+    return f"starter_grant:{user_id}"
+
+
 async def _has_starter_grant_ledger_entry(conn: asyncpg.Connection, user_id: int) -> bool:
     try:
         found = await conn.fetchval(
@@ -23,15 +27,39 @@ async def _has_starter_grant_ledger_entry(conn: asyncpg.Connection, user_id: int
               AND (
                   metadata->>'kind' = 'starter_grant'
                   OR event_type = 'trial_grant'
-                  OR operation_type = 'manual_adjustment'
+                  OR idempotency_key = $2
               )
             LIMIT 1
             """,
             user_id,
+            _starter_grant_idempotency_key(user_id),
         )
+    except asyncpg.UndefinedColumnError:
+        try:
+            found = await conn.fetchval(
+                """
+                SELECT 1
+                FROM credit_ledger
+                WHERE user_id = $1
+                  AND metadata->>'kind' = 'starter_grant'
+                LIMIT 1
+                """,
+                user_id,
+            )
+        except asyncpg.PostgresError:
+            return False
     except asyncpg.PostgresError:
         return False
     return found is not None
+
+
+async def _execute_ledger_insert_with_savepoint(
+    conn: asyncpg.Connection,
+    query: str,
+    *args: object,
+) -> None:
+    async with conn.transaction():
+        await conn.execute(query, *args)
 
 
 async def _insert_starter_grant_ledger_entry(
@@ -42,7 +70,8 @@ async def _insert_starter_grant_ledger_entry(
 ) -> None:
     # Ledger is an audit trail. Missing compat columns should not block the user-facing balance flow.
     try:
-        await conn.execute(
+        await _execute_ledger_insert_with_savepoint(
+            conn,
             """
             INSERT INTO credit_ledger (
                 user_id,
@@ -65,17 +94,20 @@ async def _insert_starter_grant_ledger_entry(
             user_id,
             STARTER_GRANT_CREDITS,
             balance_after,
-            f"starter_grant:{user_id}",
+            _starter_grant_idempotency_key(user_id),
         )
         return
     except asyncpg.UndefinedColumnError:
-        logger.warning("⚠️ legacy credit_ledger schema detected; using fallback starter grant insert")
+        logger.warning(
+            "⚠️ legacy credit_ledger schema detected; using fallback starter grant insert"
+        )
     except asyncpg.PostgresError:
         logger.exception(f"❌ starter grant ledger insert failed for user_id={user_id}")
         return
 
     try:
-        await conn.execute(
+        await _execute_ledger_insert_with_savepoint(
+            conn,
             """
             INSERT INTO credit_ledger (
                 user_id,
@@ -99,7 +131,7 @@ async def _insert_starter_grant_ledger_entry(
             """,
             user_id,
             STARTER_GRANT_CREDITS,
-            f"starter_grant:{user_id}",
+            _starter_grant_idempotency_key(user_id),
         )
     except asyncpg.PostgresError:
         logger.exception(f"❌ legacy starter grant ledger insert failed for user_id={user_id}")
