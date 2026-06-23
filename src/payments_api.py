@@ -5,13 +5,13 @@ import re
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, field_validator
 
 from src import db
-from src.auth import InitDataInvalid, get_init_data_debug_context, parse_init_data
-from src.config import PAYMENTS_ENABLED
+from src.auth import resolve_telegram_auth
+from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST
 from src.credits_service import get_balance
 from src.payments_service import (
     PaymentConfigError,
@@ -67,42 +67,22 @@ class TopUpCreateRequest(BaseModel):
         return normalize_amount_rub(self.amount_rub)
 
 
-def _resolve_identity(
-    init_data: str | None, telegram_user_id: int | None
-) -> tuple[int, str | None]:
-    if init_data:
-        try:
-            parsed = parse_init_data(init_data)
-        except InitDataInvalid as exc:
-            logger.warning(
-                "⛔ payments auth failed reason=%s debug=%s",
-                exc,
-                get_init_data_debug_context(init_data),
-            )
-            raise HTTPException(status_code=401, detail=f"initData invalid: {exc}") from exc
-        user = parsed.get("user") or {}
-        resolved_user_id = user.get("id")
-        if not resolved_user_id:
-            raise HTTPException(status_code=401, detail="initData без user.id")
-        username_raw = user.get("username")
-        username = username_raw if isinstance(username_raw, str) else None
-        return int(resolved_user_id), username
-
-    if telegram_user_id is None:
-        raise HTTPException(status_code=400, detail="telegram_user_id required in dev mode")
-    return telegram_user_id, None
-
-
 @router.get("/cabinet")
 async def get_payment_cabinet(
     init_data: Annotated[str | None, Query()] = None,
     telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ):
-    resolved_tg_user_id, username = _resolve_identity(init_data, telegram_user_id)
+    auth = resolve_telegram_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="payments",
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, resolved_tg_user_id, username)
+            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
             balance = await get_balance(conn, user_id)
             payments = await list_payments_for_user(conn, user_id=user_id)
             starter_grant = await get_starter_grant_for_user(conn, user_id=user_id)
@@ -110,21 +90,46 @@ async def get_payment_cabinet(
 
 
 @router.get("/{invoice_id}/status")
-async def get_payment_status(invoice_id: int):
+async def get_payment_status(
+    invoice_id: int,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = resolve_telegram_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="payments",
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         try:
-            return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+            async with conn.transaction():
+                user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+                return await get_payment_status_by_invoice(
+                    conn,
+                    invoice_id=invoice_id,
+                    user_id=user_id,
+                )
         except PaymentNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Payment not found") from exc
 
 
 @router.post("/topups")
-async def create_topup(request: TopUpCreateRequest):
+async def create_topup(
+    request: TopUpCreateRequest,
+    authorization: Annotated[str | None, Header()] = None,
+):
     if not PAYMENTS_ENABLED:
         raise HTTPException(status_code=503, detail="Payments are temporarily disabled")
 
-    resolved_tg_user_id, username = _resolve_identity(request.init_data, request.telegram_user_id)
+    auth = resolve_telegram_auth(
+        init_data=request.init_data,
+        telegram_user_id=request.telegram_user_id,
+        authorization=authorization,
+        auth_name="payments",
+    )
     intent = TopUpIntent(
         amount_rub=request.amount_decimal,
         pricing_version=request.pricing_version,
@@ -134,13 +139,13 @@ async def create_topup(request: TopUpCreateRequest):
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, resolved_tg_user_id, username)
+            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
             await get_balance(conn, user_id)
             try:
                 payload = await create_topup_payment(conn, user_id=user_id, intent=intent)
             except PaymentConfigError as exc:
                 logger.exception(
-                    f"❌ Robokassa create topup failed tg_user={resolved_tg_user_id}: {exc}"
+                    f"❌ Robokassa create topup failed tg_user={auth.telegram_user_id}: {exc}"
                 )
                 raise HTTPException(
                     status_code=503, detail="Payment provider is not configured"
@@ -159,7 +164,8 @@ async def robokassa_result(request: Request):
     inv_id_raw = payload.get("InvId") or payload.get("inv_id")
     signature_value = str(payload.get("SignatureValue") or payload.get("signature_value") or "")
     payment_id = str(payload.get("Shp_payment_id") or "")
-    is_test = str(payload.get("IsTest") or "0") == "1"
+    is_test_raw = payload.get("IsTest")
+    is_test = None if is_test_raw is None else str(is_test_raw) == "1"
 
     if not out_sum or not inv_id_raw or not signature_value or not payment_id:
         raise HTTPException(status_code=400, detail="Missing Robokassa params")
@@ -190,7 +196,7 @@ async def robokassa_result(request: Request):
                     invoice_id=invoice_id,
                     provider_payment_id=payment_id,
                     out_sum=out_sum,
-                    is_test=is_test,
+                    is_test=ROBOKASSA_IS_TEST if is_test is None else is_test,
                 )
             except PaymentValidationError as exc:
                 raise HTTPException(status_code=400, detail="Payment payload mismatch") from exc

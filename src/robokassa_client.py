@@ -16,6 +16,8 @@ from src.config import (
     ROBOKASSA_PASSWORD1,
     ROBOKASSA_PASSWORD2,
     ROBOKASSA_PAYMENT_URL,
+    ROBOKASSA_TEST_PASSWORD1,
+    ROBOKASSA_TEST_PASSWORD2,
 )
 
 CURRENCY_RUB = "RUB"
@@ -40,11 +42,19 @@ def format_amount(value: str | Decimal) -> str:
 
 
 def _required_config() -> tuple[str, str, str]:
-    if not ROBOKASSA_MERCHANT_LOGIN or not ROBOKASSA_PASSWORD1 or not ROBOKASSA_PASSWORD2:
+    if ROBOKASSA_IS_TEST:
+        password1 = ROBOKASSA_TEST_PASSWORD1
+        password2 = ROBOKASSA_TEST_PASSWORD2
+        credential_names = "ROBOKASSA_TEST_PASSWORD1/ROBOKASSA_TEST_PASSWORD2"
+    else:
+        password1 = ROBOKASSA_PASSWORD1
+        password2 = ROBOKASSA_PASSWORD2
+        credential_names = "ROBOKASSA_PASSWORD1/ROBOKASSA_PASSWORD2"
+    if not ROBOKASSA_MERCHANT_LOGIN or not password1 or not password2:
         raise RobokassaConfigError(
-            "ROBOKASSA_MERCHANT_LOGIN/ROBOKASSA_PASSWORD1/ROBOKASSA_PASSWORD2 are not configured"
+            f"ROBOKASSA_MERCHANT_LOGIN/{credential_names} are not configured"
         )
-    return ROBOKASSA_MERCHANT_LOGIN, ROBOKASSA_PASSWORD1, ROBOKASSA_PASSWORD2
+    return ROBOKASSA_MERCHANT_LOGIN, password1, password2
 
 
 def _md5(value: str) -> str:

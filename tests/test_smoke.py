@@ -7,6 +7,7 @@
 
 from fastapi.testclient import TestClient
 
+from src.config import WEBAPP_URL
 from src.main import app
 
 client = TestClient(app)
@@ -42,17 +43,10 @@ def test_create_job_rejects_non_telegram_url():
     assert r.status_code == 422
 
 
-def test_preorder_rejects_invalid_email():
-    """Email валидируется до флага PAYMENTS_ENABLED и похода в БД."""
-    r = client.post("/payments/preorders", json={"email": "not-an-email"})
+def test_topup_rejects_invalid_email():
+    """Email валидируется до auth и похода в БД."""
+    r = client.post("/payments/topups", json={"email": "not-an-email"})
     assert r.status_code == 422
-
-
-def test_preorder_returns_disabled_when_payments_off():
-    """По умолчанию платежи выключены, чтобы случайно не открыть прием денег."""
-    r = client.post("/payments/preorders", json={"email": "user@example.com"})
-    assert r.status_code == 503
-    assert r.json()["detail"] == "payments disabled"
 
 
 def test_topup_rejects_amount_below_minimum():
@@ -64,38 +58,44 @@ def test_topup_rejects_amount_below_minimum():
     assert r.status_code == 422
 
 
-def test_topup_returns_disabled_when_payments_off():
-    """Новый contract тоже закрыт флагом PAYMENTS_ENABLED по умолчанию."""
+def test_topup_requires_init_data_when_dev_auth_disabled():
+    """Raw telegram_user_id недопустим без dev auth fallback."""
     r = client.post(
         "/payments/topups",
-        json={"amount_rub": "200.00", "telegram_user_id": 1, "source_screen": "cabinet"},
+        json={
+            "amount_rub": "200.00",
+            "pricing_version": "credits-v1",
+            "source_screen": "cabinet",
+            "email": "user@example.com",
+            "telegram_user_id": 1,
+        },
     )
-    assert r.status_code == 503
-    assert r.json()["detail"] == "payments disabled"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "initData required"
 
 
 def test_robokassa_result_accepts_get_method():
     """ResultURL в кабинете Robokassa может быть настроен как GET."""
     r = client.get("/payments/robokassa/result")
     assert r.status_code == 400
-    assert r.json()["detail"] == "invalid payment signature"
+    assert r.json()["detail"] == "Missing Robokassa params"
 
 
 def test_payment_cabinet_requires_telegram_identity():
     """Кабинет не ходит в БД без Telegram identity."""
     r = client.get("/payments/cabinet")
-    assert r.status_code == 422
+    assert r.status_code == 400
     assert r.json()["detail"] == "init_data or telegram_user_id is required"
 
 
-def test_cors_allows_local_webapp_dev_origin():
-    """Локальный static-server фронта должен иметь доступ к staging API."""
+def test_cors_allows_configured_webapp_origin():
+    """Mini App origin из конфига должен иметь доступ к API."""
     r = client.options(
         "/payments/topups",
         headers={
-            "Origin": "http://127.0.0.1:4174",
+            "Origin": WEBAPP_URL,
             "Access-Control-Request-Method": "POST",
         },
     )
     assert r.status_code == 200
-    assert r.headers["access-control-allow-origin"] == "http://127.0.0.1:4174"
+    assert r.headers["access-control-allow-origin"] == WEBAPP_URL

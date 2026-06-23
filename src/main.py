@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src import db, jobs_api, payments_api, redis_client, share_api, storage
+from src import auth_api, db, jobs_api, payments_api, redis_client, share_api, storage
 from src.config import WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
 from src.credits_service import finalize_job_credit, refund_job_credit
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
@@ -67,6 +67,7 @@ app.add_middleware(
 
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(auth_api.router)
 app.include_router(jobs_api.router)
 app.include_router(payments_api.router)
 app.include_router(share_api.router)
