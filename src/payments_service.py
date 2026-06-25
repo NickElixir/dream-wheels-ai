@@ -1,14 +1,11 @@
 """Robokassa top-up flow и cabinet payment queries."""
 
-import hashlib
-import hmac
 import json
 import logging
 import uuid
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
-from urllib.parse import quote, urlencode
 
 import asyncpg
 
@@ -23,6 +20,12 @@ from src.config import (
     ROBOKASSA_TEST_PASSWORD2,
 )
 from src.credits_service import ensure_credit_account
+from src.payments.providers.robokassa import (
+    RobokassaConfig,
+    RobokassaPaymentProvider,
+    RobokassaProviderConfigError,
+    RobokassaTopUpIntent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,80 +80,47 @@ def calculate_topup_credits(amount_rub: Decimal) -> int:
     return 0
 
 
-def _robokassa_digest(value: str) -> str:
-    algo = ROBOKASSA_HASH_ALGO
-    try:
-        hasher = hashlib.new(algo)
-    except ValueError as exc:
-        raise PaymentConfigError(f"Unsupported ROBOKASSA_HASH_ALGO={algo}") from exc
-    hasher.update(value.encode("utf-8"))
-    return hasher.hexdigest()
+def _robokassa_provider() -> RobokassaPaymentProvider:
+    return RobokassaPaymentProvider(
+        RobokassaConfig(
+            merchant_login=ROBOKASSA_MERCHANT_LOGIN,
+            password1=ROBOKASSA_PASSWORD1,
+            password2=ROBOKASSA_PASSWORD2,
+            test_password1=ROBOKASSA_TEST_PASSWORD1,
+            test_password2=ROBOKASSA_TEST_PASSWORD2,
+            payment_url=ROBOKASSA_PAYMENT_URL,
+            hash_algo=ROBOKASSA_HASH_ALGO,
+            is_test=ROBOKASSA_IS_TEST,
+        )
+    )
 
 
 def _receipt_payload(intent: TopUpIntent) -> dict[str, Any]:
-    return {
-        "items": [
-            {
-                "name": f"Dream Wheels AI credits ({intent.credits_granted})",
-                "quantity": 1,
-                "sum": float(intent.amount_rub),
-                "tax": "none",
-            }
-        ],
-        "email": intent.receipt_email,
-    }
-
-
-def _require_payment_config(*, is_test: bool | None = None) -> None:
-    password1, password2 = _active_passwords(is_test=is_test)
-    if not ROBOKASSA_MERCHANT_LOGIN or not password1 or not password2:
-        raise PaymentConfigError("Robokassa credentials are not configured")
-
-
-def _active_passwords(*, is_test: bool | None = None) -> tuple[str, str]:
-    use_test_mode = ROBOKASSA_IS_TEST if is_test is None else is_test
-    if use_test_mode:
-        password1 = ROBOKASSA_TEST_PASSWORD1
-        password2 = ROBOKASSA_TEST_PASSWORD2
-        mode = "test"
-    else:
-        password1 = ROBOKASSA_PASSWORD1
-        password2 = ROBOKASSA_PASSWORD2
-        mode = "live"
-    if not password1 or not password2:
-        raise PaymentConfigError(f"Robokassa {mode} credentials are not configured")
-    return password1, password2
+    return RobokassaPaymentProvider.receipt_payload(
+        RobokassaTopUpIntent(
+            amount_rub=intent.amount_rub,
+            credits_granted=intent.credits_granted,
+            receipt_email=intent.receipt_email,
+        )
+    )
 
 
 def build_payment_url(*, invoice_id: int, payment_id: str, intent: TopUpIntent) -> str:
-    _require_payment_config(is_test=ROBOKASSA_IS_TEST)
-    password1, _ = _active_passwords(is_test=ROBOKASSA_IS_TEST)
-    receipt_json = json.dumps(_receipt_payload(intent), ensure_ascii=False, separators=(",", ":"))
-    encoded_receipt = quote(receipt_json, safe="")
-    signature_parts = [
-        ROBOKASSA_MERCHANT_LOGIN,
-        f"{intent.amount_rub:.2f}",
-        str(invoice_id),
-        receipt_json,
-        password1,
-        f"Shp_payment_id={payment_id}",
-    ]
-    signature_value = _robokassa_digest(":".join(signature_parts))
-
-    params = {
-        "MerchantLogin": ROBOKASSA_MERCHANT_LOGIN,
-        "OutSum": f"{intent.amount_rub:.2f}",
-        "InvId": str(invoice_id),
-        "Description": "Dream Wheels AI credits",
-        "Email": intent.receipt_email,
-        "Shp_payment_id": payment_id,
-        "SignatureValue": signature_value,
-    }
-    if ROBOKASSA_IS_TEST:
-        params["IsTest"] = "1"
-    query_string = urlencode(params)
-    query_string += f"&Receipt={encoded_receipt}"
-    return f"{ROBOKASSA_PAYMENT_URL}?{query_string}"
+    try:
+        invoice = _robokassa_provider().build_topup_invoice(
+            invoice_id=invoice_id,
+            payment_id=payment_id,
+            intent=RobokassaTopUpIntent(
+                amount_rub=intent.amount_rub,
+                credits_granted=intent.credits_granted,
+                receipt_email=intent.receipt_email,
+            ),
+        )
+    except RobokassaProviderConfigError as exc:
+        raise PaymentConfigError(str(exc)) from exc
+    if invoice.confirmation_url is None:
+        raise PaymentConfigError("Robokassa confirmation URL was not generated")
+    return invoice.confirmation_url
 
 
 async def create_topup_payment(
@@ -325,30 +295,13 @@ def verify_result_signature(
     payment_id: str,
     is_test: bool | None,
 ) -> bool:
-    if is_test is not None and is_test != ROBOKASSA_IS_TEST:
-        logger.warning(
-            "❌ Robokassa callback mode mismatch invoice_id=%s callback_is_test=%s env_is_test=%s",
-            invoice_id,
-            is_test,
-            ROBOKASSA_IS_TEST,
-        )
-        return False
-    try:
-        _, password2 = _active_passwords(is_test=ROBOKASSA_IS_TEST)
-    except PaymentConfigError:
-        logger.warning(
-            "❌ Robokassa callback rejected because credentials are not configured for is_test=%s",
-            is_test,
-        )
-        return False
-    expected_parts = [
-        out_sum,
-        str(invoice_id),
-        password2,
-        f"Shp_payment_id={payment_id}",
-    ]
-    expected = _robokassa_digest(":".join(expected_parts))
-    return hmac.compare_digest(expected.lower(), signature_value.lower())
+    return _robokassa_provider().verify_result_signature(
+        out_sum=out_sum,
+        invoice_id=invoice_id,
+        signature_value=signature_value,
+        payment_id=payment_id,
+        is_test=is_test,
+    )
 
 
 async def mark_payment_paid(
