@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 from datetime import datetime
 
 import asyncpg
@@ -14,6 +15,7 @@ from src.payments_service import (
     TopUpIntent,
     build_payment_url,
     calculate_topup_credits,
+    create_topup_payment,
     get_payment_status_by_invoice,
     get_starter_grant_for_user,
     normalize_amount_rub,
@@ -222,6 +224,83 @@ def test_payment_status_lookup_rejects_non_owner():
 
     with pytest.raises(PaymentNotFoundError):
         asyncio.run(get_payment_status_by_invoice(FakeConn(), invoice_id=42, user_id=77))
+
+
+def test_create_topup_persists_robokassa_provider_neutral_fields(monkeypatch):
+    monkeypatch.setattr(
+        "src.payments_service.uuid.uuid4",
+        lambda: "00000000-0000-0000-0000-000000000001",
+    )
+    monkeypatch.setattr("src.payments_service.ROBOKASSA_PAYMENT_URL", "https://stage.example/pay")
+    monkeypatch.setattr("src.payments_service.ROBOKASSA_MERCHANT_LOGIN", "demo")
+    monkeypatch.setattr("src.payments_service.ROBOKASSA_PASSWORD1", "live-password1")
+    monkeypatch.setattr("src.payments_service.ROBOKASSA_PASSWORD2", "live-password2")
+    monkeypatch.setattr("src.payments_service.ROBOKASSA_IS_TEST", False)
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            expected_columns = [
+                "provider",
+                "provider_payment_id",
+                "provider_invoice_payload",
+                "currency",
+                "amount_provider_units",
+                "delivery_channel",
+            ]
+            for column in expected_columns:
+                assert column in query
+            assert args[:9] == (
+                77,
+                "robokassa",
+                "00000000-0000-0000-0000-000000000001",
+                "00000000-0000-0000-0000-000000000001",
+                "RUB",
+                20000,
+                normalize_amount_rub("200.00"),
+                7,
+                "user@example.com",
+            )
+            assert json.loads(args[9]) == {
+                "items": [
+                    {
+                        "name": "Dream Wheels AI credits (7)",
+                        "quantity": 1,
+                        "sum": 200.0,
+                        "tax": "none",
+                    }
+                ],
+                "email": "user@example.com",
+            }
+            assert args[10:13] == (
+                "credits-v1",
+                "cabinet",
+                "website",
+            )
+            return {
+                "id": "11111111-1111-1111-1111-111111111111",
+                "invoice_id": 42,
+                "amount_rub": normalize_amount_rub("200.00"),
+                "credits_granted": 7,
+                "pricing_version": "credits-v1",
+            }
+
+    payload = asyncio.run(
+        create_topup_payment(
+            FakeConn(),
+            user_id=77,
+            intent=TopUpIntent(
+                amount_rub=normalize_amount_rub("200.00"),
+                pricing_version="credits-v1",
+                source_screen="cabinet",
+                receipt_email="user@example.com",
+            ),
+        )
+    )
+
+    assert payload["invoice_id"] == 42
+    assert payload["amount"] == 200.0
+    assert payload["credits_granted"] == 7
+    assert "Shp_payment_id=00000000-0000-0000-0000-000000000001" in payload["payment_url"]
 
 
 def test_build_payment_url_uses_configured_payment_url(monkeypatch):

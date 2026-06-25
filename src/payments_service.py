@@ -33,6 +33,9 @@ TWOPLACES = Decimal("0.01")
 PAYMENT_STATUS_PENDING = "pending"
 PAYMENT_STATUS_PAID = "paid"
 PAYMENT_STATUS_FAILED = "failed"
+PAYMENT_PROVIDER_ROBOKASSA = "robokassa"
+PAYMENT_CURRENCY_RUB = "RUB"
+PAYMENT_DELIVERY_CHANNEL_WEBSITE = "website"
 TOPUP_TIERS: tuple[tuple[int, Decimal], ...] = (
     (1000, Decimal("1000") / Decimal("45")),
     (500, Decimal("25")),
@@ -78,6 +81,10 @@ def calculate_topup_credits(amount_rub: Decimal) -> int:
         if normalized_amount >= Decimal(str(min_amount)):
             return max(1, int(normalized_amount / rub_per_credit))
     return 0
+
+
+def _amount_rub_provider_units(amount_rub: Decimal) -> int:
+    return int((amount_rub * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 
 def _robokassa_provider() -> RobokassaPaymentProvider:
@@ -135,36 +142,51 @@ async def create_topup_payment(
         """
         INSERT INTO payments (
             user_id,
+            provider,
             provider_payment_id,
+            provider_invoice_payload,
             status,
+            currency,
+            amount_provider_units,
             amount_rub,
             credits_granted,
             receipt_email,
             receipt_payload,
             pricing_version,
-            source_screen
+            source_screen,
+            delivery_channel
         )
         VALUES (
             $1,
             $2,
-            'pending',
             $3,
             $4,
+            'pending',
             $5,
-            $6::jsonb,
+            $6,
             $7,
-            $8
+            $8,
+            $9,
+            $10::jsonb,
+            $11,
+            $12,
+            $13
         )
         RETURNING id, invoice_id, amount_rub, credits_granted, pricing_version
         """,
         user_id,
+        PAYMENT_PROVIDER_ROBOKASSA,
         payment_id,
+        payment_id,
+        PAYMENT_CURRENCY_RUB,
+        _amount_rub_provider_units(intent.amount_rub),
         intent.amount_rub,
         intent.credits_granted,
         intent.receipt_email,
         json.dumps(receipt_payload, ensure_ascii=False),
         intent.pricing_version,
         intent.source_screen,
+        PAYMENT_DELIVERY_CHANNEL_WEBSITE,
     )
     invoice_id = int(row["invoice_id"])
     payment_url = build_payment_url(invoice_id=invoice_id, payment_id=payment_id, intent=intent)
