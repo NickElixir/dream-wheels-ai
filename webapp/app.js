@@ -472,6 +472,10 @@ function resolveDevTelegramUserId() {
         localStorage.setItem(DEV_TELEGRAM_USER_ID_STORAGE_KEY, value);
         return value;
     }
+    if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+        localStorage.removeItem(DEV_TELEGRAM_USER_ID_STORAGE_KEY);
+        return "";
+    }
     return localStorage.getItem(DEV_TELEGRAM_USER_ID_STORAGE_KEY) || "";
 }
 
