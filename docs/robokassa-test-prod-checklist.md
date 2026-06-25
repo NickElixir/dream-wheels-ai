@@ -1,5 +1,28 @@
 # Robokassa Test/Prod Checklist
 
+## Short Final Smoke
+
+Use this after any Robokassa/payment hardening change on staging.
+
+1. Confirm staging health: `GET /health` returns `200`.
+2. Open the cabinet with a valid website or Mini App auth context: `GET /payments/cabinet` returns `200`.
+3. Create a test top-up from staging: `POST /payments/topups`.
+4. Confirm the new `payments` row has:
+   - `provider = robokassa`
+   - `currency = RUB`
+   - `amount_provider_units = amount_rub * 100`
+   - `delivery_channel = website`
+5. Confirm `payment_url` opens Robokassa in test mode.
+6. Send the callback to `/payments/robokassa/result`.
+7. Confirm the payment becomes `paid`, `credit_ledger` gets `purchase_grant`, and cabinet balance increases.
+
+Expected result:
+
+- no `500` in cabinet or payment endpoints
+- `payments.status = paid`
+- `credit_ledger` contains one idempotent purchase grant
+- balance matches the paid credits
+
 ## Цель
 
 На staging последовательно проверить:
