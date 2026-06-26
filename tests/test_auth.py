@@ -148,7 +148,10 @@ def test_verify_telegram_login_id_token_accepts_valid_claims(monkeypatch):
 @pytest.mark.parametrize(
     ("mutate_claims", "expected_error"),
     [
-        (lambda claims: claims.__setitem__("iss", "https://evil.example"), "Invalid Telegram issuer"),
+        (
+            lambda claims: claims.__setitem__("iss", "https://evil.example"),
+            "Invalid Telegram issuer",
+        ),
         (lambda claims: claims.__setitem__("aud", "wrong"), "Invalid Telegram audience"),
         (lambda claims: claims.__setitem__("exp", 1_699_999_999), "Expired Telegram id_token"),
         (lambda claims: claims.__setitem__("nonce", "wrong-nonce"), "Nonce mismatch"),
