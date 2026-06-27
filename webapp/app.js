@@ -517,7 +517,10 @@ const state = {
     payments: [],
     starterGrant: null,
     walletBusy: false,
+    walletLoading: false,
+    walletLoadingMessage: "",
     walletMessage: "",
+    walletMessageTone: "neutral",
     paymentReturnState: "",
     pendingRefreshTimer: null,
     createScreen: "upload",
@@ -871,13 +874,31 @@ function setWalletBusy(busy) {
     });
 }
 
+function syncWalletStatusIsland(selector, textSelector, message, tone = "neutral", visible = false) {
+    const island = document.querySelector(selector);
+    if (!island) return;
+    island.dataset.visible = String(Boolean(visible && message));
+    island.className = `wallet-status-island ${tone ? `tone-${tone}` : ""}`.trim();
+    island.setAttribute("aria-hidden", String(!(visible && message)));
+    const text = document.querySelector(textSelector);
+    if (text) text.textContent = visible && message ? message : "";
+}
+
+function renderWalletStatus() {
+    syncWalletStatusIsland("[data-wallet-loading]", "[data-wallet-loading-text]", state.walletLoadingMessage, "loading", state.walletLoading);
+    syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
+}
+
+function setWalletLoading(visible, message = t("wallet.loading")) {
+    state.walletLoading = visible;
+    state.walletLoadingMessage = visible ? message : "";
+    renderWalletStatus();
+}
+
 function setWalletMessage(message, tone = "neutral") {
     state.walletMessage = message;
-    const feedback = document.querySelector("[data-wallet-feedback]");
-    if (!feedback) return;
-    feedback.hidden = !message;
-    feedback.textContent = message;
-    feedback.className = `topup-general-error ${tone}`;
+    state.walletMessageTone = tone;
+    renderWalletStatus();
 }
 
 function getLastInvoice() {
@@ -1048,6 +1069,8 @@ function renderWallet() {
         if (meta) meta.textContent = topUpMeta(credits);
         button.dataset.selected = String(amount === state.selectedAmount);
     });
+
+    renderWalletStatus();
 }
 
 function renderConfirmation() {
@@ -1114,7 +1137,9 @@ async function loadCabinet({ silent = false } = {}) {
     clearPendingRefreshTimer();
     setWalletBusy(true);
     if (!silent) {
-        setWalletMessage(t("wallet.loading"));
+        setWalletLoading(true);
+    } else {
+        setWalletLoading(false);
     }
     try {
         const response = await fetch(`${state.apiBaseUrl}/payments/cabinet?${identity.toString()}`, {
@@ -1174,6 +1199,7 @@ async function loadCabinet({ silent = false } = {}) {
         renderWallet();
     } finally {
         setWalletBusy(false);
+        setWalletLoading(false);
     }
 }
 
@@ -1835,7 +1861,7 @@ function bindEvents() {
 
     document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
     document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
-        setWalletMessage(t("wallet.refreshingInvoice"));
+        setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
         void loadCabinet();
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
@@ -1847,6 +1873,7 @@ function bindEvents() {
         setSelectedAmount(state.selectedAmount);
         renderConfirmation();
         setWalletMessage("");
+        setWalletLoading(false);
     });
 
     document.querySelectorAll("input[data-input]").forEach((input) => {
