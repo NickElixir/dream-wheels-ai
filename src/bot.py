@@ -13,14 +13,19 @@ from telegram.ext import (
     filters,
 )
 
+from src import db
 from src.config import (
     API_BASE_URL,
     API_INTERNAL_TOKEN,
     BOT_TOKEN,
     LEGAL_BASE_URL,
     REDIS_URL,
+    STARTER_GRANT_CREDITS,
+    STARTER_GRANT_TTL_DAYS,
     WEBAPP_URL,
 )
+from src.credits_service import ensure_credit_account
+from src.users_service import ensure_user
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,8 +74,8 @@ MESSAGES = {
         "open_support": "💬 Open support",
         "open_document": "📄 Open document",
         "start": (
-            "Hi! Tap the button below to open the Mini App, "
-            "or send a car photo directly in this chat."
+            "Hi! We have credited {credits} starter credits for {days} days. "
+            "Tap the button below to open the Mini App, or send a car photo directly in this chat."
         ),
         "app": "Open the Mini App below.",
         "help": (
@@ -95,7 +100,8 @@ MESSAGES = {
         "open_support": "💬 Открыть поддержку",
         "open_document": "📄 Открыть документ",
         "start": (
-            "Привет! Жми кнопку ниже, чтобы открыть Mini App, или отправь фото машины прямо в чат."
+            "Привет! Дарим {credits} стартовых credits на {days} дней. "
+            "Жми кнопку ниже, чтобы открыть Mini App, или отправь фото машины прямо в чат."
         ),
         "app": "Открываю Mini App.",
         "help": (
@@ -128,6 +134,30 @@ def _t(update: Update, key: str) -> str:
     return MESSAGES[_locale(update)][key]
 
 
+def _start_text(update: Update) -> str:
+    return _t(update, "start").format(
+        credits=STARTER_GRANT_CREDITS,
+        days=STARTER_GRANT_TTL_DAYS,
+    )
+
+
+async def _grant_starter_credits_for_bot_user(update: Update) -> None:
+    user = update.effective_user
+    telegram_user_id = getattr(user, "id", None)
+    if user is None or telegram_user_id is None:
+        return
+
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            user_id = await ensure_user(
+                conn,
+                telegram_user_id=telegram_user_id,
+                username=getattr(user, "username", None),
+            )
+            await ensure_credit_account(conn, user_id)
+
+
 def _webapp_url(section: str | None = None) -> str:
     base_url = WEBAPP_URL.rstrip("/")
     return f"{base_url}/?section={section}" if section else base_url
@@ -156,11 +186,19 @@ async def _reply_with_url_button(update: Update, text: str, url: str, button_tex
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user is not None:
+        try:
+            await _grant_starter_credits_for_bot_user(update)
+        except Exception as e:
+            logger.exception(
+                "❌ /start starter grant failed telegram_user_id=%s: %s",
+                getattr(user, "id", None),
+                e,
+            )
+
     await _reply_with_webapp_button(
-        update,
-        _t(update, "start"),
-        _webapp_url(),
-        _t(update, "open_app"),
+        update, _start_text(update), _webapp_url(), _t(update, "open_app")
     )
 
 
@@ -354,9 +392,23 @@ async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
 
 
+async def _post_init(_application: Application) -> None:
+    await db.init_pool()
+
+
+async def _post_shutdown(_application: Application) -> None:
+    await db.close_pool()
+
+
 def main():
     logger.info("Запуск Telegram-бота...")
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .post_init(_post_init)
+        .post_shutdown(_post_shutdown)
+        .build()
+    )
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("app", app_command))
     application.add_handler(CommandHandler("help", help_command))
