@@ -509,22 +509,31 @@ async def upload_job(
     try:
         async with pool.acquire() as conn:
             async with conn.transaction():
-                await assets_service.insert_asset(conn, car_asset)
-                await assets_service.insert_asset(conn, rim_asset)
                 await conn.execute(
                     """
                     INSERT INTO jobs (
-                        id, user_id, status, car_image_url, wheel_image_url,
-                        car_asset_id, rim_asset_id
+                        id, user_id, status, car_image_url, wheel_image_url
                     )
-                    VALUES ($1::uuid, $2, 'queued', $3, $4, $5::uuid, $6::uuid)
+                    VALUES ($1::uuid, $2, 'queued', $3, $4)
                     """,
                     job_id,
                     user_id,
                     car_asset.storage_key,
                     rim_asset.storage_key,
+                )
+                await assets_service.insert_asset(conn, car_asset)
+                await assets_service.insert_asset(conn, rim_asset)
+                await conn.execute(
+                    """
+                    UPDATE jobs
+                    SET car_asset_id = $1::uuid,
+                        rim_asset_id = $2::uuid,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $3::uuid
+                    """,
                     car_asset.id,
                     rim_asset.id,
+                    job_id,
                 )
                 await reserve_job_credit(conn, user_id=user_id, job_id=job_id)
         logger.info(f"✅ Job {job_id} создан в БД (queued)")
