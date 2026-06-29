@@ -62,6 +62,7 @@ LEGAL_BASE_URL = os.getenv("LEGAL_BASE_URL", "https://dream-wheels-ai-legal.verc
 
 # Billing / credits
 STARTER_GRANT_CREDITS = int(os.getenv("STARTER_GRANT_CREDITS", "3"))
+STARTER_GRANT_TTL_DAYS = int(os.getenv("STARTER_GRANT_TTL_DAYS", "30"))
 JOB_CREDIT_COST = int(os.getenv("JOB_CREDIT_COST", "1"))
 PAYMENTS_ENABLED = os.getenv("PAYMENTS_ENABLED", "true").lower() == "true"
 WEBAPP_DEV_AUTH_ENABLED = os.getenv("WEBAPP_DEV_AUTH_ENABLED", "false").lower() == "true"
