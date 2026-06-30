@@ -24,7 +24,7 @@ from src.config import (
     STARTER_GRANT_TTL_DAYS,
     WEBAPP_URL,
 )
-from src.credits_service import ensure_credit_account
+from src.credits_service import CreditAccountState, ensure_credit_account_state
 from src.users_service import ensure_user
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -77,6 +77,10 @@ MESSAGES = {
             "Hi! We have credited {credits} starter credits for {days} days. "
             "Tap the button below to open the Mini App, or send a car photo directly in this chat."
         ),
+        "start_existing": (
+            "Hi! Your Mini App is ready. Tap the button below to open it, or send a car photo "
+            "directly in this chat. The starter grant stays active for {days} days from the first crediting."
+        ),
         "app": "Open the Mini App below.",
         "help": (
             "Send two photos in chat: first the car from the side, "
@@ -102,6 +106,10 @@ MESSAGES = {
         "start": (
             "Привет! Дарим {credits} стартовых credits на {days} дней. "
             "Жми кнопку ниже, чтобы открыть Mini App, или отправь фото машины прямо в чат."
+        ),
+        "start_existing": (
+            "Привет! Mini App уже готов. Жми кнопку ниже, чтобы открыть его, или отправь фото "
+            "машины прямо в чат. Стартовый grant действует {days} дней с момента первого начисления."
         ),
         "app": "Открываю Mini App.",
         "help": (
@@ -134,18 +142,18 @@ def _t(update: Update, key: str) -> str:
     return MESSAGES[_locale(update)][key]
 
 
-def _start_text(update: Update) -> str:
-    return _t(update, "start").format(
+def _format_start_text(update: Update, key: str) -> str:
+    return _t(update, key).format(
         credits=STARTER_GRANT_CREDITS,
         days=STARTER_GRANT_TTL_DAYS,
     )
 
 
-async def _grant_starter_credits_for_bot_user(update: Update) -> None:
+async def _ensure_credit_state_for_bot_user(update: Update) -> CreditAccountState | None:
     user = update.effective_user
     telegram_user_id = getattr(user, "id", None)
     if user is None or telegram_user_id is None:
-        return
+        return None
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
@@ -155,7 +163,7 @@ async def _grant_starter_credits_for_bot_user(update: Update) -> None:
                 telegram_user_id=telegram_user_id,
                 username=getattr(user, "username", None),
             )
-            await ensure_credit_account(conn, user_id)
+            return await ensure_credit_account_state(conn, user_id)
 
 
 def _webapp_url(section: str | None = None) -> str:
@@ -187,9 +195,12 @@ async def _reply_with_url_button(update: Update, text: str, url: str, button_tex
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    start_message_key = "start_existing"
     if user is not None:
         try:
-            await _grant_starter_credits_for_bot_user(update)
+            state = await _ensure_credit_state_for_bot_user(update)
+            if state is not None and state.starter_credits_granted_now:
+                start_message_key = "start"
         except Exception as e:
             logger.exception(
                 "❌ /start starter grant failed telegram_user_id=%s: %s",
@@ -198,7 +209,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
     await _reply_with_webapp_button(
-        update, _start_text(update), _webapp_url(), _t(update, "open_app")
+        update,
+        _format_start_text(update, start_message_key),
+        _webapp_url(),
+        _t(update, "open_app"),
     )
 
 
