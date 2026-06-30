@@ -1,0 +1,80 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
+STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
+INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+T_INDEX_HTML = (ROOT / "webapp" / "t" / "index.html").read_text(encoding="utf-8")
+
+
+def test_dashboard_uses_balance_from_cabinet_api() -> None:
+    assert 'view: "dashboard"' in APP_JS
+    assert "data-dashboard-balance" in INDEX_HTML
+    assert "/payments/cabinet" in APP_JS
+    assert "state.balance = cabinet.balance ?? 0" in APP_JS
+
+
+def test_latest_completed_render_uses_durable_history_api() -> None:
+    assert "/jobs?" in APP_JS
+    assert "fetchRenderHistory" in APP_JS
+    assert "state.renderHistory = Array.isArray(history.jobs)" in APP_JS
+    assert "resultUrlForJob(latest)" in APP_JS
+    assert "assets?.result?.url" in APP_JS
+
+
+def test_history_does_not_use_recent_render_local_storage_as_source() -> None:
+    assert "RECENT_RENDERS_STORAGE_KEY" not in APP_JS
+    assert "dreamWheelsRecentRenders" not in APP_JS
+    assert "loadRecentRenders" not in APP_JS
+    assert "recentRenders" not in APP_JS
+
+
+def test_empty_processing_and_failed_states_are_user_safe() -> None:
+    assert "Ваша первая примерка" in INDEX_HTML
+    assert "Создаём результат" in APP_JS
+    assert "Не удалось создать результат" in APP_JS
+    assert "Failed to fetch" not in APP_JS
+
+
+def test_history_expands_only_one_completed_card() -> None:
+    assert "expandedJobId" in APP_JS
+    assert "state.expandedJobId === job.job_id" in APP_JS
+    assert 'state.expandedJobId === jobId ? "" : jobId' in APP_JS
+    assert 'status === "completed" && resultUrl' in APP_JS
+
+
+def test_expanded_images_are_not_cropped() -> None:
+    assert ".render-full-image" in STYLE_CSS
+    render_full_block = STYLE_CSS.split(".render-full-image", 1)[1].split("}", 1)[0]
+    assert "width: 100%" in render_full_block
+    assert "height: auto" in render_full_block
+    assert "object-fit: contain" in render_full_block
+
+
+def test_frontend_does_not_offer_cross_owner_query_inputs() -> None:
+    assert "getIdentitySearchParams" in APP_JS
+    assert "withAuthHeaders" in APP_JS
+    assert "telegram_user_id" in APP_JS
+    assert "tgUser" in APP_JS
+    assert "WEBAPP_DEV_AUTH_ENABLED" not in APP_JS
+    assert "owner_user_id" not in APP_JS
+
+
+def test_unauthenticated_state_prompts_telegram_login() -> None:
+    assert "data-website-auth-button" in INDEX_HTML
+    assert "Откройте Mini App в Telegram или войдите через Telegram на сайте" in INDEX_HTML
+    assert "wallet.authRequired" in APP_JS
+
+
+def test_existing_create_and_payment_flows_remain_wired() -> None:
+    assert "/jobs/upload" in APP_JS
+    assert "/payments/topups" in APP_JS
+    for icon in ("⚡", "🏁", "💎", "👑"):
+        assert icon in INDEX_HTML
+    assert "Robokassa" in INDEX_HTML
+
+
+def test_root_and_t_entrypoints_stay_aligned_and_expiry_hidden() -> None:
+    assert INDEX_HTML == T_INDEX_HTML
+    assert "Срок действия рендеров" not in INDEX_HTML
+    assert "expiry" not in INDEX_HTML.lower()
