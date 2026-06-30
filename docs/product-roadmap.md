@@ -63,6 +63,7 @@ A visual result must never be presented as proof of technical compatibility.
 - Read from durable render history and existing payment endpoints.
 - Use the approved UI reference: `docs/ui-design-code.md` and `docs/references/sprint-1-dashboard.html`.
 - Dashboard includes desktop sidebar, mobile bottom navigation, a real latest-result preview and the approved history interaction: a completed render expands inside its card, shows its image at full width without crop, and only one history item is open at once.
+- **Sprint 1 feedback UI only:** show `👍 Понравилось` / `👎 Не похоже` for completed renders on the latest-result card and expanded history item. Negative selection reveals inline reason chips. The state is in-memory/mock only: no API, database table, analytics event, localStorage persistence or training-data side effect.
 - Fitment verdicts are out of scope. They are introduced only in Parallel F2.
 - **Deferred profile enhancement:** after the dashboard and auth flows are stable, enrich the account header with the Telegram display name and profile photo when available. Do not add custom avatar uploads. Use a deterministic initials fallback when no Telegram photo is available. Keep `avatar_url` and its refresh timestamp in the backend user profile only when the authenticated Telegram flow provides a validated URL.
 - **Expiry UI condition:** the approved expiry island may be implemented only after immutable grant/ledger expiry data is explicitly approved and available. Before then, it must be hidden rather than populated from mock or browser-local data.
@@ -85,8 +86,9 @@ Flow: upload car → upload rim → confirm vehicle → optional rim data → re
 ### Sprint 3 — comparison, history and feedback
 
 - Original/result toggle in render detail.
-- Render history with states and repeat scenario.
-- User feedback on visual similarity and usefulness.
+- Persist render history with states and repeat scenario.
+- Add real visual feedback persistence tied to durable render/job ids: positive/negative selection, optional reason, consent/privacy boundary, aggregation and evaluation use.
+- Do not treat a feedback click itself as a training signal. Any dataset use requires explicit product, consent and evaluation rules.
 
 ### Parallel F2 — fitment UX integration
 
