@@ -61,7 +61,11 @@ A visual result must never be presented as proof of technical compatibility.
 
 - Dashboard with balance, latest render, CTA and navigation to history/wallet.
 - Read from durable render history and existing payment endpoints.
+- Use the approved UI reference: `docs/ui-design-code.md` and `docs/references/sprint-1-dashboard.html`.
+- Dashboard includes desktop sidebar, mobile bottom navigation, a real latest-result preview and the approved history interaction: a completed render expands inside its card, shows its image at full width without crop, and only one history item is open at once.
+- Fitment verdicts are out of scope. They are introduced only in Parallel F2.
 - **Deferred profile enhancement:** after the dashboard and auth flows are stable, enrich the account header with the Telegram display name and profile photo when available. Do not add custom avatar uploads. Use a deterministic initials fallback when no Telegram photo is available. Keep `avatar_url` and its refresh timestamp in the backend user profile only when the authenticated Telegram flow provides a validated URL.
+- **Expiry UI condition:** the approved expiry island may be implemented only after immutable grant/ledger expiry data is explicitly approved and available. Before then, it must be hidden rather than populated from mock or browser-local data.
 
 ### Sprint 2 — create flow and structured input
 
