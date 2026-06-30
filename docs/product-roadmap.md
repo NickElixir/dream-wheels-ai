@@ -61,6 +61,7 @@ A visual result must never be presented as proof of technical compatibility.
 
 - Dashboard with balance, latest render, CTA and navigation to history/wallet.
 - Read from durable render history and existing payment endpoints.
+- **Deferred profile enhancement:** after the dashboard and auth flows are stable, enrich the account header with the Telegram display name and profile photo when available. Do not add custom avatar uploads. Use a deterministic initials fallback when no Telegram photo is available. Keep `avatar_url` and its refresh timestamp in the backend user profile only when the authenticated Telegram flow provides a validated URL.
 
 ### Sprint 2 — create flow and structured input
 
