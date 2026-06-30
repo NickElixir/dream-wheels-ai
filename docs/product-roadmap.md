@@ -1,4 +1,29 @@
-# Product and Delivery Roadmap
+# Dream Wheels Dual-Track Product Roadmap
+
+> **Internal initiative:** Project Dual Track
+>
+> This is the delivery plan for two independent product pipelines and their shared foundation. It is not a third pipeline.
+
+## Working model
+
+```text
+Shared Product Foundation
+  ├── durable jobs, assets and history
+  ├── authentication, payments and wallet
+  └── common create/result user flow
+
+Rendering Pipeline
+  └── produces and improves the visual wheel-on-car result
+
+Fitment Pipeline
+  └── produces a preliminary technical compatibility verdict
+```
+
+The pipelines meet in one user scenario, but remain independent:
+
+- the **Rendering Pipeline** answers: “How will these wheels look on this car?”;
+- the **Fitment Pipeline** answers: “What is known about the technical possibility of installation?”;
+- a visual result must never be presented as proof of technical compatibility.
 
 ## Goal
 
