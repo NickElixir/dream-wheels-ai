@@ -97,6 +97,16 @@ Use restrained motion only:
 - screen transition: fade + `translateY(-6px → 0)` over about 300 ms;
 - respect `prefers-reduced-motion`.
 
+### Topbar caption
+
+The topbar page label is not a content heading and should not reuse `H1` or `H2`.
+Use a dedicated caption style:
+
+- place the current page label at the far right edge of the topbar on desktop;
+- keep the website Telegram login action in the same right-side cluster, immediately before the page label;
+- use a slightly larger but restrained caption treatment with muted color, moderate weight, and no oversized hero emphasis;
+- hide the caption on narrow mobile widths when it starts competing with primary controls.
+
 ## Status islands
 
 Use the established island pattern for asynchronous states and warnings:
