@@ -148,11 +148,11 @@ a {
 }
 
 .topbar-actions {
-    display: flex;
+    display: grid;
     flex: 1 1 auto;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    justify-content: flex-end;
-    gap: 14px;
+    gap: 18px;
     color: var(--text-subtle);
     margin-left: auto;
 }
@@ -271,7 +271,7 @@ a {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--text-subtle);
-    margin-left: 10px;
+    justify-self: end;
     text-align: right;
 }
 

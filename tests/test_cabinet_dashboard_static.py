@@ -116,7 +116,8 @@ def test_dashboard_summary_cards_use_container_responsive_headers() -> None:
 
 
 def test_topbar_actions_are_right_aligned_with_dedicated_caption_style() -> None:
-    assert "justify-content: flex-end;" in STYLE_CSS
+    assert "grid-template-columns: auto minmax(0, 1fr);" in STYLE_CSS
     assert "margin-left: auto;" in STYLE_CSS
     assert ".topbar-caption {" in STYLE_CSS
+    assert "justify-self: end;" in STYLE_CSS
     assert "font-size: 18px;" in STYLE_CSS
