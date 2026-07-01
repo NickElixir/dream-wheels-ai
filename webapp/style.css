@@ -1460,6 +1460,24 @@ h2 {
     font-size: 15px;
 }
 
+.view[data-view="photo-guide"] .form-stack {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.view[data-view="photo-guide"] .form-row {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+    padding: 20px 22px;
+}
+
+.view[data-view="photo-guide"] .form-row p {
+    margin: 0;
+    max-width: 44ch;
+}
+
 .support-grid,
 .docs-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

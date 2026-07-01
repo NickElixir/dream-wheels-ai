@@ -43,6 +43,8 @@ Rules:
 - keep at least 40 px visual gutter between sidebar and the nearest panel at desktop widths;
 - topbar, hero panels and content panels align to the same content rail;
 - panels and status islands use visible vertical gaps, so warnings, upload zones, cards and forms never touch each other.
+- help instruction cards should be centered, with the label and explanation stacked vertically and separated by a visible gap;
+- do not let the label and the explanatory paragraph run into each other on desktop help screens.
 
 ### Desktop
 
