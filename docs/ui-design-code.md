@@ -1,8 +1,8 @@
 # Dream Wheels AI — UI Design Code
 
-> **Status:** approved reference for Sprint 1 Cabinet Dashboard.
+> **Status:** approved reference for Sprint 1 Cabinet Dashboard
 >
-> Canonical interactive prototype: `docs/references/sprint-1-dashboard.html`.
+> Canonical interactive prototype: `docs/references/sprint-1-dashboard.html`
 
 ## Scope and boundaries
 
@@ -23,6 +23,10 @@ Use the established dark Dream Wheels AI system:
 - card radii: 18–28 px; thin translucent borders; soft panel shadows.
 
 Do not allow native browser button text colours to leak into the UI. Interactive cards, upload zones and buttons explicitly inherit the design-system foreground colour.
+
+For this product UI, standalone paragraph-style copy should not end with a period
+This applies to ledes, helper text, empty states, support copy, form guidance and similar short interface text
+Exceptions are explicit multi-sentence legal text, technical payloads and copy where punctuation is required for clarity
 
 ## Responsive navigation
 

@@ -597,6 +597,28 @@ h2 {
 
 .last-invoice-panel {
     display: grid;
+    gap: 18px;
+}
+
+.last-invoice-panel .panel-head {
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.last-invoice-panel .panel-head > div {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+}
+
+.last-invoice-panel .section-label,
+.last-invoice-panel h2 {
+    margin: 0;
+}
+
+.last-invoice-panel [data-payment-status] {
+    flex: 0 0 auto;
+    margin-top: 4px;
 }
 
 .warning-note {
@@ -958,6 +980,11 @@ h2 {
     border-radius: 20px;
     border: 1px solid rgba(255, 159, 67, 0.26);
     background: rgba(255, 159, 67, 0.08);
+}
+
+.last-invoice-panel .payment-card,
+.last-invoice-panel .invoice-card {
+    margin-top: 0;
 }
 
 .payment-card[data-status="paid"] {

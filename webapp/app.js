@@ -66,7 +66,7 @@ const I18N = {
         create: {
             eyebrow: "Создание",
             title: "Загрузите фото машины и диска",
-            lede: "Машина целиком сбоку, диск анфас. JPG или PNG, до 10 MB.",
+            lede: "Машина целиком сбоку, диск анфас. JPG или PNG, до 10 MB",
             carPhoto: "Фото машины",
             wheelPhoto: "Фото диска",
             choose: "Нажми, чтобы выбрать",
@@ -91,7 +91,7 @@ const I18N = {
         result: {
             imageAlt: "AI рендер",
             title: "Готово!",
-            caption: "Ваш рендер с новыми дисками готов.",
+            caption: "Ваш рендер с новыми дисками готов",
         },
         actions: {
             createRender: "Создать рендер",
@@ -117,7 +117,7 @@ const I18N = {
             missingFiles: "Файлы не выбраны — вернитесь и загрузите оба фото",
             generationFailed: "Ошибка генерации",
             timeout: "Превышено время ожидания (>110 с)",
-            requestFailed: "Запрос не удался. Попробуйте ещё раз.",
+            requestFailed: "Запрос не удался. Попробуйте ещё раз",
         },
         share: {
             text: "Мой рендер в Dream Wheels AI",
@@ -168,8 +168,8 @@ const I18N = {
             refreshInvoice: "Обновить счет",
             refreshingInvoice: "Обновляем статус счета...",
             openingPayment: "Открываем Robokassa...",
-            paymentSuccess: "Оплата подтверждена. Обновляем баланс.",
-            paymentFail: "Платеж не завершен.",
+            paymentSuccess: "Оплата подтверждена. Обновляем баланс",
+            paymentFail: "Платеж не завершен",
             pendingFresh: "Счет создан. Если вы вернулись из Robokassa, обновите его через несколько секунд",
             pendingStale: "Счет все еще ждет подтверждения. Если оплата не прошла, он останется в ожидании, пока мы не получим финальный статус. Обновите счет позже",
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
@@ -190,8 +190,8 @@ const I18N = {
         renders: {
             eyebrow: "Готовые работы",
             title: "Мои виртуальные примерки",
-            lede: "Результаты и текущие статусы из вашей истории.",
-            empty: "Готовых примерок пока нет. Создайте первую на главном экране.",
+            lede: "Результаты и текущие статусы из вашей истории",
+            empty: "Готовых примерок пока нет. Создайте первую на главном экране",
             completed: "Готово",
             processing: "В обработке",
             failed: "Не удалось",
@@ -204,20 +204,20 @@ const I18N = {
         settings: {
             eyebrow: "Параметры кабинета",
             title: "Настройки",
-            lede: "Формальный экран для будущих параметров профиля и уведомлений.",
+            lede: "Формальный экран для будущих параметров профиля и уведомлений",
             profileTitle: "Профиль Telegram",
-            profileText: "Связан автоматически с Mini App.",
+            profileText: "Связан автоматически с Mini App",
             notificationsTitle: "Уведомления",
-            notificationsText: "Будут добавлены позже.",
+            notificationsText: "Будут добавлены позже",
             languageTitle: "Язык интерфейса",
-            languageText: "Определяется по Telegram.",
+            languageText: "Определяется по Telegram",
             linked: "Подключено",
             soon: "Скоро",
         },
         support: {
             eyebrow: "Связь",
             title: "Поддержка",
-            lede: "Короткий и формальный экран контактов без лишнего текста.",
+            lede: "Короткий и формальный экран контактов без лишнего текста",
             telegram: "Telegram",
             email: "Email",
             offer: "Оферта",
@@ -228,7 +228,7 @@ const I18N = {
         docs: {
             eyebrow: "Документы",
             title: "Документы",
-            lede: "Формальный список ссылок на юридические и справочные материалы.",
+            lede: "Формальный список ссылок на юридические и справочные материалы",
             offer: "Оферта",
             privacy: "Политика конфиденциальности",
             payments: "Условия оплаты",
@@ -271,7 +271,7 @@ const I18N = {
         create: {
             eyebrow: "Main screen",
             title: "Upload your car and wheel photos",
-            lede: "Full side view of the car, front view of the wheel. JPG or PNG, up to 10 MB.",
+            lede: "Full side view of the car, front view of the wheel. JPG or PNG, up to 10 MB",
             carPhoto: "Car photo",
             wheelPhoto: "Wheel photo",
             choose: "Tap to choose",
@@ -296,7 +296,7 @@ const I18N = {
         result: {
             imageAlt: "AI render",
             title: "Done!",
-            caption: "Your render with new wheels is ready.",
+            caption: "Your render with new wheels is ready",
         },
         actions: {
             createRender: "Create render",
@@ -319,10 +319,10 @@ const I18N = {
         },
         errors: {
             generic: "Something went wrong",
-            missingFiles: "Files are missing. Go back and upload both photos.",
+            missingFiles: "Files are missing. Go back and upload both photos",
             generationFailed: "Generation failed",
             timeout: "Timed out after 110 seconds",
-            requestFailed: "Request failed. Please try again.",
+            requestFailed: "Request failed. Please try again",
         },
         share: {
             text: "My Dream Wheels AI render",
@@ -373,8 +373,8 @@ const I18N = {
             refreshInvoice: "Refresh invoice",
             refreshingInvoice: "Refreshing invoice status...",
             openingPayment: "Opening Robokassa...",
-            paymentSuccess: "Payment confirmed. Refreshing balance.",
-            paymentFail: "Payment was not completed.",
+            paymentSuccess: "Payment confirmed. Refreshing balance",
+            paymentFail: "Payment was not completed",
             pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds",
             pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later",
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
@@ -395,28 +395,28 @@ const I18N = {
         renders: {
             eyebrow: "Finished work",
             title: "Render history",
-            lede: "Recent renders saved on this device.",
-            empty: "No renders yet. Create your first one on the main screen.",
+            lede: "Recent renders saved on this device",
+            empty: "No renders yet. Create your first one on the main screen",
             completed: "Done",
             failed: "Failed",
         },
         settings: {
             eyebrow: "Cabinet settings",
             title: "Settings",
-            lede: "A formal screen for future profile and notification options.",
+            lede: "A formal screen for future profile and notification options",
             profileTitle: "Telegram profile",
-            profileText: "Linked automatically through the Mini App.",
+            profileText: "Linked automatically through the Mini App",
             notificationsTitle: "Notifications",
-            notificationsText: "Will be added later.",
+            notificationsText: "Will be added later",
             languageTitle: "Interface language",
-            languageText: "Detected from Telegram.",
+            languageText: "Detected from Telegram",
             linked: "Connected",
             soon: "Soon",
         },
         support: {
             eyebrow: "Contact",
             title: "Support",
-            lede: "A short formal contact screen without extra content.",
+            lede: "A short formal contact screen without extra content",
             telegram: "Telegram",
             email: "Email",
             offer: "Offer",
@@ -427,7 +427,7 @@ const I18N = {
         docs: {
             eyebrow: "Documents",
             title: "Documents",
-            lede: "A formal list of legal and reference materials.",
+            lede: "A formal list of legal and reference materials",
             offer: "Offer",
             privacy: "Privacy policy",
             payments: "Payment terms",
@@ -1262,7 +1262,7 @@ function renderRenders() {
             <div class="history-card render-empty">
                 <div>
                     <strong>${t("renders.empty")}</strong>
-                    <div class="meta">Создайте первую виртуальную примерку.</div>
+                    <div class="meta">Создайте первую виртуальную примерку</div>
                 </div>
             </div>
         `;
@@ -1295,8 +1295,8 @@ function renderDashboard() {
         latestStatus.className = "status-pill neutral";
         latestContent.innerHTML = `
             <div class="first-render-empty">
-                <p>Посмотрите, как новые диски изменят автомобиль.</p>
-                <p>Загрузите фото автомобиля и диска — готовый результат появится здесь.</p>
+                <p>Посмотрите, как новые диски изменят автомобиль</p>
+                <p>Загрузите фото автомобиля и диска — готовый результат появится здесь</p>
                 <button type="button" class="ghost-button compact-button" data-nav="create">Создать первую примерку →</button>
             </div>
         `;
@@ -1321,12 +1321,12 @@ function renderDashboard() {
     }
     if (latest.status === "failed") {
         latestContent.innerHTML = `
-            <p class="latest-meta">Попробуйте создать виртуальную примерку ещё раз.</p>
+            <p class="latest-meta">Попробуйте создать виртуальную примерку ещё раз</p>
             <button type="button" class="ghost-button compact-button" data-nav="create">Попробовать ещё раз</button>
         `;
         return;
     }
-    latestContent.innerHTML = `<p class="latest-meta">Готовый результат появится здесь автоматически.</p>`;
+    latestContent.innerHTML = `<p class="latest-meta">Готовый результат появится здесь автоматически</p>`;
 }
 
 async function loadRenderHistory({ silent = false } = {}) {
