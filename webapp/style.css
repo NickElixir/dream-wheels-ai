@@ -1312,7 +1312,15 @@ h2 {
     padding: 20px;
 }
 
-.payment-history-details summary > span {
+.payment-history-details summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 16px;
+}
+
+.payment-history-details summary > span:first-child {
+    min-width: 0;
     display: grid;
     gap: 8px;
 }
@@ -1834,6 +1842,10 @@ h2 {
     }
 
     .view[data-view="photo-guide"] .form-stack {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-history-details summary {
         grid-template-columns: 1fr;
     }
 
