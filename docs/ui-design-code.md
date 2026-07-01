@@ -1,8 +1,8 @@
 # Dream Wheels AI — UI Design Code
 
-> **Status:** approved reference for Sprint 1 Cabinet Dashboard.
+> **Status:** approved reference for Sprint 1 Cabinet Dashboard
 >
-> Canonical interactive prototype: `docs/references/sprint-1-dashboard.html`.
+> Canonical interactive prototype: `docs/references/sprint-1-dashboard.html`
 
 ## Scope and boundaries
 
@@ -24,7 +24,40 @@ Use the established dark Dream Wheels AI system:
 
 Do not allow native browser button text colours to leak into the UI. Interactive cards, upload zones and buttons explicitly inherit the design-system foreground colour.
 
+For this product UI, standalone paragraph-style copy should not end with a period
+This applies to ledes, helper text, empty states, support copy, form guidance and similar short interface text
+Exceptions are explicit multi-sentence legal text, technical payloads and copy where punctuation is required for clarity
+
+## Buttons and action chips
+
+Use a small, consistent button family across the cabinet:
+
+- primary CTA uses the acid fill, dark foreground, strong weight, and the largest visual priority;
+- secondary actions use a dark island chip with a thin border, 44-48 px minimum height, rounded corners, and a restrained hover tint;
+- accent secondary chips may keep the same island base while using accent text for actions like open, sign in, or disclose;
+- inline panel actions should not appear as naked text links when they compete with other controls in the same block;
+- compact actions such as `Открыть`, `Сбросить`, `Обновить счет`, `Пополнить баланс`, download/share, and website Telegram login should stay within the same secondary-chip family;
+- buttons should visually align with the panel system, avoid browser-default fills, and preserve comfortable tap targets on mobile.
+
 ## Responsive navigation
+
+### Desktop layout rail
+
+Desktop screens must reserve a real layout column for the permanent sidebar.
+Do not rely on a visually fixed sidebar floating over the page content.
+
+Rules:
+
+- sidebar has a fixed width and its own viewport inset;
+- main content starts only after `sidebar width + sidebar inset + content gutter`;
+- use a centered content rail with a bounded max width instead of stretching task screens across the full viewport;
+- keep at least 40 px visual gutter between sidebar and the nearest panel at desktop widths;
+- topbar, hero panels and content panels align to the same content rail;
+- panels and status islands use visible vertical gaps, so warnings, upload zones, cards and forms never touch each other.
+- help instruction cards should be centered, with the label and explanation stacked vertically and separated by a visible gap;
+- help instruction cards should sit in a two-column row on desktop and collapse to a single column on mobile;
+- do not let the label and the explanatory paragraph run into each other on desktop help screens.
+- the payment history disclosure title should be visually prominent like the main section headers, without a secondary "collapsed by default" hint in the header.
 
 ### Desktop
 
@@ -64,6 +97,18 @@ Use restrained motion only:
 - screen transition: fade + `translateY(-6px → 0)` over about 300 ms;
 - respect `prefers-reduced-motion`.
 
+### Topbar caption
+
+The topbar page label is not a content heading and should not reuse `H1` or `H2`.
+Use a dedicated caption style:
+
+- let the caption row stretch across the full desktop content width;
+- place the current page label at the far left edge of that row on desktop;
+- place the website Telegram login action at the far right edge of that row;
+- keep these two elements visually separated rather than grouped into a tight cluster;
+- use a slightly larger but restrained caption treatment with muted color, moderate weight, and no oversized hero emphasis;
+- hide the caption on narrow mobile widths when it starts competing with primary controls.
+
 ## Status islands
 
 Use the established island pattern for asynchronous states and warnings:
@@ -84,6 +129,16 @@ The dashboard contains:
 3. latest render card or a first-use empty state;
 4. primary CTA: **Создать виртуальную примерку**;
 5. quick links: **Мои примерки**, **Нужна помощь?**.
+
+### Dashboard card headers
+
+Dashboard summary cards such as balance and latest result must use a resilient internal header layout:
+
+- use a two-zone header: content block on the left, action chip or status chip on the right;
+- do not rely on a raw single-line flex row when the left side contains a large metric or multi-line title;
+- the content block must allow shrinking with `min-width: 0`, while the action or status chip remains auto-sized;
+- when the card container becomes narrow, the action or status chip should move below the content instead of compressing or overlapping the metric;
+- card-internal responsive behavior should follow the card container width, not only the full viewport width.
 
 ### Balance terminology
 
