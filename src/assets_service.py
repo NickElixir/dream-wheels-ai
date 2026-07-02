@@ -19,13 +19,14 @@ ALL_ASSET_KINDS: set[AssetKind] = {"car_original", "rim_original", "result"}
 class AssetUpload:
     id: str
     owner_user_id: int
-    job_id: str
+    job_id: str | None
     kind: AssetKind
     bucket: str
     storage_key: str
     content_type: str
     size_bytes: int
     sha256: str
+    render_input_draft_id: str | None = None
     public_url: str | None = None
 
 
@@ -41,34 +42,43 @@ def _ext_for_content_type(content_type: str) -> str:
 def build_storage_key(
     *,
     owner_user_id: int,
-    job_id: str,
     kind: AssetKind,
     asset_id: str,
     content_type: str,
+    job_id: str | None = None,
+    render_input_draft_id: str | None = None,
 ) -> str:
     ext = _ext_for_content_type(content_type)
-    return f"users/{owner_user_id}/jobs/{job_id}/{kind}/{asset_id}.{ext}"
+    if job_id:
+        return f"users/{owner_user_id}/jobs/{job_id}/{kind}/{asset_id}.{ext}"
+    if render_input_draft_id:
+        return f"users/{owner_user_id}/drafts/{render_input_draft_id}/{kind}/{asset_id}.{ext}"
+    raise ValueError("job_id or render_input_draft_id is required")
 
 
 async def upload_render_asset(
     *,
     owner_user_id: int,
-    job_id: str,
     kind: AssetKind,
     data: bytes,
     content_type: str,
+    job_id: str | None = None,
+    render_input_draft_id: str | None = None,
 ) -> AssetUpload:
     if kind not in ALL_ASSET_KINDS:
         raise ValueError(f"Unsupported asset kind: {kind}")
+    if not job_id and not render_input_draft_id:
+        raise ValueError("job_id or render_input_draft_id is required")
 
     asset_id = str(uuid4())
     bucket = storage.RAW_BUCKET if kind in RAW_ASSET_KINDS else storage.RESULTS_BUCKET
     storage_key = build_storage_key(
         owner_user_id=owner_user_id,
-        job_id=job_id,
         kind=kind,
         asset_id=asset_id,
         content_type=content_type,
+        job_id=job_id,
+        render_input_draft_id=render_input_draft_id,
     )
     await storage.upload_bytes(
         bucket=bucket,
@@ -89,6 +99,7 @@ async def upload_render_asset(
         content_type=content_type,
         size_bytes=len(data),
         sha256=hashlib.sha256(data).hexdigest(),
+        render_input_draft_id=render_input_draft_id,
         public_url=public_url,
     )
 
@@ -98,9 +109,9 @@ async def insert_asset(conn: asyncpg.Connection, asset: AssetUpload) -> None:
         """
         INSERT INTO assets (
             id, owner_user_id, job_id, kind, bucket, storage_key,
-            content_type, size_bytes, sha256
+            content_type, size_bytes, sha256, render_input_draft_id
         )
-        VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9)
+        VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid)
         ON CONFLICT (id) DO NOTHING
         """,
         asset.id,
@@ -112,6 +123,7 @@ async def insert_asset(conn: asyncpg.Connection, asset: AssetUpload) -> None:
         asset.content_type,
         asset.size_bytes,
         asset.sha256,
+        asset.render_input_draft_id,
     )
 
 

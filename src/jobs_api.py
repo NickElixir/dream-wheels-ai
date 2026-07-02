@@ -17,7 +17,7 @@ from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadF
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
 
-from src import assets_service, db, redis_client, storage
+from src import assets_service, db, identity_service, redis_client, storage
 from src.assets_service import AssetKind
 from src.auth import AuthContext, resolve_telegram_auth
 from src.config import API_INTERNAL_TOKEN, REDIS_JOB_QUEUE, WORKER_ENABLED
@@ -93,6 +93,16 @@ class JobCreateRequest(BaseModel):
 class JobCreateResponse(BaseModel):
     job_id: str
     status: str
+
+
+class JobFromAssetsRequest(BaseModel):
+    draft_id: str
+    idempotency_key: str
+    vehicle: identity_service.VehicleCandidate
+    rim: identity_service.RimProposal
+    rim_user_confirmed: bool = True
+    init_data: str | None = None
+    telegram_user_id: int | None = None
 
 
 class JobStatusResponse(BaseModel):
@@ -601,6 +611,201 @@ async def upload_job(
             status_code=503, detail="Job queue is temporarily unavailable"
         ) from queue_err
 
+    return JobCreateResponse(job_id=job_id, status="queued")
+
+
+@router.post("/from-assets", response_model=JobCreateResponse)
+async def create_job_from_assets(
+    request: JobFromAssetsRequest,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Create a render job from confirmed Sprint 2 identity draft assets."""
+    auth = resolve_telegram_auth(
+        init_data=request.init_data or "",
+        telegram_user_id=request.telegram_user_id,
+        authorization=authorization,
+        auth_name="jobs from assets",
+    )
+
+    rds = _get_render_queue_client("/jobs/from-assets", auth.telegram_user_id)
+    await enforce_rate_limit(
+        scope="jobs_upload",
+        identifier=auth.telegram_user_id,
+        limit=UPLOAD_RATE_LIMIT,
+        window_sec=UPLOAD_RATE_WINDOW_SEC,
+    )
+
+    idem_redis_key = redis_client.key(
+        f"idem:jobs_from_assets:{auth.telegram_user_id}:{request.idempotency_key}"
+    )
+    job_id = str(uuid.uuid4())
+    reserved = await rds.set(idem_redis_key, job_id, ex=IDEMPOTENCY_TTL_SEC, nx=True)
+    if not reserved:
+        existing_job_id = await rds.get(idem_redis_key)
+        if not existing_job_id:
+            raise HTTPException(status_code=409, detail="Create retry in progress")
+        logger.info(
+            "♻️  Idempotent replay: tg_user=%s key=%s → job=%s",
+            auth.telegram_user_id,
+            request.idempotency_key,
+            existing_job_id,
+        )
+        return JobCreateResponse(job_id=existing_job_id, status="queued")
+
+    pool = db.get_pool()
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+                draft = await conn.fetchrow(
+                    """
+                    SELECT
+                        draft.id::text AS draft_id,
+                        draft.car_asset_id::text AS car_asset_id,
+                        draft.rim_asset_id::text AS rim_asset_id,
+                        car_asset.storage_key AS car_storage_key,
+                        rim_asset.storage_key AS rim_storage_key
+                    FROM render_input_drafts AS draft
+                    JOIN assets AS car_asset
+                      ON car_asset.id = draft.car_asset_id
+                     AND car_asset.owner_user_id = draft.owner_user_id
+                    JOIN assets AS rim_asset
+                      ON rim_asset.id = draft.rim_asset_id
+                     AND rim_asset.owner_user_id = draft.owner_user_id
+                    WHERE draft.id = $1::uuid
+                      AND draft.owner_user_id = $2
+                      AND draft.status = 'resolved'
+                      AND draft.expires_at > CURRENT_TIMESTAMP
+                    FOR UPDATE OF draft
+                    """,
+                    request.draft_id,
+                    user_id,
+                )
+                if not draft:
+                    raise HTTPException(status_code=404, detail="Identity draft not found")
+
+                vehicle_identity_id = await identity_service.insert_vehicle_identity(
+                    conn,
+                    owner_user_id=user_id,
+                    vehicle=request.vehicle,
+                )
+                rim_spec_id = await identity_service.insert_rim_spec(
+                    conn,
+                    owner_user_id=user_id,
+                    rim=request.rim,
+                    is_user_confirmed=request.rim_user_confirmed,
+                )
+                rim_setup_id = await identity_service.insert_rim_setup(
+                    conn,
+                    owner_user_id=user_id,
+                    rim_spec_id=rim_spec_id,
+                )
+                snapshot = identity_service.render_input_snapshot(
+                    vehicle_identity_id=vehicle_identity_id,
+                    rim_setup_id=rim_setup_id,
+                    vehicle=request.vehicle,
+                    rim=request.rim,
+                    rim_user_confirmed=request.rim_user_confirmed,
+                    car_asset_id=draft["car_asset_id"],
+                    rim_asset_id=draft["rim_asset_id"],
+                )
+
+                await conn.execute(
+                    """
+                    INSERT INTO jobs (
+                        id, user_id, status, car_image_url, wheel_image_url,
+                        car_asset_id, rim_asset_id, vehicle_identity_id,
+                        rim_setup_id, render_input_snapshot
+                    )
+                    VALUES (
+                        $1::uuid, $2, 'queued', $3, $4,
+                        $5::uuid, $6::uuid, $7::uuid, $8::uuid, $9::jsonb
+                    )
+                    """,
+                    job_id,
+                    user_id,
+                    draft["car_storage_key"],
+                    draft["rim_storage_key"],
+                    draft["car_asset_id"],
+                    draft["rim_asset_id"],
+                    vehicle_identity_id,
+                    rim_setup_id,
+                    json.dumps(snapshot),
+                )
+                await conn.execute(
+                    """
+                    UPDATE assets
+                    SET job_id = $1::uuid
+                    WHERE id IN ($2::uuid, $3::uuid)
+                      AND owner_user_id = $4
+                    """,
+                    job_id,
+                    draft["car_asset_id"],
+                    draft["rim_asset_id"],
+                    user_id,
+                )
+                await conn.execute(
+                    """
+                    UPDATE render_input_drafts
+                    SET status = 'consumed',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $1::uuid
+                      AND owner_user_id = $2
+                    """,
+                    request.draft_id,
+                    user_id,
+                )
+                await reserve_job_credit(conn, user_id=user_id, job_id=job_id)
+    except InsufficientCreditsError as exc:
+        await rds.delete(idem_redis_key)
+        logger.warning("❌ Недостаточно credits для tg_user=%s: %s", auth.telegram_user_id, exc)
+        raise HTTPException(status_code=402, detail="Insufficient credits") from exc
+    except HTTPException:
+        await rds.delete(idem_redis_key)
+        raise
+    except Exception as db_err:
+        await rds.delete(idem_redis_key)
+        logger.exception("❌ DB INSERT failed для Sprint 2 job_id=%s: %s", job_id, db_err)
+        raise HTTPException(status_code=500, detail="Database insert failed") from db_err
+
+    try:
+        await rds.rpush(
+            redis_client.key(REDIS_JOB_QUEUE),
+            json.dumps(
+                {
+                    "job_id": job_id,
+                    "user_id": user_id,
+                    "telegram_user_id": auth.telegram_user_id,
+                    "source": "webapp",
+                    "car_storage_path": draft["car_storage_key"],
+                    "wheel_storage_path": draft["rim_storage_key"],
+                    "car_asset_id": draft["car_asset_id"],
+                    "rim_asset_id": draft["rim_asset_id"],
+                    "vehicle_identity_id": vehicle_identity_id,
+                    "rim_setup_id": rim_setup_id,
+                }
+            ),
+        )
+    except Exception as queue_err:
+        logger.exception(
+            "❌ Queue publish failed for job_id=%s user_id=%s telegram_user_id=%s: %s",
+            job_id,
+            user_id,
+            auth.telegram_user_id,
+            queue_err,
+        )
+        await _compensate_queue_publish_failure(
+            pool=pool,
+            user_id=user_id,
+            job_id=job_id,
+            error_message="Queue publish failed",
+        )
+        await rds.delete(idem_redis_key)
+        raise HTTPException(
+            status_code=503, detail="Job queue is temporarily unavailable"
+        ) from queue_err
+
+    logger.info("✅ Sprint 2 job %s создан из draft_id=%s", job_id, request.draft_id)
     return JobCreateResponse(job_id=job_id, status="queued")
 
 
