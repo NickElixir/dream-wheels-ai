@@ -149,6 +149,83 @@
                     <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
                     <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
                 </div>
+
+                <div class="create-flow-actions" data-identity-action hidden>
+                    <button type="button" class="primary-button" data-detect-identity>Определить данные</button>
+                </div>
+
+                <section class="identity-flow" data-identity-flow hidden>
+                    <div class="wallet-status-island tone-loading" data-identity-loading data-visible="false" aria-live="polite">
+                        <div class="wallet-status-spinner" aria-hidden="true"></div>
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title">Определяем автомобиль и диск</div>
+                            <div class="wallet-status-text">Анализируем фото. Это не проверка совместимости — данные нужны для более точной виртуальной примерки</div>
+                        </div>
+                    </div>
+
+                    <div class="wallet-status-island tone-error" data-identity-error data-visible="false" aria-live="polite">
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-identity-error-text>Не удалось определить данные</div>
+                        </div>
+                    </div>
+
+                    <div class="identity-confirmation-grid" data-identity-confirmations hidden>
+                        <article class="identity-card">
+                            <div class="identity-card-head">
+                                <div>
+                                    <p class="section-label">Автомобиль</p>
+                                    <h2>Проверьте AI-предложение</h2>
+                                </div>
+                                <span class="confidence-pill" data-vehicle-confidence>—</span>
+                            </div>
+                            <div class="identity-choice-list" data-vehicle-options></div>
+                        </article>
+
+                        <article class="identity-card">
+                            <div class="identity-card-head">
+                                <div>
+                                    <p class="section-label">Диск</p>
+                                    <h2>Параметры для рендера</h2>
+                                </div>
+                                <span class="confidence-pill" data-rim-confidence>—</span>
+                            </div>
+                            <div class="identity-metrics">
+                                <div class="identity-metric"><span>Диаметр</span><strong data-rim-diameter>—</strong></div>
+                                <div class="identity-metric"><span>Ширина</span><strong data-rim-width>—</strong></div>
+                                <div class="identity-metric"><span>PCD</span><strong data-rim-pcd>—</strong></div>
+                            </div>
+                            <div class="create-flow-actions">
+                                <button type="button" class="ghost-button compact-button" data-rim-confirm="true">✓ Верно</button>
+                                <button type="button" class="ghost-button compact-button" data-rim-confirm="false">Не уверен</button>
+                            </div>
+                            <div class="identity-note" data-rim-uncertain-note hidden>
+                                Данные можно будет уточнить позже для технической проверки
+                            </div>
+                        </article>
+                    </div>
+
+                    <article class="identity-card review-card" data-identity-review hidden>
+                        <div class="identity-card-head">
+                            <div>
+                                <p class="section-label">Проверка перед рендером</p>
+                                <h2>Всё готово</h2>
+                            </div>
+                        </div>
+                        <div class="review-summary">
+                            <div class="review-row"><span>Автомобиль</span><strong data-review-vehicle>—</strong></div>
+                            <div class="review-row"><span>Диск</span><strong data-review-rim>—</strong></div>
+                            <div class="review-row"><span>Назначение</span><strong>Визуальная примерка</strong></div>
+                        </div>
+                        <div class="identity-note warning">
+                            Совместимость пока не проверена. Это визуальный рендер, а не технический fitment verdict
+                        </div>
+                        <button type="button" class="primary-button full-width" data-create-render>Создать виртуальную примерку</button>
+                        <div class="coming-soon-island" aria-disabled="true">
+                            <strong>Проверка совместимости — скоро</strong>
+                            <span>Позже здесь появится техническая проверка PCD, ширины, ET, DIA и условий установки</span>
+                        </div>
+                    </article>
+                </section>
             </section>
 
             <section class="panel result-panel" data-create-screen="result" hidden>

@@ -13,6 +13,7 @@ from src import (
     assets_service,
     auth_api,
     db,
+    identity_api,
     jobs_api,
     payments_api,
     redis_client,
@@ -86,6 +87,7 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_api.router)
+app.include_router(identity_api.router)
 app.include_router(jobs_api.router)
 app.include_router(payments_api.router)
 app.include_router(share_api.router)

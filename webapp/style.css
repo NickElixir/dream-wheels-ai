@@ -250,13 +250,19 @@ a {
 }
 
 @media (max-width: 560px) {
+    .topbar {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
     .topbar-actions {
+        flex: 0 0 100%;
         gap: 8px;
         justify-content: flex-end;
     }
 
     .website-auth-button {
-        max-width: 132px;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1454,6 +1460,185 @@ h2 {
     gap: 18px;
 }
 
+.create-flow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.identity-flow {
+    display: grid;
+    gap: 16px;
+}
+
+.identity-confirmation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.identity-card {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+}
+
+.identity-card-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+}
+
+.identity-card h2 {
+    font-size: 20px;
+    line-height: 1.12;
+    letter-spacing: 0;
+}
+
+.confidence-pill {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    border: 1px solid rgba(221, 255, 0, 0.24);
+    background: rgba(221, 255, 0, 0.07);
+    color: var(--accent-strong);
+    font-size: 12px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.identity-choice-list {
+    display: grid;
+    gap: 8px;
+}
+
+.identity-choice {
+    width: 100%;
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--text);
+    text-align: left;
+    font-weight: 850;
+}
+
+.identity-choice[data-selected="true"] {
+    border-color: rgba(221, 255, 0, 0.42);
+    background: rgba(221, 255, 0, 0.08);
+    color: var(--accent-strong);
+}
+
+.identity-card [data-rim-confirm][data-selected="true"] {
+    border-color: rgba(221, 255, 0, 0.42);
+    background: rgba(221, 255, 0, 0.08);
+    color: var(--accent-strong);
+}
+
+.identity-choice small {
+    color: var(--text-subtle);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.identity-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.identity-metric {
+    display: grid;
+    gap: 4px;
+    padding: 13px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.identity-metric span {
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+
+.identity-metric strong {
+    font-size: 18px;
+}
+
+.identity-note {
+    padding: 13px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 204, 86, 0.22);
+    background: rgba(255, 204, 86, 0.07);
+    color: var(--warning);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.identity-note.warning {
+    margin-top: 2px;
+}
+
+.review-summary {
+    display: grid;
+    gap: 2px;
+}
+
+.review-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.review-row:last-child {
+    border-bottom: 0;
+}
+
+.review-row span {
+    color: var(--text-muted);
+}
+
+.review-row strong {
+    text-align: right;
+}
+
+.coming-soon-island {
+    display: grid;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px dashed rgba(221, 255, 0, 0.25);
+    background: rgba(221, 255, 0, 0.045);
+}
+
+.coming-soon-island strong {
+    color: var(--accent-strong);
+}
+
+.coming-soon-island span {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.full-width {
+    width: 100%;
+}
+
 .history-card {
     padding: 16px 18px;
     display: flex;
@@ -1881,8 +2066,19 @@ h2 {
     }
 
     .dashboard-grid,
-    .quick-links {
+    .quick-links,
+    .identity-confirmation-grid,
+    .identity-metrics {
         grid-template-columns: 1fr;
+    }
+
+    .identity-card-head,
+    .review-row {
+        grid-template-columns: 1fr;
+    }
+
+    .review-row strong {
+        text-align: left;
     }
 
     .render-summary {

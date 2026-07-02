@@ -77,6 +77,8 @@ const I18N = {
             carPreviewAlt: "Превью машины",
             wheelPreviewAlt: "Превью диска",
             footerNotTelegram: "Не в Telegram",
+            detectIdentity: "Определить данные",
+            createRender: "Создать виртуальную примерку",
         },
         steps: {
             upload: "Загрузка",
@@ -117,6 +119,8 @@ const I18N = {
         errors: {
             generic: "Что-то пошло не так",
             missingFiles: "Файлы не выбраны — вернитесь и загрузите оба фото",
+            missingIdentity: "Сначала определите и подтвердите данные",
+            missingRimConfirmation: "Подтвердите параметры диска или выберите «Не уверен»",
             generationFailed: "Ошибка генерации",
             timeout: "Превышено время ожидания (>110 с)",
             requestFailed: "Запрос не удался. Попробуйте ещё раз",
@@ -282,6 +286,8 @@ const I18N = {
             carPreviewAlt: "Car preview",
             wheelPreviewAlt: "Wheel preview",
             footerNotTelegram: "Not in Telegram",
+            detectIdentity: "Detect details",
+            createRender: "Create virtual render",
         },
         steps: {
             upload: "Upload",
@@ -322,6 +328,8 @@ const I18N = {
         errors: {
             generic: "Something went wrong",
             missingFiles: "Files are missing. Go back and upload both photos",
+            missingIdentity: "Detect and confirm details first",
+            missingRimConfirmation: "Confirm wheel details or choose Not sure",
             generationFailed: "Generation failed",
             timeout: "Timed out after 110 seconds",
             requestFailed: "Request failed. Please try again",
@@ -537,6 +545,12 @@ const state = {
     createScreen: "upload",
     files: { car: null, wheel: null },
     previewUrls: { car: "", wheel: "" },
+    identityDraftId: "",
+    identityProposal: null,
+    identityResolving: false,
+    identityError: "",
+    selectedVehicleIndex: 0,
+    rimUserConfirmed: null,
     jobId: null,
     resultUrl: null,
     resultDownloadUrl: null,
@@ -1683,6 +1697,135 @@ function renderPreviewFromFile(kind, fileLike) {
     zone.hidden = true;
 }
 
+function resetIdentityState() {
+    state.identityDraftId = "";
+    state.identityProposal = null;
+    state.identityResolving = false;
+    state.identityError = "";
+    state.selectedVehicleIndex = 0;
+    state.rimUserConfirmed = null;
+    renderIdentityFlow();
+}
+
+function identityVehicles() {
+    const vehicle = state.identityProposal?.vehicle;
+    if (!vehicle?.primary) return [];
+    const alternatives = Array.isArray(vehicle.alternatives) ? vehicle.alternatives.slice(0, 2) : [];
+    return [vehicle.primary, ...alternatives];
+}
+
+function selectedVehicleCandidate() {
+    const vehicles = identityVehicles();
+    return vehicles[state.selectedVehicleIndex] || vehicles[0] || null;
+}
+
+function formatVehicle(candidate) {
+    if (!candidate) return "—";
+    const year = candidate.year ?? (
+        candidate.year_start && candidate.year_end ? `${candidate.year_start}-${candidate.year_end}` : ""
+    );
+    return `${candidate.make} ${candidate.model}${year ? ` · ${year}` : ""}`;
+}
+
+function formatPcd(rim) {
+    if (!rim) return "—";
+    const pcd = Number(rim.pcd_mm);
+    return `${rim.bolt_count}×${Number.isInteger(pcd) ? pcd.toFixed(0) : pcd}`;
+}
+
+function formatIdentityNumber(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "—";
+    return Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+}
+
+function formatRim(rim) {
+    if (!rim) return "—";
+    return `${formatIdentityNumber(rim.wheel_diameter_in)}" · ${formatIdentityNumber(rim.wheel_width_j)}J · ${formatPcd(rim)}`;
+}
+
+function confidenceLabel(confidence) {
+    const value = Number(confidence || 0);
+    if (value >= 0.85) return "уверенность высокая";
+    if (value >= 0.65) return "уверенность средняя";
+    return "уверенность низкая";
+}
+
+function renderIdentityFlow() {
+    const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
+    const action = document.querySelector("[data-identity-action]");
+    if (action) action.hidden = !ready || Boolean(state.identityProposal) || state.identityResolving;
+
+    const flow = document.querySelector("[data-identity-flow]");
+    const loading = document.querySelector("[data-identity-loading]");
+    const error = document.querySelector("[data-identity-error]");
+    const errorText = document.querySelector("[data-identity-error-text]");
+    const confirmations = document.querySelector("[data-identity-confirmations]");
+    const review = document.querySelector("[data-identity-review]");
+    const hasFlow = state.identityResolving || state.identityError || state.identityProposal;
+    if (flow) flow.hidden = !hasFlow;
+    if (loading) loading.dataset.visible = String(state.identityResolving);
+    if (error) error.dataset.visible = String(Boolean(state.identityError));
+    if (errorText && state.identityError) errorText.textContent = localizeErrorMessage(state.identityError);
+
+    const hasProposal = Boolean(state.identityProposal && !state.identityResolving);
+    if (confirmations) confirmations.hidden = !hasProposal;
+    if (review) review.hidden = !hasProposal;
+    if (!hasProposal) {
+        refreshButtonsForCurrentView();
+        return;
+    }
+
+    const vehicles = identityVehicles();
+    const selectedVehicle = selectedVehicleCandidate();
+    const rim = state.identityProposal.rim;
+    const vehicleOptions = document.querySelector("[data-vehicle-options]");
+    if (vehicleOptions) {
+        vehicleOptions.innerHTML = vehicles
+            .slice(0, 3)
+            .map((candidate, index) => {
+                const selected = index === state.selectedVehicleIndex;
+                const actionText = selected ? "✓ Верно" : "Выбрать";
+                return `
+                    <button type="button" class="identity-choice" data-vehicle-choice="${index}" data-selected="${selected}">
+                        <span>${escapeHtml(formatVehicle(candidate))}</span>
+                        <small>${escapeHtml(actionText)}</small>
+                    </button>
+                `;
+            })
+            .join("");
+    }
+
+    const vehicleConfidence = document.querySelector("[data-vehicle-confidence]");
+    if (vehicleConfidence) vehicleConfidence.textContent = confidenceLabel(selectedVehicle?.confidence);
+    const rimConfidence = document.querySelector("[data-rim-confidence]");
+    if (rimConfidence) rimConfidence.textContent = confidenceLabel(rim?.confidence);
+    document.querySelector("[data-rim-diameter]")?.replaceChildren(
+        document.createTextNode(`${formatIdentityNumber(rim?.wheel_diameter_in)}"`)
+    );
+    document.querySelector("[data-rim-width]")?.replaceChildren(
+        document.createTextNode(`${formatIdentityNumber(rim?.wheel_width_j)}J`)
+    );
+    document.querySelector("[data-rim-pcd]")?.replaceChildren(document.createTextNode(formatPcd(rim)));
+    document.querySelector("[data-review-vehicle]")?.replaceChildren(
+        document.createTextNode(formatVehicle(selectedVehicle))
+    );
+    document.querySelector("[data-review-rim]")?.replaceChildren(document.createTextNode(formatRim(rim)));
+    document.querySelector("[data-rim-uncertain-note]")?.toggleAttribute(
+        "hidden",
+        state.rimUserConfirmed !== false
+    );
+    document.querySelectorAll("[data-rim-confirm]").forEach((button) => {
+        button.dataset.selected = String(
+            state.rimUserConfirmed !== null &&
+            (button.dataset.rimConfirm === "true") === state.rimUserConfirmed
+        );
+    });
+    const createRenderButton = document.querySelector("[data-create-render]");
+    if (createRenderButton) createRenderButton.disabled = state.rimUserConfirmed === null;
+    refreshButtonsForCurrentView();
+}
+
 function showCreateScreen(name) {
     state.createScreen = name;
     document.querySelectorAll("[data-create-screen]").forEach((el) => {
@@ -1757,11 +1900,14 @@ function refreshButtonsForCurrentView() {
 
     if (state.createScreen === "upload") {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
+        const hasProposal = Boolean(state.identityProposal);
+        const needsRimChoice = hasProposal && state.rimUserConfirmed === null;
+        const disabled = !ready || state.submitting || state.identityResolving || needsRimChoice;
         setBackButton(null);
         setMainButton({
-            text: t("actions.createRender"),
-            enabled: ready && !state.submitting,
-            onClick: ready && !state.submitting ? submitJob : null,
+            text: hasProposal ? t("create.createRender") : t("create.detectIdentity"),
+            enabled: !disabled,
+            onClick: !disabled ? (hasProposal ? submitJob : resolveIdentity) : null,
         });
         return;
     }
@@ -1785,6 +1931,7 @@ function resetFlow() {
     state.sharing = false;
     state.submitting = false;
     state.files = { car: null, wheel: null };
+    resetIdentityState();
     revokePreviewUrl("car");
     revokePreviewUrl("wheel");
     void deleteDraftFile("car");
@@ -1946,6 +2093,67 @@ function makeIdempotencyKey() {
     return `dw-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+async function resolveIdentity() {
+    if (state.identityResolving || state.submitting) return;
+    if (!state.files.car?.blob || !state.files.wheel?.blob) {
+        await hydrateFilesFromDraft();
+    }
+    if (!state.files.car?.blob || !state.files.wheel?.blob) {
+        state.identityError = t("errors.missingFiles");
+        renderIdentityFlow();
+        haptic("error");
+        return;
+    }
+
+    state.identityResolving = true;
+    state.identityError = "";
+    state.identityProposal = null;
+    state.identityDraftId = "";
+    renderIdentityFlow();
+    haptic("light");
+
+    const formData = new FormData();
+    formData.append("car_image", state.files.car.blob, state.files.car.name);
+    formData.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
+    const identity = getIdentityPayload({ includeTelegramUserId: true });
+    if (identity.init_data) formData.append("init_data", identity.init_data);
+    if (identity.telegram_user_id != null) {
+        formData.append("telegram_user_id", String(identity.telegram_user_id));
+    }
+
+    try {
+        const resp = await fetch(`${state.apiBaseUrl}/identity/resolve`, {
+            method: "POST",
+            headers: withAuthHeaders(),
+            body: formData,
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            const detail = Array.isArray(data.detail)
+                ? data.detail.map((entry) => entry.msg).join("; ")
+                : (data.detail || `HTTP ${resp.status}`);
+            throw new Error(detail);
+        }
+        state.identityDraftId = data.draft_id || "";
+        state.identityProposal = {
+            vehicle: data.vehicle,
+            rim: data.rim,
+            pcdDisplay: data.pcd_display,
+            resolver: data.resolver,
+        };
+        state.selectedVehicleIndex = 0;
+        state.rimUserConfirmed = null;
+        haptic("success");
+    } catch (error) {
+        console.error("[DW] identity resolve failed", error);
+        state.identityError = error?.message || t("errors.requestFailed");
+        haptic("error");
+    } finally {
+        state.identityResolving = false;
+        renderIdentityFlow();
+    }
+}
+
 async function submitJob() {
     if (state.submitting) return;
     state.submitting = true;
@@ -2005,52 +2213,43 @@ async function submitJob() {
         pushDebug("health:fail");
     }
 
-    if (statusText) statusText.textContent = t("status.uploading");
+    if (statusText) statusText.textContent = t("status.creating");
     if (statusSub) statusSub.textContent = t("status.upTo90");
 
-    if (!state.files.car?.blob || !state.files.wheel?.blob) {
-        await hydrateFilesFromDraft();
+    const selectedVehicle = selectedVehicleCandidate();
+    const rim = state.identityProposal?.rim;
+    if (!state.identityDraftId || !selectedVehicle || !rim) {
+        showError(t("errors.missingIdentity"));
+        return;
     }
-
-    pushDebug(
-        "files",
-        JSON.stringify({
-            carName: state.files.car?.name,
-            carBlobSize: state.files.car?.blob?.size,
-            wheelName: state.files.wheel?.name,
-            wheelBlobSize: state.files.wheel?.blob?.size,
-            hasTG: HAS_TG,
-            initDataLen: HAS_TG ? (tg.initData || "").length : 0,
-        })
-    );
-
-    if (!state.files.car?.blob || !state.files.wheel?.blob) {
-        showError(t("errors.missingFiles"));
+    if (state.rimUserConfirmed === null) {
+        showError(t("errors.missingRimConfirmation"));
         return;
     }
 
-    const formData = new FormData();
-    formData.append("car_image", state.files.car.blob, state.files.car.name);
-    formData.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
     const identity = getIdentityPayload({ includeTelegramUserId: true });
-    if (identity.init_data) formData.append("init_data", identity.init_data);
-    if (identity.telegram_user_id != null) {
-        formData.append("telegram_user_id", String(identity.telegram_user_id));
-    }
     const idempotencyKey = makeIdempotencyKey();
-    formData.append("idempotency_key", idempotencyKey);
-    pushDebug("upload:key", idempotencyKey);
+    const payload = {
+        draft_id: state.identityDraftId,
+        idempotency_key: idempotencyKey,
+        vehicle: selectedVehicle,
+        rim,
+        rim_user_confirmed: Boolean(state.rimUserConfirmed),
+    };
+    if (identity.init_data) payload.init_data = identity.init_data;
+    if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
+    pushDebug("create:key", idempotencyKey);
 
     try {
-        pushDebug("upload:request");
-        const resp = await fetch(`${state.apiBaseUrl}/jobs/upload`, {
+        pushDebug("create:request");
+        const resp = await fetch(`${state.apiBaseUrl}/jobs/from-assets`, {
             method: "POST",
-            headers: withAuthHeaders(),
-            body: formData,
+            headers: withAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
         });
-        pushDebug("upload:response", `status=${resp.status}`);
+        pushDebug("create:response", `status=${resp.status}`);
         const data = await resp.json().catch(() => ({}));
-        pushDebug("upload:body", JSON.stringify(data));
+        pushDebug("create:body", JSON.stringify(data));
         if (!resp.ok) {
             const detail = Array.isArray(data.detail)
                 ? data.detail.map((entry) => entry.msg).join("; ")
@@ -2058,7 +2257,7 @@ async function submitJob() {
             throw new Error(detail);
         }
         state.jobId = data.job_id;
-        pushDebug("upload:job", state.jobId);
+        pushDebug("create:job", state.jobId);
     } catch (error) {
         showError(error.message);
         return;
@@ -2118,6 +2317,7 @@ async function submitJob() {
 
 function handleFileSelected(kind, file) {
     file.arrayBuffer().then((buffer) => {
+        resetIdentityState();
         state.files[kind] = {
             blob: new Blob([buffer], { type: file.type }),
             name: file.name,
@@ -2126,6 +2326,7 @@ function handleFileSelected(kind, file) {
         };
         void saveDraftFile(kind, file, buffer);
         renderPreviewFromFile(kind, state.files[kind]);
+        renderIdentityFlow();
         refreshButtonsForCurrentView();
     });
     haptic("light");
@@ -2167,6 +2368,8 @@ function bindEvents() {
     });
 
     document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
+    document.querySelector("[data-detect-identity]")?.addEventListener("click", resolveIdentity);
+    document.querySelector("[data-create-render]")?.addEventListener("click", submitJob);
     document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
         setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
         void loadCabinet();
@@ -2196,12 +2399,14 @@ function bindEvents() {
         button.addEventListener("click", () => {
             const kind = button.dataset.clear;
             state.files[kind] = null;
+            resetIdentityState();
             revokePreviewUrl(kind);
             void deleteDraftFile(kind);
             const input = document.querySelector(`input[data-input="${kind}"]`);
             if (input) input.value = "";
             document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
             document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
+            renderIdentityFlow();
             refreshButtonsForCurrentView();
         });
     });
@@ -2224,6 +2429,22 @@ function bindEvents() {
             state.expandedJobId = state.expandedJobId === jobId ? "" : jobId;
             renderRenders();
             renderDashboard();
+            return;
+        }
+
+        const vehicleChoice = event.target.closest("[data-vehicle-choice]");
+        if (vehicleChoice) {
+            state.selectedVehicleIndex = Number(vehicleChoice.dataset.vehicleChoice || 0);
+            renderIdentityFlow();
+            haptic("light");
+            return;
+        }
+
+        const rimConfirm = event.target.closest("[data-rim-confirm]");
+        if (rimConfirm) {
+            state.rimUserConfirmed = rimConfirm.dataset.rimConfirm === "true";
+            renderIdentityFlow();
+            haptic(state.rimUserConfirmed ? "success" : "warning");
             return;
         }
 
@@ -2261,6 +2482,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     await hydrateFilesFromDraft();
+    renderIdentityFlow();
     refreshButtonsForCurrentView();
     await loadDashboardData();
 

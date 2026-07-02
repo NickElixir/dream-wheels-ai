@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
 SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
     encoding="utf-8"
@@ -102,11 +103,44 @@ def test_photo_guide_caption_uses_i18n_key_without_hyphen() -> None:
 
 
 def test_existing_create_and_payment_flows_remain_wired() -> None:
-    assert "/jobs/upload" in APP_JS
+    assert '@router.post("/upload"' in JOBS_API
+    assert "/identity/resolve" in APP_JS
+    assert "/jobs/from-assets" in APP_JS
     assert "/payments/topups" in APP_JS
     for icon in ("⚡", "🏁", "💎", "👑"):
         assert icon in INDEX_HTML
     assert "Robokassa" in INDEX_HTML
+
+
+def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
+    assert "Загрузите фото машины и диска" in INDEX_HTML
+    assert "Фото машины" in INDEX_HTML
+    assert "Фото диска" in INDEX_HTML
+    assert "Определить данные" in INDEX_HTML
+    assert "Определяем автомобиль и диск" in INDEX_HTML
+    assert "Проверьте AI-предложение" in INDEX_HTML
+    assert "Параметры для рендера" in INDEX_HTML
+    assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
+    assert "Проверка совместимости — скоро" in INDEX_HTML
+    assert "data-create-render" in INDEX_HTML
+    assert 'data-rim-confirm="false"' in INDEX_HTML
+
+
+def test_sprint_2_frontend_keeps_fitment_out_of_scope() -> None:
+    assert "FitmentCheck" not in APP_JS
+    assert "compatible_with_conditions" not in APP_JS
+    assert "Wheel Size" not in APP_JS
+    assert "wheel-size" not in APP_JS.lower()
+    assert "ET" not in INDEX_HTML.split("Проверка совместимости — скоро", 1)[0]
+    assert "DIA" not in INDEX_HTML.split("Проверка совместимости — скоро", 1)[0]
+
+
+def test_sprint_2_reference_prototype_is_committed() -> None:
+    reference = ROOT / "docs" / "references" / "sprint-2-create-flow.html"
+    assert reference.exists()
+    content = reference.read_text(encoding="utf-8")
+    assert "Определить данные" in content
+    assert "Проверка совместимости — скоро" in content
 
 
 def test_t_route_rewrites_to_shared_entrypoint_and_expiry_hidden() -> None:
