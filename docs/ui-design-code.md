@@ -74,6 +74,33 @@ Use islands for meaningful asynchronous state, warning, validation, or account i
 - shown: normal padding, opacity 1, `translateY(0)`;
 - tones: loading, success, warning, error.
 
+### Critical error island
+
+Use a red critical island when identity resolution fails in a way the user can fix or retry, for example:
+
+- missing Telegram auth / missing `init_data` or `telegram_user_id`;
+- backend route mismatch or unavailable Sprint 2 API;
+- any other failure that would otherwise leave the flow stuck in loading or an empty validation state.
+
+Recommended structure:
+
+```text
+Нужен вход в Telegram
+Этот шаг требует `init_data` или `telegram_user_id`. Откройте Mini App из Telegram или нажмите «Войти через Telegram» сверху, затем повторите проверку
+[ Войти через Telegram ] [ Повторить ]
+```
+
+Rules:
+
+- use danger styling, not warning styling, for auth/backend blockers;
+- keep the message specific and actionable, not generic;
+- prefer one primary recovery action and one retry action;
+- keep the island visible until the user changes state or retries successfully;
+- do not use a disabled CTA to represent this condition;
+- do not leave the user in an infinite loading state when the request has already failed;
+- if the backend is the cause, explain that the preview points to a backend without the Sprint 2 routes or that the API host needs to be corrected;
+- keep the critical island visually separate from the visual-renders review island so users do not confuse render generation with fitment or auth recovery.
+
 ## Dashboard and history
 
 Dashboard contains account heading, balance, latest render/empty state, **Создать виртуальную примерку**, and quick links.
