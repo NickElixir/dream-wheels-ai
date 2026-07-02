@@ -2,7 +2,7 @@
 
 > **Internal initiative:** Project Dual Track
 >
-> This is the delivery plan for two independent product pipelines and their shared foundation. It is not a third pipeline.
+> This is the delivery plan for two independent product pipelines and their shared foundation.
 
 ## Working model
 
@@ -13,174 +13,90 @@ Shared Product Foundation
   └── common create/result user flow
 
 Rendering Pipeline
-  └── produces and improves the visual wheel-on-car result
+  └── visual wheel-on-car result
 
 Fitment Pipeline
-  └── produces a preliminary technical compatibility verdict
+  └── preliminary technical compatibility verdict
 ```
 
-The pipelines meet in one user scenario, but remain independent:
-
-- **Rendering Pipeline:** “How will these wheels look on this car?”
-- **Fitment Pipeline:** “What is known about the preliminary technical possibility of installation?”
-- A visual result must never be presented as proof of technical compatibility.
+Rendering answers how wheels look. Fitment answers preliminary technical possibility. A visual render is never proof of technical compatibility.
 
 ## Canonical documents
 
-- `docs/ui-design-code.md` — approved UI rules for Cabinet and Sprint 2 create flow
-- `docs/adr/0002-fitment-render-integration.md` — existing architecture record
-- `docs/fitment/adr-fitment-render-integration.md` — concise integration decision for teams
-- `docs/fitment/adr-fitment-verdict-taxonomy.md` — accepted verdict semantics
-- `docs/fitment-schema.md` — shared VehicleIdentity, RimSpec, RimSetup boundary
-- `docs/fitment-api-contract-v1.md` — future Detailed Fitment Check boundary
-- `docs/fitment-verdict-pipeline-handoff.md` — engineering handoff for the Fitment Pipeline
+- `docs/ui-design-code.md` — approved UI rules through Sprint 3
+- `docs/sprint-3-ui.md` — approved Sprint 3 layout and interaction reference
+- `docs/adr/0003-render-feedback-data-boundary.md` — feedback persistence and ML boundary
+- `docs/render-feedback-api-contract-v1.md` — Sprint 3 API/data contract
+- `docs/fitment-schema.md`, `docs/fitment-api-contract-v1.md`, and Fitment ADRs — future Fitment work
 
 ## Delivery sequence
 
 ### Sprint 0 — durable render foundation
 
-**Backend and database**
-
-- Treat the existing `jobs` record as the canonical render job; evolve it instead of creating a competing job entity.
-- Store source and result assets durably.
-- Persist storage identifiers/URLs, provider request metadata, timestamps, status, and error code.
-- Keep idempotency for upload/create requests.
-- Serve render history from Postgres rather than browser state.
-
-**Exit criteria**
-
-- Completed and failed renders survive reload and deploy.
-- Authorized users can retrieve source car image, source rim image, and final image.
-
-### Parallel F0 — fitment provider discovery
-
-- Evaluate candidate data sources on representative vehicles.
-- Record coverage, parameters, latency, terms, cache policy, price, and gaps.
-- Select a provider only through an ADR; domain code remains provider agnostic.
+Durable jobs, assets, render statuses, idempotency, and Postgres-backed history.
 
 ### Sprint 1 — cabinet dashboard
 
-- Dashboard, balance, latest render, CTA, history, and wallet navigation.
-- Desktop sidebar, mobile bottom navigation, real latest-result preview, expandable history cards.
-- UI-only visual feedback: `👍 Понравилось` / `👎 Не похоже`; no persistence, analytics, localStorage, or training-data side effect.
-- Defer Telegram profile enrichment until dashboard/auth flows are stable.
-- Show render-expiry island only when immutable grant/ledger expiry data exists.
+Dashboard, balance, history, navigation, wallet, and UI-only feedback.
 
 ### Sprint 2 — Assisted Vehicle & Rim Identification
 
-**Goal:** improve visual-render accuracy while keeping the first create flow fast and distinct from technical fitment.
+Existing upload screen stays unchanged. One page: upload → AI proposal → confirmation → review → render.
 
-**Single-page flow:**
+Quick vehicle identity: make, model, year/range, primary proposal plus at most two alternatives.
 
-```text
-Existing approved upload screen
-→ Определить данные
-→ AI/VLM/OCR quick proposal
-→ user confirmation
-→ review
-→ Создать виртуальную примерку
-```
+Quick rim identity: diameter, mandatory width, PCD stored as `bolt_count` + `pcd_mm` and displayed as `NxPCD`.
 
-**Quick vehicle identity**
+No full vehicle catalogue, rim brand/model, SKU, ET/DIA, provider lookup, FitmentCheck, or verdict.
 
-- Make, model, and year or year range.
-- One primary AI candidate and at most two alternatives.
-- No full vehicle catalogue selector in the first iteration.
+### Sprint 3 — comparison, durable history, and persistent feedback
 
-**Quick rim identity for visual proportions**
+**Approved result detail**
 
-- Wheel diameter.
-- Wheel width — mandatory because it affects visible rim depth/proportions and must not be silently omitted even at medium confidence.
-- PCD, stored as `bolt_count` + `pcd_mm` and displayed as `NxPCD`, e.g. `5×114.3`.
+- Open a completed result inside the existing history context.
+- Single viewer with full-width equal segments: `Результат | Оригинал`.
+- Default to Result; switch the same image in place with a short fade.
+- Preserve full source/result composition: `width:100%`, `height:auto`, `object-fit:contain`.
+- History thumbnails use `object-fit:contain` in compact fixed frames; dark letterboxing is allowed.
 
-**Explicitly excluded from default quick UI**
+**History states**
 
-- Wheel brand/model.
-- SKU/article and product URL.
-- ET, DIA, fastener information.
-- Provider lookup, Wheel Size integration, technical compatibility labels, or verdict.
+- Completed: `Готово`, `Открыть`.
+- Processing: `Создаём виртуальную примерку`, `В обработке`.
+- Failed: clear error, `Рендеры не списаны`, `Повторить`.
+- Comparison and feedback are only available for completed jobs.
 
-**Shared architecture boundary**
+**Repeat scenario**
 
-- Use `VehicleIdentity`, `RimSpec`, and `RimSetup` according to `docs/fitment-schema.md`.
-- RenderJob references `vehicle_identity_id` and `rim_setup_id` and stores immutable input snapshot.
-- Sprint 2 does not implement `FitmentCheck` or Fitment Verdict.
+`Создать ещё вариант` restores server-backed car/rim assets and confirmed identity context. It does not create a job or debit until the user explicitly starts a new render.
 
-**UX boundary**
+**Persistent feedback**
 
-- Keep the existing approved upload screen unchanged.
-- Use progressive islands below upload; do not turn this into a multi-route wizard.
-- Review explicitly states that the output is visual and compatibility is not checked.
-- Show an informational non-clickable `Проверка совместимости — скоро` island after the render CTA.
+- One current record per user and completed `render_job_id`.
+- Like/dislike can be replaced or cleared.
+- Dislike uses exactly one code: `wheel_differs`, `car_changed`, `angle_or_scale`, `image_quality`, or `other`.
+- No modal, free-text comment, submit button, localStorage source of truth, or clickstream duplication.
+- Feedback is product data, not automatically a training label or consent to train on user media.
 
 ### Parallel F1 — fitment domain and rules engine
 
-- Normalize vehicle identity, vehicle fitment profile, rim specifications, and verdict evidence.
-- Implement deterministic checks for PCD, DIA, ET, width, diameter, fasteners, tyre evidence, and axle differences when reliable data is available.
-- Return `compatible`, `compatible_with_conditions`, `unknown`, or `incompatible` according to the accepted taxonomy.
-- Add golden tests and source/version audit data.
-
-### Sprint 3 — comparison, history, and persistent feedback
-
-- Original/result toggle in render detail.
-- Durable history states and repeat scenario.
-- Persist feedback tied to durable job IDs, with consent/privacy boundary, aggregation, and evaluation use.
-- A feedback click is not automatically a training signal.
+Normalize fitment data and evidence; deterministic rules return accepted taxonomy.
 
 ### Parallel F2 — fitment UX integration
 
-- User initiates Detailed Fitment Check separately from render.
-- Render never waits for verdict.
-- Show approved verdict UI, reasons, missing fields, conditions, and preliminary disclaimer on result detail/history.
-
-**Customer-development gate**
-
-Run customer development after Sprint 3 plus F2. The tested product is visual fitment plus preliminary compatibility, not a standalone image generator.
+User-initiated Detailed Fitment Check, independent from rendering.
 
 ### Sprint 4 — Detailed Fitment Wizard and wallet alignment
 
-- Optional detailed form after render/result detail: generation, modification, market, SKU/product URL, diameter, width, PCD, ET, DIA, and staggered setup.
-- Prepare detailed check entry without presenting automatic visual-support inference as a verdict.
-- Wallet work remains balance, packages, invoice summary, receipt email, and payment CTA.
-- Do not advertise expiration before backend support.
-- Keep payment-provider behavior out of scope.
+Optional detailed fields after result detail: generation, modification, market, SKU/product URL, diameter, width, PCD, ET, DIA, staggered setup.
 
-### Parallel F3 — catalog and partner recommendations
+### Sprint 5 onward
 
-Requires a structured owned catalog or partner feed.
+Evaluation baseline, input-quality gate, controlled rendering, and catalog work with audited feeds.
 
-- Filter by technical fitment.
-- Rank by fit score, availability, visual similarity, price, and commercial priority.
-- Track impressions, clicks, and leads.
+## Current non-goals
 
-### Sprint 5 — evaluation baseline
-
-- Build a labelled dataset from consented/test cases.
-- Benchmark generation providers by cost, latency, visual quality, wheel similarity, and vehicle preservation.
-- Keep expert labels separate from user feedback.
-
-### Sprint 6 — soft input quality gate
-
-- Add CV/VLM checks for blur, brightness, resolution, vehicle/wheel visibility, and rim front-face visibility.
-- Show warnings; do not automatically reject uploads until supported by measured evidence.
-
-### Sprint 7 — controlled rendering pipeline
-
-- Wheel detection and segmentation.
-- Mask/crop artefacts and render plan.
-- Post-generation validation, one internal retry, and provider fallback.
-- Internal retries never consume additional user renders.
-
-## Backlog after Fitment Verdict MVP
-
-- AI-recognition showcase for likely wheel brand/model candidates. It is excluded from Sprint 2 because it does not improve visual geometry or fitment evidence and can create false confidence.
-- Paid Detailed Fitment Check pricing, retry, and debit semantics.
-- Catalog recommendations backed by audited product feeds.
-
-## Non-goals in the current block
-
-- Email/phone login changes.
-- Payment-provider switching.
-- Credit-expiration implementation without separate approval.
-- Hard fitment guarantees.
-- Catalog recommendations without an auditable product feed.
+- Fitment verdict in Sprint 3.
+- Comparison slider or side-by-side comparison.
+- Free-text feedback, analytics dashboard, export, or automatic ML dataset ingestion.
+- Payment-provider switching, hard fitment guarantees, or catalog recommendations without audited data.
