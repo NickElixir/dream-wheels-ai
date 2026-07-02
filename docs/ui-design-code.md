@@ -1,68 +1,45 @@
 # Dream Wheels AI — UI Design Code
 
-> **Status:** approved reference for Sprint 1 Cabinet Dashboard
+> **Status:** approved reference for the Sprint 1 cabinet and Sprint 2 create flow.
 >
-> Canonical interactive prototype: `docs/references/sprint-1-dashboard.html`
+> Canonical interactive references:
+> - `docs/references/sprint-1-dashboard.html`
+> - approved Sprint 2 prototype: `dream_wheels_dashboard_adaptive_demo_v15_sprint2.html` (to be copied into repository reference assets before implementation)
 
 ## Scope and boundaries
 
-This document defines the approved user-facing design and interaction rules for the Cabinet Dashboard, upload entry, balance/wallet, render history and visual-feedback UI. It is a UI reference, not a replacement for backend contracts.
+This document defines user-facing design and interaction rules for the cabinet, upload entry, Sprint 2 identity confirmation, balance/wallet, render history, and visual feedback. It is a UI reference, not a replacement for backend contracts.
 
-Fitment UI is intentionally out of scope until **Parallel F2 — Fitment UI integration** in the Dual-Track Product Roadmap. Do not add fitment verdicts to the Sprint 1 dashboard, render cards or history.
+Rendering and Fitment are independent. A visual result must never be presented as proof of technical compatibility.
 
 ## Visual foundation
 
-Use the established dark Dream Wheels AI system:
+Use the established dark Dream Wheels system:
 
-- background: `#070809` with restrained dark radial glow;
-- panels: `#161a22`, `#1b2029`, `#202631`;
-- primary text: `#eef2f6`;
-- muted text: `#a3adba` and `#7e8896`;
-- primary accent: `#ddff00` / `#e7ff3a`;
-- semantic colors: success `#27d88a`, warning `#ffcc56`, danger `#ff6666`;
-- card radii: 18–28 px; thin translucent borders; soft panel shadows.
+- background `#070809` with restrained dark radial glow;
+- panels `#161a22`, `#1b2029`, `#202631`;
+- text `#eef2f6`; muted text `#a3adba`, `#7e8896`;
+- accent `#ddff00` / `#e7ff3a`;
+- semantic success `#27d88a`, warning `#ffcc56`, danger `#ff6666`;
+- panel radius 18–28 px, thin translucent borders, soft shadows.
 
-Do not allow native browser button text colours to leak into the UI. Interactive cards, upload zones and buttons explicitly inherit the design-system foreground colour.
+Do not let browser-default button colours or focus outlines leak into the interface. Use product-owned foreground colours and `:focus-visible` rings.
 
-For this product UI, standalone paragraph-style copy should not end with a period
-This applies to ledes, helper text, empty states, support copy, form guidance and similar short interface text
-Exceptions are explicit multi-sentence legal text, technical payloads and copy where punctuation is required for clarity
+Standalone interface guidance and helper copy should not end with a period, except legal, multi-sentence, or technically necessary copy.
 
-## Buttons and action chips
+## Buttons and motion
 
-Use a small, consistent button family across the cabinet:
-
-- primary CTA uses the acid fill, dark foreground, strong weight, and the largest visual priority;
-- secondary actions use a dark island chip with a thin border, 44-48 px minimum height, rounded corners, and a restrained hover tint;
-- accent secondary chips may keep the same island base while using accent text for actions like open, sign in, or disclose;
-- inline panel actions should not appear as naked text links when they compete with other controls in the same block;
-- compact actions such as `Открыть`, `Сбросить`, `Обновить счет`, `Пополнить баланс`, download/share, and website Telegram login should stay within the same secondary-chip family;
-- buttons should visually align with the panel system, avoid browser-default fills, and preserve comfortable tap targets on mobile.
-- keyboard focus must use a product-owned `:focus-visible` ring on buttons, nav items, and document/support links; do not leave the website version on the default bright-blue browser outline.
+- Primary CTA: acid fill, dark text, strong weight, highest priority.
+- Secondary action: dark outlined island chip, minimum 44–48 px touch target.
+- Inline actions must remain chips rather than naked text links when competing with controls.
+- Keep animation restrained: fade and `translateY(-6px → 0)` around 220–300 ms.
+- Respect `prefers-reduced-motion`.
 
 ## Responsive navigation
 
-### Desktop layout rail
-
-Desktop screens must reserve a real layout column for the permanent sidebar.
-Do not rely on a visually fixed sidebar floating over the page content.
-
-Rules:
-
-- sidebar has a fixed width and its own viewport inset;
-- main content starts only after `sidebar width + sidebar inset + content gutter`;
-- use a centered content rail with a bounded max width instead of stretching task screens across the full viewport;
-- keep at least 40 px visual gutter between sidebar and the nearest panel at desktop widths;
-- topbar, hero panels and content panels align to the same content rail;
-- panels and status islands use visible vertical gaps, so warnings, upload zones, cards and forms never touch each other.
-- help instruction cards should be centered, with the label and explanation stacked vertically and separated by a visible gap;
-- help instruction cards should sit in a two-column row on desktop and collapse to a single column on mobile;
-- do not let the label and the explanatory paragraph run into each other on desktop help screens.
-- the payment history disclosure title should be visually prominent like the main section headers, without a secondary "collapsed by default" hint in the header.
-
 ### Desktop
 
-Permanent left sidebar:
+Permanent sidebar in a real layout column:
 
 ```text
 Основное
@@ -77,7 +54,7 @@ Permanent left sidebar:
 - Документы
 ```
 
-The Dream Wheels AI wordmark is a button that returns to **Главная**. The account block remains at the bottom of the sidebar.
+The wordmark returns to **Главная**. Keep the account block at the bottom. Main content starts after the sidebar and keeps a bounded centered rail with visible gutters.
 
 ### Mobile
 
@@ -87,215 +64,172 @@ Bottom navigation:
 Главная · Создать · История · Баланс · Ещё
 ```
 
-`Ещё` opens a compact bottom sheet with Support, photo guidance and documents.
-
-### Navigation motion
-
-Use restrained motion only:
-
-- active desktop item: accent vertical indicator, accent-soft background;
-- hover: small horizontal shift, no excessive bounce;
-- screen transition: fade + `translateY(-6px → 0)` over about 300 ms;
-- respect `prefers-reduced-motion`.
-
-### Topbar caption
-
-The topbar page label is not a content heading and should not reuse `H1` or `H2`.
-Use a dedicated caption style:
-
-- let the caption row stretch across the full desktop content width;
-- place the current page label at the far left edge of that row on desktop;
-- place the website Telegram login action at the far right edge of that row;
-- keep these two elements visually separated rather than grouped into a tight cluster;
-- use a slightly larger but restrained caption treatment with muted color, moderate weight, and no oversized hero emphasis;
-- hide the caption on narrow mobile widths when it starts competing with primary controls.
-
-### Website Telegram login warmup
-
-Website Telegram login should feel immediate on the first click after refresh
-
-Rules:
-
-- preload the Telegram Login library before the user clicks the auth button;
-- preload a fresh backend nonce while the page is becoming interactive;
-- warm these resources again on auth-button hover, pointer down, or focus;
-- avoid a cold first-click path where popup auth starts only after script loading or nonce fetch latency.
+`Ещё` opens a compact bottom sheet with support, photo guidance, and documents.
 
 ## Status islands
 
-Use the established island pattern for asynchronous states and warnings:
+Use islands for meaningful asynchronous state, warning, validation, or account information—not every interaction.
 
-- hidden: `max-height: 0`, zero vertical padding, `opacity: 0`, `translateY(-6px)`;
-- shown: content height up to 320 px, normal padding, `opacity: 1`, `translateY(0)`;
-- timings: 220–280 ms;
+- hidden: `max-height: 0`, zero vertical padding, opacity 0, `translateY(-6px)`;
+- shown: normal padding, opacity 1, `translateY(0)`;
 - tones: loading, success, warning, error.
 
-Do not use islands for every interaction. Use them only for meaningful state, validation or account information.
+## Dashboard and history
 
-## Dashboard
+Dashboard contains account heading, balance, latest render/empty state, **Создать виртуальную примерку**, and quick links.
 
-The dashboard contains:
+Use **рендеры** in Russian UI, not `credits`.
 
-1. account heading;
-2. balance card;
-3. latest render card or a first-use empty state;
-4. primary CTA: **Создать виртуальную примерку**;
-5. quick links: **Мои примерки**, **Нужна помощь?**.
+For completed history items, show readable scenario name, date, and `Готово`; never expose raw filenames or transport errors. `Открыть` expands one result inside the same card; only one card may be open. The opened image must use full card width, `width: 100%`, `height: auto`, and no cropped `object-fit: cover` presentation.
 
-### Dashboard card headers
+## Render-expiry island
 
-Dashboard summary cards such as balance and latest result must use a resilient internal header layout:
-
-- use a two-zone header: content block on the left, action chip or status chip on the right;
-- do not rely on a raw single-line flex row when the left side contains a large metric or multi-line title;
-- the content block must allow shrinking with `min-width: 0`, while the action or status chip remains auto-sized;
-- when the card container becomes narrow, the action or status chip should move below the content instead of compressing or overlapping the metric;
-- card-internal responsive behavior should follow the card container width, not only the full viewport width.
-
-### Balance terminology
-
-Use **рендеры** in the Russian UI. Avoid exposing `credits` as a primary user-facing term.
-
-### Render-expiry island
-
-When and only when the backend supports grant-level expiry data, show the compact island:
+Show only when backend supports immutable grant-level expiry:
 
 ```text
 Срок действия рендеров                         Подробнее →
-
 16 рендеров                                    до 15 июля
 20 рендеров                                    до 30 июля
-
-⚠ Сначала используются рендеры с ближайшей датой окончания.
+⚠ Сначала используются рендеры с ближайшей датой окончания
 ```
 
-Layout rules:
+No decorative hourglass. Do not populate it from mock or browser-local data.
 
-- no decorative hourglass icon;
-- title and `Подробнее →` share the header row;
-- each availability line is a two-column row: quantity left, date right;
-- dates use accent colour;
-- the warning is a thin bottom line, not a nested card;
-- `Подробнее →` opens **Баланс** and expands the purchase/expiry history.
+## Upload entry — existing approved screen
 
-Until immutable grants/expiry backend behaviour is approved and implemented, this island must be omitted rather than populated by mock or local data.
-
-## Upload entry
-
-Use the approved existing upload screen:
+Sprint 2 must preserve the approved upload screen and its existing mechanics:
 
 ```text
 Загрузите фото машины и диска
-Машина целиком сбоку, диск анфас. JPG или PNG, до 10 МБ.
+Машина целиком сбоку, диск анфас. JPG или PNG, до 10 МБ
 ```
 
 - two large stacked zones: **Фото машины**, **Фото диска**;
-- user-facing labels and helper text must remain light-coloured;
-- soft warning island may remind the user that wheels should be fully visible;
-- this screen does not yet collect vehicle/rim technical data.
+- light user-facing labels and helper text;
+- soft warning island about fully visible car wheels;
+- no redesign of upload zones during Sprint 2.
 
-## Wallet and top-up
+## Sprint 2 — Assisted Vehicle & Rim Identification
 
-Use the approved existing three-step payment layout rather than a new wallet redesign:
+### Product purpose
 
-1. choose package;
-2. enter receipt email;
-3. confirm and open Robokassa.
+Sprint 2 improves visual-render accuracy without turning the first experience into a technical fitment form.
 
-Keep the package emojis:
+It is a single-page flow inside **Примерить диски**. It uses progressive disclosure: existing upload block first, then new islands below it. It is not a multi-route wizard.
 
 ```text
-⚡ 100 ₽
-🏁 200 ₽
-💎 500 ₽
-👑 1 000 ₽
+Existing upload screen
+→ Определить данные
+→ AI analysis island
+→ confirmation islands
+→ review island
+→ Создать виртуальную примерку
 ```
 
-Any package expiry text is subject to the same backend condition as the render-expiry island.
+### AI analysis island
 
-## Render history
+After both images are uploaded, the primary action is **Определить данные**.
 
-Use the title **Мои виртуальные примерки**. Do not expose raw filenames or transport errors.
-
-### Collapsed render card
+Show a short loading island:
 
 ```text
-[ preview ]  Lexus RX · виртуальная примерка
-             Сегодня, 14:32
-             Готово                         Открыть
+Определяем автомобиль и диск
+Анализируем фото. Это не проверка совместимости — данные нужны для более точной виртуальной примерки
 ```
 
-- completed items: preview, readable car/scenario name, date and `Готово` status;
-- processing items: `Создаём результат` and `В обработке`;
-- failed items: readable failure copy and `Повторить` that returns to create flow.
+Never use compatibility language here.
 
-### Open action
+### Vehicle confirmation island
 
-`Открыть` expands the result inside the same history card:
+Show one primary AI proposal:
 
-- only one card may be open at a time;
-- transition uses the status-island disclosure pattern;
-- full result image uses full card width, `width: 100%`, `height: auto`, no `object-fit: cover` crop;
-- action changes to `Скрыть ▲`;
-- show **Скачать изображение** and **Создать ещё вариант** beneath the image.
+```text
+Автомобиль
+Lexus RX · 2020
+[ ✓ Верно ]
+```
+
+Rules:
+
+- quick identity contains make, model, and year or year range;
+- show at most two alternative candidates;
+- alternatives are selectable chips/cards, not a full vehicle catalogue selector;
+- selected candidate receives accent outline/background;
+- copy explains that the user is checking an AI proposal;
+- confidence can be shown as a compact pill, never as a guarantee.
+
+### Rim confirmation island
+
+Show only values that support render proportions:
+
+```text
+Диск
+Диаметр: 20"
+Ширина: 8.5J
+PCD: 5×114.3
+```
+
+Rules:
+
+- width is mandatory in quick identity because it affects visual wheel proportions;
+- display PCD as `NxPCD`, for example `5×114.3`;
+- backend stores PCD as `bolt_count` plus `pcd_mm`; this implementation detail must not dominate user-facing copy;
+- keep a compact confidence pill;
+- actions are `✓ Верно` and `Не уверен`;
+- do not offer speculative rim alternatives in the first UX.
+
+Do not show wheel brand, model, SKU/article, product URL, ET, DIA, fastener type, fitment recommendations, or compatibility status in the default quick confirmation UI.
+
+### Review island
+
+Show an explicit pre-render summary:
+
+```text
+Всё готово
+Автомобиль     Lexus RX · 2020
+Диск           20" · 8.5J · 5×114.3
+Назначение     Визуальная примерка
+
+Совместимость пока не проверена. Это визуальный рендер, а не технический fitment verdict
+
+[ Создать виртуальную примерку ]
+```
+
+The final CTA is the acid primary button.
+
+### Future fitment teaser
+
+Below the Sprint 2 review CTA show a non-clickable informational island:
+
+```text
+Проверка совместимости — скоро
+Позже здесь появится техническая проверка PCD, ширины, ET, DIA и условий установки
+```
+
+Do not use a disabled CTA. Do not promise a date. Do not show this as a currently available technical feature.
+
+### Responsive layout
+
+- desktop: vehicle and rim confirmation may sit in a two-column layout only when card width remains comfortable;
+- mobile: all islands stack in a single column;
+- review stays readable with label/value rows;
+- panel spacing must make every island visually distinct.
+
+## Wallet and payment
+
+Keep the approved three-step payment layout: package → receipt email → confirm/open Robokassa. Keep package emojis ⚡ 🏁 💎 👑. Package expiration copy follows the same backend condition as the render-expiry island.
 
 ## Visual feedback UI
 
-Feedback is a compact secondary control for a completed visual render. Place it:
-
-- below **Открыть результат** on the Dashboard latest-result card;
-- below **Скачать изображение** / **Создать ещё вариант** in an expanded completed history card.
-
-Do not put feedback controls over the image. Do not show them for processing or failed jobs.
-
-### Initial state
+Feedback is a secondary completed-render control only:
 
 ```text
 Как результат?
-
 [ 👍 Понравилось ] [ 👎 Не похоже ]
 ```
 
-Both controls are neutral outline buttons.
-
-### Positive selection
-
-`👍 Понравилось` becomes a success-coloured selected control and shows:
-
-```text
-✓ Спасибо, это помогает улучшать примерки.
-```
-
-The negative control remains available so the user can change the selection.
-
-### Negative selection
-
-`👎 Не похоже` becomes warning-coloured and reveals an inline island. There is no modal and no submit button.
-
-```text
-Что именно не так?
-
-[ Диск отличается ] [ Машина изменилась ]
-[ Ракурс / масштаб ] [ Качество изображения ]
-[ Другое ]
-```
-
-A selected reason uses warning styling. On narrow mobile widths, reasons stack in one column. After choosing a reason, show a local acknowledgement in the prototype only.
-
-### Sprint 1 implementation rule
-
-Sprint 1 implements the UI and in-memory/mock interaction state only. It must not create a feedback database table, backend endpoint, analytics event, localStorage persistence or training dataset side effect.
-
-Real feedback persistence, consent boundaries, data model, aggregation and evaluation use are scheduled for **Sprint 3 — comparison, history and feedback**. Every persisted feedback record must be tied to a durable render/job id, not a filename or storage URL.
-
-Original/result comparison also belongs to Sprint 3 and is intentionally not part of the Sprint 1 reference.
-
-## First-use and visual artwork
-
-Cinematic automotive imagery is appropriate for Launch Screen, landing and first-use empty state, not as persistent decoration on task-heavy screens.
-
-The last-result preview must show a real result image with preserved aspect ratio. It must not use a schematic placeholder or cropped composition that hides the car.
+Positive selection uses success styling and acknowledgement. Negative selection reveals inline reason chips, no modal and no submit button. In Sprint 1 it remains UI/in-memory only; persistent feedback belongs to Sprint 3 and must be tied to a durable render/job id.
 
 ## Implementation handoff
 
-Before implementing Sprint 1, Codex must treat `docs/references/sprint-1-dashboard.html` and this document as the approved visual reference. Preserve the existing application’s API and authentication boundaries; do not convert the prototype’s mock data into a frontend source of truth.
+Before Sprint 2 implementation, Codex must treat this document, `docs/product-roadmap.md`, the Fitment ADRs, schema, API contract, and the approved Sprint 2 HTML prototype as mandatory references. Preserve existing upload design. Do not turn prototype mock data into a frontend source of truth. Do not implement Fitment Verdict, provider lookup, Wheel Size integration, detailed fitment form, or wheel brand-recognition UI in Sprint 2.
