@@ -35,6 +35,13 @@ const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 110000;
 const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
+const HISTORY_ASSET_VIEWS = ["result", "original"];
+const FEEDBACK_REASONS = [
+    "Не тот диск",
+    "Плохое совмещение",
+    "Искажения",
+    "Другое",
+];
 
 const I18N = {
     ru: {
@@ -582,6 +589,13 @@ const state = {
     renderHistoryLoading: false,
     renderHistoryError: "",
     expandedJobId: "",
+    renderHistoryPollTimer: null,
+    renderAssetViewByJob: {},
+    renderAssetErrorsByJob: {},
+    feedbackByJob: {},
+    feedbackBusyByJob: {},
+    feedbackErrorByJob: {},
+    feedbackReasonsByJob: {},
 };
 
 function applyTranslations() {
@@ -1000,6 +1014,7 @@ function setMoreOpen(open) {
 
 function setView(view) {
     state.view = view;
+    if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
         el.hidden = el.dataset.view !== view;
     });
@@ -1311,6 +1326,47 @@ function resultUrlForJob(job) {
     return job?.assets?.result?.url || job?.result_url || "";
 }
 
+function canUseIdentityAssetUrls() {
+    return Boolean(getIdentitySearchParams().toString());
+}
+
+function proxiedAssetUrl(asset) {
+    const assetPath = asset?.download_url;
+    if (!assetPath || !canUseIdentityAssetUrls()) return "";
+    if (assetPath.startsWith("/")) return withIdentityQuery(`${state.apiBaseUrl}${assetPath}`);
+    return withIdentityQuery(assetPath);
+}
+
+function assetErrorKey(kind) {
+    return kind === "original" ? "car_original" : "result";
+}
+
+function hasAssetLoadError(job, kind) {
+    return Boolean(state.renderAssetErrorsByJob[job?.job_id]?.[assetErrorKey(kind)]);
+}
+
+function assetUrlForJob(job, kind) {
+    if (!job) return "";
+    if (kind === "original") {
+        return proxiedAssetUrl(job.assets?.car_original);
+    }
+    return resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
+}
+
+function isAssetAvailable(job, kind) {
+    return Boolean(assetUrlForJob(job, kind)) && !hasAssetLoadError(job, kind);
+}
+
+function defaultAssetViewForJob(job) {
+    const savedView = state.renderAssetViewByJob[job?.job_id];
+    if (HISTORY_ASSET_VIEWS.includes(savedView) && isAssetAvailable(job, savedView)) {
+        return savedView;
+    }
+    if (isAssetAvailable(job, "result")) return "result";
+    if (isAssetAvailable(job, "original")) return "original";
+    return savedView || "result";
+}
+
 function downloadUrlForJob(job) {
     if (getWebsiteAuthToken()) return resultUrlForJob(job);
     const assetPath = job?.assets?.result?.download_url;
@@ -1333,28 +1389,172 @@ function statusClass(status) {
     return "neutral";
 }
 
+function feedbackValueForJob(job) {
+    const localValue = state.feedbackByJob[job?.job_id];
+    if (localValue !== undefined) return localValue;
+    return job?.feedback || "";
+}
+
+function setFeedbackValue(jobId, value) {
+    state.feedbackByJob[jobId] = value || "";
+    state.renderHistory = state.renderHistory.map((job) => (
+        job.job_id === jobId ? { ...job, feedback: value || null } : job
+    ));
+}
+
+function mergeHistoryFeedbackState(jobs) {
+    jobs.forEach((job) => {
+        if (!job?.job_id) return;
+        if (state.feedbackByJob[job.job_id] === undefined) {
+            state.feedbackByJob[job.job_id] = job.feedback || "";
+        }
+    });
+}
+
+function renderAssetMissingState(text = "Изображение временно недоступно") {
+    return `
+        <div class="render-asset-error" role="status">
+            <strong>${escapeHtml(text)}</strong>
+            <span>Доступные действия ниже сохранены</span>
+        </div>
+    `;
+}
+
+function renderHistoryViewer(job) {
+    const activeView = defaultAssetViewForJob(job);
+    const originalAvailable = isAssetAvailable(job, "original");
+    const resultAvailable = isAssetAvailable(job, "result");
+    const activeUrl = assetUrlForJob(job, activeView);
+    const activeAvailable = isAssetAvailable(job, activeView);
+    const label = activeView === "original" ? "Исходное фото" : "Результат";
+    const missingLabels = [
+        originalAvailable ? "" : "оригинал",
+        resultAvailable ? "" : "результат",
+    ].filter(Boolean);
+
+    return `
+        <div class="render-viewer">
+            <div class="render-segmented" role="tablist" aria-label="Сравнение изображений">
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="original" class="${activeView === "original" ? "active" : ""}" aria-selected="${activeView === "original"}" ${originalAvailable ? "" : "disabled"}>Оригинал</button>
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="result" class="${activeView === "result" ? "active" : ""}" aria-selected="${activeView === "result"}" ${resultAvailable ? "" : "disabled"}>Результат</button>
+            </div>
+            <div class="render-asset-frame" data-asset-frame>
+                ${activeAvailable && activeUrl ? `
+                    <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(label)}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
+                    <span class="render-image-label">${escapeHtml(label)}</span>
+                ` : renderAssetMissingState()}
+            </div>
+            ${missingLabels.length ? `
+                <div class="render-asset-notice" role="status">
+                    Недоступно: ${escapeHtml(missingLabels.join(", "))}
+                </div>
+            ` : ""}
+        </div>
+    `;
+}
+
+function renderFeedbackBlock(job) {
+    const jobId = job.job_id;
+    const selected = feedbackValueForJob(job);
+    const busy = Boolean(state.feedbackBusyByJob[jobId]);
+    const error = state.feedbackErrorByJob[jobId] || "";
+    const selectedReason = state.feedbackReasonsByJob[jobId] || "";
+    const reasonsVisible = selected === "dislike";
+
+    return `
+        <section class="render-feedback" aria-live="polite">
+            <h3>Оценка результата</h3>
+            <p>Помогите улучшить следующие примерки</p>
+            <div class="render-feedback-actions">
+                <button type="button" class="render-feedback-button like ${selected === "like" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="like" ${busy ? "disabled" : ""}>👍 Нравится</button>
+                <button type="button" class="render-feedback-button dislike ${selected === "dislike" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="dislike" ${busy ? "disabled" : ""}>👎 Не нравится</button>
+            </div>
+            <div class="render-feedback-reasons ${reasonsVisible ? "visible" : ""}">
+                <div class="reason-title">Что улучшить</div>
+                <div class="render-reason-grid">
+                    ${FEEDBACK_REASONS.map((reason) => `
+                        <button type="button" class="render-reason ${selectedReason === reason ? "selected" : ""}" data-history-feedback-reason="${escapeHtml(jobId)}" data-feedback-reason="${escapeHtml(reason)}" ${busy ? "disabled" : ""}>${escapeHtml(reason)}</button>
+                    `).join("")}
+                </div>
+            </div>
+            <div class="render-feedback-error" ${error ? "" : "hidden"}>
+                ${escapeHtml(localizeErrorMessage(error))}
+            </div>
+        </section>
+    `;
+}
+
+function setAssetLoadError(jobId, kind, hasError) {
+    if (!jobId || !kind) return;
+    const previous = Boolean(state.renderAssetErrorsByJob[jobId]?.[kind]);
+    if (previous === hasError) return;
+    state.renderAssetErrorsByJob[jobId] = {
+        ...(state.renderAssetErrorsByJob[jobId] || {}),
+        [kind]: hasError,
+    };
+    if (state.expandedJobId === jobId || state.view === "renders") {
+        renderRenders();
+        renderDashboard();
+    }
+}
+
+async function submitHistoryFeedback(jobId, vote) {
+    if (!jobId || state.feedbackBusyByJob[jobId]) return;
+    const job = state.renderHistory.find((item) => item.job_id === jobId);
+    if (!job) return;
+
+    const currentVote = feedbackValueForJob(job);
+    const deleting = currentVote === vote;
+    const identity = getIdentityPayload({ includeTelegramUserId: true });
+    state.feedbackBusyByJob[jobId] = true;
+    state.feedbackErrorByJob[jobId] = "";
+    renderRenders();
+
+    try {
+        const response = await fetch(`${state.apiBaseUrl}/jobs/${jobId}/feedback`, {
+            method: deleting ? "DELETE" : "POST",
+            headers: withAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(deleting ? identity : { vote, ...identity }),
+        });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        setFeedbackValue(jobId, deleting ? "" : vote);
+        if (deleting) state.feedbackReasonsByJob[jobId] = "";
+        haptic(deleting ? "light" : "success");
+    } catch (error) {
+        state.feedbackErrorByJob[jobId] = error?.message || t("errors.requestFailed");
+        haptic("warning");
+    } finally {
+        state.feedbackBusyByJob[jobId] = false;
+        renderRenders();
+        renderDashboard();
+    }
+}
+
 function renderHistoryCard(job) {
     const title = humanRenderTitle(job);
     const status = job.status || "processing";
-    const resultUrl = resultUrlForJob(job);
-    const createdAt = formatDateTime(job.completed_at || job.created_at);
+    const resultUrl = assetUrlForJob(job, "result");
+    const createdAt = formatDateTime(job.created_at);
     const expanded = state.expandedJobId === job.job_id;
-    const canOpen = status === "completed" && resultUrl;
+    const canOpen = status === "completed";
+    const hasResult = isAssetAvailable(job, "result");
+    const hasOriginal = isAssetAvailable(job, "original");
     const summaryText = status === "failed"
         ? "Не удалось создать результат"
         : status === "completed"
-          ? createdAt
+          ? (hasResult || hasOriginal ? createdAt : "Изображения временно недоступны")
           : "Создаём результат";
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
         : canOpen
           ? `<button type="button" class="ghost-button compact-button" data-toggle-render="${escapeHtml(job.job_id)}">${expanded ? t("renders.hide") : t("renders.open")}</button>`
           : "";
+    const downloadUrl = hasResult ? downloadUrlForJob(job) : "";
     return `
         <article class="render-card cabinet-render-card ${expanded ? "is-open" : ""}">
             <div class="render-summary">
                 <div class="render-thumb-wrap">
-                    ${resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image">` : `<div class="render-thumb"></div>`}
+                    ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
                     <div class="render-title">${escapeHtml(title)} · виртуальная примерка</div>
@@ -1365,10 +1565,15 @@ function renderHistoryCard(job) {
             </div>
             <div class="render-disclosure" data-visible="${expanded && canOpen ? "true" : "false"}">
                 ${canOpen ? `
-                    <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="render-full-image">
-                    <div class="render-expanded-actions">
-                        <a class="ghost-button compact-button" href="${escapeHtml(downloadUrlForJob(job))}" download> ${t("renders.download")} </a>
-                        <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
+                    <div class="render-detail-grid">
+                        ${renderHistoryViewer(job)}
+                        <div class="render-side">
+                            <div class="render-expanded-actions">
+                                ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>${t("renders.download")}</a>` : ""}
+                                <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
+                            </div>
+                            ${renderFeedbackBlock(job)}
+                        </div>
                     </div>
                 ` : ""}
             </div>
@@ -1403,6 +1608,79 @@ function renderRenders() {
         return;
     }
     container.innerHTML = state.renderHistory.map(renderHistoryCard).join("");
+    scheduleRenderHistoryPolling();
+}
+
+function clearRenderHistoryPolling() {
+    if (!state.renderHistoryPollTimer) return;
+    clearTimeout(state.renderHistoryPollTimer);
+    state.renderHistoryPollTimer = null;
+}
+
+function hasProcessingHistoryJobs() {
+    return state.renderHistory.some((job) => {
+        const status = job?.status || "processing";
+        return status !== "completed" && status !== "failed";
+    });
+}
+
+function scheduleRenderHistoryPolling() {
+    clearRenderHistoryPolling();
+    if (state.view !== "renders" || document.hidden || !hasProcessingHistoryJobs()) return;
+    state.renderHistoryPollTimer = setTimeout(() => {
+        void refreshProcessingHistoryJobs();
+    }, POLL_INTERVAL_MS);
+}
+
+function mergeStatusIntoHistory(jobId, statusData) {
+    state.renderHistory = state.renderHistory.map((job) => {
+        if (job.job_id !== jobId) return job;
+        return {
+            ...job,
+            status: statusData.status || job.status,
+            completed_at: statusData.completed_at || job.completed_at,
+            result_url: statusData.result_url || statusData.output_image_url || job.result_url,
+            error_code: statusData.error_code ?? job.error_code,
+            error_message: statusData.error_message || statusData.error || job.error_message,
+            feedback: statusData.feedback ?? job.feedback,
+            assets: statusData.assets || job.assets,
+        };
+    });
+    if (statusData.feedback !== undefined && state.feedbackByJob[jobId] === undefined) {
+        state.feedbackByJob[jobId] = statusData.feedback || "";
+    }
+}
+
+async function fetchJobStatusForHistory(jobId) {
+    const response = await fetch(withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}`), {
+        headers: withAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(await parseApiError(response));
+    return response.json();
+}
+
+async function refreshProcessingHistoryJobs() {
+    if (state.view !== "renders" || !hasFrontendAuth()) {
+        clearRenderHistoryPolling();
+        return;
+    }
+    const processingJobs = state.renderHistory.filter((job) => {
+        const status = job?.status || "processing";
+        return status !== "completed" && status !== "failed";
+    });
+    if (!processingJobs.length) {
+        clearRenderHistoryPolling();
+        return;
+    }
+    const updates = await Promise.allSettled(
+        processingJobs.map((job) => fetchJobStatusForHistory(job.job_id))
+    );
+    updates.forEach((update, index) => {
+        if (update.status !== "fulfilled") return;
+        mergeStatusIntoHistory(processingJobs[index].job_id, update.value);
+    });
+    renderRenders();
+    renderDashboard();
 }
 
 function renderDashboard() {
@@ -1444,12 +1722,19 @@ function renderDashboard() {
     latestStatus.textContent = statusLabel(latest.status);
     latestStatus.className = `status-pill ${statusClass(latest.status)}`;
 
-    const resultUrl = resultUrlForJob(latest);
-    if (latest.status === "completed" && resultUrl) {
+    const resultUrl = assetUrlForJob(latest, "result");
+    if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
         latestContent.innerHTML = `
-            <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image">
+            <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
             <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
+        `;
+        return;
+    }
+    if (latest.status === "completed") {
+        latestContent.innerHTML = `
+            <p class="latest-meta">Изображение результата временно недоступно</p>
+            <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть детали</button>
         `;
         return;
     }
@@ -1478,6 +1763,7 @@ async function loadRenderHistory({ silent = false } = {}) {
     try {
         const history = await fetchRenderHistory({ limit: 20, offset: 0 });
         state.renderHistory = Array.isArray(history.jobs) ? history.jobs : [];
+        mergeHistoryFeedbackState(state.renderHistory);
         if (!state.renderHistory.some((job) => job.job_id === state.expandedJobId)) {
             state.expandedJobId = "";
         }
@@ -1487,6 +1773,7 @@ async function loadRenderHistory({ silent = false } = {}) {
         state.renderHistoryLoading = false;
         renderRenders();
         renderDashboard();
+        scheduleRenderHistoryPolling();
     }
 }
 
@@ -2506,6 +2793,38 @@ function bindEvents() {
             return;
         }
 
+        const historyViewButton = event.target.closest("[data-history-view]");
+        if (historyViewButton) {
+            if (historyViewButton.disabled) return;
+            const jobId = historyViewButton.dataset.historyView;
+            const assetView = historyViewButton.dataset.assetView;
+            if (HISTORY_ASSET_VIEWS.includes(assetView)) {
+                state.renderAssetViewByJob[jobId] = assetView;
+                renderRenders();
+            }
+            return;
+        }
+
+        const feedbackButton = event.target.closest("[data-history-feedback]");
+        if (feedbackButton) {
+            void submitHistoryFeedback(
+                feedbackButton.dataset.historyFeedback,
+                feedbackButton.dataset.feedbackVote
+            );
+            return;
+        }
+
+        const feedbackReasonButton = event.target.closest("[data-history-feedback-reason]");
+        if (feedbackReasonButton) {
+            const jobId = feedbackReasonButton.dataset.historyFeedbackReason;
+            if (state.feedbackBusyByJob[jobId]) return;
+            state.feedbackReasonsByJob[jobId] = feedbackReasonButton.dataset.feedbackReason || "";
+            state.feedbackErrorByJob[jobId] = "";
+            renderRenders();
+            haptic("light");
+            return;
+        }
+
         const vehicleChoice = event.target.closest("[data-vehicle-choice]");
         if (vehicleChoice) {
             state.selectedVehicleIndex = Number(vehicleChoice.dataset.vehicleChoice || 0);
@@ -2528,6 +2847,18 @@ function bindEvents() {
         if (layer.contains(event.target) || toggle.contains(event.target)) return;
         setMenuOpen(false);
     });
+
+    document.addEventListener("error", (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement) || !image.matches("[data-asset-image]")) return;
+        setAssetLoadError(image.dataset.jobId, image.dataset.assetKind, true);
+    }, true);
+
+    document.addEventListener("load", (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement) || !image.matches("[data-asset-image]")) return;
+        setAssetLoadError(image.dataset.jobId, image.dataset.assetKind, false);
+    }, true);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -2552,6 +2883,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && state.view === "wallet") {
             void loadCabinet({ silent: true });
+        }
+        if (!document.hidden && state.view === "renders") {
+            scheduleRenderHistoryPolling();
+        }
+        if (document.hidden) {
+            clearRenderHistoryPolling();
         }
     });
 

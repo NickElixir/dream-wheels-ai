@@ -113,6 +113,7 @@ class JobStatusResponse(BaseModel):
     completed_at: datetime | None = None
     error_code: str | None = None
     error_message: str | None = None
+    feedback: str | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
 
 
@@ -125,6 +126,7 @@ class JobStatusDetailedResponse(BaseModel):
     share_url: str | None = None
     error: str | None = None
     error_code: str | None = None
+    feedback: str | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
 
 
@@ -150,6 +152,7 @@ class JobHistoryItem(BaseModel):
     error_message: str | None = None
     generation_provider: str | None = None
     provider_request_id: str | None = None
+    feedback: str | None = None
     assets: dict[str, JobAssetResponse] = Field(default_factory=dict)
 
 
@@ -159,10 +162,13 @@ class JobHistoryResponse(BaseModel):
     offset: int
 
 
-class FeedbackRequest(BaseModel):
-    vote: str
+class FeedbackAuthRequest(BaseModel):
     init_data: str | None = None
     telegram_user_id: int | None = None
+
+
+class FeedbackRequest(FeedbackAuthRequest):
+    vote: str
 
     @field_validator("vote")
     @classmethod
@@ -173,7 +179,7 @@ class FeedbackRequest(BaseModel):
 
 
 def _telegram_user_id_from_feedback_request(
-    request: FeedbackRequest,
+    request: FeedbackAuthRequest,
     internal_token: str | None,
 ) -> int:
     if request.init_data:
@@ -841,6 +847,7 @@ async def list_jobs(
                 jobs.error_message,
                 jobs.generation_provider,
                 jobs.provider_request_id,
+                jobs.feedback,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -864,6 +871,7 @@ async def list_jobs(
             error_message=row["error_message"],
             generation_provider=row["generation_provider"],
             provider_request_id=row["provider_request_id"],
+            feedback=row["feedback"],
             assets=_assets_from_row(row, job_id=row["job_id"]),
         )
         for row in rows
@@ -911,6 +919,7 @@ async def get_job_status(
                 jobs.output_image_url,
                 jobs.error_code,
                 jobs.error_message,
+                jobs.feedback,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -930,6 +939,7 @@ async def get_job_status(
         completed_at=row["completed_at"],
         error_code=row["error_code"],
         error_message=row["error_message"],
+        feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]),
     ).model_dump(mode="json", exclude_none=True)
 
@@ -961,6 +971,7 @@ async def get_job_status_detailed(
                 jobs.output_image_url,
                 jobs.error_code,
                 jobs.error_message,
+                jobs.feedback,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -981,6 +992,7 @@ async def get_job_status_detailed(
             if row["output_image_url"]
             else None,
             "error": row["error_message"],
+            "feedback": row["feedback"],
         }
     return JobStatusDetailedResponse(
         job_id=job_id,
@@ -991,6 +1003,7 @@ async def get_job_status_detailed(
         else None,
         error=row["error_message"],
         error_code=row["error_code"],
+        feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]) if auth is not None else None,
     ).model_dump(mode="json", exclude_none=True)
 
@@ -1083,6 +1096,33 @@ async def submit_feedback(
     if result == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Job not found")
     logger.info(f"👍 Feedback '{request.vote}' для job_id={job_id} tg_user={telegram_user_id}")
+
+
+@router.delete("/{job_id}/feedback", status_code=204)
+async def delete_feedback(
+    job_id: str,
+    request: FeedbackAuthRequest,
+    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+):
+    """Удалить feedback на результат для владельца job."""
+    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            """
+            UPDATE jobs
+            SET feedback = NULL
+            FROM users
+            WHERE jobs.id = $1::uuid
+              AND jobs.user_id = users.id
+              AND users.telegram_user_id = $2
+            """,
+            job_id,
+            telegram_user_id,
+        )
+    if result == "UPDATE 0":
+        raise HTTPException(status_code=404, detail="Job not found")
+    logger.info("👍 Feedback deleted для job_id=%s tg_user=%s", job_id, telegram_user_id)
 
 
 @router.get("/{job_id}/download")
