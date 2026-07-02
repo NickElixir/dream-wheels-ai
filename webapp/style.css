@@ -1635,6 +1635,54 @@ h2 {
     font-size: 13px;
 }
 
+.future-stage-island {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    border: 1px dashed rgba(221, 255, 0, 0.18);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+    opacity: 0.72;
+}
+
+.future-stage-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+}
+
+.future-stage-head h2 {
+    font-size: 18px;
+    line-height: 1.15;
+    letter-spacing: 0;
+}
+
+.future-stage-copy {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.future-stage-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.future-stage-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(0, 0, 0, 0.14);
+    color: var(--text-subtle);
+    font-size: 12px;
+    font-weight: 750;
+}
+
 .full-width {
     width: 100%;
 }
@@ -2175,6 +2223,14 @@ h2 {
 
     .payment-card-badge {
         align-self: flex-start;
+    }
+
+    .future-stage-head {
+        grid-template-columns: 1fr;
+    }
+
+    .future-stage-head .status-pill {
+        width: fit-content;
     }
 }
 
