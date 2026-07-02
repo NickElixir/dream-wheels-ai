@@ -19,6 +19,7 @@ const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
 const PRICING_VERSION = "credits-v1";
+const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
 const TOPUP_PACKAGES = [
@@ -40,6 +41,7 @@ const I18N = {
         auth: {
             login: "Войти через Telegram",
             loggingIn: "Входим...",
+            preparing: "Подготавливаем вход...",
             logout: "Выйти",
             failed: "Не удалось войти через Telegram",
         },
@@ -244,6 +246,7 @@ const I18N = {
         auth: {
             login: "Log in with Telegram",
             loggingIn: "Logging in...",
+            preparing: "Preparing login...",
             logout: "Log out",
             failed: "Telegram login failed",
         },
@@ -508,6 +511,12 @@ const state = {
     apiBaseUrl: resolveApiBaseUrl(),
     devTelegramUserId: resolveDevTelegramUserId(),
     websiteAuth: loadWebsiteAuth(),
+    websiteLoginPending: false,
+    websiteLoginWarmupPending: false,
+    websiteLoginLibraryPromise: null,
+    websiteLoginNoncePromise: null,
+    websiteLoginNonce: null,
+    websiteLoginNonceFetchedAt: 0,
     view: "dashboard",
     menuOpen: false,
     moreOpen: false,
@@ -631,6 +640,14 @@ function updateWebsiteAuthUi() {
     button.hidden = HAS_TG;
     if (HAS_TG) return;
 
+    if (state.websiteLoginWarmupPending && !state.websiteAuth) {
+        button.disabled = true;
+        button.textContent = t("auth.preparing");
+        updateCreateFooter();
+        updateAccountBlock();
+        return;
+    }
+
     const username = state.websiteAuth?.username;
     button.textContent = state.websiteAuth
         ? `${t("auth.logout")}${username ? ` @${username}` : ""}`
@@ -641,13 +658,14 @@ function updateWebsiteAuthUi() {
 
 function loadTelegramLoginLibrary() {
     if (window.Telegram?.Login) return Promise.resolve(window.Telegram.Login);
+    if (state.websiteLoginLibraryPromise) return state.websiteLoginLibraryPromise;
 
     function resolveLoginLibrary(resolve, reject) {
         if (window.Telegram?.Login) resolve(window.Telegram.Login);
         else reject(new Error("Telegram Login library is unavailable"));
     }
 
-    return new Promise((resolve, reject) => {
+    state.websiteLoginLibraryPromise = new Promise((resolve, reject) => {
         const existingScript = document.querySelector("script[data-telegram-login-library]");
         if (existingScript) {
             existingScript.addEventListener("load", () => resolveLoginLibrary(resolve, reject), {
@@ -664,24 +682,72 @@ function loadTelegramLoginLibrary() {
         script.addEventListener("load", () => resolveLoginLibrary(resolve, reject), { once: true });
         script.addEventListener("error", reject, { once: true });
         document.head.append(script);
+    }).catch((error) => {
+        state.websiteLoginLibraryPromise = null;
+        throw error;
+    });
+    return state.websiteLoginLibraryPromise;
+}
+
+function hasFreshWebsiteLoginNonce() {
+    return Boolean(
+        state.websiteLoginNonce &&
+        Date.now() - state.websiteLoginNonceFetchedAt < WEBSITE_LOGIN_NONCE_MAX_AGE_MS
+    );
+}
+
+async function fetchWebsiteLoginNonce({ force = false } = {}) {
+    if (!force && hasFreshWebsiteLoginNonce()) return state.websiteLoginNonce;
+    if (!force && state.websiteLoginNoncePromise) return state.websiteLoginNoncePromise;
+
+    state.websiteLoginNoncePromise = fetch(`${state.apiBaseUrl}/auth/telegram/nonce`)
+        .then(async (response) => {
+            if (!response.ok) throw new Error(await parseApiError(response));
+            const payload = await response.json();
+            state.websiteLoginNonce = payload;
+            state.websiteLoginNonceFetchedAt = Date.now();
+            return payload;
+        })
+        .finally(() => {
+            state.websiteLoginNoncePromise = null;
+        });
+    return state.websiteLoginNoncePromise;
+}
+
+function invalidateWebsiteLoginNonce() {
+    state.websiteLoginNonce = null;
+    state.websiteLoginNonceFetchedAt = 0;
+}
+
+function warmWebsiteLoginResources() {
+    if (HAS_TG || state.websiteAuth) return;
+    if (state.websiteLoginWarmupPending) return;
+    state.websiteLoginWarmupPending = true;
+    updateWebsiteAuthUi();
+    const warmup = Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()]);
+    void warmup.finally(() => {
+        state.websiteLoginWarmupPending = false;
+        updateWebsiteAuthUi();
     });
 }
 
+warmWebsiteLoginResources();
+
 async function loginWithTelegram() {
+    if (state.websiteLoginPending) return;
     const button = document.querySelector("[data-website-auth-button]");
+    state.websiteLoginPending = true;
     if (button) {
         button.disabled = true;
         button.textContent = t("auth.loggingIn");
     }
 
     try {
-        const nonceResponse = await fetch(`${state.apiBaseUrl}/auth/telegram/nonce`);
-        if (!nonceResponse.ok) throw new Error(await parseApiError(nonceResponse));
-        const { client_id: clientId, nonce, nonce_token: nonceToken } = await nonceResponse.json();
+        const [{ client_id: clientId, nonce, nonce_token: nonceToken }, telegramLogin] =
+            await Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()]);
         const numericClientId = Number(clientId);
         if (!Number.isSafeInteger(numericClientId)) throw new Error("Invalid Telegram client_id");
 
-        const telegramLogin = await loadTelegramLoginLibrary();
         const loginResult = await new Promise((resolve, reject) => {
             telegramLogin.auth(
                 { client_id: numericClientId, lang: locale, nonce },
@@ -712,6 +778,9 @@ async function loginWithTelegram() {
         console.error("[DW] Telegram website login failed", error);
         setWalletMessage(error?.message || t("auth.failed"), "error");
     } finally {
+        state.websiteLoginPending = false;
+        invalidateWebsiteLoginNonce();
+        warmWebsiteLoginResources();
         if (button) button.disabled = false;
         updateWebsiteAuthUi();
     }
@@ -2072,9 +2141,13 @@ function bindEvents() {
     document.querySelector("[data-more-close]")?.addEventListener("click", () => setMoreOpen(false));
     document.querySelector("[data-more-backdrop]")?.addEventListener("click", () => setMoreOpen(false));
 
-    document.querySelector("[data-website-auth-button]")?.addEventListener("click", () => {
+    const websiteAuthButton = document.querySelector("[data-website-auth-button]");
+    websiteAuthButton?.addEventListener("click", () => {
         if (state.websiteAuth) logoutWebsiteAuth();
         else void loginWithTelegram();
+    });
+    ["pointerdown", "mouseenter", "focus"].forEach((eventName) => {
+        websiteAuthButton?.addEventListener(eventName, warmWebsiteLoginResources, { passive: true });
     });
 
     document.querySelectorAll("[data-nav]").forEach((button) => {
@@ -2167,6 +2240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initTelegram();
     updateWebsiteAuthUi();
     bindEvents();
+    warmWebsiteLoginResources();
     handlePaymentReturn();
 
     syncEmailInput();

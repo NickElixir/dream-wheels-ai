@@ -6,6 +6,9 @@ APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
+    encoding="utf-8"
+)
 
 
 def test_dashboard_uses_balance_from_cabinet_api() -> None:
@@ -67,6 +70,22 @@ def test_unauthenticated_state_prompts_telegram_login() -> None:
     assert "wallet.authRequired" in APP_JS
 
 
+def test_website_login_warms_popup_dependencies_before_first_click() -> None:
+    assert 'href="https://oauth.telegram.org"' in INDEX_HTML
+    assert 'href="//oauth.telegram.org"' in INDEX_HTML
+    assert 'src="https://oauth.telegram.org/js/telegram-login.js?5"' in INDEX_HTML
+    assert "data-telegram-login-library" in INDEX_HTML
+    assert "WEBSITE_LOGIN_NONCE_MAX_AGE_MS" in APP_JS
+    assert "auth.preparing" in APP_JS
+    assert "function warmWebsiteLoginResources()" in APP_JS
+    assert "websiteLoginWarmupPending" in APP_JS
+    assert "Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()])" in APP_JS
+    assert '["pointerdown", "mouseenter", "focus"]' in APP_JS
+    assert "warmWebsiteLoginResources();" in APP_JS
+    assert "Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()])" in APP_JS
+    assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
+
+
 def test_desktop_layout_reserves_sidebar_gutter() -> None:
     assert "--desktop-sidebar-width" in STYLE_CSS
     assert "--desktop-content-gap" in STYLE_CSS
@@ -108,6 +127,17 @@ def test_secondary_action_family_uses_shared_island_button_style() -> None:
     assert "color: var(--accent-strong);" in STYLE_CSS
 
 
+def test_focus_visible_style_covers_button_and_navigation_families() -> None:
+    assert ".brand-button:focus-visible," in STYLE_CSS
+    assert ".sidebar-item:focus-visible," in STYLE_CSS
+    assert ".bottom-nav-item:focus-visible," in STYLE_CSS
+    assert ".website-auth-button:focus-visible," in STYLE_CSS
+    assert ".support-link:focus-visible," in STYLE_CSS
+    assert (
+        "box-shadow: 0 0 0 2px rgba(7, 8, 9, 0.92), 0 0 0 4px rgba(221, 255, 0, 0.3);" in STYLE_CSS
+    )
+
+
 def test_dashboard_summary_cards_use_container_responsive_headers() -> None:
     assert "container-type: inline-size;" in STYLE_CSS
     assert "grid-template-columns: minmax(0, 1fr) auto;" in STYLE_CSS
@@ -122,4 +152,16 @@ def test_topbar_actions_split_caption_left_and_login_right() -> None:
     assert "font-size: 18px;" in STYLE_CSS
     assert "text-align: left;" in STYLE_CSS
     topbar_actions = INDEX_HTML.split('<div class="topbar-actions">', 1)[1].split("</header>", 1)[0]
-    assert topbar_actions.index('class="topbar-caption"') < topbar_actions.index('class="website-auth-button"')
+    assert topbar_actions.index('class="topbar-caption"') < topbar_actions.index(
+        'class="website-auth-button"'
+    )
+
+
+def test_visual_smoke_checklist_covers_key_viewports_and_screens() -> None:
+    assert "## Visual smoke screenshots" in SMOKE_CHECKLIST
+    assert "Desktop `1280px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Desktop `1024px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Desktop `1280px` wallet unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` renders/history unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` photo-guide with `Ещё` sheet open" in SMOKE_CHECKLIST

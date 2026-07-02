@@ -38,6 +38,7 @@ Use a small, consistent button family across the cabinet:
 - inline panel actions should not appear as naked text links when they compete with other controls in the same block;
 - compact actions such as `Открыть`, `Сбросить`, `Обновить счет`, `Пополнить баланс`, download/share, and website Telegram login should stay within the same secondary-chip family;
 - buttons should visually align with the panel system, avoid browser-default fills, and preserve comfortable tap targets on mobile.
+- keyboard focus must use a product-owned `:focus-visible` ring on buttons, nav items, and document/support links; do not leave the website version on the default bright-blue browser outline.
 
 ## Responsive navigation
 
@@ -108,6 +109,17 @@ Use a dedicated caption style:
 - keep these two elements visually separated rather than grouped into a tight cluster;
 - use a slightly larger but restrained caption treatment with muted color, moderate weight, and no oversized hero emphasis;
 - hide the caption on narrow mobile widths when it starts competing with primary controls.
+
+### Website Telegram login warmup
+
+Website Telegram login should feel immediate on the first click after refresh
+
+Rules:
+
+- preload the Telegram Login library before the user clicks the auth button;
+- preload a fresh backend nonce while the page is becoming interactive;
+- warm these resources again on auth-button hover, pointer down, or focus;
+- avoid a cold first-click path where popup auth starts only after script loading or nonce fetch latency.
 
 ## Status islands
 

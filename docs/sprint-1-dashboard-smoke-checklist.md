@@ -22,3 +22,20 @@ staging Supabase and staging Redis namespace/prefix.
 17. Refresh the app and verify dashboard/history still come from backend data.
 18. Check owner isolation with another staging test account.
 19. Confirm production bot, Render, Vercel, Supabase, Storage and env vars are untouched.
+
+## Visual smoke screenshots
+
+Capture and compare these 6 screenshots before closing a UI-heavy PR:
+
+1. Desktop `1280px` dashboard unauthorized state
+   Check topbar split, sidebar gutter, hero CTA row, balance card, latest-result card
+2. Desktop `1024px` dashboard unauthorized state
+   Check topbar caption/login spacing, hero line breaks, balance/latest cards do not collide
+3. Mobile `390px` dashboard unauthorized state
+   Check bottom nav, stacked cards, warning island wrapping, no horizontal overflow
+4. Desktop `1280px` wallet unauthorized state
+   Check last-invoice block, payment-step spacing, history panel header, secondary actions
+5. Mobile `390px` renders/history unauthorized state
+   Check header, warning island, collapsed card rhythm, bottom nav active state
+6. Mobile `390px` photo-guide with `Ещё` sheet open
+   Check sheet height, sheet item spacing, background dimmer, no collisions with bottom nav
