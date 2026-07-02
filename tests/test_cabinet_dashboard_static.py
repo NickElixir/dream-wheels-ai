@@ -143,6 +143,18 @@ def test_sprint_2_reference_prototype_is_committed() -> None:
     assert "Проверка совместимости — скоро" in content
 
 
+def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
+    assert "tone-critical" in STYLE_CSS
+    assert "identity-critical-card" in INDEX_HTML
+    assert "identity-critical-head" in INDEX_HTML
+    assert "Нужен вход в Telegram" in APP_JS
+    assert "Войти через Telegram" in INDEX_HTML
+    assert "Повторить" in INDEX_HTML
+    assert "classifyIdentityError" in APP_JS
+    assert "identityBackendTitle" in APP_JS
+    assert "identityBackendBody" in APP_JS
+
+
 def test_t_route_rewrites_to_shared_entrypoint_and_expiry_hidden() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
     assert {"source": "/t", "destination": "/index.html"} in rewrites
