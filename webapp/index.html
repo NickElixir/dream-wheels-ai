@@ -182,9 +182,19 @@
                         </div>
                     </div>
 
-                    <div class="wallet-status-island tone-error" data-identity-error data-visible="false" aria-live="polite">
-                        <div class="wallet-status-copy">
-                            <div class="wallet-status-title" data-identity-error-text>Не удалось определить данные</div>
+                    <div class="wallet-status-island tone-critical identity-critical-card" data-identity-error data-visible="false" aria-live="assertive">
+                        <div class="wallet-status-copy identity-critical-copy">
+                            <div class="identity-critical-head">
+                                <div>
+                                    <div class="wallet-status-title" data-identity-error-title>Не удалось определить данные</div>
+                                    <div class="wallet-status-text" data-identity-error-text>—</div>
+                                </div>
+                                <span class="status-pill danger">Критично</span>
+                            </div>
+                        </div>
+                        <div class="identity-error-actions">
+                            <button type="button" class="ghost-button compact-button critical-button" data-identity-error-action>Войти через Telegram</button>
+                            <button type="button" class="ghost-button compact-button critical-button secondary" data-identity-error-retry>Повторить</button>
                         </div>
                     </div>
 

@@ -815,6 +815,68 @@ h2 {
     color: #ff8f8f;
 }
 
+.wallet-status-island.tone-critical {
+    border-color: rgba(255, 102, 102, 0.3);
+    background: rgba(255, 102, 102, 0.1);
+    color: #ffb0b0;
+}
+
+.identity-critical-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 14px;
+}
+
+.identity-critical-copy {
+    min-width: 0;
+}
+
+.identity-critical-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+}
+
+.identity-critical-head .wallet-status-title {
+    color: #ffd0d0;
+}
+
+.identity-critical-head .wallet-status-text {
+    margin-top: 6px;
+    color: #ffc0c0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.status-pill.danger {
+    border-color: rgba(255, 102, 102, 0.28);
+    background: rgba(255, 102, 102, 0.12);
+    color: #ffb0b0;
+}
+
+.identity-error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.critical-button {
+    border-color: rgba(255, 102, 102, 0.28);
+    background: rgba(255, 102, 102, 0.1);
+    color: #ffd0d0;
+}
+
+.critical-button:hover {
+    border-color: rgba(255, 102, 102, 0.42);
+    background: rgba(255, 102, 102, 0.18);
+}
+
+.critical-button.secondary {
+    background: rgba(255, 255, 255, 0.03);
+    color: #ffc0c0;
+}
+
 .wallet-status-spinner {
     width: 18px;
     height: 18px;
@@ -833,6 +895,13 @@ h2 {
     font-weight: 700;
     line-height: 1.45;
     color: inherit;
+}
+
+.wallet-status-text {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.45;
 }
 
 @keyframes wallet-spin {
@@ -2230,6 +2299,14 @@ h2 {
     }
 
     .future-stage-head .status-pill {
+        width: fit-content;
+    }
+
+    .identity-critical-head {
+        grid-template-columns: 1fr;
+    }
+
+    .identity-critical-head .status-pill {
         width: fit-content;
     }
 }

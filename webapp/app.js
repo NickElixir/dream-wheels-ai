@@ -121,6 +121,16 @@ const I18N = {
             missingFiles: "Файлы не выбраны — вернитесь и загрузите оба фото",
             missingIdentity: "Сначала определите и подтвердите данные",
             missingRimConfirmation: "Подтвердите параметры диска или выберите «Не уверен»",
+            identityAuthTitle: "Нужен вход в Telegram",
+            identityAuthBody:
+                "Этот шаг требует `init_data` или `telegram_user_id`. Откройте Mini App из Telegram или нажмите «Войти через Telegram» сверху, затем повторите проверку.",
+            identityAuthAction: "Войти через Telegram",
+            identityBackendTitle: "Staging backend не готов",
+            identityBackendBody:
+                "Этот preview смотрит на backend без Sprint 2 маршрутов. Нужен deploy backend-а на staging или правильный API host, затем можно повторить.",
+            identityRetryAction: "Повторить",
+            identityGenericTitle: "Не удалось определить данные",
+            identityGenericBody: "Проверьте фото и повторите попытку.",
             generationFailed: "Ошибка генерации",
             timeout: "Превышено время ожидания (>110 с)",
             requestFailed: "Запрос не удался. Попробуйте ещё раз",
@@ -330,6 +340,16 @@ const I18N = {
             missingFiles: "Files are missing. Go back and upload both photos",
             missingIdentity: "Detect and confirm details first",
             missingRimConfirmation: "Confirm wheel details or choose Not sure",
+            identityAuthTitle: "Telegram login required",
+            identityAuthBody:
+                "This step requires `init_data` or `telegram_user_id`. Open the Mini App in Telegram or click \"Log in with Telegram\" above, then try again.",
+            identityAuthAction: "Log in with Telegram",
+            identityBackendTitle: "Staging backend is not ready",
+            identityBackendBody:
+                "This preview points to a backend without the Sprint 2 routes. The staging backend needs a deploy, or the API host must be switched, then try again.",
+            identityRetryAction: "Retry",
+            identityGenericTitle: "Could not detect the data",
+            identityGenericBody: "Check the photos and try again.",
             generationFailed: "Generation failed",
             timeout: "Timed out after 110 seconds",
             requestFailed: "Request failed. Please try again",
@@ -860,6 +880,39 @@ function localizeErrorMessage(message) {
         return t("errors.requestFailed");
     }
     return message || t("errors.generic");
+}
+
+function classifyIdentityError(message) {
+    const rawMessage = message || "";
+    const normalized = rawMessage.toLowerCase();
+
+    if (normalized.includes("init_data") || normalized.includes("telegram_user_id")) {
+        return {
+            title: t("errors.identityAuthTitle"),
+            body: t("errors.identityAuthBody"),
+            primaryActionLabel: t("errors.identityAuthAction"),
+            showPrimaryAction: true,
+            retryLabel: t("errors.identityRetryAction"),
+        };
+    }
+
+    if (normalized.includes("not found") || normalized.includes("404") || normalized.includes("method not allowed") || normalized.includes("405")) {
+        return {
+            title: t("errors.identityBackendTitle"),
+            body: formatTemplate("errors.identityBackendBody", { apiBase: state.apiBaseUrl }),
+            primaryActionLabel: "",
+            showPrimaryAction: false,
+            retryLabel: t("errors.identityRetryAction"),
+        };
+    }
+
+    return {
+        title: t("errors.identityGenericTitle"),
+        body: t("errors.identityGenericBody"),
+        primaryActionLabel: "",
+        showPrimaryAction: false,
+        retryLabel: t("errors.identityRetryAction"),
+    };
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
@@ -1759,14 +1812,28 @@ function renderIdentityFlow() {
     const flow = document.querySelector("[data-identity-flow]");
     const loading = document.querySelector("[data-identity-loading]");
     const error = document.querySelector("[data-identity-error]");
+    const errorTitle = document.querySelector("[data-identity-error-title]");
     const errorText = document.querySelector("[data-identity-error-text]");
+    const errorAction = document.querySelector("[data-identity-error-action]");
+    const errorRetry = document.querySelector("[data-identity-error-retry]");
     const confirmations = document.querySelector("[data-identity-confirmations]");
     const review = document.querySelector("[data-identity-review]");
     const hasFlow = state.identityResolving || state.identityError || state.identityProposal;
     if (flow) flow.hidden = !hasFlow;
     if (loading) loading.dataset.visible = String(state.identityResolving);
     if (error) error.dataset.visible = String(Boolean(state.identityError));
-    if (errorText && state.identityError) errorText.textContent = localizeErrorMessage(state.identityError);
+    const identityErrorView = state.identityError ? classifyIdentityError(state.identityError) : null;
+    if (errorTitle && identityErrorView) errorTitle.textContent = identityErrorView.title;
+    if (errorText && identityErrorView) errorText.textContent = identityErrorView.body;
+    if (errorAction) {
+        errorAction.hidden = !identityErrorView?.showPrimaryAction;
+        if (identityErrorView?.showPrimaryAction) {
+            errorAction.textContent = identityErrorView.primaryActionLabel;
+        }
+    }
+    if (errorRetry && identityErrorView) {
+        errorRetry.textContent = identityErrorView.retryLabel;
+    }
 
     const hasProposal = Boolean(state.identityProposal && !state.identityResolving);
     if (confirmations) confirmations.hidden = !hasProposal;
@@ -2349,6 +2416,13 @@ function bindEvents() {
     });
     ["pointerdown", "mouseenter", "focus"].forEach((eventName) => {
         websiteAuthButton?.addEventListener(eventName, warmWebsiteLoginResources, { passive: true });
+    });
+
+    document.querySelector("[data-identity-error-action]")?.addEventListener("click", () => {
+        document.querySelector("[data-website-auth-button]")?.click();
+    });
+    document.querySelector("[data-identity-error-retry]")?.addEventListener("click", () => {
+        void resolveIdentity();
     });
 
     document.querySelectorAll("[data-nav]").forEach((button) => {
