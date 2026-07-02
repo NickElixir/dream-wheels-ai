@@ -79,6 +79,7 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "auth.preparing" in APP_JS
     assert "function warmWebsiteLoginResources()" in APP_JS
     assert "websiteLoginWarmupPending" in APP_JS
+    assert "button.disabled = false;" in APP_JS
     assert "Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()])" in APP_JS
     assert '["pointerdown", "mouseenter", "focus"]' in APP_JS
     assert "warmWebsiteLoginResources();" in APP_JS
