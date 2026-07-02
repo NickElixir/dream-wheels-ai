@@ -37,8 +37,6 @@ Returns the current user’s feedback for a completed owned render job.
 
 Creates or replaces the current feedback record.
 
-Request:
-
 ```json
 { "sentiment": "disliked", "reason": "wheel_differs" }
 ```
@@ -46,11 +44,9 @@ Request:
 Validation:
 
 - `liked` requires `reason: null` or omitted;
-- `disliked` accepts an optional allowed reason;
+- `disliked` accepts an optional allowed reason and persists immediately even when reason is omitted;
 - unknown fields and unknown reason codes are rejected;
 - completed render job is required.
-
-Response: current canonical record.
 
 ### DELETE `/jobs/{job_id}/feedback`
 
@@ -58,20 +54,25 @@ Clears the current user’s feedback. It is idempotent.
 
 ## Comparison assets
 
-The render-detail response must expose the authorized URLs/asset references for:
+The render-detail response exposes authorized references for original car image, generated result image, durable job id, and status. The frontend uses server-provided references and must not reconstruct URLs or use localStorage as the source of truth.
 
-- original car image;
-- generated result image;
-- durable render job id and status.
+## Create contexts
 
-The frontend must use those server-provided references. It must not reconstruct URLs or use localStorage as the source of truth.
+The endpoint/path can reuse existing job/create conventions, but must preserve these two distinct behaviours.
 
-## Repeat scenario
+### Retry a failed result
 
-`Создать ещё вариант` opens the existing create flow with a server-backed repeat context from the selected completed job:
+`Повторить` returns a create context with prior car/rim assets and confirmed identity data. It does not create a job, enqueue work, or debit a render. The user explicitly confirms the new render after review.
 
-- car/rim assets;
-- confirmed identity/rim setup where available;
-- no new job, queue item, or render debit until the user explicitly starts a new render.
+### Try different wheels from a completed result
 
-The exact endpoint/path may reuse existing job/create conventions, but must preserve this behavior.
+`Примерить другие диски` returns a create context with only:
+
+- prior car asset;
+- confirmed vehicle identity where available.
+
+It must not preselect the prior rim asset or RimSetup. The user uploads another wheel image and explicitly confirms a new render. Navigation alone does not create a job or debit a render.
+
+## Retention
+
+Sprint 3 provides no user-initiated deletion endpoint for render jobs, source assets, result assets, or feedback.
