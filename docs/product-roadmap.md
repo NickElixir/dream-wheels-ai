@@ -68,12 +68,15 @@ A visual result must never be presented as proof of technical compatibility.
 - **Deferred profile enhancement:** after the dashboard and auth flows are stable, enrich the account header with the Telegram display name and profile photo when available. Do not add custom avatar uploads. Use a deterministic initials fallback when no Telegram photo is available. Keep `avatar_url` and its refresh timestamp in the backend user profile only when the authenticated Telegram flow provides a validated URL.
 - **Expiry UI condition:** the approved expiry island may be implemented only after immutable grant/ledger expiry data is explicitly approved and available. Before then, it must be hidden rather than populated from mock or browser-local data.
 
-### Sprint 2 — create flow and structured input
+### Sprint 2 — quick create flow and identity confirmation
 
-Flow: upload car → upload rim → confirm vehicle → optional rim data → review → generate.
+Flow: upload car → upload rim → AI/VLM/OCR quick identity proposal → user confirmation → review → generate.
 
-- Vehicle confirmation: make, model, year, body; generation/modification when needed.
-- Optional rim fields: brand, model, SKU/article, product URL, diameter, width, PCD, ET, DIA.
+- Vehicle quick identity: make, model and year or year range. Show at most two alternative AI candidates; do not expose a full vehicle catalogue selector in the first iteration.
+- Rim quick identity for rendering: wheel diameter, wheel width and PCD. Store PCD as `bolt_count` + `pcd_mm`; display it as `NxPCD`, for example `5×114.3`.
+- Wheel width is part of the quick identity because it affects visual proportions; do not omit it even if confidence is medium.
+- Brand, model, SKU/article, product URL, ET and DIA are not part of the default quick confirmation UI. They belong to the later Detailed Fitment Wizard or an optional advanced section after the render.
+- Use `VehicleIdentity`, `RimSpec` and `RimSetup` as the shared data boundary with the Fitment Pipeline, but do not run Fitment Verdict in this sprint.
 - Input technical validation and self-check warnings only; no automatic AI rejection.
 
 ### Parallel F1 — fitment domain and rules engine
@@ -100,9 +103,11 @@ Flow: upload car → upload rim → confirm vehicle → optional rim data → re
 
 Run customer development after Sprint 3 + F2. The tested product is the complete value proposition: visual fitment + preliminary compatibility, not a standalone image generator.
 
-### Sprint 4 — wallet redesign
+### Sprint 4 — Detailed Fitment Wizard and wallet alignment
 
-- Balance, packages, invoice summary, receipt email and payment CTA.
+- Add the optional detailed form after render or from result detail: generation/modification/market, SKU/product URL, diameter, width, PCD, ET, DIA and staggered setup.
+- Prepare the detailed-check entry point without turning automatic visual-support inference into a technical verdict.
+- Wallet changes remain limited to balance, packages, invoice summary, receipt email and payment CTA.
 - Do not advertise credit expiration until the backend implements it.
 - Keep payment provider behavior out of this scope.
 
@@ -131,6 +136,12 @@ Requires a structured owned catalog or partner feed.
 - Mask/crop artifacts and render plan.
 - Post-generation validation, one internal retry and provider fallback.
 - Internal retries never consume additional user credits.
+
+## Backlog after Fitment Verdict MVP
+
+- AI recognition showcase for likely wheel brand/model candidates. This is not part of Sprint 2 because it does not improve render geometry or fitment evidence and can create false confidence.
+- Paid Detailed Fitment Check pricing, retry and credit semantics.
+- Catalog recommendations backed by audited product feeds.
 
 ## Non-goals in the current block
 
