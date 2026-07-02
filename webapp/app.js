@@ -641,7 +641,7 @@ function updateWebsiteAuthUi() {
     if (HAS_TG) return;
 
     if (state.websiteLoginWarmupPending && !state.websiteAuth) {
-        button.disabled = true;
+        button.disabled = false;
         button.textContent = t("auth.preparing");
         updateCreateFooter();
         updateAccountBlock();
