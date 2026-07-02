@@ -80,14 +80,25 @@ For a square setup, front and rear references may point to the same RimSpec. For
 
 ## Required data by mode
 
-### Sprint 2 create flow
+### Sprint 2 quick create flow
 
 Collect and persist when available:
 
 ```text
 Vehicle: make, model, year, body, generation, modification.
-Rim: brand, model, SKU, product URL, diameter, width, bolt_count/PCD, ET, DIA.
+Rim quick identity: wheel_diameter_in, wheel_width_j, bolt_count, pcd_mm.
 ```
+
+Sprint 2 default UI should confirm only the fields required for a fast render-oriented identity:
+
+- vehicle make/model/year or year range;
+- wheel diameter;
+- wheel width;
+- PCD displayed as `NxPCD`, for example `5×114.3`.
+
+Wheel width is intentionally included in the quick confirmation step because it affects visual proportions and prevents the renderer from making the wheel appear too wide or too narrow.
+
+Brand, model, SKU, product URL, ET and DIA are still supported by the schema but should not be part of the default Sprint 2 quick-confirmation UI. They are collected later in the Detailed Fitment Wizard or through an optional advanced section after the render.
 
 All fields are nullable except the minimum vehicle identity required by the UI. Missing values do not block visual rendering.
 
