@@ -1584,8 +1584,8 @@ h2 {
 .payment-history-details summary {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 16px;
+    align-items: center;
+    gap: 18px;
 }
 
 .payment-history-details summary > span:first-child {
@@ -1614,6 +1614,7 @@ h2 {
 .summary-action {
     color: var(--accent);
     font-weight: 700;
+    align-self: center;
 }
 
 .history-list,

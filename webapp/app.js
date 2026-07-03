@@ -183,6 +183,7 @@ const I18N = {
             paymentNote: "Оплата откроется через Robokassa. Рендеры начисляются после подтверждения",
             paymentHistory: "История платежей",
             openHistory: "Открыть",
+            closeHistory: "Скрыть",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
             noPaymentsMeta: "Стартовый грант по /start на 30 дней появится в истории платежей",
@@ -402,6 +403,7 @@ const I18N = {
             paymentNote: "Robokassa opens on tap. Renders are applied after confirmation",
             paymentHistory: "Payment history",
             openHistory: "Open",
+            closeHistory: "Hide",
             emptyHistory: "No payments yet",
             noPaymentsTitle: "No payments yet",
             noPaymentsMeta: "Your 30-day /start starter grant will appear in payment history",
@@ -562,6 +564,7 @@ const state = {
     balance: null,
     payments: [],
     starterGrant: null,
+    walletHistoryOpen: true,
     walletBusy: false,
     walletLoading: false,
     walletLoadingMessage: "",
@@ -1088,6 +1091,14 @@ function renderWalletStatus() {
     syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
 }
 
+function syncPaymentHistoryDetailsAction() {
+    const details = document.querySelector("[data-wallet-history-details]");
+    const action = document.querySelector("[data-wallet-history-toggle]");
+    if (!details || !action) return;
+    state.walletHistoryOpen = details.open;
+    action.textContent = details.open ? t("wallet.closeHistory") : t("wallet.openHistory");
+}
+
 function setWalletLoading(visible, message = t("wallet.loading")) {
     state.walletLoading = visible;
     state.walletLoadingMessage = visible ? message : "";
@@ -1271,6 +1282,7 @@ function renderWallet() {
     });
 
     renderWalletStatus();
+    syncPaymentHistoryDetailsAction();
 }
 
 function renderConfirmation() {
@@ -2953,6 +2965,12 @@ function bindEvents() {
     document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
         setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
         void loadCabinet();
+    });
+    document.querySelector("[data-wallet-history-details]")?.addEventListener("toggle", (event) => {
+        const details = event.currentTarget;
+        if (!(details instanceof HTMLDetailsElement)) return;
+        state.walletHistoryOpen = details.open;
+        syncPaymentHistoryDetailsAction();
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
         state.paymentStep = 1;
