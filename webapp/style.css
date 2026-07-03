@@ -438,6 +438,90 @@ a {
     justify-self: end;
 }
 
+.dashboard-balance-card .dashboard-balance-action {
+    justify-self: start;
+}
+
+.dashboard-expiry-card {
+    display: grid;
+    gap: 12px;
+    padding: 17px 18px;
+    border-radius: 20px;
+    border: 1px solid rgba(221, 255, 0, 0.22);
+    background: linear-gradient(145deg, rgba(42, 47, 27, 0.8), rgba(28, 32, 27, 0.7));
+}
+
+.dashboard-expiry-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.dashboard-expiry-head strong {
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.dashboard-expiry-link {
+    padding: 0;
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.dashboard-expiry-list,
+.wallet-expiry-list {
+    display: grid;
+    gap: 10px;
+}
+
+.dashboard-expiry-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.dashboard-expiry-line strong {
+    display: block;
+    font-size: 14px;
+}
+
+.dashboard-expiry-line span {
+    display: block;
+    margin-top: 3px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.dashboard-expiry-date,
+.wallet-expiry-date {
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.dashboard-expiry-note,
+.wallet-expiry-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 204, 86, 0.18);
+    color: var(--warning);
+    font-size: 13px;
+    line-height: 1.38;
+    font-weight: 800;
+}
+
+.dashboard-expiry-note::before,
+.wallet-expiry-note::before {
+    content: "⚠";
+    font-size: 15px;
+    line-height: 1.1;
+}
+
 @container (max-width: 640px) {
     .dashboard-balance-card .panel-head,
     .latest-render-card .panel-head {
@@ -465,6 +549,22 @@ a {
 .first-render-empty {
     color: var(--text-muted);
     line-height: 1.5;
+}
+
+.latest-render-card [data-latest-content] {
+    display: grid;
+    gap: 14px;
+}
+
+.latest-render-copy {
+    display: grid;
+    gap: 10px;
+}
+
+.latest-render-specs {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .first-render-empty {
@@ -1484,14 +1584,20 @@ h2 {
 .payment-history-details summary {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 16px;
+    align-items: center;
+    gap: 18px;
 }
 
 .payment-history-details summary > span:first-child {
     min-width: 0;
     display: grid;
     gap: 8px;
+}
+
+.history-summary-copy {
+    color: var(--text-subtle);
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .payment-history-details .history-summary-title {
@@ -1508,6 +1614,7 @@ h2 {
 .summary-action {
     color: var(--accent);
     font-weight: 700;
+    align-self: center;
 }
 
 .history-list,
@@ -1781,14 +1888,14 @@ h2 {
 
 .render-summary {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr) auto;
-    gap: 14px;
+    grid-template-columns: 110px minmax(0, 1fr) auto;
+    gap: 18px;
     align-items: center;
 }
 
 .render-thumb-wrap {
-    width: 84px;
-    height: 84px;
+    width: 108px;
+    height: 108px;
     border-radius: 18px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
@@ -1816,11 +1923,23 @@ h2 {
 
 .render-title {
     font-weight: 800;
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.render-body {
+    display: grid;
+    gap: 8px;
 }
 
 .render-subtitle {
-    margin-top: 4px;
     color: var(--text-subtle);
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.render-meta {
+    color: var(--text-muted);
     font-size: 13px;
 }
 
@@ -1856,8 +1975,8 @@ h2 {
 
 .render-detail-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.85fr);
-    gap: 14px;
+    grid-template-columns: minmax(0, 1.75fr) minmax(270px, 0.85fr);
+    gap: 18px;
     align-items: start;
 }
 
@@ -1868,7 +1987,7 @@ h2 {
 
 .render-viewer {
     overflow: hidden;
-    padding: 12px;
+    padding: 14px;
     border-radius: 20px;
     border: 1px solid var(--line);
     background: rgba(0, 0, 0, 0.15);
@@ -1911,7 +2030,7 @@ h2 {
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 220px;
+    min-height: 320px;
     border-radius: 16px;
     overflow: hidden;
     background: #0c0e11;
@@ -1967,9 +2086,8 @@ h2 {
 }
 
 .render-expanded-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    display: grid;
+    gap: 12px;
 }
 
 .render-feedback {
@@ -2075,6 +2193,51 @@ h2 {
     color: #ff8b8b;
     font-size: 12px;
     font-weight: 800;
+}
+
+.wallet-expiry-section,
+.wallet-history-section {
+    display: grid;
+    gap: 14px;
+}
+
+.wallet-expiry-row,
+.payment-history-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 18px 22px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.wallet-expiry-row strong,
+.payment-history-item strong {
+    display: block;
+    font-size: 18px;
+}
+
+.wallet-expiry-row .meta,
+.payment-history-item .meta {
+    margin-top: 4px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.wallet-expiry-inline-note {
+    padding: 18px 22px;
+    border-radius: 20px;
+    border: 1px solid rgba(39, 216, 138, 0.22);
+    background: rgba(39, 216, 138, 0.08);
+    color: var(--success);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.wallet-expiry-inline-note::before {
+    content: none;
 }
 
 .form-row,
@@ -2421,8 +2584,8 @@ h2 {
     }
 
     .render-thumb-wrap {
-        width: 72px;
-        height: 62px;
+        width: 88px;
+        height: 88px;
     }
 
     .render-detail-grid {
@@ -2473,6 +2636,12 @@ h2 {
         grid-template-columns: 1fr;
     }
 
+    .wallet-expiry-row,
+    .payment-history-item,
+    .dashboard-expiry-line {
+        grid-template-columns: 1fr;
+    }
+
     .step-actions,
     .step-actions.split {
         flex-direction: column;
@@ -2501,7 +2670,7 @@ h2 {
     }
 
     .render-asset-frame {
-        min-height: 180px;
+        min-height: 240px;
     }
 
     .panel-head,

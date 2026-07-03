@@ -115,6 +115,7 @@ class JobStatusResponse(BaseModel):
     error_message: str | None = None
     feedback: str | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobStatusDetailedResponse(BaseModel):
@@ -128,6 +129,7 @@ class JobStatusDetailedResponse(BaseModel):
     error_code: str | None = None
     feedback: str | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobAssetResponse(BaseModel):
@@ -154,6 +156,7 @@ class JobHistoryItem(BaseModel):
     provider_request_id: str | None = None
     feedback: str | None = None
     assets: dict[str, JobAssetResponse] = Field(default_factory=dict)
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobHistoryResponse(BaseModel):
@@ -859,6 +862,7 @@ async def list_jobs(
                 jobs.generation_provider,
                 jobs.provider_request_id,
                 jobs.feedback,
+                jobs.render_input_snapshot,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -884,6 +888,7 @@ async def list_jobs(
             provider_request_id=row["provider_request_id"],
             feedback=row["feedback"],
             assets=_assets_from_row(row, job_id=row["job_id"]),
+            render_input_snapshot=row["render_input_snapshot"],
         )
         for row in rows
     ]
@@ -931,6 +936,7 @@ async def get_job_status(
                 jobs.error_code,
                 jobs.error_message,
                 jobs.feedback,
+                jobs.render_input_snapshot,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -952,6 +958,7 @@ async def get_job_status(
         error_message=row["error_message"],
         feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]),
+        render_input_snapshot=row["render_input_snapshot"],
     ).model_dump(mode="json", exclude_none=True)
 
 
@@ -982,6 +989,7 @@ async def get_job_status_detailed(
                 jobs.error_code,
                 jobs.error_message,
                 jobs.feedback,
+                jobs.render_input_snapshot,
                 {_job_assets_select_clause()}
             FROM jobs
             {_job_assets_join_clause()}
@@ -1004,6 +1012,7 @@ async def get_job_status_detailed(
         error_code=row["error_code"],
         feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]),
+        render_input_snapshot=row["render_input_snapshot"],
     ).model_dump(mode="json", exclude_none=True)
 
 
