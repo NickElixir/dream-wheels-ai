@@ -181,11 +181,22 @@ class FeedbackRequest(FeedbackAuthRequest):
 def _telegram_user_id_from_feedback_request(
     request: FeedbackAuthRequest,
     internal_token: str | None,
+    authorization: str | None = None,
 ) -> int:
     if request.init_data:
         auth = resolve_telegram_auth(
             init_data=request.init_data,
             telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
+            auth_name="feedback",
+        )
+        return auth.telegram_user_id
+
+    if authorization:
+        auth = resolve_telegram_auth(
+            init_data=None,
+            telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
             auth_name="feedback",
         )
         return auth.telegram_user_id
@@ -1070,6 +1081,7 @@ async def download_job_asset(
 async def submit_feedback(
     job_id: str,
     request: FeedbackRequest,
+    authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
     """Сохранить лайк/дизлайк на результат. Повторный вызов перезаписывает.
@@ -1077,7 +1089,11 @@ async def submit_feedback(
     WebApp подтверждает владельца через Telegram initData. Бот ходит как
     trusted backend client с X-Internal-Token и telegram_user_id из callback.
     """
-    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         result = await conn.execute(
@@ -1102,10 +1118,15 @@ async def submit_feedback(
 async def delete_feedback(
     job_id: str,
     request: FeedbackAuthRequest,
+    authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
     """Удалить feedback на результат для владельца job."""
-    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         result = await conn.execute(

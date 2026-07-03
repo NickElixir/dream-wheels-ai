@@ -592,6 +592,8 @@ const state = {
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
+    renderAssetBlobUrlsByJob: {},
+    renderAssetBlobLoadingByJob: {},
     feedbackByJob: {},
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
@@ -1330,6 +1332,21 @@ function canUseIdentityAssetUrls() {
     return Boolean(getIdentitySearchParams().toString());
 }
 
+function hasAssetSource(job, kind) {
+    if (!job) return false;
+    if (kind === "original") return Boolean(job?.assets?.car_original);
+    if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
+    return false;
+}
+
+function assetDownloadUrlForJob(job, kind) {
+    const assetKey = kind === "original" ? "car_original" : kind;
+    if (!job?.assets?.[assetKey]) return "";
+    const downloadUrl = job.assets[assetKey].download_url;
+    if (!downloadUrl) return "";
+    return downloadUrl.startsWith("/") ? `${state.apiBaseUrl}${downloadUrl}` : downloadUrl;
+}
+
 function proxiedAssetUrl(asset) {
     const assetPath = asset?.download_url;
     if (!assetPath || !canUseIdentityAssetUrls()) return "";
@@ -1345,10 +1362,69 @@ function hasAssetLoadError(job, kind) {
     return Boolean(state.renderAssetErrorsByJob[job?.job_id]?.[assetErrorKey(kind)]);
 }
 
+function assetBlobUrlForJob(job, kind) {
+    return state.renderAssetBlobUrlsByJob[job?.job_id]?.[kind] || "";
+}
+
+function isAssetBlobLoading(job, kind) {
+    return Boolean(state.renderAssetBlobLoadingByJob[job?.job_id]?.[kind]);
+}
+
+function markAssetBlobLoading(jobId, kind, value) {
+    state.renderAssetBlobLoadingByJob[jobId] = {
+        ...(state.renderAssetBlobLoadingByJob[jobId] || {}),
+        [kind]: value,
+    };
+}
+
+async function ensureAssetBlobUrl(job, kind) {
+    if (!job?.job_id || kind !== "original") return "";
+    const existingBlobUrl = assetBlobUrlForJob(job, kind);
+    if (existingBlobUrl) return existingBlobUrl;
+    if (!getWebsiteAuthToken()) return "";
+    if (isAssetBlobLoading(job, kind)) return "";
+
+    const sourceUrl = assetDownloadUrlForJob(job, kind);
+    if (!sourceUrl) return "";
+
+    markAssetBlobLoading(job.job_id, kind, true);
+    renderRenders();
+    renderDashboard();
+
+    try {
+        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const previousUrl = state.renderAssetBlobUrlsByJob[job.job_id]?.[kind] || "";
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        state.renderAssetBlobUrlsByJob[job.job_id] = {
+            ...(state.renderAssetBlobUrlsByJob[job.job_id] || {}),
+            [kind]: objectUrl,
+        };
+    } catch (error) {
+        state.renderAssetErrorsByJob[job.job_id] = {
+            ...(state.renderAssetErrorsByJob[job.job_id] || {}),
+            [assetErrorKey(kind)]: true,
+        };
+        console.error("[DW] Failed to load history asset blob", {
+            job_id: job.job_id,
+            kind,
+            error,
+        });
+    } finally {
+        markAssetBlobLoading(job.job_id, kind, false);
+        renderRenders();
+        renderDashboard();
+    }
+
+    return assetBlobUrlForJob(job, kind);
+}
+
 function assetUrlForJob(job, kind) {
     if (!job) return "";
     if (kind === "original") {
-        return proxiedAssetUrl(job.assets?.car_original);
+        return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.car_original);
     }
     return resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
 }
@@ -1359,11 +1435,11 @@ function isAssetAvailable(job, kind) {
 
 function defaultAssetViewForJob(job) {
     const savedView = state.renderAssetViewByJob[job?.job_id];
-    if (HISTORY_ASSET_VIEWS.includes(savedView) && isAssetAvailable(job, savedView)) {
+    if (HISTORY_ASSET_VIEWS.includes(savedView) && hasAssetSource(job, savedView)) {
         return savedView;
     }
-    if (isAssetAvailable(job, "result")) return "result";
-    if (isAssetAvailable(job, "original")) return "original";
+    if (hasAssetSource(job, "result")) return "result";
+    if (hasAssetSource(job, "original")) return "original";
     return savedView || "result";
 }
 
@@ -1422,15 +1498,20 @@ function renderAssetMissingState(text = "Изображение временно
 
 function renderHistoryViewer(job) {
     const activeView = defaultAssetViewForJob(job);
-    const originalAvailable = isAssetAvailable(job, "original");
-    const resultAvailable = isAssetAvailable(job, "result");
+    const originalAvailable = hasAssetSource(job, "original");
+    const resultAvailable = hasAssetSource(job, "result");
     const activeUrl = assetUrlForJob(job, activeView);
     const activeAvailable = isAssetAvailable(job, activeView);
+    const originalBlobLoading = isAssetBlobLoading(job, "original");
     const label = activeView === "original" ? "Исходное фото" : "Результат";
     const missingLabels = [
         originalAvailable ? "" : "оригинал",
         resultAvailable ? "" : "результат",
     ].filter(Boolean);
+
+    if (activeView === "original" && !activeUrl && !originalBlobLoading && getWebsiteAuthToken()) {
+        void ensureAssetBlobUrl(job, "original");
+    }
 
     return `
         <div class="render-viewer">
@@ -1442,7 +1523,7 @@ function renderHistoryViewer(job) {
                 ${activeAvailable && activeUrl ? `
                     <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(label)}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
                     <span class="render-image-label">${escapeHtml(label)}</span>
-                ` : renderAssetMissingState()}
+                ` : originalBlobLoading ? renderAssetMissingState("Загружаем оригинал...") : renderAssetMissingState()}
             </div>
             ${missingLabels.length ? `
                 <div class="render-asset-notice" role="status">
@@ -1537,8 +1618,8 @@ function renderHistoryCard(job) {
     const createdAt = formatDateTime(job.created_at);
     const expanded = state.expandedJobId === job.job_id;
     const canOpen = status === "completed";
-    const hasResult = isAssetAvailable(job, "result");
-    const hasOriginal = isAssetAvailable(job, "original");
+    const hasResult = hasAssetSource(job, "result");
+    const hasOriginal = hasAssetSource(job, "original");
     const summaryText = status === "failed"
         ? "Не удалось создать результат"
         : status === "completed"
