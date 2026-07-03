@@ -1105,15 +1105,7 @@ function getLastInvoice() {
 }
 
 function getHistoryItems() {
-    const items = [];
-    if (state.starterGrant) {
-        items.push({
-            type: "starter_grant",
-            credits: state.starterGrant.credits,
-            createdAt: state.starterGrant.createdAt,
-        });
-    }
-    return items.concat(state.payments);
+    return state.payments;
 }
 
 function formatPaymentStatus(status) {
@@ -1171,6 +1163,8 @@ function renderWallet() {
     const cardBlock = document.querySelector("[data-last-invoice-card]");
     const cardDetails = document.querySelector("[data-last-invoice-details]");
     const history = document.querySelector("[data-payment-history-list]");
+    const expiryList = document.querySelector("[data-wallet-expiry-list]");
+    const expiryNote = document.querySelector("[data-wallet-expiry-note]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
     const headingStatus = document.querySelector("[data-payment-status]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
@@ -1229,28 +1223,35 @@ function renderWallet() {
     }
 
     if (!history) return;
+    const expiryItems = buildRenderExpiryCohorts();
+    if (expiryList) {
+        expiryList.innerHTML = expiryItems.length
+            ? renderExpiryRows(expiryItems)
+            : `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">⏳</span><span>${locale === "ru" ? "Активных пакетов пока нет" : "No active render packages yet"}</span></div>`;
+    }
+    if (expiryNote) {
+        const firstCohort = expiryItems[0] || null;
+        expiryNote.hidden = !firstCohort;
+        expiryNote.textContent = firstCohort
+            ? (
+                locale === "ru"
+                    ? `Сначала будут использованы ${firstCohort.credits} рендеров со сроком ${expiryLabel(firstCohort.expiresAt)}.`
+                    : `${firstCohort.credits} renders expiring ${expiryLabel(firstCohort.expiresAt)} will be used first.`
+            )
+            : "";
+    }
+
     const historyItems = getHistoryItems();
     if (!historyItems.length) {
         history.innerHTML = `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">🧾</span><span>${t("wallet.emptyHistory")}</span></div>`;
     } else {
         history.innerHTML = historyItems
             .map((item) => {
-                if (item.type === "starter_grant") {
-                    return `
-                        <div class="history-item payment-history-item grant-history-item">
-                            <div>
-                                <strong>${t("wallet.starterGrantTitle")}</strong>
-                                <div class="meta">${formatTemplate("wallet.starterGrantMeta", { credits: item.credits })}</div>
-                            </div>
-                            <span class="status-pill success">${t("wallet.gift")}</span>
-                        </div>
-                    `;
-                }
                 return `
                     <div class="history-item payment-history-item">
                         <div>
-                            <strong>#${String(item.invoiceId).padStart(6, "0")} · ${formatRub(item.amount)}</strong>
-                            <div class="meta">${item.email || "—"} · ${item.createdAt} · ${item.credits} ${t("credits")}</div>
+                            <strong>${formatRub(item.amount)} · ${item.credits} ${t("credits")}</strong>
+                            <div class="meta">Robokassa · ${item.createdAt}</div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -1324,9 +1325,90 @@ function formatDateTime(value) {
 }
 
 function humanRenderTitle(job) {
-    const vehicle = job?.vehicle || job?.vehicle_identity || job?.metadata?.vehicle;
+    const vehicle = job?.render_input_snapshot?.vehicle || job?.vehicle || job?.vehicle_identity || job?.metadata?.vehicle;
     const makeModel = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
     return makeModel || (locale === "ru" ? "Виртуальная примерка" : "Virtual render");
+}
+
+function rimSummaryForJob(job) {
+    const rim = job?.render_input_snapshot?.rim;
+    if (!rim) return "";
+    if (rim.pcd_display) {
+        return `${rim.wheel_diameter_in}" · ${rim.wheel_width_j}J · ${rim.pcd_display}`;
+    }
+    if (rim.wheel_diameter_in && rim.wheel_width_j && rim.bolt_count && rim.pcd_mm) {
+        return `${rim.wheel_diameter_in}" · ${rim.wheel_width_j}J · ${rim.bolt_count}×${rim.pcd_mm}`;
+    }
+    return "";
+}
+
+function paymentDateForDisplay(payment) {
+    return payment?.paidAtIso || payment?.createdAtIso || "";
+}
+
+function addDays(isoString, days) {
+    const source = new Date(isoString);
+    if (Number.isNaN(source.getTime())) return "";
+    source.setDate(source.getDate() + days);
+    return source.toISOString();
+}
+
+function formatShortDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    if (locale === "ru") {
+        return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    }
+    return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+function expiryLabel(value) {
+    const formatted = formatShortDate(value);
+    if (!formatted) return "";
+    return locale === "ru" ? `до ${formatted}` : `until ${formatted}`;
+}
+
+function buildRenderExpiryCohorts() {
+    const cohorts = [];
+    if (state.starterGrant?.credits > 0) {
+        cohorts.push({
+            key: "starter_grant",
+            credits: state.starterGrant.credits,
+            expiresAt: state.starterGrant.expiresAtIso || addDays(state.starterGrant.createdAtIso, 30),
+            meta: locale === "ru"
+                ? `Стартовый пакет · начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
+                : `Starter grant · added ${formatShortDate(state.starterGrant.createdAtIso)}`,
+        });
+    }
+    state.payments
+        .filter((payment) => payment.status === "paid" && Number(payment.credits || 0) > 0)
+        .forEach((payment) => {
+            const paidAt = paymentDateForDisplay(payment);
+            cohorts.push({
+                key: `payment_${payment.invoiceId}`,
+                credits: Number(payment.credits || 0),
+                expiresAt: addDays(paidAt, 30),
+                meta: locale === "ru"
+                    ? `Пакет ${formatRub(payment.amount)} · оплачен ${formatShortDate(paidAt)}`
+                    : `Package ${formatRub(payment.amount)} · paid ${formatShortDate(paidAt)}`,
+            });
+        });
+    return cohorts
+        .filter((item) => item.credits > 0 && item.expiresAt)
+        .sort((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt));
+}
+
+function renderExpiryRows(items) {
+    return items.map((item) => `
+        <div class="wallet-expiry-row">
+            <div>
+                <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
+                <div class="meta">${escapeHtml(item.meta)}</div>
+            </div>
+            <div class="wallet-expiry-date">${escapeHtml(expiryLabel(item.expiresAt))}</div>
+        </div>
+    `).join("");
 }
 
 function resultUrlForJob(job) {
@@ -1618,6 +1700,7 @@ async function submitHistoryFeedback(jobId, vote) {
 
 function renderHistoryCard(job) {
     const title = humanRenderTitle(job);
+    const rimSummary = rimSummaryForJob(job);
     const status = job.status || "processing";
     const resultUrl = assetUrlForJob(job, "result");
     const createdAt = formatDateTime(job.created_at);
@@ -1630,6 +1713,8 @@ function renderHistoryCard(job) {
         : status === "completed"
           ? (hasResult || hasOriginal ? createdAt : "Изображения временно недоступны")
           : "Создаём результат";
+    const subtitle = rimSummary || summaryText;
+    const metaText = status === "completed" ? createdAt : "";
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
         : canOpen
@@ -1643,8 +1728,9 @@ function renderHistoryCard(job) {
                     ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
-                    <div class="render-title">${escapeHtml(title)} · виртуальная примерка</div>
-                    <div class="render-subtitle">${escapeHtml(summaryText)}</div>
+                    <div class="render-title">${escapeHtml(title)}</div>
+                    <div class="render-subtitle">${escapeHtml(subtitle)}</div>
+                    ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
                     <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
                 </div>
                 <div class="render-card-action">${action}</div>
@@ -1778,12 +1864,38 @@ function renderDashboard() {
     const auth = document.querySelector("[data-dashboard-auth]");
     const error = document.querySelector("[data-dashboard-error]");
     const errorText = document.querySelector("[data-dashboard-error-text]");
+    const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
+    const dashboardExpiryList = document.querySelector("[data-dashboard-expiry-list]");
+    const dashboardExpiryNote = document.querySelector("[data-dashboard-expiry-note]");
+    const expiryCohorts = buildRenderExpiryCohorts();
 
     if (balance) balance.textContent = state.balance === null ? "—" : String(state.balance);
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
     if (auth) auth.dataset.visible = String(!hasFrontendAuth());
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
+    if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
+    if (dashboardExpiryList) {
+        dashboardExpiryList.innerHTML = expiryCohorts.slice(0, 2).map((item) => `
+            <div class="dashboard-expiry-line">
+                <div>
+                    <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
+                    <span>${escapeHtml(item.meta)}</span>
+                </div>
+                <div class="dashboard-expiry-date">${escapeHtml(expiryLabel(item.expiresAt))}</div>
+            </div>
+        `).join("");
+    }
+    if (dashboardExpiryNote) {
+        dashboardExpiryNote.hidden = !expiryCohorts.length;
+        dashboardExpiryNote.textContent = expiryCohorts.length
+            ? (
+                locale === "ru"
+                    ? "Сначала используются рендеры с ближайшей датой окончания."
+                    : "Renders with the nearest expiration date are used first."
+            )
+            : "";
+    }
 
     if (!latestTitle || !latestStatus || !latestContent) return;
     const latest = state.renderHistory[0] || null;
@@ -1802,6 +1914,7 @@ function renderDashboard() {
     }
 
     const title = humanRenderTitle(latest);
+    const rimSummary = rimSummaryForJob(latest);
     latestTitle.textContent = latest.status === "completed" ? title : (
         latest.status === "failed" ? "Не удалось создать результат" : "Создаём виртуальную примерку"
     );
@@ -1811,6 +1924,7 @@ function renderDashboard() {
     const resultUrl = assetUrlForJob(latest, "result");
     if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
         latestContent.innerHTML = `
+            ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
             <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
             <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
@@ -1912,6 +2026,7 @@ async function loadCabinet({ silent = false } = {}) {
             createdAtIso: payment.created_at,
             createdAtMs: Date.parse(payment.created_at),
             createdAt: new Date(payment.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
+            paidAtIso: payment.paid_at || "",
             status: payment.status,
         }));
         state.starterGrant = cabinet.starter_grant
@@ -1920,6 +2035,7 @@ async function loadCabinet({ silent = false } = {}) {
                 createdAtIso: cabinet.starter_grant.created_at,
                 createdAtMs: Date.parse(cabinet.starter_grant.created_at),
                 createdAt: new Date(cabinet.starter_grant.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
+                expiresAtIso: cabinet.starter_grant.expires_at || "",
             }
             : null;
         const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
