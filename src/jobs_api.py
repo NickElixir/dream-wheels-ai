@@ -967,13 +967,12 @@ async def get_job_status_detailed(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
-        required=False,
+        required=True,
     )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = None
-        if auth is not None:
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             f"""
             SELECT
@@ -987,24 +986,13 @@ async def get_job_status_detailed(
             FROM jobs
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
-              AND ($2::integer IS NULL OR jobs.user_id = $2)
+              AND jobs.user_id = $2
             """,
             job_id,
             user_id,
         )
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
-    if auth is None:
-        return {
-            "job_id": job_id,
-            "status": row["status"],
-            "result_url": row["output_image_url"],
-            "share_url": share_url_for_job(job_id, bust_preview_cache=True)
-            if row["output_image_url"]
-            else None,
-            "error": row["error_message"],
-            "feedback": row["feedback"],
-        }
     return JobStatusDetailedResponse(
         job_id=job_id,
         status=row["status"],
@@ -1015,7 +1003,7 @@ async def get_job_status_detailed(
         error=row["error_message"],
         error_code=row["error_code"],
         feedback=row["feedback"],
-        assets=_assets_from_row(row, job_id=row["job_id"]) if auth is not None else None,
+        assets=_assets_from_row(row, job_id=row["job_id"]),
     ).model_dump(mode="json", exclude_none=True)
 
 
@@ -1147,17 +1135,32 @@ async def delete_feedback(
 
 
 @router.get("/{job_id}/download")
-async def download_job_result(job_id: str):
+async def download_job_result(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
     """Отдать результат как attachment для Telegram.WebApp.downloadFile."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             """
             SELECT status, output_image_url
             FROM jobs
             WHERE id = $1::uuid
+              AND user_id = $2
             """,
             job_id,
+            user_id,
         )
 
     if not row:

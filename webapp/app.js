@@ -684,6 +684,10 @@ function withAuthHeaders(headers = {}) {
     return accessToken ? { ...headers, Authorization: `Bearer ${accessToken}` } : headers;
 }
 
+function isWebsiteAuthMode() {
+    return Boolean(getWebsiteAuthToken());
+}
+
 function updateWebsiteAuthUi() {
     const button = document.querySelector("[data-website-auth-button]");
     if (!button) return;
@@ -932,6 +936,7 @@ function classifyIdentityError(message) {
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
+    if (isWebsiteAuthMode()) return {};
     if (HAS_TG && tg?.initData) {
         const payload = { init_data: tg.initData };
         if (includeTelegramUserId && tg.initDataUnsafe?.user?.id != null) {
@@ -2424,7 +2429,22 @@ async function downloadResult() {
     state.downloading = true;
     setDownloadButtonState({ disabled: true, text: t("actions.requestingDownload") });
     try {
-        if (SUPPORTS_DOWNLOAD_FILE) {
+        if (isWebsiteAuthMode()) {
+            const response = await fetch(state.resultDownloadUrl, { headers: withAuthHeaders() });
+            if (!response.ok) throw new Error(await parseApiError(response));
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = state.resultFileName || "dream-wheels-result.jpg";
+            link.rel = "noopener";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(objectUrl);
+            setDownloadButtonState({ text: t("actions.downloadStarted") });
+            haptic("success");
+        } else if (SUPPORTS_DOWNLOAD_FILE) {
             const accepted = await requestTelegramDownload(
                 state.resultDownloadUrl,
                 state.resultFileName || "dream-wheels-result.jpg"
@@ -2721,7 +2741,9 @@ async function submitJob() {
         if (statusData.status === "completed") {
             state.submitting = false;
             state.resultUrl = statusData.result_url || "";
-            state.resultDownloadUrl = `${state.apiBaseUrl}/jobs/${state.jobId}/download`;
+            state.resultDownloadUrl = withIdentityQuery(
+                `${state.apiBaseUrl}/jobs/${state.jobId}/download`
+            );
             state.resultFileName = `dream-wheels-${state.jobId}.jpg`;
             if (statusBlock) statusBlock.hidden = true;
             if (resultBlock) resultBlock.hidden = false;

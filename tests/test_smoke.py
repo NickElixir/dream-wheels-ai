@@ -107,6 +107,18 @@ def test_payment_cabinet_requires_telegram_identity():
     assert r.json()["detail"] == "init_data or telegram_user_id is required"
 
 
+def test_detailed_job_status_requires_identity():
+    r = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+
+
+def test_job_result_download_requires_identity():
+    r = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+
+
 def test_cors_allows_configured_webapp_origin():
     """Mini App origin из конфига должен иметь доступ к API."""
     r = client.options(
