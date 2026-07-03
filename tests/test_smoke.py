@@ -132,6 +132,21 @@ def test_cors_allows_configured_webapp_origin():
     assert r.headers["access-control-allow-origin"] == WEBAPP_URL
 
 
+def test_cors_allows_vercel_preview_jobs_requests_with_authorization_header():
+    preview_origin = "https://dream-wheels-ai-webapp-staging-rirw6kum4.vercel.app"
+    r = client.options(
+        "/jobs",
+        headers={
+            "Origin": preview_origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == preview_origin
+    assert "authorization" in r.headers["access-control-allow-headers"].lower()
+
+
 def test_upload_invalid_mime_does_not_reserve_idempotency_key(monkeypatch):
     class FakeRedis:
         def __init__(self) -> None:

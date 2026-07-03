@@ -34,6 +34,8 @@ def _job_row(**overrides) -> dict:
         "error_message": None,
         "generation_provider": "reve",
         "provider_request_id": "safe-id",
+        "feedback": None,
+        "render_input_snapshot": None,
     }
     row.update(_base_asset_fields("car", kind="car_original"))
     row.update(_base_asset_fields("rim", kind="rim_original"))
@@ -99,6 +101,39 @@ def test_history_query_is_scoped_to_authenticated_user(monkeypatch):
     body = response.json()
     assert body["jobs"][0]["job_id"] == "11111111-1111-4111-8111-111111111111"
     assert set(body["jobs"][0]["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
+    auth_calls: dict[str, str | None] = {}
+
+    def fake_resolve_telegram_auth(**kwargs):
+        auth_calls.update(kwargs)
+        return AuthContext(
+            telegram_user_id=123456789,
+            username="dw-user",
+            auth_channel="website",
+        )
+
+    class FakeConn:
+        async def fetch(self, *_args):
+            return [_job_row()]
+
+    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
+        assert telegram_user_id == 123456789
+        assert username == "dw-user"
+        return 10
+
+    monkeypatch.setattr(jobs_api, "resolve_telegram_auth", fake_resolve_telegram_auth)
+    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0", headers={"Authorization": "Bearer website-token"})
+
+    assert response.status_code == 200
+    assert auth_calls["init_data"] is None
+    assert auth_calls["telegram_user_id"] is None
+    assert auth_calls["authorization"] == "Bearer website-token"
+    assert auth_calls["auth_name"] == "jobs history"
 
 
 def test_job_detail_returns_404_for_non_owner(monkeypatch):

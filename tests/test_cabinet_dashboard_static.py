@@ -20,10 +20,10 @@ def test_dashboard_uses_balance_from_cabinet_api() -> None:
 
 
 def test_latest_completed_render_uses_durable_history_api() -> None:
-    assert "/jobs?" in APP_JS
+    assert 'apiUrl("/jobs"' in APP_JS
     assert "fetchRenderHistory" in APP_JS
     assert "state.renderHistory = Array.isArray(history.jobs)" in APP_JS
-    assert "resultUrlForJob(latest)" in APP_JS
+    assert 'assetUrlForJob(latest, "result")' in APP_JS
     assert "assets?.result?.url" in APP_JS
 
 
@@ -45,7 +45,8 @@ def test_history_expands_only_one_completed_card() -> None:
     assert "expandedJobId" in APP_JS
     assert "state.expandedJobId === job.job_id" in APP_JS
     assert 'state.expandedJobId === jobId ? "" : jobId' in APP_JS
-    assert 'status === "completed" && resultUrl' in APP_JS
+    assert 'const canOpen = status === "completed";' in APP_JS
+    assert 'const hasResult = hasAssetSource(job, "result");' in APP_JS
 
 
 def test_expanded_images_are_not_cropped() -> None:
@@ -155,13 +156,28 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
     assert "identityBackendBody" in APP_JS
 
 
-def test_t_route_rewrites_to_shared_entrypoint_and_expiry_hidden() -> None:
+def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
-    assert "Срок действия рендеров" not in INDEX_HTML
-    assert "expiry" not in INDEX_HTML.lower()
+    assert "Срок действия рендеров" in INDEX_HTML
+    assert "data-dashboard-expiry" in INDEX_HTML
+    assert "data-wallet-expiry-list" in INDEX_HTML
+
+
+def test_website_flows_use_same_origin_proxy_and_paginated_history() -> None:
+    proxy_file = ROOT / "webapp" / "api" / "backend" / "[...path].js"
+    assert proxy_file.exists()
+    assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
+    assert "function shouldUseBrowserApiProxy()" in APP_JS
+    assert "apiUrl(\"/jobs\"" in APP_JS
+    assert "walletHistoryPage" in APP_JS
+    assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
+    assert "data-wallet-history-pager" in INDEX_HTML
+    assert "data-wallet-history-prev" in INDEX_HTML
+    assert "data-wallet-history-next" in INDEX_HTML
+    assert "wallet-history-stack" in STYLE_CSS
 
 
 def test_secondary_action_family_uses_shared_island_button_style() -> None:
