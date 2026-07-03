@@ -1197,7 +1197,6 @@ async def download_job_result(
         media_type=content_type,
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
-            "Access-Control-Allow-Origin": "https://web.telegram.org",
             "Cache-Control": "private, max-age=300",
         },
     )

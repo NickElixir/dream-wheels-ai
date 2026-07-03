@@ -439,7 +439,8 @@ a {
 }
 
 .dashboard-balance-card .dashboard-balance-action {
-    justify-self: start;
+    justify-self: stretch;
+    width: 100%;
 }
 
 .dashboard-expiry-card {
@@ -2201,6 +2202,58 @@ h2 {
     gap: 14px;
 }
 
+.wallet-history-stack {
+    display: grid;
+    gap: 16px;
+    padding: 4px 20px 20px;
+}
+
+.wallet-history-island {
+    gap: 16px;
+}
+
+.wallet-history-island-head {
+    display: grid;
+    gap: 6px;
+}
+
+.wallet-history-island-head-split {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.wallet-history-caption {
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.wallet-history-list.history-list {
+    padding: 0;
+    gap: 12px;
+}
+
+.wallet-history-pager {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wallet-history-page-button {
+    min-height: 38px;
+    padding-inline: 14px;
+}
+
+.wallet-history-page-label {
+    min-width: 94px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
 .wallet-expiry-row,
 .payment-history-item {
     display: grid;
@@ -2632,7 +2685,8 @@ h2 {
         grid-template-columns: 1fr;
     }
 
-    .payment-history-details summary {
+    .payment-history-details summary,
+    .wallet-history-island-head-split {
         grid-template-columns: 1fr;
     }
 
@@ -2655,6 +2709,20 @@ h2 {
         width: 100%;
         justify-content: center;
         text-align: center;
+    }
+
+    .wallet-history-stack {
+        padding-inline: 0;
+        padding-bottom: 0;
+    }
+
+    .wallet-history-pager {
+        flex-wrap: wrap;
+    }
+
+    .wallet-history-page-label {
+        min-width: 0;
+        text-align: left;
     }
 
     .render-card {

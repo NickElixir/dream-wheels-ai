@@ -18,10 +18,12 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
+const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
+const PAYMENT_HISTORY_PAGE_SIZE = 10;
 const TOPUP_PACKAGES = [
     { amount: 100, credits: 3, icon: "⚡" },
     { amount: 200, credits: 7, icon: "🏁" },
@@ -182,8 +184,16 @@ const I18N = {
             pay: "Оплатить",
             paymentNote: "Оплата откроется через Robokassa. Рендеры начисляются после подтверждения",
             paymentHistory: "История платежей",
+            paymentHistoryHint: "Покупки и сроки действия рендеров",
             openHistory: "Открыть",
             closeHistory: "Скрыть",
+            availableRenders: "Доступные рендеры",
+            availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
+            topUpHistory: "История пополнений",
+            topUpHistoryHint: "Показываем 10 последних операций",
+            previousPage: "Назад",
+            nextPage: "Далее",
+            pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
             noPaymentsMeta: "Стартовый грант по /start на 30 дней появится в истории платежей",
@@ -402,8 +412,16 @@ const I18N = {
             pay: "Pay",
             paymentNote: "Robokassa opens on tap. Renders are applied after confirmation",
             paymentHistory: "Payment history",
+            paymentHistoryHint: "Purchases and render expiry windows",
             openHistory: "Open",
             closeHistory: "Hide",
+            availableRenders: "Available renders",
+            availableRendersHint: "Packages expiring sooner are spent first",
+            topUpHistory: "Top-up history",
+            topUpHistoryHint: "Showing the latest 10 operations",
+            previousPage: "Back",
+            nextPage: "Next",
+            pageRange: "{from}-{to} of {total}",
             emptyHistory: "No payments yet",
             noPaymentsTitle: "No payments yet",
             noPaymentsMeta: "Your 30-day /start starter grant will appear in payment history",
@@ -516,6 +534,21 @@ function resolveApiBaseUrl() {
     return PROD_API_BASE_URL;
 }
 
+function shouldUseBrowserApiProxy() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("apiBase")) return false;
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return false;
+    return host.endsWith(".vercel.app");
+}
+
+function appendSearchParams(url, params) {
+    const query = params instanceof URLSearchParams ? params : new URLSearchParams(params || "");
+    const serialized = query.toString();
+    if (!serialized) return url;
+    return `${url}${url.includes("?") ? "&" : "?"}${serialized}`;
+}
+
 function resolveDevTelegramUserId() {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("tgUser");
@@ -565,6 +598,7 @@ const state = {
     payments: [],
     starterGrant: null,
     walletHistoryOpen: true,
+    walletHistoryPage: 0,
     walletBusy: false,
     walletLoading: false,
     walletLoadingMessage: "",
@@ -713,6 +747,19 @@ function updateWebsiteAuthUi() {
     updateAccountBlock();
 }
 
+function apiUrl(path, { includeIdentity = false, params = null } = {}) {
+    const baseUrl = shouldUseBrowserApiProxy() ? WEBSITE_PROXY_BASE_URL : state.apiBaseUrl;
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    let url = `${baseUrl}${normalizedPath}`;
+    if (includeIdentity) {
+        url = appendSearchParams(url, getIdentitySearchParams());
+    }
+    if (params) {
+        url = appendSearchParams(url, params);
+    }
+    return url;
+}
+
 function loadTelegramLoginLibrary() {
     if (window.Telegram?.Login) return Promise.resolve(window.Telegram.Login);
     if (state.websiteLoginLibraryPromise) return state.websiteLoginLibraryPromise;
@@ -757,7 +804,7 @@ async function fetchWebsiteLoginNonce({ force = false } = {}) {
     if (!force && hasFreshWebsiteLoginNonce()) return state.websiteLoginNonce;
     if (!force && state.websiteLoginNoncePromise) return state.websiteLoginNoncePromise;
 
-    state.websiteLoginNoncePromise = fetch(`${state.apiBaseUrl}/auth/telegram/nonce`)
+    state.websiteLoginNoncePromise = fetch(apiUrl("/auth/telegram/nonce"))
         .then(async (response) => {
             if (!response.ok) throw new Error(await parseApiError(response));
             const payload = await response.json();
@@ -815,7 +862,7 @@ async function loginWithTelegram() {
             );
         });
 
-        const verifyResponse = await fetch(`${state.apiBaseUrl}/auth/telegram/verify-id-token`, {
+        const verifyResponse = await fetch(apiUrl("/auth/telegram/verify-id-token"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id_token: loginResult.id_token, nonce_token: nonceToken }),
@@ -962,16 +1009,14 @@ function getIdentitySearchParams() {
 }
 
 function withIdentityQuery(url) {
-    const params = getIdentitySearchParams();
-    const query = params.toString();
-    return query ? `${url}?${query}` : url;
+    return appendSearchParams(url, getIdentitySearchParams());
 }
 
 async function fetchRenderHistory({ limit = 20, offset = 0 } = {}) {
-    const params = getIdentitySearchParams();
+    const params = new URLSearchParams();
     params.set("limit", String(limit));
     params.set("offset", String(offset));
-    const response = await fetch(`${state.apiBaseUrl}/jobs?${params.toString()}`, {
+    const response = await fetch(apiUrl("/jobs", { includeIdentity: true, params }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -1119,6 +1164,20 @@ function getHistoryItems() {
     return state.payments;
 }
 
+function getVisibleHistoryItems() {
+    const items = getHistoryItems();
+    const totalPages = Math.max(1, Math.ceil(items.length / PAYMENT_HISTORY_PAGE_SIZE));
+    state.walletHistoryPage = Math.min(Math.max(state.walletHistoryPage, 0), totalPages - 1);
+    const startIndex = state.walletHistoryPage * PAYMENT_HISTORY_PAGE_SIZE;
+    return {
+        items,
+        visibleItems: items.slice(startIndex, startIndex + PAYMENT_HISTORY_PAGE_SIZE),
+        totalPages,
+        from: items.length ? startIndex + 1 : 0,
+        to: Math.min(startIndex + PAYMENT_HISTORY_PAGE_SIZE, items.length),
+    };
+}
+
 function formatPaymentStatus(status) {
     if (status === "paid") return t("paid");
     if (status === "pending") return t("pending");
@@ -1176,6 +1235,11 @@ function renderWallet() {
     const history = document.querySelector("[data-payment-history-list]");
     const expiryList = document.querySelector("[data-wallet-expiry-list]");
     const expiryNote = document.querySelector("[data-wallet-expiry-note]");
+    const historyHint = document.querySelector("[data-wallet-history-hint]");
+    const historyPager = document.querySelector("[data-wallet-history-pager]");
+    const historyPageLabel = document.querySelector("[data-wallet-history-page-label]");
+    const historyPrev = document.querySelector("[data-wallet-history-prev]");
+    const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
     const headingStatus = document.querySelector("[data-payment-status]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
@@ -1252,11 +1316,12 @@ function renderWallet() {
             : "";
     }
 
-    const historyItems = getHistoryItems();
-    if (!historyItems.length) {
+    const historyState = getVisibleHistoryItems();
+    if (historyHint) historyHint.textContent = t("wallet.topUpHistoryHint");
+    if (!historyState.items.length) {
         history.innerHTML = `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">🧾</span><span>${t("wallet.emptyHistory")}</span></div>`;
     } else {
-        history.innerHTML = historyItems
+        history.innerHTML = historyState.visibleItems
             .map((item) => {
                 return `
                     <div class="history-item payment-history-item">
@@ -1269,6 +1334,17 @@ function renderWallet() {
                 `;
             })
             .join("");
+    }
+    if (historyPager && historyPageLabel && historyPrev && historyNext) {
+        const hasMultiplePages = historyState.totalPages > 1;
+        historyPager.hidden = !hasMultiplePages;
+        historyPageLabel.textContent = formatTemplate("wallet.pageRange", {
+            from: historyState.from,
+            to: historyState.to,
+            total: historyState.items.length,
+        });
+        historyPrev.disabled = state.walletHistoryPage === 0;
+        historyNext.disabled = state.walletHistoryPage >= historyState.totalPages - 1;
     }
 
     document.querySelectorAll("[data-topup-amount]").forEach((button) => {
@@ -1443,13 +1519,16 @@ function assetDownloadUrlForJob(job, kind) {
     if (!job?.assets?.[assetKey]) return "";
     const downloadUrl = job.assets[assetKey].download_url;
     if (!downloadUrl) return "";
-    return downloadUrl.startsWith("/") ? `${state.apiBaseUrl}${downloadUrl}` : downloadUrl;
+    return downloadUrl.startsWith("/")
+        ? apiUrl(downloadUrl, { includeIdentity: true })
+        : withIdentityQuery(downloadUrl);
 }
 
 function proxiedAssetUrl(asset) {
     const assetPath = asset?.download_url;
-    if (!assetPath || !canUseIdentityAssetUrls()) return "";
-    if (assetPath.startsWith("/")) return withIdentityQuery(`${state.apiBaseUrl}${assetPath}`);
+    if (!assetPath) return "";
+    if (assetPath.startsWith("/")) return apiUrl(assetPath, { includeIdentity: true });
+    if (!canUseIdentityAssetUrls()) return "";
     return withIdentityQuery(assetPath);
 }
 
@@ -1543,10 +1622,10 @@ function defaultAssetViewForJob(job) {
 }
 
 function downloadUrlForJob(job) {
-    if (getWebsiteAuthToken()) return resultUrlForJob(job);
+    if (getWebsiteAuthToken()) return assetDownloadUrlForJob(job, "result") || resultUrlForJob(job);
     const assetPath = job?.assets?.result?.download_url;
     if (assetPath?.startsWith("/")) {
-        return withIdentityQuery(`${state.apiBaseUrl}${assetPath}`);
+        return apiUrl(assetPath, { includeIdentity: true });
     }
     if (assetPath) return withIdentityQuery(assetPath);
     return resultUrlForJob(job);
@@ -1691,7 +1770,7 @@ async function submitHistoryFeedback(jobId, vote) {
     renderRenders();
 
     try {
-        const response = await fetch(`${state.apiBaseUrl}/jobs/${jobId}/feedback`, {
+        const response = await fetch(apiUrl(`/jobs/${jobId}/feedback`), {
             method: deleting ? "DELETE" : "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(deleting ? identity : { vote, ...identity }),
@@ -1836,7 +1915,7 @@ function mergeStatusIntoHistory(jobId, statusData) {
 }
 
 async function fetchJobStatusForHistory(jobId) {
-    const response = await fetch(withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}`), {
+    const response = await fetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -2014,7 +2093,7 @@ async function loadCabinet({ silent = false } = {}) {
         setWalletLoading(false);
     }
     try {
-        const response = await fetch(`${state.apiBaseUrl}/payments/cabinet?${identity.toString()}`, {
+        const response = await fetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) {
@@ -2041,6 +2120,7 @@ async function loadCabinet({ silent = false } = {}) {
             paidAtIso: payment.paid_at || "",
             status: payment.status,
         }));
+        state.walletHistoryPage = 0;
         state.starterGrant = cabinet.starter_grant
             ? {
                 credits: Number(cabinet.starter_grant.credits || 0),
@@ -2107,7 +2187,7 @@ async function createPayment() {
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
     try {
-        const response = await fetch(`${state.apiBaseUrl}/payments/topups`, {
+        const response = await fetch(apiUrl("/payments/topups"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
@@ -2790,7 +2870,7 @@ async function submitJob() {
 
     try {
         pushDebug("health:request");
-        await fetch(`${state.apiBaseUrl}/health`, { method: "GET" });
+        await fetch(apiUrl("/health"), { method: "GET" });
         pushDebug("health:ok");
     } catch {
         pushDebug("health:fail");
@@ -2825,7 +2905,7 @@ async function submitJob() {
 
     try {
         pushDebug("create:request");
-        const resp = await fetch(`${state.apiBaseUrl}/jobs/from-assets`, {
+        const resp = await fetch(apiUrl("/jobs/from-assets"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
@@ -2856,7 +2936,7 @@ async function submitJob() {
         try {
             pushDebug("poll:request", state.jobId);
             const response = await fetch(
-                withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.jobId}/status`),
+                apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
             statusData = await response.json();
@@ -2869,9 +2949,9 @@ async function submitJob() {
         if (statusData.status === "completed") {
             state.submitting = false;
             state.resultUrl = statusData.result_url || "";
-            state.resultDownloadUrl = withIdentityQuery(
-                `${state.apiBaseUrl}/jobs/${state.jobId}/download`
-            );
+            state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
+                includeIdentity: true,
+            });
             state.resultFileName = `dream-wheels-${state.jobId}.jpg`;
             if (statusBlock) statusBlock.hidden = true;
             if (resultBlock) resultBlock.hidden = false;
@@ -2971,6 +3051,14 @@ function bindEvents() {
         if (!(details instanceof HTMLDetailsElement)) return;
         state.walletHistoryOpen = details.open;
         syncPaymentHistoryDetailsAction();
+    });
+    document.querySelector("[data-wallet-history-prev]")?.addEventListener("click", () => {
+        state.walletHistoryPage = Math.max(0, state.walletHistoryPage - 1);
+        renderWallet();
+    });
+    document.querySelector("[data-wallet-history-next]")?.addEventListener("click", () => {
+        state.walletHistoryPage += 1;
+        renderWallet();
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
         state.paymentStep = 1;
