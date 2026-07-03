@@ -140,6 +140,71 @@ def test_failed_job_status_returns_error_metadata_for_owner(monkeypatch):
     assert body["error"] == "Storage upload failed"
 
 
+def test_detailed_job_status_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND jobs.user_id = $2" in query
+            return _job_row()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    body = response.json()
+    assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
+    assert set(body["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_result_download_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND user_id = $2" in query
+            return {
+                "status": "completed",
+                "output_image_url": "https://example.test/result.jpg",
+            }
+
+    class FakeResponse:
+        status_code = 200
+        content = b"image"
+
+        def __init__(self) -> None:
+            self.headers = {"content-type": "image/jpeg"}
+
+    class FakeAsyncClient:
+        def __init__(self, timeout: float):
+            assert timeout == 30.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str):
+            assert url == "https://example.test/result.jpg"
+            return FakeResponse()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.httpx, "AsyncClient", FakeAsyncClient)
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    assert response.content == b"image"
+
+
 def test_legacy_job_response_keeps_existing_shape(monkeypatch):
     monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", lambda **_kwargs: None)
 

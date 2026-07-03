@@ -181,11 +181,22 @@ class FeedbackRequest(FeedbackAuthRequest):
 def _telegram_user_id_from_feedback_request(
     request: FeedbackAuthRequest,
     internal_token: str | None,
+    authorization: str | None = None,
 ) -> int:
     if request.init_data:
         auth = resolve_telegram_auth(
             init_data=request.init_data,
             telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
+            auth_name="feedback",
+        )
+        return auth.telegram_user_id
+
+    if authorization:
+        auth = resolve_telegram_auth(
+            init_data=None,
+            telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
             auth_name="feedback",
         )
         return auth.telegram_user_id
@@ -956,13 +967,12 @@ async def get_job_status_detailed(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
-        required=False,
+        required=True,
     )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = None
-        if auth is not None:
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             f"""
             SELECT
@@ -976,24 +986,13 @@ async def get_job_status_detailed(
             FROM jobs
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
-              AND ($2::integer IS NULL OR jobs.user_id = $2)
+              AND jobs.user_id = $2
             """,
             job_id,
             user_id,
         )
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
-    if auth is None:
-        return {
-            "job_id": job_id,
-            "status": row["status"],
-            "result_url": row["output_image_url"],
-            "share_url": share_url_for_job(job_id, bust_preview_cache=True)
-            if row["output_image_url"]
-            else None,
-            "error": row["error_message"],
-            "feedback": row["feedback"],
-        }
     return JobStatusDetailedResponse(
         job_id=job_id,
         status=row["status"],
@@ -1004,7 +1003,7 @@ async def get_job_status_detailed(
         error=row["error_message"],
         error_code=row["error_code"],
         feedback=row["feedback"],
-        assets=_assets_from_row(row, job_id=row["job_id"]) if auth is not None else None,
+        assets=_assets_from_row(row, job_id=row["job_id"]),
     ).model_dump(mode="json", exclude_none=True)
 
 
@@ -1070,6 +1069,7 @@ async def download_job_asset(
 async def submit_feedback(
     job_id: str,
     request: FeedbackRequest,
+    authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
     """Сохранить лайк/дизлайк на результат. Повторный вызов перезаписывает.
@@ -1077,7 +1077,11 @@ async def submit_feedback(
     WebApp подтверждает владельца через Telegram initData. Бот ходит как
     trusted backend client с X-Internal-Token и telegram_user_id из callback.
     """
-    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         result = await conn.execute(
@@ -1102,10 +1106,15 @@ async def submit_feedback(
 async def delete_feedback(
     job_id: str,
     request: FeedbackAuthRequest,
+    authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
     """Удалить feedback на результат для владельца job."""
-    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
     pool = db.get_pool()
     async with pool.acquire() as conn:
         result = await conn.execute(
@@ -1126,17 +1135,32 @@ async def delete_feedback(
 
 
 @router.get("/{job_id}/download")
-async def download_job_result(job_id: str):
+async def download_job_result(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
     """Отдать результат как attachment для Telegram.WebApp.downloadFile."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             """
             SELECT status, output_image_url
             FROM jobs
             WHERE id = $1::uuid
+              AND user_id = $2
             """,
             job_id,
+            user_id,
         )
 
     if not row:
