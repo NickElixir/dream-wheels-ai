@@ -158,6 +158,10 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
 
 def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
+    assert {
+        "source": "/api/backend/:path*",
+        "destination": "https://dream-wheels-ai-robokassa-staging.onrender.com/:path*",
+    } in rewrites
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
@@ -166,9 +170,7 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert "data-wallet-expiry-list" in INDEX_HTML
 
 
-def test_website_flows_use_same_origin_proxy_and_paginated_history() -> None:
-    proxy_file = ROOT / "webapp" / "api" / "backend" / "[...path].js"
-    assert proxy_file.exists()
+def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "function shouldUseBrowserApiProxy()" in APP_JS
     assert "apiUrl(\"/jobs\"" in APP_JS
