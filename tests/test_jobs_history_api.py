@@ -103,6 +103,34 @@ def test_history_query_is_scoped_to_authenticated_user(monkeypatch):
     assert set(body["jobs"][0]["assets"]) == {"car_original", "rim_original", "result"}
 
 
+def test_history_parses_jsonb_snapshot_string(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='{"vehicle":{"make":"Lexus"}}')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] == {"vehicle": {"make": "Lexus"}}
+
+
+def test_history_drops_non_object_snapshot_payload(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='["unexpected"]')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] is None
+
+
 def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
     auth_calls: dict[str, str | None] = {}
 
