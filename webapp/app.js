@@ -1462,10 +1462,10 @@ function rimSummaryForJob(job) {
     const rim = job?.render_input_snapshot?.rim;
     if (!rim) return "";
     if (rim.pcd_display) {
-        return `${rim.wheel_diameter_in}" · ${rim.wheel_width_j}J · ${rim.pcd_display}`;
+        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.pcd_display}`;
     }
     if (rim.wheel_diameter_in && rim.wheel_width_j && rim.bolt_count && rim.pcd_mm) {
-        return `${rim.wheel_diameter_in}" · ${rim.wheel_width_j}J · ${rim.bolt_count}×${rim.pcd_mm}`;
+        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.bolt_count}×${rim.pcd_mm}`;
     }
     return "";
 }
@@ -1878,7 +1878,7 @@ function renderHistoryCard(job) {
                 </div>
                 <div class="render-body">
                     <div class="render-title">${escapeHtml(title)}</div>
-                    <div class="render-subtitle">${escapeHtml(subtitle)}</div>
+                    <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
                     ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
                     ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
                     <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
