@@ -45,7 +45,7 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_RENDER_DEMO_ASSET_URL = "cover.jpg";
+const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
 
 const I18N = {
     ru: {
