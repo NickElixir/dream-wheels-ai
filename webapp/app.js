@@ -39,10 +39,11 @@ const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
 const HISTORY_ASSET_VIEWS = ["result", "original"];
 const FEEDBACK_REASONS = [
-    "Не тот диск",
-    "Плохое совмещение",
-    "Искажения",
-    "Другое",
+    { code: "wheel_differs", label: "Диск отличается" },
+    { code: "car_changed", label: "Машина изменилась" },
+    { code: "angle_or_scale", label: "Ракурс / масштаб" },
+    { code: "image_quality", label: "Качество изображения" },
+    { code: "other", label: "Другое" },
 ];
 const GUEST_RENDER_DEMO_ASSET_URL = "cover.jpg";
 
@@ -635,7 +636,7 @@ const state = {
     feedbackByJob: {},
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
-    feedbackReasonsByJob: {},
+    feedbackNoticeByJob: {},
 };
 
 function isGuestRenderJob(job) {
@@ -654,7 +655,7 @@ function guestRenderHistory() {
         status: "completed",
         created_at: "2026-07-05T03:04:00+03:00",
         completed_at: "2026-07-05T03:11:00+03:00",
-        feedback: "",
+        feedback: null,
         render_input_snapshot: {
             vehicle: {
                 make: "Toyota",
@@ -1692,26 +1693,68 @@ function statusClass(status) {
     return "neutral";
 }
 
-function feedbackValueForJob(job) {
-    const localValue = state.feedbackByJob[job?.job_id];
-    if (localValue !== undefined) return localValue;
-    return job?.feedback || "";
+function normalizeFeedbackRecord(feedback) {
+    if (!feedback || typeof feedback !== "object") return null;
+    if (feedback.sentiment !== "liked" && feedback.sentiment !== "disliked") return null;
+    return {
+        sentiment: feedback.sentiment,
+        reason: typeof feedback.reason === "string" ? feedback.reason : null,
+        created_at: typeof feedback.created_at === "string" ? feedback.created_at : null,
+        updated_at: typeof feedback.updated_at === "string" ? feedback.updated_at : null,
+    };
 }
 
-function setFeedbackValue(jobId, value) {
-    state.feedbackByJob[jobId] = value || "";
+function feedbackRecordForJob(job) {
+    if (!job?.job_id) return null;
+    if (Object.prototype.hasOwnProperty.call(state.feedbackByJob, job.job_id)) {
+        return state.feedbackByJob[job.job_id];
+    }
+    return normalizeFeedbackRecord(job.feedback);
+}
+
+function feedbackSentimentForJob(job) {
+    return feedbackRecordForJob(job)?.sentiment || "";
+}
+
+function feedbackReasonForJob(job) {
+    return feedbackRecordForJob(job)?.reason || "";
+}
+
+function setFeedbackRecord(jobId, feedback) {
+    const normalized = normalizeFeedbackRecord(feedback);
+    state.feedbackByJob[jobId] = normalized;
     state.renderHistory = state.renderHistory.map((job) => (
-        job.job_id === jobId ? { ...job, feedback: value || null } : job
+        job.job_id === jobId ? { ...job, feedback: normalized } : job
     ));
 }
 
 function mergeHistoryFeedbackState(jobs) {
     jobs.forEach((job) => {
         if (!job?.job_id) return;
-        if (state.feedbackByJob[job.job_id] === undefined) {
-            state.feedbackByJob[job.job_id] = job.feedback || "";
-        }
+        state.feedbackByJob[job.job_id] = normalizeFeedbackRecord(job.feedback);
     });
+}
+
+function feedbackLikeAckText() {
+    return locale === "ru" ? "Спасибо за оценку" : "Thanks for the rating";
+}
+
+function feedbackReasonAckText() {
+    return locale === "ru" ? "✓ Спасибо, мы учтём эту оценку" : "✓ Thanks, we'll use this feedback";
+}
+
+function setFeedbackNotice(jobId, message = "") {
+    state.feedbackNoticeByJob[jobId] = message;
+}
+
+function guestFeedbackRecord({ sentiment, reason = null }, previousFeedback = null) {
+    const timestamp = new Date().toISOString();
+    return {
+        sentiment,
+        reason,
+        created_at: previousFeedback?.created_at || timestamp,
+        updated_at: timestamp,
+    };
 }
 
 function renderAssetMissingState(text = "Изображение временно недоступно") {
@@ -1761,28 +1804,32 @@ function renderHistoryViewer(job) {
 
 function renderFeedbackBlock(job) {
     const jobId = job.job_id;
-    const selected = feedbackValueForJob(job);
+    const selected = feedbackSentimentForJob(job);
     const busy = Boolean(state.feedbackBusyByJob[jobId]);
     const error = state.feedbackErrorByJob[jobId] || "";
-    const selectedReason = state.feedbackReasonsByJob[jobId] || "";
-    const reasonsVisible = selected === "dislike";
+    const selectedReason = feedbackReasonForJob(job);
+    const reasonsVisible = selected === "disliked";
     const guestDemo = isGuestRenderJob(job);
+    const notice = state.feedbackNoticeByJob[jobId] || "";
 
     return `
         <section class="render-feedback" aria-live="polite">
             <h3>Оценка результата</h3>
             <p>${guestDemo ? "Гостевой пример: фидбек остаётся локально" : "Помогите улучшить следующие примерки"}</p>
             <div class="render-feedback-actions">
-                <button type="button" class="render-feedback-button like ${selected === "like" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="like" ${busy ? "disabled" : ""}>👍 Нравится</button>
-                <button type="button" class="render-feedback-button dislike ${selected === "dislike" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="dislike" ${busy ? "disabled" : ""}>👎 Не нравится</button>
+                <button type="button" class="render-feedback-button like ${selected === "liked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="liked" ${busy ? "disabled" : ""}>👍 Понравилось</button>
+                <button type="button" class="render-feedback-button dislike ${selected === "disliked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Не похоже</button>
             </div>
             <div class="render-feedback-reasons ${reasonsVisible ? "visible" : ""}">
                 <div class="reason-title">Что улучшить</div>
                 <div class="render-reason-grid">
                     ${FEEDBACK_REASONS.map((reason) => `
-                        <button type="button" class="render-reason ${selectedReason === reason ? "selected" : ""}" data-history-feedback-reason="${escapeHtml(jobId)}" data-feedback-reason="${escapeHtml(reason)}" ${busy ? "disabled" : ""}>${escapeHtml(reason)}</button>
+                        <button type="button" class="render-reason ${selectedReason === reason.code ? "selected" : ""}" data-history-feedback-reason="${escapeHtml(jobId)}" data-feedback-reason="${escapeHtml(reason.code)}" ${busy ? "disabled" : ""}>${escapeHtml(reason.label)}</button>
                     `).join("")}
                 </div>
+            </div>
+            <div class="render-feedback-note" ${notice ? "" : "hidden"}>
+                ${escapeHtml(notice)}
             </div>
             <div class="render-feedback-error" ${error ? "" : "hidden"}>
                 ${escapeHtml(localizeErrorMessage(error))}
@@ -1805,17 +1852,32 @@ function setAssetLoadError(jobId, kind, hasError) {
     }
 }
 
-async function submitHistoryFeedback(jobId, vote) {
+async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
     if (!jobId || state.feedbackBusyByJob[jobId]) return;
     const job = state.renderHistory.find((item) => item.job_id === jobId);
     if (!job) return;
 
-    const currentVote = feedbackValueForJob(job);
-    const deleting = currentVote === vote;
+    const currentFeedback = feedbackRecordForJob(job);
+    const deleting = reason === undefined && currentFeedback?.sentiment === sentiment;
     if (isGuestRenderJob(job)) {
-        setFeedbackValue(jobId, deleting ? "" : vote);
-        if (deleting) state.feedbackReasonsByJob[jobId] = "";
-        else if (vote !== "dislike") state.feedbackReasonsByJob[jobId] = "";
+        if (deleting) {
+            setFeedbackRecord(jobId, null);
+            setFeedbackNotice(jobId, "");
+        } else {
+            const nextFeedback = guestFeedbackRecord(
+                { sentiment, reason: sentiment === "disliked" ? reason || null : null },
+                currentFeedback,
+            );
+            setFeedbackRecord(jobId, nextFeedback);
+            setFeedbackNotice(
+                jobId,
+                nextFeedback.sentiment === "liked"
+                    ? feedbackLikeAckText()
+                    : nextFeedback.reason
+                      ? feedbackReasonAckText()
+                      : "",
+            );
+        }
         haptic(deleting ? "light" : "success");
         renderRenders();
         renderDashboard();
@@ -1824,17 +1886,42 @@ async function submitHistoryFeedback(jobId, vote) {
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     state.feedbackBusyByJob[jobId] = true;
     state.feedbackErrorByJob[jobId] = "";
+    if (reason === undefined && sentiment !== "liked") {
+        setFeedbackNotice(jobId, "");
+    }
     renderRenders();
 
     try {
         const response = await fetch(apiUrl(`/jobs/${jobId}/feedback`), {
-            method: deleting ? "DELETE" : "POST",
+            method: deleting ? "DELETE" : "PUT",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify(deleting ? identity : { vote, ...identity }),
+            body: JSON.stringify(
+                deleting
+                    ? identity
+                    : {
+                        sentiment,
+                        ...(reason !== undefined ? { reason } : {}),
+                        ...identity,
+                    }
+            ),
         });
         if (!response.ok) throw new Error(await parseApiError(response));
-        setFeedbackValue(jobId, deleting ? "" : vote);
-        if (deleting) state.feedbackReasonsByJob[jobId] = "";
+        if (deleting) {
+            setFeedbackRecord(jobId, null);
+            setFeedbackNotice(jobId, "");
+        } else {
+            const data = await response.json();
+            setFeedbackRecord(jobId, data.feedback || null);
+            const savedFeedback = normalizeFeedbackRecord(data.feedback);
+            setFeedbackNotice(
+                jobId,
+                savedFeedback?.sentiment === "liked"
+                    ? feedbackLikeAckText()
+                    : savedFeedback?.reason
+                      ? feedbackReasonAckText()
+                      : "",
+            );
+        }
         haptic(deleting ? "light" : "success");
     } catch (error) {
         state.feedbackErrorByJob[jobId] = error?.message || t("errors.requestFailed");
@@ -1964,8 +2051,8 @@ function mergeStatusIntoHistory(jobId, statusData) {
             assets: statusData.assets || job.assets,
         };
     });
-    if (statusData.feedback !== undefined && state.feedbackByJob[jobId] === undefined) {
-        state.feedbackByJob[jobId] = statusData.feedback || "";
+    if (statusData.feedback !== undefined) {
+        state.feedbackByJob[jobId] = normalizeFeedbackRecord(statusData.feedback);
     }
 }
 
@@ -3192,7 +3279,7 @@ function bindEvents() {
         if (feedbackButton) {
             void submitHistoryFeedback(
                 feedbackButton.dataset.historyFeedback,
-                feedbackButton.dataset.feedbackVote
+                feedbackButton.dataset.feedbackSentiment
             );
             return;
         }
@@ -3201,10 +3288,12 @@ function bindEvents() {
         if (feedbackReasonButton) {
             const jobId = feedbackReasonButton.dataset.historyFeedbackReason;
             if (state.feedbackBusyByJob[jobId]) return;
-            state.feedbackReasonsByJob[jobId] = feedbackReasonButton.dataset.feedbackReason || "";
             state.feedbackErrorByJob[jobId] = "";
-            renderRenders();
-            haptic("light");
+            void submitHistoryFeedback(
+                jobId,
+                "disliked",
+                feedbackReasonButton.dataset.feedbackReason || undefined
+            );
             return;
         }
 

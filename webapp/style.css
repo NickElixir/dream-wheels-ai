@@ -2224,6 +2224,16 @@ h2 {
     background: rgba(255, 204, 86, 0.1);
 }
 
+.render-feedback-note {
+    padding: 10px 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(39, 216, 138, 0.24);
+    background: rgba(39, 216, 138, 0.08);
+    color: #8ef2bf;
+    font-size: 12px;
+    font-weight: 800;
+}
+
 .render-feedback-error {
     padding: 10px 11px;
     border-radius: 12px;

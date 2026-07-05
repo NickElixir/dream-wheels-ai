@@ -34,7 +34,10 @@ def _job_row(**overrides) -> dict:
         "error_message": None,
         "generation_provider": "reve",
         "provider_request_id": "safe-id",
-        "feedback": None,
+        "feedback_sentiment": None,
+        "feedback_reason": None,
+        "feedback_created_at": None,
+        "feedback_updated_at": None,
         "render_input_snapshot": None,
     }
     row.update(_base_asset_fields("car", kind="car_original"))
@@ -155,7 +158,9 @@ def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
     monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
 
-    response = client.get("/jobs?limit=5&offset=0", headers={"Authorization": "Bearer website-token"})
+    response = client.get(
+        "/jobs?limit=5&offset=0", headers={"Authorization": "Bearer website-token"}
+    )
 
     assert response.status_code == 200
     assert auth_calls["init_data"] is None
@@ -203,6 +208,32 @@ def test_failed_job_status_returns_error_metadata_for_owner(monkeypatch):
     assert body["error"] == "Storage upload failed"
 
 
+def test_history_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    feedback_sentiment="disliked",
+                    feedback_reason="image_quality",
+                    feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                    feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["feedback"] == {
+        "sentiment": "disliked",
+        "reason": "image_quality",
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
+
+
 def test_detailed_job_status_query_is_scoped_to_authenticated_user(monkeypatch):
     calls: list[tuple[str, tuple]] = []
 
@@ -222,6 +253,30 @@ def test_detailed_job_status_query_is_scoped_to_authenticated_user(monkeypatch):
     body = response.json()
     assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
     assert set(body["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_job_detail_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _job_row(
+                feedback_sentiment="liked",
+                feedback_reason=None,
+                feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+            )
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111?telegram_user_id=123")
+
+    assert response.status_code == 200
+    assert response.json()["feedback"] == {
+        "sentiment": "liked",
+        "reason": None,
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
 
 
 def test_result_download_query_is_scoped_to_authenticated_user(monkeypatch):

@@ -21,6 +21,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0015_durable_render_assets.sql` — `assets` и ссылки `jobs.*_asset_id` для durable render history
 - `0016_credit_ledger_expiration_compat.sql` — compat для canonical `credit_ledger.event_type='expiration'`
 - `0017_vehicle_rim_identity.sql` — `VehicleIdentity`, `RimSpec`, `RimSetup`, pre-render drafts и snapshot-ссылки для Sprint 2
+- `0018_render_feedback.sql` — durable `render_feedback`, backfill из legacy `jobs.feedback` и owner/job constraints для Sprint 3
 
 ## Стратегия применения
 
@@ -44,6 +45,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед внедрением Telegram Stars применить `0014_payments_provider_neutral_fields.sql`: она добавляет `currency`, `amount_provider_units`, provider payload/charge id и `delivery_channel`, сохраняя совместимость текущих Robokassa inserts через trigger.
 - Перед выкладкой durable history кода применить `0015_durable_render_assets.sql`: код пишет в `assets` и `jobs.car_asset_id/rim_asset_id/result_asset_id`, сохраняя legacy поля `car_image_url/wheel_image_url/output_image_url`.
 - Перед выкладкой Sprint 2 create flow применить `0017_vehicle_rim_identity.sql`: новый flow пишет `render_input_drafts`, `vehicle_identities`, `rim_specs`, `rim_setups` и `jobs.render_input_snapshot`; legacy `/jobs/upload` остаётся совместимым.
+- Перед выкладкой Sprint 3 feedback-кода применить `0018_render_feedback.sql`: canonical feedback read/write paths переходят на `render_feedback`, а `jobs.feedback` остаётся только legacy-колонкой для rollout/backfill.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
 ## Соглашения
