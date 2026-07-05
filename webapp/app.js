@@ -1771,7 +1771,7 @@ function renderFeedbackBlock(job) {
     return `
         <section class="render-feedback" aria-live="polite">
             <h3>Оценка результата</h3>
-            <p>${guestDemo ? "Гостевой пример: можно нажимать, но фидбек не отправляется" : "Помогите улучшить следующие примерки"}</p>
+            <p>${guestDemo ? "Гостевой пример: фидбек остаётся локально" : "Помогите улучшить следующие примерки"}</p>
             <div class="render-feedback-actions">
                 <button type="button" class="render-feedback-button like ${selected === "like" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="like" ${busy ? "disabled" : ""}>👍 Нравится</button>
                 <button type="button" class="render-feedback-button dislike ${selected === "dislike" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="dislike" ${busy ? "disabled" : ""}>👎 Не нравится</button>
