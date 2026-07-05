@@ -284,6 +284,38 @@ def _assets_from_row(row, *, job_id: str) -> dict[str, JobAssetResponse]:
     return assets
 
 
+def _snapshot_from_row(row, *, job_id: str) -> dict[str, object] | None:
+    raw_snapshot = row["render_input_snapshot"]
+    if raw_snapshot is None:
+        return None
+    if isinstance(raw_snapshot, dict):
+        return raw_snapshot
+    if isinstance(raw_snapshot, str):
+        try:
+            parsed_snapshot = json.loads(raw_snapshot)
+        except json.JSONDecodeError:
+            logger.warning(
+                "⚠️ Invalid render_input_snapshot JSON for job_id=%s snapshot=%r",
+                job_id,
+                raw_snapshot[:200],
+            )
+            return None
+        if isinstance(parsed_snapshot, dict):
+            return parsed_snapshot
+        logger.warning(
+            "⚠️ Non-object render_input_snapshot for job_id=%s parsed_type=%s",
+            job_id,
+            type(parsed_snapshot).__name__,
+        )
+        return None
+    logger.warning(
+        "⚠️ Unsupported render_input_snapshot type for job_id=%s snapshot_type=%s",
+        job_id,
+        type(raw_snapshot).__name__,
+    )
+    return None
+
+
 def _job_assets_select_clause() -> str:
     return """
         car_asset.id AS car_asset_id,
@@ -888,7 +920,7 @@ async def list_jobs(
             provider_request_id=row["provider_request_id"],
             feedback=row["feedback"],
             assets=_assets_from_row(row, job_id=row["job_id"]),
-            render_input_snapshot=row["render_input_snapshot"],
+            render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
         )
         for row in rows
     ]
@@ -958,7 +990,7 @@ async def get_job_status(
         error_message=row["error_message"],
         feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]),
-        render_input_snapshot=row["render_input_snapshot"],
+        render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
     ).model_dump(mode="json", exclude_none=True)
 
 
@@ -1012,7 +1044,7 @@ async def get_job_status_detailed(
         error_code=row["error_code"],
         feedback=row["feedback"],
         assets=_assets_from_row(row, job_id=row["job_id"]),
-        render_input_snapshot=row["render_input_snapshot"],
+        render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
     ).model_dump(mode="json", exclude_none=True)
 
 
