@@ -1889,14 +1889,16 @@ h2 {
 
 .render-summary {
     display: grid;
-    grid-template-columns: 110px minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: center;
+    grid-template-columns: clamp(180px, 22vw, 260px) minmax(0, 1fr) auto;
+    grid-template-areas: "thumb body action";
+    gap: 20px;
+    align-items: start;
 }
 
 .render-thumb-wrap {
-    width: 108px;
-    height: 108px;
+    grid-area: thumb;
+    width: 100%;
+    aspect-ratio: 4 / 3;
     border-radius: 18px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
@@ -1931,6 +1933,9 @@ h2 {
 .render-body {
     display: grid;
     gap: 8px;
+    grid-area: body;
+    min-width: 0;
+    align-self: center;
 }
 
 .render-subtitle {
@@ -1949,7 +1954,9 @@ h2 {
 }
 
 .render-card-action {
+    grid-area: action;
     justify-self: end;
+    align-self: center;
 }
 
 .render-disclosure {
@@ -2627,26 +2634,57 @@ h2 {
         text-align: left;
     }
 
-    .render-summary {
-        grid-template-columns: 72px minmax(0, 1fr);
-    }
-
-    .render-card-action {
-        grid-column: 2;
-        justify-self: start;
-    }
-
-    .render-thumb-wrap {
-        width: 88px;
-        height: 88px;
-    }
-
     .render-detail-grid {
         grid-template-columns: 1fr;
     }
 
     .mobile-bottom-nav {
         display: grid;
+    }
+}
+
+@media (max-width: 980px) and (min-width: 761px) {
+    .render-summary {
+        grid-template-columns: minmax(220px, 40%) minmax(0, 1fr);
+        grid-template-areas:
+            "thumb body"
+            "thumb action";
+        align-items: start;
+    }
+
+    .render-card-action {
+        justify-self: start;
+        align-self: start;
+    }
+}
+
+@media (max-width: 760px) {
+    .render-summary {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "thumb"
+            "body"
+            "action";
+        gap: 16px;
+    }
+
+    .render-thumb-wrap {
+        width: 100%;
+        aspect-ratio: auto;
+    }
+
+    .cabinet-render-card .render-thumb-image {
+        height: auto;
+    }
+
+    .render-thumb {
+        min-height: 180px;
+        height: clamp(180px, 44vw, 260px);
+    }
+
+    .render-card-action {
+        justify-self: start;
+        align-self: start;
     }
 }
 
