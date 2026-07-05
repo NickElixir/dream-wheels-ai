@@ -1730,7 +1730,6 @@ function renderHistoryViewer(job) {
     const activeUrl = assetUrlForJob(job, activeView);
     const activeAvailable = isAssetAvailable(job, activeView);
     const originalBlobLoading = isAssetBlobLoading(job, "original");
-    const label = activeView === "original" ? "Исходное фото" : "Результат";
     const missingLabels = [
         originalAvailable ? "" : "оригинал",
         resultAvailable ? "" : "результат",
@@ -1748,8 +1747,7 @@ function renderHistoryViewer(job) {
             </div>
             <div class="render-asset-frame" data-asset-frame>
                 ${activeAvailable && activeUrl ? `
-                    <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(label)}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
-                    <span class="render-image-label">${escapeHtml(label)}</span>
+                    <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(activeView === "original" ? "Исходное фото" : "Результат")}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
                 ` : originalBlobLoading ? renderAssetMissingState("Загружаем оригинал...") : renderAssetMissingState()}
             </div>
             ${missingLabels.length ? `
@@ -1762,25 +1760,18 @@ function renderHistoryViewer(job) {
 }
 
 function renderFeedbackBlock(job) {
-    if (isGuestRenderJob(job)) {
-        return `
-            <section class="render-feedback" aria-live="polite">
-                <h3>Оценка результата</h3>
-                <p>Гостевой пример: войдите через Telegram, чтобы оставить фидбек</p>
-            </section>
-        `;
-    }
     const jobId = job.job_id;
     const selected = feedbackValueForJob(job);
     const busy = Boolean(state.feedbackBusyByJob[jobId]);
     const error = state.feedbackErrorByJob[jobId] || "";
     const selectedReason = state.feedbackReasonsByJob[jobId] || "";
     const reasonsVisible = selected === "dislike";
+    const guestDemo = isGuestRenderJob(job);
 
     return `
         <section class="render-feedback" aria-live="polite">
             <h3>Оценка результата</h3>
-            <p>Помогите улучшить следующие примерки</p>
+            <p>${guestDemo ? "Гостевой пример: можно нажимать, но фидбек не отправляется" : "Помогите улучшить следующие примерки"}</p>
             <div class="render-feedback-actions">
                 <button type="button" class="render-feedback-button like ${selected === "like" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="like" ${busy ? "disabled" : ""}>👍 Нравится</button>
                 <button type="button" class="render-feedback-button dislike ${selected === "dislike" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-vote="dislike" ${busy ? "disabled" : ""}>👎 Не нравится</button>
@@ -1821,6 +1812,15 @@ async function submitHistoryFeedback(jobId, vote) {
 
     const currentVote = feedbackValueForJob(job);
     const deleting = currentVote === vote;
+    if (isGuestRenderJob(job)) {
+        setFeedbackValue(jobId, deleting ? "" : vote);
+        if (deleting) state.feedbackReasonsByJob[jobId] = "";
+        else if (vote !== "dislike") state.feedbackReasonsByJob[jobId] = "";
+        haptic(deleting ? "light" : "success");
+        renderRenders();
+        renderDashboard();
+        return;
+    }
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     state.feedbackBusyByJob[jobId] = true;
     state.feedbackErrorByJob[jobId] = "";
