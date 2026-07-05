@@ -1949,6 +1949,13 @@ h2 {
     font-size: 13px;
 }
 
+.render-demo-note {
+    margin-top: 4px;
+    color: var(--warning);
+    font-size: 12px;
+    font-weight: 750;
+}
+
 .render-empty {
     justify-content: flex-start;
 }

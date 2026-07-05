@@ -44,6 +44,7 @@ const FEEDBACK_REASONS = [
     "Искажения",
     "Другое",
 ];
+const GUEST_RENDER_DEMO_ASSET_URL = "cover.jpg";
 
 const I18N = {
     ru: {
@@ -636,6 +637,45 @@ const state = {
     feedbackErrorByJob: {},
     feedbackReasonsByJob: {},
 };
+
+function isGuestRenderJob(job) {
+    return Boolean(job?.is_guest_demo);
+}
+
+function guestRenderAssetUrl(job, kind) {
+    if (!isGuestRenderJob(job)) return "";
+    return job?.demo_assets?.[kind] || "";
+}
+
+function guestRenderHistory() {
+    const assetUrl = GUEST_RENDER_DEMO_ASSET_URL;
+    return [{
+        job_id: "guest-demo-prius",
+        status: "completed",
+        created_at: "2026-07-05T03:04:00+03:00",
+        completed_at: "2026-07-05T03:11:00+03:00",
+        feedback: "",
+        render_input_snapshot: {
+            vehicle: {
+                make: "Toyota",
+                model: "Prius",
+                year: 2016,
+            },
+            rim: {
+                wheel_diameter_in: 17,
+                wheel_width_j: 7,
+                bolt_count: 5,
+                pcd_mm: 100,
+                pcd_display: "5×100",
+            },
+        },
+        demo_assets: {
+            original: assetUrl,
+            result: assetUrl,
+        },
+        is_guest_demo: true,
+    }];
+}
 
 function applyTranslations() {
     document.documentElement.lang = locale;
@@ -1500,6 +1540,8 @@ function renderExpiryRows(items) {
 }
 
 function resultUrlForJob(job) {
+    const guestUrl = guestRenderAssetUrl(job, "result");
+    if (guestUrl) return guestUrl;
     return job?.assets?.result?.url || job?.result_url || "";
 }
 
@@ -1509,12 +1551,15 @@ function canUseIdentityAssetUrls() {
 
 function hasAssetSource(job, kind) {
     if (!job) return false;
+    if (isGuestRenderJob(job)) return Boolean(guestRenderAssetUrl(job, kind));
     if (kind === "original") return Boolean(job?.assets?.car_original);
     if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
     return false;
 }
 
 function assetDownloadUrlForJob(job, kind) {
+    const guestUrl = guestRenderAssetUrl(job, kind);
+    if (guestUrl) return guestUrl;
     const assetKey = kind === "original" ? "car_original" : kind;
     if (!job?.assets?.[assetKey]) return "";
     const downloadUrl = job.assets[assetKey].download_url;
@@ -1601,6 +1646,8 @@ async function ensureAssetBlobUrl(job, kind) {
 
 function assetUrlForJob(job, kind) {
     if (!job) return "";
+    const guestUrl = guestRenderAssetUrl(job, kind);
+    if (guestUrl) return guestUrl;
     if (kind === "original") {
         return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.car_original);
     }
@@ -1622,6 +1669,8 @@ function defaultAssetViewForJob(job) {
 }
 
 function downloadUrlForJob(job) {
+    const guestUrl = guestRenderAssetUrl(job, "result");
+    if (guestUrl) return guestUrl;
     if (getWebsiteAuthToken()) return assetDownloadUrlForJob(job, "result") || resultUrlForJob(job);
     const assetPath = job?.assets?.result?.download_url;
     if (assetPath?.startsWith("/")) {
@@ -1713,6 +1762,14 @@ function renderHistoryViewer(job) {
 }
 
 function renderFeedbackBlock(job) {
+    if (isGuestRenderJob(job)) {
+        return `
+            <section class="render-feedback" aria-live="polite">
+                <h3>Оценка результата</h3>
+                <p>Гостевой пример: войдите через Telegram, чтобы оставить фидбек</p>
+            </section>
+        `;
+    }
     const jobId = job.job_id;
     const selected = feedbackValueForJob(job);
     const busy = Boolean(state.feedbackBusyByJob[jobId]);
@@ -1793,6 +1850,7 @@ function renderHistoryCard(job) {
     const title = humanRenderTitle(job);
     const rimSummary = rimSummaryForJob(job);
     const status = job.status || "processing";
+    const guestDemo = isGuestRenderJob(job);
     const resultUrl = assetUrlForJob(job, "result");
     const createdAt = formatDateTime(job.created_at);
     const expanded = state.expandedJobId === job.job_id;
@@ -1822,6 +1880,7 @@ function renderHistoryCard(job) {
                     <div class="render-title">${escapeHtml(title)}</div>
                     <div class="render-subtitle">${escapeHtml(subtitle)}</div>
                     ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
+                    ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
                     <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
                 </div>
                 <div class="render-card-action">${action}</div>
@@ -1853,10 +1912,6 @@ function renderRenders() {
     }
     if (state.renderHistoryError) {
         container.innerHTML = `<div class="history-card render-empty"><strong>${escapeHtml(localizeErrorMessage(state.renderHistoryError))}</strong></div>`;
-        return;
-    }
-    if (!hasFrontendAuth()) {
-        container.innerHTML = `<div class="history-card render-empty"><strong>${t("wallet.authRequired")}</strong></div>`;
         return;
     }
     if (!state.renderHistory.length) {
@@ -2041,8 +2096,11 @@ function renderDashboard() {
 
 async function loadRenderHistory({ silent = false } = {}) {
     if (!hasFrontendAuth()) {
-        state.renderHistory = [];
+        state.renderHistoryLoading = false;
+        state.renderHistory = guestRenderHistory();
         state.renderHistoryError = "";
+        state.expandedJobId = state.renderHistory[0]?.job_id || "";
+        mergeHistoryFeedbackState(state.renderHistory);
         renderRenders();
         renderDashboard();
         return;
