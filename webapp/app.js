@@ -18,10 +18,12 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
+const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
+const PAYMENT_HISTORY_PAGE_SIZE = 10;
 const TOPUP_PACKAGES = [
     { amount: 100, credits: 3, icon: "⚡" },
     { amount: 200, credits: 7, icon: "🏁" },
@@ -35,6 +37,15 @@ const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 110000;
 const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
+const HISTORY_ASSET_VIEWS = ["result", "original"];
+const FEEDBACK_REASONS = [
+    { code: "wheel_differs", label: "Диск отличается" },
+    { code: "car_changed", label: "Машина изменилась" },
+    { code: "angle_or_scale", label: "Ракурс / масштаб" },
+    { code: "image_quality", label: "Качество изображения" },
+    { code: "other", label: "Другое" },
+];
+const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
 
 const I18N = {
     ru: {
@@ -233,7 +244,16 @@ const I18N = {
             pay: "Оплатить",
             paymentNote: "Оплата откроется через Robokassa. Рендеры начисляются после подтверждения",
             paymentHistory: "История платежей",
+            paymentHistoryHint: "Покупки и сроки действия рендеров",
             openHistory: "Открыть",
+            closeHistory: "Скрыть",
+            availableRenders: "Доступные рендеры",
+            availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
+            topUpHistory: "История пополнений",
+            topUpHistoryHint: "Показываем 10 последних операций",
+            previousPage: "Назад",
+            nextPage: "Далее",
+            pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
             noPaymentsMeta: "Стартовый грант по /start на 30 дней появится в истории платежей",
@@ -510,7 +530,16 @@ const I18N = {
             pay: "Pay",
             paymentNote: "Robokassa opens on tap. Renders are applied after confirmation",
             paymentHistory: "Payment history",
+            paymentHistoryHint: "Purchases and render expiry windows",
             openHistory: "Open",
+            closeHistory: "Hide",
+            availableRenders: "Available renders",
+            availableRendersHint: "Packages expiring sooner are spent first",
+            topUpHistory: "Top-up history",
+            topUpHistoryHint: "Showing the latest 10 operations",
+            previousPage: "Back",
+            nextPage: "Next",
+            pageRange: "{from}-{to} of {total}",
             emptyHistory: "No payments yet",
             noPaymentsTitle: "No payments yet",
             noPaymentsMeta: "Your 30-day /start starter grant will appear in payment history",
@@ -623,6 +652,21 @@ function resolveApiBaseUrl() {
     return PROD_API_BASE_URL;
 }
 
+function shouldUseBrowserApiProxy() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("apiBase")) return false;
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return false;
+    return host.endsWith(".vercel.app");
+}
+
+function appendSearchParams(url, params) {
+    const query = params instanceof URLSearchParams ? params : new URLSearchParams(params || "");
+    const serialized = query.toString();
+    if (!serialized) return url;
+    return `${url}${url.includes("?") ? "&" : "?"}${serialized}`;
+}
+
 function resolveDevTelegramUserId() {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("tgUser");
@@ -671,6 +715,8 @@ const state = {
     balance: null,
     payments: [],
     starterGrant: null,
+    walletHistoryOpen: true,
+    walletHistoryPage: 0,
     walletBusy: false,
     walletLoading: false,
     walletLoadingMessage: "",
@@ -708,7 +754,55 @@ const state = {
     fitmentMessage: "",
     fitmentMessageTone: "neutral",
     fitmentForm: createEmptyFitmentForm(),
+    renderHistoryPollTimer: null,
+    renderAssetViewByJob: {},
+    renderAssetErrorsByJob: {},
+    renderAssetBlobUrlsByJob: {},
+    renderAssetBlobLoadingByJob: {},
+    feedbackByJob: {},
+    feedbackBusyByJob: {},
+    feedbackErrorByJob: {},
+    feedbackNoticeByJob: {},
 };
+
+function isGuestRenderJob(job) {
+    return Boolean(job?.is_guest_demo);
+}
+
+function guestRenderAssetUrl(job, kind) {
+    if (!isGuestRenderJob(job)) return "";
+    return job?.demo_assets?.[kind] || "";
+}
+
+function guestRenderHistory() {
+    const assetUrl = GUEST_RENDER_DEMO_ASSET_URL;
+    return [{
+        job_id: "guest-demo-prius",
+        status: "completed",
+        created_at: "2026-07-05T03:04:00+03:00",
+        completed_at: "2026-07-05T03:11:00+03:00",
+        feedback: null,
+        render_input_snapshot: {
+            vehicle: {
+                make: "Toyota",
+                model: "Prius",
+                year: 2016,
+            },
+            rim: {
+                wheel_diameter_in: 17,
+                wheel_width_j: 7,
+                bolt_count: 5,
+                pcd_mm: 100,
+                pcd_display: "5×100",
+            },
+        },
+        demo_assets: {
+            original: assetUrl,
+            result: assetUrl,
+        },
+        is_guest_demo: true,
+    }];
+}
 
 function applyTranslations() {
     document.documentElement.lang = locale;
@@ -794,6 +888,10 @@ function withAuthHeaders(headers = {}) {
     return accessToken ? { ...headers, Authorization: `Bearer ${accessToken}` } : headers;
 }
 
+function isWebsiteAuthMode() {
+    return Boolean(getWebsiteAuthToken());
+}
+
 function updateWebsiteAuthUi() {
     const button = document.querySelector("[data-website-auth-button]");
     if (!button) return;
@@ -814,6 +912,19 @@ function updateWebsiteAuthUi() {
         : t("auth.login");
     updateCreateFooter();
     updateAccountBlock();
+}
+
+function apiUrl(path, { includeIdentity = false, params = null } = {}) {
+    const baseUrl = shouldUseBrowserApiProxy() ? WEBSITE_PROXY_BASE_URL : state.apiBaseUrl;
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    let url = `${baseUrl}${normalizedPath}`;
+    if (includeIdentity) {
+        url = appendSearchParams(url, getIdentitySearchParams());
+    }
+    if (params) {
+        url = appendSearchParams(url, params);
+    }
+    return url;
 }
 
 function loadTelegramLoginLibrary() {
@@ -860,7 +971,7 @@ async function fetchWebsiteLoginNonce({ force = false } = {}) {
     if (!force && hasFreshWebsiteLoginNonce()) return state.websiteLoginNonce;
     if (!force && state.websiteLoginNoncePromise) return state.websiteLoginNoncePromise;
 
-    state.websiteLoginNoncePromise = fetch(`${state.apiBaseUrl}/auth/telegram/nonce`)
+    state.websiteLoginNoncePromise = fetch(apiUrl("/auth/telegram/nonce"))
         .then(async (response) => {
             if (!response.ok) throw new Error(await parseApiError(response));
             const payload = await response.json();
@@ -918,7 +1029,7 @@ async function loginWithTelegram() {
             );
         });
 
-        const verifyResponse = await fetch(`${state.apiBaseUrl}/auth/telegram/verify-id-token`, {
+        const verifyResponse = await fetch(apiUrl("/auth/telegram/verify-id-token"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id_token: loginResult.id_token, nonce_token: nonceToken }),
@@ -1042,6 +1153,7 @@ function classifyIdentityError(message) {
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
+    if (isWebsiteAuthMode()) return {};
     if (HAS_TG && tg?.initData) {
         const payload = { init_data: tg.initData };
         if (includeTelegramUserId && tg.initDataUnsafe?.user?.id != null) {
@@ -1064,9 +1176,7 @@ function getIdentitySearchParams() {
 }
 
 function withIdentityQuery(url) {
-    const params = getIdentitySearchParams();
-    const query = params.toString();
-    return query ? `${url}?${query}` : url;
+    return appendSearchParams(url, getIdentitySearchParams());
 }
 
 function fitmentAvailable(job) {
@@ -1459,10 +1569,10 @@ async function saveFitment(event) {
 }
 
 async function fetchRenderHistory({ limit = 20, offset = 0 } = {}) {
-    const params = getIdentitySearchParams();
+    const params = new URLSearchParams();
     params.set("limit", String(limit));
     params.set("offset", String(offset));
-    const response = await fetch(`${state.apiBaseUrl}/jobs?${params.toString()}`, {
+    const response = await fetch(apiUrl("/jobs", { includeIdentity: true, params }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -1515,6 +1625,7 @@ function setMoreOpen(open) {
 
 function setView(view) {
     state.view = view;
+    if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
         el.hidden = el.dataset.view !== view;
     });
@@ -1583,6 +1694,14 @@ function renderWalletStatus() {
     syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
 }
 
+function syncPaymentHistoryDetailsAction() {
+    const details = document.querySelector("[data-wallet-history-details]");
+    const action = document.querySelector("[data-wallet-history-toggle]");
+    if (!details || !action) return;
+    state.walletHistoryOpen = details.open;
+    action.textContent = details.open ? t("wallet.closeHistory") : t("wallet.openHistory");
+}
+
 function setWalletLoading(visible, message = t("wallet.loading")) {
     state.walletLoading = visible;
     state.walletLoadingMessage = visible ? message : "";
@@ -1600,15 +1719,21 @@ function getLastInvoice() {
 }
 
 function getHistoryItems() {
-    const items = [];
-    if (state.starterGrant) {
-        items.push({
-            type: "starter_grant",
-            credits: state.starterGrant.credits,
-            createdAt: state.starterGrant.createdAt,
-        });
-    }
-    return items.concat(state.payments);
+    return state.payments;
+}
+
+function getVisibleHistoryItems() {
+    const items = getHistoryItems();
+    const totalPages = Math.max(1, Math.ceil(items.length / PAYMENT_HISTORY_PAGE_SIZE));
+    state.walletHistoryPage = Math.min(Math.max(state.walletHistoryPage, 0), totalPages - 1);
+    const startIndex = state.walletHistoryPage * PAYMENT_HISTORY_PAGE_SIZE;
+    return {
+        items,
+        visibleItems: items.slice(startIndex, startIndex + PAYMENT_HISTORY_PAGE_SIZE),
+        totalPages,
+        from: items.length ? startIndex + 1 : 0,
+        to: Math.min(startIndex + PAYMENT_HISTORY_PAGE_SIZE, items.length),
+    };
 }
 
 function formatPaymentStatus(status) {
@@ -1666,6 +1791,13 @@ function renderWallet() {
     const cardBlock = document.querySelector("[data-last-invoice-card]");
     const cardDetails = document.querySelector("[data-last-invoice-details]");
     const history = document.querySelector("[data-payment-history-list]");
+    const expiryList = document.querySelector("[data-wallet-expiry-list]");
+    const expiryNote = document.querySelector("[data-wallet-expiry-note]");
+    const historyHint = document.querySelector("[data-wallet-history-hint]");
+    const historyPager = document.querySelector("[data-wallet-history-pager]");
+    const historyPageLabel = document.querySelector("[data-wallet-history-page-label]");
+    const historyPrev = document.querySelector("[data-wallet-history-prev]");
+    const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
     const headingStatus = document.querySelector("[data-payment-status]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
@@ -1724,34 +1856,53 @@ function renderWallet() {
     }
 
     if (!history) return;
-    const historyItems = getHistoryItems();
-    if (!historyItems.length) {
+    const expiryItems = buildRenderExpiryCohorts();
+    if (expiryList) {
+        expiryList.innerHTML = expiryItems.length
+            ? renderExpiryRows(expiryItems)
+            : `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">⏳</span><span>${locale === "ru" ? "Активных пакетов пока нет" : "No active render packages yet"}</span></div>`;
+    }
+    if (expiryNote) {
+        const firstCohort = expiryItems[0] || null;
+        expiryNote.hidden = !firstCohort;
+        expiryNote.textContent = firstCohort
+            ? (
+                locale === "ru"
+                    ? `Сначала будут использованы ${firstCohort.credits} рендеров со сроком ${expiryLabel(firstCohort.expiresAt)}.`
+                    : `${firstCohort.credits} renders expiring ${expiryLabel(firstCohort.expiresAt)} will be used first.`
+            )
+            : "";
+    }
+
+    const historyState = getVisibleHistoryItems();
+    if (historyHint) historyHint.textContent = t("wallet.topUpHistoryHint");
+    if (!historyState.items.length) {
         history.innerHTML = `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">🧾</span><span>${t("wallet.emptyHistory")}</span></div>`;
     } else {
-        history.innerHTML = historyItems
+        history.innerHTML = historyState.visibleItems
             .map((item) => {
-                if (item.type === "starter_grant") {
-                    return `
-                        <div class="history-item payment-history-item grant-history-item">
-                            <div>
-                                <strong>${t("wallet.starterGrantTitle")}</strong>
-                                <div class="meta">${formatTemplate("wallet.starterGrantMeta", { credits: item.credits })}</div>
-                            </div>
-                            <span class="status-pill success">${t("wallet.gift")}</span>
-                        </div>
-                    `;
-                }
                 return `
                     <div class="history-item payment-history-item">
                         <div>
-                            <strong>#${String(item.invoiceId).padStart(6, "0")} · ${formatRub(item.amount)}</strong>
-                            <div class="meta">${item.email || "—"} · ${item.createdAt} · ${item.credits} ${t("credits")}</div>
+                            <strong>${formatRub(item.amount)} · ${item.credits} ${t("credits")}</strong>
+                            <div class="meta">Robokassa · ${item.createdAt}</div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
                 `;
             })
             .join("");
+    }
+    if (historyPager && historyPageLabel && historyPrev && historyNext) {
+        const hasMultiplePages = historyState.totalPages > 1;
+        historyPager.hidden = !hasMultiplePages;
+        historyPageLabel.textContent = formatTemplate("wallet.pageRange", {
+            from: historyState.from,
+            to: historyState.to,
+            total: historyState.items.length,
+        });
+        historyPrev.disabled = state.walletHistoryPage === 0;
+        historyNext.disabled = state.walletHistoryPage >= historyState.totalPages - 1;
     }
 
     document.querySelectorAll("[data-topup-amount]").forEach((button) => {
@@ -1765,6 +1916,7 @@ function renderWallet() {
     });
 
     renderWalletStatus();
+    syncPaymentHistoryDetailsAction();
 }
 
 function renderConfirmation() {
@@ -1819,20 +1971,228 @@ function formatDateTime(value) {
 }
 
 function humanRenderTitle(job) {
-    const vehicle = job?.vehicle || job?.vehicle_identity || job?.metadata?.vehicle;
+    const vehicle = job?.render_input_snapshot?.vehicle || job?.vehicle || job?.vehicle_identity || job?.metadata?.vehicle;
     const makeModel = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
     return makeModel || (locale === "ru" ? "Виртуальная примерка" : "Virtual render");
 }
 
+function rimSummaryForJob(job) {
+    const rim = job?.render_input_snapshot?.rim;
+    if (!rim) return "";
+    if (rim.pcd_display) {
+        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.pcd_display}`;
+    }
+    if (rim.wheel_diameter_in && rim.wheel_width_j && rim.bolt_count && rim.pcd_mm) {
+        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.bolt_count}×${rim.pcd_mm}`;
+    }
+    return "";
+}
+
+function paymentDateForDisplay(payment) {
+    return payment?.paidAtIso || payment?.createdAtIso || "";
+}
+
+function addDays(isoString, days) {
+    const source = new Date(isoString);
+    if (Number.isNaN(source.getTime())) return "";
+    source.setDate(source.getDate() + days);
+    return source.toISOString();
+}
+
+function formatShortDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    if (locale === "ru") {
+        return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    }
+    return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+function expiryLabel(value) {
+    const formatted = formatShortDate(value);
+    if (!formatted) return "";
+    return locale === "ru" ? `до ${formatted}` : `until ${formatted}`;
+}
+
+function buildRenderExpiryCohorts() {
+    const cohorts = [];
+    if (state.starterGrant?.credits > 0) {
+        cohorts.push({
+            key: "starter_grant",
+            credits: state.starterGrant.credits,
+            expiresAt: state.starterGrant.expiresAtIso || addDays(state.starterGrant.createdAtIso, 30),
+            meta: locale === "ru"
+                ? `Стартовый пакет · начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
+                : `Starter grant · added ${formatShortDate(state.starterGrant.createdAtIso)}`,
+        });
+    }
+    state.payments
+        .filter((payment) => payment.status === "paid" && Number(payment.credits || 0) > 0)
+        .forEach((payment) => {
+            const paidAt = paymentDateForDisplay(payment);
+            cohorts.push({
+                key: `payment_${payment.invoiceId}`,
+                credits: Number(payment.credits || 0),
+                expiresAt: addDays(paidAt, 30),
+                meta: locale === "ru"
+                    ? `Пакет ${formatRub(payment.amount)} · оплачен ${formatShortDate(paidAt)}`
+                    : `Package ${formatRub(payment.amount)} · paid ${formatShortDate(paidAt)}`,
+            });
+        });
+    return cohorts
+        .filter((item) => item.credits > 0 && item.expiresAt)
+        .sort((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt));
+}
+
+function renderExpiryRows(items) {
+    return items.map((item) => `
+        <div class="wallet-expiry-row">
+            <div>
+                <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
+                <div class="meta">${escapeHtml(item.meta)}</div>
+            </div>
+            <div class="wallet-expiry-date">${escapeHtml(expiryLabel(item.expiresAt))}</div>
+        </div>
+    `).join("");
+}
+
 function resultUrlForJob(job) {
+    const guestUrl = guestRenderAssetUrl(job, "result");
+    if (guestUrl) return guestUrl;
     return job?.assets?.result?.url || job?.result_url || "";
 }
 
+function canUseIdentityAssetUrls() {
+    return Boolean(getIdentitySearchParams().toString());
+}
+
+function hasAssetSource(job, kind) {
+    if (!job) return false;
+    if (isGuestRenderJob(job)) return Boolean(guestRenderAssetUrl(job, kind));
+    if (kind === "original") return Boolean(job?.assets?.car_original);
+    if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
+    return false;
+}
+
+function assetDownloadUrlForJob(job, kind) {
+    const guestUrl = guestRenderAssetUrl(job, kind);
+    if (guestUrl) return guestUrl;
+    const assetKey = kind === "original" ? "car_original" : kind;
+    if (!job?.assets?.[assetKey]) return "";
+    const downloadUrl = job.assets[assetKey].download_url;
+    if (!downloadUrl) return "";
+    return downloadUrl.startsWith("/")
+        ? apiUrl(downloadUrl, { includeIdentity: true })
+        : withIdentityQuery(downloadUrl);
+}
+
+function proxiedAssetUrl(asset) {
+    const assetPath = asset?.download_url;
+    if (!assetPath) return "";
+    if (assetPath.startsWith("/")) return apiUrl(assetPath, { includeIdentity: true });
+    if (!canUseIdentityAssetUrls()) return "";
+    return withIdentityQuery(assetPath);
+}
+
+function assetErrorKey(kind) {
+    return kind === "original" ? "car_original" : "result";
+}
+
+function hasAssetLoadError(job, kind) {
+    return Boolean(state.renderAssetErrorsByJob[job?.job_id]?.[assetErrorKey(kind)]);
+}
+
+function assetBlobUrlForJob(job, kind) {
+    return state.renderAssetBlobUrlsByJob[job?.job_id]?.[kind] || "";
+}
+
+function isAssetBlobLoading(job, kind) {
+    return Boolean(state.renderAssetBlobLoadingByJob[job?.job_id]?.[kind]);
+}
+
+function markAssetBlobLoading(jobId, kind, value) {
+    state.renderAssetBlobLoadingByJob[jobId] = {
+        ...(state.renderAssetBlobLoadingByJob[jobId] || {}),
+        [kind]: value,
+    };
+}
+
+async function ensureAssetBlobUrl(job, kind) {
+    if (!job?.job_id || kind !== "original") return "";
+    const existingBlobUrl = assetBlobUrlForJob(job, kind);
+    if (existingBlobUrl) return existingBlobUrl;
+    if (!getWebsiteAuthToken()) return "";
+    if (isAssetBlobLoading(job, kind)) return "";
+
+    const sourceUrl = assetDownloadUrlForJob(job, kind);
+    if (!sourceUrl) return "";
+
+    markAssetBlobLoading(job.job_id, kind, true);
+    renderRenders();
+    renderDashboard();
+
+    try {
+        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const previousUrl = state.renderAssetBlobUrlsByJob[job.job_id]?.[kind] || "";
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        state.renderAssetBlobUrlsByJob[job.job_id] = {
+            ...(state.renderAssetBlobUrlsByJob[job.job_id] || {}),
+            [kind]: objectUrl,
+        };
+    } catch (error) {
+        state.renderAssetErrorsByJob[job.job_id] = {
+            ...(state.renderAssetErrorsByJob[job.job_id] || {}),
+            [assetErrorKey(kind)]: true,
+        };
+        console.error("[DW] Failed to load history asset blob", {
+            job_id: job.job_id,
+            kind,
+            error,
+        });
+    } finally {
+        markAssetBlobLoading(job.job_id, kind, false);
+        renderRenders();
+        renderDashboard();
+    }
+
+    return assetBlobUrlForJob(job, kind);
+}
+
+function assetUrlForJob(job, kind) {
+    if (!job) return "";
+    const guestUrl = guestRenderAssetUrl(job, kind);
+    if (guestUrl) return guestUrl;
+    if (kind === "original") {
+        return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.car_original);
+    }
+    return resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
+}
+
+function isAssetAvailable(job, kind) {
+    return Boolean(assetUrlForJob(job, kind)) && !hasAssetLoadError(job, kind);
+}
+
+function defaultAssetViewForJob(job) {
+    const savedView = state.renderAssetViewByJob[job?.job_id];
+    if (HISTORY_ASSET_VIEWS.includes(savedView) && hasAssetSource(job, savedView)) {
+        return savedView;
+    }
+    if (hasAssetSource(job, "result")) return "result";
+    if (hasAssetSource(job, "original")) return "original";
+    return savedView || "result";
+}
+
 function downloadUrlForJob(job) {
-    if (getWebsiteAuthToken()) return resultUrlForJob(job);
+    const guestUrl = guestRenderAssetUrl(job, "result");
+    if (guestUrl) return guestUrl;
+    if (getWebsiteAuthToken()) return assetDownloadUrlForJob(job, "result") || resultUrlForJob(job);
     const assetPath = job?.assets?.result?.download_url;
     if (assetPath?.startsWith("/")) {
-        return withIdentityQuery(`${state.apiBaseUrl}${assetPath}`);
+        return apiUrl(assetPath, { includeIdentity: true });
     }
     if (assetPath) return withIdentityQuery(assetPath);
     return resultUrlForJob(job);
@@ -1850,19 +2210,265 @@ function statusClass(status) {
     return "neutral";
 }
 
+function normalizeFeedbackRecord(feedback) {
+    if (!feedback || typeof feedback !== "object") return null;
+    if (feedback.sentiment !== "liked" && feedback.sentiment !== "disliked") return null;
+    return {
+        sentiment: feedback.sentiment,
+        reason: typeof feedback.reason === "string" ? feedback.reason : null,
+        created_at: typeof feedback.created_at === "string" ? feedback.created_at : null,
+        updated_at: typeof feedback.updated_at === "string" ? feedback.updated_at : null,
+    };
+}
+
+function feedbackRecordForJob(job) {
+    if (!job?.job_id) return null;
+    if (Object.prototype.hasOwnProperty.call(state.feedbackByJob, job.job_id)) {
+        return state.feedbackByJob[job.job_id];
+    }
+    return normalizeFeedbackRecord(job.feedback);
+}
+
+function feedbackSentimentForJob(job) {
+    return feedbackRecordForJob(job)?.sentiment || "";
+}
+
+function feedbackReasonForJob(job) {
+    return feedbackRecordForJob(job)?.reason || "";
+}
+
+function setFeedbackRecord(jobId, feedback) {
+    const normalized = normalizeFeedbackRecord(feedback);
+    state.feedbackByJob[jobId] = normalized;
+    state.renderHistory = state.renderHistory.map((job) => (
+        job.job_id === jobId ? { ...job, feedback: normalized } : job
+    ));
+}
+
+function mergeHistoryFeedbackState(jobs) {
+    jobs.forEach((job) => {
+        if (!job?.job_id) return;
+        state.feedbackByJob[job.job_id] = normalizeFeedbackRecord(job.feedback);
+    });
+}
+
+function feedbackLikeAckText() {
+    return locale === "ru" ? "Спасибо за оценку" : "Thanks for the rating";
+}
+
+function feedbackReasonAckText() {
+    return locale === "ru" ? "✓ Спасибо, мы учтём эту оценку" : "✓ Thanks, we'll use this feedback";
+}
+
+function setFeedbackNotice(jobId, message = "") {
+    state.feedbackNoticeByJob[jobId] = message;
+}
+
+function guestFeedbackRecord({ sentiment, reason = null }, previousFeedback = null) {
+    const timestamp = new Date().toISOString();
+    return {
+        sentiment,
+        reason,
+        created_at: previousFeedback?.created_at || timestamp,
+        updated_at: timestamp,
+    };
+}
+
+function renderAssetMissingState(text = "Изображение временно недоступно") {
+    return `
+        <div class="render-asset-error" role="status">
+            <strong>${escapeHtml(text)}</strong>
+            <span>Доступные действия ниже сохранены</span>
+        </div>
+    `;
+}
+
+function renderHistoryViewer(job) {
+    const activeView = defaultAssetViewForJob(job);
+    const originalAvailable = hasAssetSource(job, "original");
+    const resultAvailable = hasAssetSource(job, "result");
+    const activeUrl = assetUrlForJob(job, activeView);
+    const activeAvailable = isAssetAvailable(job, activeView);
+    const originalBlobLoading = isAssetBlobLoading(job, "original");
+    const missingLabels = [
+        originalAvailable ? "" : "оригинал",
+        resultAvailable ? "" : "результат",
+    ].filter(Boolean);
+
+    if (activeView === "original" && !activeUrl && !originalBlobLoading && getWebsiteAuthToken()) {
+        void ensureAssetBlobUrl(job, "original");
+    }
+
+    return `
+        <div class="render-viewer">
+            <div class="render-segmented" role="tablist" aria-label="Сравнение изображений">
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="original" class="${activeView === "original" ? "active" : ""}" aria-selected="${activeView === "original"}" ${originalAvailable ? "" : "disabled"}>Оригинал</button>
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="result" class="${activeView === "result" ? "active" : ""}" aria-selected="${activeView === "result"}" ${resultAvailable ? "" : "disabled"}>Результат</button>
+            </div>
+            <div class="render-asset-frame" data-asset-frame>
+                ${activeAvailable && activeUrl ? `
+                    <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(activeView === "original" ? "Исходное фото" : "Результат")}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
+                ` : originalBlobLoading ? renderAssetMissingState("Загружаем оригинал...") : renderAssetMissingState()}
+            </div>
+            ${missingLabels.length ? `
+                <div class="render-asset-notice" role="status">
+                    Недоступно: ${escapeHtml(missingLabels.join(", "))}
+                </div>
+            ` : ""}
+        </div>
+    `;
+}
+
+function renderFeedbackBlock(job) {
+    const jobId = job.job_id;
+    const selected = feedbackSentimentForJob(job);
+    const busy = Boolean(state.feedbackBusyByJob[jobId]);
+    const error = state.feedbackErrorByJob[jobId] || "";
+    const selectedReason = feedbackReasonForJob(job);
+    const reasonsVisible = selected === "disliked";
+    const guestDemo = isGuestRenderJob(job);
+    const notice = state.feedbackNoticeByJob[jobId] || "";
+
+    return `
+        <section class="render-feedback" aria-live="polite">
+            <h3>Оценка результата</h3>
+            <p>${guestDemo ? "Гостевой пример: фидбек остаётся локально" : "Помогите улучшить следующие примерки"}</p>
+            <div class="render-feedback-actions">
+                <button type="button" class="render-feedback-button like ${selected === "liked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="liked" ${busy ? "disabled" : ""}>👍 Понравилось</button>
+                <button type="button" class="render-feedback-button dislike ${selected === "disliked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Не похоже</button>
+            </div>
+            <div class="render-feedback-reasons ${reasonsVisible ? "visible" : ""}">
+                <div class="reason-title">Что улучшить</div>
+                <div class="render-reason-grid">
+                    ${FEEDBACK_REASONS.map((reason) => `
+                        <button type="button" class="render-reason ${selectedReason === reason.code ? "selected" : ""}" data-history-feedback-reason="${escapeHtml(jobId)}" data-feedback-reason="${escapeHtml(reason.code)}" ${busy ? "disabled" : ""}>${escapeHtml(reason.label)}</button>
+                    `).join("")}
+                </div>
+            </div>
+            <div class="render-feedback-note" ${notice ? "" : "hidden"}>
+                ${escapeHtml(notice)}
+            </div>
+            <div class="render-feedback-error" ${error ? "" : "hidden"}>
+                ${escapeHtml(localizeErrorMessage(error))}
+            </div>
+        </section>
+    `;
+}
+
+function setAssetLoadError(jobId, kind, hasError) {
+    if (!jobId || !kind) return;
+    const previous = Boolean(state.renderAssetErrorsByJob[jobId]?.[kind]);
+    if (previous === hasError) return;
+    state.renderAssetErrorsByJob[jobId] = {
+        ...(state.renderAssetErrorsByJob[jobId] || {}),
+        [kind]: hasError,
+    };
+    if (state.expandedJobId === jobId || state.view === "renders") {
+        renderRenders();
+        renderDashboard();
+    }
+}
+
+async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
+    if (!jobId || state.feedbackBusyByJob[jobId]) return;
+    const job = state.renderHistory.find((item) => item.job_id === jobId);
+    if (!job) return;
+
+    const currentFeedback = feedbackRecordForJob(job);
+    const deleting = reason === undefined && currentFeedback?.sentiment === sentiment;
+    if (isGuestRenderJob(job)) {
+        if (deleting) {
+            setFeedbackRecord(jobId, null);
+            setFeedbackNotice(jobId, "");
+        } else {
+            const nextFeedback = guestFeedbackRecord(
+                { sentiment, reason: sentiment === "disliked" ? reason || null : null },
+                currentFeedback,
+            );
+            setFeedbackRecord(jobId, nextFeedback);
+            setFeedbackNotice(
+                jobId,
+                nextFeedback.sentiment === "liked"
+                    ? feedbackLikeAckText()
+                    : nextFeedback.reason
+                      ? feedbackReasonAckText()
+                      : "",
+            );
+        }
+        haptic(deleting ? "light" : "success");
+        renderRenders();
+        renderDashboard();
+        return;
+    }
+    const identity = getIdentityPayload({ includeTelegramUserId: true });
+    state.feedbackBusyByJob[jobId] = true;
+    state.feedbackErrorByJob[jobId] = "";
+    if (reason === undefined && sentiment !== "liked") {
+        setFeedbackNotice(jobId, "");
+    }
+    renderRenders();
+
+    try {
+        const response = await fetch(apiUrl(`/jobs/${jobId}/feedback`), {
+            method: deleting ? "DELETE" : "PUT",
+            headers: withAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(
+                deleting
+                    ? identity
+                    : {
+                        sentiment,
+                        ...(reason !== undefined ? { reason } : {}),
+                        ...identity,
+                    }
+            ),
+        });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        if (deleting) {
+            setFeedbackRecord(jobId, null);
+            setFeedbackNotice(jobId, "");
+        } else {
+            const data = await response.json();
+            setFeedbackRecord(jobId, data.feedback || null);
+            const savedFeedback = normalizeFeedbackRecord(data.feedback);
+            setFeedbackNotice(
+                jobId,
+                savedFeedback?.sentiment === "liked"
+                    ? feedbackLikeAckText()
+                    : savedFeedback?.reason
+                      ? feedbackReasonAckText()
+                      : "",
+            );
+        }
+        haptic(deleting ? "light" : "success");
+    } catch (error) {
+        state.feedbackErrorByJob[jobId] = error?.message || t("errors.requestFailed");
+        haptic("warning");
+    } finally {
+        state.feedbackBusyByJob[jobId] = false;
+        renderRenders();
+        renderDashboard();
+    }
+}
+
 function renderHistoryCard(job) {
     const title = humanRenderTitle(job);
+    const rimSummary = rimSummaryForJob(job);
     const status = job.status || "processing";
-    const resultUrl = resultUrlForJob(job);
-    const createdAt = formatDateTime(job.completed_at || job.created_at);
+    const guestDemo = isGuestRenderJob(job);
+    const resultUrl = assetUrlForJob(job, "result");
+    const createdAt = formatDateTime(job.created_at);
     const expanded = state.expandedJobId === job.job_id;
-    const canOpen = status === "completed" && resultUrl;
+    const canOpen = status === "completed";
+    const hasResult = hasAssetSource(job, "result");
+    const hasOriginal = hasAssetSource(job, "original");
     const canOpenFitment = canOpen && fitmentAvailable(job);
     const summaryText = status === "failed"
         ? "Не удалось создать результат"
         : status === "completed"
-          ? createdAt
+          ? (hasResult || hasOriginal ? createdAt : "Изображения временно недоступны")
           : "Создаём результат";
+    const subtitle = rimSummary || summaryText;
+    const metaText = status === "completed" ? createdAt : "";
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
         : canOpen
@@ -1873,26 +2479,34 @@ function renderHistoryCard(job) {
                 </div>
             `
           : "";
+    const downloadUrl = hasResult ? downloadUrlForJob(job) : "";
     return `
         <article class="render-card cabinet-render-card ${expanded ? "is-open" : ""}">
             <div class="render-summary">
                 <div class="render-thumb-wrap">
-                    ${resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image">` : `<div class="render-thumb"></div>`}
+                    ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
-                    <div class="render-title">${escapeHtml(title)} · виртуальная примерка</div>
-                    <div class="render-subtitle">${escapeHtml(summaryText)}</div>
+                    <div class="render-title">${escapeHtml(title)}</div>
+                    <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
+                    ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
+                    ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
                     <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
                 </div>
                 <div class="render-card-action">${action}</div>
             </div>
             <div class="render-disclosure" data-visible="${expanded && canOpen ? "true" : "false"}">
                 ${canOpen ? `
-                    <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="render-full-image">
-                    <div class="render-expanded-actions">
-                        <a class="ghost-button compact-button" href="${escapeHtml(downloadUrlForJob(job))}" download> ${t("renders.download")} </a>
-                        ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
-                        <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
+                    <div class="render-detail-grid">
+                        ${renderHistoryViewer(job)}
+                        <div class="render-side">
+                            <div class="render-expanded-actions">
+                                ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>${t("renders.download")}</a>` : ""}
+                                ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
+                                <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
+                            </div>
+                            ${renderFeedbackBlock(job)}
+                        </div>
                     </div>
                 ` : ""}
             </div>
@@ -1911,10 +2525,6 @@ function renderRenders() {
         container.innerHTML = `<div class="history-card render-empty"><strong>${escapeHtml(localizeErrorMessage(state.renderHistoryError))}</strong></div>`;
         return;
     }
-    if (!hasFrontendAuth()) {
-        container.innerHTML = `<div class="history-card render-empty"><strong>${t("wallet.authRequired")}</strong></div>`;
-        return;
-    }
     if (!state.renderHistory.length) {
         container.innerHTML = `
             <div class="history-card render-empty">
@@ -1927,6 +2537,79 @@ function renderRenders() {
         return;
     }
     container.innerHTML = state.renderHistory.map(renderHistoryCard).join("");
+    scheduleRenderHistoryPolling();
+}
+
+function clearRenderHistoryPolling() {
+    if (!state.renderHistoryPollTimer) return;
+    clearTimeout(state.renderHistoryPollTimer);
+    state.renderHistoryPollTimer = null;
+}
+
+function hasProcessingHistoryJobs() {
+    return state.renderHistory.some((job) => {
+        const status = job?.status || "processing";
+        return status !== "completed" && status !== "failed";
+    });
+}
+
+function scheduleRenderHistoryPolling() {
+    clearRenderHistoryPolling();
+    if (state.view !== "renders" || document.hidden || !hasProcessingHistoryJobs()) return;
+    state.renderHistoryPollTimer = setTimeout(() => {
+        void refreshProcessingHistoryJobs();
+    }, POLL_INTERVAL_MS);
+}
+
+function mergeStatusIntoHistory(jobId, statusData) {
+    state.renderHistory = state.renderHistory.map((job) => {
+        if (job.job_id !== jobId) return job;
+        return {
+            ...job,
+            status: statusData.status || job.status,
+            completed_at: statusData.completed_at || job.completed_at,
+            result_url: statusData.result_url || statusData.output_image_url || job.result_url,
+            error_code: statusData.error_code ?? job.error_code,
+            error_message: statusData.error_message || statusData.error || job.error_message,
+            feedback: statusData.feedback ?? job.feedback,
+            assets: statusData.assets || job.assets,
+        };
+    });
+    if (statusData.feedback !== undefined) {
+        state.feedbackByJob[jobId] = normalizeFeedbackRecord(statusData.feedback);
+    }
+}
+
+async function fetchJobStatusForHistory(jobId) {
+    const response = await fetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
+        headers: withAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(await parseApiError(response));
+    return response.json();
+}
+
+async function refreshProcessingHistoryJobs() {
+    if (state.view !== "renders" || !hasFrontendAuth()) {
+        clearRenderHistoryPolling();
+        return;
+    }
+    const processingJobs = state.renderHistory.filter((job) => {
+        const status = job?.status || "processing";
+        return status !== "completed" && status !== "failed";
+    });
+    if (!processingJobs.length) {
+        clearRenderHistoryPolling();
+        return;
+    }
+    const updates = await Promise.allSettled(
+        processingJobs.map((job) => fetchJobStatusForHistory(job.job_id))
+    );
+    updates.forEach((update, index) => {
+        if (update.status !== "fulfilled") return;
+        mergeStatusIntoHistory(processingJobs[index].job_id, update.value);
+    });
+    renderRenders();
+    renderDashboard();
 }
 
 function renderDashboard() {
@@ -1938,12 +2621,38 @@ function renderDashboard() {
     const auth = document.querySelector("[data-dashboard-auth]");
     const error = document.querySelector("[data-dashboard-error]");
     const errorText = document.querySelector("[data-dashboard-error-text]");
+    const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
+    const dashboardExpiryList = document.querySelector("[data-dashboard-expiry-list]");
+    const dashboardExpiryNote = document.querySelector("[data-dashboard-expiry-note]");
+    const expiryCohorts = buildRenderExpiryCohorts();
 
     if (balance) balance.textContent = state.balance === null ? "—" : String(state.balance);
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
     if (auth) auth.dataset.visible = String(!hasFrontendAuth());
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
+    if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
+    if (dashboardExpiryList) {
+        dashboardExpiryList.innerHTML = expiryCohorts.slice(0, 2).map((item) => `
+            <div class="dashboard-expiry-line">
+                <div>
+                    <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
+                    <span>${escapeHtml(item.meta)}</span>
+                </div>
+                <div class="dashboard-expiry-date">${escapeHtml(expiryLabel(item.expiresAt))}</div>
+            </div>
+        `).join("");
+    }
+    if (dashboardExpiryNote) {
+        dashboardExpiryNote.hidden = !expiryCohorts.length;
+        dashboardExpiryNote.textContent = expiryCohorts.length
+            ? (
+                locale === "ru"
+                    ? "Сначала используются рендеры с ближайшей датой окончания."
+                    : "Renders with the nearest expiration date are used first."
+            )
+            : "";
+    }
 
     if (!latestTitle || !latestStatus || !latestContent) return;
     const latest = state.renderHistory[0] || null;
@@ -1962,21 +2671,30 @@ function renderDashboard() {
     }
 
     const title = humanRenderTitle(latest);
+    const rimSummary = rimSummaryForJob(latest);
     latestTitle.textContent = latest.status === "completed" ? title : (
         latest.status === "failed" ? "Не удалось создать результат" : "Создаём виртуальную примерку"
     );
     latestStatus.textContent = statusLabel(latest.status);
     latestStatus.className = `status-pill ${statusClass(latest.status)}`;
 
-    const resultUrl = resultUrlForJob(latest);
-    if (latest.status === "completed" && resultUrl) {
+    const resultUrl = assetUrlForJob(latest, "result");
+    if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
         latestContent.innerHTML = `
-            <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image">
+            ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
+            <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
             <div class="render-card-buttons">
                 <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
                 ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
             </div>
+        `;
+        return;
+    }
+    if (latest.status === "completed") {
+        latestContent.innerHTML = `
+            <p class="latest-meta">Изображение результата временно недоступно</p>
+            <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть детали</button>
         `;
         return;
     }
@@ -1992,8 +2710,11 @@ function renderDashboard() {
 
 async function loadRenderHistory({ silent = false } = {}) {
     if (!hasFrontendAuth()) {
-        state.renderHistory = [];
+        state.renderHistoryLoading = false;
+        state.renderHistory = guestRenderHistory();
         state.renderHistoryError = "";
+        state.expandedJobId = state.renderHistory[0]?.job_id || "";
+        mergeHistoryFeedbackState(state.renderHistory);
         renderRenders();
         renderDashboard();
         return;
@@ -2005,6 +2726,7 @@ async function loadRenderHistory({ silent = false } = {}) {
     try {
         const history = await fetchRenderHistory({ limit: 20, offset: 0 });
         state.renderHistory = Array.isArray(history.jobs) ? history.jobs : [];
+        mergeHistoryFeedbackState(state.renderHistory);
         if (!state.renderHistory.some((job) => job.job_id === state.expandedJobId)) {
             state.expandedJobId = "";
         }
@@ -2014,6 +2736,7 @@ async function loadRenderHistory({ silent = false } = {}) {
         state.renderHistoryLoading = false;
         renderRenders();
         renderDashboard();
+        scheduleRenderHistoryPolling();
     }
 }
 
@@ -2042,7 +2765,7 @@ async function loadCabinet({ silent = false } = {}) {
         setWalletLoading(false);
     }
     try {
-        const response = await fetch(`${state.apiBaseUrl}/payments/cabinet?${identity.toString()}`, {
+        const response = await fetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) {
@@ -2066,14 +2789,17 @@ async function loadCabinet({ silent = false } = {}) {
             createdAtIso: payment.created_at,
             createdAtMs: Date.parse(payment.created_at),
             createdAt: new Date(payment.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
+            paidAtIso: payment.paid_at || "",
             status: payment.status,
         }));
+        state.walletHistoryPage = 0;
         state.starterGrant = cabinet.starter_grant
             ? {
                 credits: Number(cabinet.starter_grant.credits || 0),
                 createdAtIso: cabinet.starter_grant.created_at,
                 createdAtMs: Date.parse(cabinet.starter_grant.created_at),
                 createdAt: new Date(cabinet.starter_grant.created_at).toLocaleString(locale === "ru" ? "ru-RU" : "en-US"),
+                expiresAtIso: cabinet.starter_grant.expires_at || "",
             }
             : null;
         const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
@@ -2133,7 +2859,7 @@ async function createPayment() {
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
     try {
-        const response = await fetch(`${state.apiBaseUrl}/payments/topups`, {
+        const response = await fetch(apiUrl("/payments/topups"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
@@ -2590,7 +3316,22 @@ async function downloadResult() {
     state.downloading = true;
     setDownloadButtonState({ disabled: true, text: t("actions.requestingDownload") });
     try {
-        if (SUPPORTS_DOWNLOAD_FILE) {
+        if (isWebsiteAuthMode()) {
+            const response = await fetch(state.resultDownloadUrl, { headers: withAuthHeaders() });
+            if (!response.ok) throw new Error(await parseApiError(response));
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = state.resultFileName || "dream-wheels-result.jpg";
+            link.rel = "noopener";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(objectUrl);
+            setDownloadButtonState({ text: t("actions.downloadStarted") });
+            haptic("success");
+        } else if (SUPPORTS_DOWNLOAD_FILE) {
             const accepted = await requestTelegramDownload(
                 state.resultDownloadUrl,
                 state.resultFileName || "dream-wheels-result.jpg"
@@ -2808,7 +3549,7 @@ async function submitJob() {
 
     try {
         pushDebug("health:request");
-        await fetch(`${state.apiBaseUrl}/health`, { method: "GET" });
+        await fetch(apiUrl("/health"), { method: "GET" });
         pushDebug("health:ok");
     } catch {
         pushDebug("health:fail");
@@ -2843,7 +3584,7 @@ async function submitJob() {
 
     try {
         pushDebug("create:request");
-        const resp = await fetch(`${state.apiBaseUrl}/jobs/from-assets`, {
+        const resp = await fetch(apiUrl("/jobs/from-assets"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
@@ -2874,7 +3615,7 @@ async function submitJob() {
         try {
             pushDebug("poll:request", state.jobId);
             const response = await fetch(
-                withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.jobId}/status`),
+                apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
             statusData = await response.json();
@@ -2887,7 +3628,9 @@ async function submitJob() {
         if (statusData.status === "completed") {
             state.submitting = false;
             state.resultUrl = statusData.result_url || "";
-            state.resultDownloadUrl = `${state.apiBaseUrl}/jobs/${state.jobId}/download`;
+            state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
+                includeIdentity: true,
+            });
             state.resultFileName = `dream-wheels-${state.jobId}.jpg`;
             if (statusBlock) statusBlock.hidden = true;
             if (resultBlock) resultBlock.hidden = false;
@@ -2985,6 +3728,20 @@ function bindEvents() {
     document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
         setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
         void loadCabinet();
+    });
+    document.querySelector("[data-wallet-history-details]")?.addEventListener("toggle", (event) => {
+        const details = event.currentTarget;
+        if (!(details instanceof HTMLDetailsElement)) return;
+        state.walletHistoryOpen = details.open;
+        syncPaymentHistoryDetailsAction();
+    });
+    document.querySelector("[data-wallet-history-prev]")?.addEventListener("click", () => {
+        state.walletHistoryPage = Math.max(0, state.walletHistoryPage - 1);
+        renderWallet();
+    });
+    document.querySelector("[data-wallet-history-next]")?.addEventListener("click", () => {
+        state.walletHistoryPage += 1;
+        renderWallet();
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
         state.paymentStep = 1;
@@ -3084,6 +3841,40 @@ function bindEvents() {
             return;
         }
 
+        const historyViewButton = event.target.closest("[data-history-view]");
+        if (historyViewButton) {
+            if (historyViewButton.disabled) return;
+            const jobId = historyViewButton.dataset.historyView;
+            const assetView = historyViewButton.dataset.assetView;
+            if (HISTORY_ASSET_VIEWS.includes(assetView)) {
+                state.renderAssetViewByJob[jobId] = assetView;
+                renderRenders();
+            }
+            return;
+        }
+
+        const feedbackButton = event.target.closest("[data-history-feedback]");
+        if (feedbackButton) {
+            void submitHistoryFeedback(
+                feedbackButton.dataset.historyFeedback,
+                feedbackButton.dataset.feedbackSentiment
+            );
+            return;
+        }
+
+        const feedbackReasonButton = event.target.closest("[data-history-feedback-reason]");
+        if (feedbackReasonButton) {
+            const jobId = feedbackReasonButton.dataset.historyFeedbackReason;
+            if (state.feedbackBusyByJob[jobId]) return;
+            state.feedbackErrorByJob[jobId] = "";
+            void submitHistoryFeedback(
+                jobId,
+                "disliked",
+                feedbackReasonButton.dataset.feedbackReason || undefined
+            );
+            return;
+        }
+
         const vehicleChoice = event.target.closest("[data-vehicle-choice]");
         if (vehicleChoice) {
             state.selectedVehicleIndex = Number(vehicleChoice.dataset.vehicleChoice || 0);
@@ -3106,6 +3897,18 @@ function bindEvents() {
         if (layer.contains(event.target) || toggle.contains(event.target)) return;
         setMenuOpen(false);
     });
+
+    document.addEventListener("error", (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement) || !image.matches("[data-asset-image]")) return;
+        setAssetLoadError(image.dataset.jobId, image.dataset.assetKind, true);
+    }, true);
+
+    document.addEventListener("load", (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement) || !image.matches("[data-asset-image]")) return;
+        setAssetLoadError(image.dataset.jobId, image.dataset.assetKind, false);
+    }, true);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -3130,6 +3933,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && state.view === "wallet") {
             void loadCabinet({ silent: true });
+        }
+        if (!document.hidden && state.view === "renders") {
+            scheduleRenderHistoryPolling();
+        }
+        if (document.hidden) {
+            clearRenderHistoryPolling();
         }
     });
 

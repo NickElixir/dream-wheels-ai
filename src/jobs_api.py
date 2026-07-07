@@ -16,7 +16,7 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src import assets_service, db, identity_service, redis_client, storage
 from src.assets_service import AssetKind
@@ -47,6 +47,11 @@ ALLOWED_UPLOAD_MIME = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 # Идемпотентность: ключ живёт 1 час. Юзер с ретраем (плохой коннект)
 # получит тот же job_id вместо дубля рендера.
 IDEMPOTENCY_TTL_SEC = 60 * 60
+
+FEEDBACK_SENTIMENTS = frozenset({"liked", "disliked"})
+FEEDBACK_REASONS = frozenset(
+    {"wheel_differs", "car_changed", "angle_or_scale", "image_quality", "other"}
+)
 
 
 def _get_render_queue_client(endpoint: str, telegram_user_id: int):
@@ -106,6 +111,21 @@ class JobFromAssetsRequest(BaseModel):
     telegram_user_id: int | None = None
 
 
+class JobFeedbackSummary(BaseModel):
+    sentiment: str
+    reason: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class JobFeedbackRecord(JobFeedbackSummary):
+    render_job_id: str
+
+
+class JobFeedbackEnvelope(BaseModel):
+    feedback: JobFeedbackRecord | None
+
+
 class JobStatusResponse(BaseModel):
     job_id: str | None = None
     status: str
@@ -114,7 +134,9 @@ class JobStatusResponse(BaseModel):
     completed_at: datetime | None = None
     error_code: str | None = None
     error_message: str | None = None
+    feedback: JobFeedbackSummary | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobStatusDetailedResponse(BaseModel):
@@ -127,7 +149,9 @@ class JobStatusDetailedResponse(BaseModel):
     error: str | None = None
     error_code: str | None = None
     fitment_available: bool = False
+    feedback: JobFeedbackSummary | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobAssetResponse(BaseModel):
@@ -153,7 +177,9 @@ class JobHistoryItem(BaseModel):
     generation_provider: str | None = None
     provider_request_id: str | None = None
     fitment_available: bool = False
+    feedback: JobFeedbackSummary | None = None
     assets: dict[str, JobAssetResponse] = Field(default_factory=dict)
+    render_input_snapshot: dict[str, object] | None = None
 
 
 class JobHistoryResponse(BaseModel):
@@ -233,10 +259,14 @@ class FitmentHistoryResponse(BaseModel):
     events: list[FitmentHistoryItemResponse] = Field(default_factory=list)
 
 
-class FeedbackRequest(BaseModel):
-    vote: str
+class FeedbackAuthRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     init_data: str | None = None
     telegram_user_id: int | None = None
+
+
+class FeedbackLegacyRequest(FeedbackAuthRequest):
+    vote: str
 
     @field_validator("vote")
     @classmethod
@@ -246,14 +276,53 @@ class FeedbackRequest(BaseModel):
         return v
 
 
+class FeedbackPutRequest(FeedbackAuthRequest):
+    sentiment: str
+    reason: str | None = None
+
+    @field_validator("sentiment")
+    @classmethod
+    def validate_sentiment(cls, v: str) -> str:
+        if v not in FEEDBACK_SENTIMENTS:
+            raise ValueError("sentiment must be 'liked' or 'disliked'")
+        return v
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if v not in FEEDBACK_REASONS:
+            raise ValueError("reason must be an approved feedback code")
+        return v
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason_for_sentiment(cls, v: str | None, info) -> str | None:
+        if info.data.get("sentiment") == "liked" and v is not None:
+            raise ValueError("liked feedback does not accept a reason")
+        return v
+
+
 def _telegram_user_id_from_feedback_request(
-    request: FeedbackRequest,
+    request: FeedbackAuthRequest,
     internal_token: str | None,
+    authorization: str | None = None,
 ) -> int:
     if request.init_data:
         auth = resolve_telegram_auth(
             init_data=request.init_data,
             telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
+            auth_name="feedback",
+        )
+        return auth.telegram_user_id
+
+    if authorization:
+        auth = resolve_telegram_auth(
+            init_data=None,
+            telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
             auth_name="feedback",
         )
         return auth.telegram_user_id
@@ -336,6 +405,82 @@ def _assets_from_row(row, *, job_id: str) -> dict[str, JobAssetResponse]:
         if asset:
             assets[asset.kind] = asset
     return assets
+
+
+def _feedback_select_clause(alias: str = "render_feedback") -> str:
+    return f"""
+        {alias}.sentiment AS feedback_sentiment,
+        {alias}.reason AS feedback_reason,
+        {alias}.created_at AS feedback_created_at,
+        {alias}.updated_at AS feedback_updated_at
+    """
+
+
+def _job_feedback_join_clause(alias: str = "render_feedback") -> str:
+    return f"""
+        LEFT JOIN render_feedback AS {alias}
+          ON {alias}.render_job_id = jobs.id
+         AND {alias}.owner_user_id = jobs.user_id
+    """
+
+
+def _feedback_from_row(
+    row,
+    *,
+    job_id: str,
+    include_job_id: bool = False,
+) -> JobFeedbackSummary | JobFeedbackRecord | None:
+    if row["feedback_sentiment"] is None:
+        return None
+
+    payload = {
+        "sentiment": row["feedback_sentiment"],
+        "reason": row["feedback_reason"],
+        "created_at": row["feedback_created_at"],
+        "updated_at": row["feedback_updated_at"],
+    }
+    if include_job_id:
+        return JobFeedbackRecord(render_job_id=job_id, **payload)
+    return JobFeedbackSummary(**payload)
+
+
+def _preserve_feedback_reason(payload: dict) -> dict:
+    feedback = payload.get("feedback")
+    if feedback is not None and "reason" not in feedback:
+        feedback["reason"] = None
+    return payload
+
+
+def _snapshot_from_row(row, *, job_id: str) -> dict[str, object] | None:
+    raw_snapshot = row["render_input_snapshot"]
+    if raw_snapshot is None:
+        return None
+    if isinstance(raw_snapshot, dict):
+        return raw_snapshot
+    if isinstance(raw_snapshot, str):
+        try:
+            parsed_snapshot = json.loads(raw_snapshot)
+        except json.JSONDecodeError:
+            logger.warning(
+                "⚠️ Invalid render_input_snapshot JSON for job_id=%s snapshot=%r",
+                job_id,
+                raw_snapshot[:200],
+            )
+            return None
+        if isinstance(parsed_snapshot, dict):
+            return parsed_snapshot
+        logger.warning(
+            "⚠️ Non-object render_input_snapshot for job_id=%s parsed_type=%s",
+            job_id,
+            type(parsed_snapshot).__name__,
+        )
+        return None
+    logger.warning(
+        "⚠️ Unsupported render_input_snapshot type for job_id=%s snapshot_type=%s",
+        job_id,
+        type(raw_snapshot).__name__,
+    )
+    return None
 
 
 def _job_assets_select_clause() -> str:
@@ -785,6 +930,67 @@ async def _fetch_fitment_history_rows(
         job_id,
         user_id,
     )
+
+
+def _sentiment_from_vote(vote: str) -> str:
+    return {"like": "liked", "dislike": "disliked"}[vote]
+
+
+async def _require_feedback_job_access(conn, *, job_id: str, user_id: int) -> dict:
+    job = await conn.fetchrow(
+        """
+        SELECT user_id, status
+        FROM jobs
+        WHERE id = $1::uuid
+        """,
+        job_id,
+    )
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Job does not belong to current user")
+    if job["status"] != "completed":
+        raise HTTPException(status_code=409, detail="Feedback is available only for completed jobs")
+    return dict(job)
+
+
+async def _upsert_feedback(
+    conn,
+    *,
+    job_id: str,
+    user_id: int,
+    sentiment: str,
+    reason: str | None,
+) -> JobFeedbackRecord:
+    row = await conn.fetchrow(
+        """
+        INSERT INTO render_feedback (
+            render_job_id,
+            owner_user_id,
+            sentiment,
+            reason
+        )
+        VALUES ($1::uuid, $2, $3, $4)
+        ON CONFLICT (owner_user_id, render_job_id) DO UPDATE
+        SET sentiment = EXCLUDED.sentiment,
+            reason = EXCLUDED.reason,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING
+            render_job_id::text AS render_job_id,
+            sentiment AS feedback_sentiment,
+            reason AS feedback_reason,
+            created_at AS feedback_created_at,
+            updated_at AS feedback_updated_at
+        """,
+        job_id,
+        user_id,
+        sentiment,
+        reason,
+    )
+    assert row is not None
+    feedback = _feedback_from_row(row, job_id=row["render_job_id"], include_job_id=True)
+    assert isinstance(feedback, JobFeedbackRecord)
+    return feedback
 
 
 async def _compensate_queue_publish_failure(
@@ -1422,8 +1628,11 @@ async def list_jobs(
                 jobs.generation_provider,
                 jobs.provider_request_id,
                 {_fitment_available_clause()},
+                jobs.render_input_snapshot,
+                {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.user_id = $1
             ORDER BY jobs.created_at DESC, jobs.id DESC
@@ -1446,7 +1655,9 @@ async def list_jobs(
             generation_provider=row["generation_provider"],
             provider_request_id=row["provider_request_id"],
             fitment_available=bool(row["fitment_available"]),
+            feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
+            render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
         )
         for row in rows
     ]
@@ -1493,8 +1704,11 @@ async def get_job_status(
                 jobs.output_image_url,
                 jobs.error_code,
                 jobs.error_message,
+                jobs.render_input_snapshot,
+                {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
               AND jobs.user_id = $2
@@ -1504,16 +1718,20 @@ async def get_job_status(
         )
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
-    return JobStatusResponse(
-        job_id=row["job_id"],
-        status=row["status"],
-        output_image_url=row["output_image_url"],
-        created_at=row["created_at"],
-        completed_at=row["completed_at"],
-        error_code=row["error_code"],
-        error_message=row["error_message"],
-        assets=_assets_from_row(row, job_id=row["job_id"]),
-    ).model_dump(mode="json", exclude_none=True)
+    return _preserve_feedback_reason(
+        JobStatusResponse(
+            job_id=row["job_id"],
+            status=row["status"],
+            output_image_url=row["output_image_url"],
+            created_at=row["created_at"],
+            completed_at=row["completed_at"],
+            error_code=row["error_code"],
+            error_message=row["error_message"],
+            feedback=_feedback_from_row(row, job_id=row["job_id"]),
+            assets=_assets_from_row(row, job_id=row["job_id"]),
+            render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
+        ).model_dump(mode="json", exclude_none=True)
+    )
 
 
 @router.get("/{job_id}/status")
@@ -1528,13 +1746,12 @@ async def get_job_status_detailed(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
-        required=False,
+        required=True,
     )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = None
-        if auth is not None:
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             f"""
             SELECT
@@ -1544,39 +1761,36 @@ async def get_job_status_detailed(
                 jobs.error_code,
                 jobs.error_message,
                 {_fitment_available_clause()},
+                jobs.render_input_snapshot,
+                {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
-              AND ($2::integer IS NULL OR jobs.user_id = $2)
+              AND jobs.user_id = $2
             """,
             job_id,
             user_id,
         )
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
-    if auth is None:
-        return {
-            "job_id": job_id,
-            "status": row["status"],
-            "result_url": row["output_image_url"],
-            "share_url": share_url_for_job(job_id, bust_preview_cache=True)
+    return _preserve_feedback_reason(
+        JobStatusDetailedResponse(
+            job_id=job_id,
+            status=row["status"],
+            result_url=row["output_image_url"],
+            share_url=share_url_for_job(job_id, bust_preview_cache=True)
             if row["output_image_url"]
             else None,
-            "error": row["error_message"],
-        }
-    return JobStatusDetailedResponse(
-        job_id=job_id,
-        status=row["status"],
-        result_url=row["output_image_url"],
-        share_url=share_url_for_job(job_id, bust_preview_cache=True)
-        if row["output_image_url"]
-        else None,
-        error=row["error_message"],
-        error_code=row["error_code"],
-        fitment_available=bool(row["fitment_available"]),
-        assets=_assets_from_row(row, job_id=row["job_id"]) if auth is not None else None,
-    ).model_dump(mode="json", exclude_none=True)
+            error=row["error_message"],
+            error_code=row["error_code"],
+            fitment_available=bool(row["fitment_available"]),
+            feedback=_feedback_from_row(row, job_id=row["job_id"]),
+            assets=_assets_from_row(row, job_id=row["job_id"]),
+            render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
+        ).model_dump(mode="json", exclude_none=True)
+    )
 
 
 @router.get("/{job_id}/fitment", response_model=FitmentOverviewResponse)
@@ -1974,50 +2188,163 @@ async def download_job_asset(
     )
 
 
-@router.post("/{job_id}/feedback", status_code=204)
-async def submit_feedback(
+@router.get("/{job_id}/feedback", response_model=JobFeedbackEnvelope)
+async def get_job_feedback(
     job_id: str,
-    request: FeedbackRequest,
-    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ):
-    """Сохранить лайк/дизлайк на результат. Повторный вызов перезаписывает.
-
-    WebApp подтверждает владельца через Telegram initData. Бот ходит как
-    trusted backend client с X-Internal-Token и telegram_user_id из callback.
-    """
-    telegram_user_id = _telegram_user_id_from_feedback_request(request, x_internal_token)
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        result = await conn.execute(
-            """
-            UPDATE jobs
-            SET feedback = $1
-            FROM users
-            WHERE jobs.id = $2::uuid
-              AND jobs.user_id = users.id
-              AND users.telegram_user_id = $3
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
+        row = await conn.fetchrow(
+            f"""
+            SELECT
+                jobs.id::text AS job_id,
+                {_feedback_select_clause()}
+            FROM jobs
+            {_job_feedback_join_clause()}
+            WHERE jobs.id = $1::uuid
+              AND jobs.user_id = $2
             """,
-            request.vote,
             job_id,
-            telegram_user_id,
+            user_id,
         )
-    if result == "UPDATE 0":
-        raise HTTPException(status_code=404, detail="Job not found")
-    logger.info(f"👍 Feedback '{request.vote}' для job_id={job_id} tg_user={telegram_user_id}")
+    assert row is not None
+    return JobFeedbackEnvelope(
+        feedback=_feedback_from_row(row, job_id=row["job_id"], include_job_id=True)
+    ).model_dump(mode="json", exclude_none=False)
+
+
+@router.put("/{job_id}/feedback", response_model=JobFeedbackEnvelope)
+async def put_feedback(
+    job_id: str,
+    request: FeedbackPutRequest,
+    authorization: Annotated[str | None, Header()] = None,
+    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+):
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, telegram_user_id)
+        await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
+        feedback = await _upsert_feedback(
+            conn,
+            job_id=job_id,
+            user_id=user_id,
+            sentiment=request.sentiment,
+            reason=request.reason,
+        )
+    logger.info(
+        "👍 Feedback saved sentiment=%s reason=%s для job_id=%s tg_user=%s",
+        feedback.sentiment,
+        feedback.reason,
+        job_id,
+        telegram_user_id,
+    )
+    return JobFeedbackEnvelope(feedback=feedback).model_dump(mode="json", exclude_none=False)
+
+
+@router.post("/{job_id}/feedback", status_code=204)
+async def submit_feedback_legacy(
+    job_id: str,
+    request: FeedbackLegacyRequest,
+    authorization: Annotated[str | None, Header()] = None,
+    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+):
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, telegram_user_id)
+        await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
+        feedback = await _upsert_feedback(
+            conn,
+            job_id=job_id,
+            user_id=user_id,
+            sentiment=_sentiment_from_vote(request.vote),
+            reason=None,
+        )
+    logger.info(
+        "👍 Legacy feedback alias saved sentiment=%s для job_id=%s tg_user=%s",
+        feedback.sentiment,
+        job_id,
+        telegram_user_id,
+    )
+
+
+@router.delete("/{job_id}/feedback", status_code=204)
+async def delete_feedback(
+    job_id: str,
+    request: FeedbackAuthRequest,
+    authorization: Annotated[str | None, Header()] = None,
+    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+):
+    """Удалить feedback на результат для владельца job."""
+    telegram_user_id = _telegram_user_id_from_feedback_request(
+        request,
+        x_internal_token,
+        authorization,
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, telegram_user_id)
+        await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
+        await conn.execute(
+            """
+            DELETE FROM render_feedback
+            WHERE render_job_id = $1::uuid
+              AND owner_user_id = $2
+            """,
+            job_id,
+            user_id,
+        )
+    logger.info("👍 Feedback deleted для job_id=%s tg_user=%s", job_id, telegram_user_id)
 
 
 @router.get("/{job_id}/download")
-async def download_job_result(job_id: str):
+async def download_job_result(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
     """Отдать результат как attachment для Telegram.WebApp.downloadFile."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await conn.fetchrow(
             """
             SELECT status, output_image_url
             FROM jobs
             WHERE id = $1::uuid
+              AND user_id = $2
             """,
             job_id,
+            user_id,
         )
 
     if not row:
@@ -2045,7 +2372,6 @@ async def download_job_result(job_id: str):
         media_type=content_type,
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
-            "Access-Control-Allow-Origin": "https://web.telegram.org",
             "Cache-Control": "private, max-age=300",
         },
     )

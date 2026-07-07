@@ -85,12 +85,34 @@ def test_feedback_rejects_invalid_vote_before_db():
     assert r.status_code == 422
 
 
+def test_feedback_put_rejects_invalid_sentiment_before_db():
+    r = client.put(
+        "/jobs/00000000-0000-4000-8000-000000000000/feedback",
+        json={"sentiment": "meh"},
+    )
+    assert r.status_code == 422
+
+
+def test_feedback_put_rejects_like_with_reason_before_db():
+    r = client.put(
+        "/jobs/00000000-0000-4000-8000-000000000000/feedback",
+        json={"sentiment": "liked", "reason": "other"},
+    )
+    assert r.status_code == 422
+
+
 def test_bot_feedback_requires_internal_auth_when_no_init_data():
     r = client.post(
         "/jobs/00000000-0000-4000-8000-000000000000/feedback",
         json={"vote": "like", "telegram_user_id": 1},
     )
     assert r.status_code in (401, 503)
+
+
+def test_feedback_get_requires_identity():
+    r = client.get("/jobs/11111111-1111-4111-8111-111111111111/feedback")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "init_data or telegram_user_id is required"
 
 
 def test_robokassa_result_accepts_get_method():
@@ -103,6 +125,18 @@ def test_robokassa_result_accepts_get_method():
 def test_payment_cabinet_requires_telegram_identity():
     """Кабинет не ходит в БД без Telegram identity."""
     r = client.get("/payments/cabinet")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+
+
+def test_detailed_job_status_requires_identity():
+    r = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+
+
+def test_job_result_download_requires_identity():
+    r = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
     assert r.status_code == 400
     assert r.json()["detail"] == "init_data or telegram_user_id is required"
 
@@ -130,6 +164,21 @@ def test_cors_allows_patch_for_fitment_flow():
     )
     assert r.status_code == 200
     assert r.headers["access-control-allow-origin"] == WEBAPP_URL
+
+
+def test_cors_allows_vercel_preview_jobs_requests_with_authorization_header():
+    preview_origin = "https://dream-wheels-ai-webapp-staging-rirw6kum4.vercel.app"
+    r = client.options(
+        "/jobs",
+        headers={
+            "Origin": preview_origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == preview_origin
+    assert "authorization" in r.headers["access-control-allow-headers"].lower()
 
 
 def test_upload_invalid_mime_does_not_reserve_idempotency_key(monkeypatch):

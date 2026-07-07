@@ -274,12 +274,15 @@ async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             headers = {}
             if API_INTERNAL_TOKEN:
                 headers["X-Internal-Token"] = API_INTERNAL_TOKEN
-            async with session.post(
+            async with session.put(
                 f"{API_BASE_URL}/jobs/{job_id}/feedback",
-                json={"vote": vote, "telegram_user_id": telegram_user_id},
+                json={
+                    "sentiment": "liked" if vote == "like" else "disliked",
+                    "telegram_user_id": telegram_user_id,
+                },
                 headers=headers,
             ) as resp:
-                if resp.status != 204:
+                if resp.status != 200:
                     body = await resp.text()
                     logger.warning(
                         "Feedback API rejected job_id=%s tg_user=%s status=%s body=%s",

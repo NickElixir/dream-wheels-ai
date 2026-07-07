@@ -78,7 +78,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[WEBAPP_URL, "https://web.telegram.org"],
     allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,
     max_age=600,

@@ -35,6 +35,11 @@ def _job_row(**overrides) -> dict:
         "error_message": None,
         "generation_provider": "reve",
         "provider_request_id": "safe-id",
+        "feedback_sentiment": None,
+        "feedback_reason": None,
+        "feedback_created_at": None,
+        "feedback_updated_at": None,
+        "render_input_snapshot": None,
     }
     row.update(_base_asset_fields("car", kind="car_original"))
     row.update(_base_asset_fields("rim", kind="rim_original"))
@@ -102,6 +107,69 @@ def test_history_query_is_scoped_to_authenticated_user(monkeypatch):
     assert set(body["jobs"][0]["assets"]) == {"car_original", "rim_original", "result"}
 
 
+def test_history_parses_jsonb_snapshot_string(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='{"vehicle":{"make":"Lexus"}}')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] == {"vehicle": {"make": "Lexus"}}
+
+
+def test_history_drops_non_object_snapshot_payload(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='["unexpected"]')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] is None
+
+
+def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
+    auth_calls: dict[str, str | None] = {}
+
+    def fake_resolve_telegram_auth(**kwargs):
+        auth_calls.update(kwargs)
+        return AuthContext(
+            telegram_user_id=123456789,
+            username="dw-user",
+            auth_channel="website",
+        )
+
+    class FakeConn:
+        async def fetch(self, *_args):
+            return [_job_row()]
+
+    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
+        assert telegram_user_id == 123456789
+        assert username == "dw-user"
+        return 10
+
+    monkeypatch.setattr(jobs_api, "resolve_telegram_auth", fake_resolve_telegram_auth)
+    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get(
+        "/jobs?limit=5&offset=0", headers={"Authorization": "Bearer website-token"}
+    )
+
+    assert response.status_code == 200
+    assert auth_calls["init_data"] is None
+    assert auth_calls["telegram_user_id"] is None
+    assert auth_calls["authorization"] == "Bearer website-token"
+    assert auth_calls["auth_name"] == "jobs history"
+
+
 def test_job_detail_returns_404_for_non_owner(monkeypatch):
     class FakeConn:
         async def fetchrow(self, query: str, *args):
@@ -139,6 +207,121 @@ def test_failed_job_status_returns_error_metadata_for_owner(monkeypatch):
     assert body["status"] == "failed"
     assert body["error_code"] == "StorageError"
     assert body["error"] == "Storage upload failed"
+
+
+def test_history_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    feedback_sentiment="disliked",
+                    feedback_reason="image_quality",
+                    feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                    feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["feedback"] == {
+        "sentiment": "disliked",
+        "reason": "image_quality",
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
+
+
+def test_detailed_job_status_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND jobs.user_id = $2" in query
+            return _job_row()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    body = response.json()
+    assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
+    assert set(body["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_job_detail_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _job_row(
+                feedback_sentiment="liked",
+                feedback_reason=None,
+                feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+            )
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111?telegram_user_id=123")
+
+    assert response.status_code == 200
+    assert response.json()["feedback"] == {
+        "sentiment": "liked",
+        "reason": None,
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
+
+
+def test_result_download_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND user_id = $2" in query
+            return {
+                "status": "completed",
+                "output_image_url": "https://example.test/result.jpg",
+            }
+
+    class FakeResponse:
+        status_code = 200
+        content = b"image"
+
+        def __init__(self) -> None:
+            self.headers = {"content-type": "image/jpeg"}
+
+    class FakeAsyncClient:
+        def __init__(self, timeout: float):
+            assert timeout == 30.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str):
+            assert url == "https://example.test/result.jpg"
+            return FakeResponse()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.httpx, "AsyncClient", FakeAsyncClient)
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    assert response.content == b"image"
 
 
 def test_legacy_job_response_keeps_existing_shape(monkeypatch):

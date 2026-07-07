@@ -7,10 +7,10 @@ STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
 JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
-MIGRATION_0018 = (ROOT / "migrations" / "0018_fitment_identity_candidates.sql").read_text(
+MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_identity_candidates.sql").read_text(
     encoding="utf-8"
 )
-MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_change_events.sql").read_text(
+MIGRATION_0020 = (ROOT / "migrations" / "0020_fitment_change_events.sql").read_text(
     encoding="utf-8"
 )
 SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
@@ -26,10 +26,10 @@ def test_dashboard_uses_balance_from_cabinet_api() -> None:
 
 
 def test_latest_completed_render_uses_durable_history_api() -> None:
-    assert "/jobs?" in APP_JS
+    assert 'apiUrl("/jobs"' in APP_JS
     assert "fetchRenderHistory" in APP_JS
     assert "state.renderHistory = Array.isArray(history.jobs)" in APP_JS
-    assert "resultUrlForJob(latest)" in APP_JS
+    assert 'assetUrlForJob(latest, "result")' in APP_JS
     assert "assets?.result?.url" in APP_JS
 
 
@@ -51,7 +51,8 @@ def test_history_expands_only_one_completed_card() -> None:
     assert "expandedJobId" in APP_JS
     assert "state.expandedJobId === job.job_id" in APP_JS
     assert 'state.expandedJobId === jobId ? "" : jobId' in APP_JS
-    assert 'status === "completed" && resultUrl' in APP_JS
+    assert 'const canOpen = status === "completed";' in APP_JS
+    assert 'const hasResult = hasAssetSource(job, "result");' in APP_JS
 
 
 def test_expanded_images_are_not_cropped() -> None:
@@ -150,28 +151,27 @@ def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
     assert "FitmentCheck" not in APP_JS
     assert "compatible_with_conditions" not in APP_JS
     assert "rerender" not in APP_JS.lower()
-    assert "render_input_snapshot" not in APP_JS
     assert "source_summary" not in APP_JS
     assert "vehicle?.summary" not in APP_JS
 
 
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
-    assert "ALTER TABLE vehicle_identities" in MIGRATION_0018
+    assert "ALTER TABLE vehicle_identities" in MIGRATION_0019
     assert (
         "ADD COLUMN IF NOT EXISTS field_candidates JSONB NOT NULL DEFAULT '{}'::jsonb"
-        in MIGRATION_0018
+        in MIGRATION_0019
     )
-    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0018
-    assert "ALTER TABLE rim_specs" in MIGRATION_0018
-    assert "vehicle_identities_revision_check" in MIGRATION_0018
-    assert "rim_specs_revision_check" in MIGRATION_0018
+    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0019
+    assert "ALTER TABLE rim_specs" in MIGRATION_0019
+    assert "vehicle_identities_revision_check" in MIGRATION_0019
+    assert "rim_specs_revision_check" in MIGRATION_0019
 
 
 def test_fitment_change_events_migration_is_append_only() -> None:
-    assert "CREATE TABLE IF NOT EXISTS fitment_change_events" in MIGRATION_0019
-    assert "actor_type" in MIGRATION_0019 and "TEXT NOT NULL" in MIGRATION_0019
-    assert "changes" in MIGRATION_0019 and "JSONB NOT NULL DEFAULT '{}'::jsonb" in MIGRATION_0019
-    assert "idx_fitment_change_events_job_created" in MIGRATION_0019
+    assert "CREATE TABLE IF NOT EXISTS fitment_change_events" in MIGRATION_0020
+    assert "actor_type" in MIGRATION_0020 and "TEXT NOT NULL" in MIGRATION_0020
+    assert "changes" in MIGRATION_0020 and "JSONB NOT NULL DEFAULT '{}'::jsonb" in MIGRATION_0020
+    assert "idx_fitment_change_events_job_created" in MIGRATION_0020
 
 
 def test_sprint_2_reference_prototype_is_committed() -> None:
@@ -194,13 +194,30 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
     assert "identityBackendBody" in APP_JS
 
 
-def test_t_route_rewrites_to_shared_entrypoint_and_expiry_hidden() -> None:
+def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
+    assert {
+        "source": "/api/backend/:path*",
+        "destination": "https://dream-wheels-ai-robokassa-staging.onrender.com/:path*",
+    } in rewrites
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
-    assert "Срок действия рендеров" not in INDEX_HTML
-    assert "expiry" not in INDEX_HTML.lower()
+    assert "Срок действия рендеров" in INDEX_HTML
+    assert "data-dashboard-expiry" in INDEX_HTML
+    assert "data-wallet-expiry-list" in INDEX_HTML
+
+
+def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:
+    assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
+    assert "function shouldUseBrowserApiProxy()" in APP_JS
+    assert 'apiUrl("/jobs"' in APP_JS
+    assert "walletHistoryPage" in APP_JS
+    assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
+    assert "data-wallet-history-pager" in INDEX_HTML
+    assert "data-wallet-history-prev" in INDEX_HTML
+    assert "data-wallet-history-next" in INDEX_HTML
+    assert "wallet-history-stack" in STYLE_CSS
 
 
 def test_secondary_action_family_uses_shared_island_button_style() -> None:

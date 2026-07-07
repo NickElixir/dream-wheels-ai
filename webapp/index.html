@@ -70,7 +70,14 @@
                             <p class="section-label">Баланс</p>
                             <h2><span data-dashboard-balance>—</span> рендеров</h2>
                         </div>
-                        <button type="button" class="ghost-button compact-button" data-nav="wallet">Пополнить баланс</button>
+                    </div>
+                    <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
+                        <div class="dashboard-expiry-head">
+                            <strong>Срок действия рендеров</strong>
+                            <button type="button" class="link-button dashboard-expiry-link" data-nav="wallet">Подробнее →</button>
+                        </div>
+                        <div class="dashboard-expiry-list" data-dashboard-expiry-list></div>
+                        <div class="dashboard-expiry-note" data-dashboard-expiry-note hidden></div>
                     </div>
                     <div class="wallet-status-island tone-loading" data-dashboard-loading data-visible="false" aria-live="polite">
                         <div class="wallet-status-spinner" aria-hidden="true"></div>
@@ -88,6 +95,7 @@
                             <div class="wallet-status-title" data-dashboard-error-text>Баланс временно недоступен</div>
                         </div>
                     </div>
+                    <button type="button" class="ghost-button compact-button dashboard-balance-action" data-nav="wallet">Пополнить баланс</button>
                 </article>
 
                 <article class="panel latest-render-card" data-latest-render-card>
@@ -464,14 +472,38 @@
                 </div>
             </section>
 
-            <details class="collapsible panel payment-history-details">
+            <details class="collapsible panel payment-history-details" data-wallet-history-details open>
                 <summary>
                     <span>
                         <strong class="history-summary-title" data-i18n="wallet.paymentHistory">История платежей</strong>
+                        <span class="history-summary-copy" data-i18n="wallet.paymentHistoryHint">Покупки и сроки действия рендеров</span>
                     </span>
-                    <span class="summary-action" data-i18n="wallet.openHistory">Открыть</span>
+                    <span class="summary-action" data-wallet-history-toggle data-i18n="wallet.closeHistory">Скрыть</span>
                 </summary>
-                <div class="history-list" data-payment-history-list></div>
+                <div class="wallet-history-stack">
+                    <section class="topup-island wallet-history-island wallet-expiry-section">
+                        <div class="wallet-history-island-head">
+                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные рендеры</p>
+                            <div class="wallet-history-caption" data-i18n="wallet.availableRendersHint">Сначала списываются пакеты с ближайшей датой окончания</div>
+                        </div>
+                        <div class="wallet-expiry-list" data-wallet-expiry-list></div>
+                        <div class="wallet-expiry-note wallet-expiry-inline-note" data-wallet-expiry-note hidden></div>
+                    </section>
+                    <section class="topup-island wallet-history-island wallet-history-section">
+                        <div class="wallet-history-island-head wallet-history-island-head-split">
+                            <div>
+                                <p class="section-label" data-i18n="wallet.topUpHistory">История пополнений</p>
+                                <div class="wallet-history-caption" data-wallet-history-hint data-i18n="wallet.topUpHistoryHint">Показываем 10 последних операций</div>
+                            </div>
+                            <div class="wallet-history-pager" data-wallet-history-pager hidden>
+                                <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-prev data-i18n="wallet.previousPage">Назад</button>
+                                <span class="wallet-history-page-label" data-wallet-history-page-label>1-10 из 10</span>
+                                <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-next data-i18n="wallet.nextPage">Далее</button>
+                            </div>
+                        </div>
+                        <div class="history-list wallet-history-list" data-payment-history-list></div>
+                    </section>
+                </div>
             </details>
         </section>
 
