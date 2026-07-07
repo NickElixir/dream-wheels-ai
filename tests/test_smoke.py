@@ -120,6 +120,18 @@ def test_cors_allows_configured_webapp_origin():
     assert r.headers["access-control-allow-origin"] == WEBAPP_URL
 
 
+def test_cors_allows_patch_for_fitment_flow():
+    r = client.options(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        headers={
+            "Origin": WEBAPP_URL,
+            "Access-Control-Request-Method": "PATCH",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == WEBAPP_URL
+
+
 def test_upload_invalid_mime_does_not_reserve_idempotency_key(monkeypatch):
     class FakeRedis:
         def __init__(self) -> None:

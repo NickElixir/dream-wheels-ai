@@ -7,6 +7,12 @@ STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
 JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+MIGRATION_0018 = (ROOT / "migrations" / "0018_fitment_identity_candidates.sql").read_text(
+    encoding="utf-8"
+)
+MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_change_events.sql").read_text(
+    encoding="utf-8"
+)
 SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
     encoding="utf-8"
 )
@@ -126,13 +132,46 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert 'data-rim-confirm="false"' in INDEX_HTML
 
 
-def test_sprint_2_frontend_keeps_fitment_out_of_scope() -> None:
+def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
+    assert 'data-view="fitment"' in INDEX_HTML
+    assert "data-open-fitment-result" in INDEX_HTML
+    assert "data-fitment-form" in INDEX_HTML
+    assert "data-fitment-readiness" in INDEX_HTML
+    assert "data-fitment-card-vehicle-meta" in INDEX_HTML
+    assert "data-fitment-card-rim-meta" in INDEX_HTML
+    assert "/fitment`" in APP_JS
+    assert "data-open-fitment" in APP_JS
+    assert "data-fitment-candidate" in APP_JS
+    assert "expected_vehicle_revision" in APP_JS
+    assert "expected_rim_revision" in APP_JS
+    assert "fitment_available" in APP_JS
+    assert "readinessUnconfirmed" in APP_JS
+    assert "fitment/history" in JOBS_API
     assert "FitmentCheck" not in APP_JS
     assert "compatible_with_conditions" not in APP_JS
-    assert "Wheel Size" not in APP_JS
-    assert "wheel-size" not in APP_JS.lower()
-    assert "ET" not in INDEX_HTML.split("Проверка совместимости — скоро", 1)[0]
-    assert "DIA" not in INDEX_HTML.split("Проверка совместимости — скоро", 1)[0]
+    assert "rerender" not in APP_JS.lower()
+    assert "render_input_snapshot" not in APP_JS
+    assert "source_summary" not in APP_JS
+    assert "vehicle?.summary" not in APP_JS
+
+
+def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
+    assert "ALTER TABLE vehicle_identities" in MIGRATION_0018
+    assert (
+        "ADD COLUMN IF NOT EXISTS field_candidates JSONB NOT NULL DEFAULT '{}'::jsonb"
+        in MIGRATION_0018
+    )
+    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0018
+    assert "ALTER TABLE rim_specs" in MIGRATION_0018
+    assert "vehicle_identities_revision_check" in MIGRATION_0018
+    assert "rim_specs_revision_check" in MIGRATION_0018
+
+
+def test_fitment_change_events_migration_is_append_only() -> None:
+    assert "CREATE TABLE IF NOT EXISTS fitment_change_events" in MIGRATION_0019
+    assert "actor_type" in MIGRATION_0019 and "TEXT NOT NULL" in MIGRATION_0019
+    assert "changes" in MIGRATION_0019 and "JSONB NOT NULL DEFAULT '{}'::jsonb" in MIGRATION_0019
+    assert "idx_fitment_change_events_job_created" in MIGRATION_0019
 
 
 def test_sprint_2_reference_prototype_is_committed() -> None:

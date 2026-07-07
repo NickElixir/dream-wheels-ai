@@ -30,6 +30,7 @@ def _job_row(**overrides) -> dict:
         "created_at": datetime(2026, 6, 29, tzinfo=UTC),
         "completed_at": datetime(2026, 6, 29, tzinfo=UTC),
         "output_image_url": "https://example.test/result.jpg",
+        "fitment_available": True,
         "error_code": None,
         "error_message": None,
         "generation_provider": "reve",

@@ -18,6 +18,8 @@ market nullable
 is_user_confirmed
 provider_mappings JSONB nullable
 field_provenance JSONB
+field_candidates JSONB
+revision integer
 ```
 
 `provider_mappings` is populated by the Fitment Pipeline after vehicle resolution. It stores provider-specific IDs/slugs and must not replace canonical make/model/year fields.
@@ -48,6 +50,8 @@ thread_pitch_mm nullable
 bolt_length_mm nullable
 
 field_provenance JSONB
+field_candidates JSONB
+revision integer
 created_at
 updated_at
 ```
@@ -126,6 +130,55 @@ Why it matters:
 - UI can ask for confirmation only where needed;
 - conflicts are explainable and auditable;
 - manufacturer data can outrank a low-confidence image extraction.
+
+## Field candidates and revisions
+
+Canonical columns store the current values that the user edits and that future
+fitment checks snapshot. `field_candidates` stores VLM/OCR/provider suggestions
+next to those values; candidates are explanatory and never override canonical
+values automatically.
+
+```json
+{
+  "model": [
+    {
+      "value": "RX",
+      "source": "vlm_visual",
+      "confidence": 0.92,
+      "resolver": "mock_visual_identity_v1",
+      "origin": "render_input_draft",
+      "captured_at": "2026-07-06T00:00:00Z"
+    }
+  ]
+}
+```
+
+`revision` increments when the canonical entity is edited. The Sprint 4 editor
+uses it for optimistic locking, and future `FitmentCheck` snapshots should store
+the revisions evaluated with the immutable vehicle/rim snapshots.
+
+## Fitment change history
+
+Canonical current values and AI candidates answer different questions, so edit
+history must live separately in an append-only audit table.
+
+```text
+fitment_change_events
+- job_id
+- vehicle_identity_id
+- rim_spec_id
+- event_type           -- initial_prefill | user_save | user_confirm | candidate_applied
+- actor_type           -- system | user | admin | provider
+- actor_user_id nullable
+- vehicle_revision_before / after
+- rim_revision_before / after
+- changes JSONB
+- created_at
+```
+
+`initial_prefill` records the first VLM/OCR defaults written into canonical
+columns. `user_confirm` records a meaningful state change where the value stays
+the same but provenance changes from AI-guessed to user-confirmed.
 
 ## Indexing and scale
 

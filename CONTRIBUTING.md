@@ -15,14 +15,14 @@ cp .env.example .env  # заполнить секреты
 ## Бранчинг
 
 ```
-feature/* → dev → test → main
-                          └─ Render auto-deploy
+feature/* -> staging -> main
+                      └─ Render auto-deploy
 ```
 
-- `feature/<short-desc>` — новая фича, ветвишься от `dev`
+- `feature/<short-desc>` — новая фича, ветвишься от `staging`
 - `fix/<bug-id>` — багфикс
 - `chore/<task>` — инфраструктура, конфиг, зависимости
-- `hotfix/<critical>` — от `main`, обратно в `main` + `dev` (только для прод-инцидентов)
+- `hotfix/<critical>` — от `main`, обратно в `main` + `staging` (только для прод-инцидентов)
 
 **Никогда не пушить напрямую в `main`** — только через PR с зелёным CI.
 
@@ -43,7 +43,7 @@ feature/* → dev → test → main
 
 ## Pull Requests
 
-1. Открыть PR в `dev` (или `main` для release-PR)
+1. Открыть PR в `staging` (или `main` для release-PR)
 2. Заполнить [PR template](.github/PULL_REQUEST_TEMPLATE.md)
 3. Дождаться зелёного CI (ruff + pytest)
 4. Получить approve (для PR в `main`)
@@ -159,7 +159,7 @@ feature/* → dev → test → main
 ## Что не делать
 
 - ❌ Прямой push в `main`
-- ❌ Force push в shared-ветки (`main`, `dev`, `test`)
+- ❌ Force push в shared-ветки (`main`, `staging`)
 - ❌ `git rebase` уже запушенных коммитов в shared-ветках
 - ❌ `--no-verify` чтобы пропустить pre-commit/CI
 - ❌ Коммитить `.env`, `node_modules`, `__pycache__`, `.venv`
