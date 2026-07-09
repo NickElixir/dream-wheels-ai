@@ -140,6 +140,8 @@ def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
     assert "data-fitment-readiness" in INDEX_HTML
     assert "data-fitment-card-vehicle-meta" in INDEX_HTML
     assert "data-fitment-card-rim-meta" in INDEX_HTML
+    assert "data-fitment-preview-badge" in INDEX_HTML
+    assert "data-fitment-preview-note" in INDEX_HTML
     assert "/fitment`" in APP_JS
     assert "data-open-fitment" in APP_JS
     assert "data-fitment-candidate" in APP_JS
@@ -147,6 +149,13 @@ def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
     assert "expected_rim_revision" in APP_JS
     assert "fitment_available" in APP_JS
     assert "readinessUnconfirmed" in APP_JS
+    assert 'params.get("preview") === "fitment"' in APP_JS
+    assert "FITMENT_PREVIEW_STORAGE_KEY" in APP_JS
+    assert "buildDefaultDemoFitmentOverview" in APP_JS
+    assert "applyDemoFitmentSave(fitmentPayload())" in APP_JS
+    assert "persistDemoFitmentOverview(overview);" in APP_JS
+    assert "job_id: GUEST_FITMENT_DEMO_JOB_ID" in APP_JS
+    assert "fitment_available: true" in APP_JS
     assert "fitment/history" in JOBS_API
     assert "FitmentCheck" not in APP_JS
     assert "compatible_with_conditions" not in APP_JS

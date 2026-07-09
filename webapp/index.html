@@ -531,7 +531,10 @@
                         Предварительные данные помогут подготовить будущую техническую проверку совместимости
                     </p>
                 </div>
-                <span class="status-pill neutral" data-fitment-badge data-i18n="fitment.preliminary">Предварительно</span>
+                <div class="fitment-hero-badges">
+                    <span class="status-pill neutral" data-fitment-badge data-i18n="fitment.preliminary">Предварительно</span>
+                    <span class="status-pill neutral fitment-preview-badge" data-fitment-preview-badge data-i18n="fitment.previewBadge" hidden>Demo preview</span>
+                </div>
             </section>
 
             <section class="panel fitment-panel">
@@ -612,6 +615,9 @@
 
                     <p class="panel-note neutral" data-i18n="fitment.notice">
                         Поля необязательны и не меняют уже созданную виртуальную примерку
+                    </p>
+                    <p class="panel-note neutral fitment-preview-note" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
+                        Изменения сохраняются только локально в этой сессии
                     </p>
 
                     <form class="form-stack fitment-form" data-fitment-form>
