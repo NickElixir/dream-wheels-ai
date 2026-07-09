@@ -166,6 +166,41 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
                 "draft_id": "11111111-1111-4111-8111-111111111111",
                 "car_asset_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
                 "rim_asset_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                "identity_proposal": {
+                    "vehicle": {
+                        "primary": {
+                            "make": "Lexus",
+                            "model": "RX",
+                            "year": 2020,
+                            "confidence": 0.92,
+                            "source": "vlm",
+                        },
+                        "alternatives": [
+                            {
+                                "make": "Lexus",
+                                "model": "RX",
+                                "year": 2021,
+                                "confidence": 0.72,
+                                "source": "vlm",
+                            }
+                        ],
+                    },
+                    "rim": {
+                        "brand": "OZ",
+                        "model": "Ultraleggera",
+                        "sku": "OZ-18",
+                        "product_url": "https://shop.example.test/oz-18",
+                        "wheel_diameter_in": 20,
+                        "wheel_width_j": 8.5,
+                        "bolt_count": 5,
+                        "pcd_mm": 114.3,
+                        "center_bore_mm": 66.6,
+                        "offset_et_mm": 35,
+                        "confidence": 0.72,
+                        "source": "ocr",
+                    },
+                    "resolver": "mock_visual_identity_v1",
+                },
                 "car_storage_key": "users/77/drafts/111/car_original/asset.jpg",
                 "rim_storage_key": "users/77/drafts/111/rim_original/asset.jpg",
             }
@@ -238,6 +273,33 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     assert any(call[0] == "reserve_job_credit" for call in calls)
     assert len(fake_redis.queue_payloads) == 1
     assert "fitment" not in fake_redis.queue_payloads[0].lower()
+
+    vehicle_insert = next(call for call in calls if call[0] == "insert_vehicle_identity")
+    assert vehicle_insert[1][6] is False
+    vehicle_candidates = json.loads(vehicle_insert[1][8])
+    assert vehicle_candidates["model"][0]["value"] == "RX"
+    assert vehicle_candidates["model"][0]["source"] == "vlm_visual"
+    assert vehicle_candidates["year"][1]["value"] == 2021
+
+    rim_insert = next(call for call in calls if call[0] == "insert_rim_spec")
+    assert rim_insert[1][1] == "OZ"
+    assert rim_insert[1][4] == "https://shop.example.test/oz-18"
+    assert float(rim_insert[1][9]) == 66.6
+    assert float(rim_insert[1][10]) == 35
+    rim_candidates = json.loads(rim_insert[1][12])
+    assert rim_candidates["pcd_mm"][0]["value"] == 114.3
+    assert rim_candidates["product_url"][0]["value"] == "https://shop.example.test/oz-18"
+
+    fitment_event = next(
+        call
+        for call in calls
+        if call[0] == "execute" and "INSERT INTO fitment_change_events" in call[1]
+    )
+    event_changes = json.loads(fitment_event[2][10])
+    assert fitment_event[2][3] == "initial_prefill"
+    assert fitment_event[2][4] == "system"
+    assert event_changes["vehicle"]["model"]["new"] == "RX"
+    assert event_changes["rim"]["center_bore_mm"]["new"] == 66.6
 
     job_insert = next(
         call for call in calls if call[0] == "execute" and call[1].startswith("INSERT INTO jobs")

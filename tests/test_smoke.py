@@ -154,6 +154,18 @@ def test_cors_allows_configured_webapp_origin():
     assert r.headers["access-control-allow-origin"] == WEBAPP_URL
 
 
+def test_cors_allows_patch_for_fitment_flow():
+    r = client.options(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        headers={
+            "Origin": WEBAPP_URL,
+            "Access-Control-Request-Method": "PATCH",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == WEBAPP_URL
+
+
 def test_cors_allows_vercel_preview_jobs_requests_with_authorization_header():
     preview_origin = "https://dream-wheels-ai-webapp-staging-rirw6kum4.vercel.app"
     r = client.options(

@@ -281,6 +281,9 @@
                     <div class="result-icon">✅</div>
                     <p class="result-title" data-i18n="result.title">Готово!</p>
                     <p class="result-caption" data-i18n="result.caption">Ваш рендер с новыми дисками готов</p>
+                    <div class="create-flow-actions">
+                        <button type="button" class="ghost-button compact-button" data-open-fitment-result hidden data-i18n="fitment.openFromResult">Уточнить параметры</button>
+                    </div>
                 </div>
                 <div class="error-block" data-error hidden>
                     <div class="error-icon">⚠️</div>
@@ -519,6 +522,207 @@
             </section>
         </section>
 
+        <section class="view" data-view="fitment" hidden>
+            <section class="hero-panel compact fitment-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow" data-i18n="fitment.eyebrow">Проверка совместимости</p>
+                    <h1 data-i18n="fitment.title">Базовые параметры автомобиля</h1>
+                    <p class="lede" data-fitment-subtitle data-i18n="fitment.subtitleFallback">
+                        Предварительные данные помогут подготовить будущую техническую проверку совместимости
+                    </p>
+                </div>
+                <div class="fitment-hero-badges">
+                    <span class="status-pill neutral" data-fitment-badge data-i18n="fitment.preliminary">Предварительно</span>
+                    <span class="status-pill neutral fitment-preview-badge" data-fitment-preview-badge data-i18n="fitment.previewBadge" hidden>Demo preview</span>
+                </div>
+            </section>
+
+            <section class="panel fitment-panel">
+                <div class="create-flow-actions fitment-back-row">
+                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к результату</button>
+                </div>
+
+                <div class="wallet-status-island tone-loading" data-fitment-loading data-visible="false" aria-live="polite">
+                    <div class="wallet-status-spinner" aria-hidden="true"></div>
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-i18n="fitment.loading">Загружаем данные</div>
+                    </div>
+                </div>
+
+                <div class="wallet-status-island tone-error" data-fitment-error data-visible="false" aria-live="assertive">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-fitment-error-text>Не удалось загрузить данные</div>
+                    </div>
+                </div>
+
+                <div class="wallet-status-island tone-success" data-fitment-message data-visible="false" aria-live="polite">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-fitment-message-text>Данные сохранены</div>
+                    </div>
+                </div>
+
+                <div class="fitment-shell" data-fitment-shell hidden>
+                    <article class="fitment-basics-card">
+                        <div class="fitment-basics-head">
+                            <div>
+                                <p class="section-label" data-i18n="fitment.basicsLabel">Базовые данные</p>
+                                <h2 data-fitment-vehicle-title>—</h2>
+                            </div>
+                            <span class="status-pill neutral" data-i18n="fitment.preliminary">Предварительно</span>
+                        </div>
+                        <p class="fitment-basics-copy" data-i18n="fitment.basicsCopy">Определено по фото · данные требуют подтверждения перед установкой</p>
+                        <div class="fitment-readiness" data-fitment-readiness>
+                            <strong data-fitment-readiness-title>Данных для проверки пока недостаточно</strong>
+                            <span data-fitment-readiness-fields>—</span>
+                        </div>
+                        <div class="fitment-basic-grid">
+                            <div class="fitment-basic-row"><span>PCD</span><strong data-fitment-basic-pcd>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Центральное отверстие</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.diameter">Заводской диаметр</span><strong data-fitment-basic-diameter>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.width">Ориентировочная ширина</span><strong data-fitment-basic-width>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.offset">Ориентировочный ET</span><strong data-fitment-basic-offset>Не указано</strong></div>
+                        </div>
+                    </article>
+
+                    <div class="fitment-overview-grid">
+                        <article class="fitment-overview-card">
+                            <div class="fitment-overview-copy">
+                                <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
+                                <div class="fitment-overview-value" data-fitment-card-vehicle-title>—</div>
+                                <div class="fitment-overview-meta" data-fitment-card-vehicle-meta data-i18n="fitment.vehicleCardMeta">Определено по фото</div>
+                            </div>
+                            <button type="button" class="ghost-button compact-button" data-fitment-jump="vehicle" data-i18n="fitment.jumpVehicle">Уточнить →</button>
+                        </article>
+
+                        <article class="fitment-overview-card">
+                            <div class="fitment-overview-copy">
+                                <div class="fitment-overview-title" data-i18n="fitment.rimCard">Колесный диск</div>
+                                <div class="fitment-overview-value" data-fitment-card-rim-title>—</div>
+                                <div class="fitment-overview-meta" data-fitment-card-rim-meta data-i18n="fitment.rimCardMeta">Часть данных определена по фото</div>
+                            </div>
+                            <button type="button" class="ghost-button compact-button" data-fitment-jump="rim" data-i18n="fitment.jumpRim">Уточнить →</button>
+                        </article>
+
+                        <article class="fitment-overview-card">
+                            <div class="fitment-overview-copy">
+                                <div class="fitment-overview-title" data-i18n="fitment.sourceCard">Источник колесного диска</div>
+                                <div class="fitment-overview-value" data-fitment-card-source-title>Не указано</div>
+                                <div class="fitment-overview-meta" data-fitment-card-source-meta data-i18n="fitment.sourceCardMeta">Бренд, артикул или ссылка на колесный диск</div>
+                            </div>
+                            <button type="button" class="ghost-button compact-button" data-fitment-jump="source" data-i18n="fitment.jumpSource">Добавить →</button>
+                        </article>
+                    </div>
+
+                    <p class="panel-note neutral" data-i18n="fitment.notice">
+                        Поля необязательны и не меняют уже созданную виртуальную примерку
+                    </p>
+                    <p class="panel-note neutral fitment-preview-note" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
+                        Изменения сохраняются только локально в этой сессии
+                    </p>
+
+                    <form class="form-stack fitment-form" data-fitment-form>
+                        <section class="fitment-form-section" data-fitment-section="vehicle">
+                            <div class="fitment-form-head">
+                                <p class="section-label" data-i18n="fitment.vehicleSection">Автомобиль</p>
+                                <h2 data-i18n="fitment.vehicleSectionTitle">Уточнить известные данные</h2>
+                            </div>
+                            <div class="fitment-form-grid">
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.make">Марка</span>
+                                    <input type="text" data-fitment-input="vehicle.make" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.model">Модель</span>
+                                    <input type="text" data-fitment-input="vehicle.model" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.year">Год</span>
+                                    <input type="number" inputmode="numeric" data-fitment-input="vehicle.year">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.body">Кузов</span>
+                                    <input type="text" data-fitment-input="vehicle.body" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.generation">Поколение</span>
+                                    <input type="text" data-fitment-input="vehicle.generation" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.modification">Модификация</span>
+                                    <input type="text" data-fitment-input="vehicle.modification" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.market">Рынок</span>
+                                    <input type="text" data-fitment-input="vehicle.market" autocomplete="off">
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="fitment-form-section" data-fitment-section="rim">
+                            <div class="fitment-form-head">
+                                <p class="section-label" data-i18n="fitment.rimSection">Колесный диск</p>
+                                <h2 data-i18n="fitment.rimSectionTitle">Уточнить параметры</h2>
+                            </div>
+                            <div class="fitment-form-grid">
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.rimBrand">Бренд</span>
+                                    <input type="text" data-fitment-input="rim.brand" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.rimModel">Модель</span>
+                                    <input type="text" data-fitment-input="rim.model" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.sku">Артикул</span>
+                                    <input type="text" data-fitment-input="rim.sku" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.boltCount">Болтов</span>
+                                    <input type="number" inputmode="numeric" data-fitment-input="rim.bolt_count">
+                                </label>
+                                <label class="fitment-field">
+                                    <span>PCD</span>
+                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.pcd_mm">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.diameter">Диаметр</span>
+                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_diameter_in">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.widthShort">Ширина</span>
+                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_width_j">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.centerBore">Центральное отверстие</span>
+                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.center_bore_mm">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.offset">ET</span>
+                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.offset_et_mm">
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="fitment-form-section" data-fitment-section="source">
+                            <div class="fitment-form-head">
+                                <p class="section-label" data-i18n="fitment.sourceSection">Источник колесного диска</p>
+                                <h2 data-i18n="fitment.sourceSectionTitle">Сохранить известный источник</h2>
+                            </div>
+                            <label class="fitment-field full-span">
+                                <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
+                                <input type="url" inputmode="url" data-fitment-input="rim.product_url" autocomplete="off" placeholder="https://">
+                            </label>
+                        </section>
+
+                        <div class="create-flow-actions fitment-actions">
+                            <button type="submit" class="primary-button" data-fitment-save data-i18n="fitment.save">Сохранить данные</button>
+                            <button type="button" class="ghost-button compact-button" data-fitment-skip data-i18n="fitment.skip">Не сейчас</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </section>
+
         <section class="view" data-view="settings" hidden>
             <section class="hero-panel compact">
                 <div class="hero-copy">
@@ -635,6 +839,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260627-1" type="module"></script>
+    <script src="/app.js?v=20260706-1" type="module"></script>
 </body>
 </html>

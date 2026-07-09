@@ -10,6 +10,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 import httpx
@@ -147,6 +148,7 @@ class JobStatusDetailedResponse(BaseModel):
     share_url: str | None = None
     error: str | None = None
     error_code: str | None = None
+    fitment_available: bool = False
     feedback: JobFeedbackSummary | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
     render_input_snapshot: dict[str, object] | None = None
@@ -174,6 +176,7 @@ class JobHistoryItem(BaseModel):
     error_message: str | None = None
     generation_provider: str | None = None
     provider_request_id: str | None = None
+    fitment_available: bool = False
     feedback: JobFeedbackSummary | None = None
     assets: dict[str, JobAssetResponse] = Field(default_factory=dict)
     render_input_snapshot: dict[str, object] | None = None
@@ -185,9 +188,79 @@ class JobHistoryResponse(BaseModel):
     offset: int
 
 
+class FitmentVehicleResponse(BaseModel):
+    make: str | None = None
+    model: str | None = None
+    year: int | None = None
+    body: str | None = None
+    generation: str | None = None
+    modification: str | None = None
+    market: str | None = None
+    is_user_confirmed: bool
+    title: str
+
+
+class FitmentRimResponse(BaseModel):
+    brand: str | None = None
+    model: str | None = None
+    sku: str | None = None
+    product_url: str | None = None
+    bolt_count: int | None = None
+    pcd_mm: float | None = None
+    pcd_display: str | None = None
+    center_bore_mm: float | None = None
+    wheel_diameter_in: float | None = None
+    wheel_width_j: float | None = None
+    offset_et_mm: float | None = None
+    has_product_url: bool
+    title: str
+
+
+class FitmentReadinessResponse(BaseModel):
+    ready: bool
+    missing_fields: list[str] = Field(default_factory=list)
+    blocking_fields: list[str] = Field(default_factory=list)
+    unconfirmed_fields: list[str] = Field(default_factory=list)
+
+
+class FitmentOverviewResponse(BaseModel):
+    job_id: str
+    status: str
+    result_url: str | None = None
+    completed_at: datetime | None = None
+    fitment_available: bool
+    is_staggered: bool
+    snapshot_locked: bool = True
+    vehicle_revision: int
+    rim_revision: int
+    vehicle_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
+    rim_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
+    vehicle_provenance: dict[str, object] = Field(default_factory=dict)
+    rim_provenance: dict[str, object] = Field(default_factory=dict)
+    readiness: FitmentReadinessResponse
+    vehicle: FitmentVehicleResponse
+    rim: FitmentRimResponse
+
+
+class FitmentHistoryItemResponse(BaseModel):
+    event_type: str
+    actor_type: str
+    actor_user_id: int | None = None
+    vehicle_revision_before: int | None = None
+    vehicle_revision_after: int | None = None
+    rim_revision_before: int | None = None
+    rim_revision_after: int | None = None
+    changes: dict[str, object] = Field(default_factory=dict)
+    created_at: datetime
+
+
+class FitmentHistoryResponse(BaseModel):
+    job_id: str
+    events: list[FitmentHistoryItemResponse] = Field(default_factory=list)
+
+
 class FeedbackAuthRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
     init_data: str | None = None
     telegram_user_id: int | None = None
 
@@ -442,12 +515,421 @@ def _job_assets_select_clause() -> str:
     """
 
 
+def _fitment_available_clause() -> str:
+    return (
+        "CASE "
+        "WHEN jobs.status = 'completed' "
+        "AND jobs.vehicle_identity_id IS NOT NULL "
+        "AND jobs.rim_setup_id IS NOT NULL "
+        "THEN true ELSE false END AS fitment_available"
+    )
+
+
 def _job_assets_join_clause() -> str:
     return """
         LEFT JOIN assets AS car_asset ON car_asset.id = jobs.car_asset_id
         LEFT JOIN assets AS rim_asset ON rim_asset.id = jobs.rim_asset_id
         LEFT JOIN assets AS result_asset ON result_asset.id = jobs.result_asset_id
     """
+
+
+def _fitment_provenance_meta(*, source: str) -> dict[str, object]:
+    return {
+        "source": source,
+        "confidence": 1.0,
+        "is_user_confirmed": True,
+    }
+
+
+def _normalized_identity_source(source: str) -> str:
+    return "vlm_visual" if source == "vlm" else source
+
+
+def _merge_field_provenance(
+    current: dict | None,
+    payload: dict[str, object],
+    *,
+    source: str,
+) -> dict[str, object]:
+    merged = dict(current or {})
+    for field_name, value in payload.items():
+        if value is None:
+            merged.pop(field_name, None)
+            continue
+        merged[field_name] = _fitment_provenance_meta(source=source)
+    return merged
+
+
+def _field_provenance_value(current: dict | None, field_name: str) -> dict[str, object]:
+    raw = (current or {}).get(field_name)
+    return raw if isinstance(raw, dict) else {}
+
+
+def _is_user_confirmed_provenance(meta: dict[str, object] | None) -> bool:
+    return bool((meta or {}).get("is_user_confirmed"))
+
+
+def _rim_decimal(value: float | None) -> Decimal | None:
+    if value is None:
+        return None
+    return Decimal(str(value))
+
+
+def _fitment_values_equal(current: object, incoming: object) -> bool:
+    if current is None or incoming is None:
+        return current is None and incoming is None
+    if isinstance(current, (Decimal, int, float)) or isinstance(incoming, (Decimal, int, float)):
+        try:
+            return Decimal(str(current)) == Decimal(str(incoming))
+        except Exception:
+            return current == incoming
+    return current == incoming
+
+
+def _changed_payload(
+    row,
+    payload: dict[str, object],
+    row_keys: dict[str, str],
+) -> dict[str, object]:
+    changed: dict[str, object] = {}
+    for field_name, value in payload.items():
+        row_key = row_keys.get(field_name)
+        if row_key and not _fitment_values_equal(row[row_key], value):
+            changed[field_name] = value
+    return changed
+
+
+def _confirmation_payload(
+    row,
+    payload: dict[str, object],
+    row_keys: dict[str, str],
+    current_provenance: dict | None,
+) -> dict[str, object]:
+    confirmed: dict[str, object] = {}
+    for field_name, value in payload.items():
+        row_key = row_keys.get(field_name)
+        if row_key is None or value is None:
+            continue
+        if not _fitment_values_equal(row[row_key], value):
+            continue
+        if row[row_key] is None:
+            continue
+        if _is_user_confirmed_provenance(_field_provenance_value(current_provenance, field_name)):
+            continue
+        confirmed[field_name] = value
+    return confirmed
+
+
+def _jsonable_fitment_value(value: object) -> object:
+    if isinstance(value, Decimal):
+        numeric = float(value)
+        return int(numeric) if numeric.is_integer() else numeric
+    return value
+
+
+def _build_fitment_changes(
+    *,
+    section: str,
+    before_values: dict[str, object],
+    after_values: dict[str, object],
+    before_provenance: dict | None,
+    after_provenance: dict | None,
+) -> dict[str, object]:
+    changes: dict[str, object] = {}
+    for field_name, new_value in after_values.items():
+        old_value = before_values.get(field_name)
+        old_meta = _field_provenance_value(before_provenance, field_name)
+        new_meta = _field_provenance_value(after_provenance, field_name)
+        if _fitment_values_equal(old_value, new_value) and old_meta == new_meta:
+            continue
+        changes.setdefault(section, {})[field_name] = {
+            "old": _jsonable_fitment_value(old_value),
+            "new": _jsonable_fitment_value(new_value),
+            "old_provenance": old_meta,
+            "new_provenance": new_meta,
+        }
+    return changes
+
+
+async def _insert_fitment_change_event(
+    conn,
+    *,
+    job_id: str,
+    vehicle_identity_id: str | None,
+    rim_spec_id: str | None,
+    event_type: str,
+    actor_type: str,
+    actor_user_id: int | None,
+    vehicle_revision_before: int | None,
+    vehicle_revision_after: int | None,
+    rim_revision_before: int | None,
+    rim_revision_after: int | None,
+    changes: dict[str, object],
+) -> None:
+    await conn.execute(
+        """
+        INSERT INTO fitment_change_events (
+            job_id,
+            vehicle_identity_id,
+            rim_spec_id,
+            event_type,
+            actor_type,
+            actor_user_id,
+            vehicle_revision_before,
+            vehicle_revision_after,
+            rim_revision_before,
+            rim_revision_after,
+            changes
+        )
+        VALUES (
+            $1::uuid,
+            $2::uuid,
+            $3::uuid,
+            $4,
+            $5,
+            $6,
+            $7,
+            $8,
+            $9,
+            $10,
+            $11::jsonb
+        )
+        """,
+        job_id,
+        vehicle_identity_id,
+        rim_spec_id,
+        event_type,
+        actor_type,
+        actor_user_id,
+        vehicle_revision_before,
+        vehicle_revision_after,
+        rim_revision_before,
+        rim_revision_after,
+        json.dumps(changes),
+    )
+
+
+def _parse_update_count(result: str) -> int:
+    try:
+        return int(result.rsplit(" ", 1)[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
+    required_fields = {
+        "vehicle.make": row["vehicle_make"],
+        "vehicle.model": row["vehicle_model"],
+        "vehicle.year": row["vehicle_year"],
+        "rim.bolt_count": row["rim_bolt_count"],
+        "rim.pcd_mm": row["rim_pcd_mm"],
+        "rim.center_bore_mm": row["rim_center_bore_mm"],
+        "rim.wheel_diameter_in": row["rim_wheel_diameter_in"],
+        "rim.wheel_width_j": row["rim_wheel_width_j"],
+        "rim.offset_et_mm": row["rim_offset_et_mm"],
+    }
+    missing = [field for field, value in required_fields.items() if value is None or value == ""]
+    provenance_map = {
+        "vehicle.make": _field_provenance_value(row["vehicle_field_provenance"], "make"),
+        "vehicle.model": _field_provenance_value(row["vehicle_field_provenance"], "model"),
+        "vehicle.year": _field_provenance_value(row["vehicle_field_provenance"], "year"),
+        "rim.bolt_count": _field_provenance_value(row["rim_field_provenance"], "bolt_count"),
+        "rim.pcd_mm": _field_provenance_value(row["rim_field_provenance"], "pcd_mm"),
+        "rim.center_bore_mm": _field_provenance_value(
+            row["rim_field_provenance"],
+            "center_bore_mm",
+        ),
+        "rim.wheel_diameter_in": _field_provenance_value(
+            row["rim_field_provenance"],
+            "wheel_diameter_in",
+        ),
+        "rim.wheel_width_j": _field_provenance_value(
+            row["rim_field_provenance"],
+            "wheel_width_j",
+        ),
+        "rim.offset_et_mm": _field_provenance_value(
+            row["rim_field_provenance"],
+            "offset_et_mm",
+        ),
+    }
+    unconfirmed = [
+        field
+        for field, value in required_fields.items()
+        if value is not None
+        and value != ""
+        and not _is_user_confirmed_provenance(provenance_map[field])
+    ]
+    return FitmentReadinessResponse(
+        ready=not missing,
+        missing_fields=missing,
+        blocking_fields=missing,
+        unconfirmed_fields=unconfirmed,
+    )
+
+
+def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
+    pcd_display = None
+    if row["rim_bolt_count"] is not None and row["rim_pcd_mm"] is not None:
+        pcd_display = identity_service.pcd_display_value(
+            bolt_count=int(row["rim_bolt_count"]),
+            pcd_mm=row["rim_pcd_mm"],
+        )
+    vehicle_title = identity_service.vehicle_fitment_summary(
+        {
+            "make": row["vehicle_make"],
+            "model": row["vehicle_model"],
+            "year": row["vehicle_year"],
+            "generation": row["vehicle_generation"],
+        }
+    )
+    rim_title = identity_service.rim_fitment_summary(
+        {
+            "wheel_diameter_in": row["rim_wheel_diameter_in"],
+            "wheel_width_j": row["rim_wheel_width_j"],
+            "bolt_count": row["rim_bolt_count"],
+            "pcd_mm": row["rim_pcd_mm"],
+        }
+    )
+    return FitmentOverviewResponse(
+        job_id=row["job_id"],
+        status=row["status"],
+        result_url=row["output_image_url"],
+        completed_at=row["completed_at"],
+        fitment_available=bool(row["fitment_available"]),
+        is_staggered=bool(row["is_staggered"]),
+        vehicle_revision=int(row["vehicle_revision"]),
+        rim_revision=int(row["rim_revision"]),
+        vehicle_candidates=row["vehicle_field_candidates"] or {},
+        rim_candidates=row["rim_field_candidates"] or {},
+        vehicle_provenance=row["vehicle_field_provenance"] or {},
+        rim_provenance=row["rim_field_provenance"] or {},
+        readiness=_fitment_readiness_from_row(row),
+        vehicle=FitmentVehicleResponse(
+            make=row["vehicle_make"],
+            model=row["vehicle_model"],
+            year=row["vehicle_year"],
+            body=row["vehicle_body"],
+            generation=row["vehicle_generation"],
+            modification=row["vehicle_modification"],
+            market=row["vehicle_market"],
+            is_user_confirmed=bool(row["vehicle_is_user_confirmed"]),
+            title=vehicle_title,
+        ),
+        rim=FitmentRimResponse(
+            brand=row["rim_brand"],
+            model=row["rim_model"],
+            sku=row["rim_sku"],
+            product_url=row["rim_product_url"],
+            bolt_count=row["rim_bolt_count"],
+            pcd_mm=float(row["rim_pcd_mm"]) if row["rim_pcd_mm"] is not None else None,
+            pcd_display=pcd_display,
+            center_bore_mm=float(row["rim_center_bore_mm"])
+            if row["rim_center_bore_mm"] is not None
+            else None,
+            wheel_diameter_in=float(row["rim_wheel_diameter_in"])
+            if row["rim_wheel_diameter_in"] is not None
+            else None,
+            wheel_width_j=float(row["rim_wheel_width_j"])
+            if row["rim_wheel_width_j"] is not None
+            else None,
+            offset_et_mm=float(row["rim_offset_et_mm"])
+            if row["rim_offset_et_mm"] is not None
+            else None,
+            has_product_url=bool(row["rim_product_url"]),
+            title=rim_title,
+        ),
+    )
+
+
+async def _fetch_fitment_job_row(
+    conn,
+    *,
+    job_id: str,
+    user_id: int,
+):
+    return await conn.fetchrow(
+        f"""
+        SELECT
+            jobs.id::text AS job_id,
+            jobs.status,
+            jobs.completed_at,
+            jobs.output_image_url,
+            jobs.render_input_snapshot,
+            {_fitment_available_clause()},
+            jobs.vehicle_identity_id::text AS vehicle_identity_id,
+            jobs.rim_setup_id::text AS rim_setup_id,
+            vehicle.owner_user_id AS owner_user_id,
+            vehicle.make AS vehicle_make,
+            vehicle.model AS vehicle_model,
+            vehicle.year AS vehicle_year,
+            vehicle.body AS vehicle_body,
+            vehicle.generation AS vehicle_generation,
+            vehicle.modification AS vehicle_modification,
+            vehicle.market AS vehicle_market,
+            vehicle.is_user_confirmed AS vehicle_is_user_confirmed,
+            vehicle.field_provenance AS vehicle_field_provenance,
+            vehicle.field_candidates AS vehicle_field_candidates,
+            vehicle.revision AS vehicle_revision,
+            rim_setup.front_rim_spec_id::text AS front_rim_spec_id,
+            rim_setup.rear_rim_spec_id::text AS rear_rim_spec_id,
+            rim_setup.is_staggered,
+            rim.owner_user_id AS rim_owner_user_id,
+            rim.brand AS rim_brand,
+            rim.model AS rim_model,
+            rim.sku AS rim_sku,
+            rim.product_url AS rim_product_url,
+            rim.bolt_count AS rim_bolt_count,
+            rim.pcd_mm AS rim_pcd_mm,
+            rim.center_bore_mm AS rim_center_bore_mm,
+            rim.wheel_diameter_in AS rim_wheel_diameter_in,
+            rim.wheel_width_j AS rim_wheel_width_j,
+            rim.offset_et_mm AS rim_offset_et_mm,
+            rim.field_provenance AS rim_field_provenance,
+            rim.field_candidates AS rim_field_candidates,
+            rim.revision AS rim_revision
+        FROM jobs
+        LEFT JOIN vehicle_identities AS vehicle
+          ON vehicle.id = jobs.vehicle_identity_id
+        LEFT JOIN rim_setups AS rim_setup
+          ON rim_setup.id = jobs.rim_setup_id
+        LEFT JOIN rim_specs AS rim
+          ON rim.id = rim_setup.front_rim_spec_id
+        WHERE jobs.id = $1::uuid
+          AND jobs.user_id = $2
+        """,
+        job_id,
+        user_id,
+    )
+
+
+async def _fetch_fitment_history_rows(
+    conn,
+    *,
+    job_id: str,
+    user_id: int,
+):
+    return await conn.fetch(
+        """
+        SELECT
+            evt.event_type,
+            evt.actor_type,
+            evt.actor_user_id,
+            evt.vehicle_revision_before,
+            evt.vehicle_revision_after,
+            evt.rim_revision_before,
+            evt.rim_revision_after,
+            evt.changes,
+            evt.created_at
+        FROM fitment_change_events AS evt
+        JOIN jobs
+          ON jobs.id = evt.job_id
+        WHERE evt.job_id = $1::uuid
+          AND jobs.user_id = $2
+        ORDER BY evt.created_at DESC, evt.id DESC
+        """,
+        job_id,
+        user_id,
+    )
 
 
 def _sentiment_from_vote(vote: str) -> str:
@@ -870,6 +1352,7 @@ async def create_job_from_assets(
                         draft.id::text AS draft_id,
                         draft.car_asset_id::text AS car_asset_id,
                         draft.rim_asset_id::text AS rim_asset_id,
+                        draft.identity_proposal AS identity_proposal,
                         car_asset.storage_key AS car_storage_key,
                         rim_asset.storage_key AS rim_storage_key
                     FROM render_input_drafts AS draft
@@ -891,16 +1374,27 @@ async def create_job_from_assets(
                 if not draft:
                     raise HTTPException(status_code=404, detail="Identity draft not found")
 
+                proposal = identity_service.parse_identity_proposal(draft["identity_proposal"])
+                vehicle_candidates, rim_candidates = (
+                    identity_service.field_candidates_from_identity_proposal(proposal)
+                )
+                canonical_vehicle = identity_service.prefill_vehicle_from_proposal(
+                    request.vehicle,
+                    proposal,
+                )
+                canonical_rim = identity_service.prefill_rim_from_proposal(request.rim, proposal)
                 vehicle_identity_id = await identity_service.insert_vehicle_identity(
                     conn,
                     owner_user_id=user_id,
-                    vehicle=request.vehicle,
+                    vehicle=canonical_vehicle,
+                    field_candidates=vehicle_candidates,
                 )
                 rim_spec_id = await identity_service.insert_rim_spec(
                     conn,
                     owner_user_id=user_id,
-                    rim=request.rim,
+                    rim=canonical_rim,
                     is_user_confirmed=request.rim_user_confirmed,
+                    field_candidates=rim_candidates,
                 )
                 rim_setup_id = await identity_service.insert_rim_setup(
                     conn,
@@ -938,6 +1432,91 @@ async def create_job_from_assets(
                     vehicle_identity_id,
                     rim_setup_id,
                     json.dumps(snapshot),
+                )
+                initial_vehicle_confirmed = identity_service.is_user_source(
+                    canonical_vehicle.source
+                )
+                initial_vehicle_meta = {
+                    "source": _normalized_identity_source(canonical_vehicle.source),
+                    "confidence": canonical_vehicle.confidence,
+                    "is_user_confirmed": initial_vehicle_confirmed,
+                }
+                initial_vehicle_provenance = {
+                    field_name: initial_vehicle_meta
+                    for field_name in ("make", "model", "year", "year_start", "year_end")
+                    if getattr(canonical_vehicle, field_name, None) is not None
+                }
+                initial_rim_provenance = {
+                    field_name: {
+                        "source": "user_confirmed"
+                        if request.rim_user_confirmed
+                        else _normalized_identity_source(canonical_rim.source),
+                        "confidence": canonical_rim.confidence,
+                        "is_user_confirmed": request.rim_user_confirmed,
+                    }
+                    for field_name in (
+                        "brand",
+                        "model",
+                        "sku",
+                        "product_url",
+                        "wheel_diameter_in",
+                        "wheel_width_j",
+                        "bolt_count",
+                        "pcd_mm",
+                        "center_bore_mm",
+                        "offset_et_mm",
+                    )
+                    if getattr(canonical_rim, field_name) is not None
+                }
+                initial_changes: dict[str, object] = {}
+                initial_changes.update(
+                    _build_fitment_changes(
+                        section="vehicle",
+                        before_values={},
+                        after_values={
+                            "make": canonical_vehicle.make,
+                            "model": canonical_vehicle.model,
+                            "year": canonical_vehicle.year,
+                            "year_start": canonical_vehicle.year_start,
+                            "year_end": canonical_vehicle.year_end,
+                        },
+                        before_provenance={},
+                        after_provenance=initial_vehicle_provenance,
+                    )
+                )
+                initial_changes.update(
+                    _build_fitment_changes(
+                        section="rim",
+                        before_values={},
+                        after_values={
+                            "brand": canonical_rim.brand,
+                            "model": canonical_rim.model,
+                            "sku": canonical_rim.sku,
+                            "product_url": canonical_rim.product_url,
+                            "wheel_diameter_in": canonical_rim.wheel_diameter_in,
+                            "wheel_width_j": canonical_rim.wheel_width_j,
+                            "bolt_count": canonical_rim.bolt_count,
+                            "pcd_mm": canonical_rim.pcd_mm,
+                            "center_bore_mm": canonical_rim.center_bore_mm,
+                            "offset_et_mm": canonical_rim.offset_et_mm,
+                        },
+                        before_provenance={},
+                        after_provenance=initial_rim_provenance,
+                    )
+                )
+                await _insert_fitment_change_event(
+                    conn,
+                    job_id=job_id,
+                    vehicle_identity_id=vehicle_identity_id,
+                    rim_spec_id=rim_spec_id,
+                    event_type="initial_prefill",
+                    actor_type="system",
+                    actor_user_id=None,
+                    vehicle_revision_before=None,
+                    vehicle_revision_after=1,
+                    rim_revision_before=None,
+                    rim_revision_after=1,
+                    changes=initial_changes,
                 )
                 await conn.execute(
                     """
@@ -1048,6 +1627,7 @@ async def list_jobs(
                 jobs.error_message,
                 jobs.generation_provider,
                 jobs.provider_request_id,
+                {_fitment_available_clause()},
                 jobs.render_input_snapshot,
                 {_feedback_select_clause()},
                 {_job_assets_select_clause()}
@@ -1074,6 +1654,7 @@ async def list_jobs(
             error_message=row["error_message"],
             generation_provider=row["generation_provider"],
             provider_request_id=row["provider_request_id"],
+            fitment_available=bool(row["fitment_available"]),
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
@@ -1179,6 +1760,7 @@ async def get_job_status_detailed(
                 jobs.output_image_url,
                 jobs.error_code,
                 jobs.error_message,
+                {_fitment_available_clause()},
                 jobs.render_input_snapshot,
                 {_feedback_select_clause()},
                 {_job_assets_select_clause()}
@@ -1203,11 +1785,349 @@ async def get_job_status_detailed(
             else None,
             error=row["error_message"],
             error_code=row["error_code"],
+            fitment_available=bool(row["fitment_available"]),
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
         ).model_dump(mode="json", exclude_none=True)
     )
+
+
+@router.get("/{job_id}/fitment", response_model=FitmentOverviewResponse)
+async def get_fitment_overview(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if row["status"] != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail="Fitment overview is available only for completed jobs",
+        )
+    if not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+
+    return _fitment_overview_from_row(row)
+
+
+@router.get("/{job_id}/fitment/history", response_model=FitmentHistoryResponse)
+async def get_fitment_history(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+        if not row:
+            raise HTTPException(status_code=404, detail="Fitment overview not found")
+        events = await _fetch_fitment_history_rows(conn, job_id=job_id, user_id=user_id)
+
+    return FitmentHistoryResponse(
+        job_id=job_id,
+        events=[
+            FitmentHistoryItemResponse(
+                event_type=event["event_type"],
+                actor_type=event["actor_type"],
+                actor_user_id=event["actor_user_id"],
+                vehicle_revision_before=event["vehicle_revision_before"],
+                vehicle_revision_after=event["vehicle_revision_after"],
+                rim_revision_before=event["rim_revision_before"],
+                rim_revision_after=event["rim_revision_after"],
+                changes=event["changes"] or {},
+                created_at=event["created_at"],
+            )
+            for event in events
+        ],
+    )
+
+
+@router.patch("/{job_id}/fitment", response_model=FitmentOverviewResponse)
+async def save_fitment_details(
+    job_id: str,
+    request: identity_service.FitmentDetailsUpdateRequest,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+
+    vehicle_updates = request.vehicle.model_dump(exclude_unset=True)
+    rim_updates = request.rim.model_dump(exclude_unset=True)
+
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            if not row:
+                raise HTTPException(status_code=404, detail="Fitment overview not found")
+            if row["status"] != "completed":
+                raise HTTPException(
+                    status_code=409,
+                    detail="Fitment overview is available only for completed jobs",
+                )
+            if not row["fitment_available"]:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Fitment overview is unavailable for this job",
+                )
+            if row["is_staggered"] and row["front_rim_spec_id"] != row["rear_rim_spec_id"]:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Staggered rim setup is not supported in Sprint 4",
+                )
+            if (
+                request.expected_vehicle_revision != row["vehicle_revision"]
+                or request.expected_rim_revision != row["rim_revision"]
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Fitment details were updated elsewhere. Reload and try again.",
+                )
+
+            vehicle_row_keys = {
+                "make": "vehicle_make",
+                "model": "vehicle_model",
+                "year": "vehicle_year",
+                "body": "vehicle_body",
+                "generation": "vehicle_generation",
+                "modification": "vehicle_modification",
+                "market": "vehicle_market",
+            }
+            rim_row_keys = {
+                "brand": "rim_brand",
+                "model": "rim_model",
+                "sku": "rim_sku",
+                "product_url": "rim_product_url",
+                "bolt_count": "rim_bolt_count",
+                "pcd_mm": "rim_pcd_mm",
+                "center_bore_mm": "rim_center_bore_mm",
+                "wheel_diameter_in": "rim_wheel_diameter_in",
+                "wheel_width_j": "rim_wheel_width_j",
+                "offset_et_mm": "rim_offset_et_mm",
+            }
+
+            if vehicle_updates:
+                vehicle_values = {
+                    field_name: vehicle_updates.get(field_name, row[row_key])
+                    for field_name, row_key in vehicle_row_keys.items()
+                }
+                vehicle_make = vehicle_values["make"]
+                vehicle_model = vehicle_values["model"]
+                if not vehicle_make or not vehicle_model:
+                    raise HTTPException(
+                        status_code=422,
+                        detail="Vehicle make and model are required",
+                    )
+                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
+                vehicle_confirmed = _confirmation_payload(
+                    row,
+                    vehicle_values,
+                    vehicle_row_keys,
+                    row["vehicle_field_provenance"],
+                )
+            else:
+                vehicle_values = {}
+                vehicle_changed = {}
+                vehicle_confirmed = {}
+
+            vehicle_provenance = row["vehicle_field_provenance"] or {}
+            vehicle_write_needed = bool(vehicle_changed or vehicle_confirmed)
+            if vehicle_write_needed:
+                vehicle_provenance = _merge_field_provenance(
+                    row["vehicle_field_provenance"],
+                    vehicle_changed,
+                    source="user_edited",
+                )
+                vehicle_provenance = _merge_field_provenance(
+                    vehicle_provenance,
+                    vehicle_confirmed,
+                    source="user_confirmed",
+                )
+                result = await conn.execute(
+                    """
+                    UPDATE vehicle_identities
+                    SET make = $1,
+                        model = $2,
+                        year = $3,
+                        body = $4,
+                        generation = $5,
+                        modification = $6,
+                        market = $7,
+                        is_user_confirmed = true,
+                        field_provenance = $8::jsonb,
+                        revision = revision + 1,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $9::uuid
+                      AND owner_user_id = $10
+                      AND revision = $11
+                    """,
+                    vehicle_values["make"],
+                    vehicle_values["model"],
+                    vehicle_values["year"],
+                    vehicle_values["body"],
+                    vehicle_values["generation"],
+                    vehicle_values["modification"],
+                    vehicle_values["market"],
+                    json.dumps(vehicle_provenance),
+                    row["vehicle_identity_id"],
+                    user_id,
+                    request.expected_vehicle_revision,
+                )
+                if _parse_update_count(result) != 1:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Fitment vehicle was updated elsewhere. Reload and try again.",
+                    )
+
+            if rim_updates:
+                rim_values = {
+                    field_name: rim_updates.get(field_name, row[row_key])
+                    for field_name, row_key in rim_row_keys.items()
+                }
+                rim_changed = _changed_payload(row, rim_values, rim_row_keys)
+                rim_confirmed = _confirmation_payload(
+                    row,
+                    rim_values,
+                    rim_row_keys,
+                    row["rim_field_provenance"],
+                )
+            else:
+                rim_values = {}
+                rim_changed = {}
+                rim_confirmed = {}
+
+            rim_provenance = row["rim_field_provenance"] or {}
+            rim_write_needed = bool(rim_changed or rim_confirmed)
+            if rim_write_needed:
+                rim_provenance = _merge_field_provenance(
+                    row["rim_field_provenance"],
+                    rim_changed,
+                    source="user_edited",
+                )
+                rim_provenance = _merge_field_provenance(
+                    rim_provenance,
+                    rim_confirmed,
+                    source="user_confirmed",
+                )
+                result = await conn.execute(
+                    """
+                    UPDATE rim_specs
+                    SET brand = $1,
+                        model = $2,
+                        sku = $3,
+                        product_url = $4,
+                        bolt_count = $5,
+                        pcd_mm = $6,
+                        center_bore_mm = $7,
+                        wheel_diameter_in = $8,
+                        wheel_width_j = $9,
+                        offset_et_mm = $10,
+                        field_provenance = $11::jsonb,
+                        revision = revision + 1,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $12::uuid
+                      AND owner_user_id = $13
+                      AND revision = $14
+                    """,
+                    rim_values["brand"],
+                    rim_values["model"],
+                    rim_values["sku"],
+                    rim_values["product_url"],
+                    rim_values["bolt_count"],
+                    _rim_decimal(rim_values["pcd_mm"]),
+                    _rim_decimal(rim_values["center_bore_mm"]),
+                    _rim_decimal(rim_values["wheel_diameter_in"]),
+                    _rim_decimal(rim_values["wheel_width_j"]),
+                    _rim_decimal(rim_values["offset_et_mm"]),
+                    json.dumps(rim_provenance),
+                    row["front_rim_spec_id"],
+                    user_id,
+                    request.expected_rim_revision,
+                )
+                if _parse_update_count(result) != 1:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Fitment rim was updated elsewhere. Reload and try again.",
+                    )
+
+            fitment_changes: dict[str, object] = {}
+            fitment_changes.update(
+                _build_fitment_changes(
+                    section="vehicle",
+                    before_values={
+                        field_name: row[row_key] for field_name, row_key in vehicle_row_keys.items()
+                    },
+                    after_values=vehicle_values if vehicle_write_needed else {},
+                    before_provenance=row["vehicle_field_provenance"],
+                    after_provenance=vehicle_provenance if vehicle_write_needed else {},
+                )
+            )
+            fitment_changes.update(
+                _build_fitment_changes(
+                    section="rim",
+                    before_values={
+                        field_name: row[row_key] for field_name, row_key in rim_row_keys.items()
+                    },
+                    after_values=rim_values if rim_write_needed else {},
+                    before_provenance=row["rim_field_provenance"],
+                    after_provenance=rim_provenance if rim_write_needed else {},
+                )
+            )
+            if fitment_changes:
+                await _insert_fitment_change_event(
+                    conn,
+                    job_id=job_id,
+                    vehicle_identity_id=row["vehicle_identity_id"],
+                    rim_spec_id=row["front_rim_spec_id"],
+                    event_type="user_save" if vehicle_changed or rim_changed else "user_confirm",
+                    actor_type="user",
+                    actor_user_id=user_id,
+                    vehicle_revision_before=row["vehicle_revision"],
+                    vehicle_revision_after=row["vehicle_revision"]
+                    + (1 if vehicle_write_needed else 0),
+                    rim_revision_before=row["rim_revision"],
+                    rim_revision_after=row["rim_revision"] + (1 if rim_write_needed else 0),
+                    changes=fitment_changes,
+                )
+
+            updated_row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+
+    assert updated_row is not None
+    return _fitment_overview_from_row(updated_row)
 
 
 @router.get("/{job_id}/assets/{kind}/download")

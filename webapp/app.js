@@ -17,6 +17,7 @@ const LOCAL_API_BASE_URL = "http://127.0.0.1:10000";
 const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
+const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
@@ -38,6 +39,7 @@ const POLL_TIMEOUT_MS = 110000;
 const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
 const HISTORY_ASSET_VIEWS = ["result", "original"];
+const GUEST_FITMENT_DEMO_JOB_ID = "guest-demo-prius";
 const FEEDBACK_REASONS = [
     { code: "wheel_differs", label: "Диск отличается" },
     { code: "car_changed", label: "Машина изменилась" },
@@ -69,6 +71,7 @@ const I18N = {
         caption: {
             dashboard: "Главная",
             create: "Создание",
+            fitment: "Совместимость",
             wallet: "Баланс",
             renders: "История",
             settings: "Настройки",
@@ -107,6 +110,65 @@ const I18N = {
             imageAlt: "AI рендер",
             title: "Готово!",
             caption: "Ваш рендер с новыми дисками готов",
+        },
+        fitment: {
+            eyebrow: "Проверка совместимости",
+            title: "Базовые параметры автомобиля",
+            subtitleFallback: "Предварительные данные помогут подготовить будущую техническую проверку совместимости",
+            preliminary: "Предварительно",
+            openFromResult: "Уточнить параметры",
+            openFromHistory: "Проверить совместимость",
+            back: "Вернуться к результату",
+            loading: "Загружаем данные",
+            saveSuccess: "Данные сохранены",
+            stale: "Данные уже изменились в другом окне. Обновите экран и попробуйте ещё раз",
+            readinessReady: "Данных достаточно для будущей проверки",
+            readinessMissing: "Для будущей проверки не хватает данных",
+            readinessUnconfirmed: "Часть полей ещё нужно подтвердить",
+            aiSuggestion: "AI",
+            aiPending: "AI-предположение, нужно подтвердить",
+            userConfirmed: "Подтверждено пользователем",
+            sourceAdded: "Ссылка добавлена",
+            basicsLabel: "Базовые данные",
+            basicsCopy: "Определено по фото · данные требуют подтверждения перед установкой",
+            centerBore: "Центральное отверстие",
+            diameter: "Заводской диаметр",
+            width: "Ориентировочная ширина",
+            widthShort: "Ширина",
+            offset: "Ориентировочный ET",
+            vehicleCard: "Автомобиль",
+            vehicleCardMeta: "Определено по фото",
+            rimCard: "Колесный диск",
+            rimCardMeta: "Часть данных определена по фото",
+            sourceCard: "Источник колесного диска",
+            sourceCardMeta: "Бренд, артикул или ссылка на колесный диск",
+            jumpVehicle: "Уточнить →",
+            jumpRim: "Уточнить →",
+            jumpSource: "Добавить →",
+            notice: "Поля необязательны и не меняют уже созданную виртуальную примерку",
+            vehicleSection: "Автомобиль",
+            vehicleSectionTitle: "Уточнить известные данные",
+            rimSection: "Колесный диск",
+            rimSectionTitle: "Уточнить параметры",
+            sourceSection: "Источник колесного диска",
+            sourceSectionTitle: "Сохранить известный источник",
+            make: "Марка",
+            model: "Модель",
+            year: "Год",
+            body: "Кузов",
+            generation: "Поколение",
+            modification: "Модификация",
+            market: "Рынок",
+            rimBrand: "Бренд",
+            rimModel: "Модель",
+            sku: "Артикул",
+            boltCount: "Болтов",
+            productUrl: "Ссылка на колесный диск",
+            save: "Сохранить данные",
+            skip: "Не сейчас",
+            unavailable: "Для этого результата уточнение параметров пока недоступно",
+            previewBadge: "Demo preview",
+            previewNote: "Изменения сохраняются только локально в этой сессии",
         },
         actions: {
             createRender: "Создать рендер",
@@ -297,6 +359,7 @@ const I18N = {
         caption: {
             dashboard: "Home",
             create: "Render",
+            fitment: "Fitment",
             wallet: "Cabinet",
             renders: "Renders",
             settings: "Settings",
@@ -335,6 +398,65 @@ const I18N = {
             imageAlt: "AI render",
             title: "Done!",
             caption: "Your render with new wheels is ready",
+        },
+        fitment: {
+            eyebrow: "Fitment preparation",
+            title: "Basic vehicle parameters",
+            subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
+            preliminary: "Preliminary",
+            openFromResult: "Refine details",
+            openFromHistory: "Check compatibility",
+            back: "Back to result",
+            loading: "Loading details",
+            saveSuccess: "Details saved",
+            stale: "Details were changed in another window. Reload the screen and try again",
+            readinessReady: "Enough data for a future check",
+            readinessMissing: "More data is needed for a future check",
+            readinessUnconfirmed: "Some fields still need confirmation",
+            aiSuggestion: "AI",
+            aiPending: "AI guess, confirmation needed",
+            userConfirmed: "Confirmed by user",
+            sourceAdded: "Link added",
+            basicsLabel: "Basic data",
+            basicsCopy: "Detected from the photo · confirm the data before installation",
+            centerBore: "Center bore",
+            diameter: "Factory diameter",
+            width: "Approximate width",
+            widthShort: "Width",
+            offset: "Approximate ET",
+            vehicleCard: "Vehicle",
+            vehicleCardMeta: "Detected from the photo",
+            rimCard: "Wheel",
+            rimCardMeta: "Some data was detected from the photo",
+            sourceCard: "Wheel source",
+            sourceCardMeta: "Brand, SKU, or wheel link",
+            jumpVehicle: "Refine →",
+            jumpRim: "Refine →",
+            jumpSource: "Add →",
+            notice: "These fields are optional and do not change the existing virtual render",
+            vehicleSection: "Vehicle",
+            vehicleSectionTitle: "Refine known details",
+            rimSection: "Wheel",
+            rimSectionTitle: "Refine parameters",
+            sourceSection: "Wheel source",
+            sourceSectionTitle: "Save a known source",
+            make: "Make",
+            model: "Model",
+            year: "Year",
+            body: "Body",
+            generation: "Generation",
+            modification: "Trim",
+            market: "Market",
+            rimBrand: "Brand",
+            rimModel: "Model",
+            sku: "SKU",
+            boltCount: "Bolt count",
+            productUrl: "Wheel link",
+            save: "Save details",
+            skip: "Not now",
+            unavailable: "Fitment preparation is not available for this result yet",
+            previewBadge: "Demo preview",
+            previewNote: "Changes are saved locally for this session only",
         },
         actions: {
             createRender: "Create render",
@@ -565,6 +687,11 @@ function resolveDevTelegramUserId() {
     return localStorage.getItem(DEV_TELEGRAM_USER_ID_STORAGE_KEY) || "";
 }
 
+function resolveFitmentPreviewMode() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("preview") === "fitment";
+}
+
 function loadWebsiteAuth() {
     try {
         const parsed = JSON.parse(sessionStorage.getItem(WEBSITE_AUTH_STORAGE_KEY) || "null");
@@ -583,6 +710,7 @@ const state = {
     apiBaseUrl: resolveApiBaseUrl(),
     devTelegramUserId: resolveDevTelegramUserId(),
     websiteAuth: loadWebsiteAuth(),
+    fitmentPreviewForced: resolveFitmentPreviewMode(),
     websiteLoginPending: false,
     websiteLoginWarmupPending: false,
     websiteLoginLibraryPromise: null,
@@ -628,6 +756,16 @@ const state = {
     renderHistoryLoading: false,
     renderHistoryError: "",
     expandedJobId: "",
+    fitmentJobId: "",
+    fitmentOriginView: "dashboard",
+    fitmentOriginJobId: "",
+    fitmentOverview: null,
+    fitmentLoading: false,
+    fitmentSaving: false,
+    fitmentError: "",
+    fitmentMessage: "",
+    fitmentMessageTone: "neutral",
+    fitmentForm: createEmptyFitmentForm(),
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
@@ -639,8 +777,213 @@ const state = {
     feedbackNoticeByJob: {},
 };
 
+const FITMENT_PREVIEW_REQUIRED_FIELDS = [
+    "vehicle.make",
+    "vehicle.model",
+    "vehicle.year",
+    "rim.bolt_count",
+    "rim.pcd_mm",
+    "rim.center_bore_mm",
+    "rim.wheel_diameter_in",
+    "rim.wheel_width_j",
+    "rim.offset_et_mm",
+];
+
+const FITMENT_PREVIEW_FIELD_CONFIG = {
+    vehicle: ["make", "model", "year", "body", "generation", "modification", "market"],
+    rim: [
+        "brand",
+        "model",
+        "sku",
+        "product_url",
+        "bolt_count",
+        "pcd_mm",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "center_bore_mm",
+        "offset_et_mm",
+    ],
+};
+
 function isGuestRenderJob(job) {
     return Boolean(job?.is_guest_demo);
+}
+
+function isDemoFitmentJobId(jobId) {
+    return jobId === GUEST_FITMENT_DEMO_JOB_ID;
+}
+
+function shouldUseDemoFitment(jobId = state.fitmentJobId) {
+    return isDemoFitmentJobId(jobId) && (state.fitmentPreviewForced || !hasFrontendAuth());
+}
+
+function fitmentPreviewProvenance({ source, confidence, isUserConfirmed = false }) {
+    return {
+        source,
+        confidence,
+        is_user_confirmed: isUserConfirmed,
+    };
+}
+
+function demoVehicleTitle(vehicle) {
+    const parts = [[vehicle?.make, vehicle?.model].filter(Boolean).join(" "), vehicle?.year, vehicle?.generation]
+        .filter(Boolean);
+    return parts.length ? parts.join(" · ") : fitmentEmptyValue();
+}
+
+function demoPcdDisplay(rim) {
+    if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${rim.pcd_mm}`;
+    return null;
+}
+
+function demoRimTitle(rim) {
+    const base = [rim?.brand, rim?.model].filter(Boolean).join(" ");
+    const details = [
+        rim?.wheel_diameter_in ? `${rim.wheel_diameter_in}"` : "",
+        rim?.wheel_width_j ? `${rim.wheel_width_j}J` : "",
+        demoPcdDisplay(rim),
+    ].filter(Boolean);
+    if (base && details.length) return `${base} · ${details.join(" / ")}`;
+    if (base) return base;
+    if (details.length) return details.join(" / ");
+    return fitmentEmptyValue();
+}
+
+function demoFitmentOverviewReadiness(overview) {
+    const missing = [];
+    const unconfirmed = [];
+    for (const path of FITMENT_PREVIEW_REQUIRED_FIELDS) {
+        const value = getDeepValue(overview, path);
+        const empty = value === null || value === undefined || value === "";
+        if (empty) {
+            missing.push(path);
+            continue;
+        }
+        const [scope, fieldName] = path.split(".");
+        const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
+        const meta = overview?.[provenanceKey]?.[fieldName];
+        if (!meta?.is_user_confirmed) unconfirmed.push(path);
+    }
+    return {
+        ready: missing.length === 0,
+        missing_fields: missing,
+        blocking_fields: [...missing],
+        unconfirmed_fields: unconfirmed,
+    };
+}
+
+function buildDefaultDemoFitmentOverview() {
+    const completedAt = guestRenderHistory()[0]?.completed_at || "2026-07-05T03:11:00+03:00";
+    const vehicle = {
+        make: "Toyota",
+        model: "Prius",
+        year: 2016,
+        body: "ZVW50",
+        generation: "IV",
+        modification: "1.8 Hybrid",
+        market: "JP",
+        is_user_confirmed: false,
+    };
+    vehicle.title = demoVehicleTitle(vehicle);
+
+    const rim = {
+        brand: "OZ",
+        model: "Ultraleggera",
+        sku: "OZ-ULTRA-17",
+        product_url: "https://shop.example.test/oz-ultraleggera-17",
+        bolt_count: 5,
+        pcd_mm: 100,
+        pcd_display: "5×100",
+        center_bore_mm: null,
+        wheel_diameter_in: 17,
+        wheel_width_j: 7,
+        offset_et_mm: null,
+        has_product_url: true,
+        title: "",
+    };
+    rim.title = demoRimTitle(rim);
+
+    return {
+        job_id: GUEST_FITMENT_DEMO_JOB_ID,
+        status: "completed",
+        result_url: GUEST_RENDER_DEMO_ASSET_URL,
+        completed_at: completedAt,
+        fitment_available: true,
+        is_staggered: false,
+        snapshot_locked: true,
+        vehicle_revision: 1,
+        rim_revision: 1,
+        vehicle_candidates: {
+            make: [
+                { value: "Toyota", source: "vlm_visual", confidence: 0.98 },
+                { value: "Lexus", source: "vlm_visual", confidence: 0.34 },
+            ],
+            model: [
+                { value: "Prius", source: "vlm_visual", confidence: 0.94 },
+                { value: "Prius Prime", source: "vlm_visual", confidence: 0.41 },
+            ],
+            year: [
+                { value: 2016, source: "vlm_visual", confidence: 0.87 },
+                { value: 2017, source: "vlm_visual", confidence: 0.45 },
+            ],
+        },
+        rim_candidates: {
+            pcd_mm: [{ value: 100, source: "ocr", confidence: 0.91 }],
+            center_bore_mm: [{ value: 54.1, source: "ocr", confidence: 0.52 }],
+            wheel_diameter_in: [{ value: 17, source: "ocr", confidence: 0.88 }],
+            wheel_width_j: [{ value: 7, source: "ocr", confidence: 0.74 }],
+            offset_et_mm: [{ value: 45, source: "ocr", confidence: 0.43 }],
+            product_url: [
+                {
+                    value: "https://shop.example.test/oz-ultraleggera-17",
+                    source: "provider_catalog",
+                    confidence: 0.66,
+                },
+            ],
+        },
+        vehicle_provenance: {
+            make: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.98 }),
+            model: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.94 }),
+            year: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.87 }),
+        },
+        rim_provenance: {
+            bolt_count: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.89 }),
+            pcd_mm: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.91 }),
+            wheel_diameter_in: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.88 }),
+            wheel_width_j: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.74 }),
+        },
+        readiness: {
+            ready: false,
+            missing_fields: ["rim.center_bore_mm", "rim.offset_et_mm"],
+            blocking_fields: ["rim.center_bore_mm", "rim.offset_et_mm"],
+            unconfirmed_fields: [
+                "vehicle.make",
+                "vehicle.model",
+                "vehicle.year",
+                "rim.bolt_count",
+                "rim.pcd_mm",
+                "rim.wheel_diameter_in",
+                "rim.wheel_width_j",
+            ],
+        },
+        vehicle,
+        rim,
+    };
+}
+
+function loadDemoFitmentOverview() {
+    try {
+        const parsed = JSON.parse(sessionStorage.getItem(FITMENT_PREVIEW_STORAGE_KEY) || "null");
+        if (parsed?.job_id !== GUEST_FITMENT_DEMO_JOB_ID) return null;
+        return parsed;
+    } catch {
+        sessionStorage.removeItem(FITMENT_PREVIEW_STORAGE_KEY);
+        return null;
+    }
+}
+
+function persistDemoFitmentOverview(overview) {
+    sessionStorage.setItem(FITMENT_PREVIEW_STORAGE_KEY, JSON.stringify(overview));
 }
 
 function guestRenderAssetUrl(job, kind) {
@@ -651,11 +994,12 @@ function guestRenderAssetUrl(job, kind) {
 function guestRenderHistory() {
     const assetUrl = GUEST_RENDER_DEMO_ASSET_URL;
     return [{
-        job_id: "guest-demo-prius",
+        job_id: GUEST_FITMENT_DEMO_JOB_ID,
         status: "completed",
         created_at: "2026-07-05T03:04:00+03:00",
         completed_at: "2026-07-05T03:11:00+03:00",
         feedback: null,
+        fitment_available: true,
         render_input_snapshot: {
             vehicle: {
                 make: "Toyota",
@@ -1053,6 +1397,493 @@ function withIdentityQuery(url) {
     return appendSearchParams(url, getIdentitySearchParams());
 }
 
+function fitmentAvailable(job) {
+    return Boolean(job?.fitment_available);
+}
+
+function createEmptyFitmentForm() {
+    return {
+        vehicle: {
+            make: "",
+            model: "",
+            year: "",
+            body: "",
+            generation: "",
+            modification: "",
+            market: "",
+        },
+        rim: {
+            brand: "",
+            model: "",
+            sku: "",
+            product_url: "",
+            bolt_count: "",
+            pcd_mm: "",
+            wheel_diameter_in: "",
+            wheel_width_j: "",
+            center_bore_mm: "",
+            offset_et_mm: "",
+        },
+    };
+}
+
+function fitmentEmptyValue() {
+    return locale === "ru" ? "Не указано" : "Not specified";
+}
+
+function setDeepValue(target, path, value) {
+    const parts = path.split(".");
+    let current = target;
+    for (const part of parts.slice(0, -1)) {
+        if (!current[part] || typeof current[part] !== "object") current[part] = {};
+        current = current[part];
+    }
+    current[parts.at(-1)] = value;
+}
+
+function getDeepValue(target, path) {
+    return path.split(".").reduce((current, part) => current?.[part], target);
+}
+
+function fitmentFieldLabel(path) {
+    const labels = {
+        "vehicle.make": locale === "ru" ? "марка" : "make",
+        "vehicle.model": locale === "ru" ? "модель" : "model",
+        "vehicle.year": locale === "ru" ? "год" : "year",
+        "rim.bolt_count": locale === "ru" ? "болтов" : "bolt count",
+        "rim.pcd_mm": "PCD",
+        "rim.center_bore_mm": locale === "ru" ? "центральное отверстие" : "center bore",
+        "rim.wheel_diameter_in": locale === "ru" ? "диаметр" : "diameter",
+        "rim.wheel_width_j": locale === "ru" ? "ширина" : "width",
+        "rim.offset_et_mm": "ET",
+    };
+    return labels[path] || path;
+}
+
+function fitmentCandidatesFor(path) {
+    const [scope, fieldName] = path.split(".");
+    const key = scope === "vehicle" ? "vehicle_candidates" : "rim_candidates";
+    const candidates = state.fitmentOverview?.[key]?.[fieldName];
+    return Array.isArray(candidates) ? candidates : [];
+}
+
+function fitmentVehicleMeta(overview) {
+    return overview?.vehicle?.is_user_confirmed ? t("fitment.userConfirmed") : t("fitment.aiPending");
+}
+
+function fitmentRimMeta(overview) {
+    const unconfirmed = overview?.readiness?.unconfirmed_fields || [];
+    return unconfirmed.some((field) => field.startsWith("rim."))
+        ? t("fitment.aiPending")
+        : t("fitment.userConfirmed");
+}
+
+function fitmentSourceValue(overview) {
+    const parts = [overview?.rim?.brand, overview?.rim?.sku];
+    if (overview?.rim?.has_product_url) parts.push(t("fitment.sourceAdded"));
+    return parts.filter(Boolean).join(" · ") || fitmentEmptyValue();
+}
+
+function fitmentCandidateLabel(candidate) {
+    const value = candidate?.value;
+    const confidence = Number(candidate?.confidence);
+    const confidenceLabel = Number.isFinite(confidence)
+        ? `${Math.round(confidence * 100)}%`
+        : "";
+    return [t("fitment.aiSuggestion"), value, confidenceLabel].filter(Boolean).join(" · ");
+}
+
+function renderFitmentCandidates() {
+    document.querySelectorAll(".fitment-candidate-row").forEach((row) => row.remove());
+    document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        const path = input.dataset.fitmentInput;
+        const candidates = fitmentCandidatesFor(path);
+        if (!candidates.length) return;
+        const row = document.createElement("div");
+        row.className = "fitment-candidate-row";
+        for (const candidate of candidates.slice(0, 3)) {
+            if (candidate?.value === null || candidate?.value === undefined || candidate?.value === "") continue;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "fitment-candidate";
+            button.dataset.fitmentCandidate = path;
+            button.dataset.fitmentCandidateValue = String(candidate.value);
+            button.textContent = fitmentCandidateLabel(candidate);
+            row.append(button);
+        }
+        if (row.children.length) input.closest(".fitment-field")?.append(row);
+    });
+}
+
+function fitmentFormFromOverview(overview) {
+    return {
+        vehicle: {
+            make: overview?.vehicle?.make || "",
+            model: overview?.vehicle?.model || "",
+            year: overview?.vehicle?.year ?? "",
+            body: overview?.vehicle?.body || "",
+            generation: overview?.vehicle?.generation || "",
+            modification: overview?.vehicle?.modification || "",
+            market: overview?.vehicle?.market || "",
+        },
+        rim: {
+            brand: overview?.rim?.brand || "",
+            model: overview?.rim?.model || "",
+            sku: overview?.rim?.sku || "",
+            product_url: overview?.rim?.product_url || "",
+            bolt_count: overview?.rim?.bolt_count ?? "",
+            pcd_mm: overview?.rim?.pcd_mm ?? "",
+            wheel_diameter_in: overview?.rim?.wheel_diameter_in ?? "",
+            wheel_width_j: overview?.rim?.wheel_width_j ?? "",
+            center_bore_mm: overview?.rim?.center_bore_mm ?? "",
+            offset_et_mm: overview?.rim?.offset_et_mm ?? "",
+        },
+    };
+}
+
+function syncFitmentFormInputs() {
+    document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        const value = getDeepValue(state.fitmentForm, input.dataset.fitmentInput);
+        input.value = value ?? "";
+    });
+}
+
+function normalizeFitmentText(value) {
+    const normalized = String(value || "").trim();
+    return normalized || null;
+}
+
+function normalizeFitmentNumber(value) {
+    if (value === "" || value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatFitmentNumber(value, suffix = "") {
+    if (value === null || value === undefined || value === "") return fitmentEmptyValue();
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fitmentEmptyValue();
+    const formatted = Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+    return suffix ? `${formatted} ${suffix}` : formatted;
+}
+
+function fitmentSubtitle(overview) {
+    const title = overview?.vehicle?.title || fitmentEmptyValue();
+    if (locale === "ru") {
+        return `Предварительные данные для ${title} помогут подготовить будущую техническую проверку совместимости`;
+    }
+    return `Preliminary data for ${title} helps prepare a future technical compatibility check`;
+}
+
+function fitmentPayload() {
+    return {
+        expected_vehicle_revision: state.fitmentOverview?.vehicle_revision,
+        expected_rim_revision: state.fitmentOverview?.rim_revision,
+        vehicle: {
+            make: normalizeFitmentText(state.fitmentForm.vehicle.make),
+            model: normalizeFitmentText(state.fitmentForm.vehicle.model),
+            year: normalizeFitmentNumber(state.fitmentForm.vehicle.year),
+            body: normalizeFitmentText(state.fitmentForm.vehicle.body),
+            generation: normalizeFitmentText(state.fitmentForm.vehicle.generation),
+            modification: normalizeFitmentText(state.fitmentForm.vehicle.modification),
+            market: normalizeFitmentText(state.fitmentForm.vehicle.market),
+        },
+        rim: {
+            brand: normalizeFitmentText(state.fitmentForm.rim.brand),
+            model: normalizeFitmentText(state.fitmentForm.rim.model),
+            sku: normalizeFitmentText(state.fitmentForm.rim.sku),
+            product_url: normalizeFitmentText(state.fitmentForm.rim.product_url),
+            bolt_count: normalizeFitmentNumber(state.fitmentForm.rim.bolt_count),
+            pcd_mm: normalizeFitmentNumber(state.fitmentForm.rim.pcd_mm),
+            wheel_diameter_in: normalizeFitmentNumber(state.fitmentForm.rim.wheel_diameter_in),
+            wheel_width_j: normalizeFitmentNumber(state.fitmentForm.rim.wheel_width_j),
+            center_bore_mm: normalizeFitmentNumber(state.fitmentForm.rim.center_bore_mm),
+            offset_et_mm: normalizeFitmentNumber(state.fitmentForm.rim.offset_et_mm),
+        },
+    };
+}
+
+function fitmentValuesEqual(current, incoming) {
+    if (current === null || current === undefined || current === "") {
+        return incoming === null || incoming === undefined || incoming === "";
+    }
+    if (incoming === null || incoming === undefined || incoming === "") {
+        return current === null || current === undefined || current === "";
+    }
+    if (typeof current === "number" || typeof incoming === "number") {
+        const left = Number(current);
+        const right = Number(incoming);
+        return Number.isFinite(left) && Number.isFinite(right) ? left === right : current === incoming;
+    }
+    return current === incoming;
+}
+
+function fitmentPreviewMetaFor(path, source) {
+    const [scope, fieldName] = path.split(".");
+    const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
+    const currentMeta = state.fitmentOverview?.[provenanceKey]?.[fieldName] || {};
+    return {
+        source,
+        confidence: Number(currentMeta.confidence || 1),
+        is_user_confirmed: true,
+    };
+}
+
+function applyDemoFitmentSave(payload) {
+    const nextOverview = JSON.parse(
+        JSON.stringify(state.fitmentOverview || buildDefaultDemoFitmentOverview())
+    );
+    let vehicleChanged = false;
+    let rimChanged = false;
+    let vehicleConfirmed = false;
+    let rimConfirmed = false;
+
+    for (const scope of Object.keys(FITMENT_PREVIEW_FIELD_CONFIG)) {
+        const fields = FITMENT_PREVIEW_FIELD_CONFIG[scope];
+        const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
+        for (const fieldName of fields) {
+            const path = `${scope}.${fieldName}`;
+            const incomingValue = payload?.[scope]?.[fieldName] ?? null;
+            const currentValue = nextOverview?.[scope]?.[fieldName] ?? null;
+            if (!fitmentValuesEqual(currentValue, incomingValue)) {
+                nextOverview[scope][fieldName] = incomingValue;
+                nextOverview[provenanceKey][fieldName] = fitmentPreviewMetaFor(path, "user_edited");
+                if (scope === "vehicle") vehicleChanged = true;
+                else rimChanged = true;
+                continue;
+            }
+            if (
+                incomingValue !== null &&
+                incomingValue !== "" &&
+                !nextOverview?.[provenanceKey]?.[fieldName]?.is_user_confirmed
+            ) {
+                nextOverview[provenanceKey][fieldName] = fitmentPreviewMetaFor(path, "user_confirmed");
+                if (scope === "vehicle") vehicleConfirmed = true;
+                else rimConfirmed = true;
+            }
+        }
+    }
+
+    if (vehicleChanged || vehicleConfirmed) nextOverview.vehicle_revision += 1;
+    if (rimChanged || rimConfirmed) nextOverview.rim_revision += 1;
+
+    nextOverview.vehicle.is_user_confirmed = ["make", "model", "year"].every(
+        (fieldName) => nextOverview.vehicle_provenance?.[fieldName]?.is_user_confirmed
+    );
+    nextOverview.vehicle.title = demoVehicleTitle(nextOverview.vehicle);
+    nextOverview.rim.pcd_display = demoPcdDisplay(nextOverview.rim);
+    nextOverview.rim.has_product_url = Boolean(nextOverview.rim.product_url);
+    nextOverview.rim.title = demoRimTitle(nextOverview.rim);
+    nextOverview.snapshot_locked = true;
+    nextOverview.readiness = demoFitmentOverviewReadiness(nextOverview);
+
+    return nextOverview;
+}
+
+function renderFitment() {
+    const loading = document.querySelector("[data-fitment-loading]");
+    const error = document.querySelector("[data-fitment-error]");
+    const errorText = document.querySelector("[data-fitment-error-text]");
+    const message = document.querySelector("[data-fitment-message]");
+    const messageText = document.querySelector("[data-fitment-message-text]");
+    const shell = document.querySelector("[data-fitment-shell]");
+    const subtitle = document.querySelector("[data-fitment-subtitle]");
+    const previewBadge = document.querySelector("[data-fitment-preview-badge]");
+    const previewNote = document.querySelector("[data-fitment-preview-note]");
+    const readiness = document.querySelector("[data-fitment-readiness]");
+    const readinessTitle = document.querySelector("[data-fitment-readiness-title]");
+    const readinessFields = document.querySelector("[data-fitment-readiness-fields]");
+    const saveButton = document.querySelector("[data-fitment-save]");
+    const skipButton = document.querySelector("[data-fitment-skip]");
+
+    if (loading) loading.dataset.visible = String(state.fitmentLoading);
+    if (error) error.dataset.visible = String(Boolean(state.fitmentError));
+    if (errorText) errorText.textContent = localizeErrorMessage(state.fitmentError);
+    if (message) {
+        message.dataset.visible = String(Boolean(state.fitmentMessage));
+        message.className = `wallet-status-island tone-${state.fitmentMessageTone || "neutral"}`;
+    }
+    if (messageText) messageText.textContent = state.fitmentMessage || "";
+    if (saveButton) saveButton.disabled = state.fitmentLoading || state.fitmentSaving;
+    if (skipButton) skipButton.disabled = state.fitmentLoading || state.fitmentSaving;
+
+    const overview = state.fitmentOverview;
+    const demoMode = shouldUseDemoFitment(state.fitmentJobId);
+    if (previewBadge) previewBadge.hidden = !demoMode;
+    if (previewNote) previewNote.hidden = !demoMode;
+    if (!overview) {
+        if (shell) shell.hidden = true;
+        return;
+    }
+
+    if (shell) shell.hidden = false;
+    if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
+    if (readiness) readiness.dataset.ready = String(Boolean(overview.readiness?.ready));
+    if (readinessTitle) {
+        readinessTitle.textContent = overview.readiness?.ready
+            ? t("fitment.readinessReady")
+            : t("fitment.readinessMissing");
+    }
+    if (readinessFields) {
+        const missing = overview.readiness?.missing_fields || [];
+        const unconfirmed = overview.readiness?.unconfirmed_fields || [];
+        if (missing.length) {
+            readinessFields.textContent = missing.map(fitmentFieldLabel).join(" · ");
+        } else if (unconfirmed.length) {
+            readinessFields.textContent = `${t("fitment.readinessUnconfirmed")}: ${unconfirmed
+                .map(fitmentFieldLabel)
+                .join(" · ")}`;
+        } else {
+            readinessFields.textContent =
+                locale === "ru"
+                    ? "Можно будет запускать отдельную проверку позже"
+                    : "A separate check can be started later";
+        }
+    }
+    document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(
+        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+    );
+    document.querySelector("[data-fitment-card-vehicle-title]")?.replaceChildren(
+        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+    );
+    document.querySelector("[data-fitment-card-vehicle-meta]")?.replaceChildren(
+        document.createTextNode(fitmentVehicleMeta(overview))
+    );
+    document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(
+        document.createTextNode(overview.rim?.title || fitmentEmptyValue())
+    );
+    document.querySelector("[data-fitment-card-rim-meta]")?.replaceChildren(
+        document.createTextNode(fitmentRimMeta(overview))
+    );
+    document.querySelector("[data-fitment-card-source-title]")?.replaceChildren(
+        document.createTextNode(fitmentSourceValue(overview))
+    );
+    document.querySelector("[data-fitment-basic-pcd]")?.replaceChildren(
+        document.createTextNode(overview.rim?.pcd_display || fitmentEmptyValue())
+    );
+    document.querySelector("[data-fitment-basic-center-bore]")?.replaceChildren(
+        document.createTextNode(formatFitmentNumber(overview.rim?.center_bore_mm, "мм"))
+    );
+    document.querySelector("[data-fitment-basic-diameter]")?.replaceChildren(
+        document.createTextNode(
+            overview.rim?.wheel_diameter_in !== null && overview.rim?.wheel_diameter_in !== undefined
+                ? `R${formatFitmentNumber(overview.rim?.wheel_diameter_in)}`
+                : fitmentEmptyValue()
+        )
+    );
+    document.querySelector("[data-fitment-basic-width]")?.replaceChildren(
+        document.createTextNode(
+            overview.rim?.wheel_width_j !== null && overview.rim?.wheel_width_j !== undefined
+                ? `${formatFitmentNumber(overview.rim?.wheel_width_j)}J`
+                : fitmentEmptyValue()
+        )
+    );
+    document.querySelector("[data-fitment-basic-offset]")?.replaceChildren(
+        document.createTextNode(formatFitmentNumber(overview.rim?.offset_et_mm, "мм"))
+    );
+    syncFitmentFormInputs();
+    renderFitmentCandidates();
+}
+
+async function loadFitmentOverview(jobId) {
+    if (!jobId) return;
+    state.fitmentLoading = true;
+    state.fitmentError = "";
+    state.fitmentMessage = "";
+    renderFitment();
+    try {
+        if (shouldUseDemoFitment(jobId)) {
+            const overview = loadDemoFitmentOverview() || buildDefaultDemoFitmentOverview();
+            persistDemoFitmentOverview(overview);
+            state.fitmentOverview = overview;
+            state.fitmentForm = fitmentFormFromOverview(overview);
+            return;
+        }
+        const response = await fetch(withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`), {
+            headers: withAuthHeaders(),
+        });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const overview = await response.json();
+        state.fitmentOverview = overview;
+        state.fitmentForm = fitmentFormFromOverview(overview);
+    } catch (error) {
+        state.fitmentOverview = null;
+        state.fitmentForm = createEmptyFitmentForm();
+        state.fitmentError = error?.message || t("errors.requestFailed");
+    } finally {
+        state.fitmentLoading = false;
+        renderFitment();
+    }
+}
+
+function openFitmentView(jobId, { originView = state.view } = {}) {
+    if (!jobId) return;
+    state.fitmentJobId = jobId;
+    state.fitmentOriginView = originView;
+    state.fitmentOriginJobId = jobId;
+    state.fitmentOverview = null;
+    state.fitmentForm = createEmptyFitmentForm();
+    state.fitmentError = "";
+    state.fitmentMessage = "";
+    setView("fitment");
+    void loadFitmentOverview(jobId);
+}
+
+function closeFitmentView() {
+    const originView = state.fitmentOriginView || "dashboard";
+    const originJobId = state.fitmentOriginJobId;
+    if (originView === "create") {
+        showCreateScreen("result");
+    }
+    if (originView === "renders" && originJobId) {
+        state.expandedJobId = originJobId;
+    }
+    setView(originView);
+}
+
+async function saveFitment(event) {
+    event?.preventDefault?.();
+    if (!state.fitmentJobId || state.fitmentSaving) return;
+    state.fitmentSaving = true;
+    state.fitmentError = "";
+    state.fitmentMessage = "";
+    renderFitment();
+    try {
+        if (shouldUseDemoFitment(state.fitmentJobId)) {
+            const overview = applyDemoFitmentSave(fitmentPayload());
+            persistDemoFitmentOverview(overview);
+            state.fitmentOverview = overview;
+            state.fitmentForm = fitmentFormFromOverview(overview);
+            state.fitmentMessage = t("fitment.saveSuccess");
+            state.fitmentMessageTone = "success";
+            return;
+        }
+        const response = await fetch(
+            withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`),
+            {
+                method: "PATCH",
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify(fitmentPayload()),
+            }
+        );
+        if (!response.ok) {
+            const detail = await parseApiError(response);
+            throw new Error(response.status === 409 ? t("fitment.stale") : detail);
+        }
+        const overview = await response.json();
+        state.fitmentOverview = overview;
+        state.fitmentForm = fitmentFormFromOverview(overview);
+        state.fitmentMessage = t("fitment.saveSuccess");
+        state.fitmentMessageTone = "success";
+        void loadRenderHistory({ silent: true });
+    } catch (error) {
+        state.fitmentError = error?.message || t("errors.requestFailed");
+    } finally {
+        state.fitmentSaving = false;
+        renderFitment();
+    }
+}
+
 async function fetchRenderHistory({ limit = 20, offset = 0 } = {}) {
     const params = new URLSearchParams();
     params.set("limit", String(limit));
@@ -1129,6 +1960,8 @@ function setView(view) {
         void loadCabinet({ silent: true });
     } else if (view === "renders") {
         void loadRenderHistory({ silent: true });
+    } else if (view === "fitment") {
+        renderFitment();
     }
 }
 
@@ -1944,6 +2777,7 @@ function renderHistoryCard(job) {
     const canOpen = status === "completed";
     const hasResult = hasAssetSource(job, "result");
     const hasOriginal = hasAssetSource(job, "original");
+    const canOpenFitment = canOpen && fitmentAvailable(job);
     const summaryText = status === "failed"
         ? "Не удалось создать результат"
         : status === "completed"
@@ -1954,7 +2788,12 @@ function renderHistoryCard(job) {
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
         : canOpen
-          ? `<button type="button" class="ghost-button compact-button" data-toggle-render="${escapeHtml(job.job_id)}">${expanded ? t("renders.hide") : t("renders.open")}</button>`
+          ? `
+                <div class="render-card-buttons">
+                    <button type="button" class="ghost-button compact-button" data-toggle-render="${escapeHtml(job.job_id)}">${expanded ? t("renders.hide") : t("renders.open")}</button>
+                    ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
+                </div>
+            `
           : "";
     const downloadUrl = hasResult ? downloadUrlForJob(job) : "";
     return `
@@ -1979,6 +2818,7 @@ function renderHistoryCard(job) {
                         <div class="render-side">
                             <div class="render-expanded-actions">
                                 ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>${t("renders.download")}</a>` : ""}
+                                ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
                                 <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
                             </div>
                             ${renderFeedbackBlock(job)}
@@ -2160,7 +3000,10 @@ function renderDashboard() {
             ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
             <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
-            <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
+            <div class="render-card-buttons">
+                <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
+                ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
+            </div>
         `;
         return;
     }
@@ -2685,6 +3528,12 @@ function setBackButton(onClick) {
 }
 
 function refreshButtonsForCurrentView() {
+    if (state.view === "fitment") {
+        hideMainButton();
+        setBackButton(() => closeFitmentView());
+        return;
+    }
+
     if (state.view !== "create") {
         hideMainButton();
         setBackButton(null);
@@ -2747,6 +3596,7 @@ function resetFlow() {
     }
     document.querySelector("[data-download-result]")?.toggleAttribute("hidden", true);
     document.querySelector("[data-share-result]")?.toggleAttribute("hidden", true);
+    document.querySelector("[data-open-fitment-result]")?.toggleAttribute("hidden", true);
     setDownloadButtonState();
     setShareButtonState();
     showCreateScreen("upload");
@@ -3106,6 +3956,10 @@ async function submitJob() {
             }
             document.querySelector("[data-download-result]")?.toggleAttribute("hidden", !state.resultDownloadUrl);
             document.querySelector("[data-share-result]")?.toggleAttribute("hidden", !state.resultUrl);
+            document.querySelector("[data-open-fitment-result]")?.toggleAttribute(
+                "hidden",
+                !fitmentAvailable(statusData)
+            );
             setDownloadButtonState();
             setShareButtonState();
             refreshButtonsForCurrentView();
@@ -3244,6 +4098,28 @@ function bindEvents() {
 
     document.querySelector("[data-download-result]")?.addEventListener("click", downloadResult);
     document.querySelector("[data-share-result]")?.addEventListener("click", shareResult);
+    document.querySelector("[data-open-fitment-result]")?.addEventListener("click", () => {
+        if (!state.jobId) return;
+        void openFitmentView(state.jobId, { originView: "create" });
+    });
+    document.querySelector("[data-fitment-back]")?.addEventListener("click", closeFitmentView);
+    document.querySelector("[data-fitment-skip]")?.addEventListener("click", closeFitmentView);
+    document.querySelector("[data-fitment-form]")?.addEventListener("submit", (event) => {
+        void saveFitment(event);
+    });
+    document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        input.addEventListener("input", (event) => {
+            setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
+        });
+    });
+    document.querySelectorAll("[data-fitment-jump]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const section = document.querySelector(
+                `[data-fitment-section="${button.dataset.fitmentJump}"]`
+            );
+            section?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    });
 
     document.addEventListener("click", (event) => {
         const navButton = event.target.closest("[data-nav]");
@@ -3260,6 +4136,24 @@ function bindEvents() {
             state.expandedJobId = state.expandedJobId === jobId ? "" : jobId;
             renderRenders();
             renderDashboard();
+            return;
+        }
+
+        const fitmentButton = event.target.closest("[data-open-fitment]");
+        if (fitmentButton) {
+            void openFitmentView(fitmentButton.dataset.openFitment, {
+                originView: fitmentButton.dataset.originView || state.view,
+            });
+            return;
+        }
+
+        const fitmentCandidate = event.target.closest("[data-fitment-candidate]");
+        if (fitmentCandidate) {
+            const path = fitmentCandidate.dataset.fitmentCandidate;
+            const value = fitmentCandidate.dataset.fitmentCandidateValue || "";
+            setDeepValue(state.fitmentForm, path, value);
+            const input = document.querySelector(`[data-fitment-input="${path}"]`);
+            if (input) input.value = value;
             return;
         }
 
@@ -3369,7 +4263,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshButtonsForCurrentView();
     await loadDashboardData();
 
-    if (!new URLSearchParams(window.location.search).get("payment")) {
+    if (state.fitmentPreviewForced && !new URLSearchParams(window.location.search).get("payment")) {
+        void openFitmentView(GUEST_FITMENT_DEMO_JOB_ID, { originView: "dashboard" });
+    } else if (!new URLSearchParams(window.location.search).get("payment")) {
         setView("dashboard");
     }
 });

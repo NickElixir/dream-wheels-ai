@@ -35,7 +35,7 @@ except Exception as e:
 ### Коммиты и ветки
 
 - Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
-- Ветви: `feature/* → dev → test → main`
+- Ветви: `feature/* -> staging -> main`
 - **НЕ пушить в `main`** напрямую — только через PR
 - Атомарные коммиты, не смешивать рефакторинг с фиксами
 

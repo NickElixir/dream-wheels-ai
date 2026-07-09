@@ -22,6 +22,8 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0016_credit_ledger_expiration_compat.sql` — compat для canonical `credit_ledger.event_type='expiration'`
 - `0017_vehicle_rim_identity.sql` — `VehicleIdentity`, `RimSpec`, `RimSetup`, pre-render drafts и snapshot-ссылки для Sprint 2
 - `0018_render_feedback.sql` — durable `render_feedback`, backfill из legacy `jobs.feedback` и owner/job constraints для Sprint 3
+- `0019_fitment_identity_candidates.sql` — JSON candidates и revisions для Sprint 4 full editor canonical identity
+- `0020_fitment_change_events.sql` — append-only история canonical fitment edits и подтверждений
 
 ## Стратегия применения
 
@@ -46,6 +48,8 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед выкладкой durable history кода применить `0015_durable_render_assets.sql`: код пишет в `assets` и `jobs.car_asset_id/rim_asset_id/result_asset_id`, сохраняя legacy поля `car_image_url/wheel_image_url/output_image_url`.
 - Перед выкладкой Sprint 2 create flow применить `0017_vehicle_rim_identity.sql`: новый flow пишет `render_input_drafts`, `vehicle_identities`, `rim_specs`, `rim_setups` и `jobs.render_input_snapshot`; legacy `/jobs/upload` остаётся совместимым.
 - Перед выкладкой Sprint 3 feedback-кода применить `0018_render_feedback.sql`: canonical feedback read/write paths переходят на `render_feedback`, а `jobs.feedback` остаётся только legacy-колонкой для rollout/backfill.
+- Перед выкладкой Sprint 4 full editor применить `0019_fitment_identity_candidates.sql`: API читает `field_candidates` и `revision` из `vehicle_identities` / `rim_specs`.
+- Перед выкладкой fitment history и confirm-without-change flow применить `0020_fitment_change_events.sql`: API пишет `initial_prefill`, `user_save` и `user_confirm` события в append-only audit table.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
 ## Соглашения

@@ -3,6 +3,7 @@ import os
 import uuid
 from pathlib import Path
 
+import anyio
 import asyncpg
 import pytest
 
@@ -15,7 +16,7 @@ TARGET_MIGRATION = ROOT / "migrations" / "0018_render_feedback.sql"
 
 
 async def _apply_sql(conn: asyncpg.Connection, path: Path) -> None:
-    await conn.execute(path.read_text())
+    await conn.execute(await anyio.Path(path).read_text())
 
 
 async def _with_temp_schema(callback) -> None:
