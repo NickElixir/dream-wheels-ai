@@ -565,6 +565,45 @@ def _field_provenance_value(current: dict | None, field_name: str) -> dict[str, 
     return raw if isinstance(raw, dict) else {}
 
 
+def _json_object_field(
+    raw: object,
+    *,
+    job_id: str,
+    field_name: str,
+) -> dict[str, object]:
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            logger.warning(
+                "⚠️ Invalid %s JSON for job_id=%s raw=%r",
+                field_name,
+                job_id,
+                raw[:200],
+            )
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
+        logger.warning(
+            "⚠️ Non-object %s for job_id=%s parsed_type=%s",
+            field_name,
+            job_id,
+            type(parsed).__name__,
+        )
+        return {}
+    logger.warning(
+        "⚠️ Unsupported %s type for job_id=%s raw_type=%s",
+        field_name,
+        job_id,
+        type(raw).__name__,
+    )
+    return {}
+
+
 def _is_user_confirmed_provenance(meta: dict[str, object] | None) -> bool:
     return bool((meta or {}).get("is_user_confirmed"))
 
@@ -578,7 +617,9 @@ def _rim_decimal(value: float | None) -> Decimal | None:
 def _fitment_values_equal(current: object, incoming: object) -> bool:
     if current is None or incoming is None:
         return current is None and incoming is None
-    if isinstance(current, (Decimal, int, float)) or isinstance(incoming, (Decimal, int, float)):
+    if isinstance(current, Decimal | int | float) or isinstance(
+        incoming, Decimal | int | float
+    ):
         try:
             return Decimal(str(current)) == Decimal(str(incoming))
         except Exception:
@@ -847,7 +888,7 @@ async def _fetch_fitment_job_row(
     job_id: str,
     user_id: int,
 ):
-    return await conn.fetchrow(
+    row = await conn.fetchrow(
         f"""
         SELECT
             jobs.id::text AS job_id,
@@ -900,6 +941,22 @@ async def _fetch_fitment_job_row(
         job_id,
         user_id,
     )
+    if not row:
+        return None
+    normalized_row = dict(row)
+    normalized_job_id = str(normalized_row["job_id"])
+    for field_name in (
+        "vehicle_field_provenance",
+        "vehicle_field_candidates",
+        "rim_field_provenance",
+        "rim_field_candidates",
+    ):
+        normalized_row[field_name] = _json_object_field(
+            normalized_row.get(field_name),
+            job_id=normalized_job_id,
+            field_name=field_name,
+        )
+    return normalized_row
 
 
 async def _fetch_fitment_history_rows(
@@ -1860,7 +1917,11 @@ async def get_fitment_history(
                 vehicle_revision_after=event["vehicle_revision_after"],
                 rim_revision_before=event["rim_revision_before"],
                 rim_revision_after=event["rim_revision_after"],
-                changes=event["changes"] or {},
+                changes=_json_object_field(
+                    event["changes"],
+                    job_id=job_id,
+                    field_name="fitment_change_events.changes",
+                ),
                 created_at=event["created_at"],
             )
             for event in events

@@ -221,6 +221,10 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "function shouldUseBrowserApiProxy()" in APP_JS
     assert 'apiUrl("/jobs"' in APP_JS
+    assert 'apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true })' in APP_JS
+    assert 'apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true })' in APP_JS
+    assert 'withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`)' not in APP_JS
+    assert 'withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`)' not in APP_JS
     assert "walletHistoryPage" in APP_JS
     assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
     assert "data-wallet-history-pager" in INDEX_HTML

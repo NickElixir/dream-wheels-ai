@@ -170,6 +170,35 @@ def test_fitment_overview_returns_completed_owner_job(monkeypatch):
     assert body["rim"]["has_product_url"] is False
 
 
+def test_fitment_overview_parses_stringified_json_fields(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row(
+                vehicle_field_provenance=(
+                    '{"make":{"source":"vlm_visual","confidence":0.9,"is_user_confirmed":false}}'
+                ),
+                vehicle_field_candidates=(
+                    '{"model":[{"value":"3 Series","source":"vlm_visual","confidence":0.9}]}'
+                ),
+                rim_field_provenance=(
+                    '{"bolt_count":{"source":"ocr","confidence":0.72,"is_user_confirmed":false}}'
+                ),
+                rim_field_candidates='{"pcd_mm":[{"value":112,"source":"ocr","confidence":0.72}]}',
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_provenance"]["make"]["source"] == "vlm_visual"
+    assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
+    assert body["rim_provenance"]["bolt_count"]["source"] == "ocr"
+    assert body["rim_candidates"]["pcd_mm"][0]["value"] == 112
+
+
 def test_fitment_overview_returns_404_for_non_owner(monkeypatch):
     class FakeConn:
         async def fetchrow(self, *_args):
@@ -610,3 +639,35 @@ def test_fitment_history_returns_events_for_owner(monkeypatch):
     assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
     assert body["events"][0]["event_type"] == "user_confirm"
     assert body["events"][0]["actor_type"] == "user"
+
+
+def test_fitment_history_parses_stringified_changes(monkeypatch):
+    history_rows = [
+        {
+            "event_type": "user_confirm",
+            "actor_type": "user",
+            "actor_user_id": 10,
+            "vehicle_revision_before": 1,
+            "vehicle_revision_after": 2,
+            "rim_revision_before": 1,
+            "rim_revision_after": 2,
+            "changes": '{"vehicle":{"model":{"old":"3 Series","new":"3 Series"}}}',
+            "created_at": datetime(2026, 7, 2, tzinfo=UTC),
+        }
+    ]
+
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+        async def fetch(self, *_args):
+            return history_rows
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment/history")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["events"][0]["changes"]["vehicle"]["model"]["new"] == "3 Series"
