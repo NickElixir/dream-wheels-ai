@@ -117,7 +117,7 @@ const I18N = {
             subtitleFallback: "Предварительные данные помогут подготовить будущую техническую проверку совместимости",
             preliminary: "Предварительно",
             openFromResult: "Уточнить параметры",
-            openFromHistory: "Проверить совместимость",
+            openFromHistory: "Уточнить параметры",
             back: "Вернуться к результату",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
@@ -405,7 +405,7 @@ const I18N = {
             subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
             preliminary: "Preliminary",
             openFromResult: "Refine details",
-            openFromHistory: "Check compatibility",
+            openFromHistory: "Refine details",
             back: "Back to result",
             loading: "Loading details",
             saveSuccess: "Details saved",
@@ -2800,7 +2800,7 @@ function renderHistoryCard(job) {
           ? `
                 <div class="render-card-buttons">
                     <button type="button" class="ghost-button compact-button" data-toggle-render="${escapeHtml(job.job_id)}">${expanded ? t("renders.hide") : t("renders.open")}</button>
-                    ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
+                    ${expanded && canOpenFitment ? `<button type="button" class="primary-button compact-button render-fitment-cta" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
                 </div>
             `
           : "";
@@ -2827,7 +2827,6 @@ function renderHistoryCard(job) {
                         <div class="render-side">
                             <div class="render-expanded-actions">
                                 ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>${t("renders.download")}</a>` : ""}
-                                ${canOpenFitment ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
                                 <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
                             </div>
                             ${renderFeedbackBlock(job)}

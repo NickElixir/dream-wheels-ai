@@ -2499,10 +2499,14 @@ h2 {
 }
 
 .render-card-buttons {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
     justify-content: flex-end;
     gap: 10px;
+}
+
+.render-fitment-cta {
+    white-space: nowrap;
 }
 
 .wallet-history-page-button {
@@ -3005,7 +3009,8 @@ h2 {
     }
 
     .render-card-buttons {
-        justify-content: flex-start;
+        grid-template-columns: 1fr;
+        justify-content: stretch;
     }
 
     .steps {
