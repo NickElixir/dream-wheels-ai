@@ -164,6 +164,20 @@ def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
     assert "vehicle?.summary" not in APP_JS
 
 
+def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
+    history_card = APP_JS.split("function renderHistoryCard(job) {")[1].split(
+        "function renderRenders() {"
+    )[0]
+
+    assert 'openFromHistory: "Уточнить параметры"' in APP_JS
+    assert "expanded && canOpenFitment" in history_card
+    assert "primary-button compact-button render-fitment-cta" in history_card
+    assert history_card.count("data-open-fitment") == 1
+    assert "render-expanded-actions" in history_card
+    assert "renders.download" in history_card
+    assert "renders.createAnother" in history_card
+
+
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
     assert "ALTER TABLE vehicle_identities" in MIGRATION_0019
     assert (
