@@ -1799,7 +1799,7 @@ async function loadFitmentOverview(jobId) {
             state.fitmentForm = fitmentFormFromOverview(overview);
             return;
         }
-        const response = await fetch(withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`), {
+        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) throw new Error(await parseApiError(response));
@@ -1859,7 +1859,7 @@ async function saveFitment(event) {
             return;
         }
         const response = await fetch(
-            withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`),
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true }),
             {
                 method: "PATCH",
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
