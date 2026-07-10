@@ -144,6 +144,15 @@ feature/* -> staging -> main
 - **Ничего не пушить в `main`** напрямую
 - **Деструктивные SQL** на проде — только с явным подтверждением, бэкап до этого
 
+### WebApp auth / asset boundary
+
+- Разделяй URL для `browser resource` и URL для `fetch`
+- Protected asset endpoints с auth через `Authorization: Bearer ...` нельзя использовать напрямую в `<img src>` / `<a href>` / `download`
+- В website-auth режиме приватные assets грузятся через `fetch + Authorization + blob`, а не через inline `src`
+- Если endpoint должен открываться напрямую браузером, используй только query-auth path для Mini App / dev fallback или short-lived signed URL / cookie-based session
+- Не используй один helper одновременно для `img src` / `href` / `fetch`, если у этих путей разная auth-модель
+- При изменениях history / result / original asset flow добавляй regression smoke для сценария `website auth + protected asset`
+
 ## База данных
 
 - Все DDL-изменения через миграции в [migrations/](migrations/). См. [migrations/README.md](migrations/README.md)

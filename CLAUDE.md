@@ -44,6 +44,9 @@ except Exception as e:
 - Секреты только в `.env`, никогда в коде/коммитах/чате/логах
 - `.env.example` обновлять при новых переменных
 - Деструктивные действия (DROP, DELETE без WHERE, force push) — подтверждение
+- Protected asset endpoints с `Authorization` не использовать напрямую в `<img src>` / `<a href>` / `download`
+- Для website-auth private assets использовать `fetch + Authorization + blob` или отдельный signed URL / cookie flow
+- Не смешивать один helper для `browser resource URL` и `fetch URL`, если auth transport разный
 
 ## Профиль пользователя
 

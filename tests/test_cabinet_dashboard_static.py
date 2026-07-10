@@ -233,6 +233,15 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
     assert "wallet-history-stack" in STYLE_CSS
 
 
+def test_website_auth_does_not_inline_private_asset_urls() -> None:
+    assert "function proxiedAssetUrl(asset)" in APP_JS
+    assert "if (getWebsiteAuthToken()) return \"\";" in APP_JS
+    assert "Website auth lives in Authorization header" in APP_JS
+    assert "function assetDownloadUrlForJob(job, kind)" in APP_JS
+    assert "return getWebsiteAuthToken()" in APP_JS
+    assert "if (getWebsiteAuthToken()) return resultUrlForJob(job);" in APP_JS
+
+
 def test_secondary_action_family_uses_shared_island_button_style() -> None:
     assert ".payment-card-action," in STYLE_CSS
     assert ".website-auth-button," in STYLE_CSS

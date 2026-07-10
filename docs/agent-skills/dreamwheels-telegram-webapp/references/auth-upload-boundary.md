@@ -16,6 +16,11 @@
 - Validate upload MIME, non-empty content, and maximum size on the backend even if frontend validation exists.
 - Rate limiting and credit reservation remain backend responsibilities.
 - CORS should allow the exact configured `WEBAPP_URL` plus explicitly required Telegram origin behavior.
+- Keep auth transport boundaries explicit for assets:
+  `img src` / `a href` / `download` cannot attach JS `Authorization` headers.
+- Protected asset endpoints that require `Authorization: Bearer ...` must use `fetch + blob` in website-auth mode.
+- Direct browser asset URLs should be limited to Mini App query-auth paths, explicit dev fallback, signed URLs, or cookie-backed sessions.
+- Do not reuse one helper for both `browser resource URL` and `fetch URL` when their auth model differs.
 
 ## Idempotency And Failure Handling
 
@@ -23,6 +28,7 @@
 - Do not generate a new idempotency key on an automatic retry of the same user action.
 - Storage upload, DB insert, credit reservation, queue push, and Redis idempotency state can fail at different points; review partial-failure behavior when touching this flow.
 - Network polling failures should remain retryable until deadline; terminal backend failure should surface a stable user-facing error.
+- When changing history / result / original asset rendering, add a regression check for `website auth + protected asset`.
 
 ## Cross-Skill Routing
 

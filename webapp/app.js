@@ -2398,15 +2398,24 @@ function assetDownloadUrlForJob(job, kind) {
     if (!job?.assets?.[assetKey]) return "";
     const downloadUrl = job.assets[assetKey].download_url;
     if (!downloadUrl) return "";
-    return downloadUrl.startsWith("/")
-        ? apiUrl(downloadUrl, { includeIdentity: true })
-        : withIdentityQuery(downloadUrl);
+    if (downloadUrl.startsWith("/")) {
+        return getWebsiteAuthToken()
+            ? apiUrl(downloadUrl)
+            : apiUrl(downloadUrl, { includeIdentity: true });
+    }
+    if (canUseIdentityAssetUrls()) return withIdentityQuery(downloadUrl);
+    return getWebsiteAuthToken() ? downloadUrl : "";
 }
 
 function proxiedAssetUrl(asset) {
     const assetPath = asset?.download_url;
     if (!assetPath) return "";
-    if (assetPath.startsWith("/")) return apiUrl(assetPath, { includeIdentity: true });
+    // Website auth lives in Authorization header, so direct <img src> or <a href>
+    // cannot use protected asset endpoints. Those flows must go through fetch+blob.
+    if (assetPath.startsWith("/")) {
+        if (getWebsiteAuthToken()) return "";
+        return apiUrl(assetPath, { includeIdentity: true });
+    }
     if (!canUseIdentityAssetUrls()) return "";
     return withIdentityQuery(assetPath);
 }
@@ -2505,7 +2514,7 @@ function defaultAssetViewForJob(job) {
 function downloadUrlForJob(job) {
     const guestUrl = guestRenderAssetUrl(job, "result");
     if (guestUrl) return guestUrl;
-    if (getWebsiteAuthToken()) return assetDownloadUrlForJob(job, "result") || resultUrlForJob(job);
+    if (getWebsiteAuthToken()) return resultUrlForJob(job);
     const assetPath = job?.assets?.result?.download_url;
     if (assetPath?.startsWith("/")) {
         return apiUrl(assetPath, { includeIdentity: true });
