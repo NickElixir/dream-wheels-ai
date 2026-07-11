@@ -128,7 +128,8 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "Проверьте AI-предложение" in INDEX_HTML
     assert "Параметры для рендера" in INDEX_HTML
     assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
-    assert "Проверка совместимости — скоро" in INDEX_HTML
+    assert "Проверка совместимости — скоро" not in INDEX_HTML
+    assert "future-stage-island" not in INDEX_HTML
     assert "data-create-render" in INDEX_HTML
     assert 'data-rim-confirm="false"' in INDEX_HTML
 
@@ -202,7 +203,66 @@ def test_sprint_2_reference_prototype_is_committed() -> None:
     assert reference.exists()
     content = reference.read_text(encoding="utf-8")
     assert "Определить данные" in content
-    assert "Проверка совместимости — скоро" in content
+
+
+def test_uploaded_photo_preview_preserves_image_ratio_without_cropping() -> None:
+    assert 'data-preview-media="car"' in INDEX_HTML
+    assert 'data-preview-media="wheel"' in INDEX_HTML
+    assert "function syncPreviewGeometry(kind)" in APP_JS
+    assert "--preview-aspect-ratio" in APP_JS
+    assert ".preview-media" in STYLE_CSS
+    assert "transition: aspect-ratio 320ms ease" in STYLE_CSS
+    preview_block = STYLE_CSS.split(".preview img", 1)[1].split("}", 1)[0]
+    assert "object-fit: contain" in preview_block
+
+
+def test_design_code_defines_ui_separator_rules() -> None:
+    design_code = (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
+    assert "Never use a full stop or middle dot as a visual separator" in design_code
+    assert '20" / 8,5J / 5×114,3' in design_code
+    assert "Russian decimal values use a comma" in design_code
+    assert "Vehicle and rim names use spaces only" in design_code
+    assert " · " not in APP_JS
+    assert 'formatRim(rim)' in APP_JS
+    assert '" / "' in APP_JS
+
+
+def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
+    assert 'data-fitment-vehicle-specs' in INDEX_HTML
+    assert 'data-fitment-card-vehicle-specs' in INDEX_HTML
+    assert 'data-fitment-card-rim-specs' in INDEX_HTML
+    assert "function fitmentVehicleSpecs(vehicle)" in APP_JS
+    assert "function fitmentRimSpecs(rim)" in APP_JS
+    assert "demoVehicleTitle(overview.vehicle)" in APP_JS
+    assert "demoRimTitle(overview.rim)" in APP_JS
+
+
+def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> None:
+    assert 'data-fitment-overview-toggle' in INDEX_HTML
+    assert 'data-fitment-overview-grid' in INDEX_HTML
+    assert 'state.fitmentOverviewCollapsed' in APP_JS
+    assert 'input.addEventListener("focus", () => setFitmentOverviewCollapsed(true))' in APP_JS
+    assert "fitment-field.has-candidates" in STYLE_CSS
+    assert "fitment-candidate-row" in STYLE_CSS
+    assert "position: sticky" in STYLE_CSS
+    assert "--desktop-content-max: 1080px" in STYLE_CSS
+    assert 'data-fitment-card-source-brand' in INDEX_HTML
+    assert 'data-fitment-card-source-sku' in INDEX_HTML
+
+
+def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
+    assert 'data-i18n="fitment.back"' in INDEX_HTML
+    assert "Вернуться к рендеру" in INDEX_HTML
+    assert "Demo preview" not in INDEX_HTML
+    assert 'data-fitment-preview-badge hidden>Demo</span>' in INDEX_HTML
+    assert "fitment-context-row" in STYLE_CSS
+    assert "data-i18n=\"fitment.preliminary\"" not in INDEX_HTML
+    assert "render-info-island" in APP_JS
+    assert "render-info-footer" in APP_JS
+    assert ".render-info-island .status-pill" in STYLE_CSS
+    assert "render-demo-note" in APP_JS
+    assert "border: 1px solid rgba(255, 204, 86, 0.22)" in STYLE_CSS
+    assert "background: rgba(255, 204, 86, 0.08)" in STYLE_CSS
 
 
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:

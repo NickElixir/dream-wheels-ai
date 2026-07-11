@@ -144,7 +144,9 @@
                     <div class="dropzone-sub" data-i18n="create.choose">Нажми, чтобы выбрать</div>
                 </label>
                 <div class="preview" data-preview="car" hidden>
-                    <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
+                    <div class="preview-media" data-preview-media="car">
+                        <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
+                    </div>
                     <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить машину</button>
                 </div>
 
@@ -155,27 +157,11 @@
                     <div class="dropzone-sub" data-i18n="create.choose">Нажми, чтобы выбрать</div>
                 </label>
                 <div class="preview" data-preview="wheel" hidden>
-                    <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
+                    <div class="preview-media" data-preview-media="wheel">
+                        <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
+                    </div>
                     <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
                 </div>
-
-                <aside class="future-stage-island" aria-disabled="true">
-                    <div class="future-stage-head">
-                        <div>
-                            <p class="section-label">Следующий этап</p>
-                            <h2>Проверка совместимости</h2>
-                        </div>
-                        <span class="status-pill neutral">Скоро</span>
-                    </div>
-                    <p class="future-stage-copy">
-                        После upload-островов здесь откроется следующая проверка перед запуском.
-                    </p>
-                    <div class="future-stage-pills" aria-hidden="true">
-                        <span class="future-stage-pill">AI-предложение</span>
-                        <span class="future-stage-pill">Подтверждение</span>
-                        <span class="future-stage-pill">Совместимость</span>
-                    </div>
-                </aside>
 
                 <div class="create-flow-actions" data-identity-action hidden>
                     <button type="button" class="primary-button" data-detect-identity>Определить данные</button>
@@ -257,10 +243,6 @@
                             Совместимость пока не проверена. Это визуальный рендер, а не технический fitment verdict
                         </div>
                         <button type="button" class="primary-button full-width" data-create-render>Создать виртуальную примерку</button>
-                        <div class="coming-soon-island" aria-disabled="true">
-                            <strong>Проверка совместимости — скоро</strong>
-                            <span>Позже здесь появится техническая проверка PCD, ширины, ET, DIA и условий установки</span>
-                        </div>
                     </article>
                 </section>
             </section>
@@ -413,7 +395,7 @@
                                     <span class="topup-icon" aria-hidden="true">💎</span>
                                     <span class="package-main">
                                         <span class="package-name">500 ₽</span>
-                                        <span class="package-meta" data-topup-meta>20 рендеров · 30 дней</span>
+                                        <span class="package-meta" data-topup-meta>20 рендеров / 30 дней</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45" data-selected="false">
@@ -531,15 +513,12 @@
                         Предварительные данные помогут подготовить будущую техническую проверку совместимости
                     </p>
                 </div>
-                <div class="fitment-hero-badges">
-                    <span class="status-pill neutral" data-fitment-badge data-i18n="fitment.preliminary">Предварительно</span>
-                    <span class="status-pill neutral fitment-preview-badge" data-fitment-preview-badge data-i18n="fitment.previewBadge" hidden>Demo preview</span>
-                </div>
             </section>
 
             <section class="panel fitment-panel">
-                <div class="create-flow-actions fitment-back-row">
-                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к результату</button>
+                <div class="fitment-context-row">
+                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к рендеру</button>
+                    <span class="fitment-preview-badge" data-fitment-preview-badge hidden>Demo</span>
                 </div>
 
                 <div class="wallet-status-island tone-loading" data-fitment-loading data-visible="false" aria-live="polite">
@@ -567,10 +546,10 @@
                             <div>
                                 <p class="section-label" data-i18n="fitment.basicsLabel">Базовые данные</p>
                                 <h2 data-fitment-vehicle-title>—</h2>
+                                <p class="fitment-basics-specs" data-fitment-vehicle-specs hidden></p>
                             </div>
-                            <span class="status-pill neutral" data-i18n="fitment.preliminary">Предварительно</span>
                         </div>
-                        <p class="fitment-basics-copy" data-i18n="fitment.basicsCopy">Определено по фото · данные требуют подтверждения перед установкой</p>
+                        <p class="fitment-basics-copy" data-i18n="fitment.basicsCopy">Определено по фото — данные требуют подтверждения перед установкой</p>
                         <div class="fitment-readiness" data-fitment-readiness>
                             <strong data-fitment-readiness-title>Данных для проверки пока недостаточно</strong>
                             <span data-fitment-readiness-fields>—</span>
@@ -584,11 +563,12 @@
                         </div>
                     </article>
 
-                    <div class="fitment-overview-grid">
+                    <div class="fitment-overview-grid" data-fitment-overview-grid>
                         <article class="fitment-overview-card">
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
                                 <div class="fitment-overview-value" data-fitment-card-vehicle-title>—</div>
+                                <div class="fitment-overview-specs" data-fitment-card-vehicle-specs hidden></div>
                                 <div class="fitment-overview-meta" data-fitment-card-vehicle-meta data-i18n="fitment.vehicleCardMeta">Определено по фото</div>
                             </div>
                             <button type="button" class="ghost-button compact-button" data-fitment-jump="vehicle" data-i18n="fitment.jumpVehicle">Уточнить →</button>
@@ -598,6 +578,7 @@
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.rimCard">Колесный диск</div>
                                 <div class="fitment-overview-value" data-fitment-card-rim-title>—</div>
+                                <div class="fitment-overview-specs" data-fitment-card-rim-specs hidden></div>
                                 <div class="fitment-overview-meta" data-fitment-card-rim-meta data-i18n="fitment.rimCardMeta">Часть данных определена по фото</div>
                             </div>
                             <button type="button" class="ghost-button compact-button" data-fitment-jump="rim" data-i18n="fitment.jumpRim">Уточнить →</button>
@@ -606,12 +587,14 @@
                         <article class="fitment-overview-card">
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.sourceCard">Источник колесного диска</div>
-                                <div class="fitment-overview-value" data-fitment-card-source-title>Не указано</div>
+                                <div class="fitment-overview-value" data-fitment-card-source-brand>Не указано</div>
+                                <div class="fitment-overview-specs" data-fitment-card-source-sku hidden></div>
                                 <div class="fitment-overview-meta" data-fitment-card-source-meta data-i18n="fitment.sourceCardMeta">Бренд, артикул или ссылка на колесный диск</div>
                             </div>
                             <button type="button" class="ghost-button compact-button" data-fitment-jump="source" data-i18n="fitment.jumpSource">Добавить →</button>
                         </article>
                     </div>
+                    <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden>Свернуть сводку</button>
 
                     <p class="panel-note neutral" data-i18n="fitment.notice">
                         Поля необязательны и не меняют уже созданную виртуальную примерку

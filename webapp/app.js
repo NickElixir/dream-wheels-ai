@@ -118,7 +118,7 @@ const I18N = {
             preliminary: "Предварительно",
             openFromResult: "Уточнить параметры",
             openFromHistory: "Уточнить параметры",
-            back: "Вернуться к результату",
+            back: "Вернуться к рендеру",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
             stale: "Данные уже изменились в другом окне. Обновите экран и попробуйте ещё раз",
@@ -130,7 +130,7 @@ const I18N = {
             userConfirmed: "Подтверждено пользователем",
             sourceAdded: "Ссылка добавлена",
             basicsLabel: "Базовые данные",
-            basicsCopy: "Определено по фото · данные требуют подтверждения перед установкой",
+            basicsCopy: "Определено по фото — данные требуют подтверждения перед установкой",
             centerBore: "Центральное отверстие",
             diameter: "Заводской диаметр",
             width: "Ориентировочная ширина",
@@ -167,7 +167,7 @@ const I18N = {
             save: "Сохранить данные",
             skip: "Не сейчас",
             unavailable: "Для этого результата уточнение параметров пока недоступно",
-            previewBadge: "Demo preview",
+            previewBadge: "Demo",
             previewNote: "Изменения сохраняются только локально в этой сессии",
         },
         actions: {
@@ -272,17 +272,17 @@ const I18N = {
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
             fallbackDisabled: "Web fallback выключен на backend",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} рендеров · начислено по /start",
+            starterGrantMeta: "{credits} рендеров — начислено по /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Счет #{invoiceId} · {amount}",
-            paidInvoice: "Счет #{invoiceId} · {amount}",
-            failedInvoice: "Счет #{invoiceId} · {amount}",
+            pendingInvoice: "Счет #{invoiceId} — {amount}",
+            paidInvoice: "Счет #{invoiceId} — {amount}",
+            failedInvoice: "Счет #{invoiceId} — {amount}",
             packageMetaDays: "{credits} рендеров",
-            packageSummary: "{amount} · {credits} рендеров",
+            packageSummary: "{amount} / {credits} рендеров",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -406,7 +406,7 @@ const I18N = {
             preliminary: "Preliminary",
             openFromResult: "Refine details",
             openFromHistory: "Refine details",
-            back: "Back to result",
+            back: "Back to render",
             loading: "Loading details",
             saveSuccess: "Details saved",
             stale: "Details were changed in another window. Reload the screen and try again",
@@ -418,7 +418,7 @@ const I18N = {
             userConfirmed: "Confirmed by user",
             sourceAdded: "Link added",
             basicsLabel: "Basic data",
-            basicsCopy: "Detected from the photo · confirm the data before installation",
+            basicsCopy: "Detected from the photo — confirm the data before installation",
             centerBore: "Center bore",
             diameter: "Factory diameter",
             width: "Approximate width",
@@ -455,7 +455,7 @@ const I18N = {
             save: "Save details",
             skip: "Not now",
             unavailable: "Fitment preparation is not available for this result yet",
-            previewBadge: "Demo preview",
+            previewBadge: "Demo",
             previewNote: "Changes are saved locally for this session only",
         },
         actions: {
@@ -560,17 +560,17 @@ const I18N = {
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
             fallbackDisabled: "Web fallback is disabled on the backend",
             starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders · added on /start",
+            starterGrantMeta: "{credits} renders — added on /start",
             starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
             summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId} · {amount}",
-            paidInvoice: "Invoice #{invoiceId} · {amount}",
-            failedInvoice: "Invoice #{invoiceId} · {amount}",
+            pendingInvoice: "Invoice #{invoiceId} — {amount}",
+            paidInvoice: "Invoice #{invoiceId} — {amount}",
+            failedInvoice: "Invoice #{invoiceId} — {amount}",
             packageMetaDays: "{credits} renders",
-            packageSummary: "{amount} · {credits} renders",
+            packageSummary: "{amount} / {credits} renders",
         },
         renders: {
             eyebrow: "Finished work",
@@ -766,6 +766,7 @@ const state = {
     fitmentMessage: "",
     fitmentMessageTone: "neutral",
     fitmentForm: createEmptyFitmentForm(),
+    fitmentOverviewCollapsed: false,
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
@@ -826,27 +827,29 @@ function fitmentPreviewProvenance({ source, confidence, isUserConfirmed = false 
 }
 
 function demoVehicleTitle(vehicle) {
-    const parts = [[vehicle?.make, vehicle?.model].filter(Boolean).join(" "), vehicle?.year, vehicle?.generation]
-        .filter(Boolean);
-    return parts.length ? parts.join(" · ") : fitmentEmptyValue();
+    return [vehicle?.make, vehicle?.model].filter(Boolean).join(" ") || fitmentEmptyValue();
 }
 
 function demoPcdDisplay(rim) {
-    if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${rim.pcd_mm}`;
+    if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${formatIdentityNumber(rim.pcd_mm)}`;
     return null;
+}
+
+function fitmentVehicleSpecs(vehicle) {
+    return [vehicle?.year, vehicle?.generation].filter(Boolean).join(" / ");
 }
 
 function demoRimTitle(rim) {
     const base = [rim?.brand, rim?.model].filter(Boolean).join(" ");
-    const details = [
-        rim?.wheel_diameter_in ? `${rim.wheel_diameter_in}"` : "",
-        rim?.wheel_width_j ? `${rim.wheel_width_j}J` : "",
+    return base || fitmentEmptyValue();
+}
+
+function fitmentRimSpecs(rim) {
+    return [
+        rim?.wheel_diameter_in ? `${formatIdentityNumber(rim.wheel_diameter_in)}"` : "",
+        rim?.wheel_width_j ? `${formatIdentityNumber(rim.wheel_width_j)}J` : "",
         demoPcdDisplay(rim),
-    ].filter(Boolean);
-    if (base && details.length) return `${base} · ${details.join(" / ")}`;
-    if (base) return base;
-    if (details.length) return details.join(" / ");
-    return fitmentEmptyValue();
+    ].filter(Boolean).join(" / ");
 }
 
 function demoFitmentOverviewReadiness(overview) {
@@ -1055,12 +1058,12 @@ function updateCreateFooter() {
     if (!user) {
         const websiteUsername = state.websiteAuth?.username;
         userInfo.textContent = websiteUsername
-            ? `Telegram · @${websiteUsername}`
+            ? `Telegram — @${websiteUsername}`
             : t("create.footerNotTelegram");
         return;
     }
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || `id ${user.id}`;
-    userInfo.textContent = `Telegram · ${name}`;
+    userInfo.textContent = `Telegram — ${name}`;
 }
 
 function getDisplayName() {
@@ -1481,7 +1484,28 @@ function fitmentRimMeta(overview) {
 function fitmentSourceValue(overview) {
     const parts = [overview?.rim?.brand, overview?.rim?.sku];
     if (overview?.rim?.has_product_url) parts.push(t("fitment.sourceAdded"));
-    return parts.filter(Boolean).join(" · ") || fitmentEmptyValue();
+    return parts.filter(Boolean).join(" — ") || fitmentEmptyValue();
+}
+
+function fitmentSourceBrand(overview) {
+    return overview?.rim?.brand || fitmentEmptyValue();
+}
+
+function fitmentSourceSku(overview) {
+    return overview?.rim?.sku || "";
+}
+
+function setFitmentOverviewCollapsed(collapsed) {
+    state.fitmentOverviewCollapsed = collapsed;
+    const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
+    const toggle = document.querySelector("[data-fitment-overview-toggle]");
+    if (overviewGrid) overviewGrid.dataset.collapsed = String(collapsed);
+    if (toggle) {
+        toggle.hidden = !state.fitmentOverview;
+        toggle.textContent = collapsed
+            ? (locale === "ru" ? "Показать сводку" : "Show summary")
+            : (locale === "ru" ? "Свернуть сводку" : "Collapse summary");
+    }
 }
 
 function fitmentCandidateLabel(candidate) {
@@ -1490,11 +1514,14 @@ function fitmentCandidateLabel(candidate) {
     const confidenceLabel = Number.isFinite(confidence)
         ? `${Math.round(confidence * 100)}%`
         : "";
-    return [t("fitment.aiSuggestion"), value, confidenceLabel].filter(Boolean).join(" · ");
+    return [value, confidenceLabel].filter(Boolean).join(" — ");
 }
 
 function renderFitmentCandidates() {
     document.querySelectorAll(".fitment-candidate-row").forEach((row) => row.remove());
+    document.querySelectorAll(".fitment-field.has-candidates").forEach((field) => {
+        field.classList.remove("has-candidates");
+    });
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
         const path = input.dataset.fitmentInput;
         const candidates = fitmentCandidatesFor(path);
@@ -1511,7 +1538,10 @@ function renderFitmentCandidates() {
             button.textContent = fitmentCandidateLabel(candidate);
             row.append(button);
         }
-        if (row.children.length) input.closest(".fitment-field")?.append(row);
+        if (row.children.length) {
+            input.closest(".fitment-field")?.classList.add("has-candidates");
+            input.closest(".fitment-field")?.append(row);
+        }
     });
 }
 
@@ -1716,6 +1746,8 @@ function renderFitment() {
         return;
     }
 
+    setFitmentOverviewCollapsed(state.fitmentOverviewCollapsed);
+
     if (shell) shell.hidden = false;
     if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
     if (readiness) readiness.dataset.ready = String(Boolean(overview.readiness?.ready));
@@ -1728,11 +1760,11 @@ function renderFitment() {
         const missing = overview.readiness?.missing_fields || [];
         const unconfirmed = overview.readiness?.unconfirmed_fields || [];
         if (missing.length) {
-            readinessFields.textContent = missing.map(fitmentFieldLabel).join(" · ");
+            readinessFields.textContent = missing.map(fitmentFieldLabel).join(", ");
         } else if (unconfirmed.length) {
             readinessFields.textContent = `${t("fitment.readinessUnconfirmed")}: ${unconfirmed
                 .map(fitmentFieldLabel)
-                .join(" · ")}`;
+                .join(", ")}`;
         } else {
             readinessFields.textContent =
                 locale === "ru"
@@ -1741,22 +1773,47 @@ function renderFitment() {
         }
     }
     document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(
-        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+        document.createTextNode(demoVehicleTitle(overview.vehicle))
     );
+    const vehicleSpecs = fitmentVehicleSpecs(overview.vehicle);
+    const vehicleSpecsTarget = document.querySelector("[data-fitment-vehicle-specs]");
+    if (vehicleSpecsTarget) {
+        vehicleSpecsTarget.textContent = vehicleSpecs;
+        vehicleSpecsTarget.hidden = !vehicleSpecs;
+    }
     document.querySelector("[data-fitment-card-vehicle-title]")?.replaceChildren(
-        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+        document.createTextNode(demoVehicleTitle(overview.vehicle))
     );
+    const vehicleCardSpecs = document.querySelector("[data-fitment-card-vehicle-specs]");
+    if (vehicleCardSpecs) {
+        vehicleCardSpecs.textContent = vehicleSpecs;
+        vehicleCardSpecs.hidden = !vehicleSpecs;
+    }
     document.querySelector("[data-fitment-card-vehicle-meta]")?.replaceChildren(
         document.createTextNode(fitmentVehicleMeta(overview))
     );
     document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(
-        document.createTextNode(overview.rim?.title || fitmentEmptyValue())
+        document.createTextNode(demoRimTitle(overview.rim))
     );
+    const rimSpecs = fitmentRimSpecs(overview.rim);
+    const rimCardSpecs = document.querySelector("[data-fitment-card-rim-specs]");
+    if (rimCardSpecs) {
+        rimCardSpecs.textContent = rimSpecs;
+        rimCardSpecs.hidden = !rimSpecs;
+    }
     document.querySelector("[data-fitment-card-rim-meta]")?.replaceChildren(
         document.createTextNode(fitmentRimMeta(overview))
     );
-    document.querySelector("[data-fitment-card-source-title]")?.replaceChildren(
-        document.createTextNode(fitmentSourceValue(overview))
+    document.querySelector("[data-fitment-card-source-brand]")?.replaceChildren(
+        document.createTextNode(fitmentSourceBrand(overview))
+    );
+    const sourceSku = document.querySelector("[data-fitment-card-source-sku]");
+    if (sourceSku) {
+        sourceSku.textContent = fitmentSourceSku(overview);
+        sourceSku.hidden = !fitmentSourceSku(overview);
+    }
+    document.querySelector("[data-fitment-card-source-meta]")?.replaceChildren(
+        document.createTextNode(overview?.rim?.has_product_url ? t("fitment.sourceAdded") : t("fitment.sourceCardMeta"))
     );
     document.querySelector("[data-fitment-basic-pcd]")?.replaceChildren(
         document.createTextNode(overview.rim?.pcd_display || fitmentEmptyValue())
@@ -2200,8 +2257,8 @@ function renderWallet() {
                 return `
                     <div class="history-item payment-history-item">
                         <div>
-                            <strong>${formatRub(item.amount)} · ${item.credits} ${t("credits")}</strong>
-                            <div class="meta">Robokassa · ${item.createdAt}</div>
+                            <strong>${formatRub(item.amount)} / ${item.credits} ${t("credits")}</strong>
+                            <div class="meta">Robokassa — ${item.createdAt}</div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -2296,10 +2353,10 @@ function rimSummaryForJob(job) {
     const rim = job?.render_input_snapshot?.rim;
     if (!rim) return "";
     if (rim.pcd_display) {
-        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.pcd_display}`;
+        return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${formatPcdDisplay(rim.pcd_display)}`;
     }
     if (rim.wheel_diameter_in && rim.wheel_width_j && rim.bolt_count && rim.pcd_mm) {
-        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.bolt_count}×${rim.pcd_mm}`;
+        return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${rim.bolt_count}×${formatIdentityNumber(rim.pcd_mm)}`;
     }
     return "";
 }
@@ -2339,8 +2396,8 @@ function buildRenderExpiryCohorts() {
             credits: state.starterGrant.credits,
             expiresAt: state.starterGrant.expiresAtIso || addDays(state.starterGrant.createdAtIso, 30),
             meta: locale === "ru"
-                ? `Стартовый пакет · начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
-                : `Starter grant · added ${formatShortDate(state.starterGrant.createdAtIso)}`,
+                ? `Стартовый пакет — начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
+                : `Starter grant — added ${formatShortDate(state.starterGrant.createdAtIso)}`,
         });
     }
     state.payments
@@ -2352,8 +2409,8 @@ function buildRenderExpiryCohorts() {
                 credits: Number(payment.credits || 0),
                 expiresAt: addDays(paidAt, 30),
                 meta: locale === "ru"
-                    ? `Пакет ${formatRub(payment.amount)} · оплачен ${formatShortDate(paidAt)}`
-                    : `Package ${formatRub(payment.amount)} · paid ${formatShortDate(paidAt)}`,
+                    ? `Пакет ${formatRub(payment.amount)} — оплачен ${formatShortDate(paidAt)}`
+                    : `Package ${formatRub(payment.amount)} — paid ${formatShortDate(paidAt)}`,
             });
         });
     return cohorts
@@ -2812,11 +2869,15 @@ function renderHistoryCard(job) {
                     ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
-                    <div class="render-title">${escapeHtml(title)}</div>
-                    <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
-                    ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
-                    ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
-                    <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
+                    <div class="render-info-island">
+                        <div class="render-title">${escapeHtml(title)}</div>
+                        <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
+                        ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
+                        ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
+                        <div class="render-info-footer">
+                            <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="render-card-action">${action}</div>
             </div>
@@ -3314,6 +3375,18 @@ function revokePreviewUrl(kind) {
     }
 }
 
+function resetPreviewGeometry(kind) {
+    document.querySelector(`[data-preview-media="${kind}"]`)
+        ?.style.removeProperty("--preview-aspect-ratio");
+}
+
+function syncPreviewGeometry(kind) {
+    const img = document.querySelector(`[data-preview-img="${kind}"]`);
+    const media = document.querySelector(`[data-preview-media="${kind}"]`);
+    if (!img?.naturalWidth || !img?.naturalHeight || !media) return;
+    media.style.setProperty("--preview-aspect-ratio", `${img.naturalWidth} / ${img.naturalHeight}`);
+}
+
 function renderPreviewFromFile(kind, fileLike) {
     revokePreviewUrl(kind);
     const img = document.querySelector(`[data-preview-img="${kind}"]`);
@@ -3322,9 +3395,12 @@ function renderPreviewFromFile(kind, fileLike) {
     if (!img || !preview || !zone || !fileLike?.blob) return;
     const objectUrl = URL.createObjectURL(fileLike.blob);
     state.previewUrls[kind] = objectUrl;
+    resetPreviewGeometry(kind);
+    img.onload = () => syncPreviewGeometry(kind);
     img.src = objectUrl;
     preview.hidden = false;
     zone.hidden = true;
+    if (img.complete) syncPreviewGeometry(kind);
 }
 
 function resetIdentityState() {
@@ -3354,24 +3430,30 @@ function formatVehicle(candidate) {
     const year = candidate.year ?? (
         candidate.year_start && candidate.year_end ? `${candidate.year_start}-${candidate.year_end}` : ""
     );
-    return `${candidate.make} ${candidate.model}${year ? ` · ${year}` : ""}`;
+    return `${candidate.make} ${candidate.model}${year ? ` ${year}` : ""}`;
 }
 
 function formatPcd(rim) {
     if (!rim) return "—";
     const pcd = Number(rim.pcd_mm);
-    return `${rim.bolt_count}×${Number.isInteger(pcd) ? pcd.toFixed(0) : pcd}`;
+    return `${rim.bolt_count}×${formatIdentityNumber(pcd)}`;
 }
 
 function formatIdentityNumber(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return "—";
-    return Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+    const text = Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+    return locale === "ru" ? text.replace(".", ",") : text;
+}
+
+function formatPcdDisplay(value) {
+    const text = String(value || "");
+    return locale === "ru" ? text.replace(".", ",") : text;
 }
 
 function formatRim(rim) {
     if (!rim) return "—";
-    return `${formatIdentityNumber(rim.wheel_diameter_in)}" · ${formatIdentityNumber(rim.wheel_width_j)}J · ${formatPcd(rim)}`;
+    return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${formatPcd(rim)}`;
 }
 
 function confidenceLabel(confidence) {
@@ -3594,6 +3676,7 @@ function resetFlow() {
         input.value = "";
     });
     ["car", "wheel"].forEach((kind) => {
+        resetPreviewGeometry(kind);
         document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
         document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
     });
@@ -4094,6 +4177,7 @@ function bindEvents() {
             state.files[kind] = null;
             resetIdentityState();
             revokePreviewUrl(kind);
+            resetPreviewGeometry(kind);
             void deleteDraftFile(kind);
             const input = document.querySelector(`input[data-input="${kind}"]`);
             if (input) input.value = "";
@@ -4116,9 +4200,13 @@ function bindEvents() {
         void saveFitment(event);
     });
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        input.addEventListener("focus", () => setFitmentOverviewCollapsed(true));
         input.addEventListener("input", (event) => {
             setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
         });
+    });
+    document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {
+        setFitmentOverviewCollapsed(!state.fitmentOverviewCollapsed);
     });
     document.querySelectorAll("[data-fitment-jump]").forEach((button) => {
         button.addEventListener("click", () => {
