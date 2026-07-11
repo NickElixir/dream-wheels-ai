@@ -826,9 +826,7 @@ function fitmentPreviewProvenance({ source, confidence, isUserConfirmed = false 
 }
 
 function demoVehicleTitle(vehicle) {
-    const parts = [[vehicle?.make, vehicle?.model].filter(Boolean).join(" "), vehicle?.year, vehicle?.generation]
-        .filter(Boolean);
-    return parts.length ? parts.join(" — ") : fitmentEmptyValue();
+    return [vehicle?.make, vehicle?.model].filter(Boolean).join(" ") || fitmentEmptyValue();
 }
 
 function demoPcdDisplay(rim) {
@@ -836,17 +834,21 @@ function demoPcdDisplay(rim) {
     return null;
 }
 
+function fitmentVehicleSpecs(vehicle) {
+    return [vehicle?.year, vehicle?.generation].filter(Boolean).join(" / ");
+}
+
 function demoRimTitle(rim) {
     const base = [rim?.brand, rim?.model].filter(Boolean).join(" ");
-    const details = [
+    return base || fitmentEmptyValue();
+}
+
+function fitmentRimSpecs(rim) {
+    return [
         rim?.wheel_diameter_in ? `${formatIdentityNumber(rim.wheel_diameter_in)}"` : "",
         rim?.wheel_width_j ? `${formatIdentityNumber(rim.wheel_width_j)}J` : "",
         demoPcdDisplay(rim),
-    ].filter(Boolean);
-    if (base && details.length) return `${base} — ${details.join(" / ")}`;
-    if (base) return base;
-    if (details.length) return details.join(" / ");
-    return fitmentEmptyValue();
+    ].filter(Boolean).join(" / ");
 }
 
 function demoFitmentOverviewReadiness(overview) {
@@ -1741,17 +1743,34 @@ function renderFitment() {
         }
     }
     document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(
-        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+        document.createTextNode(demoVehicleTitle(overview.vehicle))
     );
+    const vehicleSpecs = fitmentVehicleSpecs(overview.vehicle);
+    const vehicleSpecsTarget = document.querySelector("[data-fitment-vehicle-specs]");
+    if (vehicleSpecsTarget) {
+        vehicleSpecsTarget.textContent = vehicleSpecs;
+        vehicleSpecsTarget.hidden = !vehicleSpecs;
+    }
     document.querySelector("[data-fitment-card-vehicle-title]")?.replaceChildren(
-        document.createTextNode(overview.vehicle?.title || fitmentEmptyValue())
+        document.createTextNode(demoVehicleTitle(overview.vehicle))
     );
+    const vehicleCardSpecs = document.querySelector("[data-fitment-card-vehicle-specs]");
+    if (vehicleCardSpecs) {
+        vehicleCardSpecs.textContent = vehicleSpecs;
+        vehicleCardSpecs.hidden = !vehicleSpecs;
+    }
     document.querySelector("[data-fitment-card-vehicle-meta]")?.replaceChildren(
         document.createTextNode(fitmentVehicleMeta(overview))
     );
     document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(
-        document.createTextNode(overview.rim?.title || fitmentEmptyValue())
+        document.createTextNode(demoRimTitle(overview.rim))
     );
+    const rimSpecs = fitmentRimSpecs(overview.rim);
+    const rimCardSpecs = document.querySelector("[data-fitment-card-rim-specs]");
+    if (rimCardSpecs) {
+        rimCardSpecs.textContent = rimSpecs;
+        rimCardSpecs.hidden = !rimSpecs;
+    }
     document.querySelector("[data-fitment-card-rim-meta]")?.replaceChildren(
         document.createTextNode(fitmentRimMeta(overview))
     );
@@ -3369,7 +3388,7 @@ function formatVehicle(candidate) {
     const year = candidate.year ?? (
         candidate.year_start && candidate.year_end ? `${candidate.year_start}-${candidate.year_end}` : ""
     );
-    return `${candidate.make} ${candidate.model}${year ? ` — ${year}` : ""}`;
+    return `${candidate.make} ${candidate.model}${year ? ` ${year}` : ""}`;
 }
 
 function formatPcd(rim) {

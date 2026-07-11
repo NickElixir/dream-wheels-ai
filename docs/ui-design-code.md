@@ -18,7 +18,8 @@
 - Never use a full stop or middle dot as a visual separator in user-facing UI.
 - Technical parameter series use spaces around a slash: `20" / 8,5J / 5×114,3` in Russian and `20" / 8.5J / 5×114.3` in English.
 - Russian decimal values use a comma. A decimal point is allowed only in English locale, URLs, and code-like identifiers.
-- Use an em dash for title/status metadata and explanatory clauses: `Lexus RX — 2020`; use commas for natural-language lists.
+- Vehicle and rim names use spaces only: `Toyota Prius`, `OZ Ultraleggera`. Put vehicle year/generation and rim specifications on a separate secondary line instead of joining them with a dash.
+- Use an em dash for explanatory clauses and non-entity status metadata; use commas for natural-language lists.
 
 ## Navigation and motion
 

@@ -221,9 +221,20 @@ def test_design_code_defines_ui_separator_rules() -> None:
     assert "Never use a full stop or middle dot as a visual separator" in design_code
     assert '20" / 8,5J / 5×114,3' in design_code
     assert "Russian decimal values use a comma" in design_code
+    assert "Vehicle and rim names use spaces only" in design_code
     assert " · " not in APP_JS
     assert 'formatRim(rim)' in APP_JS
     assert '" / "' in APP_JS
+
+
+def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
+    assert 'data-fitment-vehicle-specs' in INDEX_HTML
+    assert 'data-fitment-card-vehicle-specs' in INDEX_HTML
+    assert 'data-fitment-card-rim-specs' in INDEX_HTML
+    assert "function fitmentVehicleSpecs(vehicle)" in APP_JS
+    assert "function fitmentRimSpecs(rim)" in APP_JS
+    assert "demoVehicleTitle(overview.vehicle)" in APP_JS
+    assert "demoRimTitle(overview.rim)" in APP_JS
 
 
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
