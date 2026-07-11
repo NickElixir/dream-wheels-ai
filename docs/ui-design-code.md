@@ -1,6 +1,6 @@
 # Dream Wheels AI — UI Design Code
 
-> **Status:** approved reference for Sprint 1 Cabinet, Sprint 2 create flow, and Sprint 3 result detail.
+> **Status:** approved reference for Sprint 1 Cabinet, Sprint 2 create flow, Sprint 3 result detail, and Sprint 4 fitment preparation.
 >
 > Canonical references: `docs/references/sprint-1-dashboard.html`, `docs/references/sprint-2-create-flow.html`, `docs/sprint-3-ui.md`.
 
@@ -12,6 +12,13 @@
 - Panels use 18–28 px radii, thin translucent borders, and restrained shadows.
 - Buttons and focus rings use product-owned colours. Avoid native browser styling.
 - Short interface copy normally has no terminal period.
+
+## Separators and numbers
+
+- Never use a full stop or middle dot as a visual separator in user-facing UI.
+- Technical parameter series use spaces around a slash: `20" / 8,5J / 5×114,3` in Russian and `20" / 8.5J / 5×114.3` in English.
+- Russian decimal values use a comma. A decimal point is allowed only in English locale, URLs, and code-like identifiers.
+- Use an em dash for title/status metadata and explanatory clauses: `Lexus RX — 2020`; use commas for natural-language lists.
 
 ## Navigation and motion
 
@@ -41,7 +48,9 @@ Upload → Определить данные → AI proposal → confirmation �
 
 Vehicle: make, model, year/range; primary proposal plus up to two alternatives. Rim: diameter, mandatory width, PCD. PCD displays as `5×114.3`; backend stores `bolt_count` plus `pcd_mm`. Do not show rim brand/model, SKU, ET, DIA, technical compatibility, or a full vehicle selector.
 
-Review explicitly says the render is visual and compatibility is not checked. Show non-clickable `Проверка совместимости — скоро` below the render CTA.
+The upload preview preserves the entire image with `object-fit: contain`. Its frame follows the uploaded image aspect ratio with restrained motion instead of cropping it into a fixed-height box.
+
+Review explicitly says the render is visual and compatibility is not checked. Do not repeat this warning with a future-stage banner: the editable fitment preparation screen becomes available from a completed result, while the automated technical verdict is not yet implemented.
 
 ## Sprint 3 — result detail, comparison, history and rating
 

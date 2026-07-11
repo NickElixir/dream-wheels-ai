@@ -128,7 +128,8 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "Проверьте AI-предложение" in INDEX_HTML
     assert "Параметры для рендера" in INDEX_HTML
     assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
-    assert "Проверка совместимости — скоро" in INDEX_HTML
+    assert "Проверка совместимости — скоро" not in INDEX_HTML
+    assert "future-stage-island" not in INDEX_HTML
     assert "data-create-render" in INDEX_HTML
     assert 'data-rim-confirm="false"' in INDEX_HTML
 
@@ -202,7 +203,27 @@ def test_sprint_2_reference_prototype_is_committed() -> None:
     assert reference.exists()
     content = reference.read_text(encoding="utf-8")
     assert "Определить данные" in content
-    assert "Проверка совместимости — скоро" in content
+
+
+def test_uploaded_photo_preview_preserves_image_ratio_without_cropping() -> None:
+    assert 'data-preview-media="car"' in INDEX_HTML
+    assert 'data-preview-media="wheel"' in INDEX_HTML
+    assert "function syncPreviewGeometry(kind)" in APP_JS
+    assert "--preview-aspect-ratio" in APP_JS
+    assert ".preview-media" in STYLE_CSS
+    assert "transition: aspect-ratio 320ms ease" in STYLE_CSS
+    preview_block = STYLE_CSS.split(".preview img", 1)[1].split("}", 1)[0]
+    assert "object-fit: contain" in preview_block
+
+
+def test_design_code_defines_ui_separator_rules() -> None:
+    design_code = (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
+    assert "Never use a full stop or middle dot as a visual separator" in design_code
+    assert '20" / 8,5J / 5×114,3' in design_code
+    assert "Russian decimal values use a comma" in design_code
+    assert " · " not in APP_JS
+    assert 'formatRim(rim)' in APP_JS
+    assert '" / "' in APP_JS
 
 
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:

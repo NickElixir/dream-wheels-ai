@@ -130,7 +130,7 @@ const I18N = {
             userConfirmed: "Подтверждено пользователем",
             sourceAdded: "Ссылка добавлена",
             basicsLabel: "Базовые данные",
-            basicsCopy: "Определено по фото · данные требуют подтверждения перед установкой",
+            basicsCopy: "Определено по фото — данные требуют подтверждения перед установкой",
             centerBore: "Центральное отверстие",
             diameter: "Заводской диаметр",
             width: "Ориентировочная ширина",
@@ -272,17 +272,17 @@ const I18N = {
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
             fallbackDisabled: "Web fallback выключен на backend",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} рендеров · начислено по /start",
+            starterGrantMeta: "{credits} рендеров — начислено по /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Счет #{invoiceId} · {amount}",
-            paidInvoice: "Счет #{invoiceId} · {amount}",
-            failedInvoice: "Счет #{invoiceId} · {amount}",
+            pendingInvoice: "Счет #{invoiceId} — {amount}",
+            paidInvoice: "Счет #{invoiceId} — {amount}",
+            failedInvoice: "Счет #{invoiceId} — {amount}",
             packageMetaDays: "{credits} рендеров",
-            packageSummary: "{amount} · {credits} рендеров",
+            packageSummary: "{amount} / {credits} рендеров",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -418,7 +418,7 @@ const I18N = {
             userConfirmed: "Confirmed by user",
             sourceAdded: "Link added",
             basicsLabel: "Basic data",
-            basicsCopy: "Detected from the photo · confirm the data before installation",
+            basicsCopy: "Detected from the photo — confirm the data before installation",
             centerBore: "Center bore",
             diameter: "Factory diameter",
             width: "Approximate width",
@@ -560,17 +560,17 @@ const I18N = {
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
             fallbackDisabled: "Web fallback is disabled on the backend",
             starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders · added on /start",
+            starterGrantMeta: "{credits} renders — added on /start",
             starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
             summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId} · {amount}",
-            paidInvoice: "Invoice #{invoiceId} · {amount}",
-            failedInvoice: "Invoice #{invoiceId} · {amount}",
+            pendingInvoice: "Invoice #{invoiceId} — {amount}",
+            paidInvoice: "Invoice #{invoiceId} — {amount}",
+            failedInvoice: "Invoice #{invoiceId} — {amount}",
             packageMetaDays: "{credits} renders",
-            packageSummary: "{amount} · {credits} renders",
+            packageSummary: "{amount} / {credits} renders",
         },
         renders: {
             eyebrow: "Finished work",
@@ -828,22 +828,22 @@ function fitmentPreviewProvenance({ source, confidence, isUserConfirmed = false 
 function demoVehicleTitle(vehicle) {
     const parts = [[vehicle?.make, vehicle?.model].filter(Boolean).join(" "), vehicle?.year, vehicle?.generation]
         .filter(Boolean);
-    return parts.length ? parts.join(" · ") : fitmentEmptyValue();
+    return parts.length ? parts.join(" — ") : fitmentEmptyValue();
 }
 
 function demoPcdDisplay(rim) {
-    if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${rim.pcd_mm}`;
+    if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${formatIdentityNumber(rim.pcd_mm)}`;
     return null;
 }
 
 function demoRimTitle(rim) {
     const base = [rim?.brand, rim?.model].filter(Boolean).join(" ");
     const details = [
-        rim?.wheel_diameter_in ? `${rim.wheel_diameter_in}"` : "",
-        rim?.wheel_width_j ? `${rim.wheel_width_j}J` : "",
+        rim?.wheel_diameter_in ? `${formatIdentityNumber(rim.wheel_diameter_in)}"` : "",
+        rim?.wheel_width_j ? `${formatIdentityNumber(rim.wheel_width_j)}J` : "",
         demoPcdDisplay(rim),
     ].filter(Boolean);
-    if (base && details.length) return `${base} · ${details.join(" / ")}`;
+    if (base && details.length) return `${base} — ${details.join(" / ")}`;
     if (base) return base;
     if (details.length) return details.join(" / ");
     return fitmentEmptyValue();
@@ -1055,12 +1055,12 @@ function updateCreateFooter() {
     if (!user) {
         const websiteUsername = state.websiteAuth?.username;
         userInfo.textContent = websiteUsername
-            ? `Telegram · @${websiteUsername}`
+            ? `Telegram — @${websiteUsername}`
             : t("create.footerNotTelegram");
         return;
     }
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || `id ${user.id}`;
-    userInfo.textContent = `Telegram · ${name}`;
+    userInfo.textContent = `Telegram — ${name}`;
 }
 
 function getDisplayName() {
@@ -1481,7 +1481,7 @@ function fitmentRimMeta(overview) {
 function fitmentSourceValue(overview) {
     const parts = [overview?.rim?.brand, overview?.rim?.sku];
     if (overview?.rim?.has_product_url) parts.push(t("fitment.sourceAdded"));
-    return parts.filter(Boolean).join(" · ") || fitmentEmptyValue();
+    return parts.filter(Boolean).join(" — ") || fitmentEmptyValue();
 }
 
 function fitmentCandidateLabel(candidate) {
@@ -1490,7 +1490,7 @@ function fitmentCandidateLabel(candidate) {
     const confidenceLabel = Number.isFinite(confidence)
         ? `${Math.round(confidence * 100)}%`
         : "";
-    return [t("fitment.aiSuggestion"), value, confidenceLabel].filter(Boolean).join(" · ");
+    return [t("fitment.aiSuggestion"), value, confidenceLabel].filter(Boolean).join(" — ");
 }
 
 function renderFitmentCandidates() {
@@ -1728,11 +1728,11 @@ function renderFitment() {
         const missing = overview.readiness?.missing_fields || [];
         const unconfirmed = overview.readiness?.unconfirmed_fields || [];
         if (missing.length) {
-            readinessFields.textContent = missing.map(fitmentFieldLabel).join(" · ");
+            readinessFields.textContent = missing.map(fitmentFieldLabel).join(", ");
         } else if (unconfirmed.length) {
             readinessFields.textContent = `${t("fitment.readinessUnconfirmed")}: ${unconfirmed
                 .map(fitmentFieldLabel)
-                .join(" · ")}`;
+                .join(", ")}`;
         } else {
             readinessFields.textContent =
                 locale === "ru"
@@ -2200,8 +2200,8 @@ function renderWallet() {
                 return `
                     <div class="history-item payment-history-item">
                         <div>
-                            <strong>${formatRub(item.amount)} · ${item.credits} ${t("credits")}</strong>
-                            <div class="meta">Robokassa · ${item.createdAt}</div>
+                            <strong>${formatRub(item.amount)} / ${item.credits} ${t("credits")}</strong>
+                            <div class="meta">Robokassa — ${item.createdAt}</div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -2296,10 +2296,10 @@ function rimSummaryForJob(job) {
     const rim = job?.render_input_snapshot?.rim;
     if (!rim) return "";
     if (rim.pcd_display) {
-        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.pcd_display}`;
+        return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${formatPcdDisplay(rim.pcd_display)}`;
     }
     if (rim.wheel_diameter_in && rim.wheel_width_j && rim.bolt_count && rim.pcd_mm) {
-        return `${rim.wheel_diameter_in}" / ${rim.wheel_width_j}J / ${rim.bolt_count}×${rim.pcd_mm}`;
+        return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${rim.bolt_count}×${formatIdentityNumber(rim.pcd_mm)}`;
     }
     return "";
 }
@@ -2339,8 +2339,8 @@ function buildRenderExpiryCohorts() {
             credits: state.starterGrant.credits,
             expiresAt: state.starterGrant.expiresAtIso || addDays(state.starterGrant.createdAtIso, 30),
             meta: locale === "ru"
-                ? `Стартовый пакет · начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
-                : `Starter grant · added ${formatShortDate(state.starterGrant.createdAtIso)}`,
+                ? `Стартовый пакет — начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
+                : `Starter grant — added ${formatShortDate(state.starterGrant.createdAtIso)}`,
         });
     }
     state.payments
@@ -2352,8 +2352,8 @@ function buildRenderExpiryCohorts() {
                 credits: Number(payment.credits || 0),
                 expiresAt: addDays(paidAt, 30),
                 meta: locale === "ru"
-                    ? `Пакет ${formatRub(payment.amount)} · оплачен ${formatShortDate(paidAt)}`
-                    : `Package ${formatRub(payment.amount)} · paid ${formatShortDate(paidAt)}`,
+                    ? `Пакет ${formatRub(payment.amount)} — оплачен ${formatShortDate(paidAt)}`
+                    : `Package ${formatRub(payment.amount)} — paid ${formatShortDate(paidAt)}`,
             });
         });
     return cohorts
@@ -3314,6 +3314,18 @@ function revokePreviewUrl(kind) {
     }
 }
 
+function resetPreviewGeometry(kind) {
+    document.querySelector(`[data-preview-media="${kind}"]`)
+        ?.style.removeProperty("--preview-aspect-ratio");
+}
+
+function syncPreviewGeometry(kind) {
+    const img = document.querySelector(`[data-preview-img="${kind}"]`);
+    const media = document.querySelector(`[data-preview-media="${kind}"]`);
+    if (!img?.naturalWidth || !img?.naturalHeight || !media) return;
+    media.style.setProperty("--preview-aspect-ratio", `${img.naturalWidth} / ${img.naturalHeight}`);
+}
+
 function renderPreviewFromFile(kind, fileLike) {
     revokePreviewUrl(kind);
     const img = document.querySelector(`[data-preview-img="${kind}"]`);
@@ -3322,9 +3334,12 @@ function renderPreviewFromFile(kind, fileLike) {
     if (!img || !preview || !zone || !fileLike?.blob) return;
     const objectUrl = URL.createObjectURL(fileLike.blob);
     state.previewUrls[kind] = objectUrl;
+    resetPreviewGeometry(kind);
+    img.onload = () => syncPreviewGeometry(kind);
     img.src = objectUrl;
     preview.hidden = false;
     zone.hidden = true;
+    if (img.complete) syncPreviewGeometry(kind);
 }
 
 function resetIdentityState() {
@@ -3354,24 +3369,30 @@ function formatVehicle(candidate) {
     const year = candidate.year ?? (
         candidate.year_start && candidate.year_end ? `${candidate.year_start}-${candidate.year_end}` : ""
     );
-    return `${candidate.make} ${candidate.model}${year ? ` · ${year}` : ""}`;
+    return `${candidate.make} ${candidate.model}${year ? ` — ${year}` : ""}`;
 }
 
 function formatPcd(rim) {
     if (!rim) return "—";
     const pcd = Number(rim.pcd_mm);
-    return `${rim.bolt_count}×${Number.isInteger(pcd) ? pcd.toFixed(0) : pcd}`;
+    return `${rim.bolt_count}×${formatIdentityNumber(pcd)}`;
 }
 
 function formatIdentityNumber(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return "—";
-    return Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+    const text = Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
+    return locale === "ru" ? text.replace(".", ",") : text;
+}
+
+function formatPcdDisplay(value) {
+    const text = String(value || "");
+    return locale === "ru" ? text.replace(".", ",") : text;
 }
 
 function formatRim(rim) {
     if (!rim) return "—";
-    return `${formatIdentityNumber(rim.wheel_diameter_in)}" · ${formatIdentityNumber(rim.wheel_width_j)}J · ${formatPcd(rim)}`;
+    return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${formatPcd(rim)}`;
 }
 
 function confidenceLabel(confidence) {
@@ -3594,6 +3615,7 @@ function resetFlow() {
         input.value = "";
     });
     ["car", "wheel"].forEach((kind) => {
+        resetPreviewGeometry(kind);
         document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
         document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
     });
@@ -4094,6 +4116,7 @@ function bindEvents() {
             state.files[kind] = null;
             resetIdentityState();
             revokePreviewUrl(kind);
+            resetPreviewGeometry(kind);
             void deleteDraftFile(kind);
             const input = document.querySelector(`input[data-input="${kind}"]`);
             if (input) input.value = "";
