@@ -237,6 +237,19 @@ def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
     assert "demoRimTitle(overview.rim)" in APP_JS
 
 
+def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> None:
+    assert 'data-fitment-overview-toggle' in INDEX_HTML
+    assert 'data-fitment-overview-grid' in INDEX_HTML
+    assert 'state.fitmentOverviewCollapsed' in APP_JS
+    assert 'input.addEventListener("focus", () => setFitmentOverviewCollapsed(true))' in APP_JS
+    assert "fitment-field.has-candidates" in STYLE_CSS
+    assert "fitment-candidate-row" in STYLE_CSS
+    assert "position: sticky" in STYLE_CSS
+    assert "--desktop-content-max: 1080px" in STYLE_CSS
+    assert 'data-fitment-card-source-brand' in INDEX_HTML
+    assert 'data-fitment-card-source-sku' in INDEX_HTML
+
+
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
     assert "tone-critical" in STYLE_CSS
     assert "identity-critical-card" in INDEX_HTML

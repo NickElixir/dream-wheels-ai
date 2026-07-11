@@ -766,6 +766,7 @@ const state = {
     fitmentMessage: "",
     fitmentMessageTone: "neutral",
     fitmentForm: createEmptyFitmentForm(),
+    fitmentOverviewCollapsed: false,
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
@@ -1486,17 +1487,41 @@ function fitmentSourceValue(overview) {
     return parts.filter(Boolean).join(" — ") || fitmentEmptyValue();
 }
 
+function fitmentSourceBrand(overview) {
+    return overview?.rim?.brand || fitmentEmptyValue();
+}
+
+function fitmentSourceSku(overview) {
+    return overview?.rim?.sku || "";
+}
+
+function setFitmentOverviewCollapsed(collapsed) {
+    state.fitmentOverviewCollapsed = collapsed;
+    const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
+    const toggle = document.querySelector("[data-fitment-overview-toggle]");
+    if (overviewGrid) overviewGrid.dataset.collapsed = String(collapsed);
+    if (toggle) {
+        toggle.hidden = !state.fitmentOverview;
+        toggle.textContent = collapsed
+            ? (locale === "ru" ? "Показать сводку" : "Show summary")
+            : (locale === "ru" ? "Свернуть сводку" : "Collapse summary");
+    }
+}
+
 function fitmentCandidateLabel(candidate) {
     const value = candidate?.value;
     const confidence = Number(candidate?.confidence);
     const confidenceLabel = Number.isFinite(confidence)
         ? `${Math.round(confidence * 100)}%`
         : "";
-    return [t("fitment.aiSuggestion"), value, confidenceLabel].filter(Boolean).join(" — ");
+    return [value, confidenceLabel].filter(Boolean).join(" — ");
 }
 
 function renderFitmentCandidates() {
     document.querySelectorAll(".fitment-candidate-row").forEach((row) => row.remove());
+    document.querySelectorAll(".fitment-field.has-candidates").forEach((field) => {
+        field.classList.remove("has-candidates");
+    });
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
         const path = input.dataset.fitmentInput;
         const candidates = fitmentCandidatesFor(path);
@@ -1513,7 +1538,10 @@ function renderFitmentCandidates() {
             button.textContent = fitmentCandidateLabel(candidate);
             row.append(button);
         }
-        if (row.children.length) input.closest(".fitment-field")?.append(row);
+        if (row.children.length) {
+            input.closest(".fitment-field")?.classList.add("has-candidates");
+            input.closest(".fitment-field")?.append(row);
+        }
     });
 }
 
@@ -1718,6 +1746,8 @@ function renderFitment() {
         return;
     }
 
+    setFitmentOverviewCollapsed(state.fitmentOverviewCollapsed);
+
     if (shell) shell.hidden = false;
     if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
     if (readiness) readiness.dataset.ready = String(Boolean(overview.readiness?.ready));
@@ -1774,8 +1804,16 @@ function renderFitment() {
     document.querySelector("[data-fitment-card-rim-meta]")?.replaceChildren(
         document.createTextNode(fitmentRimMeta(overview))
     );
-    document.querySelector("[data-fitment-card-source-title]")?.replaceChildren(
-        document.createTextNode(fitmentSourceValue(overview))
+    document.querySelector("[data-fitment-card-source-brand]")?.replaceChildren(
+        document.createTextNode(fitmentSourceBrand(overview))
+    );
+    const sourceSku = document.querySelector("[data-fitment-card-source-sku]");
+    if (sourceSku) {
+        sourceSku.textContent = fitmentSourceSku(overview);
+        sourceSku.hidden = !fitmentSourceSku(overview);
+    }
+    document.querySelector("[data-fitment-card-source-meta]")?.replaceChildren(
+        document.createTextNode(overview?.rim?.has_product_url ? t("fitment.sourceAdded") : t("fitment.sourceCardMeta"))
     );
     document.querySelector("[data-fitment-basic-pcd]")?.replaceChildren(
         document.createTextNode(overview.rim?.pcd_display || fitmentEmptyValue())
@@ -4158,9 +4196,13 @@ function bindEvents() {
         void saveFitment(event);
     });
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        input.addEventListener("focus", () => setFitmentOverviewCollapsed(true));
         input.addEventListener("input", (event) => {
             setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
         });
+    });
+    document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {
+        setFitmentOverviewCollapsed(!state.fitmentOverviewCollapsed);
     });
     document.querySelectorAll("[data-fitment-jump]").forEach((button) => {
         button.addEventListener("click", () => {

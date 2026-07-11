@@ -567,7 +567,7 @@
                         </div>
                     </article>
 
-                    <div class="fitment-overview-grid">
+                    <div class="fitment-overview-grid" data-fitment-overview-grid>
                         <article class="fitment-overview-card">
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
@@ -591,12 +591,14 @@
                         <article class="fitment-overview-card">
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.sourceCard">Источник колесного диска</div>
-                                <div class="fitment-overview-value" data-fitment-card-source-title>Не указано</div>
+                                <div class="fitment-overview-value" data-fitment-card-source-brand>Не указано</div>
+                                <div class="fitment-overview-specs" data-fitment-card-source-sku hidden></div>
                                 <div class="fitment-overview-meta" data-fitment-card-source-meta data-i18n="fitment.sourceCardMeta">Бренд, артикул или ссылка на колесный диск</div>
                             </div>
                             <button type="button" class="ghost-button compact-button" data-fitment-jump="source" data-i18n="fitment.jumpSource">Добавить →</button>
                         </article>
                     </div>
+                    <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden>Свернуть сводку</button>
 
                     <p class="panel-note neutral" data-i18n="fitment.notice">
                         Поля необязательны и не меняют уже созданную виртуальную примерку
