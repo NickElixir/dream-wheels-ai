@@ -250,6 +250,21 @@ def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> Non
     assert 'data-fitment-card-source-sku' in INDEX_HTML
 
 
+def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
+    assert 'data-i18n="fitment.back"' in INDEX_HTML
+    assert "Вернуться к рендеру" in INDEX_HTML
+    assert "Demo preview" not in INDEX_HTML
+    assert 'data-fitment-preview-badge hidden>Demo</span>' in INDEX_HTML
+    assert "fitment-context-row" in STYLE_CSS
+    assert "data-i18n=\"fitment.preliminary\"" not in INDEX_HTML
+    assert "render-info-island" in APP_JS
+    assert "render-info-footer" in APP_JS
+    assert ".render-info-island .status-pill" in STYLE_CSS
+    assert "render-demo-note" in APP_JS
+    assert "border: 1px solid rgba(255, 204, 86, 0.22)" in STYLE_CSS
+    assert "background: rgba(255, 204, 86, 0.08)" in STYLE_CSS
+
+
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
     assert "tone-critical" in STYLE_CSS
     assert "identity-critical-card" in INDEX_HTML

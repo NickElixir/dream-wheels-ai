@@ -31,6 +31,10 @@ Use restrained fade and small translate motion. Respect `prefers-reduced-motion`
 
 Use islands only for meaningful loading, success, warning, or error states. Identity/auth blockers use a visible danger island with actionable recovery, never an endless loading state.
 
+Fitment preparation uses one context marker only: `Demo` is a small environment label shown next to `Вернуться к рендеру` in preview mode. Do not show a second `Предварительно` badge; readiness copy already explains that the data is not a technical verdict.
+
+Completed render history uses a compact summary island for the vehicle name, wheel specs, date, guest note, and status. The `Готово` status must not stretch across the card as a full-width bar.
+
 ## Common image rule
 
 A complete car composition is more important than filling a fixed visual box.

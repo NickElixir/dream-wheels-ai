@@ -1656,15 +1656,28 @@ h2 {
     align-items: center;
 }
 
-.fitment-back-row,
 .fitment-actions {
     justify-content: flex-start;
+}
+
+.fitment-context-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .fitment-preview-badge {
     border-color: rgba(116, 211, 255, 0.22);
     background: rgba(116, 211, 255, 0.1);
     color: #c9f0ff;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .fitment-shell {
@@ -2204,6 +2217,15 @@ h2 {
     align-self: center;
 }
 
+.render-info-island {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
 .render-subtitle {
     color: var(--text-subtle);
     font-size: 15px;
@@ -2223,10 +2245,28 @@ h2 {
 }
 
 .render-demo-note {
-    margin-top: 4px;
+    margin-top: 2px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 204, 86, 0.22);
+    border-radius: 14px;
+    background: rgba(255, 204, 86, 0.08);
     color: var(--warning);
     font-size: 12px;
     font-weight: 750;
+    line-height: 1.35;
+}
+
+.render-info-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 2px;
+}
+
+.render-info-island .status-pill {
+    min-height: 32px;
+    padding-inline: 12px;
+    font-size: 12px;
 }
 
 .render-empty {

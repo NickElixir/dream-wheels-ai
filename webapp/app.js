@@ -118,7 +118,7 @@ const I18N = {
             preliminary: "Предварительно",
             openFromResult: "Уточнить параметры",
             openFromHistory: "Уточнить параметры",
-            back: "Вернуться к результату",
+            back: "Вернуться к рендеру",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
             stale: "Данные уже изменились в другом окне. Обновите экран и попробуйте ещё раз",
@@ -167,7 +167,7 @@ const I18N = {
             save: "Сохранить данные",
             skip: "Не сейчас",
             unavailable: "Для этого результата уточнение параметров пока недоступно",
-            previewBadge: "Demo preview",
+            previewBadge: "Demo",
             previewNote: "Изменения сохраняются только локально в этой сессии",
         },
         actions: {
@@ -406,7 +406,7 @@ const I18N = {
             preliminary: "Preliminary",
             openFromResult: "Refine details",
             openFromHistory: "Refine details",
-            back: "Back to result",
+            back: "Back to render",
             loading: "Loading details",
             saveSuccess: "Details saved",
             stale: "Details were changed in another window. Reload the screen and try again",
@@ -455,7 +455,7 @@ const I18N = {
             save: "Save details",
             skip: "Not now",
             unavailable: "Fitment preparation is not available for this result yet",
-            previewBadge: "Demo preview",
+            previewBadge: "Demo",
             previewNote: "Changes are saved locally for this session only",
         },
         actions: {
@@ -2869,11 +2869,15 @@ function renderHistoryCard(job) {
                     ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
-                    <div class="render-title">${escapeHtml(title)}</div>
-                    <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
-                    ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
-                    ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
-                    <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
+                    <div class="render-info-island">
+                        <div class="render-title">${escapeHtml(title)}</div>
+                        <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
+                        ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
+                        ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
+                        <div class="render-info-footer">
+                            <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="render-card-action">${action}</div>
             </div>
