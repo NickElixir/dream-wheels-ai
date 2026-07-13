@@ -20,6 +20,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0014_payments_provider_neutral_fields.sql` — provider-neutral поля платежей для Robokassa + будущих Telegram Stars
 - `0015_durable_render_assets.sql` — `assets` и ссылки `jobs.*_asset_id` для durable render history
 - `0016_credit_ledger_expiration_compat.sql` — compat для canonical `credit_ledger.event_type='expiration'`
+- `0017_fitment_verdict.sql` — durable preliminary/confirmed fitment runs, snapshots и idempotency
 
 ## Стратегия применения
 
@@ -42,6 +43,8 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед релизом payment/ledger кода на окружение, где этих объектов ещё нет, сначала применить `0012_credit_accounts_ledger_schema_align.sql`, затем выкатывать код.
 - Перед внедрением Telegram Stars применить `0014_payments_provider_neutral_fields.sql`: она добавляет `currency`, `amount_provider_units`, provider payload/charge id и `delivery_channel`, сохраняя совместимость текущих Robokassa inserts через trigger.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
+- Перед включением `FITMENT_DB_PERSISTENCE=true` последовательно применить `0015`, `0016`, затем `0017`. `0017` включает RLS без политик для `anon`/`authenticated`; доступ к fitment-таблицам остаётся только у backend через прямое DB-подключение/service role.
+- Создание `fitment_checks` вместе с `fitment_check_idempotency` должно выполняться одной транзакцией через repository API. Раздельные legacy-методы оставлены только для совместимости и не должны использоваться в новом request flow.
 
 ## Соглашения
 

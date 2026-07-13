@@ -1,0 +1,37 @@
+{
+  "make": {
+    "slug": "haval",
+    "name": "Haval"
+  },
+  "model": {
+    "slug": "chitu",
+    "name": "Chitu"
+  },
+  "technical": {
+    "stud_holes": 5,
+    "pcd": 114.3,
+    "bolt_pattern": "5x114.3",
+    "centre_bore": "66.6",
+    "fasteners": {
+      "type": "Lug nuts",
+      "thread_size": "M12 x 1.5",
+      "wheel_tightening_torque": "110 Nm"
+    }
+  },
+  "wheels": [
+    {
+      "front": {
+        "rim_diameter": 18,
+        "rim_width": 7,
+        "offset": 40,
+        "is_stock": true
+      },
+      "rear": {
+        "rim_diameter": 18,
+        "rim_width": 7,
+        "offset": 40,
+        "is_stock": true
+      }
+    }
+  ]
+}

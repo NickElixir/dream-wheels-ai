@@ -1,0 +1,54 @@
+{
+  "_comment": "Agent vision snapshots for demo_assets — simulates VLM output from rim/car photos.",
+  "cars/suv_white_side.jpg": {
+    "make": "Land Rover",
+    "model": "Range Rover Evoque",
+    "year_from": 2012,
+    "year_to": 2016,
+    "body_type": "SUV",
+    "market_guess": "eudm",
+    "confidence": 0.76,
+    "notes": "White 3-door Evoque, front three-quarter",
+    "expected_oem": {
+      "bolt_count": 5,
+      "pcd_mm": 108.0,
+      "center_bore_mm": 63.4,
+      "rim_diameter_min": 17,
+      "rim_diameter_max": 20,
+      "rim_width_min": 7.5,
+      "rim_width_max": 8.5,
+      "offset_min": 40,
+      "offset_max": 50
+    }
+  },
+  "rims/disc_1.webp": {
+    "brand": "Konig",
+    "model": "Dekagram",
+    "style": "10-spoke dual-tone V-spoke",
+    "finish": "gloss black barrel, red spoke faces",
+    "bolt_count": 5,
+    "diameter_estimate": 18,
+    "width_estimate": 8.5,
+    "offset_estimate": null,
+    "pcd_mm": null,
+    "center_bore_mm": 73.1,
+    "marking_text": null,
+    "confidence": 0.58,
+    "notes": "KONIG center cap; product shot; no stamped PCD/size on visible face; CB typical for aftermarket flow-formed"
+  },
+  "rims/rim.jpg": {
+    "brand": "RIAL",
+    "model": "X-pattern mesh",
+    "style": "mesh split-spoke",
+    "finish": "machined silver face, gloss black barrel",
+    "bolt_count": 5,
+    "diameter_estimate": 18,
+    "width_estimate": 8,
+    "offset_estimate": null,
+    "pcd_mm": null,
+    "center_bore_mm": 66.6,
+    "marking_text": null,
+    "confidence": 0.54,
+    "notes": "RIAL center cap; catalog photo; no backside marking visible"
+  }
+}

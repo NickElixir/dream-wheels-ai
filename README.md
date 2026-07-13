@@ -1,6 +1,6 @@
 # Dream Wheels AI
 
-Dream Wheels AI is a Telegram Mini App and bot for virtual wheel fitting: a user uploads a car image and a wheel image, receives a generated visual fitment, and will receive a separate preliminary technical compatibility assessment.
+Dream Wheels AI is a Telegram Mini App and bot for virtual wheel fitting: a user uploads a car image and a wheel image, receives a generated visual fitment, and can separately request a preliminary technical compatibility assessment.
 
 > A visual result is not proof that a wheel is technically compatible with a vehicle.
 
@@ -28,6 +28,21 @@ Telegram Mini App
 ```
 
 The detailed WebApp and worker diagrams are in [docs/architecture.md](docs/architecture.md).
+
+The fitment flow is independent and user initiated:
+
+```text
+Telegram Mini App
+  → POST /fitment/preliminary with the same car and wheel photos
+  → editable VLM/OCR suggestions and preliminary likelihood
+  → user confirms vehicle and front/rear wheel specifications
+  → POST /fitment/vehicle-identities + /fitment/rim-setups
+  → POST /fitment/checks with Idempotency-Key
+  → Wheel-Size profile + deterministic rules + weighted risk
+  → confirmed verdict, missing values and recommendations
+```
+
+Fitment does not block or automatically trigger a visual render. All fitment endpoints remain behind `FITMENT_VERDICT_ENABLED`.
 
 ## Repository layout
 

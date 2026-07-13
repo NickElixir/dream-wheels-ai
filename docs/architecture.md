@@ -240,6 +240,42 @@ flowchart TD
 
 ---
 
+## 3c. Двухэтапная проверка совместимости
+
+Fitment использует те же фотографии, но остаётся независимым от рендера. Ни один
+запрос к Wheel-Size не выполняется автоматически: confirmed check запускает сам
+пользователь после проверки распознанных данных.
+
+```mermaid
+sequenceDiagram
+    actor U as Пользователь
+    participant W as Mini App
+    participant A as FastAPI
+    participant V as VLM / OCR
+    participant F as Fitment rules
+    participant WS as Wheel-Size
+
+    U->>W: Выбирает фото авто и диска
+    W->>A: POST /fitment/preliminary
+    A->>V: Параллельное распознавание
+    V-->>A: Vehicle + rim hints
+    A->>F: Preliminary rules
+    A-->>W: prediction + fit_likelihood
+    U->>W: Исправляет и подтверждает данные
+    W->>A: POST identities + rim setup
+    W->>A: POST /fitment/checks + Idempotency-Key
+    A->>WS: User-initiated vehicle/profile lookup
+    WS-->>A: Fitment profile
+    A->>F: Axle rules + weighted risk
+    A-->>W: verdict + risk + recommendations
+```
+
+Feature flag `FITMENT_VERDICT_ENABLED=false` закрывает все `/fitment/*` ответы
+статусом 503 до отдельного rollout. Опциональный `render_job_id` только связывает
+проверку с принадлежащим пользователю рендером и не меняет его lifecycle.
+
+---
+
 ## 4. Структура репозитория
 
 ```mermaid

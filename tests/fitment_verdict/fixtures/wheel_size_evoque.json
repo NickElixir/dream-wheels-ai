@@ -1,0 +1,37 @@
+{
+  "make": {
+    "slug": "land-rover",
+    "name": "Land Rover"
+  },
+  "model": {
+    "slug": "range-rover-evoque",
+    "name": "Range Rover Evoque"
+  },
+  "technical": {
+    "stud_holes": 5,
+    "pcd": 108.0,
+    "bolt_pattern": "5x108",
+    "centre_bore": "63.4",
+    "fasteners": {
+      "type": "Lug nuts",
+      "thread_size": "M14 x 1.5",
+      "wheel_tightening_torque": "140 Nm"
+    }
+  },
+  "wheels": [
+    {
+      "front": {
+        "rim_diameter": 19,
+        "rim_width": 8,
+        "offset": 45,
+        "is_stock": true
+      },
+      "rear": {
+        "rim_diameter": 19,
+        "rim_width": 8,
+        "offset": 45,
+        "is_stock": true
+      }
+    }
+  ]
+}

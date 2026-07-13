@@ -1,3 +1,5 @@
+import { createFitmentController } from "./fitment.js?v=20260714-1";
+
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 
@@ -46,6 +48,7 @@ const I18N = {
         },
         menu: {
             create: "Создать рендер",
+            fitment: "Проверка совместимости",
             wallet: "Кошелек",
             renders: "История рендеров",
             settings: "Настройки",
@@ -54,6 +57,7 @@ const I18N = {
         },
         caption: {
             create: "Рендер",
+            fitment: "Совместимость",
             wallet: "Кабинет",
             renders: "Рендеры",
             settings: "Настройки",
@@ -108,6 +112,7 @@ const I18N = {
             canceled: "Отменено",
             failed: "Не удалось",
             openRender: "Открыть",
+            checkFitment: "Проверить совместимость",
         },
         errors: {
             generic: "Что-то пошло не так",
@@ -245,6 +250,7 @@ const I18N = {
         },
         menu: {
             create: "Create render",
+            fitment: "Fitment check",
             wallet: "Wallet",
             renders: "Render history",
             settings: "Settings",
@@ -253,6 +259,7 @@ const I18N = {
         },
         caption: {
             create: "Render",
+            fitment: "Fitment",
             wallet: "Cabinet",
             renders: "Renders",
             settings: "Settings",
@@ -307,6 +314,7 @@ const I18N = {
             canceled: "Canceled",
             failed: "Failed",
             openRender: "Open",
+            checkFitment: "Check compatibility",
         },
         errors: {
             generic: "Something went wrong",
@@ -495,6 +503,9 @@ function resolveInitialView() {
     if (params.get("section") === "support") {
         return "support";
     }
+    if (params.get("section") === "fitment") {
+        return "fitment";
+    }
     return "create";
 }
 
@@ -554,6 +565,23 @@ const state = {
     submitting: false,
     recentRenders: loadRecentRenders(),
 };
+
+const fitmentController = createFitmentController({
+    locale,
+    apiBaseUrl: state.apiBaseUrl,
+    getFiles: () => state.files,
+    hydrateFiles: hydrateFilesFromDraft,
+    selectFile: handleFileSelected,
+    clearFile: clearSelectedFile,
+    getIdentityPayload,
+    getIdentitySearchParams,
+    withAuthHeaders,
+    parseApiError,
+    makeIdempotencyKey,
+    haptic,
+    onStateChange: refreshButtonsForCurrentView,
+    openRender: () => setView("create"),
+});
 
 function applyTranslations() {
     document.documentElement.lang = locale;
@@ -841,6 +869,9 @@ function setView(view) {
     updateTopbarCaption();
     setMenuOpen(false);
     refreshButtonsForCurrentView();
+    if (view === "fitment") {
+        fitmentController.onFilesChanged();
+    }
     if (view === "wallet") {
         void loadCabinet({ silent: true });
     }
@@ -1409,6 +1440,7 @@ async function hydrateFilesFromDraft() {
             // ignore
         }
     }
+    fitmentController.onFilesChanged();
 }
 
 function revokePreviewUrl(kind) {
@@ -1497,6 +1529,10 @@ function setBackButton(onClick) {
 }
 
 function refreshButtonsForCurrentView() {
+    if (state.view === "fitment") {
+        fitmentController.syncTelegramButtons({ setMainButton, hideMainButton, setBackButton });
+        return;
+    }
     if (state.view !== "create") {
         hideMainButton();
         setBackButton(null);
@@ -1555,6 +1591,8 @@ function resetFlow() {
     }
     document.querySelector("[data-download-result]")?.toggleAttribute("hidden", true);
     document.querySelector("[data-share-result]")?.toggleAttribute("hidden", true);
+    document.querySelector("[data-open-fitment]")?.toggleAttribute("hidden", true);
+    fitmentController.onFilesChanged({ clearRenderLink: true });
     setDownloadButtonState();
     setShareButtonState();
     showCreateScreen("upload");
@@ -1849,6 +1887,7 @@ async function submitJob() {
             }
             document.querySelector("[data-download-result]")?.toggleAttribute("hidden", !state.resultDownloadUrl);
             document.querySelector("[data-share-result]")?.toggleAttribute("hidden", !state.resultUrl);
+            document.querySelector("[data-open-fitment]")?.toggleAttribute("hidden", false);
             setDownloadButtonState();
             setShareButtonState();
             addRecentRender({
@@ -1875,19 +1914,31 @@ async function submitJob() {
     showError(t("errors.timeout"));
 }
 
-function handleFileSelected(kind, file) {
-    file.arrayBuffer().then((buffer) => {
-        state.files[kind] = {
-            blob: new Blob([buffer], { type: file.type }),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-        };
-        void saveDraftFile(kind, file, buffer);
-        renderPreviewFromFile(kind, state.files[kind]);
-        refreshButtonsForCurrentView();
-    });
+async function handleFileSelected(kind, file) {
+    const buffer = await file.arrayBuffer();
+    state.files[kind] = {
+        blob: new Blob([buffer], { type: file.type }),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+    };
+    void saveDraftFile(kind, file, buffer);
+    renderPreviewFromFile(kind, state.files[kind]);
+    fitmentController.onFilesChanged({ clearRenderLink: true });
+    refreshButtonsForCurrentView();
     haptic("light");
+}
+
+function clearSelectedFile(kind) {
+    state.files[kind] = null;
+    revokePreviewUrl(kind);
+    void deleteDraftFile(kind);
+    const input = document.querySelector(`input[data-input="${kind}"]`);
+    if (input) input.value = "";
+    document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
+    document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
+    fitmentController.onFilesChanged({ clearRenderLink: true });
+    refreshButtonsForCurrentView();
 }
 
 function bindEvents() {
@@ -1938,26 +1989,23 @@ function bindEvents() {
         input.addEventListener("change", (event) => {
             const file = event.target.files?.[0];
             if (!file) return;
-            handleFileSelected(kind, file);
+            void handleFileSelected(kind, file);
         });
     });
 
     document.querySelectorAll("[data-clear]").forEach((button) => {
         button.addEventListener("click", () => {
             const kind = button.dataset.clear;
-            state.files[kind] = null;
-            revokePreviewUrl(kind);
-            void deleteDraftFile(kind);
-            const input = document.querySelector(`input[data-input="${kind}"]`);
-            if (input) input.value = "";
-            document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
-            document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
-            refreshButtonsForCurrentView();
+            clearSelectedFile(kind);
         });
     });
 
     document.querySelector("[data-download-result]")?.addEventListener("click", downloadResult);
     document.querySelector("[data-share-result]")?.addEventListener("click", shareResult);
+    document.querySelector("[data-open-fitment]")?.addEventListener("click", () => {
+        fitmentController.openFromRender(state.jobId);
+        setView("fitment");
+    });
 
     document.addEventListener("click", (event) => {
         const openRenderButton = event.target.closest("[data-open-render]");
@@ -1975,6 +2023,7 @@ function bindEvents() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    fitmentController.mount();
     applyTranslations();
     initTelegram();
     updateWebsiteAuthUi();
@@ -1990,6 +2039,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     setMenuOpen(false);
     showCreateScreen("upload");
 
+    const initialView = resolveInitialView();
+    if (initialView) {
+        setView(initialView);
+    }
+
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && state.view === "wallet") {
             void loadCabinet({ silent: true });
@@ -1999,9 +2053,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     await hydrateFilesFromDraft();
     refreshButtonsForCurrentView();
     await loadCabinet();
-
-    const initialView = resolveInitialView();
-    if (initialView) {
-        setView(initialView);
-    }
 });

@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from src import auth_api, db, jobs_api, payments_api, redis_client, share_api, storage
 from src.config import REDIS_JOB_QUEUE, REDIS_URL, WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
 from src.credits_service import finalize_job_credit, refund_job_credit
+from src.fitment import api as fitment_api
 from src.reve_client import fetch_image_base64, remix_wheels_on_car
 
 logging.basicConfig(
@@ -80,6 +81,8 @@ app.include_router(auth_api.router)
 app.include_router(jobs_api.router)
 app.include_router(payments_api.router)
 app.include_router(share_api.router)
+# Fitment verdict: эндпоинты отвечают 503, пока FITMENT_VERDICT_ENABLED=false.
+app.include_router(fitment_api.router)
 
 
 async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
