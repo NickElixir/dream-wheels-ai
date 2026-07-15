@@ -140,6 +140,18 @@ model nullable
 sku nullable
 product_url nullable
 
+## Rim product URL enrichment
+
+The existing Fitment source card is the user-facing entry point for a wheel
+product URL.  Resolving a URL is explicit and produces an unpersisted draft:
+JSON-LD, OpenGraph and visible product-page text are treated as source evidence,
+not as user confirmation.  The resolver must be HTTPS-only, use an approved
+host allowlist, validate every redirect and reject private DNS targets.
+
+The same source URL and provenance should be captured before render generation
+once the pre-render flow is extended.  This enables future diffusion and
+quality-evaluation context while preserving the render/fitment boundary.
+
 bolt_count nullable
 pcd_mm nullable
 center_bore_mm nullable

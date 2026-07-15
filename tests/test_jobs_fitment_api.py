@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from src import jobs_api
 from src.auth import AuthContext
 from src.main import app
+from src.rim_url_resolver import RimUrlCandidate, RimUrlResolution
 
 client = TestClient(app)
 
@@ -197,6 +198,68 @@ def test_fitment_overview_parses_stringified_json_fields(monkeypatch):
     assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
     assert body["rim_provenance"]["bolt_count"]["source"] == "ocr"
     assert body["rim_candidates"]["pcd_mm"][0]["value"] == 112
+
+
+def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_resolve(url, *, policy):
+        assert url == "https://shop.example/wheel"
+        assert policy.permits("shop.example", 443)
+        candidate = RimUrlCandidate("pcd_mm", 114.3, "json_ld", 0.95)
+        return RimUrlResolution(
+            requested_url=url,
+            final_url=url,
+            values={"pcd_mm": 114.3, "bolt_count": 5},
+            candidates=(candidate,),
+            conflicts=(),
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ALLOWED_HOSTS", ("shop.example",))
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/wheel"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["values"] == {"pcd_mm": 114.3, "bolt_count": 5}
+
+
+def test_fitment_vehicle_variants_are_catalogue_server_side(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_variants(self, identity):
+        assert identity.make == "BMW"
+        return [
+            {
+                "generation": "G20",
+                "modification": "330i",
+                "body": "Sedan",
+                "market": "eudm",
+                "generation_slug": "g20",
+                "modification_slug": "330i",
+            }
+        ]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants", fake_variants)
+
+    response = client.post("/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants")
+
+    assert response.status_code == 200
+    assert response.json()["variants"] == [
+        {"generation": "G20", "modification": "330i", "body": "Sedan", "market": "eudm"}
+    ]
 
 
 def test_fitment_overview_returns_404_for_non_owner(monkeypatch):

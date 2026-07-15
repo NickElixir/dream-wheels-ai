@@ -75,6 +75,15 @@ TELEGRAM_AUTH_TOKEN_SECRET = _env_str("TELEGRAM_AUTH_TOKEN_SECRET")
 TELEGRAM_AUTH_TOKEN_TTL_SEC = int(os.getenv("TELEGRAM_AUTH_TOKEN_TTL_SEC", "3600"))
 TELEGRAM_LOGIN_NONCE_TTL_SEC = int(os.getenv("TELEGRAM_LOGIN_NONCE_TTL_SEC", "600"))
 
+# Rim product pages are fetched only after an explicit user action.  Keep the
+# feature disabled until the deployment has an approved store allowlist.
+RIM_URL_RESOLVER_ENABLED = os.getenv("RIM_URL_RESOLVER_ENABLED", "false").lower() == "true"
+RIM_URL_RESOLVER_ALLOWED_HOSTS = tuple(
+    host.strip().lower()
+    for host in os.getenv("RIM_URL_RESOLVER_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+)
+
 # Robokassa
 ROBOKASSA_MERCHANT_LOGIN = os.getenv("ROBOKASSA_MERCHANT_LOGIN", "")
 ROBOKASSA_PASSWORD1 = os.getenv("ROBOKASSA_PASSWORD1", "")

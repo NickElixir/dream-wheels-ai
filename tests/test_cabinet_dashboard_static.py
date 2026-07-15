@@ -134,7 +134,7 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert 'data-rim-confirm="false"' in INDEX_HTML
 
 
-def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
+def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'data-view="fitment"' in INDEX_HTML
     assert "data-open-fitment-result" in INDEX_HTML
     assert "data-fitment-form" in INDEX_HTML
@@ -158,8 +158,10 @@ def test_sprint_4_fitment_flow_is_wired_without_verdict_engine() -> None:
     assert "job_id: GUEST_FITMENT_DEMO_JOB_ID" in APP_JS
     assert "fitment_available: true" in APP_JS
     assert "fitment/history" in JOBS_API
-    assert "FitmentCheck" not in APP_JS
-    assert "compatible_with_conditions" not in APP_JS
+    assert "runFitmentCheck" in APP_JS
+    assert "data-fitment-check" in INDEX_HTML
+    assert 'apiUrl("/fitment/checks"' in APP_JS
+    assert "compatible_with_conditions" in APP_JS
     assert "rerender" not in APP_JS.lower()
     assert "source_summary" not in APP_JS
     assert "vehicle?.summary" not in APP_JS

@@ -21,9 +21,23 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from src import assets_service, db, identity_service, redis_client, storage
 from src.assets_service import AssetKind
 from src.auth import AuthContext, resolve_telegram_auth
-from src.config import API_INTERNAL_TOKEN, REDIS_JOB_QUEUE, WORKER_ENABLED
+from src.config import (
+    API_INTERNAL_TOKEN,
+    REDIS_JOB_QUEUE,
+    RIM_URL_RESOLVER_ALLOWED_HOSTS,
+    RIM_URL_RESOLVER_ENABLED,
+    WORKER_ENABLED,
+)
 from src.credits_service import InsufficientCreditsError, refund_job_credit, reserve_job_credit
+from src.fitment.providers.base import ProviderError
+from src.fitment.providers.wheel_size import WheelSizeProvider
+from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
 from src.rate_limit import enforce_rate_limit
+from src.rim_url_resolver import (
+    RimUrlError,
+    UrlAllowlistPolicy,
+    resolve_rim_product_url,
+)
 from src.share_api import share_url_for_job
 from src.users_service import ensure_user
 
@@ -225,6 +239,10 @@ class FitmentReadinessResponse(BaseModel):
 
 class FitmentOverviewResponse(BaseModel):
     job_id: str
+    vehicle_identity_id: str
+    rim_setup_id: str
+    vehicle_identity_id: str
+    rim_setup_id: str
     status: str
     result_url: str | None = None
     completed_at: datetime | None = None
@@ -257,6 +275,57 @@ class FitmentHistoryItemResponse(BaseModel):
 class FitmentHistoryResponse(BaseModel):
     job_id: str
     events: list[FitmentHistoryItemResponse] = Field(default_factory=list)
+
+
+class RimSourceResolveRequest(BaseModel):
+    product_url: str = Field(min_length=1, max_length=2048)
+
+    @field_validator("product_url")
+    @classmethod
+    def normalize_url(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("product_url must not be empty")
+        return normalized
+
+
+class RimSourceCandidateResponse(BaseModel):
+    field: str
+    value: str | int | float
+    source: str
+    confidence: float
+
+
+class RimSourceConflictResponse(BaseModel):
+    field: str
+    candidates: list[RimSourceCandidateResponse]
+
+
+class RimSourceResolveResponse(BaseModel):
+    requested_url: str
+    final_url: str
+    values: dict[str, str | int | float]
+    candidates: list[RimSourceCandidateResponse]
+    conflicts: list[RimSourceConflictResponse]
+
+
+class VehicleVariantResponse(BaseModel):
+    generation: str
+    modification: str
+    body: str = ""
+    market: str
+
+
+class VehicleVariantsResponse(BaseModel):
+    variants: list[VehicleVariantResponse]
+
+
+class VehicleVariantApplyRequest(BaseModel):
+    expected_vehicle_revision: int = Field(ge=1)
+    generation: str
+    modification: str
+    body: str = ""
+    market: str
 
 
 class FeedbackAuthRequest(BaseModel):
@@ -833,6 +902,8 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
     )
     return FitmentOverviewResponse(
         job_id=row["job_id"],
+        vehicle_identity_id=row["vehicle_identity_id"],
+        rim_setup_id=row["rim_setup_id"],
         status=row["status"],
         result_url=row["output_image_url"],
         completed_at=row["completed_at"],
@@ -908,6 +979,7 @@ async def _fetch_fitment_job_row(
             vehicle.modification AS vehicle_modification,
             vehicle.market AS vehicle_market,
             vehicle.is_user_confirmed AS vehicle_is_user_confirmed,
+            vehicle.provider_mappings AS vehicle_provider_mappings,
             vehicle.field_provenance AS vehicle_field_provenance,
             vehicle.field_candidates AS vehicle_field_candidates,
             vehicle.revision AS vehicle_revision,
@@ -948,6 +1020,7 @@ async def _fetch_fitment_job_row(
     for field_name in (
         "vehicle_field_provenance",
         "vehicle_field_candidates",
+        "vehicle_provider_mappings",
         "rim_field_provenance",
         "rim_field_candidates",
     ):
@@ -1927,6 +2000,155 @@ async def get_fitment_history(
             for event in events
         ],
     )
+
+
+@router.post("/{job_id}/fitment/rim-source/resolve", response_model=RimSourceResolveResponse)
+async def resolve_fitment_rim_source(
+    job_id: str,
+    request: RimSourceResolveRequest,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Return an unpersisted, user-confirmable draft from an approved product page."""
+    if not RIM_URL_RESOLVER_ENABLED:
+        raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
+    if not RIM_URL_RESOLVER_ALLOWED_HOSTS:
+        raise HTTPException(status_code=503, detail="Rim URL resolver has no approved hosts")
+
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if row["status"] != "completed" or not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+
+    try:
+        resolution = await resolve_rim_product_url(
+            request.product_url,
+            policy=UrlAllowlistPolicy.from_values(allowed_hosts=RIM_URL_RESOLVER_ALLOWED_HOSTS),
+        )
+    except RimUrlError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return RimSourceResolveResponse(
+        requested_url=resolution.requested_url,
+        final_url=resolution.final_url,
+        values=resolution.values,
+        candidates=[
+            RimSourceCandidateResponse(
+                field=candidate.field,
+                value=candidate.value,
+                source=candidate.source,
+                confidence=candidate.confidence,
+            )
+            for candidate in resolution.candidates
+        ],
+        conflicts=[
+            RimSourceConflictResponse(
+                field=conflict.field,
+                candidates=[
+                    RimSourceCandidateResponse(
+                        field=candidate.field,
+                        value=candidate.value,
+                        source=candidate.source,
+                        confidence=candidate.confidence,
+                    )
+                    for candidate in conflict.candidates
+                ],
+            )
+            for conflict in resolution.conflicts
+        ],
+    )
+
+
+@router.post("/{job_id}/fitment/vehicle-variants", response_model=VehicleVariantsResponse)
+async def find_fitment_vehicle_variants(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """List exact Wheel-Size variants for an already saved vehicle identity."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if row["status"] != "completed" or not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+
+    identity = ProviderVehicleIdentity(
+        make=row["vehicle_make"],
+        model=row["vehicle_model"],
+        year=row["vehicle_year"],
+        body=row["vehicle_body"],
+        generation=row["vehicle_generation"],
+        modification=row["vehicle_modification"],
+        market=row["vehicle_market"],
+    )
+    try:
+        variants = await WheelSizeProvider().find_vehicle_variants(identity)
+    except ProviderError as exc:
+        raise HTTPException(status_code=503, detail="Vehicle catalogue is unavailable") from exc
+
+    return VehicleVariantsResponse(
+        variants=[VehicleVariantResponse(**variant) for variant in variants[:3]]
+    )
+
+
+@router.post("/{job_id}/fitment/vehicle-variants/apply", response_model=FitmentOverviewResponse)
+async def apply_fitment_vehicle_variant(
+    job_id: str,
+    request: VehicleVariantApplyRequest,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = _resolve_jobs_auth(init_data=init_data, telegram_user_id=telegram_user_id, authorization=authorization, required=True)
+    assert auth is not None
+    async with db.get_pool().acquire() as conn:
+        async with conn.transaction():
+            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            if not row:
+                raise HTTPException(status_code=404, detail="Fitment overview not found")
+            if int(row["vehicle_revision"]) != request.expected_vehicle_revision:
+                raise HTTPException(status_code=409, detail="Fitment vehicle was updated elsewhere. Reload and try again.")
+            identity = ProviderVehicleIdentity(make=row["vehicle_make"], model=row["vehicle_model"], year=row["vehicle_year"], market=row["vehicle_market"])
+            try:
+                variants = await WheelSizeProvider().find_vehicle_variants(identity)
+            except ProviderError as exc:
+                raise HTTPException(status_code=503, detail="Vehicle catalogue is unavailable") from exc
+            selected = next((variant for variant in variants if all(str(variant.get(key) or "") == str(getattr(request, key)) for key in ("generation", "modification", "body", "market"))), None)
+            if selected is None:
+                raise HTTPException(status_code=422, detail="Selected vehicle variant is no longer available")
+            mapping = dict(row["vehicle_provider_mappings"] or {})
+            mapping["wheel_size"] = {key: selected[key] for key in ("generation_slug", "modification_slug")}
+            await conn.execute(
+                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, market=$4, provider_mappings=$5::jsonb, revision=revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$6::uuid AND owner_user_id=$7 AND revision=$8",
+                request.generation, request.modification, request.body or None, request.market, json.dumps(mapping), row["vehicle_identity_id"], user_id, request.expected_vehicle_revision,
+            )
+            updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    assert updated is not None
+    return _fitment_overview_from_row(updated)
 
 
 @router.patch("/{job_id}/fitment", response_model=FitmentOverviewResponse)
