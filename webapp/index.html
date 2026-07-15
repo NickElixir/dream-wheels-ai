@@ -563,8 +563,21 @@
                         </div>
                     </article>
 
+                    <section class="fitment-verdict-card" data-fitment-verdict-card hidden>
+                        <div class="fitment-verdict-head">
+                            <div>
+                                <p class="section-label" data-i18n="fitment.verdictTitle">Предварительная техническая проверка</p>
+                                <h2 data-fitment-verdict-title>Проверка совместимости</h2>
+                            </div>
+                            <button type="button" class="primary-button compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
+                        </div>
+                        <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
+                        <div class="fitment-verdict-list" data-fitment-verdict-reasons hidden></div>
+                        <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
+                    </section>
+
                     <div class="fitment-overview-grid" data-fitment-overview-grid>
-                        <article class="fitment-overview-card">
+                        <article class="fitment-overview-card fitment-source-card" data-fitment-source-card>
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
                                 <div class="fitment-overview-value" data-fitment-card-vehicle-title>—</div>
@@ -591,17 +604,30 @@
                                 <div class="fitment-overview-specs" data-fitment-card-source-sku hidden></div>
                                 <div class="fitment-overview-meta" data-fitment-card-source-meta data-i18n="fitment.sourceCardMeta">Бренд, артикул или ссылка на колесный диск</div>
                             </div>
-                            <button type="button" class="ghost-button compact-button" data-fitment-jump="source" data-i18n="fitment.jumpSource">Добавить →</button>
+                            <button type="button" class="ghost-button compact-button" data-fitment-source-toggle data-i18n="fitment.jumpSource">Добавить →</button>
+                            <div class="fitment-source-entry" data-fitment-source-entry hidden>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
+                                    <input type="url" inputmode="url" data-fitment-source-url autocomplete="off" placeholder="https://">
+                                </label>
+                                <button type="button" class="primary-button compact-button" data-fitment-source-submit data-i18n="fitment.sourceResolve">Добавить источник</button>
+                                <p class="fitment-source-status" data-fitment-source-status hidden></p>
+                            </div>
                         </article>
                     </div>
                     <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden>Свернуть сводку</button>
 
-                    <p class="panel-note neutral" data-i18n="fitment.notice">
-                        Поля необязательны и не меняют уже созданную виртуальную примерку
-                    </p>
-                    <p class="panel-note neutral fitment-preview-note" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
-                        Изменения сохраняются только локально в этой сессии
-                    </p>
+                    <div class="fitment-notice-stack">
+                        <p class="panel-note neutral" data-i18n="fitment.notice">
+                            Поля необязательны и не меняют уже созданную виртуальную примерку
+                        </p>
+                        <p class="panel-note neutral" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
+                            Изменения сохраняются только локально в этой сессии
+                        </p>
+                        <p class="panel-note neutral" data-fitment-demo-live-note data-i18n="fitment.demoLiveActionsUnavailable" hidden>
+                            В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.
+                        </p>
+                    </div>
 
                     <form class="form-stack fitment-form" data-fitment-form>
                         <section class="fitment-form-section" data-fitment-section="vehicle">
@@ -638,6 +664,10 @@
                                     <span data-i18n="fitment.market">Рынок</span>
                                     <input type="text" data-fitment-input="vehicle.market" autocomplete="off">
                                 </label>
+                            </div>
+                            <div class="fitment-variant-picker">
+                                <button type="button" class="ghost-button compact-button" data-fitment-variants-load data-i18n="fitment.findVariants">Подобрать версию автомобиля</button>
+                                <div class="fitment-variant-list" data-fitment-variant-list hidden></div>
                             </div>
                         </section>
 
@@ -684,17 +714,6 @@
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.offset_et_mm">
                                 </label>
                             </div>
-                        </section>
-
-                        <section class="fitment-form-section" data-fitment-section="source">
-                            <div class="fitment-form-head">
-                                <p class="section-label" data-i18n="fitment.sourceSection">Источник колесного диска</p>
-                                <h2 data-i18n="fitment.sourceSectionTitle">Сохранить известный источник</h2>
-                            </div>
-                            <label class="fitment-field full-span">
-                                <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
-                                <input type="url" inputmode="url" data-fitment-input="rim.product_url" autocomplete="off" placeholder="https://">
-                            </label>
                         </section>
 
                         <div class="create-flow-actions fitment-actions">

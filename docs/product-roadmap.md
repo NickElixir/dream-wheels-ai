@@ -90,6 +90,16 @@ User-initiated Detailed Fitment Check, independent from rendering.
 
 Optional detailed fields after result detail: generation, modification, market, SKU/product URL, diameter, width, PCD, ET, DIA, staggered setup.
 
+### Follow-up — rim source enrichment before rendering
+
+An optional rim product URL may be collected in the pre-render flow.  After the
+user confirms the URL, the client shows a loading state, temporarily locks rim
+parameter inputs, and applies a reviewable extraction draft.  The URL, extracted
+values and their provenance travel with the render input draft and remain
+available in the Fitment editor.  Confirmed brand/model/SKU/specification data
+may later be used as context for diffusion generation and render-quality
+evaluation; unconfirmed page data must never be treated as ground truth.
+
 ### Sprint 5 onward
 
 Evaluation baseline, input-quality gate, controlled rendering, and catalog work with audited feeds.
