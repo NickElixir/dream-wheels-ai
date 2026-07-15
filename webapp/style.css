@@ -1735,11 +1735,15 @@ h2 {
     line-height: 1.45;
 }
 
-.fitment-preview-note {
+.fitment-notice-stack {
+    display: grid;
+    gap: 8px;
+}
+
+.fitment-notice-stack .panel-note {
+    margin: 0;
     padding: 12px 14px;
     border-radius: 16px;
-    border: 1px dashed rgba(116, 211, 255, 0.18);
-    background: rgba(116, 211, 255, 0.06);
 }
 
 .fitment-readiness {

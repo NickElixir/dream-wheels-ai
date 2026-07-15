@@ -617,15 +617,17 @@
                     </div>
                     <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden>Свернуть сводку</button>
 
-                    <p class="panel-note neutral" data-i18n="fitment.notice">
-                        Поля необязательны и не меняют уже созданную виртуальную примерку
-                    </p>
-                    <p class="panel-note neutral fitment-preview-note" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
-                        Изменения сохраняются только локально в этой сессии
-                    </p>
-                    <p class="panel-note neutral fitment-preview-note" data-fitment-demo-live-note data-i18n="fitment.demoLiveActionsUnavailable" hidden>
-                        В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.
-                    </p>
+                    <div class="fitment-notice-stack">
+                        <p class="panel-note neutral" data-i18n="fitment.notice">
+                            Поля необязательны и не меняют уже созданную виртуальную примерку
+                        </p>
+                        <p class="panel-note neutral" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
+                            Изменения сохраняются только локально в этой сессии
+                        </p>
+                        <p class="panel-note neutral" data-fitment-demo-live-note data-i18n="fitment.demoLiveActionsUnavailable" hidden>
+                            В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.
+                        </p>
+                    </div>
 
                     <form class="form-stack fitment-form" data-fitment-form>
                         <section class="fitment-form-section" data-fitment-section="vehicle">
