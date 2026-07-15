@@ -53,8 +53,21 @@ def _auth(init_data, telegram_user_id, authorization):
     )
 
 
-def _field(value, provenance: dict, name: str) -> FieldValue:
-    meta = provenance.get(name) or {}
+def _field(value, provenance: object, name: str) -> FieldValue:
+    """Build a field value while tolerating legacy JSON provenance shapes.
+
+    New ``rim_specs.field_provenance`` values are objects keyed by field name.
+    Some pre-fitment rows, however, contain a single JSON string such as
+    ``\"user_confirmed\"``.  A detailed check must treat that as provenance for
+    every rim field rather than raising an AttributeError.
+    """
+    if isinstance(provenance, dict):
+        candidate = provenance.get(name)
+        meta = candidate if isinstance(candidate, dict) else {}
+    elif isinstance(provenance, str):
+        meta = {"source": provenance}
+    else:
+        meta = {}
     source = meta.get("source", "user_input")
     try:
         parsed_source = Source(source)
