@@ -189,6 +189,19 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert snapshot["rim_setup"]["front"] == snapshot["rim_setup"]["rear"]
 
 
+def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
+    legacy_row = _row()
+    legacy_row["rim_field_provenance"] = "user_confirmed"
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=legacy_row)
+
+    response = _post()
+
+    assert response.status_code == 200
+    snapshot = json.loads(conn.inserted[0][8])
+    assert snapshot["rim_setup"]["front"]["bolt_count"]["source"] == "user_confirmed"
+
+
 def test_create_check_records_provider_failure(monkeypatch):
     class FailingProvider:
         name = "wheel_size"
