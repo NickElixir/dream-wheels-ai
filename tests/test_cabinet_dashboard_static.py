@@ -170,6 +170,11 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "vehicle?.summary" not in APP_JS
 
 
+def test_fitment_panel_collapses_hidden_status_islands() -> None:
+    assert '.fitment-panel > .wallet-status-island[data-visible="false"]' in STYLE_CSS
+    assert "display: none" in STYLE_CSS.split('.fitment-panel > .wallet-status-island[data-visible="false"]', 1)[1].split("}", 1)[0]
+
+
 def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
     history_card = APP_JS.split("function renderHistoryCard(job) {")[1].split(
         "function renderRenders() {"
