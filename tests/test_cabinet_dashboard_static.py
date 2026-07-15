@@ -162,6 +162,9 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "data-fitment-check" in INDEX_HTML
     assert 'apiUrl("/fitment/checks"' in APP_JS
     assert "compatible_with_conditions" in APP_JS
+    assert "demoLiveActionsUnavailable" in APP_JS
+    assert "data-fitment-demo-live-note" in INDEX_HTML
+    assert "shouldUseDemoFitment(state.fitmentJobId)" in APP_JS
     assert "rerender" not in APP_JS.lower()
     assert "source_summary" not in APP_JS
     assert "vehicle?.summary" not in APP_JS

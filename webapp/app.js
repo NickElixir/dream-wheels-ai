@@ -176,6 +176,7 @@ const I18N = {
             unavailable: "Для этого результата уточнение параметров пока недоступно",
             previewBadge: "Demo",
             previewNote: "Изменения сохраняются только локально в этой сессии",
+            demoLiveActionsUnavailable: "В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.",
         },
         actions: {
             createRender: "Создать рендер",
@@ -471,6 +472,7 @@ const I18N = {
             unavailable: "Fitment preparation is not available for this result yet",
             previewBadge: "Demo",
             previewNote: "Changes are saved locally for this session only",
+            demoLiveActionsUnavailable: "Demo supports manual edits only. Create a render to find a vehicle version, extract wheel parameters from a link, or run a technical check.",
         },
         actions: {
             createRender: "Create render",
@@ -1742,6 +1744,7 @@ function renderFitment() {
     const subtitle = document.querySelector("[data-fitment-subtitle]");
     const previewBadge = document.querySelector("[data-fitment-preview-badge]");
     const previewNote = document.querySelector("[data-fitment-preview-note]");
+    const demoLiveNote = document.querySelector("[data-fitment-demo-live-note]");
     const readiness = document.querySelector("[data-fitment-readiness]");
     const readinessTitle = document.querySelector("[data-fitment-readiness-title]");
     const readinessFields = document.querySelector("[data-fitment-readiness-fields]");
@@ -1771,10 +1774,12 @@ function renderFitment() {
     if (messageText) messageText.textContent = state.fitmentMessage || "";
     if (saveButton) saveButton.disabled = state.fitmentLoading || state.fitmentSaving;
     if (skipButton) skipButton.disabled = state.fitmentLoading || state.fitmentSaving;
-    if (sourceEntry) sourceEntry.hidden = !state.fitmentSourceOpen;
+    const demoMode = shouldUseDemoFitment(state.fitmentJobId);
+    if (sourceEntry) sourceEntry.hidden = demoMode || !state.fitmentSourceOpen;
     if (sourceToggle) sourceToggle.textContent = state.fitmentSourceOpen
         ? t("fitment.sourceClose")
         : t("fitment.jumpSource");
+    if (sourceToggle) sourceToggle.disabled = demoMode || state.fitmentSourceResolving;
     if (sourceUrl) {
         sourceUrl.value = state.fitmentForm.rim.product_url || "";
         sourceUrl.disabled = state.fitmentSourceResolving;
@@ -1789,7 +1794,7 @@ function renderFitment() {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
     });
-    if (variantsLoad) variantsLoad.disabled = state.fitmentVehicleVariantsLoading;
+    if (variantsLoad) variantsLoad.disabled = demoMode || state.fitmentVehicleVariantsLoading;
     if (variantsList) {
         variantsList.replaceChildren();
         variantsList.hidden = !state.fitmentVehicleVariants.length;
@@ -1805,17 +1810,17 @@ function renderFitment() {
         }
     }
 
-    const demoMode = shouldUseDemoFitment(state.fitmentJobId);
     if (previewBadge) previewBadge.hidden = !demoMode;
     if (previewNote) previewNote.hidden = !demoMode;
+    if (demoLiveNote) demoLiveNote.hidden = !demoMode;
     if (!overview) {
         if (shell) shell.hidden = true;
         return;
     }
 
-    if (verdictCard) verdictCard.hidden = !overview.readiness?.ready;
+    if (verdictCard) verdictCard.hidden = demoMode || !overview.readiness?.ready;
     if (verdictCheckButton) {
-        verdictCheckButton.disabled = state.fitmentChecking || !overview.readiness?.ready;
+        verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready;
         verdictCheckButton.textContent = state.fitmentChecking ? t("fitment.checking") : t("fitment.check");
     }
     if (state.fitmentCheck && verdictTitle && verdictCopy && verdictReasons) {
@@ -1992,7 +1997,7 @@ function closeFitmentView() {
 }
 
 async function resolveFitmentRimSource() {
-    if (!state.fitmentJobId || state.fitmentSourceResolving) return;
+    if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
     if (!productUrl) {
         state.fitmentSourceStatus = locale === "ru" ? "Введите ссылку на диск" : "Enter a wheel link";
@@ -2039,7 +2044,7 @@ async function resolveFitmentRimSource() {
 }
 
 async function loadFitmentVehicleVariants() {
-    if (!state.fitmentJobId || state.fitmentVehicleVariantsLoading) return;
+    if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentVehicleVariantsLoading) return;
     state.fitmentVehicleVariantsLoading = true;
     state.fitmentError = "";
     renderFitment();
@@ -2066,7 +2071,7 @@ async function loadFitmentVehicleVariants() {
 
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (!overview?.readiness?.ready || state.fitmentChecking) return;
+    if (!overview?.readiness?.ready || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
     state.fitmentChecking = true;
     state.fitmentError = "";
     renderFitment();
