@@ -192,6 +192,7 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
 def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
     legacy_row = _row()
     legacy_row["rim_field_provenance"] = "user_confirmed"
+    legacy_row["provider_mappings"] = json.dumps({"wheel_size": {"make_slug": "lexus"}})
     conn = FakeConn()
     _patch_auth_and_inputs(monkeypatch, conn, loaded_row=legacy_row)
 
@@ -200,6 +201,7 @@ def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
     assert response.status_code == 200
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"]["bolt_count"]["source"] == "user_confirmed"
+    assert snapshot["vehicle"]["provider_mappings"] == {"wheel_size": {"make_slug": "lexus"}}
 
 
 def test_create_check_records_provider_failure(monkeypatch):

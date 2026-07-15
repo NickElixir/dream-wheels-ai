@@ -83,6 +83,19 @@ def _field(value, provenance: object, name: str) -> FieldValue:
     )
 
 
+def _json_object(value: object) -> dict:
+    """Return a JSON object from asyncpg's legacy JSONB representations."""
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return {}
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
 async def _load(conn, user_id: int, request: CheckCreateRequest):
     return await conn.fetchrow(
         """
@@ -118,7 +131,7 @@ def _snapshot(row) -> tuple[VehicleIdentity, RimSetup, dict]:
         modification=row["modification"],
         market=row["market"],
         is_user_confirmed=bool(row["is_user_confirmed"]),
-        provider_mappings=row["provider_mappings"] or {},
+        provider_mappings=_json_object(row["provider_mappings"]),
     )
     rim = RimSpec(
         brand=row["brand"],
