@@ -24,8 +24,10 @@ from src.auth import AuthContext, resolve_telegram_auth
 from src.config import (
     API_INTERNAL_TOKEN,
     REDIS_JOB_QUEUE,
-    RIM_URL_RESOLVER_ALLOWED_HOSTS,
     RIM_URL_RESOLVER_ENABLED,
+    RIM_URL_RESOLVER_MAX_BODY_BYTES,
+    RIM_URL_RESOLVER_MAX_REDIRECTS,
+    RIM_URL_RESOLVER_TIMEOUT_SEC,
     WORKER_ENABLED,
 )
 from src.credits_service import InsufficientCreditsError, refund_job_credit, reserve_job_credit
@@ -34,8 +36,9 @@ from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
+    FetchLimits,
+    PublicHttpsPolicy,
     RimUrlError,
-    UrlAllowlistPolicy,
     resolve_rim_product_url,
 )
 from src.share_api import share_url_for_job
@@ -54,6 +57,8 @@ JOBS_RATE_WINDOW_SEC = 60
 # Лимит для webapp (POST /jobs/upload): Reve API стоит денег, ставим жёстче.
 UPLOAD_RATE_LIMIT = 10
 UPLOAD_RATE_WINDOW_SEC = 60 * 60  # 10/час
+RIM_SOURCE_RESOLVE_RATE_LIMIT = 10
+RIM_SOURCE_RESOLVE_RATE_WINDOW_SEC = 60 * 60
 
 MAX_RAW_FILE_BYTES = 10 * 1024 * 1024  # 10 MB — синхронно с лимитом raw bucket
 ALLOWED_UPLOAD_MIME = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -2032,11 +2037,9 @@ async def resolve_fitment_rim_source(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """Return an unpersisted, user-confirmable draft from an approved product page."""
+    """Return an unpersisted, user-confirmable draft from a public product page."""
     if not RIM_URL_RESOLVER_ENABLED:
         raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
-    if not RIM_URL_RESOLVER_ALLOWED_HOSTS:
-        raise HTTPException(status_code=503, detail="Rim URL resolver has no approved hosts")
 
     auth = _resolve_jobs_auth(
         init_data=init_data,
@@ -2048,6 +2051,9 @@ async def resolve_fitment_rim_source(
     pool = db.get_pool()
     async with pool.acquire() as conn:
         user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        await enforce_rate_limit(
+            "fitment_rim_source", user_id, RIM_SOURCE_RESOLVE_RATE_LIMIT, RIM_SOURCE_RESOLVE_RATE_WINDOW_SEC
+        )
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -2057,7 +2063,12 @@ async def resolve_fitment_rim_source(
     try:
         resolution = await resolve_rim_product_url(
             request.product_url,
-            policy=UrlAllowlistPolicy.from_values(allowed_hosts=RIM_URL_RESOLVER_ALLOWED_HOSTS),
+            policy=PublicHttpsPolicy(),
+            limits=FetchLimits(
+                max_redirects=RIM_URL_RESOLVER_MAX_REDIRECTS,
+                max_body_bytes=RIM_URL_RESOLVER_MAX_BODY_BYTES,
+                total_timeout_seconds=RIM_URL_RESOLVER_TIMEOUT_SEC,
+            ),
         )
     except RimUrlError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

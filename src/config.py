@@ -75,14 +75,14 @@ TELEGRAM_AUTH_TOKEN_SECRET = _env_str("TELEGRAM_AUTH_TOKEN_SECRET")
 TELEGRAM_AUTH_TOKEN_TTL_SEC = int(os.getenv("TELEGRAM_AUTH_TOKEN_TTL_SEC", "3600"))
 TELEGRAM_LOGIN_NONCE_TTL_SEC = int(os.getenv("TELEGRAM_LOGIN_NONCE_TTL_SEC", "600"))
 
-# Rim product pages are fetched only after an explicit user action.  Keep the
-# feature disabled until the deployment has an approved store allowlist.
+# Rim product pages are fetched only after an explicit user action.  The
+# resolver accepts any *public* HTTPS host and applies SSRF controls at every
+# DNS lookup and redirect; it must never rely on a manually maintained store
+# allowlist.
 RIM_URL_RESOLVER_ENABLED = os.getenv("RIM_URL_RESOLVER_ENABLED", "false").lower() == "true"
-RIM_URL_RESOLVER_ALLOWED_HOSTS = tuple(
-    host.strip().lower()
-    for host in os.getenv("RIM_URL_RESOLVER_ALLOWED_HOSTS", "").split(",")
-    if host.strip()
-)
+RIM_URL_RESOLVER_MAX_REDIRECTS = int(os.getenv("RIM_URL_RESOLVER_MAX_REDIRECTS", "3"))
+RIM_URL_RESOLVER_MAX_BODY_BYTES = int(os.getenv("RIM_URL_RESOLVER_MAX_BODY_BYTES", str(2 * 1024 * 1024)))
+RIM_URL_RESOLVER_TIMEOUT_SEC = float(os.getenv("RIM_URL_RESOLVER_TIMEOUT_SEC", "15"))
 
 # Robokassa
 ROBOKASSA_MERCHANT_LOGIN = os.getenv("ROBOKASSA_MERCHANT_LOGIN", "")

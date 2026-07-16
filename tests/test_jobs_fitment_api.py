@@ -205,9 +205,10 @@ def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
         async def fetchrow(self, *_args):
             return _fitment_row()
 
-    async def fake_resolve(url, *, policy):
+    async def fake_resolve(url, *, policy, limits):
         assert url == "https://shop.example/wheel"
         assert policy.permits("shop.example", 443)
+        assert limits.max_redirects == jobs_api.RIM_URL_RESOLVER_MAX_REDIRECTS
         candidate = RimUrlCandidate("pcd_mm", 114.3, "json_ld", 0.95)
         return RimUrlResolution(
             requested_url=url,
@@ -220,8 +221,12 @@ def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
     _patch_auth(monkeypatch)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
     monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
-    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ALLOWED_HOSTS", ("shop.example",))
     monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
 
     response = client.post(
         "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",

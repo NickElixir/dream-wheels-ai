@@ -2082,6 +2082,23 @@ function closeFitmentView() {
     setView(originView);
 }
 
+function fitmentSourceErrorMessage(error) {
+    const message = error?.message || "";
+    if (/too many requests/i.test(message)) {
+        return locale === "ru"
+            ? "Слишком много попыток. Повторите извлечение позже."
+            : "Too many attempts. Try extracting the parameters later.";
+    }
+    if (/disabled/i.test(message)) {
+        return locale === "ru"
+            ? "Автоматическое извлечение временно недоступно. Сохраните ссылку и заполните параметры вручную."
+            : "Automatic extraction is temporarily unavailable. Save the link and enter the parameters manually.";
+    }
+    return locale === "ru"
+        ? "Не удалось извлечь параметры автоматически. Проверьте ссылку или заполните поля вручную."
+        : "Parameters could not be extracted automatically. Check the link or enter them manually.";
+}
+
 async function resolveFitmentRimSource() {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
@@ -2121,7 +2138,7 @@ async function resolveFitmentRimSource() {
         state.fitmentSourceStatusTone = conflictFields.length ? "warning" : "success";
         state.fitmentSourceOpen = false;
     } catch (error) {
-        state.fitmentSourceStatus = error?.message || t("errors.requestFailed");
+        state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
     } finally {
         state.fitmentSourceResolving = false;

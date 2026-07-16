@@ -7,18 +7,6 @@
 
 import os
 
-
-def _env_bool(name: str, default: bool) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _env_csv(name: str) -> tuple[str, ...]:
-    return tuple(item.strip().lower() for item in os.getenv(name, "").split(",") if item.strip())
-
-
 FITMENT_VERDICT_ENABLED = os.getenv("FITMENT_VERDICT_ENABLED", "false").lower() == "true"
 
 # Durable-хранение в Postgres (требует применённой migrations/0017_fitment_verdict.sql).
@@ -53,13 +41,3 @@ FITMENT_VLM_MAX_RETRIES = int(os.getenv("FITMENT_VLM_MAX_RETRIES", "3"))
 FITMENT_IMAGE_MAX_BYTES = int(os.getenv("FITMENT_IMAGE_MAX_BYTES", str(10 * 1024 * 1024)))
 FITMENT_IMAGE_LONG_SIDE_PX = int(os.getenv("FITMENT_IMAGE_LONG_SIDE_PX", "1536"))
 FITMENT_IMAGE_MAX_PIXELS = int(os.getenv("FITMENT_IMAGE_MAX_PIXELS", "40000000"))
-
-# Product URL resolver. Generic public hosts require an explicit opt-in.
-FITMENT_RIM_URL_RESOLVER_ENABLED = _env_bool("FITMENT_RIM_URL_RESOLVER_ENABLED", True)
-FITMENT_RIM_URL_ALLOWED_HOSTS = _env_csv("FITMENT_RIM_URL_ALLOWED_HOSTS")
-FITMENT_RIM_URL_ALLOW_ALL_PUBLIC = _env_bool("FITMENT_RIM_URL_ALLOW_ALL_PUBLIC", False)
-FITMENT_RIM_URL_MAX_REDIRECTS = int(os.getenv("FITMENT_RIM_URL_MAX_REDIRECTS", "3"))
-FITMENT_RIM_URL_MAX_BYTES = int(os.getenv("FITMENT_RIM_URL_MAX_BYTES", str(2 * 1024 * 1024)))
-FITMENT_RIM_URL_TIMEOUT_CONNECT_SEC = float(os.getenv("FITMENT_RIM_URL_TIMEOUT_CONNECT_SEC", "5"))
-FITMENT_RIM_URL_TIMEOUT_READ_SEC = float(os.getenv("FITMENT_RIM_URL_TIMEOUT_READ_SEC", "10"))
-FITMENT_RIM_URL_TIMEOUT_TOTAL_SEC = float(os.getenv("FITMENT_RIM_URL_TIMEOUT_TOTAL_SEC", "15"))

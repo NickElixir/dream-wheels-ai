@@ -1,4 +1,4 @@
-"""Safe extraction of rim specifications from approved product pages.
+"""Safe extraction of rim specifications from public product pages.
 
 The resolver deliberately returns a draft.  Callers must show its provenance
 and let a user confirm values before persisting them as fitment input.
@@ -11,7 +11,6 @@ import ipaddress
 import json
 import re
 import socket
-from collections.abc import Collection
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from typing import Any
@@ -53,32 +52,24 @@ class RimUrlResolution:
 
 
 @dataclass(frozen=True, slots=True)
-class UrlAllowlistPolicy:
-    allowed_hosts: frozenset[str] = field(default_factory=frozenset)
-    allowed_host_suffixes: frozenset[str] = field(default_factory=frozenset)
-    allowed_ports: frozenset[int] = field(default_factory=lambda: frozenset({443}))
+class PublicHttpsPolicy:
+    """Universal outbound policy without a merchant allowlist.
 
-    @classmethod
-    def from_values(
-        cls,
-        *,
-        allowed_hosts: Collection[str] = (),
-        allowed_host_suffixes: Collection[str] = (),
-    ) -> UrlAllowlistPolicy:
-        return cls(
-            allowed_hosts=frozenset(_normalize_host(host) for host in allowed_hosts),
-            allowed_host_suffixes=frozenset(
-                _normalize_host(host.lstrip(".")) for host in allowed_host_suffixes
-            ),
-        )
+    Hostnames are deliberately accepted only after the connector resolves them
+    and proves that every answer is publicly routable.  IP literals are never
+    accepted: this avoids bypassing the DNS and redirect protections.
+    """
+
+    allowed_ports: frozenset[int] = field(default_factory=lambda: frozenset({443}))
 
     def permits(self, host: str, port: int) -> bool:
         if port not in self.allowed_ports:
             return False
-        return host in self.allowed_hosts or any(
-            host == suffix or host.endswith(f".{suffix}")
-            for suffix in self.allowed_host_suffixes
-        )
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            return True
+        return False
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,41 +125,33 @@ def _is_public(address: str) -> bool:
     )
 
 
-def validate_product_url(url: str, policy: UrlAllowlistPolicy) -> str:
+def validate_product_url(url: str, policy: PublicHttpsPolicy) -> str:
     try:
         parsed = urlsplit(url)
         port = parsed.port
     except ValueError as exc:
         raise RimUrlSecurityError("URL is malformed") from exc
     if parsed.scheme.lower() != "https" or not parsed.hostname:
-        raise RimUrlSecurityError("Only approved HTTPS product URLs are allowed")
+        raise RimUrlSecurityError("Only public HTTPS product URLs are allowed")
     if parsed.username is not None or parsed.password is not None:
         raise RimUrlSecurityError("URL credentials are not allowed")
     host = _normalize_host(parsed.hostname)
     effective_port = port or 443
     if not policy.permits(host, effective_port):
-        raise RimUrlSecurityError("Product host is not approved")
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        # DNS is checked by _PublicResolver immediately before connecting.
-        pass
-    else:
-        if not _is_public(host):
-            raise RimUrlSecurityError("Product host must be public")
+        raise RimUrlSecurityError("Product host or port is not allowed")
     netloc = host if port is None else f"{host}:{port}"
     return urlunsplit(SplitResult("https", netloc, parsed.path or "/", parsed.query, ""))
 
 
 class _PublicResolver(AbstractResolver):
-    def __init__(self, policy: UrlAllowlistPolicy) -> None:
+    def __init__(self, policy: PublicHttpsPolicy) -> None:
         self._policy = policy
 
     async def resolve(self, host: str, port: int = 0, family: int = socket.AF_INET) -> list[dict[str, Any]]:
         normalized = _normalize_host(host)
         effective_port = port or 443
         if not self._policy.permits(normalized, effective_port):
-            raise OSError("Host is not approved")
+            raise OSError("Host or port is not allowed")
         try:
             ipaddress.ip_address(normalized)
             addresses = [(socket.AF_INET6 if ":" in normalized else socket.AF_INET, normalized)]
@@ -317,9 +300,10 @@ def extract_product_page(html: str) -> tuple[RimUrlCandidate, ...]:
 
 
 async def resolve_rim_product_url(
-    url: str, *, policy: UrlAllowlistPolicy, limits: FetchLimits | None = None
+    url: str, *, policy: PublicHttpsPolicy | None = None, limits: FetchLimits | None = None
 ) -> RimUrlResolution:
     limits = limits or FetchLimits()
+    policy = policy or PublicHttpsPolicy()
     current_url = validate_product_url(url, policy)
     timeout = aiohttp.ClientTimeout(total=limits.total_timeout_seconds)
     connector = aiohttp.TCPConnector(resolver=_PublicResolver(policy), use_dns_cache=False)
