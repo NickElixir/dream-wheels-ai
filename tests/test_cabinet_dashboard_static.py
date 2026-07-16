@@ -165,6 +165,9 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "demoLiveActionsUnavailable" in APP_JS
     assert "data-fitment-demo-live-note" in INDEX_HTML
     assert "shouldUseDemoFitment(state.fitmentJobId)" in APP_JS
+    assert "[data-fitment-verdict-blocking-list]" in APP_JS
+    assert "`${target}-list`" not in APP_JS
+    assert "state.fitmentCheck = null;" in APP_JS
     assert "rerender" not in APP_JS.lower()
     assert "source_summary" not in APP_JS
     assert "vehicle?.summary" not in APP_JS

@@ -1673,9 +1673,9 @@ function fitmentVerdictMessage(item) {
     return ru ? "Требуется дополнительная техническая проверка." : "Additional technical review is required.";
 }
 
-function renderFitmentVerdictGroup(target, items, kind) {
-    const section = document.querySelector(target);
-    const list = document.querySelector(`${target}-list`);
+function renderFitmentVerdictGroup(sectionTarget, listTarget, items, kind) {
+    const section = document.querySelector(sectionTarget);
+    const list = document.querySelector(listTarget);
     if (!section || !list) return;
     section.hidden = !items.length;
     section.dataset.kind = kind;
@@ -1818,7 +1818,6 @@ function renderFitment() {
     const verdictCard = document.querySelector("[data-fitment-verdict-card]");
     const verdictTitle = document.querySelector("[data-fitment-verdict-title]");
     const verdictCopy = document.querySelector("[data-fitment-verdict-copy]");
-    const verdictReasons = document.querySelector("[data-fitment-verdict-reasons]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
     const overview = state.fitmentOverview;
 
@@ -1907,9 +1906,24 @@ function renderFitment() {
             : check.verdict === "compatible"
                 ? (locale === "ru" ? "Параметры совпадают с подтверждёнными данными выбранной комплектации." : "Parameters match the confirmed data for the selected vehicle version.")
                 : "";
-        renderFitmentVerdictGroup("[data-fitment-verdict-blocking]", check.blocking_issues || [], "blocking");
-        renderFitmentVerdictGroup("[data-fitment-verdict-conditions]", check.conditions || [], "conditions");
-        renderFitmentVerdictGroup("[data-fitment-verdict-advisories]", check.advisories || [], "advisories");
+        renderFitmentVerdictGroup(
+            "[data-fitment-verdict-blocking]",
+            "[data-fitment-verdict-blocking-list]",
+            check.blocking_issues || [],
+            "blocking"
+        );
+        renderFitmentVerdictGroup(
+            "[data-fitment-verdict-conditions]",
+            "[data-fitment-verdict-conditions-list]",
+            check.conditions || [],
+            "conditions"
+        );
+        renderFitmentVerdictGroup(
+            "[data-fitment-verdict-advisories]",
+            "[data-fitment-verdict-advisories-list]",
+            check.advisories || [],
+            "advisories"
+        );
         const groups = document.querySelector("[data-fitment-verdict-groups]");
         if (groups) {
             groups.hidden = ![...(check.blocking_issues || []), ...(check.conditions || []), ...(check.advisories || [])].length;
@@ -2189,6 +2203,9 @@ async function applyFitmentVehicleVariant(variant) {
         if (!response.ok) throw new Error(await parseApiError(response));
         state.fitmentOverview = await response.json();
         state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
+        state.fitmentCheck = null;
+    } catch (error) {
+        state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         state.fitmentVehicleVariantApplying = false;
         renderFitment();
