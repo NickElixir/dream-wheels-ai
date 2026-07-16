@@ -145,8 +145,9 @@ product_url nullable
 The existing Fitment source card is the user-facing entry point for a wheel
 product URL.  Resolving a URL is explicit and produces an unpersisted draft:
 JSON-LD, OpenGraph and visible product-page text are treated as source evidence,
-not as user confirmation.  The resolver must be HTTPS-only, use an approved
-host allowlist, validate every redirect and reject private DNS targets.
+not as user confirmation.  The resolver must be HTTPS-only, accept only
+public hostnames (without a merchant allowlist), validate every redirect and
+reject IP literals and private DNS targets.
 
 The same source URL and provenance should be captured before render generation
 once the pre-render flow is extended.  This enables future diffusion and

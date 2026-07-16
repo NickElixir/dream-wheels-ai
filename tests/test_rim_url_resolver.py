@@ -1,25 +1,27 @@
 import pytest
 
 from src.rim_url_resolver import (
+    PublicHttpsPolicy,
     RimUrlSecurityError,
-    UrlAllowlistPolicy,
     extract_product_page,
     validate_product_url,
 )
 
 
-def test_product_url_policy_requires_approved_https_host() -> None:
-    policy = UrlAllowlistPolicy.from_values(allowed_host_suffixes={"shop.example"})
+def test_product_url_policy_accepts_any_public_hostname_but_not_unsafe_urls() -> None:
+    policy = PublicHttpsPolicy()
 
-    assert validate_product_url("https://wheels.shop.example/item?a=1", policy).startswith(
-        "https://wheels.shop.example/"
+    assert validate_product_url("https://rimzona.ru/diski/item?a=1", policy).startswith(
+        "https://rimzona.ru/"
     )
     with pytest.raises(RimUrlSecurityError):
-        validate_product_url("http://wheels.shop.example/item", policy)
+        validate_product_url("http://rimzona.ru/item", policy)
     with pytest.raises(RimUrlSecurityError):
-        validate_product_url("https://wheels.evil.example/item", policy)
+        validate_product_url("https://rimzona.ru:8443/item", policy)
     with pytest.raises(RimUrlSecurityError):
         validate_product_url("https://127.0.0.1/item", policy)
+    with pytest.raises(RimUrlSecurityError):
+        validate_product_url("https://user:password@rimzona.ru/item", policy)
 
 
 def test_extractor_prefers_structured_product_data_and_reports_alternatives() -> None:
