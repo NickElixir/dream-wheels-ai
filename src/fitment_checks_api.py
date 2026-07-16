@@ -41,6 +41,9 @@ class CheckResponse(BaseModel):
     is_preliminary: bool = True
     reasons: list[dict] = Field(default_factory=list)
     conditions: list[dict] = Field(default_factory=list)
+    blocking_issues: list[dict] = Field(default_factory=list)
+    advisories: list[dict] = Field(default_factory=list)
+    diagnostics: list[dict] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
     versions: dict = Field(default_factory=dict)
     error: dict | None = None
@@ -125,11 +128,13 @@ async def _load(conn, user_id: int, request: CheckCreateRequest):
         SELECT
           vehicle.make, vehicle.model AS vehicle_model, vehicle.year, vehicle.body,
           vehicle.generation, vehicle.modification, vehicle.market, vehicle.is_user_confirmed,
-          vehicle.provider_mappings, rs.is_staggered,
+          vehicle.provider_mappings, vehicle.revision AS vehicle_revision,
+          vehicle.provider_mapping_revision, rs.is_staggered,
           rim.brand, rim.model AS rim_model, rim.sku, rim.product_url, rim.bolt_count,
           rim.pcd_mm, rim.center_bore_mm, rim.wheel_diameter_in, rim.wheel_width_j,
           rim.offset_et_mm, rim.load_rating_kg, rim.fastener_system, rim.seat_type,
-          rim.field_provenance AS rim_field_provenance, jobs.id AS owned_job_id
+          rim.field_provenance AS rim_field_provenance, rim.revision AS rim_revision,
+          jobs.id AS owned_job_id
         FROM vehicle_identities vehicle
         JOIN rim_setups rs ON rs.id = $2::uuid AND rs.owner_user_id = $1
         JOIN rim_specs rim ON rim.id = rs.front_rim_spec_id AND rim.owner_user_id = $1
@@ -205,6 +210,19 @@ async def create_check(
         if request.render_job_id and row["owned_job_id"] is None:
             raise HTTPException(status_code=404, detail="Render job not found")
         vehicle, setup, snapshot = _snapshot(row)
+        provider_mapping = vehicle.provider_mappings.get("wheel_size") or {}
+        required_mapping = {
+            "make_slug",
+            "model_slug",
+            "region",
+            "generation_slug",
+            "modification_slug",
+        }
+        if not required_mapping.issubset(provider_mapping):
+            raise HTTPException(
+                status_code=409,
+                detail="A confirmed Wheel-Size vehicle variant is required before this check",
+            )
         input_hash = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
         existing = await conn.fetchrow(
             "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",
@@ -220,12 +238,7 @@ async def create_check(
             return _response(existing)
         try:
             provider = WheelSizeProvider()
-            resolved = await provider.resolve_vehicle(vehicle)
-            profile = (
-                await provider.get_fitment_profile(resolved, user_initiated=True)
-                if resolved
-                else None
-            )
+            profile = await provider.get_fitment_profile(vehicle, user_initiated=True)
             if not profile:
                 verdict = verdict_vehicle_not_resolved(provider=provider.name, is_preliminary=True)
             else:
@@ -238,18 +251,45 @@ async def create_check(
                     run_checks(profile, setup), provider=provider.name, is_preliminary=True
                 )
             result = verdict.model_dump(mode="json")
+            evaluation_snapshot = {
+                "vehicle_provider_mapping": provider_mapping,
+                "provider_request": {
+                    "make": provider_mapping["make_slug"],
+                    "model": provider_mapping["model_slug"],
+                    "year": vehicle.year,
+                    "region": provider_mapping["region"],
+                    "generation": provider_mapping["generation_slug"],
+                    "modification": provider_mapping["modification_slug"],
+                },
+                "normalized_profile": profile.model_dump(mode="json") if profile else None,
+                "provider_response_hash": hashlib.sha256(
+                    json.dumps(profile.model_dump(mode="json") if profile else {}, sort_keys=True).encode()
+                ).hexdigest(),
+                "provider": provider.name,
+                "provider_version": profile.provider_version if profile else "v2",
+                "fetched_at": profile.fetched_at if profile else datetime.now(UTC).isoformat(),
+                "disclaimer_version": "stock_vehicle_only_v1",
+                "vehicle_identity_revision": row["vehicle_revision"],
+                "rim_setup_revision": row["rim_revision"],
+                "provider_mapping_revision": row["provider_mapping_revision"],
+            }
             status, error = "completed", None
         except ProviderError as exc:
             logger.warning("⚠️ Fitment provider unavailable for user_id=%s: %s", user_id, exc)
-            verdict, result, status, error = (
+            retryable = not any(code in str(exc) for code in ("HTTP 400", "HTTP 401", "HTTP 403"))
+            verdict, result, evaluation_snapshot, status, error = (
+                None,
                 None,
                 None,
                 "failed",
-                {"code": "PROVIDER_UNAVAILABLE", "retryable": True},
+                {
+                    "code": "provider_unavailable" if retryable else "provider_configuration_error",
+                    "retryable": retryable,
+                },
             )
         record = await conn.fetchrow(
-            """INSERT INTO fitment_checks (owner_user_id,vehicle_identity_id,rim_setup_id,render_job_id,idempotency_key,input_hash,execution_status,verdict,input_snapshot,result,error,provider_version,engine_version,rules_version,evaluated_at)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15)
+            """INSERT INTO fitment_checks (owner_user_id,vehicle_identity_id,rim_setup_id,render_job_id,idempotency_key,input_hash,execution_status,verdict,input_snapshot,result,error,provider_version,engine_version,rules_version,evaluated_at,evaluation_snapshot,resolution_status,disclaimer_version,provider_mapping_revision)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15,$16::jsonb,$17,$18,$19)
                ON CONFLICT (owner_user_id, idempotency_key) DO NOTHING
                RETURNING *""",
             user_id,
@@ -263,10 +303,14 @@ async def create_check(
             json.dumps(snapshot),
             json.dumps(result) if result else None,
             json.dumps(error) if error else None,
-            "wheel_size",
+            provider.name if result else "wheel_size",
             result.get("engine_version") if result else "v1",
             result.get("tolerances_version") if result else "v1",
             datetime.now(UTC),
+            json.dumps(evaluation_snapshot) if evaluation_snapshot else None,
+            "resolved" if result else "provider_failed",
+            "stock_vehicle_only_v1",
+            row["provider_mapping_revision"],
         )
         if record is None:
             existing = await conn.fetchrow(
@@ -289,21 +333,25 @@ def _response(row) -> CheckResponse:
     result = _json_object(row["result"], field_name="fitment check result")
     error = _json_object(row["error"], field_name="fitment check error") or None
     rules = result.get("rule_results") or []
+    legacy_reasons = [
+        rule
+        for rule in rules
+        if isinstance(rule, dict) and rule.get("status") in {"incompatible", "unknown"}
+    ]
     return CheckResponse(
         id=str(row["id"]),
         execution_status=row["execution_status"],
         verdict=row["verdict"],
         is_preliminary=bool(row["is_preliminary"]),
-        reasons=[
-            rule
-            for rule in rules
-            if isinstance(rule, dict) and rule.get("status") in {"incompatible", "unknown"}
-        ],
-        conditions=[
+        reasons=legacy_reasons,
+        conditions=result.get("conditions") or [
             rule
             for rule in rules
             if isinstance(rule, dict) and rule.get("status") == "compatible_with_conditions"
         ],
+        blocking_issues=result.get("blocking_issues") or legacy_reasons,
+        advisories=result.get("advisories") or [],
+        diagnostics=result.get("diagnostics") or [],
         missing_fields=result.get("missing_fields") or [],
         versions={
             "provider": "wheel_size",

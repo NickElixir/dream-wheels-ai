@@ -1630,6 +1630,63 @@ function fitmentSubtitle(overview) {
     return `Preliminary data for ${title} helps prepare a future technical compatibility check`;
 }
 
+function fitmentProviderReady(overview) {
+    return overview?.provider_readiness?.status === "ready";
+}
+
+function fitmentVerdictMessage(item) {
+    const details = item?.details || item?.detail || {};
+    const code = item?.code || item?.reason_code || "";
+    const ru = locale === "ru";
+    if (code === "vehicle_variant_required") {
+        return ru ? "Выберите точную комплектацию автомобиля по каталогу Wheel‑Size." : "Select the exact vehicle version from Wheel‑Size.";
+    }
+    if (code === "vehicle_reference_offset_missing") {
+        return ru ? "Не удалось подтвердить ET автомобиля по данным Wheel‑Size." : "The vehicle ET could not be confirmed by Wheel‑Size.";
+    }
+    if (code === "rim_offset_missing") {
+        return ru ? "Укажите ET колесного диска для технической проверки." : "Enter the wheel ET for the technical check.";
+    }
+    if (code === "hub_rings_required") {
+        const hub = formatFitmentNumber(details.hub_bore_mm, "мм");
+        const rim = formatFitmentNumber(details.rim_bore_mm, "мм");
+        return ru ? `Для установки потребуется центровочное кольцо ${hub} → ${rim}.` : `A hub-centric ring ${hub} → ${rim} is required.`;
+    }
+    if (code === "load_rating_unknown") {
+        return ru ? "Рейтинг нагрузки диска не подтверждён — это не влияет на предварительный verdict." : "The wheel load rating is not confirmed; it does not affect this preliminary verdict.";
+    }
+    if (code === "fastener_unknown") {
+        return ru ? "Тип крепежа не подтверждён — проверьте его перед установкой." : "Fastener type is not confirmed; check it before installation.";
+    }
+    if (code === "pcd_unknown") return ru ? "Не удалось подтвердить PCD." : "PCD could not be confirmed.";
+    if (code === "center_bore_unknown") return ru ? "Не удалось подтвердить центральное отверстие." : "Center bore could not be confirmed.";
+    if (code === "size_unknown" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
+    if (code === "provider_unavailable") return ru ? "Wheel‑Size временно недоступен. Повторите проверку позже." : "Wheel‑Size is temporarily unavailable. Try again later.";
+    if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
+    if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";
+    if (code === "center_bore_too_small") return ru ? "Центральное отверстие диска меньше ступицы автомобиля." : "The wheel center bore is smaller than the vehicle hub.";
+    if (code === "offset_out_of_range") {
+        const range = `ET${formatFitmentNumber(details.reference_et_min_mm).replace(/\s/g, "")}–${formatFitmentNumber(details.reference_et_max_mm).replace(/\s/g, "")}`;
+        const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
+        return ru ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}.` : `Wheel ${rim}; vehicle reference range ${range}.`;
+    }
+    return ru ? "Требуется дополнительная техническая проверка." : "Additional technical review is required.";
+}
+
+function renderFitmentVerdictGroup(target, items, kind) {
+    const section = document.querySelector(target);
+    const list = document.querySelector(`${target}-list`);
+    if (!section || !list) return;
+    section.hidden = !items.length;
+    section.dataset.kind = kind;
+    list.replaceChildren();
+    for (const item of items) {
+        const line = document.createElement("div");
+        line.textContent = fitmentVerdictMessage(item);
+        list.append(line);
+    }
+}
+
 function fitmentPayload() {
     return {
         expected_vehicle_revision: state.fitmentOverview?.vehicle_revision,
@@ -1826,10 +1883,15 @@ function renderFitment() {
 
     if (verdictCard) verdictCard.hidden = demoMode || !overview.readiness?.ready;
     if (verdictCheckButton) {
-        verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready;
+        verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready || !fitmentProviderReady(overview);
         verdictCheckButton.textContent = state.fitmentChecking ? t("fitment.checking") : t("fitment.check");
     }
-    if (state.fitmentCheck && verdictTitle && verdictCopy && verdictReasons) {
+    if (verdictCopy && !fitmentProviderReady(overview)) {
+        verdictCopy.textContent = locale === "ru"
+            ? "Сначала выберите точную комплектацию автомобиля — это нужно для подтверждения заводских параметров."
+            : "Select the exact vehicle version first to confirm factory specifications.";
+    }
+    if (state.fitmentCheck && verdictTitle && verdictCopy) {
         const check = state.fitmentCheck;
         const labels = {
             compatible: locale === "ru" ? "Совместимо" : "Compatible",
@@ -1840,14 +1902,18 @@ function renderFitment() {
         };
         verdictCard.dataset.status = check.verdict || check.execution_status;
         verdictTitle.textContent = labels[check.verdict || check.execution_status] || t("fitment.verdictTitle");
-        verdictCopy.textContent = check.error?.code || (check.missing_fields || []).join(", ") || "";
-        verdictReasons.replaceChildren();
-        for (const item of [...(check.reasons || []), ...(check.conditions || [])]) {
-            const line = document.createElement("div");
-            line.textContent = item.reason_code || item.code || "";
-            verdictReasons.append(line);
+        verdictCopy.textContent = check.execution_status === "failed"
+            ? fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" })
+            : check.verdict === "compatible"
+                ? (locale === "ru" ? "Параметры совпадают с подтверждёнными данными выбранной комплектации." : "Parameters match the confirmed data for the selected vehicle version.")
+                : "";
+        renderFitmentVerdictGroup("[data-fitment-verdict-blocking]", check.blocking_issues || [], "blocking");
+        renderFitmentVerdictGroup("[data-fitment-verdict-conditions]", check.conditions || [], "conditions");
+        renderFitmentVerdictGroup("[data-fitment-verdict-advisories]", check.advisories || [], "advisories");
+        const groups = document.querySelector("[data-fitment-verdict-groups]");
+        if (groups) {
+            groups.hidden = ![...(check.blocking_issues || []), ...(check.conditions || []), ...(check.advisories || [])].length;
         }
-        verdictReasons.hidden = !verdictReasons.children.length;
     }
 
     setFitmentOverviewCollapsed(state.fitmentOverviewCollapsed);
@@ -2077,7 +2143,7 @@ async function loadFitmentVehicleVariants() {
 
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (!overview?.readiness?.ready || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
+    if (!overview?.readiness?.ready || !fitmentProviderReady(overview) || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
     state.fitmentChecking = true;
     state.fitmentError = "";
     renderFitment();

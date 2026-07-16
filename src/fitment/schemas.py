@@ -131,6 +131,12 @@ class ReasonCode(StrEnum):
     pcd_unknown = "pcd_unknown"
     center_bore_unknown = "center_bore_unknown"
     offset_unknown = "offset_unknown"
+    rim_offset_missing = "rim_offset_missing"
+    vehicle_reference_offset_missing = "vehicle_reference_offset_missing"
+    vehicle_variant_required = "vehicle_variant_required"
+    vehicle_market_confirmation_required = "vehicle_market_confirmation_required"
+    provider_reference_conflict = "provider_reference_conflict"
+    rear_fitment_missing = "rear_fitment_missing"
     size_unknown = "size_unknown"
     load_rating_unknown = "load_rating_unknown"
     fastener_unknown = "fastener_unknown"
@@ -260,6 +266,17 @@ class AxleFitment(BaseModel):
     tire: str | None = None
 
 
+class OffsetReference(BaseModel):
+    axle: str
+    rim_diameter_in: float
+    rim_width_j: float
+    et_min_mm: float
+    et_max_mm: float
+    source_offsets_mm: list[float] = Field(default_factory=list)
+    reference_type: str = "derived_interval"
+    evidence_class: str = "stock"
+
+
 class FitmentProfile(BaseModel):
     """Нормализованный технический профиль авто от провайдера."""
 
@@ -276,6 +293,7 @@ class FitmentProfile(BaseModel):
     tightening_torque: str | None = None
 
     allowed_wheels: list[AxleFitment] = Field(default_factory=list)
+    offset_references: list[OffsetReference] = Field(default_factory=list)
     oem_offset_front: float | None = None
     oem_offset_rear: float | None = None
 
@@ -288,6 +306,14 @@ class FitmentProfile(BaseModel):
     def allowed_for_axle(self, axle: str) -> list[AxleFitment]:
         return [w for w in self.allowed_wheels if w.axle == axle]
 
+    def offset_reference_for(self, axle: str, diameter: float, width: float) -> OffsetReference | None:
+        matches = [
+            item
+            for item in self.offset_references
+            if item.axle == axle and item.rim_diameter_in == diameter and item.rim_width_j == width
+        ]
+        return next((item for item in matches if item.evidence_class == "stock"), matches[0] if matches else None)
+
 
 class RuleResult(BaseModel):
     rule: str
@@ -297,12 +323,24 @@ class RuleResult(BaseModel):
     detail: dict = Field(default_factory=dict)
 
 
+class VerdictMessage(BaseModel):
+    """Canonical presentation input; UI owns copy, not provider machine codes."""
+
+    code: str
+    applies_to: list[str] = Field(default_factory=list)
+    details: dict = Field(default_factory=dict)
+
+
 class FitmentVerdict(BaseModel):
     status: VerdictStatus
     rule_results: list[RuleResult] = Field(default_factory=list)
     reason_codes: list[ReasonCode] = Field(default_factory=list)
     condition_codes: list[ReasonCode] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
+    blocking_issues: list[VerdictMessage] = Field(default_factory=list)
+    conditions: list[VerdictMessage] = Field(default_factory=list)
+    advisories: list[VerdictMessage] = Field(default_factory=list)
+    diagnostics: list[VerdictMessage] = Field(default_factory=list)
     engine_version: str = ""
     tolerances_version: str = ""
     provider: str | None = None

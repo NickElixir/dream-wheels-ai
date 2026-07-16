@@ -237,6 +237,11 @@ class FitmentReadinessResponse(BaseModel):
     unconfirmed_fields: list[str] = Field(default_factory=list)
 
 
+class FitmentProviderReadinessResponse(BaseModel):
+    status: str
+    blocking_issues: list[dict[str, str]] = Field(default_factory=list)
+
+
 class FitmentOverviewResponse(BaseModel):
     job_id: str
     vehicle_identity_id: str
@@ -256,6 +261,8 @@ class FitmentOverviewResponse(BaseModel):
     vehicle_provenance: dict[str, object] = Field(default_factory=dict)
     rim_provenance: dict[str, object] = Field(default_factory=dict)
     readiness: FitmentReadinessResponse
+    input_readiness: FitmentReadinessResponse
+    provider_readiness: FitmentProviderReadinessResponse
     vehicle: FitmentVehicleResponse
     rim: FitmentRimResponse
 
@@ -877,6 +884,18 @@ def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
     )
 
 
+def _provider_readiness_from_row(row) -> FitmentProviderReadinessResponse:
+    mapping = row.get("vehicle_provider_mappings") or {}
+    wheel_size = mapping.get("wheel_size") if isinstance(mapping, dict) else None
+    required = {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}
+    if not isinstance(wheel_size, dict) or not required.issubset(wheel_size):
+        return FitmentProviderReadinessResponse(
+            status="variant_required",
+            blocking_issues=[{"code": "vehicle_variant_required"}],
+        )
+    return FitmentProviderReadinessResponse(status="ready")
+
+
 def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
     pcd_display = None
     if row["rim_bolt_count"] is not None and row["rim_pcd_mm"] is not None:
@@ -916,6 +935,8 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
         vehicle_provenance=row["vehicle_field_provenance"] or {},
         rim_provenance=row["rim_field_provenance"] or {},
         readiness=_fitment_readiness_from_row(row),
+        input_readiness=_fitment_readiness_from_row(row),
+        provider_readiness=_provider_readiness_from_row(row),
         vehicle=FitmentVehicleResponse(
             make=row["vehicle_make"],
             model=row["vehicle_model"],
@@ -980,6 +1001,7 @@ async def _fetch_fitment_job_row(
             vehicle.market AS vehicle_market,
             vehicle.is_user_confirmed AS vehicle_is_user_confirmed,
             vehicle.provider_mappings AS vehicle_provider_mappings,
+            vehicle.provider_mapping_revision AS vehicle_provider_mapping_revision,
             vehicle.field_provenance AS vehicle_field_provenance,
             vehicle.field_candidates AS vehicle_field_candidates,
             vehicle.revision AS vehicle_revision,
@@ -2141,9 +2163,21 @@ async def apply_fitment_vehicle_variant(
             if selected is None:
                 raise HTTPException(status_code=422, detail="Selected vehicle variant is no longer available")
             mapping = dict(row["vehicle_provider_mappings"] or {})
-            mapping["wheel_size"] = {key: selected[key] for key in ("generation_slug", "modification_slug")}
+            exact_mapping = {
+                key: selected[key]
+                for key in (
+                    "make_slug",
+                    "model_slug",
+                    "region",
+                    "generation_slug",
+                    "modification_slug",
+                )
+            }
+            if not {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}.issubset(exact_mapping):
+                raise HTTPException(status_code=422, detail="Selected vehicle variant could not be resolved")
+            mapping["wheel_size"] = exact_mapping
             await conn.execute(
-                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, market=$4, provider_mappings=$5::jsonb, revision=revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$6::uuid AND owner_user_id=$7 AND revision=$8",
+                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, market=$4, provider_mappings=$5::jsonb, provider_mapping_revision=provider_mapping_revision+1, revision=revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$6::uuid AND owner_user_id=$7 AND revision=$8",
                 request.generation, request.modification, request.body or None, request.market, json.dumps(mapping), row["vehicle_identity_id"], user_id, request.expected_vehicle_revision,
             )
             updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
@@ -2249,6 +2283,10 @@ async def save_fitment_details(
 
             vehicle_provenance = row["vehicle_field_provenance"] or {}
             vehicle_write_needed = bool(vehicle_changed or vehicle_confirmed)
+            provider_mappings = dict(row["vehicle_provider_mappings"] or {})
+            mapping_invalidated = bool(vehicle_changed) and "wheel_size" in provider_mappings
+            if mapping_invalidated:
+                provider_mappings.pop("wheel_size", None)
             if vehicle_write_needed:
                 vehicle_provenance = _merge_field_provenance(
                     row["vehicle_field_provenance"],
@@ -2272,11 +2310,13 @@ async def save_fitment_details(
                         market = $7,
                         is_user_confirmed = true,
                         field_provenance = $8::jsonb,
+                        provider_mappings = $9::jsonb,
+                        provider_mapping_revision = provider_mapping_revision + $10,
                         revision = revision + 1,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $9::uuid
-                      AND owner_user_id = $10
-                      AND revision = $11
+                    WHERE id = $11::uuid
+                      AND owner_user_id = $12
+                      AND revision = $13
                     """,
                     vehicle_values["make"],
                     vehicle_values["model"],
@@ -2286,6 +2326,8 @@ async def save_fitment_details(
                     vehicle_values["modification"],
                     vehicle_values["market"],
                     json.dumps(vehicle_provenance),
+                    json.dumps(provider_mappings),
+                    1 if mapping_invalidated else 0,
                     row["vehicle_identity_id"],
                     user_id,
                     request.expected_vehicle_revision,
@@ -2391,6 +2433,12 @@ async def save_fitment_details(
                 )
             )
             if fitment_changes:
+                if mapping_invalidated:
+                    fitment_changes["vehicle.provider_mapping"] = {
+                        "before": {"wheel_size": row["vehicle_provider_mappings"].get("wheel_size")},
+                        "after": None,
+                        "reason": "canonical_vehicle_identity_changed",
+                    }
                 await _insert_fitment_change_event(
                     conn,
                     job_id=job_id,

@@ -196,31 +196,36 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
         return RuleResult(
             rule=rule,
             status=VerdictStatus.unknown,
-            reason_code=ReasonCode.offset_unknown,
+            reason_code=ReasonCode.rim_offset_missing,
             axle=axle,
             detail={"matched": match.model_dump()},
         )
 
-    reference_et = match.offset
-    if reference_et is None:
-        reference_et = profile.oem_offset_front if axle == "front" else profile.oem_offset_rear
-    if reference_et is None:
+    reference = profile.offset_reference_for(axle, diameter, width)
+    if reference is None:
         return RuleResult(
             rule=rule,
             status=VerdictStatus.unknown,
-            reason_code=ReasonCode.offset_unknown,
+            reason_code=ReasonCode.vehicle_reference_offset_missing,
             axle=axle,
             detail={"matched": match.model_dump(), "missing": "reference offset"},
         )
 
-    delta = rim.offset_et_mm.value - reference_et  # >0 внутрь (к подвеске), <0 наружу
+    if rim.offset_et_mm.value < reference.et_min_mm:
+        delta = rim.offset_et_mm.value - reference.et_min_mm
+    elif rim.offset_et_mm.value > reference.et_max_mm:
+        delta = rim.offset_et_mm.value - reference.et_max_mm
+    else:
+        delta = 0
     detail = {
         "rim_et_mm": rim.offset_et_mm.value,
-        "reference_et_mm": reference_et,
+        "reference_et_min_mm": reference.et_min_mm,
+        "reference_et_max_mm": reference.et_max_mm,
+        "reference_type": reference.reference_type,
         "delta_mm": round(delta, 1),
     }
 
-    if abs(delta) <= tol.ET_OK_BAND_MM:
+    if delta == 0:
         return RuleResult(
             rule=rule,
             status=VerdictStatus.compatible,

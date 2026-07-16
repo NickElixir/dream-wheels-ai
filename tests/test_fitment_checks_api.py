@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from src import fitment_checks_api
 from src.auth import AuthContext
 from src.fitment.providers.base import ProviderError
-from src.fitment.schemas import AxleFitment, FitmentProfile
+from src.fitment.schemas import AxleFitment, FitmentProfile, OffsetReference
 from src.main import app
 
 client = TestClient(app)
@@ -54,7 +54,17 @@ def _row() -> dict:
         "modification": None,
         "market": "russia",
         "is_user_confirmed": True,
-        "provider_mappings": {},
+        "provider_mappings": {
+            "wheel_size": {
+                "make_slug": "lexus",
+                "model_slug": "rx",
+                "region": "russia",
+                "generation_slug": "al20",
+                "modification_slug": "rx350",
+            }
+        },
+        "vehicle_revision": 4,
+        "provider_mapping_revision": 2,
         "is_staggered": False,
         "brand": "K&K",
         "rim_model": "Atlas",
@@ -70,6 +80,7 @@ def _row() -> dict:
         "fastener_system": None,
         "seat_type": None,
         "rim_field_provenance": provenance,
+        "rim_revision": 3,
         "owned_job_id": None,
     }
 
@@ -118,7 +129,15 @@ class Provider:
             bolt_count=5,
             pcd_mm=114.3,
             center_bore_mm=60.1,
-            allowed_wheels=[AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=45)],
+            allowed_wheels=[AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=45, is_stock=True)],
+            offset_references=[
+                OffsetReference(
+                    axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=45, et_max_mm=45
+                ),
+                OffsetReference(
+                    axle="rear", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=45, et_max_mm=45
+                ),
+            ],
         )
 
 
@@ -185,6 +204,19 @@ def test_create_check_rejects_other_users_inputs(monkeypatch):
     assert not conn.inserted
 
 
+def test_create_check_requires_confirmed_provider_variant(monkeypatch):
+    row = _row()
+    row["provider_mappings"] = {}
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=row)
+
+    response = _post()
+
+    assert response.status_code == 409
+    assert "confirmed Wheel-Size vehicle variant" in response.json()["detail"]
+    assert not conn.inserted
+
+
 def test_create_check_reuses_idempotency_key(monkeypatch):
     existing = _check_record()
     conn = FakeConn(existing=existing)
@@ -209,12 +241,17 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert body["verdict"] == "compatible"
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"] == snapshot["rim_setup"]["rear"]
+    evaluation = json.loads(conn.inserted[0][15])
+    assert evaluation["vehicle_provider_mapping"]["modification_slug"] == "rx350"
+    assert evaluation["vehicle_identity_revision"] == 4
+    assert evaluation["rim_setup_revision"] == 3
+    assert evaluation["provider_mapping_revision"] == 2
 
 
 def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
     legacy_row = _row()
     legacy_row["rim_field_provenance"] = "user_confirmed"
-    legacy_row["provider_mappings"] = json.dumps({"wheel_size": {"make_slug": "lexus"}})
+    legacy_row["provider_mappings"] = json.dumps(_row()["provider_mappings"])
     conn = FakeConn()
     _patch_auth_and_inputs(monkeypatch, conn, loaded_row=legacy_row)
 
@@ -223,7 +260,7 @@ def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
     assert response.status_code == 200
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"]["bolt_count"]["source"] == "user_confirmed"
-    assert snapshot["vehicle"]["provider_mappings"] == {"wheel_size": {"make_slug": "lexus"}}
+    assert snapshot["vehicle"]["provider_mappings"] == _row()["provider_mappings"]
 
 
 def test_create_check_accepts_json_encoded_rim_provenance(monkeypatch):
@@ -280,7 +317,7 @@ def test_create_check_records_provider_failure(monkeypatch):
     class FailingProvider:
         name = "wheel_size"
 
-        async def resolve_vehicle(self, identity):
+        async def get_fitment_profile(self, identity, *, user_initiated):
             raise ProviderError("timeout")
 
     conn = FakeConn()
@@ -290,4 +327,4 @@ def test_create_check_records_provider_failure(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["execution_status"] == "failed"
-    assert response.json()["error"]["code"] == "PROVIDER_UNAVAILABLE"
+    assert response.json()["error"]["code"] == "provider_unavailable"

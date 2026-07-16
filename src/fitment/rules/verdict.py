@@ -18,6 +18,7 @@ from src.fitment.schemas import (
     FitmentVerdict,
     ReasonCode,
     RuleResult,
+    VerdictMessage,
     VerdictStatus,
 )
 
@@ -25,6 +26,8 @@ _MISSING_FIELD_BY_REASON = {
     ReasonCode.pcd_unknown: "pcd",
     ReasonCode.center_bore_unknown: "center_bore",
     ReasonCode.offset_unknown: "offset_et",
+    ReasonCode.rim_offset_missing: "offset_et",
+    ReasonCode.vehicle_reference_offset_missing: "vehicle_reference_offset",
     ReasonCode.size_unknown: "diameter_width",
     ReasonCode.load_rating_unknown: "load_rating",
     ReasonCode.fastener_unknown: "fastener_system",
@@ -77,12 +80,32 @@ def assemble_verdict(
         if field and field not in missing:
             missing.append(field)
 
+    def aggregate(items: list[RuleResult]) -> list[VerdictMessage]:
+        grouped: dict[tuple[str, str], VerdictMessage] = {}
+        for item in items:
+            details = item.detail
+            key = (item.reason_code.value, repr(sorted(details.items())))
+            message = grouped.setdefault(
+                key,
+                VerdictMessage(code=item.reason_code.value, applies_to=[], details=details),
+            )
+            if item.axle and item.axle not in message.applies_to:
+                message.applies_to.append(item.axle)
+        return list(grouped.values())
+
+    # Unknown fastener/load evidence is intentionally advisory: it never
+    # upgrades a safe result, but also never pretends to be a hard blocker.
+    blocking = incompatible + critical_unknown
     return FitmentVerdict(
         status=status,
         rule_results=results,
         reason_codes=_dedup([r.reason_code for r in reason_results]),
         condition_codes=_dedup([r.reason_code for r in conditions]),
         missing_fields=missing,
+        blocking_issues=aggregate(blocking),
+        conditions=aggregate(conditions),
+        advisories=aggregate(noncritical_unknown),
+        diagnostics=[],
         engine_version=ENGINE_VERSION,
         tolerances_version=TOLERANCES_VERSION,
         provider=provider,
@@ -102,6 +125,9 @@ def verdict_vehicle_not_resolved(
         reason_codes=[ReasonCode.vehicle_not_resolved],
         condition_codes=[],
         missing_fields=["vehicle_identity"],
+        blocking_issues=[
+            VerdictMessage(code=ReasonCode.vehicle_not_resolved.value, applies_to=[], details={})
+        ],
         engine_version=ENGINE_VERSION,
         tolerances_version=TOLERANCES_VERSION,
         provider=provider,
