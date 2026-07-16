@@ -2027,7 +2027,10 @@ h2 {
 
     .fitment-actions {
         position: sticky;
-        bottom: calc(8px + var(--safe-bottom));
+        /* The primary mobile navigation is fixed at the viewport bottom.
+         * Keep this local action bar in its own visual lane above it instead
+         * of letting the two fixed/sticky controls compete for the same area. */
+        bottom: calc(82px + var(--safe-bottom));
         z-index: 4;
         margin-inline: -12px;
         padding: 10px 12px;
