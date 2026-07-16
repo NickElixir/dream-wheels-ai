@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 from fastapi.testclient import TestClient
@@ -74,22 +75,30 @@ def _row() -> dict:
 
 
 class FakeConn:
-    def __init__(self, existing=None):
+    def __init__(self, existing=None, *, race_winner=None):
         self.existing = existing
+        self.race_winner = race_winner
         self.inserted = []
 
     async def fetchrow(self, query, *args):
         if "FROM fitment_checks WHERE owner_user_id" in query:
+            if self.inserted and self.race_winner is not None:
+                return self.race_winner
             return self.existing
         if "INSERT INTO fitment_checks" in query:
             self.inserted.append(args)
+            if self.race_winner is not None:
+                return None
             return {
                 "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
                 "execution_status": args[6],
                 "verdict": args[7],
                 "is_preliminary": True,
-                "result": json.loads(args[9]) if args[9] else {},
-                "error": json.loads(args[10]) if args[10] else None,
+                # asyncpg can return JSONB columns as strings; tests must use
+                # the production representation rather than convenient dicts.
+                "result": args[9],
+                "error": args[10],
+                "input_hash": args[5],
                 "engine_version": args[12],
                 "rules_version": args[13],
             }
@@ -136,11 +145,33 @@ def _patch_auth_and_inputs(monkeypatch, conn, *, loaded_row=None, provider=Provi
     monkeypatch.setattr(fitment_checks_api, "WheelSizeProvider", provider)
 
 
-def _post(key="test-key"):
+def _input_hash(row=None):
+    _, _, snapshot = fitment_checks_api._snapshot(row or _row())
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
+
+
+def _check_record(*, input_hash=None):
+    return {
+        "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "execution_status": "completed",
+        "verdict": "compatible",
+        "is_preliminary": True,
+        "result": json.dumps({"rule_results": []}),
+        "error": None,
+        "engine_version": "v1",
+        "rules_version": "v1",
+        "input_hash": input_hash or _input_hash(),
+    }
+
+
+def _post(key="test-key", *, render_job_id=None):
+    payload = {"vehicle_identity_id": VEHICLE_ID, "rim_setup_id": RIM_SETUP_ID}
+    if render_job_id:
+        payload["render_job_id"] = render_job_id
     return client.post(
         "/fitment/checks",
         headers={"Idempotency-Key": key},
-        json={"vehicle_identity_id": VEHICLE_ID, "rim_setup_id": RIM_SETUP_ID},
+        json=payload,
     )
 
 
@@ -155,16 +186,7 @@ def test_create_check_rejects_other_users_inputs(monkeypatch):
 
 
 def test_create_check_reuses_idempotency_key(monkeypatch):
-    existing = {
-        "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-        "execution_status": "completed",
-        "verdict": "compatible",
-        "is_preliminary": True,
-        "result": {},
-        "error": None,
-        "engine_version": "v1",
-        "rules_version": "v1",
-    }
+    existing = _check_record()
     conn = FakeConn(existing=existing)
     _patch_auth_and_inputs(monkeypatch, conn)
 
@@ -202,6 +224,56 @@ def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"]["bolt_count"]["source"] == "user_confirmed"
     assert snapshot["vehicle"]["provider_mappings"] == {"wheel_size": {"make_slug": "lexus"}}
+
+
+def test_create_check_accepts_json_encoded_rim_provenance(monkeypatch):
+    legacy_row = _row()
+    legacy_row["rim_field_provenance"] = json.dumps(legacy_row["rim_field_provenance"])
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=legacy_row)
+
+    response = _post()
+
+    assert response.status_code == 200
+    snapshot = json.loads(conn.inserted[0][8])
+    assert snapshot["rim_setup"]["front"]["pcd_mm"]["source"] == "user_confirmed"
+
+
+def test_field_accepts_legacy_scalar_provenance():
+    field = fitment_checks_api._field(5, "user_confirmed", "bolt_count")
+
+    assert field.source.value == "user_confirmed"
+
+
+def test_create_check_rejects_foreign_render_job(monkeypatch):
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn)
+
+    response = _post(render_job_id="dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+
+    assert response.status_code == 404
+    assert not conn.inserted
+
+
+def test_create_check_rejects_reused_key_for_other_inputs(monkeypatch):
+    conn = FakeConn(existing=_check_record(input_hash="different-inputs"))
+    _patch_auth_and_inputs(monkeypatch, conn)
+
+    response = _post("same-key")
+
+    assert response.status_code == 409
+    assert not conn.inserted
+
+
+def test_create_check_uses_race_winner_after_idempotency_conflict(monkeypatch):
+    conn = FakeConn(race_winner=_check_record())
+    _patch_auth_and_inputs(monkeypatch, conn)
+
+    response = _post("same-key")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    assert len(conn.inserted) == 1
 
 
 def test_create_check_records_provider_failure(monkeypatch):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -22,6 +23,7 @@ from src.fitment.schemas import FieldValue, RimSetup, RimSpec, Source, VehicleId
 from src.users_service import ensure_user
 
 router = APIRouter(prefix="/fitment", tags=["fitment"])
+logger = logging.getLogger(__name__)
 
 
 class CheckCreateRequest(BaseModel):
@@ -53,6 +55,33 @@ def _auth(init_data, telegram_user_id, authorization):
     )
 
 
+def _json_object(value: object, *, field_name: str) -> dict:
+    """Normalize asyncpg JSONB values to objects at the database boundary."""
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        logger.warning("⚠️ Unsupported %s type=%s", field_name, type(value).__name__)
+        return {}
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        logger.warning("⚠️ Invalid %s JSON", field_name)
+        return {}
+    if isinstance(parsed, dict):
+        return parsed
+    logger.warning("⚠️ Non-object %s JSON type=%s", field_name, type(parsed).__name__)
+    return {}
+
+
+def _float_or_zero(value: object) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _field(value, provenance: object, name: str) -> FieldValue:
     """Build a field value while tolerating legacy JSON provenance shapes.
 
@@ -61,39 +90,33 @@ def _field(value, provenance: object, name: str) -> FieldValue:
     ``\"user_confirmed\"``.  A detailed check must treat that as provenance for
     every rim field rather than raising an AttributeError.
     """
-    if isinstance(provenance, dict):
-        candidate = provenance.get(name)
+    decoded_provenance: object = provenance
+    if isinstance(provenance, str):
+        try:
+            decoded_provenance = json.loads(provenance)
+        except (TypeError, ValueError):
+            decoded_provenance = provenance
+
+    if isinstance(decoded_provenance, dict):
+        candidate = decoded_provenance.get(name)
         meta = candidate if isinstance(candidate, dict) else {}
-    elif isinstance(provenance, str):
-        meta = {"source": provenance}
+    elif isinstance(decoded_provenance, str):
+        meta = {"source": decoded_provenance}
     else:
         meta = {}
     source = meta.get("source", "user_input")
     try:
         parsed_source = Source(source)
-    except ValueError:
+    except (TypeError, ValueError):
         parsed_source = Source.user_input
     return FieldValue(
         value=float(value)
         if value is not None and name not in {"bolt_count", "fastener_system", "seat_type"}
         else value,
         source=parsed_source,
-        confidence=float(meta.get("confidence") or 0),
+        confidence=_float_or_zero(meta.get("confidence")),
         is_user_confirmed=bool(meta.get("is_user_confirmed")),
     )
-
-
-def _json_object(value: object) -> dict:
-    """Return a JSON object from asyncpg's legacy JSONB representations."""
-    if isinstance(value, dict):
-        return value
-    if not isinstance(value, str):
-        return {}
-    try:
-        parsed = json.loads(value)
-    except (TypeError, ValueError):
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
 
 
 async def _load(conn, user_id: int, request: CheckCreateRequest):
@@ -131,7 +154,9 @@ def _snapshot(row) -> tuple[VehicleIdentity, RimSetup, dict]:
         modification=row["modification"],
         market=row["market"],
         is_user_confirmed=bool(row["is_user_confirmed"]),
-        provider_mappings=_json_object(row["provider_mappings"]),
+        provider_mappings=_json_object(
+            row["provider_mappings"], field_name="vehicle provider_mappings"
+        ),
     )
     rim = RimSpec(
         brand=row["brand"],
@@ -177,6 +202,8 @@ async def create_check(
         row = await _load(conn, user_id, request)
         if not row:
             raise HTTPException(status_code=404, detail="Fitment inputs not found")
+        if request.render_job_id and row["owned_job_id"] is None:
+            raise HTTPException(status_code=404, detail="Render job not found")
         vehicle, setup, snapshot = _snapshot(row)
         input_hash = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
         existing = await conn.fetchrow(
@@ -185,6 +212,11 @@ async def create_check(
             idempotency_key,
         )
         if existing:
+            if existing["input_hash"] != input_hash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used for different fitment inputs",
+                )
             return _response(existing)
         try:
             provider = WheelSizeProvider()
@@ -207,7 +239,8 @@ async def create_check(
                 )
             result = verdict.model_dump(mode="json")
             status, error = "completed", None
-        except ProviderError:
+        except ProviderError as exc:
+            logger.warning("⚠️ Fitment provider unavailable for user_id=%s: %s", user_id, exc)
             verdict, result, status, error = (
                 None,
                 None,
@@ -216,7 +249,9 @@ async def create_check(
             )
         record = await conn.fetchrow(
             """INSERT INTO fitment_checks (owner_user_id,vehicle_identity_id,rim_setup_id,render_job_id,idempotency_key,input_hash,execution_status,verdict,input_snapshot,result,error,provider_version,engine_version,rules_version,evaluated_at)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15) RETURNING *""",
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15)
+               ON CONFLICT (owner_user_id, idempotency_key) DO NOTHING
+               RETURNING *""",
             user_id,
             str(request.vehicle_identity_id),
             str(request.rim_setup_id),
@@ -233,20 +268,42 @@ async def create_check(
             result.get("tolerances_version") if result else "v1",
             datetime.now(UTC),
         )
+        if record is None:
+            existing = await conn.fetchrow(
+                "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",
+                user_id,
+                idempotency_key,
+            )
+            if not existing:
+                raise HTTPException(status_code=503, detail="Fitment check could not be persisted")
+            if existing["input_hash"] != input_hash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used for different fitment inputs",
+                )
+            record = existing
     return _response(record)
 
 
 def _response(row) -> CheckResponse:
-    result = row["result"] or {}
-    error = row["error"]
+    result = _json_object(row["result"], field_name="fitment check result")
+    error = _json_object(row["error"], field_name="fitment check error") or None
     rules = result.get("rule_results") or []
     return CheckResponse(
         id=str(row["id"]),
         execution_status=row["execution_status"],
         verdict=row["verdict"],
         is_preliminary=bool(row["is_preliminary"]),
-        reasons=[rule for rule in rules if rule.get("status") in {"incompatible", "unknown"}],
-        conditions=[rule for rule in rules if rule.get("status") == "compatible_with_conditions"],
+        reasons=[
+            rule
+            for rule in rules
+            if isinstance(rule, dict) and rule.get("status") in {"incompatible", "unknown"}
+        ],
+        conditions=[
+            rule
+            for rule in rules
+            if isinstance(rule, dict) and rule.get("status") == "compatible_with_conditions"
+        ],
         missing_fields=result.get("missing_fields") or [],
         versions={
             "provider": "wheel_size",

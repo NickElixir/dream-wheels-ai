@@ -64,6 +64,7 @@ MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
 }
 
 _FUZZY_MATCH_THRESHOLD = 0.75
+_DEFAULT_CACHE = InMemoryProviderCache()
 
 
 def _to_float(value: Any) -> float | None:
@@ -164,7 +165,7 @@ class WheelSizeProvider:
     ) -> None:
         self._api_key = api_key if api_key is not None else WHEEL_SIZE_API_KEY
         self._base_url = (base_url or WHEEL_SIZE_BASE_URL).rstrip("/")
-        self._cache = cache or InMemoryProviderCache()
+        self._cache = cache or _DEFAULT_CACHE
         self._client = client
 
     # -- HTTP core -----------------------------------------------------------
