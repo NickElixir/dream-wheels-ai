@@ -789,6 +789,7 @@ const state = {
     fitmentSourceStatusTone: "neutral",
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
+    fitmentVehicleVariantApplying: false,
     fitmentCheck: null,
     fitmentChecking: false,
     renderHistoryPollTimer: null,
@@ -1794,7 +1795,11 @@ function renderFitment() {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
     });
-    if (variantsLoad) variantsLoad.disabled = demoMode || state.fitmentVehicleVariantsLoading;
+    if (variantsLoad) {
+        variantsLoad.disabled = demoMode
+            || state.fitmentVehicleVariantsLoading
+            || state.fitmentVehicleVariantApplying;
+    }
     if (variantsList) {
         variantsList.replaceChildren();
         variantsList.hidden = !state.fitmentVehicleVariants.length;
@@ -1803,6 +1808,7 @@ function renderFitment() {
             button.type = "button";
             button.className = "fitment-variant-choice";
             button.dataset.fitmentVehicleVariant = String(index);
+            button.disabled = state.fitmentVehicleVariantApplying;
             button.textContent = [variant.market, variant.generation, variant.modification]
                 .filter(Boolean)
                 .join(" / ");
@@ -2102,18 +2108,25 @@ async function runFitmentCheck() {
 
 async function applyFitmentVehicleVariant(variant) {
     const overview = state.fitmentOverview;
-    if (!overview || !variant) return;
-    const response = await fetch(
-        apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/apply`, { includeIdentity: true }),
-        {
-            method: "POST",
-            headers: withAuthHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify({ expected_vehicle_revision: overview.vehicle_revision, ...variant }),
-        }
-    );
-    if (!response.ok) throw new Error(await parseApiError(response));
-    state.fitmentOverview = await response.json();
-    state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
+    if (!overview || !variant || state.fitmentVehicleVariantApplying) return;
+    state.fitmentVehicleVariantApplying = true;
+    renderFitment();
+    try {
+        const response = await fetch(
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/apply`, { includeIdentity: true }),
+            {
+                method: "POST",
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ expected_vehicle_revision: overview.vehicle_revision, ...variant }),
+            }
+        );
+        if (!response.ok) throw new Error(await parseApiError(response));
+        state.fitmentOverview = await response.json();
+        state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
+    } finally {
+        state.fitmentVehicleVariantApplying = false;
+        renderFitment();
+    }
 }
 
 async function saveFitment(event) {
