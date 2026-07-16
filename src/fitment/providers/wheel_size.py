@@ -28,6 +28,7 @@ import httpx
 
 from src.fitment.config import (
     FITMENT_CATALOG_CACHE_TTL_SEC,
+    FITMENT_NEGATIVE_CACHE_TTL_SEC,
     FITMENT_PROFILE_CACHE_TTL_SEC,
     WHEEL_SIZE_API_KEY,
     WHEEL_SIZE_BASE_URL,
@@ -37,10 +38,11 @@ from src.fitment.config import (
     WHEEL_SIZE_TIMEOUT_READ_SEC,
 )
 from src.fitment.providers.base import ProviderError
-from src.fitment.providers.cache import InMemoryProviderCache, ProviderCache
+from src.fitment.providers.cache import ProviderCache, default_provider_cache
 from src.fitment.schemas import (
     AxleFitment,
     FitmentProfile,
+    OffsetReference,
     VehicleIdentity,
     parse_bolt_pattern,
 )
@@ -64,9 +66,6 @@ MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
 }
 
 _FUZZY_MATCH_THRESHOLD = 0.75
-_DEFAULT_CACHE = InMemoryProviderCache()
-
-
 def _to_float(value: Any) -> float | None:
     """Безопасный парс: у Wheel-Size centre_bore бывает строкой или 'N/A'."""
     if value in (None, "", "N/A", "n/a"):
@@ -165,7 +164,7 @@ class WheelSizeProvider:
     ) -> None:
         self._api_key = api_key if api_key is not None else WHEEL_SIZE_API_KEY
         self._base_url = (base_url or WHEEL_SIZE_BASE_URL).rstrip("/")
-        self._cache = cache or _DEFAULT_CACHE
+        self._cache = cache or default_provider_cache()
         self._client = client
 
     # -- HTTP core -----------------------------------------------------------
@@ -353,6 +352,13 @@ class WheelSizeProvider:
                 )
                 variants.append(
                     {
+                        # Keep the canonical identifiers with the display
+                        # values.  Re-resolving a selected row via fuzzy
+                        # matching is both wasteful and can select a sibling
+                        # generation again.
+                        "make_slug": base["make"],
+                        "model_slug": base["model"],
+                        "region": region,
                         "generation": generation_name,
                         "modification": modification_name,
                         "body": str(modification.get("body") or generation.get("body") or ""),
@@ -377,7 +383,13 @@ class WheelSizeProvider:
             data = payload
         if not isinstance(data, list):
             raise ProviderError("wheel-size unexpected search payload on /search/by_model")
-        await self._cache.set(cache_key, data, FITMENT_PROFILE_CACHE_TTL_SEC)
+        # A provider "not found" is useful to cache briefly, but must not
+        # hide a newly available catalogue record for a whole day.
+        await self._cache.set(
+            cache_key,
+            data,
+            FITMENT_NEGATIVE_CACHE_TTL_SEC if not data else FITMENT_PROFILE_CACHE_TTL_SEC,
+        )
         return data
 
     async def get_fitment_profile(
@@ -391,10 +403,12 @@ class WheelSizeProvider:
             return None
 
         mapping = identity.provider_mappings.get(PROVIDER_NAME)
-        if not mapping or not identity.year:
+        required_mapping = {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}
+        if not isinstance(mapping, dict) or not required_mapping.issubset(mapping) or not identity.year:
             return None
 
-        for region in self._regions_for(identity):
+        # A detailed verdict must never silently fall back to another market.
+        for region in [mapping["region"]]:
             params: dict[str, Any] = {
                 "make": mapping["make_slug"],
                 "model": mapping["model_slug"],
@@ -422,21 +436,17 @@ class WheelSizeProvider:
         return None
 
     def _normalize_profile(self, data: list[dict[str, Any]]) -> FitmentProfile | None:
-        """data[] → FitmentProfile.
+        """Normalise the response for one explicitly selected modification.
 
-        В data[] несколько модификаций. Крепёжная геометрия берётся только при
-        консенсусе между модификациями: разные bolt pattern у разных моторов —
-        это «неоднозначная модификация», честный None (unknown), не догадка.
-        Allowed wheels мержатся по всем модификациям (это допустимые заводские
-        конфигурации данной модели/года).
+        ``get_fitment_profile`` always sends the persisted modification slug.
+        Consensus checks remain deliberately conservative in case the provider
+        returns duplicate records for that exact modification.
         """
         bolt_patterns: list[tuple[int, float] | None] = []
         center_bores: list[float | None] = []
         fastener_types: list[str | None] = []
         thread_sizes: list[str | None] = []
         torques: list[str | None] = []
-        oem_front_offsets: list[float | None] = []
-        oem_rear_offsets: list[float | None] = []
         allowed: list[AxleFitment] = []
 
         for item in data:
@@ -472,7 +482,6 @@ class WheelSizeProvider:
                 else None
             )
 
-            item_oem_offsets: dict[str, set[float]] = {"front": set(), "rear": set()}
             for wheel_pair in item.get("wheels") or []:
                 for axle in ("front", "rear"):
                     axle_data = wheel_pair.get(axle) or {}
@@ -494,16 +503,6 @@ class WheelSizeProvider:
                         tire=axle_data.get("tire"),
                     )
                     allowed.append(record)
-                    if is_stock and offset is not None:
-                        item_oem_offsets[axle].add(offset)
-            oem_front_offsets.append(
-                next(iter(item_oem_offsets["front"]))
-                if len(item_oem_offsets["front"]) == 1
-                else None
-            )
-            oem_rear_offsets.append(
-                next(iter(item_oem_offsets["rear"])) if len(item_oem_offsets["rear"]) == 1 else None
-            )
 
         if not allowed and not any(bolt_patterns):
             return None
@@ -529,6 +528,29 @@ class WheelSizeProvider:
                 if rec.axle == "front"
             )
 
+        grouped_offsets: dict[tuple[str, float, float, bool | None], list[float]] = {}
+        for record in unique_allowed:
+            if record.offset is None:
+                continue
+            key = (record.axle, record.rim_diameter, record.rim_width, record.is_stock)
+            grouped_offsets.setdefault(key, []).append(record.offset)
+        offset_references: list[OffsetReference] = []
+        for (axle, diameter, width, is_stock), offsets in grouped_offsets.items():
+            # Do not mix OE and non-OE records.  Non-OE stays preliminary and
+            # is used only when no stock range exists for this exact size.
+            unique_offsets = sorted(set(offsets))
+            offset_references.append(
+                OffsetReference(
+                    axle=axle,
+                    rim_diameter_in=diameter,
+                    rim_width_j=width,
+                    et_min_mm=unique_offsets[0],
+                    et_max_mm=unique_offsets[-1],
+                    source_offsets_mm=unique_offsets,
+                    evidence_class="stock" if is_stock is True else "approved_non_oem",
+                )
+            )
+
         bolt_count: int | None = None
         pcd_mm: float | None = None
         bolt_pattern = _consensus(bolt_patterns)
@@ -546,6 +568,5 @@ class WheelSizeProvider:
             thread_size=_consensus(thread_sizes),
             tightening_torque=_consensus(torques),
             allowed_wheels=unique_allowed,
-            oem_offset_front=_consensus(oem_front_offsets),
-            oem_offset_rear=_consensus(oem_rear_offsets),
+            offset_references=offset_references,
         )

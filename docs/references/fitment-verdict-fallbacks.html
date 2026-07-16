@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dream Wheels AI — Fitment verdict fallbacks</title>
+    <style>
+      :root { --bg:#070809; --panel:#161a22; --panel2:#1b2029; --line:#303844; --text:#f3f5f7; --muted:#98a1ae; --acid:#ddff00; --warn:#ffd451; --bad:#ff7480; --good:#77e59a; --r:22px; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 Inter,ui-sans-serif,system-ui,sans-serif; }
+      button { font:inherit; cursor:pointer; }
+      .app { min-height:100vh; display:grid; grid-template-columns:240px 1fr; }
+      aside { position:sticky; top:0; height:100vh; padding:26px 16px; border-right:1px solid #202630; background:#0c0e12; }
+      .logo { display:block; padding:5px 10px 30px; font-weight:900; letter-spacing:.06em; } .logo i { color:var(--acid); font-style:normal; }
+      .nav-label { margin:15px 10px 8px; color:#697482; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+      .nav-item { display:block; width:100%; border:0; border-radius:12px; padding:11px 13px; background:transparent; color:#bcc4ce; text-align:left; }
+      .nav-item.active { box-shadow:inset 3px 0 var(--acid); background:#1a2029; color:#fff; }
+      main { width:100%; max-width:1160px; margin:auto; padding:34px 40px 84px; }
+      .eyebrow { color:var(--acid); font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+      h1 { margin:5px 0 6px; font-size:clamp(28px,4vw,42px); letter-spacing:-.045em; } h2 { margin:0 0 7px; font-size:20px; } h3 { margin:0 0 6px; font-size:15px; }
+      .muted { color:var(--muted); } .contract { margin:22px 0; padding:14px 16px; border:1px dashed #5a572b; border-radius:16px; color:#efd68a; background:#282817; }
+      .tabs { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; } .tabs button { border:1px solid var(--line); border-radius:999px; padding:8px 12px; background:var(--panel); color:#c4ccd4; } .tabs button.active { border-color:var(--acid); color:var(--acid); }
+      .state { display:none; animation:show .2s ease; } .state.active { display:block; } @keyframes show { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+      .grid { display:grid; grid-template-columns:1.35fr .85fr; gap:18px; } .island { padding:22px; border:1px solid #29323d; border-radius:var(--r); background:linear-gradient(145deg,var(--panel),#12161c); box-shadow:0 18px 50px #0004; }
+      .tag { display:inline-block; padding:5px 9px; border:1px solid #3b4653; border-radius:999px; font-size:12px; } .tag.good { border-color:#287644; color:var(--good); } .tag.warn { border-color:#987925; color:var(--warn); } .tag.bad { border-color:#893b45; color:#ff9da4; }
+      .row { display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px solid #2a323d; } .row:last-child { border:0; }
+      .button,.outline { margin-top:16px; padding:13px 16px; border-radius:13px; font-weight:800; } .button { border:1px solid var(--acid); color:#121500; background:var(--acid); } .outline { border:1px solid var(--acid); color:var(--acid); background:transparent; }
+      .message { margin-top:14px; padding:14px; border:1px solid #344150; border-radius:15px; background:#202631; } .message.warn { border-color:#806929; background:#483b1d42; } .message.good { border-color:#2c7142; background:#17372440; } .message.bad { border-color:#78333d; background:#4a202640; }
+      .section-label { margin-top:18px; color:#98a1ae; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+      .condition { display:flex; gap:10px; padding:12px; margin:10px 0; border:1px solid #344252; border-radius:13px; background:#1d2630; } .dot { flex:none; display:grid; place-items:center; width:22px; height:22px; border-radius:50%; color:var(--acid); background:#dfff0030; font-weight:900; }
+      .advisory { padding:11px 0; border-bottom:1px solid #2b3540; } .advisory:last-child { border:0; }
+      .variant { display:block; width:100%; margin-top:9px; padding:14px; border:1px solid #36414e; border-radius:16px; color:#fff; background:#1c222b; text-align:left; } .variant.selected { border-color:var(--acid); background:#202918; } .variant span { display:block; color:var(--muted); font-size:13px; }
+      .metric { margin:16px 0; } .bar { height:8px; overflow:hidden; border-radius:99px; background:#0d1116; } .bar i { display:block; width:72%; height:100%; border-radius:99px; background:var(--acid); }
+      .mobile { display:none; }
+      @media (max-width:800px) { .app { display:block; } aside { display:none; } main { padding:23px 16px 86px; } .grid { grid-template-columns:1fr; } .tabs { flex-wrap:nowrap; overflow:auto; padding-bottom:3px; } .tabs button { white-space:nowrap; } .mobile { display:flex; position:fixed; bottom:0; left:0; right:0; justify-content:space-around; padding:10px; border-top:1px solid #27303a; background:#11151b; color:#bdc5ce; font-size:11px; } }
+    </style>
+  </head>
+  <body>
+    <!-- Reference only. Production UI is populated exclusively from backend API data. -->
+    <div class="app">
+      <aside><div class="logo">DREAM<i>WHEELS</i> AI</div><div class="nav-label">Основное</div><button class="nav-item active">Совместимость</button><button class="nav-item">Примерить колесные диски</button><button class="nav-item">Мои примерки</button></aside>
+      <main>
+        <div class="eyebrow">Detailed Fitment Check · reference</div>
+        <h1>Предварительная проверка совместимости</h1>
+        <p class="muted">Утверждённые fallback-состояния интерфейса</p>
+        <div class="contract">Этот HTML — визуальный и interaction contract. Mock-значения и JavaScript в нём не являются runtime data layer и не могут считаться provider evidence</div>
+        <nav class="tabs" aria-label="Состояния проверки">
+          <button class="active" data-state="variant">Комплектация</button><button data-state="ready">Готово</button><button data-state="unknown">Нет ET</button><button data-state="compatible">Совместимо</button><button data-state="conditional">С условиями</button><button data-state="market">Другой рынок</button><button data-state="failure">Ошибка</button>
+        </nav>
+
+        <section class="state active" id="variant"><div class="grid"><article class="island"><span class="tag warn">Комплектация не выбрана</span><h2 style="margin-top:13px">Выберите комплектацию автомобиля</h2><p class="muted">Без точной версии нельзя подтвердить заводские размеры и ET</p><button class="variant selected"><b>Lexus RX 350 AWD</b><span>2020 · AL20 · рынок США</span></button><button class="variant"><b>Lexus RX 350 F Sport AWD</b><span>2020 · AL20 · рынок США</span></button><button class="button">Сохранить комплектацию</button></article><aside class="island"><h2>Колесный диск</h2><div class="row"><span>Размер</span><b>20″ · 8,5J</b></div><div class="row"><span>PCD</span><b>5×114,3</b></div><div class="row"><span>ET</span><b>ET45</b></div><div class="row"><span>DIA</span><b>110 мм</b></div></aside></div></section>
+        <section class="state" id="ready"><div class="grid"><article class="island"><span class="tag good">Данные готовы к проверке</span><h2 style="margin-top:13px">Проверьте данные перед запуском</h2><div class="row"><span>Автомобиль</span><b>Lexus RX 350 AWD · AL20</b></div><div class="row"><span>Колесный диск</span><b>20″ · 8,5J · ET42</b></div><div class="message warn"><b>Автомобиль в заводской конфигурации</b><br><small>Изменения подвески, тормозной системы, кузова, ступиц или использование проставок не учитываются</small></div><button class="button">Проверить совместимость</button></article><aside class="island"><h2>Что будет проверено</h2><p class="muted">PCD, центральное отверстие, размер и ET колесного диска</p></aside></div></section>
+        <section class="state" id="unknown"><div class="grid"><article class="island"><span class="tag warn">Недостаточно данных</span><h2 style="margin-top:13px">Не удалось подтвердить ET автомобиля по данным Wheel-Size</h2><p class="muted">ET колесного диска сохранён, но для выбранной комплектации нет эталонного ET автомобиля</p><div class="message warn"><div class="row"><span>ET колесного диска</span><b>ET45</b></div><div class="row"><span>Эталонный ET автомобиля</span><b>Нет данных</b></div></div></article><aside class="island"><div class="section-label">Conditions</div><div class="condition"><span class="dot">✓</span><div><b>Для установки потребуется центровочное кольцо</b><br><small class="muted">110 → 60,1 мм для передней и задней оси</small></div></div><div class="section-label">Advisories</div><div class="advisory">Рейтинг нагрузки колесного диска не подтверждён — не влияет на предварительный verdict</div><div class="advisory">Тип крепежа не подтверждён — проверьте его перед установкой</div></aside></div></section>
+        <section class="state" id="compatible"><div class="grid"><article class="island"><span class="tag good">Предварительно совместимо</span><h2 style="margin-top:13px">ET находится в расчётном диапазоне</h2><p class="muted">Диапазон рассчитан для выбранной комплектации, размера и оси</p><div class="metric"><div class="row"><span>Эталонный диапазон ET</span><b>ET35–45</b></div><div class="bar"><i></i></div><small class="muted">ET колесного диска: ET42</small></div><div class="message good"><b>Положение колесного диска соответствует расчётному диапазону ET</b></div></article><aside class="island"><div class="section-label">Conditions</div><div class="condition"><span class="dot">✓</span><div><b>Для установки потребуется центровочное кольцо</b><br><small class="muted">110 → 60,1 мм</small></div></div><p class="muted">Результат применим только к автомобилю в заводской конфигурации</p></aside></div></section>
+        <section class="state" id="conditional"><div class="grid"><article class="island"><span class="tag warn">Совместимо с условиями</span><h2 style="margin-top:13px">ET отличается от расчётного диапазона</h2><div class="metric"><div class="row"><span>Эталонный диапазон ET</span><b>ET35–45</b></div><div class="bar"><i style="width:94%;background:var(--warn)"></i></div><small class="muted">ET колесного диска: ET48</small></div><div class="message warn"><b>Нужна дополнительная проверка внутренних зазоров</b></div></article><aside class="island"><div class="section-label">Conditions</div><div class="condition"><span class="dot">!</span><div><b>ET выше расчётного диапазона на 3 мм</b><br><small class="muted">Колесный диск смещается ближе к внутренним элементам</small></div></div></aside></div></section>
+        <section class="state" id="market"><div class="grid"><article class="island"><span class="tag warn">Требуется подтверждение</span><h2 style="margin-top:13px">Данные найдены для другого рынка автомобиля</h2><div class="row"><span>Вы указали</span><b>Россия</b></div><div class="row"><span>Wheel-Size нашёл</span><b>Китайский рынок</b></div><div class="message warn"><b>Комплектации и заводские размеры могут различаться</b><br><small>Подтвердите, что найденный вариант соответствует вашему автомобилю</small></div><button class="button">Подтвердить этот вариант</button><button class="outline">Выбрать другую комплектацию</button></article><aside class="island"><h2>Почему это важно</h2><p class="muted">Параметры крепления и заводские размеры могут различаться между рынками</p></aside></div></section>
+        <section class="state" id="failure"><div class="grid"><article class="island"><span class="tag bad">Проверка не выполнена</span><h2 style="margin-top:13px">Wheel-Size временно недоступен</h2><p class="muted">Данные автомобиля и колесного диска сохранены</p><div class="message bad"><b>Техническая ошибка провайдера</b><br><small>Повторите проверку позже</small></div><button class="button">Повторить проверку</button></article><aside class="island"><h2>Что не изменилось</h2><p class="muted">Виртуальная примерка и сохранённые параметры остаются доступными</p></aside></div></section>
+      </main>
+      <nav class="mobile">Главная　 Создать　 История　 Баланс　 Ещё</nav>
+    </div>
+    <script>
+      const tabs = document.querySelectorAll('[data-state]');
+      const states = document.querySelectorAll('.state');
+      tabs.forEach((tab) => tab.addEventListener('click', () => {
+        tabs.forEach((item) => item.classList.toggle('active', item === tab));
+        states.forEach((state) => state.classList.toggle('active', state.id === tab.dataset.state));
+      }));
+    </script>
+  </body>
+</html>

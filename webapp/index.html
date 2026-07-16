@@ -572,7 +572,20 @@
                             <button type="button" class="primary-button compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
-                        <div class="fitment-verdict-list" data-fitment-verdict-reasons hidden></div>
+                        <div class="fitment-verdict-groups" data-fitment-verdict-groups hidden>
+                            <section class="fitment-verdict-group" data-fitment-verdict-blocking hidden>
+                                <strong>Нужно уточнить</strong>
+                                <div data-fitment-verdict-blocking-list></div>
+                            </section>
+                            <section class="fitment-verdict-group" data-fitment-verdict-conditions hidden>
+                                <strong>Условия установки</strong>
+                                <div data-fitment-verdict-conditions-list></div>
+                            </section>
+                            <section class="fitment-verdict-group" data-fitment-verdict-advisories hidden>
+                                <strong>Обратите внимание</strong>
+                                <div data-fitment-verdict-advisories-list></div>
+                            </section>
+                        </div>
                         <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
                     </section>
 
