@@ -42,3 +42,19 @@ def test_extractor_prefers_structured_product_data_and_reports_alternatives() ->
     assert ("bolt_count", 5) in values
     assert ("pcd_mm", 112.0) in values
     assert ("offset_et_mm", 35.0) in values
+
+
+def test_extractor_does_not_use_marketing_product_title_as_model() -> None:
+    html = """
+    <script type="application/ld+json">
+      {"@type":"Product","brand":"В стиле BMW",
+       "name":"Литые FlowForming диски В стиле BMW 826 STYLE R18 8J 5x112 ET30 dia 66.6 купить в Москве",
+       "sku":"761476"}
+    </script>
+    <meta property="og:title" content="Литые FlowForming диски В стиле BMW 826 STYLE R18 8J 5x112 ET30 dia 66.6">
+    """
+
+    candidates = extract_product_page(html)
+
+    assert not [candidate for candidate in candidates if candidate.field == "model"]
+    assert ("sku", "761476") in {(candidate.field, candidate.value) for candidate in candidates}
