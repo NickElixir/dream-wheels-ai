@@ -90,6 +90,11 @@ _FIELD_PATTERNS = {
     "model": re.compile(r"\b(?:model|модель)\s*[:\-]\s*([^\n|;]{2,120})", re.I),
     "sku": re.compile(r"\b(?:sku|артикул|part\s*(?:no|number))\s*[:#\-]\s*([A-Z0-9._/ -]{2,64})", re.I),
 }
+_MARKETING_MODEL_TERMS = re.compile(
+    r"\b(?:купить|цена|доставка|в наличии|литые|кованые|диски|колесные|wheel|r\d{2}|"
+    r"\d(?:[.,]\d)?j|\d\s*[xх×*]\s*\d{2,3}|\bet\s*[+-]?\d|\bdia\s*\d)\b",
+    re.I,
+)
 _KNOWN_FIELDS = (
     "brand", "model", "sku", "bolt_count", "pcd_mm", "center_bore_mm",
     "wheel_diameter_in", "wheel_width_j", "offset_et_mm",
@@ -220,6 +225,19 @@ def _clean(value: Any, *, sku: bool = False) -> str | None:
     return re.sub(r"\s+", "-", result).upper() if sku else result[:160]
 
 
+def _clean_model(value: Any) -> str | None:
+    """Accept only an explicit, compact product-model value.
+
+    Product ``name`` and OpenGraph titles are frequently marketing headlines
+    that include size and commercial text.  They are useful as page context,
+    but must not overwrite the editable model field.
+    """
+    model = _clean(value)
+    if not model or len(model) > 80 or _MARKETING_MODEL_TERMS.search(model):
+        return None
+    return model
+
+
 def _products(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, list):
         return [product for item in value for product in _products(item)]
@@ -276,20 +294,20 @@ def extract_product_page(html: str) -> tuple[RimUrlCandidate, ...]:
             if isinstance(brand, dict):
                 brand = brand.get("name")
             for field_name, raw, sku in (
-                ("brand", brand, False), ("model", product.get("model") or product.get("name"), False),
-                ("sku", product.get("sku") or product.get("mpn") or product.get("productID"), True),
+                ("brand", brand, False), ("sku", product.get("sku") or product.get("mpn") or product.get("productID"), True),
             ):
                 if value := _clean(raw, sku=sku):
                     candidates.append(RimUrlCandidate(field_name, value, "json_ld", 0.95))
+            if model := _clean_model(product.get("model")):
+                candidates.append(RimUrlCandidate("model", model, "json_ld", 0.95))
             candidates.extend(_technical_candidates(" ".join(str(v) for v in product.values()), "json_ld", 0.9))
     meta = dict(parser.meta)
     for field_name, raw, sku in (
         ("brand", meta.get("product:brand") or meta.get("og:brand"), False),
-        ("model", meta.get("og:title"), False),
         ("sku", meta.get("product:retailer_item_id") or meta.get("product:sku"), True),
     ):
         if value := _clean(raw, sku=sku):
-            candidates.append(RimUrlCandidate(field_name, value, "opengraph", 0.8))
+                candidates.append(RimUrlCandidate(field_name, value, "opengraph", 0.8))
     visible = "\n".join(_clean(part, sku=False) or "" for part in parser.text)
     for field_name, pattern in _FIELD_PATTERNS.items():
         if match := pattern.search(visible):

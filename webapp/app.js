@@ -787,6 +787,7 @@ const state = {
     fitmentSourceResolving: false,
     fitmentSourceStatus: "",
     fitmentSourceStatusTone: "neutral",
+    fitmentSourceAppliedFields: [],
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
     fitmentVehicleVariantApplying: false,
@@ -1596,6 +1597,55 @@ function fitmentFormFromOverview(overview) {
     };
 }
 
+function fitmentSaveLabel() {
+    return locale === "ru" ? "Сохранить и продолжить" : "Save and continue";
+}
+
+function fitmentSourceProgressTitle() {
+    if (state.fitmentSourceResolving) {
+        return locale === "ru" ? "Извлекаем параметры из источника" : "Extracting parameters from the source";
+    }
+    return locale === "ru" ? "Параметры из источника" : "Parameters from the source";
+}
+
+function fitmentSourceProgressFields() {
+    return state.fitmentSourceAppliedFields
+        .map((fieldName) => fitmentFieldLabel(`rim.${fieldName}`))
+        .filter(Boolean)
+        .join(", ");
+}
+
+function scrollFitmentTo(selector) {
+    window.requestAnimationFrame(() => {
+        document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+}
+
+function fitmentNextStep(overview) {
+    if (!fitmentProviderReady(overview)) {
+        return {
+            selector: "[data-fitment-variants-load]",
+            message: locale === "ru"
+                ? "Данные сохранены. Следующий шаг — выберите точную комплектацию автомобиля."
+                : "Details saved. Next, select the exact vehicle version.",
+        };
+    }
+    if (!overview?.readiness?.ready) {
+        return {
+            selector: "[data-fitment-section=\"rim\"]",
+            message: locale === "ru"
+                ? "Данные сохранены. Заполните недостающие параметры диска, затем продолжите проверку."
+                : "Details saved. Complete the missing wheel parameters, then continue the check.",
+        };
+    }
+    return {
+        selector: "[data-fitment-verdict-card]",
+        message: locale === "ru"
+            ? "Данные сохранены. Теперь можно проверить совместимость."
+            : "Details saved. You can now check compatibility.",
+    };
+}
+
 function syncFitmentFormInputs() {
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
         const value = getDeepValue(state.fitmentForm, input.dataset.fitmentInput);
@@ -1813,6 +1863,11 @@ function renderFitment() {
     const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
     const sourceStatus = document.querySelector("[data-fitment-source-status]");
     const sourceToggle = document.querySelector("[data-fitment-source-toggle]");
+    const sourceProgress = document.querySelector("[data-fitment-source-progress]");
+    const sourceProgressTitle = document.querySelector("[data-fitment-source-progress-title]");
+    const sourceProgressCopy = document.querySelector("[data-fitment-source-progress-copy]");
+    const sourceProgressFields = document.querySelector("[data-fitment-source-progress-fields]");
+    const sourceSpinner = document.querySelector("[data-fitment-source-spinner]");
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantsList = document.querySelector("[data-fitment-variant-list]");
     const verdictCard = document.querySelector("[data-fitment-verdict-card]");
@@ -1829,7 +1884,12 @@ function renderFitment() {
         message.className = `wallet-status-island tone-${state.fitmentMessageTone || "neutral"}`;
     }
     if (messageText) messageText.textContent = state.fitmentMessage || "";
-    if (saveButton) saveButton.disabled = state.fitmentLoading || state.fitmentSaving;
+    if (saveButton) {
+        saveButton.disabled = state.fitmentLoading || state.fitmentSaving;
+        saveButton.textContent = state.fitmentSaving
+            ? (locale === "ru" ? "Сохраняем…" : "Saving…")
+            : fitmentSaveLabel();
+    }
     if (skipButton) skipButton.disabled = state.fitmentLoading || state.fitmentSaving;
     const demoMode = shouldUseDemoFitment(state.fitmentJobId);
     if (sourceEntry) sourceEntry.hidden = demoMode || !state.fitmentSourceOpen;
@@ -1847,9 +1907,29 @@ function renderFitment() {
         sourceStatus.textContent = state.fitmentSourceStatus;
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
     }
+    if (sourceProgress) {
+        const visible = Boolean(state.fitmentSourceStatus) || state.fitmentSourceResolving;
+        sourceProgress.hidden = !visible;
+        sourceProgress.dataset.tone = state.fitmentSourceStatusTone || "neutral";
+        sourceProgress.dataset.loading = String(state.fitmentSourceResolving);
+    }
+    if (sourceProgressTitle) sourceProgressTitle.textContent = fitmentSourceProgressTitle();
+    if (sourceProgressCopy) sourceProgressCopy.textContent = state.fitmentSourceStatus || "";
+    if (sourceProgressFields) {
+        const appliedFields = fitmentSourceProgressFields();
+        sourceProgressFields.hidden = !appliedFields;
+        sourceProgressFields.textContent = appliedFields
+            ? `${locale === "ru" ? "Заполнены поля" : "Fields filled"}: ${appliedFields}`
+            : "";
+    }
+    if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
+        input.closest(".fitment-field")?.toggleAttribute(
+            "data-source-applied",
+            state.fitmentSourceAppliedFields.includes(input.dataset.fitmentInput?.replace("rim.", ""))
+        );
     });
     if (variantsLoad) {
         variantsLoad.disabled = demoMode
@@ -2109,6 +2189,7 @@ async function resolveFitmentRimSource() {
         return;
     }
     state.fitmentSourceResolving = true;
+    state.fitmentSourceAppliedFields = [];
     state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
@@ -2124,11 +2205,14 @@ async function resolveFitmentRimSource() {
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
+        const appliedFields = [];
         for (const [fieldName, value] of Object.entries(result.values || {})) {
             if (Object.hasOwn(state.fitmentForm.rim, fieldName)) {
                 state.fitmentForm.rim[fieldName] = value;
+                appliedFields.push(fieldName);
             }
         }
+        state.fitmentSourceAppliedFields = appliedFields;
         const conflictFields = (result.conflicts || []).map((conflict) => conflict.field);
         state.fitmentSourceStatus = conflictFields.length
             ? `${locale === "ru" ? "Параметры заполнены; проверьте" : "Parameters filled; review"}: ${conflictFields.join(", ")}`
@@ -2143,6 +2227,9 @@ async function resolveFitmentRimSource() {
     } finally {
         state.fitmentSourceResolving = false;
         renderFitment();
+        if (state.fitmentSourceStatusTone !== "error") {
+            scrollFitmentTo("[data-fitment-section=\"rim\"]");
+        }
     }
 }
 
@@ -2261,9 +2348,11 @@ async function saveFitment(event) {
         const overview = await response.json();
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
-        state.fitmentMessage = t("fitment.saveSuccess");
+        const nextStep = fitmentNextStep(overview);
+        state.fitmentMessage = nextStep.message;
         state.fitmentMessageTone = "success";
         void loadRenderHistory({ silent: true });
+        scrollFitmentTo(nextStep.selector);
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
@@ -4529,7 +4618,6 @@ function bindEvents() {
     document.querySelector("[data-fitment-skip]")?.addEventListener("click", closeFitmentView);
     document.querySelector("[data-fitment-source-toggle]")?.addEventListener("click", () => {
         state.fitmentSourceOpen = !state.fitmentSourceOpen;
-        state.fitmentSourceStatus = "";
         renderFitment();
     });
     document.querySelector("[data-fitment-source-url]")?.addEventListener("input", (event) => {
@@ -4551,6 +4639,10 @@ function bindEvents() {
         input.addEventListener("focus", () => setFitmentOverviewCollapsed(true));
         input.addEventListener("input", (event) => {
             setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
+            const fieldName = input.dataset.fitmentInput?.replace("rim.", "");
+            if (fieldName) {
+                state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
+            }
         });
     });
     document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {

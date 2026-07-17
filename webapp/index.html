@@ -689,6 +689,14 @@
                                 <p class="section-label" data-i18n="fitment.rimSection">Колесный диск</p>
                                 <h2 data-i18n="fitment.rimSectionTitle">Уточнить параметры</h2>
                             </div>
+                            <div class="fitment-source-progress" data-fitment-source-progress hidden aria-live="polite">
+                                <div class="fitment-source-progress-head">
+                                    <span class="fitment-source-spinner" data-fitment-source-spinner hidden aria-hidden="true"></span>
+                                    <strong data-fitment-source-progress-title>Источник диска</strong>
+                                </div>
+                                <p data-fitment-source-progress-copy></p>
+                                <p class="fitment-source-progress-fields" data-fitment-source-progress-fields hidden></p>
+                            </div>
                             <div class="fitment-form-grid">
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.rimBrand">Бренд</span>
@@ -730,7 +738,7 @@
                         </section>
 
                         <div class="create-flow-actions fitment-actions">
-                            <button type="submit" class="primary-button" data-fitment-save data-i18n="fitment.save">Сохранить данные</button>
+                            <button type="submit" class="primary-button" data-fitment-save>Сохранить и продолжить</button>
                             <button type="button" class="ghost-button compact-button" data-fitment-skip data-i18n="fitment.skip">Не сейчас</button>
                         </div>
                     </form>
