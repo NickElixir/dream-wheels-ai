@@ -78,6 +78,29 @@ def test_remaining_starter_grant_drops_to_zero_after_spend_even_with_purchase():
     assert remaining == 0
 
 
+def test_remaining_starter_grant_accepts_json_text_metadata_from_database():
+    remaining = _calculate_remaining_starter_grant_credits(
+        [
+            {
+                "event_type": "trial_grant",
+                "credits_delta": 3,
+                "idempotency_key": "starter_grant:123",
+                "metadata": '{"kind":"starter_grant"}',
+            },
+            {
+                "event_type": "job_reserve",
+                "credits_delta": -2,
+                "idempotency_key": "job_reserve:1",
+                "metadata": "{}",
+            },
+        ],
+        user_id=123,
+        granted_credits=3,
+    )
+
+    assert remaining == 1
+
+
 def test_remaining_starter_grant_restores_refunded_credit():
     remaining = _calculate_remaining_starter_grant_credits(
         [

@@ -1,5 +1,6 @@
 """Credit ledger и безопасное списание за рендеры."""
 
+import json
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -33,6 +34,19 @@ def _starter_grant_expiration_idempotency_key(user_id: int) -> str:
 
 def _starter_grant_expires_at(created_at: datetime) -> datetime:
     return created_at + timedelta(days=STARTER_GRANT_TTL_DAYS)
+
+
+def _metadata_kind(metadata: object) -> str:
+    """Read JSONB consistently when a database codec returns text."""
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            return ""
+    if not isinstance(metadata, Mapping):
+        return ""
+    value = metadata.get("kind")
+    return value if isinstance(value, str) else ""
 
 
 async def _has_starter_grant_ledger_entry(conn: asyncpg.Connection, user_id: int) -> bool:
@@ -163,7 +177,7 @@ def _calculate_remaining_starter_grant_credits(
 
     for row in ledger_rows:
         row_idempotency_key = row.get("idempotency_key")
-        row_kind = ((row.get("metadata") or {}).get("kind") if row.get("metadata") else None) or ""
+        row_kind = _metadata_kind(row.get("metadata"))
         row_event_type = row.get("event_type")
         credits_delta = int(row.get("credits_delta") or 0)
 
