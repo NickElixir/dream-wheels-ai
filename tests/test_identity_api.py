@@ -2,12 +2,20 @@ import json
 from io import BytesIO
 
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from src import assets_service, identity_api, jobs_api
 from src.auth import AuthContext
 from src.main import app
 
 client = TestClient(app)
+
+
+def _image_bytes(*, size: tuple[int, int] = (320, 240), mode: str = "RGB") -> bytes:
+    image = Image.new(mode, size, color=(20, 30, 40, 255) if mode == "RGBA" else (20, 30, 40))
+    output = BytesIO()
+    image.save(output, format="PNG")
+    return output.getvalue()
 
 
 class FakeTransaction:
@@ -112,21 +120,19 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
         "/identity/resolve",
         data={"init_data": "unused"},
         files={
-            "car_image": ("car.jpg", BytesIO(b"car-bytes"), "image/jpeg"),
-            "wheel_image": ("wheel.jpg", BytesIO(b"rim-bytes"), "image/jpeg"),
+            "car_image": ("car.png", BytesIO(_image_bytes()), "image/png"),
+            "wheel_image": ("wheel.png", BytesIO(_image_bytes()), "image/png"),
         },
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["draft_id"] == "11111111-1111-4111-8111-111111111111"
-    assert body["vehicle"]["primary"]["make"] == "Lexus"
-    assert len(body["vehicle"]["alternatives"]) <= 2
-    assert body["rim"]["wheel_diameter_in"] == 20
-    assert body["rim"]["wheel_width_j"] == 8.5
-    assert body["rim"]["bolt_count"] == 5
-    assert body["rim"]["pcd_mm"] == 114.3
-    assert body["pcd_display"] == "5×114.3"
+    assert body["vehicle"]["status"] == "unknown"
+    assert body["vehicle"]["primary"] is None
+    assert body["vehicle"]["alternatives"] == []
+    assert body["rim"]["status"] == "manual_required"
+    assert body["pcd_display"] is None
     assert not any(call[0] == "reserve_job_credit" for call in calls)
     assert not any(call[0] == "queue" for call in calls)
 

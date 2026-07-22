@@ -26,6 +26,21 @@ def _env_str(name: str) -> str:
     return os.getenv(name, "").strip()
 
 
+# Vehicle visual identity. Disabled by default until the benchmark, privacy
+# review and staged rollout are complete.
+VEHICLE_IDENTITY_ENABLED = os.getenv("VEHICLE_IDENTITY_ENABLED", "false").lower() == "true"
+VEHICLE_IDENTITY_PROVIDER = _env_str("VEHICLE_IDENTITY_PROVIDER") or "mock"
+VEHICLE_IDENTITY_MODEL = _env_str("VEHICLE_IDENTITY_MODEL") or "gpt-4o-mini"
+VEHICLE_IDENTITY_OPENAI_API_KEY = _env_str("VEHICLE_IDENTITY_OPENAI_API_KEY")
+VEHICLE_IDENTITY_TIMEOUT_SEC = float(os.getenv("VEHICLE_IDENTITY_TIMEOUT_SEC", "20"))
+VEHICLE_IDENTITY_MAX_RETRIES = int(os.getenv("VEHICLE_IDENTITY_MAX_RETRIES", "1"))
+VEHICLE_IDENTITY_PROMPT_VERSION = (
+    _env_str("VEHICLE_IDENTITY_PROMPT_VERSION") or "vehicle_identity_v1"
+)
+VEHICLE_IDENTITY_MAX_IMAGE_EDGE = int(os.getenv("VEHICLE_IDENTITY_MAX_IMAGE_EDGE", "1536"))
+VEHICLE_IDENTITY_MAX_PIXELS = int(os.getenv("VEHICLE_IDENTITY_MAX_PIXELS", "12000000"))
+
+
 def _infer_supabase_project_ref() -> str:
     project_ref = _env_str("SUPABASE_PROJECT_REF")
     if project_ref:
@@ -81,7 +96,9 @@ TELEGRAM_LOGIN_NONCE_TTL_SEC = int(os.getenv("TELEGRAM_LOGIN_NONCE_TTL_SEC", "60
 # allowlist.
 RIM_URL_RESOLVER_ENABLED = os.getenv("RIM_URL_RESOLVER_ENABLED", "false").lower() == "true"
 RIM_URL_RESOLVER_MAX_REDIRECTS = int(os.getenv("RIM_URL_RESOLVER_MAX_REDIRECTS", "3"))
-RIM_URL_RESOLVER_MAX_BODY_BYTES = int(os.getenv("RIM_URL_RESOLVER_MAX_BODY_BYTES", str(2 * 1024 * 1024)))
+RIM_URL_RESOLVER_MAX_BODY_BYTES = int(
+    os.getenv("RIM_URL_RESOLVER_MAX_BODY_BYTES", str(2 * 1024 * 1024))
+)
 RIM_URL_RESOLVER_TIMEOUT_SEC = float(os.getenv("RIM_URL_RESOLVER_TIMEOUT_SEC", "15"))
 
 # Robokassa
@@ -105,4 +122,7 @@ def runtime_env_summary() -> dict[str, str | bool | None]:
         "supabase_host": supabase_host,
         "storage_configured": bool(SUPABASE_STORAGE_URL and SUPABASE_SERVICE_ROLE_KEY),
         "payments_test_mode": ROBOKASSA_IS_TEST,
+        "vehicle_identity_enabled": VEHICLE_IDENTITY_ENABLED,
+        "vehicle_identity_provider": VEHICLE_IDENTITY_PROVIDER,
+        "vehicle_identity_model": VEHICLE_IDENTITY_MODEL,
     }

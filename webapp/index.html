@@ -202,6 +202,14 @@
                                 <span class="confidence-pill" data-vehicle-confidence>—</span>
                             </div>
                             <div class="identity-choice-list" data-vehicle-options></div>
+                            <div class="fitment-form-grid" data-manual-vehicle-fields hidden>
+                                <label class="fitment-field"><span>Марка</span><input type="text" data-manual-identity-input="vehicle.make" autocomplete="off"></label>
+                                <label class="fitment-field"><span>Модель</span><input type="text" data-manual-identity-input="vehicle.model" autocomplete="off"></label>
+                                <label class="fitment-field"><span>Год</span><input type="number" inputmode="numeric" data-manual-identity-input="vehicle.year"></label>
+                                <label class="fitment-field"><span>Год от</span><input type="number" inputmode="numeric" data-manual-identity-input="vehicle.year_start"></label>
+                                <label class="fitment-field"><span>Год до</span><input type="number" inputmode="numeric" data-manual-identity-input="vehicle.year_end"></label>
+                            </div>
+                            <p class="identity-note" data-manual-vehicle-note hidden>Не удалось уверенно определить автомобиль. Укажите данные вручную</p>
                         </article>
 
                         <article class="identity-card">
@@ -217,6 +225,13 @@
                                 <div class="identity-metric"><span>Ширина</span><strong data-rim-width>—</strong></div>
                                 <div class="identity-metric"><span>PCD</span><strong data-rim-pcd>—</strong></div>
                             </div>
+                            <div class="fitment-form-grid" data-manual-rim-fields hidden>
+                                <label class="fitment-field"><span>Диаметр</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.wheel_diameter_in"></label>
+                                <label class="fitment-field"><span>Ширина</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.wheel_width_j"></label>
+                                <label class="fitment-field"><span>Болтов</span><input type="number" inputmode="numeric" data-manual-identity-input="rim.bolt_count"></label>
+                                <label class="fitment-field"><span>PCD</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.pcd_mm"></label>
+                            </div>
+                            <p class="identity-note" data-manual-rim-note hidden>Параметры диска не определяются автоматически. Укажите их вручную</p>
                             <div class="create-flow-actions">
                                 <button type="button" class="ghost-button compact-button" data-rim-confirm="true">✓ Верно</button>
                                 <button type="button" class="ghost-button compact-button" data-rim-confirm="false">Не уверен</button>
