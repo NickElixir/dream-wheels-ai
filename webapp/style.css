@@ -3148,6 +3148,11 @@ h2 {
 }
 
 @media (max-width: 760px) {
+    .fallback-button {
+        /* The primary CTA must sit above the fixed mobile navigation. */
+        bottom: calc(82px + var(--safe-bottom));
+    }
+
     #app {
         width: min(100%, 580px);
         padding-left: 16px;

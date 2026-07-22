@@ -13,6 +13,9 @@ MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_identity_candidates.sql").
 MIGRATION_0020 = (ROOT / "migrations" / "0020_fitment_change_events.sql").read_text(
     encoding="utf-8"
 )
+MIGRATION_0023 = (ROOT / "migrations" / "0023_enable_credit_accounts_rls.sql").read_text(
+    encoding="utf-8"
+)
 SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
     encoding="utf-8"
 )
@@ -218,6 +221,11 @@ def test_fitment_change_events_migration_is_append_only() -> None:
     assert "idx_fitment_change_events_job_created" in MIGRATION_0020
 
 
+def test_credit_accounts_migration_restores_backend_only_rls() -> None:
+    assert "ALTER TABLE IF EXISTS user_credit_accounts ENABLE ROW LEVEL SECURITY;" in MIGRATION_0023
+    assert "CREATE POLICY" not in MIGRATION_0023
+
+
 def test_sprint_2_reference_prototype_is_committed() -> None:
     reference = ROOT / "docs" / "references" / "sprint-2-create-flow.html"
     assert reference.exists()
@@ -357,6 +365,11 @@ def test_focus_visible_style_covers_button_and_navigation_families() -> None:
     assert (
         "box-shadow: 0 0 0 2px rgba(7, 8, 9, 0.92), 0 0 0 4px rgba(221, 255, 0, 0.3);" in STYLE_CSS
     )
+
+
+def test_mobile_fallback_cta_is_placed_above_fixed_navigation() -> None:
+    assert "/* The primary CTA must sit above the fixed mobile navigation. */" in STYLE_CSS
+    assert "bottom: calc(82px + var(--safe-bottom));" in STYLE_CSS
 
 
 def test_dashboard_summary_cards_use_container_responsive_headers() -> None:
