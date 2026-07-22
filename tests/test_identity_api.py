@@ -1,10 +1,11 @@
+import asyncio
 import json
 from io import BytesIO
 
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from src import assets_service, identity_api, jobs_api
+from src import assets_service, identity_api, identity_service, jobs_api
 from src.auth import AuthContext
 from src.main import app
 
@@ -118,7 +119,7 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
 
     response = client.post(
         "/identity/resolve",
-        data={"init_data": "unused"},
+        data={"init_data": "unused", "rim_product_url": "https://shop.example.test/wheel-18"},
         files={
             "car_image": ("car.png", BytesIO(_image_bytes()), "image/png"),
             "wheel_image": ("wheel.png", BytesIO(_image_bytes()), "image/png"),
@@ -132,9 +133,68 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
     assert body["vehicle"]["primary"] is None
     assert body["vehicle"]["alternatives"] == []
     assert body["rim"]["status"] == "manual_required"
+    assert body["rim"]["product_url"] == "https://shop.example.test/wheel-18"
     assert body["pcd_display"] is None
+    proposal_update = next(
+        call for call in calls if call[0] == "execute" and "identity_proposal" in call[1]
+    )
+    assert "https://shop.example.test/wheel-18" in proposal_update[2][0]
     assert not any(call[0] == "reserve_job_credit" for call in calls)
     assert not any(call[0] == "queue" for call in calls)
+
+
+def test_rim_proposal_allows_a_source_url_without_technical_values() -> None:
+    rim = identity_service.RimProposal(
+        product_url="https://shop.example.test/wheel-18",
+        confidence=1,
+        source="user_input",
+    )
+
+    snapshot = identity_service.render_input_snapshot(
+        vehicle_identity_id="22222222-2222-4222-8222-222222222222",
+        rim_setup_id="33333333-3333-4333-8333-333333333333",
+        vehicle=identity_service.VehicleCandidate(
+            make="Lexus",
+            model="RX",
+            year=2020,
+            confidence=1,
+            source="user_confirmed",
+        ),
+        rim=rim,
+        rim_user_confirmed=False,
+        car_asset_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        rim_asset_id="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    )
+
+    assert snapshot["rim"]["product_url"] == "https://shop.example.test/wheel-18"
+    assert snapshot["rim"]["pcd_display"] is None
+
+
+def test_insert_rim_spec_persists_only_source_url_when_specs_are_unknown() -> None:
+    captured: list[object] = []
+
+    class FakeConn:
+        async def fetchval(self, _query: str, *args: object) -> str:
+            captured.extend(args)
+            return "33333333-3333-4333-8333-333333333333"
+
+    rim = identity_service.RimProposal(
+        product_url="https://shop.example.test/wheel-18",
+        confidence=1,
+        source="user_input",
+    )
+    rim_spec_id = asyncio.run(
+        identity_service.insert_rim_spec(
+            FakeConn(),
+            owner_user_id=77,
+            rim=rim,
+            is_user_confirmed=False,
+        )
+    )
+
+    assert rim_spec_id == "33333333-3333-4333-8333-333333333333"
+    assert captured[4] == "https://shop.example.test/wheel-18"
+    assert captured[5:9] == [None, None, None, None]
 
 
 def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(monkeypatch):
@@ -263,6 +323,7 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
                 "source": "vlm",
             },
             "rim": {
+                "product_url": "https://shop.example.test/selected-wheel-20",
                 "wheel_diameter_in": 20,
                 "wheel_width_j": 8.5,
                 "bolt_count": 5,
@@ -289,7 +350,7 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
 
     rim_insert = next(call for call in calls if call[0] == "insert_rim_spec")
     assert rim_insert[1][1] == "OZ"
-    assert rim_insert[1][4] == "https://shop.example.test/oz-18"
+    assert rim_insert[1][4] == "https://shop.example.test/selected-wheel-20"
     assert float(rim_insert[1][9]) == 66.6
     assert float(rim_insert[1][10]) == 35
     rim_candidates = json.loads(rim_insert[1][12])
@@ -316,3 +377,13 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     assert snapshot["vehicle"]["year"] == 2021
     assert snapshot["rim"]["pcd_display"] == "5×114.3"
     assert snapshot["rim"]["is_user_confirmed"] is False
+    assert snapshot["rim"]["product_url"] == "https://shop.example.test/selected-wheel-20"
+
+    consumed_draft_update = next(
+        call
+        for call in calls
+        if call[0] == "execute"
+        and "UPDATE render_input_drafts" in call[1]
+        and "identity_proposal" in call[1]
+    )
+    assert "https://shop.example.test/selected-wheel-20" in consumed_draft_update[2][0]

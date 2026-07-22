@@ -103,12 +103,12 @@ Optional detailed fields after result detail: generation, modification, market, 
 
 ### Follow-up — rim source enrichment before rendering
 
-An optional rim product URL may be collected in the pre-render flow.  After the
-user confirms the URL, the client shows a loading state, temporarily locks rim
-parameter inputs, and applies a reviewable extraction draft.  The URL, extracted
-values and their provenance travel with the render input draft and remain
-available in the Fitment editor.  Confirmed brand/model/SKU/specification data
-may later be used as context for diffusion generation and render-quality
+An optional rim product URL is collected in the pre-render flow and travels with
+the render input draft to the Fitment editor. The create flow intentionally has no
+manual rim specification fields: photo and URL are sufficient for a visual render.
+URL parsing remains an explicit Fitment-editor action; its extracted values and
+provenance are reviewable before saving. Confirmed brand/model/SKU/specification
+data may later be used as context for diffusion generation and render-quality
 evaluation; unconfirmed page data must never be treated as ground truth.
 
 ### Sprint 5 onward
