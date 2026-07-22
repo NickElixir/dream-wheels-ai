@@ -39,7 +39,7 @@ Durable jobs, assets, render statuses, idempotency, and Postgres-backed history.
 
 Dashboard, balance, history, navigation, wallet, and UI-only feedback.
 
-### Sprint 2 — Assisted Vehicle & Rim Identification
+### Sprint 2A — Assisted Identity Flow
 
 Existing upload screen stays unchanged. One page: upload → AI proposal → confirmation → review → render.
 
@@ -48,6 +48,17 @@ Quick vehicle identity: make, model, year/range, primary proposal plus at most t
 Quick rim identity: diameter, mandatory width, PCD stored as `bolt_count` + `pcd_mm` and displayed as `NxPCD`.
 
 No full vehicle catalogue, rim brand/model, SKU, ET/DIA, provider lookup, FitmentCheck, or verdict.
+
+**Status: completed.**
+
+### Sprint 2B — Production Vehicle VLM Resolver
+
+**Status: planned / feature-flagged.**
+
+Production vehicle recognition resolves only make, model and year/range with primary,
+two alternatives at most, and explicit abstention. It is provider-neutral, uses safe
+image normalization, and requires a reproducible consented benchmark before a provider
+is enabled beyond staging. Rim technical values remain manual in this phase.
 
 ### Sprint 3 — comparison, durable history, and persistent feedback
 

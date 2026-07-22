@@ -4,6 +4,8 @@ This boundary is intentionally render-oriented. It can suggest values from a
 mock VLM/OCR adapter, but it must not produce technical fitment verdicts.
 """
 
+from __future__ import annotations
+
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -11,9 +13,9 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import asyncpg
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
-from src.assets_service import AssetUpload
+from src.identity.schemas import VehicleIdentityResolution
 
 IdentitySource = Literal[
     "user_input",
@@ -28,6 +30,8 @@ IdentitySource = Literal[
 
 
 class VehicleCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     make: str
     model: str
     year: int | None = Field(default=None, ge=1886, le=2100)
@@ -52,8 +56,17 @@ class VehicleCandidate(BaseModel):
             raise ValueError("year_end must be greater than or equal to year_start")
         return value
 
+    @model_validator(mode="after")
+    def validate_year_choice(self) -> VehicleCandidate:
+        if self.year is not None and (self.year_start is not None or self.year_end is not None):
+            raise ValueError("year must not be combined with year_start or year_end")
+        if (self.year_start is None) != (self.year_end is None):
+            raise ValueError("year_start and year_end must be supplied together")
+        return self
+
 
 class RimProposal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     brand: str | None = None
     model: str | None = None
     sku: str | None = None
@@ -105,10 +118,38 @@ class RimProposal(BaseModel):
         return value
 
 
+class RimIdentityProposal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["manual_required", "resolved"] = "manual_required"
+    brand: str | None = None
+    model: str | None = None
+    sku: str | None = None
+    product_url: str | None = None
+    wheel_diameter_in: float | None = Field(default=None, gt=0)
+    wheel_width_j: float | None = Field(default=None, gt=0)
+    bolt_count: int | None = Field(default=None, gt=0)
+    pcd_mm: float | None = Field(default=None, gt=0)
+    center_bore_mm: float | None = Field(default=None, gt=0)
+    offset_et_mm: float | None = None
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    source: IdentitySource = "unknown"
+
+
+class IdentityResolutionError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    error_code: str
+    retryable: bool
+
+
 class IdentityProposal(BaseModel):
-    vehicle: dict[str, VehicleCandidate | list[VehicleCandidate]]
-    rim: RimProposal
-    resolver: str = "mock_visual_identity_v1"
+    model_config = ConfigDict(extra="forbid")
+
+    vehicle: VehicleIdentityResolution
+    rim: RimIdentityProposal = Field(default_factory=RimIdentityProposal)
+    resolver: str = "vehicle_identity_resolver_v1"
+    error: IdentityResolutionError | None = None
 
 
 class ConfirmedIdentityRequest(BaseModel):
@@ -231,19 +272,27 @@ def _append_field_candidate(
     confidence: float,
     resolver: str,
     captured_at: str,
+    provider: str | None = None,
+    model: str | None = None,
+    prompt_version: str | None = None,
 ) -> None:
     if value is None:
         return
-    candidates.setdefault(field_name, []).append(
-        {
-            "value": value,
-            "source": _candidate_source(source),
-            "confidence": confidence,
-            "resolver": resolver,
-            "origin": "render_input_draft",
-            "captured_at": captured_at,
-        }
-    )
+    candidate = {
+        "value": value,
+        "source": _candidate_source(source),
+        "confidence": confidence,
+        "resolver": resolver,
+        "origin": "render_input_draft",
+        "captured_at": captured_at,
+    }
+    if provider is not None:
+        candidate["provider"] = provider
+    if model is not None:
+        candidate["model"] = model
+    if prompt_version is not None:
+        candidate["prompt_version"] = prompt_version
+    candidates.setdefault(field_name, []).append(candidate)
 
 
 def parse_identity_proposal(raw: object) -> IdentityProposal | None:
@@ -257,9 +306,46 @@ def parse_identity_proposal(raw: object) -> IdentityProposal | None:
     if not raw:
         return None
     try:
+        if isinstance(raw, dict):
+            raw = _adapt_legacy_identity_proposal(raw)
         return IdentityProposal.model_validate(raw)
     except ValueError:
         return None
+
+
+def _adapt_legacy_identity_proposal(raw: dict) -> dict:
+    """Read pre-VLM drafts while new drafts retain the strict resolution envelope."""
+    vehicle = raw.get("vehicle")
+    if not isinstance(vehicle, dict) or "status" in vehicle:
+        return raw
+    primary = vehicle.get("primary")
+    if isinstance(primary, dict) and primary.get("source") == "vlm":
+        primary = {**primary, "source": "vlm_visual"}
+    alternatives = []
+    for candidate in vehicle.get("alternatives", []):
+        if isinstance(candidate, dict) and candidate.get("source") == "vlm":
+            alternatives.append({**candidate, "source": "vlm_visual"})
+        else:
+            alternatives.append(candidate)
+    raw = dict(raw)
+    raw["vehicle"] = {
+        "status": "resolved" if primary else "unknown",
+        "primary": primary,
+        "alternatives": alternatives,
+        "abstention_reason": None if primary else "provider_returned_no_candidates",
+        "metadata": {
+            "provider": "legacy",
+            "model": "legacy",
+            "prompt_version": "legacy",
+            "resolver_version": raw.get("resolver", "legacy_identity"),
+            "normalized_input_sha256": "0" * 64,
+            "captured_at": datetime.now(UTC).isoformat(),
+        },
+    }
+    rim = raw.get("rim")
+    if isinstance(rim, dict) and "status" not in rim:
+        raw["rim"] = {"status": "resolved", **rim}
+    return raw
 
 
 def field_candidates_from_identity_proposal(
@@ -272,15 +358,11 @@ def field_candidates_from_identity_proposal(
     vehicle_candidates: dict[str, list[dict]] = {}
     rim_candidates: dict[str, list[dict]] = {}
 
-    raw_vehicle_candidates: list[VehicleCandidate] = []
-    primary = proposal.vehicle.get("primary")
-    if isinstance(primary, VehicleCandidate):
+    raw_vehicle_candidates = []
+    primary = proposal.vehicle.primary
+    if primary is not None:
         raw_vehicle_candidates.append(primary)
-    alternatives = proposal.vehicle.get("alternatives")
-    if isinstance(alternatives, list):
-        raw_vehicle_candidates.extend(
-            candidate for candidate in alternatives if isinstance(candidate, VehicleCandidate)
-        )
+    raw_vehicle_candidates.extend(proposal.vehicle.alternatives)
 
     for candidate in raw_vehicle_candidates:
         for field_name in ("make", "model", "year", "year_start", "year_end"):
@@ -288,10 +370,13 @@ def field_candidates_from_identity_proposal(
                 vehicle_candidates,
                 field_name,
                 getattr(candidate, field_name),
-                source=candidate.source,
+                source="vlm_visual",
                 confidence=candidate.confidence,
                 resolver=proposal.resolver,
                 captured_at=captured_at,
+                provider=proposal.vehicle.metadata.provider,
+                model=proposal.vehicle.metadata.model,
+                prompt_version=proposal.vehicle.metadata.prompt_version,
             )
 
     for field_name in (
@@ -325,8 +410,8 @@ def prefill_vehicle_from_proposal(
 ) -> VehicleCandidate:
     if proposal is None:
         return vehicle
-    primary = proposal.vehicle.get("primary")
-    if not isinstance(primary, VehicleCandidate):
+    primary = proposal.vehicle.primary
+    if primary is None:
         return vehicle
     update: dict[str, object] = {}
     for field_name in ("year", "year_start", "year_end"):
@@ -344,6 +429,8 @@ def prefill_rim_from_proposal(
     if proposal is None:
         return rim
     proposal_rim = proposal.rim
+    if proposal_rim.status != "resolved":
+        return rim
     update: dict[str, object] = {}
     for field_name in (
         "brand",
@@ -393,28 +480,12 @@ def _decimal_or_none(value: float | None) -> Decimal | None:
     return Decimal(str(value))
 
 
-async def resolve_identity_mock(
-    *,
-    car_asset: AssetUpload,
-    rim_asset: AssetUpload,
-) -> IdentityProposal:
-    """Return an explicit mock proposal until production VLM/OCR is wired."""
-    primary = VehicleCandidate(make="Lexus", model="RX", year=2020, confidence=0.92)
-    alternatives = [
-        VehicleCandidate(make="Lexus", model="RX", year=2019, confidence=0.76),
-        VehicleCandidate(make="Lexus", model="RX", year=2021, confidence=0.72),
-    ]
-    rim = RimProposal(
-        wheel_diameter_in=20,
-        wheel_width_j=8.5,
-        bolt_count=5,
-        pcd_mm=114.3,
-        confidence=0.72,
-    )
+def identity_proposal_from_resolution(resolution: VehicleIdentityResolution) -> IdentityProposal:
+    """Wrap vehicle VLM output without implying that the rim was recognized."""
     return IdentityProposal(
-        vehicle={"primary": primary, "alternatives": alternatives[:2]},
-        rim=rim,
-        resolver="mock_visual_identity_v1",
+        vehicle=resolution,
+        rim=RimIdentityProposal(status="manual_required"),
+        resolver=resolution.metadata.resolver_version,
     )
 
 

@@ -22,6 +22,22 @@ Upload
   → durable result, history and feedback
 ```
 
+## Current implementation status
+
+| Stage | Status |
+| --- | --- |
+| Upload/storage | Implemented |
+| Basic file validation | Partially implemented |
+| Vehicle identity flow | Implemented with safe mock abstention |
+| Production VLM resolver | Feature-flagged; benchmark required |
+| Quality gate | Planned |
+| Vehicle/wheel geometry | Planned |
+| Rim visual features | Planned |
+| RenderPlan | Planned |
+| Generation provider | Implemented, direct integration |
+| Post-generation validation | Planned |
+| Evaluation baseline | Planned |
+
 ## Inputs
 
 Required:

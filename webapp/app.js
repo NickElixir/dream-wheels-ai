@@ -761,6 +761,8 @@ const state = {
     identityError: "",
     selectedVehicleIndex: 0,
     rimUserConfirmed: null,
+    manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
+    manualRim: { wheel_diameter_in: "", wheel_width_j: "", bolt_count: "", pcd_mm: "" },
     jobId: null,
     resultUrl: null,
     resultDownloadUrl: null,
@@ -3830,6 +3832,8 @@ function resetIdentityState() {
     state.identityError = "";
     state.selectedVehicleIndex = 0;
     state.rimUserConfirmed = null;
+    state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
+    state.manualRim = { wheel_diameter_in: "", wheel_width_j: "", bolt_count: "", pcd_mm: "" };
     renderIdentityFlow();
 }
 
@@ -3842,7 +3846,36 @@ function identityVehicles() {
 
 function selectedVehicleCandidate() {
     const vehicles = identityVehicles();
-    return vehicles[state.selectedVehicleIndex] || vehicles[0] || null;
+    if (vehicles.length) return vehicles[state.selectedVehicleIndex] || vehicles[0] || null;
+    const manual = state.manualVehicle;
+    if (!manual.make.trim() || !manual.model.trim()) return null;
+    const year = Number(manual.year) || null;
+    const yearStart = Number(manual.year_start) || null;
+    const yearEnd = Number(manual.year_end) || null;
+    if (year && (yearStart || yearEnd)) return null;
+    if ((yearStart && !yearEnd) || (!yearStart && yearEnd) || (yearStart && yearEnd && yearStart > yearEnd)) return null;
+    return {
+        make: manual.make.trim(), model: manual.model.trim(), year,
+        year_start: yearStart, year_end: yearEnd, confidence: 1, source: "user_confirmed",
+    };
+}
+
+function selectedRimProposal() {
+    const proposal = state.identityProposal?.rim;
+    if (proposal?.status === "resolved") {
+        const { status, ...rim } = proposal;
+        return rim;
+    }
+    const manual = state.manualRim;
+    const rim = {
+        wheel_diameter_in: Number(manual.wheel_diameter_in),
+        wheel_width_j: Number(manual.wheel_width_j),
+        bolt_count: Number(manual.bolt_count),
+        pcd_mm: Number(manual.pcd_mm),
+        confidence: 1,
+        source: "user_input",
+    };
+    return Object.values(rim).slice(0, 4).every((value) => Number.isFinite(value) && value > 0) ? rim : null;
 }
 
 function formatVehicle(candidate) {
@@ -3924,7 +3957,17 @@ function renderIdentityFlow() {
 
     const vehicles = identityVehicles();
     const selectedVehicle = selectedVehicleCandidate();
-    const rim = state.identityProposal.rim;
+    const rim = selectedRimProposal();
+    const needsManualVehicle = vehicles.length === 0;
+    const needsManualRim = state.identityProposal.rim?.status !== "resolved";
+    document.querySelector("[data-manual-vehicle-fields]")?.toggleAttribute("hidden", !needsManualVehicle);
+    document.querySelector("[data-manual-vehicle-note]")?.toggleAttribute("hidden", !needsManualVehicle);
+    document.querySelector("[data-manual-rim-fields]")?.toggleAttribute("hidden", !needsManualRim);
+    document.querySelector("[data-manual-rim-note]")?.toggleAttribute("hidden", !needsManualRim);
+    document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
+        const [section, field] = input.dataset.manualIdentityInput.split(".");
+        input.value = (section === "vehicle" ? state.manualVehicle : state.manualRim)[field] || "";
+    });
     const vehicleOptions = document.querySelector("[data-vehicle-options]");
     if (vehicleOptions) {
         vehicleOptions.innerHTML = vehicles
@@ -3968,7 +4011,7 @@ function renderIdentityFlow() {
         );
     });
     const createRenderButton = document.querySelector("[data-create-render]");
-    if (createRenderButton) createRenderButton.disabled = state.rimUserConfirmed === null;
+    if (createRenderButton) createRenderButton.disabled = !selectedVehicle || !rim || state.rimUserConfirmed === null;
     refreshButtonsForCurrentView();
 }
 
@@ -4053,8 +4096,10 @@ function refreshButtonsForCurrentView() {
     if (state.createScreen === "upload") {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
         const hasProposal = Boolean(state.identityProposal);
+        const selectedVehicle = selectedVehicleCandidate();
+        const rim = selectedRimProposal();
         const needsRimChoice = hasProposal && state.rimUserConfirmed === null;
-        const disabled = !ready || state.submitting || state.identityResolving || needsRimChoice;
+        const disabled = !ready || state.submitting || state.identityResolving || needsRimChoice || (hasProposal && (!selectedVehicle || !rim));
         setBackButton(null);
         setMainButton({
             text: hasProposal ? t("create.createRender") : t("create.detectIdentity"),
@@ -4298,6 +4343,24 @@ async function resolveIdentity() {
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
+            const failure = data.detail;
+            if (failure?.manual_fallback && failure?.draft_id) {
+                state.identityDraftId = failure.draft_id;
+                state.identityProposal = {
+                    vehicle: {
+                        status: "unknown",
+                        primary: null,
+                        alternatives: [],
+                        abstention_reason: "provider_returned_no_candidates",
+                    },
+                    rim: { status: "manual_required" },
+                    resolver: "vehicle_identity_provider_error",
+                };
+                state.identityError = failure.error_code || "vehicle_identity_provider_unavailable";
+                state.rimUserConfirmed = null;
+                haptic("warning");
+                return;
+            }
             const detail = Array.isArray(data.detail)
                 ? data.detail.map((entry) => entry.msg).join("; ")
                 : (data.detail || `HTTP ${resp.status}`);
@@ -4386,7 +4449,7 @@ async function submitJob() {
     if (statusSub) statusSub.textContent = t("status.upTo90");
 
     const selectedVehicle = selectedVehicleCandidate();
-    const rim = state.identityProposal?.rim;
+    const rim = selectedRimProposal();
     if (!state.identityDraftId || !selectedVehicle || !rim) {
         showError(t("errors.missingIdentity"));
         return;
@@ -4401,7 +4464,7 @@ async function submitJob() {
     const payload = {
         draft_id: state.identityDraftId,
         idempotency_key: idempotencyKey,
-        vehicle: selectedVehicle,
+        vehicle: { ...selectedVehicle, source: "user_confirmed", confidence: 1 },
         rim,
         rim_user_confirmed: Boolean(state.rimUserConfirmed),
     };
@@ -4643,6 +4706,14 @@ function bindEvents() {
             if (fieldName) {
                 state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
             }
+        });
+    });
+    document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
+        input.addEventListener("input", (event) => {
+            const [section, field] = event.target.dataset.manualIdentityInput.split(".");
+            const target = section === "vehicle" ? state.manualVehicle : state.manualRim;
+            target[field] = event.target.value;
+            renderIdentityFlow();
         });
     });
     document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {

@@ -1,0 +1,29 @@
+{
+  "targets": [
+    {"slug": "acura-rdx-2020", "query": "2020 Acura RDX", "count": 3, "ground_truth": {"make": "Acura", "model": "RDX", "year_start": 2020, "year_end": 2020}},
+    {"slug": "audi-q3-2020", "query": "2020 Audi Q3", "count": 3, "ground_truth": {"make": "Audi", "model": "Q3", "year_start": 2020, "year_end": 2020}},
+    {"slug": "bmw-x3-2020", "query": "2020 BMW X3", "count": 3, "ground_truth": {"make": "BMW", "model": "X3", "year_start": 2020, "year_end": 2020}},
+    {"slug": "chevrolet-equinox-2020", "query": "2020 Chevrolet Equinox", "count": 3, "ground_truth": {"make": "Chevrolet", "model": "Equinox", "year_start": 2020, "year_end": 2020}},
+    {"slug": "chevrolet-tahoe-2020", "query": "2020 Chevrolet Tahoe", "count": 3, "ground_truth": {"make": "Chevrolet", "model": "Tahoe", "year_start": 2020, "year_end": 2020}},
+    {"slug": "ford-explorer-2020", "query": "2020 Ford Explorer", "count": 3, "ground_truth": {"make": "Ford", "model": "Explorer", "year_start": 2020, "year_end": 2020}},
+    {"slug": "honda-crv-2020", "query": "2020 Honda CR-V", "count": 3, "ground_truth": {"make": "Honda", "model": "CR-V", "year_start": 2020, "year_end": 2020}},
+    {"slug": "hyundai-santafe-2020", "query": "2020 Hyundai Santa Fe", "count": 3, "ground_truth": {"make": "Hyundai", "model": "Santa Fe", "year_start": 2020, "year_end": 2020}},
+    {"slug": "jeep-grand-cherokee-2020", "query": "2020 Jeep Grand Cherokee", "count": 3, "ground_truth": {"make": "Jeep", "model": "Grand Cherokee", "year_start": 2020, "year_end": 2020}},
+    {"slug": "kia-sorento-2020", "query": "2020 Kia Sorento", "count": 3, "ground_truth": {"make": "Kia", "model": "Sorento", "year_start": 2020, "year_end": 2020}},
+    {"slug": "lexus-nx-2020", "query": "2020 Lexus NX", "count": 3, "ground_truth": {"make": "Lexus", "model": "NX", "year_start": 2020, "year_end": 2020}},
+    {"slug": "mercedes-glc-2020", "query": "2020 Mercedes-Benz GLC", "count": 3, "ground_truth": {"make": "Mercedes-Benz", "model": "GLC", "year_start": 2020, "year_end": 2020}},
+    {"slug": "mitsubishi-outlander-2020", "query": "2020 Mitsubishi Outlander", "count": 3, "ground_truth": {"make": "Mitsubishi", "model": "Outlander", "year_start": 2020, "year_end": 2020}},
+    {"slug": "nissan-rogue-2020", "query": "2020 Nissan Rogue", "count": 3, "ground_truth": {"make": "Nissan", "model": "Rogue", "year_start": 2020, "year_end": 2020}},
+    {"slug": "peugeot-3008-2020", "query": "2020 Peugeot 3008", "count": 3, "ground_truth": {"make": "Peugeot", "model": "3008", "year_start": 2020, "year_end": 2020}},
+    {"slug": "porsche-macan-2020", "query": "2020 Porsche Macan", "count": 3, "ground_truth": {"make": "Porsche", "model": "Macan", "year_start": 2020, "year_end": 2020}},
+    {"slug": "renault-koleos-2020", "query": "2020 Renault Koleos", "count": 3, "ground_truth": {"make": "Renault", "model": "Koleos", "year_start": 2020, "year_end": 2020}},
+    {"slug": "skoda-kodiaq-2020", "query": "2020 Skoda Kodiaq", "count": 3, "ground_truth": {"make": "Skoda", "model": "Kodiaq", "year_start": 2020, "year_end": 2020}},
+    {"slug": "subaru-forester-2020", "query": "2020 Subaru Forester", "count": 3, "ground_truth": {"make": "Subaru", "model": "Forester", "year_start": 2020, "year_end": 2020}},
+    {"slug": "tesla-model-y-2020", "query": "2020 Tesla Model Y", "count": 3, "ground_truth": {"make": "Tesla", "model": "Model Y", "year_start": 2020, "year_end": 2020}},
+    {"slug": "toyota-highlander-2020", "query": "2020 Toyota Highlander", "count": 3, "ground_truth": {"make": "Toyota", "model": "Highlander", "year_start": 2020, "year_end": 2020}},
+    {"slug": "volkswagen-troc-2020", "query": "2020 Volkswagen T-Roc", "count": 3, "ground_truth": {"make": "Volkswagen", "model": "T-Roc", "year_start": 2020, "year_end": 2020}},
+    {"slug": "volvo-xc90-2020", "query": "2020 Volvo XC90", "count": 3, "ground_truth": {"make": "Volvo", "model": "XC90", "year_start": 2020, "year_end": 2020}},
+    {"slug": "land-rover-discovery-sport-2020", "query": "2020 Land Rover Discovery Sport", "count": 3, "ground_truth": {"make": "Land Rover", "model": "Discovery Sport", "year_start": 2020, "year_end": 2020}},
+    {"slug": "cadillac-xt5-2020", "query": "2020 Cadillac XT5", "count": 3, "ground_truth": {"make": "Cadillac", "model": "XT5", "year_start": 2020, "year_end": 2020}}
+  ]
+}
