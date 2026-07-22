@@ -171,10 +171,6 @@
                     <p>Сохраним ссылку вместе с примеркой. Параметры по ней можно извлечь и подтвердить позже в проверке совместимости.</p>
                 </div>
 
-                <div class="create-flow-actions" data-identity-action hidden>
-                    <button type="button" class="primary-button" data-detect-identity data-i18n="create.detectIdentity">Распознать автомобиль</button>
-                </div>
-
                 <section class="identity-flow" data-identity-flow hidden>
                     <div class="wallet-status-island tone-loading" data-identity-loading data-visible="false" aria-live="polite">
                         <div class="wallet-status-spinner" aria-hidden="true"></div>
@@ -247,7 +243,6 @@
                         <div class="identity-note warning">
                             Совместимость пока не проверена. Это визуальный рендер, а не технический fitment verdict
                         </div>
-                        <button type="button" class="primary-button full-width" data-create-render>Создать виртуальную примерку</button>
                     </article>
                 </section>
             </section>
@@ -269,7 +264,7 @@
                     <p class="result-title" data-i18n="result.title">Готово!</p>
                     <p class="result-caption" data-i18n="result.caption">Ваш рендер с новыми дисками готов</p>
                     <div class="create-flow-actions">
-                        <button type="button" class="ghost-button compact-button" data-open-fitment-result hidden data-i18n="fitment.openFromResult">Уточнить параметры</button>
+                        <button type="button" class="ghost-button compact-button" data-open-fitment-result hidden data-i18n="fitment.openFromResult">Проверить совместимость автомобиля и диска</button>
                     </div>
                 </div>
                 <div class="error-block" data-error hidden>
@@ -743,7 +738,7 @@
                         </section>
 
                         <div class="create-flow-actions fitment-actions">
-                            <button type="submit" class="primary-button" data-fitment-save>Сохранить и продолжить</button>
+                            <button type="submit" class="primary-button" data-fitment-save>Сохранить и проверить совместимость</button>
                             <button type="button" class="ghost-button compact-button" data-fitment-skip data-i18n="fitment.skip">Не сейчас</button>
                         </div>
                     </form>

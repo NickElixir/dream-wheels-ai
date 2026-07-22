@@ -116,8 +116,8 @@ const I18N = {
             title: "Базовые параметры автомобиля",
             subtitleFallback: "Предварительные данные помогут подготовить будущую техническую проверку совместимости",
             preliminary: "Предварительно",
-            openFromResult: "Уточнить параметры",
-            openFromHistory: "Уточнить параметры",
+            openFromResult: "Проверить совместимость автомобиля и диска",
+            openFromHistory: "Проверить совместимость автомобиля и диска",
             back: "Вернуться к рендеру",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
@@ -414,8 +414,8 @@ const I18N = {
             title: "Basic vehicle parameters",
             subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
             preliminary: "Preliminary",
-            openFromResult: "Refine details",
-            openFromHistory: "Refine details",
+            openFromResult: "Check vehicle and wheel compatibility",
+            openFromHistory: "Check vehicle and wheel compatibility",
             back: "Back to render",
             loading: "Loading details",
             saveSuccess: "Details saved",
@@ -793,6 +793,7 @@ const state = {
     fitmentSourceStatus: "",
     fitmentSourceStatusTone: "neutral",
     fitmentSourceAppliedFields: [],
+    fitmentSourceAutoResolvedForJob: "",
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
     fitmentVehicleVariantApplying: false,
@@ -1529,7 +1530,14 @@ function fitmentSourceValue(overview) {
 }
 
 function fitmentSourceBrand(overview) {
-    return overview?.rim?.brand || fitmentEmptyValue();
+    if (overview?.rim?.brand) return overview.rim.brand;
+    const productUrl = overview?.rim?.product_url;
+    if (!productUrl) return fitmentEmptyValue();
+    try {
+        return new URL(productUrl).hostname.replace(/^www\./i, "");
+    } catch {
+        return t("fitment.sourceAdded");
+    }
 }
 
 function fitmentSourceSku(overview) {
@@ -1613,7 +1621,9 @@ function fitmentFormFromOverview(overview) {
 }
 
 function fitmentSaveLabel() {
-    return locale === "ru" ? "Сохранить и продолжить" : "Save and continue";
+    return locale === "ru"
+        ? "Сохранить и проверить совместимость"
+        : "Save and check compatibility";
 }
 
 function fitmentSourceProgressTitle() {
@@ -1916,7 +1926,12 @@ function renderFitment() {
         sourceUrl.value = state.fitmentForm.rim.product_url || "";
         sourceUrl.disabled = state.fitmentSourceResolving;
     }
-    if (sourceSubmit) sourceSubmit.disabled = state.fitmentSourceResolving;
+    if (sourceSubmit) {
+        sourceSubmit.disabled = state.fitmentSourceResolving;
+        sourceSubmit.textContent = state.fitmentForm.rim.product_url
+            ? (locale === "ru" ? "Повторить извлечение" : "Extract again")
+            : (locale === "ru" ? "Извлечь параметры" : "Extract parameters");
+    }
     if (sourceStatus) {
         sourceStatus.hidden = !state.fitmentSourceStatus;
         sourceStatus.textContent = state.fitmentSourceStatus;
@@ -2142,6 +2157,10 @@ async function loadFitmentOverview(jobId) {
         const overview = await response.json();
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
+        if (overview?.rim?.product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
+            state.fitmentSourceAutoResolvedForJob = jobId;
+            void resolveFitmentRimSource({ automatic: true });
+        }
     } catch (error) {
         state.fitmentOverview = null;
         state.fitmentForm = createEmptyFitmentForm();
@@ -2161,6 +2180,10 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentForm = createEmptyFitmentForm();
     state.fitmentError = "";
     state.fitmentMessage = "";
+    state.fitmentSourceStatus = "";
+    state.fitmentSourceStatusTone = "neutral";
+    state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceAutoResolvedForJob = "";
     setView("fitment");
     void loadFitmentOverview(jobId);
 }
@@ -2194,7 +2217,7 @@ function fitmentSourceErrorMessage(error) {
         : "Parameters could not be extracted automatically. Check the link or enter them manually.";
 }
 
-async function resolveFitmentRimSource() {
+async function resolveFitmentRimSource({ automatic = false } = {}) {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
     if (!productUrl) {
@@ -2220,25 +2243,37 @@ async function resolveFitmentRimSource() {
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
+        const resolvedEntries = Object.entries(result.values || {}).filter(
+            ([, value]) => value !== null && value !== undefined && value !== ""
+        );
         const appliedFields = [];
-        for (const [fieldName, value] of Object.entries(result.values || {})) {
-            if (Object.hasOwn(state.fitmentForm.rim, fieldName)) {
+        for (const [fieldName, value] of resolvedEntries) {
+            const currentValue = state.fitmentForm.rim[fieldName];
+            if (
+                Object.hasOwn(state.fitmentForm.rim, fieldName)
+                && (currentValue === null || currentValue === undefined || currentValue === "")
+            ) {
                 state.fitmentForm.rim[fieldName] = value;
                 appliedFields.push(fieldName);
             }
         }
         state.fitmentSourceAppliedFields = appliedFields;
         const conflictFields = (result.conflicts || []).map((conflict) => conflict.field);
-        state.fitmentSourceStatus = conflictFields.length
+        state.fitmentSourceStatus = !resolvedEntries.length
+            ? locale === "ru"
+                ? "По этой ссылке не удалось распознать параметры. Проверьте ссылку или заполните поля вручную."
+                : "No wheel parameters could be recognised from this link. Check the URL or fill in the fields manually."
+            : conflictFields.length
             ? `${locale === "ru" ? "Параметры заполнены; проверьте" : "Parameters filled; review"}: ${conflictFields.join(", ")}`
             : locale === "ru"
-                ? "Параметры заполнены. Проверьте их и сохраните данные."
-                : "Parameters filled. Review them and save the data.";
-        state.fitmentSourceStatusTone = conflictFields.length ? "warning" : "success";
-        state.fitmentSourceOpen = false;
+                ? "Параметры заполнены. Проверьте их и сохраните для запуска проверки совместимости."
+                : "Parameters filled. Review them and save to run the compatibility check.";
+        state.fitmentSourceStatusTone = !resolvedEntries.length || conflictFields.length ? "warning" : "success";
+        state.fitmentSourceOpen = !resolvedEntries.length ? true : automatic ? false : state.fitmentSourceOpen;
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
+        if (automatic) state.fitmentSourceOpen = true;
     } finally {
         state.fitmentSourceResolving = false;
         renderFitment();
@@ -2364,10 +2399,17 @@ async function saveFitment(event) {
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
         const nextStep = fitmentNextStep(overview);
-        state.fitmentMessage = nextStep.message;
+        const canRunVerdict = overview.readiness?.ready && fitmentProviderReady(overview);
+        state.fitmentMessage = canRunVerdict
+            ? (locale === "ru" ? "Данные сохранены. Проверяем совместимость…" : "Details saved. Checking compatibility…")
+            : nextStep.message;
         state.fitmentMessageTone = "success";
         void loadRenderHistory({ silent: true });
-        scrollFitmentTo(nextStep.selector);
+        if (canRunVerdict) {
+            await runFitmentCheck();
+        } else {
+            scrollFitmentTo(nextStep.selector);
+        }
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
@@ -3924,8 +3966,6 @@ function confidenceLabel(confidence) {
 
 function renderIdentityFlow() {
     const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
-    const action = document.querySelector("[data-identity-action]");
-    if (action) action.hidden = !ready || Boolean(state.identityProposal) || state.identityResolving;
 
     const flow = document.querySelector("[data-identity-flow]");
     const loading = document.querySelector("[data-identity-loading]");
@@ -4013,8 +4053,6 @@ function renderIdentityFlow() {
     document.querySelector("[data-review-rim]")?.replaceChildren(
         document.createTextNode(formatRim(selectedRimProposal()))
     );
-    const createRenderButton = document.querySelector("[data-create-render]");
-    if (createRenderButton) createRenderButton.disabled = !selectedVehicle;
     refreshButtonsForCurrentView();
 }
 
@@ -4616,8 +4654,6 @@ function bindEvents() {
     });
 
     document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
-    document.querySelector("[data-detect-identity]")?.addEventListener("click", resolveIdentity);
-    document.querySelector("[data-create-render]")?.addEventListener("click", submitJob);
     document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
         setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
         void loadCabinet();

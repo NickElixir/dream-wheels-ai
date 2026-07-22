@@ -90,10 +90,10 @@ TELEGRAM_AUTH_TOKEN_SECRET = _env_str("TELEGRAM_AUTH_TOKEN_SECRET")
 TELEGRAM_AUTH_TOKEN_TTL_SEC = int(os.getenv("TELEGRAM_AUTH_TOKEN_TTL_SEC", "3600"))
 TELEGRAM_LOGIN_NONCE_TTL_SEC = int(os.getenv("TELEGRAM_LOGIN_NONCE_TTL_SEC", "600"))
 
-# Rim product pages are fetched only after an explicit user action.  The
-# resolver accepts any *public* HTTPS host and applies SSRF controls at every
-# DNS lookup and redirect; it must never rely on a manually maintained store
-# allowlist.
+# Rim product pages are fetched only from the compatibility screen of a user's
+# completed render. The resolver accepts any *public* HTTPS host and applies
+# SSRF controls at every DNS lookup and redirect; it must never rely on a
+# manually maintained store allowlist.
 RIM_URL_RESOLVER_ENABLED = os.getenv("RIM_URL_RESOLVER_ENABLED", "false").lower() == "true"
 RIM_URL_RESOLVER_MAX_REDIRECTS = int(os.getenv("RIM_URL_RESOLVER_MAX_REDIRECTS", "3"))
 RIM_URL_RESOLVER_MAX_BODY_BYTES = int(
