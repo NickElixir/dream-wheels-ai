@@ -71,10 +71,10 @@ class RimProposal(BaseModel):
     model: str | None = None
     sku: str | None = None
     product_url: str | None = None
-    wheel_diameter_in: float = Field(gt=0)
-    wheel_width_j: float = Field(gt=0)
-    bolt_count: int = Field(gt=0)
-    pcd_mm: float = Field(gt=0)
+    wheel_diameter_in: float | None = Field(default=None, gt=0)
+    wheel_width_j: float | None = Field(default=None, gt=0)
+    bolt_count: int | None = Field(default=None, gt=0)
+    pcd_mm: float | None = Field(default=None, gt=0)
     center_bore_mm: float | None = Field(default=None, gt=0)
     offset_et_mm: float | None = None
     confidence: float = Field(ge=0.0, le=1.0)
@@ -429,21 +429,25 @@ def prefill_rim_from_proposal(
     if proposal is None:
         return rim
     proposal_rim = proposal.rim
-    if proposal_rim.status != "resolved":
-        return rim
+    # A product URL is user supplied before rendering and is useful for later
+    # fitment enrichment even while photo recognition deliberately abstains
+    # from technical rim values.
+    fields = ("product_url",)
+    if proposal_rim.status == "resolved":
+        fields = (
+            "brand",
+            "model",
+            "sku",
+            "product_url",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "offset_et_mm",
+        )
     update: dict[str, object] = {}
-    for field_name in (
-        "brand",
-        "model",
-        "sku",
-        "product_url",
-        "wheel_diameter_in",
-        "wheel_width_j",
-        "bolt_count",
-        "pcd_mm",
-        "center_bore_mm",
-        "offset_et_mm",
-    ):
+    for field_name in fields:
         if getattr(rim, field_name) is None and getattr(proposal_rim, field_name) is not None:
             update[field_name] = getattr(proposal_rim, field_name)
     if not update:
@@ -573,10 +577,10 @@ async def insert_rim_spec(
             rim.model,
             rim.sku,
             rim.product_url,
-            Decimal(str(rim.wheel_diameter_in)),
-            Decimal(str(rim.wheel_width_j)),
+            _decimal_or_none(rim.wheel_diameter_in),
+            _decimal_or_none(rim.wheel_width_j),
             rim.bolt_count,
-            Decimal(str(rim.pcd_mm)),
+            _decimal_or_none(rim.pcd_mm),
             _decimal_or_none(rim.center_bore_mm),
             _decimal_or_none(rim.offset_et_mm),
             json.dumps(field_provenance),
@@ -625,9 +629,10 @@ def render_input_snapshot(
         "vehicle": vehicle.model_dump(mode="json"),
         "rim": rim.model_dump(mode="json")
         | {
-            "pcd_display": pcd_display_value(
-                bolt_count=rim.bolt_count,
-                pcd_mm=rim.pcd_mm,
+            "pcd_display": (
+                pcd_display_value(bolt_count=rim.bolt_count, pcd_mm=rim.pcd_mm)
+                if rim.bolt_count is not None and rim.pcd_mm is not None
+                else None
             ),
             "is_user_confirmed": rim_user_confirmed,
         },

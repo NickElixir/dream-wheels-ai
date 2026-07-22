@@ -163,16 +163,24 @@
                     <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
                 </div>
 
+                <div class="rim-source-preflight" data-rim-source-preflight hidden>
+                    <label class="fitment-field">
+                        <span>Ссылка на товар с диском <em>необязательно</em></span>
+                        <input type="url" inputmode="url" autocomplete="url" placeholder="https://…" data-rim-product-url>
+                    </label>
+                    <p>Сохраним ссылку вместе с примеркой. Параметры по ней можно извлечь и подтвердить позже в проверке совместимости.</p>
+                </div>
+
                 <div class="create-flow-actions" data-identity-action hidden>
-                    <button type="button" class="primary-button" data-detect-identity>Определить данные</button>
+                    <button type="button" class="primary-button" data-detect-identity data-i18n="create.detectIdentity">Распознать автомобиль</button>
                 </div>
 
                 <section class="identity-flow" data-identity-flow hidden>
                     <div class="wallet-status-island tone-loading" data-identity-loading data-visible="false" aria-live="polite">
                         <div class="wallet-status-spinner" aria-hidden="true"></div>
                         <div class="wallet-status-copy">
-                            <div class="wallet-status-title">Определяем автомобиль и диск</div>
-                            <div class="wallet-status-text">Анализируем фото. Это не проверка совместимости — данные нужны для более точной виртуальной примерки</div>
+                            <div class="wallet-status-title">Определяем автомобиль по фото</div>
+                            <div class="wallet-status-text">AI подбирает марку, модель и год. Параметры диска на этом шаге не распознаются.</div>
                         </div>
                     </div>
 
@@ -180,7 +188,7 @@
                         <div class="wallet-status-copy identity-critical-copy">
                             <div class="identity-critical-head">
                                 <div>
-                                    <div class="wallet-status-title" data-identity-error-title>Не удалось определить данные</div>
+                                    <div class="wallet-status-title" data-identity-error-title>Не удалось распознать автомобиль</div>
                                     <div class="wallet-status-text" data-identity-error-text>—</div>
                                 </div>
                                 <span class="status-pill danger">Критично</span>
@@ -197,7 +205,7 @@
                             <div class="identity-card-head">
                                 <div>
                                     <p class="section-label">Автомобиль</p>
-                                    <h2>Проверьте AI-предложение</h2>
+                                    <h2 data-vehicle-resolution-title>Проверяем AI-предложение</h2>
                                 </div>
                                 <span class="confidence-pill" data-vehicle-confidence>—</span>
                             </div>
@@ -216,29 +224,11 @@
                             <div class="identity-card-head">
                                 <div>
                                     <p class="section-label">Диск</p>
-                                    <h2>Параметры для рендера</h2>
+                                    <h2>Фото диска добавлено</h2>
                                 </div>
-                                <span class="confidence-pill" data-rim-confidence>—</span>
                             </div>
-                            <div class="identity-metrics">
-                                <div class="identity-metric"><span>Диаметр</span><strong data-rim-diameter>—</strong></div>
-                                <div class="identity-metric"><span>Ширина</span><strong data-rim-width>—</strong></div>
-                                <div class="identity-metric"><span>PCD</span><strong data-rim-pcd>—</strong></div>
-                            </div>
-                            <div class="fitment-form-grid" data-manual-rim-fields hidden>
-                                <label class="fitment-field"><span>Диаметр</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.wheel_diameter_in"></label>
-                                <label class="fitment-field"><span>Ширина</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.wheel_width_j"></label>
-                                <label class="fitment-field"><span>Болтов</span><input type="number" inputmode="numeric" data-manual-identity-input="rim.bolt_count"></label>
-                                <label class="fitment-field"><span>PCD</span><input type="number" step="0.1" inputmode="decimal" data-manual-identity-input="rim.pcd_mm"></label>
-                            </div>
-                            <p class="identity-note" data-manual-rim-note hidden>Параметры диска не определяются автоматически. Укажите их вручную</p>
-                            <div class="create-flow-actions">
-                                <button type="button" class="ghost-button compact-button" data-rim-confirm="true">✓ Верно</button>
-                                <button type="button" class="ghost-button compact-button" data-rim-confirm="false">Не уверен</button>
-                            </div>
-                            <div class="identity-note" data-rim-uncertain-note hidden>
-                                Данные можно будет уточнить позже для технической проверки
-                            </div>
+                            <p class="identity-note">Технические параметры не определяются по фото и не нужны для визуального рендера.</p>
+                            <p class="identity-note neutral" data-rim-source-summary>Источник колесного диска не указан. Его можно добавить позже в проверке совместимости.</p>
                         </article>
                     </div>
 
@@ -246,7 +236,7 @@
                         <div class="identity-card-head">
                             <div>
                                 <p class="section-label">Проверка перед рендером</p>
-                                <h2>Всё готово</h2>
+                                    <h2>Готово к созданию примерки</h2>
                             </div>
                         </div>
                         <div class="review-summary">

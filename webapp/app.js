@@ -91,7 +91,7 @@ const I18N = {
             carPreviewAlt: "Превью машины",
             wheelPreviewAlt: "Превью диска",
             footerNotTelegram: "Не в Telegram",
-            detectIdentity: "Определить данные",
+            detectIdentity: "Распознать автомобиль",
             createRender: "Создать виртуальную примерку",
         },
         steps: {
@@ -212,6 +212,8 @@ const I18N = {
             identityRetryAction: "Повторить",
             identityGenericTitle: "Не удалось определить данные",
             identityGenericBody: "Проверьте фото и повторите попытку.",
+            identityConnectionTitle: "Сервис распознавания недоступен",
+            identityConnectionBody: "Не удалось связаться с сервером. Проверьте подключение и повторите попытку.",
             generationFailed: "Ошибка генерации",
             timeout: "Превышено время ожидания (>110 с)",
             requestFailed: "Запрос не удался. Попробуйте ещё раз",
@@ -506,8 +508,10 @@ const I18N = {
             identityBackendBody:
                 "This preview points to a backend without the Sprint 2 routes. The staging backend needs a deploy, or the API host must be switched, then try again.",
             identityRetryAction: "Retry",
-            identityGenericTitle: "Could not detect the data",
+            identityGenericTitle: "Could not recognize the vehicle",
             identityGenericBody: "Check the photos and try again.",
+            identityConnectionTitle: "Recognition service is unavailable",
+            identityConnectionBody: "Could not reach the server. Check your connection and try again.",
             generationFailed: "Generation failed",
             timeout: "Timed out after 110 seconds",
             requestFailed: "Request failed. Please try again",
@@ -760,9 +764,8 @@ const state = {
     identityResolving: false,
     identityError: "",
     selectedVehicleIndex: 0,
-    rimUserConfirmed: null,
     manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
-    manualRim: { wheel_diameter_in: "", wheel_width_j: "", bolt_count: "", pcd_mm: "" },
+    rimProductUrl: "",
     jobId: null,
     resultUrl: null,
     resultDownloadUrl: null,
@@ -1386,6 +1389,16 @@ function classifyIdentityError(message) {
         return {
             title: t("errors.identityBackendTitle"),
             body: formatTemplate("errors.identityBackendBody", { apiBase: state.apiBaseUrl }),
+            primaryActionLabel: "",
+            showPrimaryAction: false,
+            retryLabel: t("errors.identityRetryAction"),
+        };
+    }
+
+    if (normalized.includes("failed to fetch") || normalized.includes("connection refused") || normalized.includes("networkerror")) {
+        return {
+            title: t("errors.identityConnectionTitle"),
+            body: t("errors.identityConnectionBody"),
             primaryActionLabel: "",
             showPrimaryAction: false,
             retryLabel: t("errors.identityRetryAction"),
@@ -3831,9 +3844,7 @@ function resetIdentityState() {
     state.identityResolving = false;
     state.identityError = "";
     state.selectedVehicleIndex = 0;
-    state.rimUserConfirmed = null;
     state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
-    state.manualRim = { wheel_diameter_in: "", wheel_width_j: "", bolt_count: "", pcd_mm: "" };
     renderIdentityFlow();
 }
 
@@ -3861,21 +3872,12 @@ function selectedVehicleCandidate() {
 }
 
 function selectedRimProposal() {
-    const proposal = state.identityProposal?.rim;
-    if (proposal?.status === "resolved") {
-        const { status, ...rim } = proposal;
-        return rim;
-    }
-    const manual = state.manualRim;
-    const rim = {
-        wheel_diameter_in: Number(manual.wheel_diameter_in),
-        wheel_width_j: Number(manual.wheel_width_j),
-        bolt_count: Number(manual.bolt_count),
-        pcd_mm: Number(manual.pcd_mm),
-        confidence: 1,
-        source: "user_input",
+    const productUrl = state.rimProductUrl.trim();
+    return {
+        product_url: productUrl || null,
+        confidence: productUrl ? 1 : 0,
+        source: productUrl ? "user_input" : "unknown",
     };
-    return Object.values(rim).slice(0, 4).every((value) => Number.isFinite(value) && value > 0) ? rim : null;
 }
 
 function formatVehicle(candidate) {
@@ -3906,6 +3908,10 @@ function formatPcdDisplay(value) {
 
 function formatRim(rim) {
     if (!rim) return "—";
+    if (rim.product_url) return "Ссылка на товар добавлена";
+    if (!rim.wheel_diameter_in || !rim.wheel_width_j || !rim.bolt_count || !rim.pcd_mm) {
+        return "Параметры будут уточнены позже";
+    }
     return `${formatIdentityNumber(rim.wheel_diameter_in)}" / ${formatIdentityNumber(rim.wheel_width_j)}J / ${formatPcd(rim)}`;
 }
 
@@ -3930,6 +3936,12 @@ function renderIdentityFlow() {
     const errorRetry = document.querySelector("[data-identity-error-retry]");
     const confirmations = document.querySelector("[data-identity-confirmations]");
     const review = document.querySelector("[data-identity-review]");
+    const sourcePreflight = document.querySelector("[data-rim-source-preflight]");
+    if (sourcePreflight) sourcePreflight.hidden = !ready;
+    const productUrlInput = document.querySelector("[data-rim-product-url]");
+    if (productUrlInput && productUrlInput.value !== state.rimProductUrl) {
+        productUrlInput.value = state.rimProductUrl;
+    }
     const hasFlow = state.identityResolving || state.identityError || state.identityProposal;
     if (flow) flow.hidden = !hasFlow;
     if (loading) loading.dataset.visible = String(state.identityResolving);
@@ -3957,16 +3969,12 @@ function renderIdentityFlow() {
 
     const vehicles = identityVehicles();
     const selectedVehicle = selectedVehicleCandidate();
-    const rim = selectedRimProposal();
     const needsManualVehicle = vehicles.length === 0;
-    const needsManualRim = state.identityProposal.rim?.status !== "resolved";
     document.querySelector("[data-manual-vehicle-fields]")?.toggleAttribute("hidden", !needsManualVehicle);
     document.querySelector("[data-manual-vehicle-note]")?.toggleAttribute("hidden", !needsManualVehicle);
-    document.querySelector("[data-manual-rim-fields]")?.toggleAttribute("hidden", !needsManualRim);
-    document.querySelector("[data-manual-rim-note]")?.toggleAttribute("hidden", !needsManualRim);
     document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
-        const [section, field] = input.dataset.manualIdentityInput.split(".");
-        input.value = (section === "vehicle" ? state.manualVehicle : state.manualRim)[field] || "";
+        const [, field] = input.dataset.manualIdentityInput.split(".");
+        input.value = state.manualVehicle[field] || "";
     });
     const vehicleOptions = document.querySelector("[data-vehicle-options]");
     if (vehicleOptions) {
@@ -3987,31 +3995,26 @@ function renderIdentityFlow() {
 
     const vehicleConfidence = document.querySelector("[data-vehicle-confidence]");
     if (vehicleConfidence) vehicleConfidence.textContent = confidenceLabel(selectedVehicle?.confidence);
-    const rimConfidence = document.querySelector("[data-rim-confidence]");
-    if (rimConfidence) rimConfidence.textContent = confidenceLabel(rim?.confidence);
-    document.querySelector("[data-rim-diameter]")?.replaceChildren(
-        document.createTextNode(`${formatIdentityNumber(rim?.wheel_diameter_in)}"`)
-    );
-    document.querySelector("[data-rim-width]")?.replaceChildren(
-        document.createTextNode(`${formatIdentityNumber(rim?.wheel_width_j)}J`)
-    );
-    document.querySelector("[data-rim-pcd]")?.replaceChildren(document.createTextNode(formatPcd(rim)));
+    const vehicleTitle = document.querySelector("[data-vehicle-resolution-title]");
+    if (vehicleTitle) {
+        vehicleTitle.textContent = needsManualVehicle
+            ? "Автомобиль не распознан — укажите вручную"
+            : "Подтвердите вариант от AI";
+    }
+    const rimSourceSummary = document.querySelector("[data-rim-source-summary]");
+    if (rimSourceSummary) {
+        rimSourceSummary.textContent = state.rimProductUrl.trim()
+            ? "Ссылка на товар сохранится с примеркой и будет доступна в проверке совместимости."
+            : "Источник колесного диска не указан. Его можно добавить позже в проверке совместимости.";
+    }
     document.querySelector("[data-review-vehicle]")?.replaceChildren(
         document.createTextNode(formatVehicle(selectedVehicle))
     );
-    document.querySelector("[data-review-rim]")?.replaceChildren(document.createTextNode(formatRim(rim)));
-    document.querySelector("[data-rim-uncertain-note]")?.toggleAttribute(
-        "hidden",
-        state.rimUserConfirmed !== false
+    document.querySelector("[data-review-rim]")?.replaceChildren(
+        document.createTextNode(formatRim(selectedRimProposal()))
     );
-    document.querySelectorAll("[data-rim-confirm]").forEach((button) => {
-        button.dataset.selected = String(
-            state.rimUserConfirmed !== null &&
-            (button.dataset.rimConfirm === "true") === state.rimUserConfirmed
-        );
-    });
     const createRenderButton = document.querySelector("[data-create-render]");
-    if (createRenderButton) createRenderButton.disabled = !selectedVehicle || !rim || state.rimUserConfirmed === null;
+    if (createRenderButton) createRenderButton.disabled = !selectedVehicle;
     refreshButtonsForCurrentView();
 }
 
@@ -4097,9 +4100,7 @@ function refreshButtonsForCurrentView() {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
         const hasProposal = Boolean(state.identityProposal);
         const selectedVehicle = selectedVehicleCandidate();
-        const rim = selectedRimProposal();
-        const needsRimChoice = hasProposal && state.rimUserConfirmed === null;
-        const disabled = !ready || state.submitting || state.identityResolving || needsRimChoice || (hasProposal && (!selectedVehicle || !rim));
+        const disabled = !ready || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
             text: hasProposal ? t("create.createRender") : t("create.detectIdentity"),
@@ -4128,6 +4129,7 @@ function resetFlow() {
     state.sharing = false;
     state.submitting = false;
     state.files = { car: null, wheel: null };
+    state.rimProductUrl = "";
     resetIdentityState();
     revokePreviewUrl("car");
     revokePreviewUrl("wheel");
@@ -4329,6 +4331,7 @@ async function resolveIdentity() {
     const formData = new FormData();
     formData.append("car_image", state.files.car.blob, state.files.car.name);
     formData.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
+    if (state.rimProductUrl.trim()) formData.append("rim_product_url", state.rimProductUrl.trim());
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     if (identity.init_data) formData.append("init_data", identity.init_data);
     if (identity.telegram_user_id != null) {
@@ -4357,7 +4360,6 @@ async function resolveIdentity() {
                     resolver: "vehicle_identity_provider_error",
                 };
                 state.identityError = failure.error_code || "vehicle_identity_provider_unavailable";
-                state.rimUserConfirmed = null;
                 haptic("warning");
                 return;
             }
@@ -4374,8 +4376,13 @@ async function resolveIdentity() {
             resolver: data.resolver,
         };
         state.selectedVehicleIndex = 0;
-        state.rimUserConfirmed = null;
         haptic("success");
+        requestAnimationFrame(() => {
+            document.querySelector("[data-identity-confirmations]")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
     } catch (error) {
         console.error("[DW] identity resolve failed", error);
         state.identityError = error?.message || t("errors.requestFailed");
@@ -4450,12 +4457,8 @@ async function submitJob() {
 
     const selectedVehicle = selectedVehicleCandidate();
     const rim = selectedRimProposal();
-    if (!state.identityDraftId || !selectedVehicle || !rim) {
+    if (!state.identityDraftId || !selectedVehicle) {
         showError(t("errors.missingIdentity"));
-        return;
-    }
-    if (state.rimUserConfirmed === null) {
-        showError(t("errors.missingRimConfirmation"));
         return;
     }
 
@@ -4466,7 +4469,7 @@ async function submitJob() {
         idempotency_key: idempotencyKey,
         vehicle: { ...selectedVehicle, source: "user_confirmed", confidence: 1 },
         rim,
-        rim_user_confirmed: Boolean(state.rimUserConfirmed),
+        rim_user_confirmed: false,
     };
     if (identity.init_data) payload.init_data = identity.init_data;
     if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
@@ -4658,6 +4661,7 @@ function bindEvents() {
         button.addEventListener("click", () => {
             const kind = button.dataset.clear;
             state.files[kind] = null;
+            if (kind === "wheel") state.rimProductUrl = "";
             resetIdentityState();
             revokePreviewUrl(kind);
             resetPreviewGeometry(kind);
@@ -4710,11 +4714,14 @@ function bindEvents() {
     });
     document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
         input.addEventListener("input", (event) => {
-            const [section, field] = event.target.dataset.manualIdentityInput.split(".");
-            const target = section === "vehicle" ? state.manualVehicle : state.manualRim;
-            target[field] = event.target.value;
+            const [, field] = event.target.dataset.manualIdentityInput.split(".");
+            state.manualVehicle[field] = event.target.value;
             renderIdentityFlow();
         });
+    });
+    document.querySelector("[data-rim-product-url]")?.addEventListener("input", (event) => {
+        state.rimProductUrl = event.target.value;
+        renderIdentityFlow();
     });
     document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {
         setFitmentOverviewCollapsed(!state.fitmentOverviewCollapsed);
@@ -4819,14 +4826,6 @@ function bindEvents() {
             state.selectedVehicleIndex = Number(vehicleChoice.dataset.vehicleChoice || 0);
             renderIdentityFlow();
             haptic("light");
-            return;
-        }
-
-        const rimConfirm = event.target.closest("[data-rim-confirm]");
-        if (rimConfirm) {
-            state.rimUserConfirmed = rimConfirm.dataset.rimConfirm === "true";
-            renderIdentityFlow();
-            haptic(state.rimUserConfirmed ? "success" : "warning");
             return;
         }
 

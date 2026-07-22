@@ -44,7 +44,10 @@ Check. Unknown and provider failure offer manual input; visual rendering remains
 available after user confirmation.
 
 The rim response is `manual_required` in v1. It must not claim that diameter, width,
-PCD, ET, or DIA were extracted from the photo.
+PCD, ET, or DIA were extracted from the photo. The pre-render flow may attach an
+optional user-supplied product URL to this response. It is retained as source context
+for the later Fitment editor, not evidence that technical values were extracted or
+confirmed.
 
 ## Privacy and retention
 

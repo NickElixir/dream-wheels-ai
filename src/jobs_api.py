@@ -1540,6 +1540,10 @@ async def create_job_from_assets(
                     proposal,
                 )
                 canonical_rim = identity_service.prefill_rim_from_proposal(request.rim, proposal)
+                if proposal is not None:
+                    proposal.rim = proposal.rim.model_copy(
+                        update={"product_url": canonical_rim.product_url}
+                    )
                 vehicle_identity_id = await identity_service.insert_vehicle_identity(
                     conn,
                     owner_user_id=user_id,
@@ -1687,17 +1691,32 @@ async def create_job_from_assets(
                     draft["rim_asset_id"],
                     user_id,
                 )
-                await conn.execute(
-                    """
-                    UPDATE render_input_drafts
-                    SET status = 'consumed',
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $1::uuid
-                      AND owner_user_id = $2
-                    """,
-                    request.draft_id,
-                    user_id,
-                )
+                if proposal is not None:
+                    await conn.execute(
+                        """
+                        UPDATE render_input_drafts
+                        SET identity_proposal = $1::jsonb,
+                            status = 'consumed',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $2::uuid
+                          AND owner_user_id = $3
+                        """,
+                        proposal.model_dump_json(),
+                        request.draft_id,
+                        user_id,
+                    )
+                else:
+                    await conn.execute(
+                        """
+                        UPDATE render_input_drafts
+                        SET status = 'consumed',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $1::uuid
+                          AND owner_user_id = $2
+                        """,
+                        request.draft_id,
+                        user_id,
+                    )
                 await reserve_job_credit(conn, user_id=user_id, job_id=job_id)
     except InsufficientCreditsError as exc:
         await rds.delete(idem_redis_key)

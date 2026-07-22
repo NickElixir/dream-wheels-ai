@@ -123,15 +123,17 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "Загрузите фото машины и диска" in INDEX_HTML
     assert "Фото машины" in INDEX_HTML
     assert "Фото диска" in INDEX_HTML
-    assert "Определить данные" in INDEX_HTML
-    assert "Определяем автомобиль и диск" in INDEX_HTML
-    assert "Проверьте AI-предложение" in INDEX_HTML
-    assert "Параметры для рендера" in INDEX_HTML
+    assert "Распознать автомобиль" in INDEX_HTML
+    assert "Определяем автомобиль по фото" in INDEX_HTML
+    assert "Проверяем AI-предложение" in INDEX_HTML
+    assert "Ссылка на товар с диском" in INDEX_HTML
+    assert "Фото диска добавлено" in INDEX_HTML
     assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
     assert "Проверка совместимости — скоро" not in INDEX_HTML
     assert "future-stage-island" not in INDEX_HTML
     assert "data-create-render" in INDEX_HTML
-    assert 'data-rim-confirm="false"' in INDEX_HTML
+    assert "data-rim-product-url" in INDEX_HTML
+    assert "data-manual-rim-fields" not in INDEX_HTML
 
 
 def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
@@ -175,7 +177,12 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
 
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
     assert '.fitment-panel > .wallet-status-island[data-visible="false"]' in STYLE_CSS
-    assert "display: none" in STYLE_CSS.split('.fitment-panel > .wallet-status-island[data-visible="false"]', 1)[1].split("}", 1)[0]
+    assert (
+        "display: none"
+        in STYLE_CSS.split('.fitment-panel > .wallet-status-island[data-visible="false"]', 1)[
+            1
+        ].split("}", 1)[0]
+    )
 
 
 def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
@@ -236,14 +243,14 @@ def test_design_code_defines_ui_separator_rules() -> None:
     assert "Russian decimal values use a comma" in design_code
     assert "Vehicle and rim names use spaces only" in design_code
     assert " · " not in APP_JS
-    assert 'formatRim(rim)' in APP_JS
+    assert "formatRim(rim)" in APP_JS
     assert '" / "' in APP_JS
 
 
 def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
-    assert 'data-fitment-vehicle-specs' in INDEX_HTML
-    assert 'data-fitment-card-vehicle-specs' in INDEX_HTML
-    assert 'data-fitment-card-rim-specs' in INDEX_HTML
+    assert "data-fitment-vehicle-specs" in INDEX_HTML
+    assert "data-fitment-card-vehicle-specs" in INDEX_HTML
+    assert "data-fitment-card-rim-specs" in INDEX_HTML
     assert "function fitmentVehicleSpecs(vehicle)" in APP_JS
     assert "function fitmentRimSpecs(rim)" in APP_JS
     assert "demoVehicleTitle(overview.vehicle)" in APP_JS
@@ -251,25 +258,25 @@ def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
 
 
 def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> None:
-    assert 'data-fitment-overview-toggle' in INDEX_HTML
-    assert 'data-fitment-overview-grid' in INDEX_HTML
-    assert 'state.fitmentOverviewCollapsed' in APP_JS
+    assert "data-fitment-overview-toggle" in INDEX_HTML
+    assert "data-fitment-overview-grid" in INDEX_HTML
+    assert "state.fitmentOverviewCollapsed" in APP_JS
     assert 'input.addEventListener("focus", () => setFitmentOverviewCollapsed(true))' in APP_JS
     assert "fitment-field.has-candidates" in STYLE_CSS
     assert "fitment-candidate-row" in STYLE_CSS
     assert "position: sticky" in STYLE_CSS
     assert "--desktop-content-max: 1080px" in STYLE_CSS
-    assert 'data-fitment-card-source-brand' in INDEX_HTML
-    assert 'data-fitment-card-source-sku' in INDEX_HTML
+    assert "data-fitment-card-source-brand" in INDEX_HTML
+    assert "data-fitment-card-source-sku" in INDEX_HTML
 
 
 def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
     assert 'data-i18n="fitment.back"' in INDEX_HTML
     assert "Вернуться к рендеру" in INDEX_HTML
     assert "Demo preview" not in INDEX_HTML
-    assert 'data-fitment-preview-badge hidden>Demo</span>' in INDEX_HTML
+    assert "data-fitment-preview-badge hidden>Demo</span>" in INDEX_HTML
     assert "fitment-context-row" in STYLE_CSS
-    assert "data-i18n=\"fitment.preliminary\"" not in INDEX_HTML
+    assert 'data-i18n="fitment.preliminary"' not in INDEX_HTML
     assert "render-info-island" in APP_JS
     assert "render-info-footer" in APP_JS
     assert ".render-info-island .status-pill" in STYLE_CSS
@@ -308,10 +315,12 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "function shouldUseBrowserApiProxy()" in APP_JS
     assert 'apiUrl("/jobs"' in APP_JS
-    assert 'apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true })' in APP_JS
-    assert 'apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true })' in APP_JS
-    assert 'withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`)' not in APP_JS
-    assert 'withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`)' not in APP_JS
+    assert "apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true })" in APP_JS
+    assert "apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true })" in APP_JS
+    assert "withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`)" not in APP_JS
+    assert (
+        "withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`)" not in APP_JS
+    )
     assert "walletHistoryPage" in APP_JS
     assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
     assert "data-wallet-history-pager" in INDEX_HTML
@@ -322,7 +331,7 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
 
 def test_website_auth_does_not_inline_private_asset_urls() -> None:
     assert "function proxiedAssetUrl(asset)" in APP_JS
-    assert "if (getWebsiteAuthToken()) return \"\";" in APP_JS
+    assert 'if (getWebsiteAuthToken()) return "";' in APP_JS
     assert "Website auth lives in Authorization header" in APP_JS
     assert "function assetDownloadUrlForJob(job, kind)" in APP_JS
     assert "return getWebsiteAuthToken()" in APP_JS

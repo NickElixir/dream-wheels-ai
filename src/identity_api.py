@@ -5,11 +5,17 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from src import assets_service, db, identity_service, storage
 from src.auth import resolve_telegram_auth
-from src.config import VEHICLE_IDENTITY_MAX_IMAGE_EDGE, VEHICLE_IDENTITY_MAX_PIXELS
+from src.config import (
+    VEHICLE_IDENTITY_ENABLED,
+    VEHICLE_IDENTITY_MAX_IMAGE_EDGE,
+    VEHICLE_IDENTITY_MAX_PIXELS,
+    VEHICLE_IDENTITY_MODEL,
+    VEHICLE_IDENTITY_PROVIDER,
+)
 from src.identity.prompts import PROMPT_VERSION, RESOLVER_VERSION
 from src.identity.providers.base import VehicleIdentityProviderError
 from src.identity.schemas import (
@@ -70,6 +76,7 @@ def _normalization_http_error(exc: ImageNormalizationError) -> HTTPException:
 async def resolve_identity(
     car_image: Annotated[UploadFile, File()],
     wheel_image: Annotated[UploadFile, File()],
+    rim_product_url: Annotated[str | None, Form()] = None,
     init_data: Annotated[str, Form()] = "",
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
@@ -87,6 +94,11 @@ async def resolve_identity(
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,
     )
+
+    try:
+        source_rim = identity_service.RimIdentityProposal(product_url=rim_product_url)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="Invalid rim product URL") from exc
 
     car_bytes = await _read_identity_upload(car_image, "car")
     rim_bytes = await _read_identity_upload(wheel_image, "wheel")
@@ -112,6 +124,16 @@ async def resolve_identity(
                 owner_user_id,
             )
         )
+
+    logger.info(
+        "🔥 Vehicle identity resolve started draft_id=%s user_id=%s enabled=%s provider=%s model=%s source_url=%s",
+        draft_id,
+        owner_user_id,
+        VEHICLE_IDENTITY_ENABLED,
+        VEHICLE_IDENTITY_PROVIDER,
+        VEHICLE_IDENTITY_MODEL,
+        bool(source_rim.product_url),
+    )
 
     uploaded_assets: list[assets_service.AssetUpload] = []
     try:
@@ -173,10 +195,14 @@ async def resolve_identity(
         resolution = await get_vehicle_identity_resolver().resolve(normalized_car)
     except VehicleIdentityProviderError as exc:
         logger.exception(
-            "❌ Vehicle identity provider failed draft_id=%s user_id=%s error_code=%s",
+            "❌ Vehicle identity provider failed draft_id=%s user_id=%s enabled=%s provider=%s model=%s error_code=%s retryable=%s",
             draft_id,
             owner_user_id,
+            VEHICLE_IDENTITY_ENABLED,
+            VEHICLE_IDENTITY_PROVIDER,
+            VEHICLE_IDENTITY_MODEL,
             exc.error_code,
+            exc.retryable,
         )
         failed_resolution = VehicleIdentityResolution(
             status=ResolutionStatus.unknown,
@@ -193,6 +219,7 @@ async def resolve_identity(
             ),
         )
         failed_proposal = identity_service.identity_proposal_from_resolution(failed_resolution)
+        failed_proposal.rim = source_rim
         failed_proposal.error = identity_service.IdentityResolutionError(
             error_code=exc.error_code,
             retryable=exc.retryable,
@@ -230,6 +257,7 @@ async def resolve_identity(
     proposal = identity_service.identity_proposal_from_resolution(
         resolution.model_copy(update={"metadata": metadata})
     )
+    proposal.rim = source_rim
     async with pool.acquire() as conn:
         await conn.execute(
             """
@@ -246,10 +274,14 @@ async def resolve_identity(
         )
 
     logger.info(
-        "✅ Identity proposal resolved draft_id=%s user_id=%s resolver=%s",
+        "✅ Identity proposal resolved draft_id=%s user_id=%s provider=%s model=%s status=%s latency_ms=%s source_url=%s",
         draft_id,
         owner_user_id,
-        proposal.resolver,
+        resolution.metadata.provider,
+        resolution.metadata.model,
+        resolution.status,
+        resolution.metadata.latency_ms,
+        bool(source_rim.product_url),
     )
     return IdentityResolveResponse(
         draft_id=draft_id,

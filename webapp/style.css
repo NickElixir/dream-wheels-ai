@@ -2127,6 +2127,27 @@ h2 {
     gap: 16px;
 }
 
+.rim-source-preflight {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.rim-source-preflight p {
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.fitment-field em {
+    color: var(--text-subtle);
+    font-style: normal;
+    font-weight: 700;
+}
+
 .identity-confirmation-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2245,6 +2266,12 @@ h2 {
 
 .identity-note.warning {
     margin-top: 2px;
+}
+
+.identity-note.neutral {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--text-muted);
 }
 
 .review-summary {
