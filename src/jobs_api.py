@@ -2090,6 +2090,11 @@ async def resolve_fitment_rim_source(
             ),
         )
     except RimUrlError as exc:
+        logger.exception(
+            "❌ Не удалось извлечь параметры диска job_id=%s user_id=%s",
+            job_id,
+            user_id,
+        )
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return RimSourceResolveResponse(

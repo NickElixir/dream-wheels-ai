@@ -126,7 +126,7 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "Загрузите фото машины и диска" in INDEX_HTML
     assert "Фото машины" in INDEX_HTML
     assert "Фото диска" in INDEX_HTML
-    assert "Распознать автомобиль" in INDEX_HTML
+    assert 'detectIdentity: "Распознать автомобиль"' in APP_JS
     assert "Определяем автомобиль по фото" in INDEX_HTML
     assert "Проверяем AI-предложение" in INDEX_HTML
     assert "Ссылка на товар с диском" in INDEX_HTML
@@ -134,7 +134,8 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
     assert "Проверка совместимости — скоро" not in INDEX_HTML
     assert "future-stage-island" not in INDEX_HTML
-    assert "data-create-render" in INDEX_HTML
+    assert "data-create-render" not in INDEX_HTML
+    assert "data-detect-identity" not in INDEX_HTML
     assert "data-rim-product-url" in INDEX_HTML
     assert "data-manual-rim-fields" not in INDEX_HTML
 
@@ -178,6 +179,25 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "vehicle?.summary" not in APP_JS
 
 
+def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
+    assert "state.fitmentSourceAutoResolvedForJob !== jobId" in APP_JS
+    assert "void resolveFitmentRimSource({ automatic: true });" in APP_JS
+    assert 'state.fitmentSourceAutoResolvedForJob = "";' in APP_JS
+    assert "Сохранить и проверить совместимость" in APP_JS
+    assert "await runFitmentCheck();" in APP_JS
+    assert "function fitmentSourceBrand(overview)" in APP_JS
+    assert "new URL(productUrl).hostname" in APP_JS
+    assert "if (automatic) state.fitmentSourceOpen = true;" in APP_JS
+    assert "No wheel parameters could be recognised from this link" in APP_JS
+    assert "state.fitmentSourceOpen = !resolvedEntries.length ? true" in APP_JS
+
+
+def test_fitment_entrypoint_uses_compatibility_language() -> None:
+    assert "Проверить совместимость автомобиля и диска" in APP_JS
+    result_button = INDEX_HTML.split("data-open-fitment-result", 1)[1].split("</button>", 1)[0]
+    assert "Уточнить параметры" not in result_button
+
+
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
     assert '.fitment-panel > .wallet-status-island[data-visible="false"]' in STYLE_CSS
     assert (
@@ -193,7 +213,7 @@ def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
         "function renderRenders() {"
     )[0]
 
-    assert 'openFromHistory: "Уточнить параметры"' in APP_JS
+    assert 'openFromHistory: "Проверить совместимость автомобиля и диска"' in APP_JS
     assert "expanded && canOpenFitment" in history_card
     assert "primary-button compact-button render-fitment-cta" in history_card
     assert history_card.count("data-open-fitment") == 1
