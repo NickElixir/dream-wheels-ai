@@ -57,14 +57,19 @@
                     <p class="eyebrow">Мой Dream Wheels AI</p>
                     <h1>Создавайте виртуальные примерки и возвращайтесь к готовым результатам</h1>
                     <div class="dashboard-actions">
-                        <button type="button" class="primary-button" data-nav="create">Создать виртуальную примерку</button>
-                        <button type="button" class="ghost-button" data-nav="renders">Мои примерки</button>
+                        <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create">Создать виртуальную примерку</button>
+                        <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
                     </div>
                 </div>
             </section>
 
             <section class="dashboard-grid">
                 <article class="panel dashboard-balance-card">
+                    <div class="dashboard-card-skeleton" data-dashboard-balance-skeleton hidden aria-hidden="true">
+                        <span class="dashboard-skeleton-line dashboard-skeleton-label"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-title"></span>
+                        <span class="dashboard-skeleton-island"></span>
+                    </div>
                     <div class="panel-head">
                         <div>
                             <p class="section-label">Баланс</p>
@@ -73,8 +78,8 @@
                     </div>
                     <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
                         <div class="dashboard-expiry-head">
-                            <strong>Срок действия рендеров</strong>
-                            <button type="button" class="link-button dashboard-expiry-link" data-nav="wallet">Подробнее →</button>
+                            <strong>Срок действия пакетов</strong>
+                            <button type="button" class="link-button dashboard-expiry-link" data-nav="wallet">Посмотреть пакеты</button>
                         </div>
                         <div class="dashboard-expiry-list" data-dashboard-expiry-list></div>
                         <div class="dashboard-expiry-note" data-dashboard-expiry-note hidden></div>
@@ -87,7 +92,9 @@
                     </div>
                     <div class="wallet-status-island tone-warning" data-dashboard-auth data-visible="false">
                         <div class="wallet-status-copy">
-                            <div class="wallet-status-title">Откройте Mini App в Telegram или войдите через Telegram на сайте</div>
+                            <div class="wallet-status-title">Войдите, чтобы увидеть баланс</div>
+                            <div class="wallet-status-sub">История примерок и остаток рендеров будут доступны после входа.</div>
+                            <button type="button" class="primary-button compact-button dashboard-auth-action" data-dashboard-auth-login>Войти через Telegram</button>
                         </div>
                     </div>
                     <div class="wallet-status-island tone-error" data-dashboard-error data-visible="false">
@@ -99,6 +106,12 @@
                 </article>
 
                 <article class="panel latest-render-card" data-latest-render-card>
+                    <div class="dashboard-card-skeleton" data-dashboard-latest-skeleton hidden aria-hidden="true">
+                        <span class="dashboard-skeleton-line dashboard-skeleton-label"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-title"></span>
+                        <span class="dashboard-skeleton-preview"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-meta"></span>
+                    </div>
                     <div class="panel-head">
                         <div>
                             <p class="section-label">Последний результат</p>
@@ -269,7 +282,9 @@
                 </div>
                 <div class="error-block" data-error hidden>
                     <div class="error-icon">⚠️</div>
-                    <div class="error-text" data-error-text data-i18n="errors.generic">Что-то пошло не так</div>
+                    <div class="error-text" data-error-text data-error-title data-i18n="errors.generic">Что-то пошло не так</div>
+                    <p class="error-copy" data-error-copy></p>
+                    <button type="button" class="ghost-button compact-button" data-error-action>Повторить</button>
                 </div>
             </section>
 
@@ -696,6 +711,12 @@
                                 </div>
                                 <p data-fitment-source-progress-copy></p>
                                 <p class="fitment-source-progress-fields" data-fitment-source-progress-fields hidden></p>
+                                <ol class="fitment-source-steps" data-fitment-source-steps>
+                                    <li data-fitment-source-step="saved">Ссылка сохранена</li>
+                                    <li data-fitment-source-step="extract">Извлекаем параметры</li>
+                                    <li data-fitment-source-step="review">Проверьте найденные значения</li>
+                                    <li data-fitment-source-step="verdict">Проверяем совместимость</li>
+                                </ol>
                             </div>
                             <div class="fitment-form-grid">
                                 <label class="fitment-field">
