@@ -116,8 +116,8 @@ const I18N = {
             title: "Базовые параметры автомобиля",
             subtitleFallback: "Предварительные данные помогут подготовить будущую техническую проверку совместимости",
             preliminary: "Предварительно",
-            openFromResult: "Проверить совместимость автомобиля и диска",
-            openFromHistory: "Проверить совместимость автомобиля и диска",
+            openFromResult: "Проверить совместимость",
+            openFromHistory: "Проверить совместимость",
             back: "Вернуться к рендеру",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
@@ -414,8 +414,8 @@ const I18N = {
             title: "Basic vehicle parameters",
             subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
             preliminary: "Preliminary",
-            openFromResult: "Check vehicle and wheel compatibility",
-            openFromHistory: "Check vehicle and wheel compatibility",
+            openFromResult: "Check compatibility",
+            openFromHistory: "Check compatibility",
             back: "Back to render",
             loading: "Loading details",
             saveSuccess: "Details saved",
@@ -1147,9 +1147,17 @@ function isWebsiteAuthMode() {
 
 function updateWebsiteAuthUi() {
     const button = document.querySelector("[data-website-auth-button]");
-    if (!button) return;
-    button.hidden = HAS_TG;
-    if (HAS_TG) return;
+    const dashboardLogin = document.querySelector("[data-dashboard-auth-login]");
+    if (button) button.hidden = HAS_TG || !state.websiteAuth;
+    if (dashboardLogin) {
+        dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending;
+        dashboardLogin.textContent = state.websiteLoginPending
+            ? t("auth.loggingIn")
+            : state.websiteLoginWarmupPending
+                ? t("auth.preparing")
+                : t("auth.login");
+    }
+    if (!button || HAS_TG) return;
 
     if (state.websiteLoginWarmupPending && !state.websiteAuth) {
         button.disabled = false;
@@ -1261,6 +1269,7 @@ async function loginWithTelegram() {
     if (state.websiteLoginPending) return;
     const button = document.querySelector("[data-website-auth-button]");
     state.websiteLoginPending = true;
+    updateWebsiteAuthUi();
     if (button) {
         button.disabled = true;
         button.textContent = t("auth.loggingIn");
@@ -1953,6 +1962,7 @@ function renderFitment() {
             : "";
     }
     if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
+    renderFitmentSourceSteps();
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
@@ -2134,6 +2144,21 @@ function renderFitment() {
     );
     syncFitmentFormInputs();
     renderFitmentCandidates();
+}
+
+function renderFitmentSourceSteps() {
+    const hasSourceUrl = Boolean(normalizeFitmentText(state.fitmentForm.rim.product_url));
+    const hasResolvedFields = state.fitmentSourceAppliedFields.length > 0;
+    const extractionFailed = Boolean(state.fitmentSourceStatus) && state.fitmentSourceStatusTone === "error";
+    const states = {
+        saved: hasSourceUrl ? "done" : "pending",
+        extract: state.fitmentSourceResolving ? "current" : extractionFailed ? "error" : hasResolvedFields ? "done" : "pending",
+        review: hasResolvedFields && !state.fitmentSourceResolving ? "current" : "pending",
+        verdict: "pending",
+    };
+    document.querySelectorAll("[data-fitment-source-step]").forEach((step) => {
+        step.dataset.state = states[step.dataset.fitmentSourceStep] || "pending";
+    });
 }
 
 async function loadFitmentOverview(jobId) {
@@ -3486,9 +3511,18 @@ function renderDashboard() {
     const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
     const dashboardExpiryList = document.querySelector("[data-dashboard-expiry-list]");
     const dashboardExpiryNote = document.querySelector("[data-dashboard-expiry-note]");
+    const balanceSkeleton = document.querySelector("[data-dashboard-balance-skeleton]");
+    const latestSkeleton = document.querySelector("[data-dashboard-latest-skeleton]");
+    const dashboardPrimaryAction = document.querySelector("[data-dashboard-primary-action]");
+    const dashboardSecondaryAction = document.querySelector("[data-dashboard-secondary-action]");
     const expiryCohorts = buildRenderExpiryCohorts();
 
     if (balance) balance.textContent = state.balance === null ? "—" : String(state.balance);
+    if (balanceSkeleton) balanceSkeleton.hidden = !(state.walletLoading && state.balance === null);
+    document.querySelector(".dashboard-balance-card")?.toggleAttribute(
+        "data-loading",
+        Boolean(state.walletLoading && state.balance === null)
+    );
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
     if (auth) auth.dataset.visible = String(!hasFrontendAuth());
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
@@ -3510,14 +3544,29 @@ function renderDashboard() {
         dashboardExpiryNote.textContent = expiryCohorts.length
             ? (
                 locale === "ru"
-                    ? "Сначала используются рендеры с ближайшей датой окончания."
+                    ? "Сначала списываются рендеры с ближайшим сроком."
                     : "Renders with the nearest expiration date are used first."
             )
             : "";
     }
 
     if (!latestTitle || !latestStatus || !latestContent) return;
+    const showLatestSkeleton = state.renderHistoryLoading && !state.renderHistory.length;
+    if (latestSkeleton) latestSkeleton.hidden = !showLatestSkeleton;
+    document.querySelector(".latest-render-card")?.toggleAttribute("data-loading", showLatestSkeleton);
     const latest = state.renderHistory[0] || null;
+    const latestCompleted = latest?.status === "completed" && fitmentAvailable(latest);
+    if (dashboardPrimaryAction) {
+        dashboardPrimaryAction.textContent = latestCompleted ? "Открыть результат" : "Создать виртуальную примерку";
+        dashboardPrimaryAction.dataset.nav = latestCompleted ? "renders" : "create";
+        if (latestCompleted) dashboardPrimaryAction.dataset.expandLatest = latest.job_id;
+        else delete dashboardPrimaryAction.dataset.expandLatest;
+    }
+    if (dashboardSecondaryAction) {
+        dashboardSecondaryAction.textContent = latestCompleted ? "Создать примерку" : "Мои примерки";
+        dashboardSecondaryAction.dataset.nav = latestCompleted ? "create" : "renders";
+        delete dashboardSecondaryAction.dataset.expandLatest;
+    }
     if (!latest) {
         latestTitle.textContent = "Ваша первая примерка";
         latestStatus.textContent = "Нет истории";
@@ -3542,12 +3591,18 @@ function renderDashboard() {
 
     const resultUrl = assetUrlForJob(latest, "result");
     if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
+        const fitmentContext = state.fitmentJobId === latest.job_id && state.fitmentCheck
+            ? fitmentDashboardContext(state.fitmentCheck)
+            : fitmentAvailable(latest)
+                ? { tone: "neutral", text: "Совместимость: доступна" }
+                : null;
         latestContent.innerHTML = `
             ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
             <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
-            <div class="render-card-buttons">
-                <button type="button" class="ghost-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
+            ${fitmentContext ? `<div class="dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
+            <div class="render-card-buttons latest-render-actions">
+                <button type="button" class="primary-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
                 ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
             </div>
         `;
@@ -3568,6 +3623,17 @@ function renderDashboard() {
         return;
     }
     latestContent.innerHTML = `<p class="latest-meta">Готовый результат появится здесь автоматически</p>`;
+}
+
+function fitmentDashboardContext(check) {
+    const contexts = {
+        compatible: { tone: "success", text: "Совместимость: предварительно совместимо" },
+        compatible_with_conditions: { tone: "warning", text: "Совместимость: есть условия установки" },
+        incompatible: { tone: "error", text: "Совместимость: несовместимо" },
+        unknown: { tone: "warning", text: "Совместимость: нужны данные" },
+        failed: { tone: "error", text: "Совместимость: проверка временно недоступна" },
+    };
+    return contexts[check?.verdict || check?.execution_status] || { tone: "neutral", text: "Совместимость: доступна" };
 }
 
 async function loadRenderHistory({ silent = false } = {}) {
@@ -4445,6 +4511,9 @@ async function submitJob() {
     const statusDebug = document.querySelector("[data-status-debug]");
     const resultImg = document.querySelector("[data-result-img]");
     const errorText = document.querySelector("[data-error-text]");
+    const errorTitle = document.querySelector("[data-error-title]");
+    const errorCopy = document.querySelector("[data-error-copy]");
+    const errorAction = document.querySelector("[data-error-action]");
     const debugLines = [];
 
     function pushDebug(label, extra = null) {
@@ -4462,7 +4531,14 @@ async function submitJob() {
         if (statusBlock) statusBlock.hidden = true;
         if (resultBlock) resultBlock.hidden = true;
         if (errorBlock) errorBlock.hidden = false;
-        if (errorText) errorText.textContent = localizeErrorMessage(message);
+        const errorState = classifyGenerationError(message);
+        if (errorText) errorText.textContent = errorState.title;
+        if (errorTitle) errorTitle.textContent = errorState.title;
+        if (errorCopy) errorCopy.textContent = errorState.copy;
+        if (errorAction) {
+            errorAction.textContent = errorState.actionLabel;
+            errorAction.dataset.generationErrorAction = errorState.action;
+        }
         refreshButtonsForCurrentView();
         pushDebug("showError", message);
         haptic("error");
@@ -4594,6 +4670,23 @@ async function submitJob() {
     showError(t("errors.timeout"));
 }
 
+function classifyGenerationError(message) {
+    const normalized = String(message || "").toLowerCase();
+    if (/(wheel|rim|disk|колес|диск)/.test(normalized)) {
+        return { title: "Не удалось обработать изображение диска", copy: "Загрузите другое фото: диск должен быть снят спереди и находиться в фокусе.", actionLabel: "Заменить фото диска", action: "wheel" };
+    }
+    if (/(vehicle|car|identity|автомоб|машин)/.test(normalized)) {
+        return { title: "Не удалось распознать автомобиль на фото", copy: "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.", actionLabel: "Заменить фото автомобиля", action: "car" };
+    }
+    if (/(credit|balance|insufficient|баланс|рендер)/.test(normalized)) {
+        return { title: "Недостаточно рендеров на балансе", copy: "Пополните баланс, чтобы создать новую примерку.", actionLabel: "Пополнить баланс", action: "wallet" };
+    }
+    if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
+        return { title: "Сервис временно недоступен", copy: "Фото сохранены. Повторите попытку через несколько минут.", actionLabel: "Повторить", action: "retry" };
+    }
+    return { title: "Не удалось создать примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", action: "retry" };
+}
+
 function handleFileSelected(kind, file) {
     file.arrayBuffer().then((buffer) => {
         resetIdentityState();
@@ -4632,6 +4725,9 @@ function bindEvents() {
 
     document.querySelector("[data-identity-error-action]")?.addEventListener("click", () => {
         document.querySelector("[data-website-auth-button]")?.click();
+    });
+    document.querySelector("[data-dashboard-auth-login]")?.addEventListener("click", () => {
+        void loginWithTelegram();
     });
     document.querySelector("[data-identity-error-retry]")?.addEventListener("click", () => {
         void resolveIdentity();
@@ -4713,6 +4809,19 @@ function bindEvents() {
 
     document.querySelector("[data-download-result]")?.addEventListener("click", downloadResult);
     document.querySelector("[data-share-result]")?.addEventListener("click", shareResult);
+    document.querySelector("[data-error-action]")?.addEventListener("click", () => {
+        const action = document.querySelector("[data-error-action]")?.dataset.generationErrorAction;
+        if (action === "wallet") {
+            setView("wallet");
+            return;
+        }
+        if (action === "car" || action === "wheel") {
+            showCreateScreen("upload");
+            document.querySelector(`[data-input="${action}"]`)?.click();
+            return;
+        }
+        void submitJob();
+    });
     document.querySelector("[data-open-fitment-result]")?.addEventListener("click", () => {
         if (!state.jobId) return;
         void openFitmentView(state.jobId, { originView: "create" });

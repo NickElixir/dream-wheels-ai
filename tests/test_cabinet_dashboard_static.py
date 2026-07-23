@@ -77,7 +77,8 @@ def test_frontend_does_not_offer_cross_owner_query_inputs() -> None:
 
 def test_unauthenticated_state_prompts_telegram_login() -> None:
     assert "data-website-auth-button" in INDEX_HTML
-    assert "Откройте Mini App в Telegram или войдите через Telegram на сайте" in INDEX_HTML
+    assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
+    assert "data-dashboard-auth-login" in INDEX_HTML
     assert "wallet.authRequired" in APP_JS
 
 
@@ -193,7 +194,9 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
 
 
 def test_fitment_entrypoint_uses_compatibility_language() -> None:
-    assert "Проверить совместимость автомобиля и диска" in APP_JS
+    assert 'openFromResult: "Проверить совместимость"' in APP_JS
+    assert 'openFromHistory: "Проверить совместимость"' in APP_JS
+    assert "Проверить совместимость автомобиля и диска" not in APP_JS
     result_button = INDEX_HTML.split("data-open-fitment-result", 1)[1].split("</button>", 1)[0]
     assert "Уточнить параметры" not in result_button
 
@@ -213,13 +216,27 @@ def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
         "function renderRenders() {"
     )[0]
 
-    assert 'openFromHistory: "Проверить совместимость автомобиля и диска"' in APP_JS
+    assert 'openFromHistory: "Проверить совместимость"' in APP_JS
     assert "expanded && canOpenFitment" in history_card
     assert "primary-button compact-button render-fitment-cta" in history_card
     assert history_card.count("data-open-fitment") == 1
     assert "render-expanded-actions" in history_card
     assert "renders.download" in history_card
     assert "renders.createAnother" in history_card
+
+
+def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> None:
+    assert ".latest-render-card [data-latest-content]" in STYLE_CSS
+    latest_content_css = STYLE_CSS.split(".latest-render-card [data-latest-content]", 1)[1].split(
+        "}", 1
+    )[0]
+    assert "min-width: 0" in latest_content_css
+    assert "overflow: clip" in latest_content_css
+    latest_image_css = STYLE_CSS.split(".latest-result-image,", 1)[1].split("}", 1)[0]
+    assert "max-width: 100%" in latest_image_css
+    assert "latest-render-actions" in APP_JS
+    assert ".latest-render-actions .compact-button" in STYLE_CSS
+    assert "font-size: clamp(" in STYLE_CSS
 
 
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
@@ -334,7 +351,9 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
-    assert "Срок действия рендеров" in INDEX_HTML
+    assert "Срок действия пакетов" in INDEX_HTML
+    assert "Посмотреть пакеты" in INDEX_HTML
+    assert "Сначала списываются рендеры с ближайшим сроком." in APP_JS
     assert "data-dashboard-expiry" in INDEX_HTML
     assert "data-wallet-expiry-list" in INDEX_HTML
 
@@ -355,6 +374,39 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
     assert "data-wallet-history-prev" in INDEX_HTML
     assert "data-wallet-history-next" in INDEX_HTML
     assert "wallet-history-stack" in STYLE_CSS
+
+
+def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> None:
+    assert "data-dashboard-auth-login" in INDEX_HTML
+    assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
+    assert "data-dashboard-balance-skeleton" in INDEX_HTML
+    assert "data-dashboard-latest-skeleton" in INDEX_HTML
+    assert "dashboard-card-skeleton" in STYLE_CSS
+    assert "dashboard-skeleton-shimmer" in STYLE_CSS
+    assert "data-dashboard-primary-action" in INDEX_HTML
+    assert "data-dashboard-secondary-action" in INDEX_HTML
+    assert "Открыть результат" in APP_JS
+    assert 'class="primary-button compact-button" data-nav="renders"' in APP_JS
+    assert "dashboard-fitment-context" in APP_JS
+    assert "fitmentDashboardContext" in APP_JS
+
+
+def test_generation_errors_use_actionable_copy_without_exposing_internal_messages() -> None:
+    assert "classifyGenerationError" in APP_JS
+    assert "Не удалось обработать изображение диска" in APP_JS
+    assert "Не удалось распознать автомобиль на фото" in APP_JS
+    assert "Сервис временно недоступен" in APP_JS
+    assert "data-error-action" in INDEX_HTML
+    assert "data-error-copy" in INDEX_HTML
+
+
+def test_rim_source_progress_uses_explicit_user_facing_steps() -> None:
+    assert "data-fitment-source-steps" in INDEX_HTML
+    assert "Ссылка сохранена" in INDEX_HTML
+    assert "Извлекаем параметры" in INDEX_HTML
+    assert "Проверьте найденные значения" in INDEX_HTML
+    assert "renderFitmentSourceSteps" in APP_JS
+    assert "fitment-source-steps" in STYLE_CSS
 
 
 def test_website_auth_does_not_inline_private_asset_urls() -> None:
