@@ -79,6 +79,8 @@ def test_unauthenticated_state_prompts_telegram_login() -> None:
     assert "data-website-auth-button" in INDEX_HTML
     assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
     assert "data-dashboard-auth-login" in INDEX_HTML
+    assert "data-dashboard-auth-info" in INDEX_HTML
+    assert "telegram-button-icon" in INDEX_HTML
     assert "wallet.authRequired" in APP_JS
 
 
@@ -97,6 +99,8 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "warmWebsiteLoginResources();" in APP_JS
     assert "Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()])" in APP_JS
     assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
+    assert "WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS" in APP_JS
+    assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
 
 
 def test_desktop_layout_reserves_sidebar_gutter() -> None:

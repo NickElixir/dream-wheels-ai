@@ -495,6 +495,36 @@ a {
     margin-top: 12px;
 }
 
+.dashboard-auth-island {
+    margin-bottom: 0;
+}
+
+.dashboard-auth-info {
+    margin-top: 10px;
+}
+
+.dashboard-auth-info .wallet-status-sub {
+    margin: 0;
+}
+
+.telegram-button-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
+.dashboard-auth-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+
+.dashboard-auth-error {
+    margin-top: 10px;
+    color: var(--danger);
+}
+
 .dashboard-expiry-card {
     display: grid;
     gap: 12px;

@@ -19,6 +19,7 @@ const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
+const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
@@ -733,6 +734,7 @@ const state = {
     fitmentPreviewForced: resolveFitmentPreviewMode(),
     websiteLoginPending: false,
     websiteLoginWarmupPending: false,
+    websiteLoginError: "",
     websiteLoginLibraryPromise: null,
     websiteLoginNoncePromise: null,
     websiteLoginNonce: null,
@@ -1148,14 +1150,21 @@ function isWebsiteAuthMode() {
 function updateWebsiteAuthUi() {
     const button = document.querySelector("[data-website-auth-button]");
     const dashboardLogin = document.querySelector("[data-dashboard-auth-login]");
+    const dashboardLoginLabel = document.querySelector("[data-dashboard-auth-login-label]");
+    const dashboardAuthError = document.querySelector("[data-dashboard-auth-error]");
     if (button) button.hidden = HAS_TG || !state.websiteAuth;
     if (dashboardLogin) {
         dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending;
-        dashboardLogin.textContent = state.websiteLoginPending
+        const label = state.websiteLoginPending
             ? t("auth.loggingIn")
             : state.websiteLoginWarmupPending
                 ? t("auth.preparing")
                 : t("auth.login");
+        if (dashboardLoginLabel) dashboardLoginLabel.textContent = label;
+    }
+    if (dashboardAuthError) {
+        dashboardAuthError.hidden = !state.websiteLoginError;
+        dashboardAuthError.textContent = state.websiteLoginError;
     }
     if (!button || HAS_TG) return;
 
@@ -1232,14 +1241,25 @@ async function fetchWebsiteLoginNonce({ force = false } = {}) {
     if (!force && hasFreshWebsiteLoginNonce()) return state.websiteLoginNonce;
     if (!force && state.websiteLoginNoncePromise) return state.websiteLoginNoncePromise;
 
-    state.websiteLoginNoncePromise = fetch(apiUrl("/auth/telegram/nonce"))
-        .then(async (response) => {
-            if (!response.ok) throw new Error(await parseApiError(response));
-            const payload = await response.json();
-            state.websiteLoginNonce = payload;
-            state.websiteLoginNonceFetchedAt = Date.now();
-            return payload;
-        })
+    state.websiteLoginNoncePromise = (async () => {
+        let lastError;
+        for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS) {
+            if (delayMs) await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+            try {
+                const response = await fetch(apiUrl("/auth/telegram/nonce"), {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) throw new Error(await parseApiError(response));
+                const payload = await response.json();
+                state.websiteLoginNonce = payload;
+                state.websiteLoginNonceFetchedAt = Date.now();
+                return payload;
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        throw lastError || new Error("Telegram login nonce is unavailable");
+    })()
         .finally(() => {
             state.websiteLoginNoncePromise = null;
         });
@@ -1269,6 +1289,7 @@ async function loginWithTelegram() {
     if (state.websiteLoginPending) return;
     const button = document.querySelector("[data-website-auth-button]");
     state.websiteLoginPending = true;
+    state.websiteLoginError = "";
     updateWebsiteAuthUi();
     if (button) {
         button.disabled = true;
@@ -1309,7 +1330,11 @@ async function loginWithTelegram() {
         await loadCabinet();
     } catch (error) {
         console.error("[DW] Telegram website login failed", error);
-        setWalletMessage(error?.message || t("auth.failed"), "error");
+        const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
+            ? "Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз."
+            : "Не удалось войти через Telegram. Попробуйте ещё раз.";
+        state.websiteLoginError = message;
+        setWalletMessage(message, "error");
     } finally {
         state.websiteLoginPending = false;
         invalidateWebsiteLoginNonce();
@@ -3506,6 +3531,7 @@ function renderDashboard() {
     const latestContent = document.querySelector("[data-latest-content]");
     const loading = document.querySelector("[data-dashboard-loading]");
     const auth = document.querySelector("[data-dashboard-auth]");
+    const authInfo = document.querySelector("[data-dashboard-auth-info]");
     const error = document.querySelector("[data-dashboard-error]");
     const errorText = document.querySelector("[data-dashboard-error-text]");
     const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
@@ -3525,6 +3551,7 @@ function renderDashboard() {
     );
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
     if (auth) auth.dataset.visible = String(!hasFrontendAuth());
+    if (authInfo) authInfo.dataset.visible = String(!hasFrontendAuth());
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
     if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
