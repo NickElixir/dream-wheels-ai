@@ -3,9 +3,24 @@ import pytest
 from src.rim_url_resolver import (
     PublicHttpsPolicy,
     RimUrlSecurityError,
+    _resolution_from_url,
     extract_product_page,
     validate_product_url,
 )
+
+
+def test_url_path_fallback_extracts_explicit_catalog_fitment_tokens() -> None:
+    url = "https://www.kolesa-darom.ru/catalog/avto/diski/skad-premium-series/kr015-19haval-f7f7x/7-5-5-114-3-et40-R19-6144957/"
+    resolution = _resolution_from_url(url)
+    assert resolution is not None
+    assert resolution.values == {
+        "wheel_width_j": 7.5,
+        "bolt_count": 5,
+        "pcd_mm": 114.3,
+        "offset_et_mm": 40.0,
+        "wheel_diameter_in": 19.0,
+    }
+    assert all(candidate.source == "url_path" for candidate in resolution.candidates)
 
 
 def test_product_url_policy_accepts_any_public_hostname_but_not_unsafe_urls() -> None:
