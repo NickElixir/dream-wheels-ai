@@ -1246,6 +1246,9 @@ async function loadCabinet({ silent = false } = {}) {
     } finally {
         setWalletBusy(false);
         setWalletLoading(false);
+        // The response may have rendered while the loading flag was still set.
+        // Render once more so the heading and empty state reflect the final state.
+        renderWallet();
     }
 }
 
