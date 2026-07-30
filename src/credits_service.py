@@ -11,6 +11,7 @@ import asyncpg
 
 from src.config import (
     JOB_CREDIT_COST,
+    PURCHASE_GRANT_TTL_DAYS,
     STARTER_GRANT_CREDITS,
     STARTER_GRANT_TTL_DAYS,
 )
@@ -877,7 +878,30 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
 
     balance = await ensure_credit_account(conn, user_id)
     credit_cost = int(job_row["credit_cost"] or JOB_CREDIT_COST)
-    balance_after = balance + credit_cost
+    restored_rows = await conn.fetch(
+        """
+        UPDATE credit_packages AS package
+        SET remaining_credits = LEAST(package.credits_granted, package.remaining_credits + allocation.credits)
+        FROM credit_package_allocations AS allocation
+        WHERE allocation.job_id = $1::uuid
+          AND allocation.package_id = package.id
+          AND package.expires_at > CURRENT_TIMESTAMP
+        RETURNING allocation.credits
+        """,
+        job_id,
+    )
+    restored_credits = sum(int(row["credits"]) for row in restored_rows)
+    if restored_credits == 0:
+        await create_credit_package(
+            conn,
+            user_id=user_id,
+            source="refund",
+            credits=credit_cost,
+            expires_at=datetime.now(UTC) + timedelta(days=PURCHASE_GRANT_TTL_DAYS),
+            idempotency_key=f"job_refund_package:{job_id}",
+        )
+        restored_credits = credit_cost
+    balance_after = balance + restored_credits
     await conn.execute(
         """
         UPDATE user_credit_accounts
@@ -911,11 +935,11 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
         ON CONFLICT (idempotency_key) DO NOTHING
         """,
         user_id,
-        credit_cost,
+        restored_credits,
         balance_after,
         job_id,
         f"job_refund:{job_id}",
-        credit_cost,
+        restored_credits,
     )
     await conn.execute(
         """
