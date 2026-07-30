@@ -14,6 +14,7 @@ const SUPPORTS_DOWNLOAD_FILE = tgSupports("8.0") && typeof tg?.downloadFile === 
 const PROD_API_BASE_URL = "https://dream-wheels-ai-tg.onrender.com";
 const STAGING_API_BASE_URL = "https://dream-wheels-ai-robokassa-staging.onrender.com";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:10000";
+const PROD_WEBAPP_HOSTNAME = "dream-wheels-ai-webapp.vercel.app";
 const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
@@ -451,6 +452,11 @@ function t(path) {
 }
 
 function resolveApiBaseUrl() {
+    if (window.location.hostname === PROD_WEBAPP_HOSTNAME) {
+        localStorage.removeItem(API_MODE_STORAGE_KEY);
+        return PROD_API_BASE_URL;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const apiBase = params.get("apiBase");
     const apiMode = params.get("api");

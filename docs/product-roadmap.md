@@ -74,6 +74,23 @@ Run customer development after Sprint 3 + F2. The tested product is the complete
 - Do not advertise credit expiration until the backend implements it.
 - Keep payment provider behavior out of this scope.
 
+### Parallel F4 — unified account and authentication
+
+Start only when website access needs to extend beyond Telegram-only sign-in.
+
+- Introduce one Dream Wheels account with separately verified identity links: Telegram, email and, later, phone.
+- Let a user who first entered through Telegram add a verified email and return to the same history, balance and payments from either channel.
+- Use email magic link or one-time code for email; evaluate Telegram Gateway and an SMS provider for phone verification before selecting a provider.
+- Design account linking, recovery, rate limits, anti-enumeration and session revocation before exposing the extra login methods.
+- Preserve Mini App `initData` validation as the Telegram-native authentication channel.
+- Revisit Telegram OIDC Authorization Code Flow when a shared auth broker, server-side sessions, multi-site SSO or a unified identity layer becomes necessary.
+
+**Exit criteria**
+
+- One verified person cannot accidentally receive duplicate accounts, balances or render histories when using Telegram and email.
+- Unverified identifiers never grant account access or account linking.
+- Existing Telegram Mini App and website login flows remain backward-compatible during rollout.
+
 ### Parallel F3 — catalog and partner recommendations
 
 Requires a structured owned catalog or partner feed.
