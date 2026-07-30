@@ -86,7 +86,15 @@ async def get_payment_cabinet(
             balance = await get_balance(conn, user_id)
             payments = await list_payments_for_user(conn, user_id=user_id)
             starter_grant = await get_starter_grant_for_user(conn, user_id=user_id)
-    return {"balance": balance, "payments": payments, "starter_grant": starter_grant}
+    # Per-package remaining balance is intentionally not reconstructed from invoices:
+    # purchases and reserves must be allocated atomically by the ledger service first.
+    # Until that contract is rolled out, the client only receives the reliable total.
+    return {
+        "balance": balance,
+        "payments": payments,
+        "starter_grant": starter_grant,
+        "credit_packages": [],
+    }
 
 
 @router.get("/{invoice_id}/status")

@@ -22,6 +22,8 @@ const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
+const PHOTO_CONSENT_VERSION = "2026-06-08";
+const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
@@ -94,6 +96,16 @@ const I18N = {
             footerNotTelegram: "Не в Telegram",
             detectIdentity: "Распознать автомобиль",
             createRender: "Создать виртуальную примерку",
+        },
+        consent: {
+            title: "Использование фотографий",
+            description: "Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации.",
+            confirmation: "Я подтверждаю, что имею право использовать выбранные фотографии, и соглашаюсь с их обработкой для создания AI-примерки.",
+            privacy: "Политика обработки данных",
+            document: "Согласие",
+            cancel: "Отменить и выбрать другие фотографии",
+            compact: "Продолжая, вы подтверждаете право использовать выбранные фотографии.",
+            processingTerms: "Условия обработки данных",
         },
         steps: {
             upload: "Загрузка",
@@ -256,8 +268,16 @@ const I18N = {
             confirmEmail: "Email",
             confirmCredits: "Начисление",
             confirmHint: "Проверьте пакет перед переходом в Robokassa",
-            pay: "Оплатить",
-            paymentNote: "Оплата откроется через Robokassa. Рендеры начисляются после подтверждения",
+            pay: "Перейти к оплате",
+            payWithAmount: "Перейти к оплате — {amount}",
+            emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
+            privacyDetails: "Подробнее — в Политике обработки персональных данных",
+            securePaymentTitle: "Безопасная оплата через Robokassa",
+            securePaymentText: "Данные банковской карты вводятся на стороне Robokassa и не сохраняются в Dream Wheels AI.",
+            acceptancePrefix: "Нажимая «Перейти к оплате», вы принимаете",
+            acceptanceAnd: "и",
+            offerLink: "Публичную оферту",
+            refundLink: "Условия возврата",
             paymentHistory: "История платежей",
             paymentHistoryHint: "Покупки и сроки действия рендеров",
             openHistory: "Открыть",
@@ -292,8 +312,8 @@ const I18N = {
             pendingInvoice: "Счет #{invoiceId} — {amount}",
             paidInvoice: "Счет #{invoiceId} — {amount}",
             failedInvoice: "Счет #{invoiceId} — {amount}",
-            packageMetaDays: "{credits} рендеров",
-            packageSummary: "{amount} / {credits} рендеров",
+            packageMetaDays: "{creditsLabel}",
+            packageSummary: "{amount} · {creditsLabel}",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -323,23 +343,31 @@ const I18N = {
             soon: "Скоро",
         },
         support: {
-            eyebrow: "Связь",
+            eyebrow: "Помощь",
             title: "Поддержка",
-            lede: "Короткий и формальный экран контактов без лишнего текста",
+            lede: "Поможем с оплатой, возвратом или созданием примерки. Обычно отвечаем в течение 24 часов.",
             telegram: "Telegram",
             email: "Email",
-            offer: "Оферта",
-            refund: "Возврат",
-            pdn: "ПДн",
-            requisites: "Реквизиты",
+            refundSection: "Возврат средств",
+            refundTitle: "Условия возврата",
+            refundDescription: "Когда доступен возврат и как отправить обращение",
+            refundSla: "Обращения по возвратам рассматриваем в течение 24 часов.",
         },
         docs: {
-            eyebrow: "Документы",
+            eyebrow: "Юридическая информация",
             title: "Документы",
-            lede: "Формальный список ссылок на юридические и справочные материалы",
-            offer: "Оферта",
-            privacy: "Политика конфиденциальности",
-            payments: "Условия оплаты",
+            lede: "Здесь собраны условия использования сервиса, оплаты, возврата и обработки данных.",
+            offer: "Публичная оферта",
+            offerDescription: "Условия оказания и оплаты услуги",
+            refund: "Условия возврата",
+            refundDescription: "Возврат оплаты и кредитов",
+            privacy: "Политика обработки данных",
+            privacyDescription: "Какие данные мы используем и храним",
+            consent: "Согласие на обработку данных",
+            consentDescription: "Состав данных, цели и отзыв согласия",
+            seller: "Исполнитель и контакты",
+            sellerDescription: "Реквизиты и способы связи",
+            edition: "Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.",
         },
         failed: "Сбой",
         starter: "Стартовый грант",
@@ -392,6 +420,16 @@ const I18N = {
             footerNotTelegram: "Not in Telegram",
             detectIdentity: "Detect details",
             createRender: "Create virtual render",
+        },
+        consent: {
+            title: "Photo use",
+            description: "To create a try-on, your vehicle and wheel photos will be processed by Dream Wheels AI and an AI generation provider.",
+            confirmation: "I confirm that I have the right to use the selected photos and consent to their processing to create an AI try-on.",
+            privacy: "Data processing policy",
+            document: "Consent",
+            cancel: "Cancel and choose different photos",
+            compact: "By continuing, you confirm your right to use the selected photos.",
+            processingTerms: "Data processing terms",
         },
         steps: {
             upload: "Upload",
@@ -554,8 +592,16 @@ const I18N = {
             confirmEmail: "Email",
             confirmCredits: "Credits",
             confirmHint: "Review the package before opening Robokassa",
-            pay: "Pay",
-            paymentNote: "Robokassa opens on tap. Renders are applied after confirmation",
+            pay: "Proceed to payment",
+            payWithAmount: "Proceed to payment — {amount}",
+            emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
+            privacyDetails: "Learn more in the Personal Data Processing Policy",
+            securePaymentTitle: "Secure payment via Robokassa",
+            securePaymentText: "Bank card details are entered on Robokassa and are not stored by Dream Wheels AI.",
+            acceptancePrefix: "By selecting “Proceed to payment”, you accept the",
+            acceptanceAnd: "and",
+            offerLink: "Public Offer",
+            refundLink: "Refund Terms",
             paymentHistory: "Payment history",
             paymentHistoryHint: "Purchases and render expiry windows",
             openHistory: "Open",
@@ -590,8 +636,8 @@ const I18N = {
             pendingInvoice: "Invoice #{invoiceId} — {amount}",
             paidInvoice: "Invoice #{invoiceId} — {amount}",
             failedInvoice: "Invoice #{invoiceId} — {amount}",
-            packageMetaDays: "{credits} renders",
-            packageSummary: "{amount} / {credits} renders",
+            packageMetaDays: "{creditsLabel}",
+            packageSummary: "{amount} · {creditsLabel}",
         },
         renders: {
             eyebrow: "Finished work",
@@ -615,23 +661,31 @@ const I18N = {
             soon: "Soon",
         },
         support: {
-            eyebrow: "Contact",
+            eyebrow: "Help",
             title: "Support",
-            lede: "A short formal contact screen without extra content",
+            lede: "We can help with payments, refunds, or creating a try-on. We usually respond within 24 hours.",
             telegram: "Telegram",
             email: "Email",
-            offer: "Offer",
-            refund: "Refund",
-            pdn: "Privacy",
-            requisites: "Details",
+            refundSection: "Refunds",
+            refundTitle: "Refund terms",
+            refundDescription: "When a refund is available and how to request one",
+            refundSla: "Refund requests are reviewed within 24 hours.",
         },
         docs: {
-            eyebrow: "Documents",
+            eyebrow: "Legal information",
             title: "Documents",
-            lede: "A formal list of legal and reference materials",
-            offer: "Offer",
-            privacy: "Privacy policy",
-            payments: "Payment terms",
+            lede: "Terms for using the service, payments, refunds, and data processing.",
+            offer: "Public offer",
+            offerDescription: "Service and payment terms",
+            refund: "Refund terms",
+            refundDescription: "Payment and credit refunds",
+            privacy: "Data processing policy",
+            privacyDescription: "What data we use and store",
+            consent: "Data processing consent",
+            consentDescription: "Data categories, purposes, and consent withdrawal",
+            seller: "Provider and contacts",
+            sellerDescription: "Business details and contact options",
+            edition: "These documents apply to Dream Wheels AI. Edition dated June 8, 2026.",
         },
         failed: "Failed",
         starter: "Starter grant",
@@ -713,6 +767,14 @@ function resolveFitmentPreviewMode() {
     return params.get("preview") === "fitment";
 }
 
+function loadPhotoConsent() {
+    try {
+        return localStorage.getItem(PHOTO_CONSENT_STORAGE_KEY) === PHOTO_CONSENT_VERSION;
+    } catch (_) {
+        return false;
+    }
+}
+
 function loadWebsiteAuth() {
     try {
         const parsed = JSON.parse(sessionStorage.getItem(WEBSITE_AUTH_STORAGE_KEY) || "null");
@@ -749,6 +811,7 @@ const state = {
     balance: null,
     payments: [],
     starterGrant: null,
+    creditPackages: [],
     walletHistoryOpen: true,
     walletHistoryPage: 0,
     walletBusy: false,
@@ -759,6 +822,7 @@ const state = {
     paymentReturnState: "",
     pendingRefreshTimer: null,
     createScreen: "upload",
+    photoConsentAccepted: loadPhotoConsent(),
     files: { car: null, wheel: null },
     previewUrls: { car: "", wheel: "" },
     identityDraftId: "",
@@ -779,6 +843,8 @@ const state = {
     renderHistoryLoading: false,
     renderHistoryError: "",
     expandedJobId: "",
+    renderDetailJobId: "",
+    renderHistoryVisibleCount: 6,
     fitmentJobId: "",
     fitmentOriginView: "dashboard",
     fitmentOriginJobId: "",
@@ -1326,8 +1392,13 @@ async function loginWithTelegram() {
             username: verified.username || "",
         };
         sessionStorage.setItem(WEBSITE_AUTH_STORAGE_KEY, JSON.stringify(state.websiteAuth));
+        state.renderHistory = [];
+        state.renderHistoryError = "";
+        state.renderHistoryLoading = true;
         updateWebsiteAuthUi();
-        await loadCabinet();
+        renderDashboard();
+        renderRenders();
+        await Promise.all([loadCabinet(), loadRenderHistory()]);
     } catch (error) {
         console.error("[DW] Telegram website login failed", error);
         const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
@@ -1395,8 +1466,21 @@ function creditsForAmount(amount) {
     return 1;
 }
 
+function formatRenderCount(value) {
+    const count = Number(value || 0);
+    if (locale !== "ru") return `${count} ${count === 1 ? "render" : "renders"}`;
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    const noun = mod10 === 1 && mod100 !== 11
+        ? "рендер"
+        : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+          ? "рендера"
+          : "рендеров";
+    return `${count} ${noun}`;
+}
+
 function topUpMeta(credits) {
-    return formatTemplate("wallet.packageMetaDays", { credits });
+    return formatTemplate("wallet.packageMetaDays", { creditsLabel: formatRenderCount(credits) });
 }
 
 function localizeErrorMessage(message) {
@@ -2501,6 +2585,10 @@ async function parseApiError(response) {
 
 function updateTopbarCaption() {
     const caption = document.querySelector("[data-topbar-caption]");
+    if (state.view === "render-detail") {
+        if (caption) caption.textContent = locale === "ru" ? "Детали примерки" : "Try-on details";
+        return;
+    }
     const captionKey = state.view === "photo-guide" ? "photoGuide" : state.view;
     if (caption) caption.textContent = t(`caption.${captionKey}`);
 }
@@ -2524,6 +2612,7 @@ function setMoreOpen(open) {
 }
 
 function setView(view) {
+    const viewChanged = state.view !== view;
     state.view = view;
     if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
@@ -2537,6 +2626,7 @@ function setView(view) {
     updateTopbarCaption();
     setMenuOpen(false);
     setMoreOpen(false);
+    if (viewChanged) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     refreshButtonsForCurrentView();
     if (view === "dashboard") {
         void loadDashboardData({ silent: true });
@@ -2544,6 +2634,8 @@ function setView(view) {
         void loadCabinet({ silent: true });
     } else if (view === "renders") {
         void loadRenderHistory({ silent: true });
+    } else if (view === "render-detail") {
+        renderRenderDetail();
     } else if (view === "fitment") {
         renderFitment();
     }
@@ -2577,6 +2669,7 @@ function setWalletBusy(busy) {
     document.querySelectorAll("[data-topup-amount]").forEach((button) => {
         button.toggleAttribute("disabled", busy);
     });
+    renderConfirmation();
 }
 
 function syncWalletStatusIsland(selector, textSelector, message, tone = "neutral", visible = false) {
@@ -2757,10 +2850,9 @@ function renderWallet() {
 
     if (!history) return;
     const expiryItems = buildRenderExpiryCohorts();
+    document.querySelector("[data-wallet-expiry-section]")?.toggleAttribute("hidden", expiryItems.length === 0);
     if (expiryList) {
-        expiryList.innerHTML = expiryItems.length
-            ? renderExpiryRows(expiryItems)
-            : `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">⏳</span><span>${locale === "ru" ? "Активных пакетов пока нет" : "No active render packages yet"}</span></div>`;
+        expiryList.innerHTML = expiryItems.length ? renderExpiryRows(expiryItems) : "";
     }
     if (expiryNote) {
         const firstCohort = expiryItems[0] || null;
@@ -2828,10 +2920,16 @@ function renderConfirmation() {
         document.createTextNode(
             formatTemplate("wallet.packageSummary", {
                 amount: formatRub(state.selectedAmount),
-                credits,
+                creditsLabel: formatRenderCount(credits),
             })
         )
     );
+    const payButton = document.querySelector("[data-pay-button]");
+    if (payButton) {
+        payButton.textContent = state.walletBusy
+            ? t("wallet.openingPayment")
+            : formatTemplate("wallet.payWithAmount", { amount: formatRub(state.selectedAmount) });
+    }
 }
 
 function syncEmailInput() {
@@ -2916,32 +3014,14 @@ function expiryLabel(value) {
 }
 
 function buildRenderExpiryCohorts() {
-    const cohorts = [];
-    if (state.starterGrant?.credits > 0) {
-        cohorts.push({
-            key: "starter_grant",
-            credits: state.starterGrant.credits,
-            expiresAt: state.starterGrant.expiresAtIso || addDays(state.starterGrant.createdAtIso, 30),
-            meta: locale === "ru"
-                ? `Стартовый пакет — начислено ${formatShortDate(state.starterGrant.createdAtIso)}`
-                : `Starter grant — added ${formatShortDate(state.starterGrant.createdAtIso)}`,
-        });
-    }
-    state.payments
-        .filter((payment) => payment.status === "paid" && Number(payment.credits || 0) > 0)
-        .forEach((payment) => {
-            const paidAt = paymentDateForDisplay(payment);
-            cohorts.push({
-                key: `payment_${payment.invoiceId}`,
-                credits: Number(payment.credits || 0),
-                expiresAt: addDays(paidAt, 30),
-                meta: locale === "ru"
-                    ? `Пакет ${formatRub(payment.amount)} — оплачен ${formatShortDate(paidAt)}`
-                    : `Package ${formatRub(payment.amount)} — paid ${formatShortDate(paidAt)}`,
-            });
-        });
-    return cohorts
-        .filter((item) => item.credits > 0 && item.expiresAt)
+    return state.creditPackages
+        .filter((item) => Number(item.remainingCredits || 0) > 0 && item.expiresAt && Date.parse(item.expiresAt) > Date.now())
+        .map((item) => ({
+            key: item.id || `${item.source}-${item.expiresAt}`,
+            credits: Number(item.remainingCredits),
+            expiresAt: item.expiresAt,
+            meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : "Пакет примерок"),
+        }))
         .sort((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt));
 }
 
@@ -3066,6 +3146,7 @@ async function ensureAssetBlobUrl(job, kind) {
         markAssetBlobLoading(job.job_id, kind, false);
         renderRenders();
         renderDashboard();
+        if (state.view === "render-detail") renderRenderDetail();
     }
 
     return assetBlobUrlForJob(job, kind);
@@ -3211,8 +3292,8 @@ function renderHistoryViewer(job) {
     return `
         <div class="render-viewer">
             <div class="render-segmented" role="tablist" aria-label="Сравнение изображений">
-                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="original" class="${activeView === "original" ? "active" : ""}" aria-selected="${activeView === "original"}" ${originalAvailable ? "" : "disabled"}>Оригинал</button>
-                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="result" class="${activeView === "result" ? "active" : ""}" aria-selected="${activeView === "result"}" ${resultAvailable ? "" : "disabled"}>Результат</button>
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="original" class="${activeView === "original" ? "active" : ""}" aria-selected="${activeView === "original"}" ${originalAvailable ? "" : "disabled"}>До</button>
+                <button type="button" data-history-view="${escapeHtml(job.job_id)}" data-asset-view="result" class="${activeView === "result" ? "active" : ""}" aria-selected="${activeView === "result"}" ${resultAvailable ? "" : "disabled"}>После</button>
             </div>
             <div class="render-asset-frame" data-asset-frame>
                 ${activeAvailable && activeUrl ? `
@@ -3366,11 +3447,9 @@ function renderHistoryCard(job) {
     const guestDemo = isGuestRenderJob(job);
     const resultUrl = assetUrlForJob(job, "result");
     const createdAt = formatDateTime(job.created_at);
-    const expanded = state.expandedJobId === job.job_id;
     const canOpen = status === "completed";
     const hasResult = hasAssetSource(job, "result");
     const hasOriginal = hasAssetSource(job, "original");
-    const canOpenFitment = canOpen && fitmentAvailable(job);
     const summaryText = status === "failed"
         ? "Не удалось создать результат"
         : status === "completed"
@@ -3381,16 +3460,10 @@ function renderHistoryCard(job) {
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
         : canOpen
-          ? `
-                <div class="render-card-buttons">
-                    <button type="button" class="ghost-button compact-button" data-toggle-render="${escapeHtml(job.job_id)}">${expanded ? t("renders.hide") : t("renders.open")}</button>
-                    ${expanded && canOpenFitment ? `<button type="button" class="primary-button compact-button render-fitment-cta" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="renders">${t("fitment.openFromHistory")}</button>` : ""}
-                </div>
-            `
+          ? `<button type="button" class="ghost-button compact-button" data-open-render-detail="${escapeHtml(job.job_id)}">Посмотреть</button>`
           : "";
-    const downloadUrl = hasResult ? downloadUrlForJob(job) : "";
     return `
-        <article class="render-card cabinet-render-card ${expanded ? "is-open" : ""}">
+        <article class="render-card cabinet-render-card">
             <div class="render-summary">
                 <div class="render-thumb-wrap">
                     ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
@@ -3400,7 +3473,7 @@ function renderHistoryCard(job) {
                         <div class="render-title">${escapeHtml(title)}</div>
                         <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
                         ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
-                        ${guestDemo ? `<div class="render-demo-note">Гостевой пример для отладки без входа</div>` : ""}
+                        ${guestDemo ? `<div class="render-demo-note">Гостевой пример</div>` : ""}
                         <div class="render-info-footer">
                             <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
                         </div>
@@ -3408,22 +3481,78 @@ function renderHistoryCard(job) {
                 </div>
                 <div class="render-card-action">${action}</div>
             </div>
-            <div class="render-disclosure" data-visible="${expanded && canOpen ? "true" : "false"}">
-                ${canOpen ? `
-                    <div class="render-detail-grid">
-                        ${renderHistoryViewer(job)}
-                        <div class="render-side">
-                            <div class="render-expanded-actions">
-                                ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>${t("renders.download")}</a>` : ""}
-                                <button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.createAnother")}</button>
-                            </div>
-                            ${renderFeedbackBlock(job)}
-                        </div>
-                    </div>
-                ` : ""}
-            </div>
         </article>
     `;
+}
+
+function renderRenderDetail() {
+    const container = document.querySelector("[data-render-detail]");
+    if (!container) return;
+    const job = state.renderHistory.find((item) => item.job_id === state.renderDetailJobId);
+    if (!job) {
+        container.innerHTML = `<div class="render-empty"><strong>Примерка не найдена</strong><button type="button" class="ghost-button compact-button" data-nav="renders">К истории</button></div>`;
+        return;
+    }
+    const downloadUrl = hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
+    const fitmentAction = fitmentAvailable(job)
+        ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">Проверить, подойдут ли диски</button>`
+        : "";
+    container.innerHTML = `
+        <div class="render-detail-page">
+            <button type="button" class="ghost-button compact-button" data-nav="renders">← К моим примеркам</button>
+            <h2>${escapeHtml(humanRenderTitle(job))}</h2>
+            <p class="meta">${escapeHtml(formatDateTime(job.created_at))}</p>
+            ${renderHistoryViewer(job)}
+            <div class="render-expanded-actions">
+                ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>Скачать результат</a>` : ""}
+                <button type="button" class="ghost-button compact-button" data-share-history-result="${escapeHtml(job.job_id)}">Поделиться</button>
+                ${fitmentAction}
+                <button type="button" class="primary-button compact-button" data-new-tryon>Новая примерка</button>
+                <button type="button" class="ghost-button compact-button" data-repeat-render="${escapeHtml(job.job_id)}">Повторить с этими фото</button>
+            </div>
+            ${renderFeedbackBlock(job)}
+        </div>`;
+}
+
+function openRenderDetail(jobId, originView = "renders") {
+    state.renderDetailJobId = jobId;
+    state.fitmentOriginView = originView;
+    setView("render-detail");
+}
+
+function openBlankTryOn() {
+    resetFlow();
+}
+
+async function repeatRenderWithSavedPhotos(jobId) {
+    const job = state.renderHistory.find((item) => item.job_id === jobId);
+    const car = job?.assets?.car_original;
+    const wheel = job?.assets?.rim_original;
+    if (!car?.download_url || !wheel?.download_url) {
+        setView("create");
+        return;
+    }
+    try {
+        const fetchAsset = async (asset) => {
+            const url = asset.download_url.startsWith("/") ? apiUrl(asset.download_url) : asset.download_url;
+            const response = await fetch(url, { headers: withAuthHeaders() });
+            if (!response.ok) throw new Error(await parseApiError(response));
+            const blob = await response.blob();
+            return { blob, name: `${asset.kind}.jpg`, size: blob.size, type: blob.type || "image/jpeg" };
+        };
+        const [carFile, wheelFile] = await Promise.all([fetchAsset(car), fetchAsset(wheel)]);
+        resetIdentityState();
+        state.files.car = carFile;
+        state.files.wheel = wheelFile;
+        renderPreviewFromFile("car", carFile);
+        renderPreviewFromFile("wheel", wheelFile);
+        setView("create");
+        renderIdentityFlow();
+        void resolveIdentity();
+    } catch (error) {
+        console.error("[DW] Unable to restore saved photos", error);
+        setView("create");
+    }
 }
 
 function renderRenders() {
@@ -3448,7 +3577,15 @@ function renderRenders() {
         `;
         return;
     }
-    container.innerHTML = state.renderHistory.map(renderHistoryCard).join("");
+    const visible = state.renderHistory.slice(0, state.renderHistoryVisibleCount);
+    const groups = new Map();
+    visible.forEach((job) => {
+        const label = new Date(job.created_at).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "long" });
+        groups.set(label, [...(groups.get(label) || []), job]);
+    });
+    container.innerHTML = [...groups.entries()].map(([label, jobs]) => `
+        <section class="render-date-group"><h2>${escapeHtml(label)}</h2>${jobs.map(renderHistoryCard).join("")}</section>`).join("")
+        + (state.renderHistory.length > visible.length ? `<button type="button" class="ghost-button compact-button" data-show-more-renders>Показать ещё</button>` : "");
     scheduleRenderHistoryPolling();
 }
 
@@ -3584,10 +3721,15 @@ function renderDashboard() {
     const latest = state.renderHistory[0] || null;
     const latestCompleted = latest?.status === "completed" && fitmentAvailable(latest);
     if (dashboardPrimaryAction) {
-        dashboardPrimaryAction.textContent = latestCompleted ? "Открыть результат" : "Создать виртуальную примерку";
-        dashboardPrimaryAction.dataset.nav = latestCompleted ? "renders" : "create";
-        if (latestCompleted) dashboardPrimaryAction.dataset.expandLatest = latest.job_id;
-        else delete dashboardPrimaryAction.dataset.expandLatest;
+        dashboardPrimaryAction.textContent = latestCompleted ? "Посмотреть последнюю примерку" : "Начать примерку";
+        if (latestCompleted) {
+            delete dashboardPrimaryAction.dataset.nav;
+            delete dashboardPrimaryAction.dataset.expandLatest;
+            dashboardPrimaryAction.dataset.openRenderDetail = latest.job_id;
+        } else {
+            dashboardPrimaryAction.dataset.nav = "create";
+            delete dashboardPrimaryAction.dataset.openRenderDetail;
+        }
     }
     if (dashboardSecondaryAction) {
         dashboardSecondaryAction.textContent = latestCompleted ? "Создать примерку" : "Мои примерки";
@@ -3621,7 +3763,7 @@ function renderDashboard() {
         const fitmentContext = state.fitmentJobId === latest.job_id && state.fitmentCheck
             ? fitmentDashboardContext(state.fitmentCheck)
             : fitmentAvailable(latest)
-                ? { tone: "neutral", text: "Совместимость: доступна" }
+                ? { tone: "neutral", text: "Совместимость ещё не проверена" }
                 : null;
         latestContent.innerHTML = `
             ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
@@ -3629,7 +3771,7 @@ function renderDashboard() {
             <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
             ${fitmentContext ? `<div class="dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
             <div class="render-card-buttons latest-render-actions">
-                <button type="button" class="primary-button compact-button" data-nav="renders" data-expand-latest="${escapeHtml(latest.job_id)}">Открыть результат</button>
+                <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">Посмотреть последнюю примерку</button>
                 ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
             </div>
         `;
@@ -3660,7 +3802,7 @@ function fitmentDashboardContext(check) {
         unknown: { tone: "warning", text: "Совместимость: нужны данные" },
         failed: { tone: "error", text: "Совместимость: проверка временно недоступна" },
     };
-    return contexts[check?.verdict || check?.execution_status] || { tone: "neutral", text: "Совместимость: доступна" };
+    return contexts[check?.verdict || check?.execution_status] || { tone: "neutral", text: "Совместимость ещё не проверена" };
 }
 
 async function loadRenderHistory({ silent = false } = {}) {
@@ -3757,6 +3899,13 @@ async function loadCabinet({ silent = false } = {}) {
                 expiresAtIso: cabinet.starter_grant.expires_at || "",
             }
             : null;
+        state.creditPackages = (cabinet.credit_packages || []).map((item) => ({
+            id: item.id || "",
+            source: item.source || "purchase",
+            label: item.label || "",
+            remainingCredits: Number(item.remaining_credits || 0),
+            expiresAt: item.expires_at || "",
+        }));
         const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
         if (rememberedEmail && !state.email) {
             state.email = rememberedEmail;
@@ -4189,7 +4338,7 @@ function setMainButton({ text, enabled = true, onClick = null }) {
     const btn = ensureFallbackButton();
     btn.textContent = text;
     btn.disabled = !enabled;
-    btn.hidden = !onClick;
+    btn.hidden = false;
 }
 
 function hideMainButton() {
@@ -4214,6 +4363,28 @@ function setBackButton(onClick) {
     }
 }
 
+function persistPhotoConsent(accepted) {
+    state.photoConsentAccepted = Boolean(accepted);
+    try {
+        if (state.photoConsentAccepted) {
+            localStorage.setItem(PHOTO_CONSENT_STORAGE_KEY, PHOTO_CONSENT_VERSION);
+        } else {
+            localStorage.removeItem(PHOTO_CONSENT_STORAGE_KEY);
+        }
+    } catch (_) {
+        // Consent remains valid for the current session if storage is unavailable.
+    }
+}
+
+function renderPhotoConsent(ready) {
+    const fullCard = document.querySelector("[data-photo-consent]");
+    const compactNote = document.querySelector("[data-photo-consent-compact]");
+    const checkbox = document.querySelector("[data-photo-consent-checkbox]");
+    if (fullCard) fullCard.hidden = !ready || state.photoConsentAccepted;
+    if (compactNote) compactNote.hidden = !ready || !state.photoConsentAccepted;
+    if (checkbox) checkbox.checked = state.photoConsentAccepted;
+}
+
 function refreshButtonsForCurrentView() {
     if (state.view === "fitment") {
         hideMainButton();
@@ -4231,12 +4402,14 @@ function refreshButtonsForCurrentView() {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
         const hasProposal = Boolean(state.identityProposal);
         const selectedVehicle = selectedVehicleCandidate();
-        const disabled = !ready || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
+        renderPhotoConsent(ready);
+        const consentMissing = ready && !state.photoConsentAccepted;
+        const disabled = !ready || consentMissing || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
-            text: hasProposal ? t("create.createRender") : t("create.detectIdentity"),
+            text: hasProposal ? `Создать примерку · 1 примерка${state.balance !== null ? ` · останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
             enabled: !disabled,
-            onClick: !disabled ? (hasProposal ? submitJob : resolveIdentity) : null,
+            onClick: !disabled && hasProposal ? submitJob : null,
         });
         return;
     }
@@ -4442,6 +4615,11 @@ function makeIdempotencyKey() {
 
 async function resolveIdentity() {
     if (state.identityResolving || state.submitting) return;
+    if (!state.photoConsentAccepted) {
+        renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+        refreshButtonsForCurrentView();
+        return;
+    }
     if (!state.files.car?.blob || !state.files.wheel?.blob) {
         await hydrateFilesFromDraft();
     }
@@ -4535,24 +4713,11 @@ async function submitJob() {
     const errorBlock = document.querySelector("[data-error]");
     const statusText = document.querySelector("[data-status-text]");
     const statusSub = document.querySelector("[data-status-sub]");
-    const statusDebug = document.querySelector("[data-status-debug]");
     const resultImg = document.querySelector("[data-result-img]");
     const errorText = document.querySelector("[data-error-text]");
     const errorTitle = document.querySelector("[data-error-title]");
     const errorCopy = document.querySelector("[data-error-copy]");
     const errorAction = document.querySelector("[data-error-action]");
-    const debugLines = [];
-
-    function pushDebug(label, extra = null) {
-        const line = extra ? `${label}: ${extra}` : label;
-        debugLines.push(line);
-        console.log("[DW]", line);
-        if (statusDebug) {
-            statusDebug.hidden = false;
-            statusDebug.textContent = debugLines.join("\n");
-        }
-    }
-
     function showError(message) {
         state.submitting = false;
         if (statusBlock) statusBlock.hidden = true;
@@ -4567,7 +4732,6 @@ async function submitJob() {
             errorAction.dataset.generationErrorAction = errorState.action;
         }
         refreshButtonsForCurrentView();
-        pushDebug("showError", message);
         haptic("error");
         if (state.jobId) void loadRenderHistory({ silent: true });
     }
@@ -4575,26 +4739,8 @@ async function submitJob() {
     if (statusBlock) statusBlock.hidden = false;
     if (resultBlock) resultBlock.hidden = true;
     if (errorBlock) errorBlock.hidden = true;
-    if (statusText) statusText.textContent = t("status.startingServer");
-    if (statusSub) statusSub.textContent = t("status.coldStart");
-    if (statusDebug) {
-        statusDebug.hidden = true;
-        statusDebug.textContent = "";
-    }
-
-    pushDebug("submit:start");
-    pushDebug("api:base", state.apiBaseUrl);
-
-    try {
-        pushDebug("health:request");
-        await fetch(apiUrl("/health"), { method: "GET" });
-        pushDebug("health:ok");
-    } catch {
-        pushDebug("health:fail");
-    }
-
-    if (statusText) statusText.textContent = t("status.creating");
-    if (statusSub) statusSub.textContent = t("status.upTo90");
+    if (statusText) statusText.textContent = "Подготавливаем примерку";
+    if (statusSub) statusSub.textContent = "Это обычно занимает 1–2 минуты";
 
     const selectedVehicle = selectedVehicleCandidate();
     const rim = selectedRimProposal();
@@ -4614,18 +4760,13 @@ async function submitJob() {
     };
     if (identity.init_data) payload.init_data = identity.init_data;
     if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
-    pushDebug("create:key", idempotencyKey);
-
     try {
-        pushDebug("create:request");
         const resp = await fetch(apiUrl("/jobs/from-assets"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
         });
-        pushDebug("create:response", `status=${resp.status}`);
         const data = await resp.json().catch(() => ({}));
-        pushDebug("create:body", JSON.stringify(data));
         if (!resp.ok) {
             const detail = Array.isArray(data.detail)
                 ? data.detail.map((entry) => entry.msg).join("; ")
@@ -4633,29 +4774,24 @@ async function submitJob() {
             throw new Error(detail);
         }
         state.jobId = data.job_id;
-        pushDebug("create:job", state.jobId);
     } catch (error) {
         showError(error.message);
         return;
     }
 
-    if (statusText) statusText.textContent = t("status.generating");
-    pushDebug("poll:start");
+    if (statusText) statusText.textContent = "Примеряем диски";
 
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
         await sleep(POLL_INTERVAL_MS);
         let statusData;
         try {
-            pushDebug("poll:request", state.jobId);
             const response = await fetch(
                 apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
             statusData = await response.json();
-            pushDebug("poll:response", JSON.stringify(statusData));
         } catch {
-            pushDebug("poll:network-fail");
             continue;
         }
 
@@ -4667,22 +4803,8 @@ async function submitJob() {
             });
             state.resultFileName = `dream-wheels-${state.jobId}.jpg`;
             if (statusBlock) statusBlock.hidden = true;
-            if (resultBlock) resultBlock.hidden = false;
-            if (resultImg && statusData.result_url) {
-                resultImg.src = statusData.result_url;
-                resultImg.hidden = false;
-            }
-            document.querySelector("[data-download-result]")?.toggleAttribute("hidden", !state.resultDownloadUrl);
-            document.querySelector("[data-share-result]")?.toggleAttribute("hidden", !state.resultUrl);
-            document.querySelector("[data-open-fitment-result]")?.toggleAttribute(
-                "hidden",
-                !fitmentAvailable(statusData)
-            );
-            setDownloadButtonState();
-            setShareButtonState();
-            refreshButtonsForCurrentView();
-            void loadRenderHistory({ silent: true });
-            pushDebug("poll:completed");
+            if (resultBlock) resultBlock.hidden = true;
+            void loadRenderHistory({ silent: true }).then(() => openRenderDetail(state.jobId, "create"));
             haptic("success");
             return;
         }
@@ -4693,8 +4815,41 @@ async function submitJob() {
         }
     }
 
-    pushDebug("poll:timeout");
-    showError(t("errors.timeout"));
+    state.submitting = false;
+    if (statusBlock) statusBlock.hidden = true;
+    if (resultBlock) resultBlock.hidden = true;
+    if (errorBlock) errorBlock.hidden = false;
+    if (errorText) errorText.textContent = "Примерка всё ещё создаётся";
+    if (errorTitle) errorTitle.textContent = "Примерка всё ещё создаётся";
+    if (errorCopy) errorCopy.textContent = "Мы продолжаем обрабатывать фото. Результат появится в «Моих примерках».";
+    if (errorAction) {
+        errorAction.textContent = "Обновить статус";
+        errorAction.dataset.generationErrorAction = "refresh-job";
+    }
+    refreshButtonsForCurrentView();
+    void loadRenderHistory({ silent: true });
+}
+
+async function refreshExistingJobStatus() {
+    if (!state.jobId) {
+        setView("renders");
+        return;
+    }
+    const response = await fetch(apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }), {
+        headers: withAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.status === "failed") {
+        void loadRenderHistory({ silent: true });
+        setView("renders");
+        return;
+    }
+    if (data.status !== "completed") {
+        void loadRenderHistory({ silent: true });
+        setView("renders");
+        return;
+    }
+    void loadRenderHistory({ silent: true }).then(() => openRenderDetail(state.jobId, "create"));
 }
 
 function classifyGenerationError(message) {
@@ -4727,8 +4882,26 @@ function handleFileSelected(kind, file) {
         renderPreviewFromFile(kind, state.files[kind]);
         renderIdentityFlow();
         refreshButtonsForCurrentView();
+        if (state.files.car?.blob && state.files.wheel?.blob && state.photoConsentAccepted) {
+            void resolveIdentity();
+        }
     });
     haptic("light");
+}
+
+function clearSelectedFile(kind) {
+    state.files[kind] = null;
+    if (kind === "wheel") state.rimProductUrl = "";
+    resetIdentityState();
+    revokePreviewUrl(kind);
+    resetPreviewGeometry(kind);
+    void deleteDraftFile(kind);
+    const input = document.querySelector(`input[data-input="${kind}"]`);
+    if (input) input.value = "";
+    document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
+    document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
+    renderIdentityFlow();
+    refreshButtonsForCurrentView();
 }
 
 function bindEvents() {
@@ -4762,8 +4935,29 @@ function bindEvents() {
 
     document.querySelectorAll("[data-nav]").forEach((button) => {
         button.addEventListener("click", (event) => {
+            if (!button.dataset.nav) return;
             event.stopPropagation();
             setView(button.dataset.nav);
+        });
+    });
+
+    document.querySelectorAll("[data-external-link]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            openExternal(link.href);
+        });
+    });
+
+    document.querySelectorAll("[data-telegram-link]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            if (HAS_TG && typeof tg?.openTelegramLink === "function") {
+                tg.openTelegramLink(link.href);
+                return;
+            }
+            openExternal(link.href);
         });
     });
 
@@ -4816,21 +5010,25 @@ function bindEvents() {
         });
     });
 
+    document.querySelector("[data-photo-consent-checkbox]")?.addEventListener("change", (event) => {
+        persistPhotoConsent(event.target.checked);
+        renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+        refreshButtonsForCurrentView();
+        if (event.target.checked && state.files.car?.blob && state.files.wheel?.blob && !state.identityProposal) {
+            void resolveIdentity();
+        }
+        haptic(event.target.checked ? "success" : "light");
+    });
+
+    document.querySelector("[data-photo-consent-cancel]")?.addEventListener("click", () => {
+        clearSelectedFile("car");
+        clearSelectedFile("wheel");
+        document.querySelector('[data-input="car"]')?.click();
+    });
+
     document.querySelectorAll("[data-clear]").forEach((button) => {
         button.addEventListener("click", () => {
-            const kind = button.dataset.clear;
-            state.files[kind] = null;
-            if (kind === "wheel") state.rimProductUrl = "";
-            resetIdentityState();
-            revokePreviewUrl(kind);
-            resetPreviewGeometry(kind);
-            void deleteDraftFile(kind);
-            const input = document.querySelector(`input[data-input="${kind}"]`);
-            if (input) input.value = "";
-            document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
-            document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
-            renderIdentityFlow();
-            refreshButtonsForCurrentView();
+            clearSelectedFile(button.dataset.clear);
         });
     });
 
@@ -4845,6 +5043,10 @@ function bindEvents() {
         if (action === "car" || action === "wheel") {
             showCreateScreen("upload");
             document.querySelector(`[data-input="${action}"]`)?.click();
+            return;
+        }
+        if (action === "refresh-job") {
+            void refreshExistingJobStatus();
             return;
         }
         void submitJob();
@@ -4925,6 +5127,39 @@ function bindEvents() {
             return;
         }
 
+        const openRenderDetailButton = event.target.closest("[data-open-render-detail]");
+        if (openRenderDetailButton) {
+            openRenderDetail(openRenderDetailButton.dataset.openRenderDetail);
+            return;
+        }
+
+        if (event.target.closest("[data-new-tryon]")) {
+            openBlankTryOn();
+            return;
+        }
+
+        const showMoreRendersButton = event.target.closest("[data-show-more-renders]");
+        if (showMoreRendersButton) {
+            state.renderHistoryVisibleCount += 6;
+            renderRenders();
+            return;
+        }
+
+        const shareHistoryResult = event.target.closest("[data-share-history-result]");
+        if (shareHistoryResult) {
+            const job = state.renderHistory.find((item) => item.job_id === shareHistoryResult.dataset.shareHistoryResult);
+            if (!job) return;
+            state.resultUrl = assetUrlForJob(job, "result");
+            void shareResult();
+            return;
+        }
+
+        const repeatRenderButton = event.target.closest("[data-repeat-render]");
+        if (repeatRenderButton) {
+            void repeatRenderWithSavedPhotos(repeatRenderButton.dataset.repeatRender);
+            return;
+        }
+
         const fitmentButton = event.target.closest("[data-open-fitment]");
         if (fitmentButton) {
             void openFitmentView(fitmentButton.dataset.openFitment, {
@@ -4967,6 +5202,7 @@ function bindEvents() {
             if (HISTORY_ASSET_VIEWS.includes(assetView)) {
                 state.renderAssetViewByJob[jobId] = assetView;
                 renderRenders();
+                if (state.view === "render-detail") renderRenderDetail();
             }
             return;
         }
