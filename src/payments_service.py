@@ -4,13 +4,14 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 import asyncpg
 
 from src.config import (
+    PURCHASE_GRANT_TTL_DAYS,
     ROBOKASSA_HASH_ALGO,
     ROBOKASSA_IS_TEST,
     ROBOKASSA_MERCHANT_LOGIN,
@@ -21,7 +22,7 @@ from src.config import (
     ROBOKASSA_TEST_PASSWORD2,
     STARTER_GRANT_TTL_DAYS,
 )
-from src.credits_service import ensure_credit_account
+from src.credits_service import create_credit_package, ensure_credit_account
 from src.payments.providers.robokassa import (
     RobokassaConfig,
     RobokassaPaymentProvider,
@@ -434,6 +435,15 @@ async def mark_payment_paid(
         invoice_id,
         out_sum,
         is_test,
+    )
+    await create_credit_package(
+        conn,
+        user_id=int(row["user_id"]),
+        source="purchase",
+        credits=credits_granted,
+        expires_at=datetime.now(UTC) + timedelta(days=PURCHASE_GRANT_TTL_DAYS),
+        related_payment_id=str(row["id"]),
+        idempotency_key=f"payment_package:{invoice_id}",
     )
     await conn.execute(
         """

@@ -12,7 +12,7 @@ from pydantic import BaseModel, field_validator
 from src import db
 from src.auth import resolve_telegram_auth
 from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST
-from src.credits_service import get_balance
+from src.credits_service import get_balance, list_credit_packages
 from src.payments_service import (
     PaymentConfigError,
     PaymentNotFoundError,
@@ -86,14 +86,12 @@ async def get_payment_cabinet(
             balance = await get_balance(conn, user_id)
             payments = await list_payments_for_user(conn, user_id=user_id)
             starter_grant = await get_starter_grant_for_user(conn, user_id=user_id)
-    # Per-package remaining balance is intentionally not reconstructed from invoices:
-    # purchases and reserves must be allocated atomically by the ledger service first.
-    # Until that contract is rolled out, the client only receives the reliable total.
+            credit_packages = await list_credit_packages(conn, user_id=user_id)
     return {
         "balance": balance,
         "payments": payments,
         "starter_grant": starter_grant,
-        "credit_packages": [],
+        "credit_packages": credit_packages,
     }
 
 
