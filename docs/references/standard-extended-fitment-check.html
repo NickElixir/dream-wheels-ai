@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dream Wheels AI — Стандартная и расширенная проверка</title>
+    <style>
+      :root {
+        --bg: #070809;
+        --panel: #161a22;
+        --panel-2: #1b2029;
+        --panel-3: #202631;
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #eef2f6;
+        --muted: #a3adba;
+        --subtle: #7e8896;
+        --acid: #ddff00;
+        --good: #27d88a;
+        --warn: #ffcc56;
+        --bad: #ff7474;
+        --info: #74b9ff;
+        --r-xl: 28px;
+        --r-lg: 22px;
+        --r-md: 16px;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 78% -8%, rgba(72, 84, 25, 0.22), transparent 31%),
+          var(--bg);
+        font: 15px/1.48 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+      }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      button:focus-visible, input:focus-visible {
+        outline: 3px solid rgba(221, 255, 0, 0.35);
+        outline-offset: 3px;
+      }
+      .shell { min-height: 100vh; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+      .sidebar {
+        position: sticky; top: 0; height: 100vh; padding: 30px 22px;
+        display: flex; flex-direction: column; gap: 25px;
+        border-right: 1px solid var(--line); background: rgba(14, 17, 22, 0.96);
+      }
+      .brand { font-size: 16px; font-weight: 900; letter-spacing: 0.24em; white-space: nowrap; }
+      .brand b { color: var(--acid); }
+      .nav-label, .eyebrow, .group-title {
+        color: var(--subtle); font-size: 11px; font-weight: 900;
+        letter-spacing: 0.16em; text-transform: uppercase;
+      }
+      .nav { display: grid; gap: 8px; }
+      .nav button {
+        border: 0; border-radius: 16px; padding: 13px 14px;
+        background: transparent; color: var(--muted); font-weight: 800; text-align: left;
+      }
+      .nav button.active { color: var(--acid); background: rgba(221, 255, 0, 0.09); box-shadow: inset 3px 0 var(--acid); }
+      .profile { margin-top: auto; padding: 14px; border: 1px solid var(--line); border-radius: 20px; color: var(--muted); }
+      .profile strong { display: block; color: var(--text); }
+      main { width: min(100%, 1160px); margin: 0 auto; padding: 32px 28px 100px; min-width: 0; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 24px; }
+      .topbar h1 { margin: 0; color: var(--muted); font-size: 18px; }
+      .button, .outline-button, .ghost-button, .state-tab {
+        min-width: 0; border: 1px solid var(--line); border-radius: 18px; font-weight: 850;
+      }
+      .button { min-height: 48px; padding: 12px 18px; color: #151811; background: var(--acid); border-color: var(--acid); }
+      .outline-button { min-height: 48px; padding: 12px 18px; color: var(--text); background: rgba(255,255,255,.025); }
+      .ghost-button { min-height: 44px; padding: 10px 14px; color: var(--muted); background: transparent; }
+      .contract {
+        margin: 0 0 18px; padding: 14px 16px; border: 1px dashed rgba(255, 204, 86, 0.36);
+        border-radius: var(--r-md); color: #f1d785; background: rgba(255, 204, 86, 0.07);
+      }
+      .state-tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding: 2px 0 12px; margin-bottom: 18px; }
+      .state-tab { flex: 0 0 auto; padding: 9px 12px; color: var(--muted); background: var(--panel); }
+      .state-tab.active { color: var(--acid); border-color: rgba(221, 255, 0, 0.45); background: rgba(221, 255, 0, 0.08); }
+      .screen { display: none; animation: reveal 0.18s ease-out; }
+      .screen.active { display: block; }
+      @keyframes reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+      .hero, .panel, .island {
+        min-width: 0; border: 1px solid var(--line); border-radius: var(--r-xl);
+        background: linear-gradient(145deg, var(--panel-2), var(--panel));
+      }
+      .hero { padding: 30px; margin-bottom: 18px; }
+      .hero h2 { max-width: 780px; margin: 7px 0 12px; font-size: clamp(30px, 4vw, 48px); line-height: 1.06; letter-spacing: -0.045em; }
+      .hero p, .muted { margin: 0; color: var(--muted); }
+      .grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(280px, .82fr); gap: 18px; }
+      .panel { padding: 24px; }
+      .panel h2 { margin: 7px 0 8px; font-size: 28px; line-height: 1.1; letter-spacing: -0.035em; }
+      .panel h3 { margin: 4px 0 6px; font-size: 18px; }
+      .summary { display: grid; gap: 10px; margin-top: 18px; }
+      .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+      .row:last-child { border-bottom: 0; }
+      .row span { color: var(--muted); }
+      .row b { text-align: right; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+      .actions .button, .actions .outline-button { flex: 1 1 210px; }
+      .notice { margin-top: 16px; padding: 15px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,.025); }
+      .notice.good { border-color: rgba(39, 216, 138, .34); background: rgba(39, 216, 138, .07); }
+      .notice.warn { border-color: rgba(255, 204, 86, .34); background: rgba(255, 204, 86, .07); }
+      .notice.bad { border-color: rgba(255, 116, 116, .38); background: rgba(255, 116, 116, .07); }
+      .notice.info { border-color: rgba(116, 185, 255, .34); background: rgba(116, 185, 255, .07); }
+      .notice p { margin: 4px 0 0; color: var(--muted); }
+      .status { display: inline-flex; width: fit-content; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 900; }
+      .status.good { color: var(--good); border-color: rgba(39,216,138,.36); background: rgba(39,216,138,.08); }
+      .status.warn { color: var(--warn); border-color: rgba(255,204,86,.36); background: rgba(255,204,86,.08); }
+      .status.bad { color: #ff9696; border-color: rgba(255,116,116,.38); background: rgba(255,116,116,.08); }
+      .status.info { color: #a9d3ff; border-color: rgba(116,185,255,.36); background: rgba(116,185,255,.08); }
+      .flow { display: grid; gap: 0; margin-top: 18px; }
+      .flow-step { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding-bottom: 19px; }
+      .flow-step:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 30px; bottom: 3px; width: 2px; background: var(--line); }
+      .step-icon { z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); font-weight: 900; }
+      .flow-step.done .step-icon { color: #141810; border-color: var(--good); background: var(--good); }
+      .flow-step.current .step-icon { color: #141810; border-color: var(--acid); background: var(--acid); box-shadow: 0 0 0 6px rgba(221,255,0,.08); }
+      .flow-step strong { display: block; }
+      .flow-step small { color: var(--muted); }
+      .field { margin-top: 14px; }
+      .field label { display: block; margin-bottom: 7px; color: var(--muted); font-weight: 800; }
+      .field input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-radius: 15px; color: var(--text); background: var(--panel-3); }
+      .option { width: 100%; margin-top: 10px; padding: 15px; border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); background: rgba(255,255,255,.025); text-align: left; }
+      .option.selected { border-color: rgba(221,255,0,.5); background: rgba(221,255,0,.07); }
+      .option span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
+      .upload-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+      .upload-preview { overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: #11151b; }
+      .upload-preview svg { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; }
+      .upload-preview figcaption { padding: 10px 12px 12px; color: var(--muted); font-weight: 800; }
+      .groups { display: grid; gap: 12px; margin-top: 18px; }
+      .group { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(255,255,255,.022); }
+      .group.blocking { border-color: rgba(255,116,116,.34); background: rgba(255,116,116,.055); }
+      .group.conditions { border-color: rgba(255,204,86,.34); background: rgba(255,204,86,.055); }
+      .group.advisories { border-color: rgba(116,185,255,.27); background: rgba(116,185,255,.045); }
+      .group-title { margin-bottom: 9px; }
+      .group.blocking .group-title { color: #ff9d9d; }
+      .group.conditions .group-title { color: var(--warn); }
+      .group.advisories .group-title { color: #a9d3ff; }
+      .item { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 9px; padding: 8px 0; }
+      .item + .item { border-top: 1px solid var(--line); }
+      .item i { font-style: normal; font-weight: 900; }
+      .item small { display: block; margin-top: 2px; color: var(--muted); }
+      .metric { margin-top: 18px; padding: 17px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(0,0,0,.12); }
+      .bar { position: relative; height: 9px; margin: 16px 0 9px; border-radius: 99px; background: #0d1116; }
+      .bar-range { position: absolute; left: 26%; width: 48%; height: 100%; border-radius: 99px; background: var(--good); }
+      .bar-marker { position: absolute; left: 61%; top: 50%; width: 16px; height: 16px; transform: translate(-50%,-50%); border: 3px solid var(--panel); border-radius: 50%; background: var(--acid); }
+      .bar-marker.outside { left: 86%; background: var(--warn); }
+      .disclaimer { margin-top: 16px; color: var(--muted); font-size: 13px; }
+      .reference-note { margin-top: 18px; padding: 14px; border-left: 3px solid var(--warn); border-radius: 10px; color: var(--muted); background: rgba(255,204,86,.05); }
+      .mobile-nav { display: none; }
+
+      @media (max-width: 820px) {
+        .shell { display: block; }
+        .sidebar { display: none; }
+        main { padding: 20px 16px 104px; }
+        .topbar { margin-bottom: 18px; }
+        .topbar h1 { font-size: 15px; }
+        .grid { grid-template-columns: 1fr; }
+        .hero, .panel { padding: 18px; border-radius: 24px; }
+        .hero h2 { font-size: clamp(29px, 9vw, 42px); }
+        .panel h2 { font-size: 25px; }
+        .row { gap: 10px; }
+        .row b { max-width: 55%; }
+        .actions { display: grid; grid-template-columns: 1fr; }
+        .actions .button, .actions .outline-button { width: 100%; }
+        .upload-preview-grid { grid-template-columns: 1fr; }
+        .mobile-nav {
+          position: fixed; inset: auto 10px 10px; z-index: 5; display: grid; grid-template-columns: repeat(5, 1fr);
+          padding: 7px; border: 1px solid var(--line); border-radius: 22px;
+          background: rgba(17,20,26,.96); backdrop-filter: blur(14px);
+        }
+        .mobile-nav span { min-width: 0; padding: 10px 2px; overflow: hidden; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; text-overflow: ellipsis; }
+        .mobile-nav span.active { color: var(--acid); background: rgba(221,255,0,.08); border-radius: 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .screen { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <!--
+      REFERENCE ONLY.
+      This file is a visual and interaction contract, not a runtime source.
+      Mock values and JavaScript must never be used as provider evidence or production data.
+    -->
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><b>DREAM</b>WHEELS AI</div>
+        <div class="nav-label">Основное</div>
+        <nav class="nav" aria-label="Навигация макета">
+          <button>Главная</button><button class="active">Примерить диски</button><button>Мои примерки</button><button>Баланс</button>
+        </nav>
+        <div class="nav-label">Помощь</div>
+        <nav class="nav"><button>Поддержка</button><button>Как подготовить фото</button><button>Документы</button></nav>
+        <div class="profile"><strong>Dream Wheels</strong>Предварительный макет</div>
+      </aside>
+
+      <main>
+        <header class="topbar"><h1>Стандартная и расширенная проверка</h1><button class="outline-button">Войти через Telegram</button></header>
+        <p class="contract">Макет для согласования интерфейса и контракта данных. Все значения демонстрационные; интерфейс получает отдельные причины, условия, рекомендации и статус источников данных от серверной части.</p>
+        <nav class="state-tabs" aria-label="Состояния проверки">
+          <button class="state-tab active" data-screen="upload">Загрузка</button>
+          <button class="state-tab" data-screen="preparing">Подготовка</button>
+          <button class="state-tab" data-screen="confirm">Подтверждение</button>
+          <button class="state-tab" data-screen="ready">Готово</button>
+          <button class="state-tab" data-screen="checking">Стандартная</button>
+          <button class="state-tab" data-screen="compatible">Совместимо</button>
+          <button class="state-tab" data-screen="conditional">С условиями</button>
+          <button class="state-tab" data-screen="incompatible">Несовместимо</button>
+          <button class="state-tab" data-screen="unknown">Недостаточно данных</button>
+          <button class="state-tab" data-screen="failure">Сбой</button>
+          <button class="state-tab" data-screen="extended-offer">Расширенная</button>
+          <button class="state-tab" data-screen="extended-progress">Расширенная в работе</button>
+          <button class="state-tab" data-screen="extended-result">Расширенный результат</button>
+          <button class="state-tab" data-screen="stale">Данные изменились</button>
+        </nav>
+
+        <section class="screen active" id="upload">
+          <section class="hero"><div class="eyebrow">Создание</div><h2>Загрузите фото автомобиля и диска</h2><p>Ссылка на товар необязательна. Она сохранится вместе с примеркой и поможет уточнить параметры после рендера.</p></section>
+          <div class="grid">
+            <article class="panel"><span class="status good">Фото загружены</span><div class="upload-preview-grid"><figure class="upload-preview"><svg viewBox="0 0 400 300" role="img" aria-label="Превью фото автомобиля"><defs><linearGradient id="car-bg" x1="0" x2="1"><stop stop-color="#52616d"/><stop offset="1" stop-color="#1d2730"/></linearGradient></defs><rect width="400" height="300" fill="url(#car-bg)"/><path d="M78 210h246l-12-44-55-40H151l-42 40z" fill="#151c24" stroke="#a6b3c0" stroke-width="5"/><path d="M159 130h92l45 36H112z" fill="#273a48" stroke="#a6b3c0" stroke-width="4"/><circle cx="144" cy="214" r="31" fill="#090b0e" stroke="#b9c5cf" stroke-width="8"/><circle cx="273" cy="214" r="31" fill="#090b0e" stroke="#b9c5cf" stroke-width="8"/><rect x="22" y="22" width="122" height="29" rx="14" fill="rgba(7,8,9,.65)"/><text x="38" y="42" fill="#eef2f6" font-family="system-ui" font-size="15" font-weight="700">Автомобиль</text></svg><figcaption>Фото автомобиля</figcaption></figure><figure class="upload-preview"><svg viewBox="0 0 400 300" role="img" aria-label="Превью фото диска"><rect width="400" height="300" fill="#f0f2f4"/><circle cx="200" cy="150" r="102" fill="#202833" stroke="#101419" stroke-width="16"/><circle cx="200" cy="150" r="32" fill="#9ba5ae" stroke="#4c5965" stroke-width="11"/><g stroke="#aeb8c0" stroke-width="16" stroke-linecap="round"><path d="M200 118L200 56"/><path d="M229 132l52-31"/><path d="M229 168l52 31"/><path d="M200 182v62"/><path d="M171 168l-52 31"/><path d="M171 132l-52-31"/></g><rect x="22" y="22" width="92" height="29" rx="14" fill="rgba(7,8,9,.65)"/><text x="38" y="42" fill="#eef2f6" font-family="system-ui" font-size="15" font-weight="700">Диск</text></svg><figcaption>Фото колесного диска</figcaption></figure></div><div class="field"><label>Ссылка на товар с диском необязательно</label><input value="https://example.test/wheel" aria-label="Ссылка на товар" /></div><div class="actions"><button class="button">Продолжить</button></div></article>
+            <aside class="panel"><div class="eyebrow">Что произойдёт дальше</div><h2>Сначала подготовим данные</h2><p class="muted">Распознаем автомобиль, сохраним источник диска и предложим проверить найденные значения до технической проверки.</p><div class="notice warn"><strong>Визуальная примерка не подтверждает техническую совместимость</strong></div></aside>
+          </div>
+        </section>
+
+        <section class="screen" id="preparing">
+          <section class="hero"><div class="eyebrow">Подготовка данных</div><h2>Готовим данные для примерки</h2><p>Пользователь видит один понятный процесс вместо нескольких несвязанных запросов.</p></section>
+          <div class="grid"><article class="panel"><span class="status info">В процессе</span><div class="flow"><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Фото сохранены</strong><small>Оригиналы доступны для рендера</small></div></div><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Автомобиль распознан</strong><small>BMW 5 series · оценка распознавания 78%</small></div></div><div class="flow-step current"><span class="step-icon">3</span><div><strong>Извлекаем параметры диска</strong><small>Источник сохранён, форма пока недоступна</small></div></div><div class="flow-step"><span class="step-icon">4</span><div><strong>Проверьте найденные значения</strong><small>Продолжим после вашего подтверждения</small></div></div></div></article><aside class="panel"><div class="eyebrow">Следующий шаг</div><h2>Подтверждение данных</h2><p class="muted">Оценка распознавания помогает сориентироваться, но перед примеркой данные автомобиля нужно подтвердить.</p></aside></div>
+        </section>
+
+        <section class="screen" id="confirm">
+          <section class="hero"><div class="eyebrow">Проверьте данные</div><h2>Выберите точную версию автомобиля</h2><p>Параметры диска остаются черновиком, пока пользователь их не подтвердит.</p></section>
+          <div class="grid"><article class="panel"><div class="eyebrow">Автомобиль</div><h2>BMW 5 series</h2><button class="option selected"><b>520i xDrive</b><span>2020 / G30 LCI / рынок Европы</span></button><button class="option"><b>530i xDrive</b><span>2020 / G30 LCI / рынок Европы</span></button><button class="option"><b>520i</b><span>2020 / G30 LCI / рынок России</span></button><div class="notice warn"><strong>Нужно подтвердить рынок и комплектацию</strong><p>Заводские размеры могут различаться.</p></div></article><article class="panel"><div class="eyebrow">Колесный диск</div><h2>Проверьте найденные значения</h2><div class="summary"><div class="row"><span>Размер</span><b>20&quot; / 8,5J</b></div><div class="row"><span>PCD</span><b>5×112</b></div><div class="row"><span>ET</span><b>ET30</b></div><div class="row"><span>DIA</span><b>66,6 мм</b></div></div><div class="notice info"><strong>Найдено по ссылке на товар</strong><p>Сверьте значения с карточкой продавца.</p></div><div class="actions"><button class="button">Подтвердить данные</button><button class="outline-button">Исправить</button></div></article></div>
+        </section>
+
+        <section class="screen" id="ready">
+          <section class="hero"><div class="eyebrow">Проверка совместимости</div><h2>Данные готовы к стандартной проверке</h2><p>До запуска показываем, какие данные будут проверены и где проходит граница результата.</p></section>
+          <div class="grid"><article class="panel"><span class="status good">Готово к проверке</span><div class="summary"><div class="row"><span>Автомобиль</span><b>BMW 520i xDrive / 2020 / G30 LCI</b></div><div class="row"><span>Колесный диск</span><b>20&quot; / 8,5J / 5×112 / ET30</b></div></div><div class="notice warn"><strong>Проверка относится к автомобилю в заводской конфигурации</strong><p>Изменения подвески, тормозов, ступиц, кузова и проставки не учитываются.</p></div><div class="actions"><button class="button">Проверить совместимость</button><button class="outline-button">Создать без проверки</button></div></article><aside class="panel"><div class="eyebrow">Стандартная проверка</div><h2>Что проверим</h2><div class="summary"><div class="row"><span>Крепление</span><b>Разболтовка (PCD)</b></div><div class="row"><span>Ступица</span><b>Центральное отверстие (DIA)</b></div><div class="row"><span>Геометрия</span><b>Размер и вылет (ET)</b></div></div><p class="disclaimer">Рейтинг нагрузки и тип крепежа не мешают получить предварительный результат, но их стоит проверить перед установкой.</p></aside></div>
+        </section>
+
+        <section class="screen" id="checking">
+          <section class="hero"><div class="eyebrow">Стандартная проверка</div><h2>Проверяем совместимость</h2><p>Техническая проверка не блокирует уже запущенный визуальный рендер.</p></section>
+          <div class="grid"><article class="panel"><span class="status info">Обычно до минуты</span><div class="flow"><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Данные подтверждены</strong><small>Версии автомобиля и диска сохранены</small></div></div><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Заводские параметры получены</strong><small>Источник и версия данных зафиксированы</small></div></div><div class="flow-step current"><span class="step-icon">3</span><div><strong>Сравниваем параметры</strong><small>PCD, DIA, размер и ET</small></div></div></div></article><aside class="panel"><h2>Можно продолжить</h2><p class="muted">Когда результат будет готов, он появится в этой карточке и сохранится в истории проверки.</p><div class="actions"><button class="outline-button">Вернуться к рендеру</button></div></aside></div>
+        </section>
+
+        <section class="screen" id="compatible">
+          <section class="hero"><div class="eyebrow">Результат стандартной проверки</div><h2>Предварительно совместимо</h2><p>Подтверждённые технические параметры не содержат известных конфликтов.</p></section>
+          <div class="grid"><article class="panel"><span class="status good">Предварительно совместимо</span><div class="metric"><div class="row"><span>Расчётный диапазон ET</span><b>ET35–45</b></div><div class="bar"><span class="bar-range"></span><span class="bar-marker"></span></div><small class="muted">ET колесного диска: ET42</small></div><div class="groups"><div class="group conditions"><div class="group-title">Условия установки</div><div class="item"><i>✓</i><div><b>Потребуется центровочное кольцо 66,6 → 66,5 мм</b><small>Наличие подходящего кольца пользователь проверяет отдельно</small></div></div></div><div class="group advisories"><div class="group-title">Обратите внимание</div><div class="item"><i>i</i><div>Рейтинг нагрузки не подтверждён — это не влияет на предварительный результат</div></div></div></div></article><aside class="panel"><h2>Что дальше</h2><p class="muted">Результат не является гарантией установки. Перед монтажом проверьте крепёж и фактические зазоры.</p><div class="actions"><button class="button">Открыть рендер</button></div></aside></div>
+        </section>
+
+        <section class="screen" id="conditional">
+          <section class="hero"><div class="eyebrow">Результат стандартной проверки</div><h2>Совместимо с условиями</h2><p>Подтверждённой несовместимости нет, но установка требует отдельной проверки.</p></section>
+          <div class="grid"><article class="panel"><span class="status warn">Совместимо с условиями</span><div class="metric"><div class="row"><span>Расчётный диапазон ET</span><b>ET35–45</b></div><div class="bar"><span class="bar-range"></span><span class="bar-marker outside"></span></div><small class="muted">ET колесного диска: ET48</small></div><div class="groups"><div class="group conditions"><div class="group-title">Условия установки</div><div class="item"><i>!</i><div><b>ET выходит за расчётный диапазон</b><small>Перед установкой обязательно проверьте внутренние и наружные зазоры</small></div></div><div class="item"><i>!</i><div><b>Потребуется центровочное кольцо 66,6 → 66,5 мм</b></div></div></div><div class="group advisories"><div class="group-title">Обратите внимание</div><div class="item"><i>i</i><div>Тип крепежа не подтверждён — проверьте его перед установкой</div></div></div></div><p class="reference-note"><b>Утверждённое продуктовое правило:</b> выход ET за расчётный диапазон отображается как условная совместимость только при отсутствии подтверждённого жёсткого конфликта. Физическая проверка зазоров обязательна.</p></article><aside class="panel"><h2>Почему не зелёный результат</h2><p class="muted">Расчётный диапазон не подтверждает фактический зазор до подвески, тормозов и кузова.</p><div class="actions"><button class="button">Открыть рендер</button><button class="outline-button">Уточнить данные</button></div></aside></div>
+        </section>
+
+        <section class="screen" id="incompatible">
+          <section class="hero"><div class="eyebrow">Результат стандартной проверки</div><h2>Несовместимо</h2><p>Обнаружен подтверждённый конфликт, который нельзя представить как условие установки.</p></section>
+          <div class="grid"><article class="panel"><span class="status bad">Несовместимо</span><div class="groups"><div class="group blocking"><div class="group-title">Почему не подходит</div><div class="item"><i>×</i><div><b>PCD колесного диска не совпадает</b><small>Для автомобиля: 5×112 / у диска: 5×114,3</small></div></div><div class="item"><i>×</i><div><b>Центральное отверстие диска меньше ступицы</b><small>Диск невозможно установить на ступицу</small></div></div></div></div><div class="actions"><button class="button">Выбрать другой диск</button><button class="outline-button">Создать рендер всё равно</button></div></article><aside class="panel"><h2>Визуальный рендер доступен</h2><p class="muted">Он показывает внешний вид и не отменяет технический результат.</p></aside></div>
+        </section>
+
+        <section class="screen" id="unknown">
+          <section class="hero"><div class="eyebrow">Результат стандартной проверки</div><h2>Недостаточно данных</h2><p>Это не техническая ошибка: проверка выполнена, но данных для результата пока недостаточно.</p></section>
+          <div class="grid"><article class="panel"><span class="status warn">Нужно уточнить</span><div class="groups"><div class="group blocking"><div class="group-title">Что мешает сформировать результат</div><div class="item"><i>!</i><div><b>Не удалось подтвердить вылет (ET) автомобиля</b><small>Для выбранной комплектации в доступных технических данных нет эталонного ET</small></div></div></div><div class="group conditions"><div class="group-title">Известные условия</div><div class="item"><i>!</i><div><b>Потребуется центровочное кольцо 66,6 → 66,5 мм</b></div></div></div><div class="group advisories"><div class="group-title">Обратите внимание</div><div class="item"><i>i</i><div>Рейтинг нагрузки диска не подтверждён</div></div></div></div><div class="actions"><button class="button">Открыть рендер</button><button class="outline-button">Изменить данные</button></div></article><aside class="panel"><div class="eyebrow">После рендера</div><h2>Можно запустить расширенную проверку</h2><p class="muted">Она использует результат рендера и дополнительные технические источники, не подменяя отсутствующие данные.</p></aside></div>
+        </section>
+
+        <section class="screen" id="failure">
+          <section class="hero"><div class="eyebrow">Стандартная проверка</div><h2>Проверка временно недоступна</h2><p>Это технический сбой источника данных, а не результат совместимости.</p></section>
+          <div class="grid"><article class="panel"><span class="status bad">Проверка не выполнена</span><div class="notice bad"><strong>Технические данные временно недоступны</strong><p>Данные автомобиля и диска сохранены. Повторите попытку позже.</p></div><div class="actions"><button class="button">Повторить проверку</button><button class="outline-button">Вернуться к рендеру</button></div></article><aside class="panel"><h2>Что сохранено</h2><div class="summary"><div class="row"><span>Автомобиль</span><b>Сохранён</b></div><div class="row"><span>Колесный диск</span><b>Сохранён</b></div><div class="row"><span>Источник</span><b>Сохранён</b></div></div></aside></div>
+        </section>
+
+        <section class="screen" id="extended-offer">
+          <section class="hero"><div class="eyebrow">Результат рендера</div><h2>Нужна дополнительная проверка?</h2><p>Расширенная проверка предлагается после рендера только когда стандартная проверка не смогла закрыть важный вопрос.</p></section>
+          <div class="grid"><article class="panel"><span class="status warn">Стандартная проверка: недостаточно данных</span><h2>Проверим больше источников</h2><div class="summary"><div class="row"><span>Причина</span><b>Не подтверждён ET автомобиля</b></div><div class="row"><span>Будет проверено</span><b>Комплектация, геометрия, доступные источники</b></div><div class="row"><span>Стоимость</span><b>Отдельная услуга</b></div></div><div class="actions"><button class="button">Запустить расширенную проверку</button><button class="outline-button">Не сейчас</button></div></article><aside class="panel"><h2>Что важно</h2><p class="muted">Расширенная проверка не обещает положительный результат. Она может подтвердить совместимость, оставить результат неизвестным или выявить конфликт.</p></aside></div>
+        </section>
+
+        <section class="screen" id="extended-progress">
+          <section class="hero"><div class="eyebrow">Расширенная проверка</div><h2>Выполняем дополнительную проверку</h2><p>Показываем понятные задачи, а служебные коды остаются только во внутренней информации.</p></section>
+          <div class="grid"><article class="panel"><span class="status info">Расширенная проверка в работе</span><div class="flow"><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Проверили выбранную комплектацию</strong><small>Рынок и поколение подтверждены</small></div></div><div class="flow-step done"><span class="step-icon">✓</span><div><strong>Сверили параметры диска</strong><small>Источник и введённые значения совпадают</small></div></div><div class="flow-step current"><span class="step-icon">3</span><div><strong>Уточняем геометрию установки</strong><small>Проверяем доступные технические источники</small></div></div><div class="flow-step"><span class="step-icon">4</span><div><strong>Формируем результат</strong><small>Разделим ограничения, условия и рекомендации</small></div></div></div></article><aside class="panel"><h2>Можно закрыть экран</h2><p class="muted">Результат сохранится в истории и будет связан с текущими версиями данных автомобиля и диска.</p><div class="actions"><button class="outline-button">Вернуться к результату</button></div></aside></div>
+        </section>
+
+        <section class="screen" id="extended-result">
+          <section class="hero"><div class="eyebrow">Результат расширенной проверки</div><h2>Совместимо с условиями</h2><p>Дополнительные источники закрыли вопрос с ET, но сохранили обязательные условия установки.</p></section>
+          <div class="grid"><article class="panel"><span class="status warn">Расширенная проверка завершена</span><div class="groups"><div class="group conditions"><div class="group-title">Условия установки</div><div class="item"><i>!</i><div><b>Проверьте внутренний зазор перед монтажом</b><small>ET находится у границы подтверждённого диапазона</small></div></div><div class="item"><i>!</i><div><b>Используйте центровочное кольцо 66,6 → 66,5 мм</b></div></div></div><div class="group advisories"><div class="group-title">Обратите внимание</div><div class="item"><i>i</i><div>Тип крепежа требуется подтвердить перед установкой</div></div></div></div><div class="actions"><button class="button">Открыть рендер</button><button class="outline-button">Посмотреть данные</button></div></article><aside class="panel"><h2>Как сформирован результат</h2><p class="muted">Пользователь видит понятные выводы. Служебная информация об источниках и обработке доступна только внутреннему интерфейсу.</p></aside></div>
+        </section>
+
+        <section class="screen" id="stale">
+          <section class="hero"><div class="eyebrow">Сохранённый результат</div><h2>Данные изменились после проверки</h2><p>Предыдущий результат не применяется к новой версии автомобиля или диска.</p></section>
+          <div class="grid"><article class="panel"><span class="status warn">Нужно проверить заново</span><div class="notice warn"><strong>После проверки изменился ET колесного диска</strong><p>Было ET42, сейчас ET48. Сохранённый результат относится к предыдущим данным.</p></div><div class="actions"><button class="button">Проверить заново</button><button class="outline-button">Посмотреть прошлый результат</button></div></article><aside class="panel"><h2>Почему так</h2><p class="muted">Каждая проверка связана с конкретными версиями данных автомобиля и диска. Это защищает пользователя от устаревшего результата.</p></aside></div>
+        </section>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Мобильная навигация"><span>Главная</span><span class="active">Создать</span><span>История</span><span>Баланс</span><span>Ещё</span></nav>
+    </div>
+    <script>
+      const tabs = document.querySelectorAll('[data-screen]');
+      const screens = document.querySelectorAll('.screen');
+      tabs.forEach((tab) => tab.addEventListener('click', () => {
+        tabs.forEach((item) => item.classList.toggle('active', item === tab));
+        screens.forEach((screen) => screen.classList.toggle('active', screen.id === tab.dataset.screen));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }));
+    </script>
+  </body>
+</html>
