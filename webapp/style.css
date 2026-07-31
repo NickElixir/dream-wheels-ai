@@ -3313,8 +3313,7 @@ h2 {
     gap: 10px;
 }
 
-.photo-guide-example,
-.photo-guide-wheel-visual {
+.photo-guide-example {
     display: grid;
     gap: 8px;
     margin: 0;
@@ -3335,8 +3334,12 @@ h2 {
     object-fit: cover;
 }
 
-.photo-guide-example figcaption,
-.photo-guide-wheel-visual figcaption {
+.photo-guide-wheel-examples .photo-guide-example img {
+    object-fit: contain;
+    background: #f7f7f7;
+}
+
+.photo-guide-example figcaption {
     display: grid;
     gap: 3px;
     padding: 0 10px 10px;
@@ -3345,8 +3348,7 @@ h2 {
     line-height: 1.35;
 }
 
-.photo-guide-example figcaption span,
-.photo-guide-wheel-visual figcaption span {
+.photo-guide-example figcaption span {
     color: var(--text);
     font-size: 12px;
     font-weight: 850;
@@ -3356,32 +3358,6 @@ h2 {
 .photo-guide-example.is-good figcaption span { color: var(--success); }
 .photo-guide-example.is-bad { border-color: rgba(255, 204, 86, 0.28); }
 .photo-guide-example.is-bad figcaption span { color: var(--warning); }
-
-.photo-guide-wheel-visual {
-    place-items: center;
-    min-height: 198px;
-    padding: 14px;
-    border: 1px solid rgba(39, 216, 138, 0.28);
-    border-radius: 16px;
-    background: radial-gradient(circle at 50% 46%, rgba(221, 255, 0, 0.11), transparent 42%), rgba(39, 216, 138, 0.035);
-}
-
-.photo-guide-wheel-visual svg {
-    width: min(100%, 230px);
-    height: 148px;
-    fill: none;
-    stroke: var(--success);
-    stroke-width: 4;
-    stroke-linecap: round;
-}
-
-.photo-guide-wheel-visual figcaption {
-    width: 100%;
-    padding: 0;
-    text-align: center;
-}
-
-.photo-guide-wheel-visual figcaption span { color: var(--success); }
 
 .photo-guide-checklist {
     display: grid;

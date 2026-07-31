@@ -293,9 +293,14 @@ def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> Non
 def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> None:
     assert "/assets/photo-guide-car.jpg" in INDEX_HTML
     assert (ROOT / "webapp" / "assets" / "photo-guide-car.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-car-bad.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-product.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-real.jpg").is_file()
     assert "Снимите диск прямо спереди" in INDEX_HTML
     assert 'data-nav="create">Начать примерку</button>' in INDEX_HTML
-    assert "photo-guide-wheel-visual" in STYLE_CSS
+    assert "/assets/photo-guide-wheel-product.jpg" in INDEX_HTML
+    assert "/assets/photo-guide-wheel-real.jpg" in INDEX_HTML
+    assert "photo-guide-wheel-examples" in STYLE_CSS
 
 
 def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
