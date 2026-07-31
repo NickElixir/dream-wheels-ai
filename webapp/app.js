@@ -1,5 +1,6 @@
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
+const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
 
 function tgSupports(version) {
     if (!HAS_TG) return false;
@@ -51,6 +52,17 @@ const FEEDBACK_REASONS = [
     { code: "other", label: "Другое" },
 ];
 const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
+
+async function checkCurrentBuild() {
+    try {
+        const response = await fetch(`/version.json?ts=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const deployed = await response.json();
+        if (deployed?.build && deployed.build !== APP_BUILD_ID) window.location.reload();
+    } catch {
+        // A version check must never interrupt the current user flow.
+    }
+}
 
 const I18N = {
     ru: {
@@ -117,12 +129,12 @@ const I18N = {
             coldStart: "Первый запуск может занять до 40 секунд",
             uploading: "Загружаем файлы...",
             upTo90: "Это может занять до 90 секунд",
-            generating: "Генерируем рендер...",
+            generating: "Создаём примерку...",
         },
         result: {
-            imageAlt: "AI рендер",
+            imageAlt: "Результат примерки",
             title: "Готово!",
-            caption: "Ваш рендер с новыми дисками готов",
+            caption: "Результат примерки готов",
         },
         fitment: {
             eyebrow: "Проверка совместимости",
@@ -131,7 +143,7 @@ const I18N = {
             preliminary: "Предварительно",
             openFromResult: "Проверить совместимость",
             openFromHistory: "Проверить совместимость",
-            back: "Вернуться к рендеру",
+            back: "Вернуться к примерке",
             loading: "Загружаем данные",
             saveSuccess: "Данные сохранены",
             stale: "Данные уже изменились в другом окне. Обновите экран и попробуйте ещё раз",
@@ -192,7 +204,7 @@ const I18N = {
             demoLiveActionsUnavailable: "В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.",
         },
         actions: {
-            createRender: "Создать рендер",
+            createRender: "Создать примерку",
             createAnother: "Сделать ещё один",
             download: "Скачать",
             downloadImage: "Скачать изображение",
@@ -215,14 +227,14 @@ const I18N = {
             missingFiles: "Файлы не выбраны — вернитесь и загрузите оба фото",
             missingIdentity: "Сначала определите и подтвердите данные",
             missingRimConfirmation: "Подтвердите параметры диска или выберите «Не уверен»",
-            identityAuthTitle: "Нужен вход в Telegram",
+            identityAuthTitle: "Нужно войти в аккаунт",
             identityAuthBody:
-                "Этот шаг требует `init_data` или `telegram_user_id`. Откройте Mini App из Telegram или нажмите «Войти через Telegram» сверху, затем повторите проверку.",
+                "Мы не смогли подтвердить вход. Войдите через Telegram и повторите распознавание автомобиля.",
             identityAuthAction: "Войти через Telegram",
-            identityBackendTitle: "Staging backend не готов",
+            identityBackendTitle: "Распознавание временно недоступно",
             identityBackendBody:
-                "Этот preview смотрит на backend без Sprint 2 маршрутов. Нужен deploy backend-а на staging или правильный API host, затем можно повторить.",
-            identityRetryAction: "Повторить",
+                "Сервис пока не может обработать фотографии. Попробуйте ещё раз через несколько минут.",
+            identityRetryAction: "Проверить ещё раз",
             identityGenericTitle: "Не удалось определить данные",
             identityGenericBody: "Проверьте фото и повторите попытку.",
             identityConnectionTitle: "Сервис распознавания недоступен",
@@ -232,20 +244,20 @@ const I18N = {
             requestFailed: "Запрос не удался. Попробуйте ещё раз",
         },
         share: {
-            text: "Мой рендер в Dream Wheels AI",
+            text: "Моя примерка в Dream Wheels AI",
         },
         wallet: {
             eyebrow: "Кабинет",
             title: "Мой Dream Wheels AI",
-            lede: "Здесь видны баланс, последний счет и быстрый платежный flow в три шага",
+            lede: "Здесь видны баланс, последняя оплата и пополнение в три шага",
             gift: "Подарок",
-            lastInvoiceLabel: "Последний счет",
+            lastInvoiceLabel: "Последняя оплата",
             lastInvoiceTitle: "Статус виден сразу после оплаты",
-            lastInvoiceEmpty: "Оплат еще не было. После первой покупки здесь появится последний счет",
+            lastInvoiceEmpty: "Оплат ещё не было. После первой покупки здесь появится её статус",
             invoiceAmount: "Сумма",
-            invoiceNumber: "Счет",
+            invoiceNumber: "Номер оплаты",
             invoiceEmail: "Email",
-            invoiceCredits: "Начисление",
+            invoiceCredits: "Получено",
             invoiceState: "Состояние",
             wizardLabel: "Пополнение",
             wizardTitle: "Три шага оплаты",
@@ -254,7 +266,7 @@ const I18N = {
             stepEmail: "Email",
             stepConfirm: "Подтверждение",
             stepChooseTitle: "Выберите пакет",
-            stepChooseSub: "Пакетный режим активен по умолчанию",
+            stepChooseSub: "Выберите подходящее количество примерок",
             chooseAmount: "Выбор суммы",
             nextToEmail: "Продолжить",
             modePackage: "Пакет",
@@ -266,7 +278,7 @@ const I18N = {
             nextToConfirm: "Продолжить",
             confirmAmount: "Сумма",
             confirmEmail: "Email",
-            confirmCredits: "Начисление",
+            confirmCredits: "Будет получено",
             confirmHint: "Проверьте пакет перед переходом в Robokassa",
             pay: "Перейти к оплате",
             payWithAmount: "Перейти к оплате — {amount}",
@@ -279,10 +291,10 @@ const I18N = {
             offerLink: "Публичную оферту",
             refundLink: "Условия возврата",
             paymentHistory: "История платежей",
-            paymentHistoryHint: "Покупки и сроки действия рендеров",
+            paymentHistoryHint: "Покупки и сроки действия примерок",
             openHistory: "Открыть",
             closeHistory: "Скрыть",
-            availableRenders: "Доступные рендеры",
+            availableRenders: "Доступные примерки",
             availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
             topUpHistory: "История пополнений",
             topUpHistoryHint: "Показываем 10 последних операций",
@@ -291,29 +303,29 @@ const I18N = {
             pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
-            noPaymentsMeta: "Стартовый грант по /start на 30 дней появится в истории платежей",
+            noPaymentsMeta: "Стартовые примерки по команде /start действуют 30 дней и появятся в истории пополнений",
             loading: "Загружаем кабинет...",
-            refreshInvoice: "Обновить счет",
-            refreshingInvoice: "Обновляем статус счета...",
+            refreshInvoice: "Обновить статус",
+            refreshingInvoice: "Обновляем статус оплаты...",
             openingPayment: "Открываем Robokassa...",
             paymentSuccess: "Оплата подтверждена. Обновляем баланс",
             paymentFail: "Платеж не завершен",
-            pendingFresh: "Счет создан. Если вы вернулись из Robokassa, обновите его через несколько секунд",
-            pendingStale: "Счет все еще ждет подтверждения. Если оплата не прошла, он останется в ожидании, пока мы не получим финальный статус. Обновите счет позже",
+            pendingFresh: "Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд",
+            pendingStale: "Подтверждение оплаты ещё не получено. Обновите статус позже",
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
-            fallbackDisabled: "Web fallback выключен на backend",
+            fallbackDisabled: "Вход с сайта временно недоступен",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} рендеров — начислено по /start",
+            starterGrantMeta: "{credits} — получено по команде /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Счет #{invoiceId} — {amount}",
-            paidInvoice: "Счет #{invoiceId} — {amount}",
-            failedInvoice: "Счет #{invoiceId} — {amount}",
+            pendingInvoice: "Оплата #{invoiceId} — {amount}",
+            paidInvoice: "Оплата #{invoiceId} — {amount}",
+            failedInvoice: "Оплата #{invoiceId} — {amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} · {creditsLabel}",
+            packageSummary: "{amount} / {creditsLabel}",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -370,12 +382,12 @@ const I18N = {
             edition: "Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.",
         },
         failed: "Сбой",
-        starter: "Стартовый грант",
+        starter: "Стартовые примерки",
         pending: "В ожидании",
         paid: "Оплачено",
         created: "Создан",
         locale: "RU",
-        credits: "рендеров",
+        credits: "примерок",
     },
     en: {
         auth: {
@@ -541,11 +553,11 @@ const I18N = {
             missingRimConfirmation: "Confirm wheel details or choose Not sure",
             identityAuthTitle: "Telegram login required",
             identityAuthBody:
-                "This step requires `init_data` or `telegram_user_id`. Open the Mini App in Telegram or click \"Log in with Telegram\" above, then try again.",
+                "We could not confirm your session. Log in with Telegram and try vehicle recognition again.",
             identityAuthAction: "Log in with Telegram",
-            identityBackendTitle: "Staging backend is not ready",
+            identityBackendTitle: "Recognition is temporarily unavailable",
             identityBackendBody:
-                "This preview points to a backend without the Sprint 2 routes. The staging backend needs a deploy, or the API host must be switched, then try again.",
+                "The service cannot process the photos right now. Try again in a few minutes.",
             identityRetryAction: "Retry",
             identityGenericTitle: "Could not recognize the vehicle",
             identityGenericBody: "Check the photos and try again.",
@@ -637,7 +649,7 @@ const I18N = {
             paidInvoice: "Invoice #{invoiceId} — {amount}",
             failedInvoice: "Invoice #{invoiceId} — {amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} · {creditsLabel}",
+            packageSummary: "{amount} / {creditsLabel}",
         },
         renders: {
             eyebrow: "Finished work",
@@ -844,6 +856,8 @@ const state = {
     renderHistoryError: "",
     expandedJobId: "",
     renderDetailJobId: "",
+    renderDetailLoading: false,
+    renderDetailError: "",
     renderHistoryVisibleCount: 6,
     fitmentJobId: "",
     fitmentOriginView: "dashboard",
@@ -1190,18 +1204,22 @@ function updateAccountBlock() {
     const subtitle = document.querySelector("[data-account-subtitle]");
     if (name) name.textContent = displayName;
     if (avatar) avatar.textContent = getInitials(displayName);
-    if (subtitle) subtitle.textContent = HAS_TG ? "Telegram Mini App" : "Website login";
+    if (subtitle) subtitle.textContent = HAS_TG ? "Открыто в Telegram" : "Вход через Telegram";
 }
 
 function getWebsiteAuthToken() {
     if (HAS_TG || !state.websiteAuth) return "";
     if (Number(state.websiteAuth.expiresAt || 0) <= Date.now()) {
-        state.websiteAuth = null;
-        sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
-        updateWebsiteAuthUi();
+        clearWebsiteAuthSession();
         return "";
     }
     return state.websiteAuth.accessToken || "";
+}
+
+function clearWebsiteAuthSession({ refreshUi = true } = {}) {
+    state.websiteAuth = null;
+    sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
+    if (refreshUi) updateWebsiteAuthUi();
 }
 
 function withAuthHeaders(headers = {}) {
@@ -1399,6 +1417,9 @@ async function loginWithTelegram() {
         renderDashboard();
         renderRenders();
         await Promise.all([loadCabinet(), loadRenderHistory()]);
+        if (state.identityError && state.files.car?.blob && state.files.wheel?.blob) {
+            await resolveIdentity();
+        }
     } catch (error) {
         console.error("[DW] Telegram website login failed", error);
         const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
@@ -1416,8 +1437,7 @@ async function loginWithTelegram() {
 }
 
 function logoutWebsiteAuth() {
-    state.websiteAuth = null;
-    sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
+    clearWebsiteAuthSession({ refreshUi: false });
     state.balance = null;
     state.payments = [];
     state.starterGrant = null;
@@ -1468,14 +1488,14 @@ function creditsForAmount(amount) {
 
 function formatRenderCount(value) {
     const count = Number(value || 0);
-    if (locale !== "ru") return `${count} ${count === 1 ? "render" : "renders"}`;
+    if (locale !== "ru") return `${count} ${count === 1 ? "try-on" : "try-ons"}`;
     const mod10 = count % 10;
     const mod100 = count % 100;
     const noun = mod10 === 1 && mod100 !== 11
-        ? "рендер"
+        ? "примерка"
         : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-          ? "рендера"
-          : "рендеров";
+          ? "примерки"
+          : "примерок";
     return `${count} ${noun}`;
 }
 
@@ -1494,13 +1514,14 @@ function classifyIdentityError(message) {
     const rawMessage = message || "";
     const normalized = rawMessage.toLowerCase();
 
-    if (normalized.includes("init_data") || normalized.includes("telegram_user_id")) {
+    if (normalized.includes("identity_auth_required") || normalized.includes("init_data") || normalized.includes("telegram_user_id")) {
         return {
             title: t("errors.identityAuthTitle"),
             body: t("errors.identityAuthBody"),
             primaryActionLabel: t("errors.identityAuthAction"),
             showPrimaryAction: true,
             retryLabel: t("errors.identityRetryAction"),
+            badgeLabel: locale === "ru" ? "Нужен вход" : "Sign in",
         };
     }
 
@@ -1511,6 +1532,7 @@ function classifyIdentityError(message) {
             primaryActionLabel: "",
             showPrimaryAction: false,
             retryLabel: t("errors.identityRetryAction"),
+            badgeLabel: locale === "ru" ? "Недоступно" : "Unavailable",
         };
     }
 
@@ -1521,6 +1543,7 @@ function classifyIdentityError(message) {
             primaryActionLabel: "",
             showPrimaryAction: false,
             retryLabel: t("errors.identityRetryAction"),
+            badgeLabel: locale === "ru" ? "Нет связи" : "Offline",
         };
     }
 
@@ -1530,6 +1553,7 @@ function classifyIdentityError(message) {
         primaryActionLabel: "",
         showPrimaryAction: false,
         retryLabel: t("errors.identityRetryAction"),
+        badgeLabel: locale === "ru" ? "Не удалось" : "Failed",
     };
 }
 
@@ -2860,7 +2884,7 @@ function renderWallet() {
         expiryNote.textContent = firstCohort
             ? (
                 locale === "ru"
-                    ? `Сначала будут использованы ${firstCohort.credits} рендеров со сроком ${expiryLabel(firstCohort.expiresAt)}.`
+                    ? `Сначала будут использованы ${formatRenderCount(firstCohort.credits)} со сроком ${expiryLabel(firstCohort.expiresAt)}.`
                     : `${firstCohort.credits} renders expiring ${expiryLabel(firstCohort.expiresAt)} will be used first.`
             )
             : "";
@@ -3462,6 +3486,9 @@ function renderHistoryCard(job) {
         : canOpen
           ? `<button type="button" class="ghost-button compact-button" data-open-render-detail="${escapeHtml(job.job_id)}">Посмотреть</button>`
           : "";
+    const statusMarkup = status === "completed"
+        ? ""
+        : `<div class="render-info-footer"><div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div></div>`;
     return `
         <article class="render-card cabinet-render-card">
             <div class="render-summary">
@@ -3474,9 +3501,7 @@ function renderHistoryCard(job) {
                         <div class="render-subtitle ${rimSummary ? "render-rim-specs" : ""}">${escapeHtml(subtitle)}</div>
                         ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
                         ${guestDemo ? `<div class="render-demo-note">Гостевой пример</div>` : ""}
-                        <div class="render-info-footer">
-                            <div class="status-pill ${statusClass(status)}">${statusLabel(status)}</div>
-                        </div>
+                        ${statusMarkup}
                     </div>
                 </div>
                 <div class="render-card-action">${action}</div>
@@ -3490,7 +3515,12 @@ function renderRenderDetail() {
     if (!container) return;
     const job = state.renderHistory.find((item) => item.job_id === state.renderDetailJobId);
     if (!job) {
-        container.innerHTML = `<div class="render-empty"><strong>Примерка не найдена</strong><button type="button" class="ghost-button compact-button" data-nav="renders">К истории</button></div>`;
+        if (state.renderDetailLoading) {
+            container.innerHTML = `<div class="render-empty" aria-live="polite"><strong>Загружаем примерку…</strong></div>`;
+        } else {
+            const message = state.renderDetailError || "Примерка не найдена";
+            container.innerHTML = `<div class="render-empty"><strong>${escapeHtml(message)}</strong><button type="button" class="ghost-button compact-button" data-nav="renders">К моим примеркам</button></div>`;
+        }
         return;
     }
     const downloadUrl = hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
@@ -3507,7 +3537,6 @@ function renderRenderDetail() {
                 ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>Скачать результат</a>` : ""}
                 <button type="button" class="ghost-button compact-button" data-share-history-result="${escapeHtml(job.job_id)}">Поделиться</button>
                 ${fitmentAction}
-                <button type="button" class="primary-button compact-button" data-new-tryon>Новая примерка</button>
                 <button type="button" class="ghost-button compact-button" data-repeat-render="${escapeHtml(job.job_id)}">Повторить с этими фото</button>
             </div>
             ${renderFeedbackBlock(job)}
@@ -3517,7 +3546,29 @@ function renderRenderDetail() {
 function openRenderDetail(jobId, originView = "renders") {
     state.renderDetailJobId = jobId;
     state.fitmentOriginView = originView;
+    state.renderDetailError = "";
     setView("render-detail");
+    if (!state.renderHistory.some((item) => item.job_id === jobId)) {
+        void loadRenderDetailJob(jobId);
+    }
+}
+
+async function loadRenderDetailJob(jobId) {
+    if (!jobId || !hasFrontendAuth()) return;
+    state.renderDetailLoading = true;
+    state.renderDetailError = "";
+    renderRenderDetail();
+    try {
+        const job = await fetchJobStatusForHistory(jobId);
+        const existingIndex = state.renderHistory.findIndex((item) => item.job_id === jobId);
+        if (existingIndex >= 0) state.renderHistory[existingIndex] = { ...state.renderHistory[existingIndex], ...job };
+        else state.renderHistory.unshift(job);
+    } catch (error) {
+        state.renderDetailError = localizeErrorMessage(error?.message || t("errors.requestFailed"));
+    } finally {
+        state.renderDetailLoading = false;
+        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+    }
 }
 
 function openBlankTryOn() {
@@ -3663,6 +3714,7 @@ async function refreshProcessingHistoryJobs() {
 
 function renderDashboard() {
     const balance = document.querySelector("[data-dashboard-balance]");
+    const balanceUnit = document.querySelector("[data-dashboard-balance-unit]");
     const latestTitle = document.querySelector("[data-latest-title]");
     const latestStatus = document.querySelector("[data-latest-status]");
     const latestContent = document.querySelector("[data-latest-content]");
@@ -3681,6 +3733,11 @@ function renderDashboard() {
     const expiryCohorts = buildRenderExpiryCohorts();
 
     if (balance) balance.textContent = state.balance === null ? "—" : String(state.balance);
+    if (balanceUnit) {
+        balanceUnit.textContent = state.balance === null
+            ? "примерок"
+            : formatRenderCount(state.balance).replace(/^\d+\s+/, "");
+    }
     if (balanceSkeleton) balanceSkeleton.hidden = !(state.walletLoading && state.balance === null);
     document.querySelector(".dashboard-balance-card")?.toggleAttribute(
         "data-loading",
@@ -3708,7 +3765,7 @@ function renderDashboard() {
         dashboardExpiryNote.textContent = expiryCohorts.length
             ? (
                 locale === "ru"
-                    ? "Сначала списываются рендеры с ближайшим сроком."
+                    ? "Сначала используются примерки с ближайшим сроком."
                     : "Renders with the nearest expiration date are used first."
             )
             : "";
@@ -3740,6 +3797,7 @@ function renderDashboard() {
         latestTitle.textContent = "Ваша первая примерка";
         latestStatus.textContent = "Нет истории";
         latestStatus.className = "status-pill neutral";
+        latestStatus.hidden = false;
         latestContent.innerHTML = `
             <div class="first-render-empty">
                 <p>Посмотрите, как новые диски изменят автомобиль</p>
@@ -3757,6 +3815,7 @@ function renderDashboard() {
     );
     latestStatus.textContent = statusLabel(latest.status);
     latestStatus.className = `status-pill ${statusClass(latest.status)}`;
+    latestStatus.hidden = latest.status === "completed";
 
     const resultUrl = assetUrlForJob(latest, "result");
     if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
@@ -3766,13 +3825,17 @@ function renderDashboard() {
                 ? { tone: "neutral", text: "Совместимость ещё не проверена" }
                 : null;
         latestContent.innerHTML = `
-            ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
-            <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
-            <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
-            ${fitmentContext ? `<div class="dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
-            <div class="render-card-buttons latest-render-actions">
-                <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">Посмотреть последнюю примерку</button>
-                ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
+            <div class="latest-preview-layout">
+                <img src="${escapeHtml(resultUrl)}" alt="${escapeHtml(title)}" class="latest-result-image" data-asset-image data-job-id="${escapeHtml(latest.job_id)}" data-asset-kind="result">
+                <div class="latest-preview-info">
+                    ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
+                    <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
+                    ${fitmentContext ? `<div class="dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
+                    <div class="render-card-buttons latest-render-actions">
+                        <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">Посмотреть последнюю примерку</button>
+                        ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
+                    </div>
+                </div>
             </div>
         `;
         return;
@@ -3833,6 +3896,7 @@ async function loadRenderHistory({ silent = false } = {}) {
         state.renderHistoryLoading = false;
         renderRenders();
         renderDashboard();
+        if (state.view === "render-detail") renderRenderDetail();
         scheduleRenderHistoryPolling();
     }
 }
@@ -4214,6 +4278,7 @@ function renderIdentityFlow() {
     const error = document.querySelector("[data-identity-error]");
     const errorTitle = document.querySelector("[data-identity-error-title]");
     const errorText = document.querySelector("[data-identity-error-text]");
+    const errorBadge = document.querySelector("[data-identity-error-badge]");
     const errorAction = document.querySelector("[data-identity-error-action]");
     const errorRetry = document.querySelector("[data-identity-error-retry]");
     const confirmations = document.querySelector("[data-identity-confirmations]");
@@ -4231,6 +4296,7 @@ function renderIdentityFlow() {
     const identityErrorView = state.identityError ? classifyIdentityError(state.identityError) : null;
     if (errorTitle && identityErrorView) errorTitle.textContent = identityErrorView.title;
     if (errorText && identityErrorView) errorText.textContent = identityErrorView.body;
+    if (errorBadge && identityErrorView) errorBadge.textContent = identityErrorView.badgeLabel;
     if (errorAction) {
         errorAction.hidden = !identityErrorView?.showPrimaryAction;
         if (identityErrorView?.showPrimaryAction) {
@@ -4407,7 +4473,7 @@ function refreshButtonsForCurrentView() {
         const disabled = !ready || consentMissing || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
-            text: hasProposal ? `Создать примерку · 1 примерка${state.balance !== null ? ` · останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
+            text: hasProposal ? `Создать примерку — 1 примерка${state.balance !== null ? `. Останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
             enabled: !disabled,
             onClick: !disabled && hasProposal ? submitJob : null,
         });
@@ -4655,6 +4721,10 @@ async function resolveIdentity() {
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
+            if (resp.status === 401 || resp.status === 403) {
+                clearWebsiteAuthSession();
+                throw new Error("identity_auth_required");
+            }
             const failure = data.detail;
             if (failure?.manual_fallback && failure?.draft_id) {
                 state.identityDraftId = failure.draft_id;
@@ -4861,7 +4931,7 @@ function classifyGenerationError(message) {
         return { title: "Не удалось распознать автомобиль на фото", copy: "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.", actionLabel: "Заменить фото автомобиля", action: "car" };
     }
     if (/(credit|balance|insufficient|баланс|рендер)/.test(normalized)) {
-        return { title: "Недостаточно рендеров на балансе", copy: "Пополните баланс, чтобы создать новую примерку.", actionLabel: "Пополнить баланс", action: "wallet" };
+        return { title: "Недостаточно примерок на балансе", copy: "Пополните баланс, чтобы создать новую примерку.", actionLabel: "Пополнить баланс", action: "wallet" };
     }
     if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
         return { title: "Сервис временно недоступен", copy: "Фото сохранены. Повторите попытку через несколько минут.", actionLabel: "Повторить", action: "retry" };
@@ -4924,7 +4994,8 @@ function bindEvents() {
     });
 
     document.querySelector("[data-identity-error-action]")?.addEventListener("click", () => {
-        document.querySelector("[data-website-auth-button]")?.click();
+        if (HAS_TG || getWebsiteAuthToken()) void resolveIdentity();
+        else void loginWithTelegram();
     });
     document.querySelector("[data-dashboard-auth-login]")?.addEventListener("click", () => {
         void loginWithTelegram();
@@ -5258,6 +5329,7 @@ function bindEvents() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    void checkCurrentBuild();
     applyTranslations();
     initTelegram();
     updateWebsiteAuthUi();
@@ -5283,6 +5355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!document.hidden && state.view === "renders") {
             scheduleRenderHistoryPolling();
         }
+        if (!document.hidden) void checkCurrentBuild();
         if (document.hidden) {
             clearRenderHistoryPolling();
         }

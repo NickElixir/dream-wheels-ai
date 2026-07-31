@@ -7,6 +7,7 @@ STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
 JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+VERSION_JSON = json.loads((ROOT / "webapp" / "version.json").read_text(encoding="utf-8"))
 MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_identity_candidates.sql").read_text(
     encoding="utf-8"
 )
@@ -50,10 +51,10 @@ def test_empty_processing_and_failed_states_are_user_safe() -> None:
     assert "Failed to fetch" not in APP_JS
 
 
-def test_history_expands_only_one_completed_card() -> None:
-    assert "expandedJobId" in APP_JS
-    assert "state.expandedJobId === job.job_id" in APP_JS
-    assert 'state.expandedJobId === jobId ? "" : jobId' in APP_JS
+def test_history_opens_completed_card_on_a_dedicated_detail_screen() -> None:
+    assert "renderDetailJobId" in APP_JS
+    assert "function openRenderDetail(jobId" in APP_JS
+    assert 'setView("render-detail")' in APP_JS
     assert 'const canOpen = status === "completed";' in APP_JS
     assert 'const hasResult = hasAssetSource(job, "result");' in APP_JS
 
@@ -103,6 +104,30 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
 
 
+def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() -> None:
+    assert "function clearWebsiteAuthSession" in APP_JS
+    assert 'throw new Error("identity_auth_required")' in APP_JS
+    identity_action = APP_JS.split(
+        'document.querySelector("[data-identity-error-action]")?.addEventListener'
+    )[1].split("});", 1)[0]
+    assert "getWebsiteAuthToken()" in identity_action
+    assert "loginWithTelegram()" in identity_action
+    assert "website-auth-button" not in identity_action
+
+
+def test_open_tabs_detect_a_new_frontend_build() -> None:
+    build = VERSION_JSON["build"]
+    assert f'data-app-build="{build}"' in INDEX_HTML
+    assert f'/style.css?v={build}' in INDEX_HTML
+    assert f'/app.js?v={build}' in INDEX_HTML
+    assert "function checkCurrentBuild()" in APP_JS
+    assert 'cache: "no-store"' in APP_JS
+    version_headers = next(
+        item["headers"] for item in VERCEL_JSON["headers"] if item["source"] == "/version.json"
+    )
+    assert {"key": "Cache-Control", "value": "no-store, max-age=0"} in version_headers
+
+
 def test_desktop_layout_reserves_sidebar_gutter() -> None:
     assert "--desktop-sidebar-width" in STYLE_CSS
     assert "--desktop-content-gap" in STYLE_CSS
@@ -128,15 +153,15 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
 
 
 def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
-    assert "Загрузите фото машины и диска" in INDEX_HTML
+    assert "Примерьте новые диски на своём автомобиле" in INDEX_HTML
     assert "Фото машины" in INDEX_HTML
     assert "Фото диска" in INDEX_HTML
     assert 'detectIdentity: "Распознать автомобиль"' in APP_JS
     assert "Определяем автомобиль по фото" in INDEX_HTML
-    assert "Проверяем AI-предложение" in INDEX_HTML
+    assert "Мы определили автомобиль" in INDEX_HTML
     assert "Ссылка на товар с диском" in INDEX_HTML
     assert "Фото диска добавлено" in INDEX_HTML
-    assert "Совместимость пока не проверена. Это визуальный рендер" in INDEX_HTML
+    assert "Совместимость ещё не проверена. Это визуальная примерка" in INDEX_HTML
     assert "Проверка совместимости — скоро" not in INDEX_HTML
     assert "future-stage-island" not in INDEX_HTML
     assert "data-create-render" not in INDEX_HTML
@@ -179,7 +204,6 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "[data-fitment-verdict-blocking-list]" in APP_JS
     assert "`${target}-list`" not in APP_JS
     assert "state.fitmentCheck = null;" in APP_JS
-    assert "rerender" not in APP_JS.lower()
     assert "source_summary" not in APP_JS
     assert "vehicle?.summary" not in APP_JS
 
@@ -215,18 +239,18 @@ def test_fitment_panel_collapses_hidden_status_islands() -> None:
     )
 
 
-def test_expanded_history_card_has_one_fitment_editor_cta() -> None:
-    history_card = APP_JS.split("function renderHistoryCard(job) {")[1].split(
-        "function renderRenders() {"
+def test_detail_screen_has_one_fitment_editor_cta_and_no_duplicate_new_tryon() -> None:
+    detail = APP_JS.split("function renderRenderDetail() {")[1].split(
+        "function openRenderDetail"
     )[0]
-
     assert 'openFromHistory: "Проверить совместимость"' in APP_JS
-    assert "expanded && canOpenFitment" in history_card
-    assert "primary-button compact-button render-fitment-cta" in history_card
-    assert history_card.count("data-open-fitment") == 1
-    assert "render-expanded-actions" in history_card
-    assert "renders.download" in history_card
-    assert "renders.createAnother" in history_card
+    assert detail.count("data-open-fitment") == 1
+    assert "render-expanded-actions" in detail
+    assert "Скачать результат" in detail
+    assert "Повторить с этими фото" in detail
+    assert "data-new-tryon" not in detail
+    assert 'class="hero-panel compact render-detail-hero"' in INDEX_HTML
+    assert "data-new-tryon" in INDEX_HTML
 
 
 def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> None:
@@ -239,8 +263,31 @@ def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> N
     latest_image_css = STYLE_CSS.split(".latest-result-image,", 1)[1].split("}", 1)[0]
     assert "max-width: 100%" in latest_image_css
     assert "latest-render-actions" in APP_JS
+    assert "latest-preview-layout" in APP_JS
+    assert "grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1.15fr)" in STYLE_CSS
+    assert ".latest-render-actions.render-card-buttons" in STYLE_CSS
     assert ".latest-render-actions .compact-button" in STYLE_CSS
     assert "font-size: clamp(" in STYLE_CSS
+
+
+def test_detail_screen_rerenders_after_history_refresh_and_can_fetch_missing_job() -> None:
+    load_history = APP_JS.split("async function loadRenderHistory")[1].split(
+        "async function loadDashboardData"
+    )[0]
+    assert 'state.view === "render-detail"' in load_history
+    assert "renderRenderDetail()" in load_history
+    assert "async function loadRenderDetailJob(jobId)" in APP_JS
+    assert "fetchJobStatusForHistory(jobId)" in APP_JS
+    assert "Загружаем примерку…" in APP_JS
+
+
+def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> None:
+    history_card = APP_JS.split("function renderHistoryCard(job) {")[1].split(
+        "function renderRenderDetail()"
+    )[0]
+    assert 'status === "completed"' in history_card
+    assert 'const statusMarkup = status === "completed"' in history_card
+    assert "grid-template-columns: 72px minmax(0, 1fr)" in STYLE_CSS
 
 
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
@@ -321,13 +368,13 @@ def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> Non
 
 def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
     assert 'data-i18n="fitment.back"' in INDEX_HTML
-    assert "Вернуться к рендеру" in INDEX_HTML
+    assert "Вернуться к примерке" in INDEX_HTML
     assert "Demo preview" not in INDEX_HTML
     assert "data-fitment-preview-badge hidden>Demo</span>" in INDEX_HTML
     assert "fitment-context-row" in STYLE_CSS
     assert 'data-i18n="fitment.preliminary"' not in INDEX_HTML
     assert "render-info-island" in APP_JS
-    assert "render-info-footer" in APP_JS
+    assert 'status === "completed"' in APP_JS
     assert ".render-info-island .status-pill" in STYLE_CSS
     assert "render-demo-note" in APP_JS
     assert "border: 1px solid rgba(255, 204, 86, 0.22)" in STYLE_CSS
@@ -338,9 +385,9 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
     assert "tone-critical" in STYLE_CSS
     assert "identity-critical-card" in INDEX_HTML
     assert "identity-critical-head" in INDEX_HTML
-    assert "Нужен вход в Telegram" in APP_JS
+    assert "Нужно войти в аккаунт" in APP_JS
     assert "Войти через Telegram" in INDEX_HTML
-    assert "Повторить" in INDEX_HTML
+    assert "Проверить ещё раз" in APP_JS
     assert "classifyIdentityError" in APP_JS
     assert "identityBackendTitle" in APP_JS
     assert "identityBackendBody" in APP_JS
@@ -357,7 +404,7 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
     assert "Срок действия пакетов" in INDEX_HTML
     assert "Посмотреть пакеты" in INDEX_HTML
-    assert "Сначала списываются рендеры с ближайшим сроком." in APP_JS
+    assert "Сначала используются примерки с ближайшим сроком." in APP_JS
     assert "data-dashboard-expiry" in INDEX_HTML
     assert "data-wallet-expiry-list" in INDEX_HTML
 
@@ -389,8 +436,8 @@ def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> No
     assert "dashboard-skeleton-shimmer" in STYLE_CSS
     assert "data-dashboard-primary-action" in INDEX_HTML
     assert "data-dashboard-secondary-action" in INDEX_HTML
-    assert "Открыть результат" in APP_JS
-    assert 'class="primary-button compact-button" data-nav="renders"' in APP_JS
+    assert "Посмотреть последнюю примерку" in APP_JS
+    assert "latest-preview-layout" in APP_JS
     assert "dashboard-fitment-context" in APP_JS
     assert "fitmentDashboardContext" in APP_JS
 
