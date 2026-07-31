@@ -9,3 +9,4 @@ authlib==1.7.2
 itsdangerous==2.2.0
 python-multipart==0.0.9
 python-telegram-bot[job-queue]==21.0.1
+Pillow==10.4.0
