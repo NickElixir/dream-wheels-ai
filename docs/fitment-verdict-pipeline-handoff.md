@@ -295,7 +295,7 @@ Idempotency-Key: <uuid>
   "rim_setup_id": "uuid",
   "render_job_id": "uuid-or-null",
   "trigger": "user_requested",
-  "mode": "detailed"
+  "mode": "standard"
 }
 ```
 

@@ -229,6 +229,12 @@ def test_fitment_entrypoint_uses_compatibility_language() -> None:
     assert "Уточнить параметры" not in result_button
 
 
+def test_user_facing_ui_never_uses_middle_dot_as_separator() -> None:
+    assert "middle dot (`·`)" in (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
+    assert "·" not in INDEX_HTML
+    assert "·" not in APP_JS
+
+
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
     assert '.fitment-panel > .wallet-status-island[data-visible="false"]' in STYLE_CSS
     assert (
@@ -361,7 +367,7 @@ def test_uploaded_photo_preview_preserves_image_ratio_without_cropping() -> None
 
 def test_design_code_defines_ui_separator_rules() -> None:
     design_code = (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
-    assert "Never use a full stop or middle dot as a visual separator" in design_code
+    assert "Never use a full stop, middle dot (`·`)" in design_code
     assert '20" / 8,5J / 5×114,3' in design_code
     assert "Russian decimal values use a comma" in design_code
     assert "Vehicle and rim names use spaces only" in design_code

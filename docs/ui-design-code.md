@@ -1,8 +1,8 @@
 # Dream Wheels AI — UI Design Code
 
-> **Status:** approved reference for Sprint 1 Cabinet, Sprint 2 create flow, Sprint 3 result detail, and Sprint 4 fitment preparation.
+> **Status:** approved reference for Sprint 1 Cabinet, Sprint 2 create flow, Sprint 3 result detail, Sprint 4 fitment preparation, and the Standard / Extended Fitment Check handoff.
 >
-> Canonical references: `docs/references/sprint-1-dashboard.html`, `docs/references/sprint-2-create-flow.html`, `docs/sprint-3-ui.md`.
+> Canonical references: `docs/references/sprint-1-dashboard.html`, `docs/references/sprint-2-create-flow.html`, `docs/sprint-3-ui.md`, `docs/references/fitment-verdict-fallbacks.html`, and `docs/references/standard-extended-fitment-check.html`.
 
 ## Visual foundation
 
@@ -15,11 +15,12 @@
 
 ## Separators and numbers
 
-- Never use a full stop or middle dot as a visual separator in user-facing UI.
+- Never use a full stop, middle dot (`·`), bullet (`•`), or a similar glyph as a visual separator in user-facing UI.
+- Prefer the en dash `–` for an explanatory clause or status metadata. Do not use a dot-like glyph to separate pieces of metadata.
 - Technical parameter series use spaces around a slash: `20" / 8,5J / 5×114,3` in Russian and `20" / 8.5J / 5×114.3` in English.
 - Russian decimal values use a comma. A decimal point is allowed only in English locale, URLs, and code-like identifiers.
 - Vehicle and rim names use spaces only: `Toyota Prius`, `OZ Ultraleggera`. Put vehicle year/generation and rim specifications on a separate secondary line instead of joining them with a dash.
-- Use an em dash for explanatory clauses and non-entity status metadata; use commas for natural-language lists.
+- Use an en dash for explanatory clauses and non-entity status metadata; use commas for natural-language lists.
 
 ## Navigation and motion
 
@@ -107,6 +108,12 @@ Comparison and rating controls are unavailable for processing and failed jobs.
 ## Boundaries
 
 A visual render is never technical fitment proof. Do not add a Fitment Verdict, provider lookup, detailed fitment form, comparison slider, free-text rating, analytics dashboard, or automatic ML dataset ingestion in these sprints.
+
+## Standard and Extended Fitment Check handoff
+
+`docs/references/standard-extended-fitment-check.html` is the current visual and interaction contract for the future Standard and Extended Fitment Check flow. It is not a runtime data source. Production UI must receive separate `blocking issues`, `conditions`, `advisories`, and provider execution status from the backend; internal diagnostic codes are not user-facing copy.
+
+An ET value outside the calculated reference interval is shown as `Совместимо с условиями` only when the rules engine has no confirmed hard conflict. The user-facing condition must require a physical check of inner and outer clearances before installation. This state is not an unconditional positive verdict.
 
 ## Implementation handoff
 
