@@ -138,8 +138,8 @@ const I18N = {
         },
         fitment: {
             eyebrow: "Проверка совместимости",
-            title: "Базовые параметры автомобиля",
-            subtitleFallback: "Предварительные данные помогут подготовить будущую техническую проверку совместимости",
+            title: "Проверьте, подойдут ли диски",
+            subtitleFallback: "Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод",
             preliminary: "Предварительно",
             openFromResult: "Проверить совместимость",
             openFromHistory: "Проверить совместимость",
@@ -156,11 +156,11 @@ const I18N = {
             sourceAdded: "Ссылка добавлена",
             basicsLabel: "Базовые данные",
             basicsCopy: "Определено по фото — данные требуют подтверждения перед установкой",
-            centerBore: "Центральное отверстие",
-            diameter: "Заводской диаметр",
+            centerBore: "Диаметр ступичного отверстия",
+            diameter: "Диаметр диска, дюймы",
             width: "Ориентировочная ширина",
             widthShort: "Ширина",
-            offset: "Ориентировочный ET",
+            offset: "Вылет (ET), мм",
             vehicleCard: "Автомобиль",
             vehicleCardMeta: "Определено по фото",
             rimCard: "Колесный диск",
@@ -194,7 +194,7 @@ const I18N = {
             rimBrand: "Бренд",
             rimModel: "Модель",
             sku: "Артикул",
-            boltCount: "Болтов",
+            boltCount: "Крепёжных отверстий",
             productUrl: "Ссылка на колесный диск",
             save: "Сохранить данные",
             skip: "Не сейчас",
@@ -863,6 +863,7 @@ const state = {
     fitmentOriginView: "dashboard",
     fitmentOriginJobId: "",
     fitmentOverview: null,
+    fitmentActiveStep: 0,
     fitmentLoading: false,
     fitmentSaving: false,
     fitmentError: "",
@@ -1763,9 +1764,10 @@ function fitmentFormFromOverview(overview) {
 }
 
 function fitmentSaveLabel() {
-    return locale === "ru"
-        ? "Сохранить и проверить совместимость"
-        : "Save and check compatibility";
+    if (state.fitmentActiveStep === 1) {
+        return locale === "ru" ? "Продолжить к параметрам диска" : "Continue to wheel details";
+    }
+    return locale === "ru" ? "Сохранить и получить вывод" : "Save and get result";
 }
 
 function fitmentSourceProgressTitle() {
@@ -2041,7 +2043,19 @@ function renderFitment() {
     const verdictTitle = document.querySelector("[data-fitment-verdict-title]");
     const verdictCopy = document.querySelector("[data-fitment-verdict-copy]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
+    const basicsCard = document.querySelector(".fitment-basics-card");
+    const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
+    const rimSection = document.querySelector('[data-fitment-section="rim"]');
+    const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
+    const actions = document.querySelector("[data-fitment-actions]");
     const overview = state.fitmentOverview;
+    if (overview && !state.fitmentActiveStep) {
+        state.fitmentActiveStep = state.fitmentCheck
+            ? 3
+            : fitmentProviderReady(overview)
+                ? 2
+                : 1;
+    }
 
     if (loading) loading.dataset.visible = String(state.fitmentLoading);
     if (error) error.dataset.visible = String(Boolean(state.fitmentError));
@@ -2133,7 +2147,19 @@ function renderFitment() {
         return;
     }
 
-    if (verdictCard) verdictCard.hidden = demoMode || !overview.readiness?.ready;
+    const activeStep = state.fitmentActiveStep;
+    document.querySelectorAll("[data-fitment-step-indicator]").forEach((indicator) => {
+        const step = Number(indicator.dataset.fitmentStepIndicator);
+        indicator.classList.toggle("active", step === activeStep);
+        indicator.classList.toggle("complete", step < activeStep);
+    });
+    if (basicsCard) basicsCard.hidden = activeStep !== 1;
+    if (vehicleSection) vehicleSection.hidden = activeStep !== 1;
+    if (rimSection) rimSection.hidden = activeStep !== 2;
+    if (overviewGrid) overviewGrid.hidden = activeStep !== 2;
+    if (actions) actions.hidden = activeStep === 3;
+
+    if (verdictCard) verdictCard.hidden = activeStep !== 3 || demoMode || !overview.readiness?.ready;
     if (verdictCheckButton) {
         verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready || !fitmentProviderReady(overview);
         verdictCheckButton.textContent = state.fitmentChecking ? t("fitment.checking") : t("fitment.check");
@@ -2335,6 +2361,7 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentOriginView = originView;
     state.fitmentOriginJobId = jobId;
     state.fitmentOverview = null;
+    state.fitmentActiveStep = 0;
     state.fitmentForm = createEmptyFitmentForm();
     state.fitmentError = "";
     state.fitmentMessage = "";
@@ -2516,6 +2543,7 @@ async function applyFitmentVehicleVariant(variant) {
         state.fitmentOverview = await response.json();
         state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
         state.fitmentCheck = null;
+        state.fitmentActiveStep = 2;
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
@@ -2539,6 +2567,7 @@ async function saveFitment(event) {
             state.fitmentForm = fitmentFormFromOverview(overview);
             state.fitmentMessage = t("fitment.saveSuccess");
             state.fitmentMessageTone = "success";
+            state.fitmentActiveStep = Math.min(3, Math.max(2, state.fitmentActiveStep + 1));
             return;
         }
         const response = await fetch(
@@ -2563,7 +2592,11 @@ async function saveFitment(event) {
             : nextStep.message;
         state.fitmentMessageTone = "success";
         void loadRenderHistory({ silent: true });
-        if (canRunVerdict) {
+        if (state.fitmentActiveStep === 1 && fitmentProviderReady(overview)) {
+            state.fitmentActiveStep = 2;
+            scrollFitmentTo('[data-fitment-section="rim"]');
+        } else if (canRunVerdict) {
+            state.fitmentActiveStep = 3;
             await runFitmentCheck();
         } else {
             scrollFitmentTo(nextStep.selector);
@@ -5173,6 +5206,8 @@ function bindEvents() {
     });
     document.querySelectorAll("[data-fitment-jump]").forEach((button) => {
         button.addEventListener("click", () => {
+            state.fitmentActiveStep = button.dataset.fitmentJump === "rim" ? 2 : 1;
+            renderFitment();
             const section = document.querySelector(
                 `[data-fitment-section="${button.dataset.fitmentJump}"]`
             );

@@ -212,7 +212,7 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "state.fitmentSourceAutoResolvedForJob !== jobId" in APP_JS
     assert "void resolveFitmentRimSource({ automatic: true });" in APP_JS
     assert 'state.fitmentSourceAutoResolvedForJob = "";' in APP_JS
-    assert "Сохранить и проверить совместимость" in APP_JS
+    assert "Сохранить и получить вывод" in APP_JS
     assert "await runFitmentCheck();" in APP_JS
     assert "function fitmentSourceBrand(overview)" in APP_JS
     assert "new URL(productUrl).hostname" in APP_JS
@@ -364,6 +364,19 @@ def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> Non
     assert "--desktop-content-max: 1080px" in STYLE_CSS
     assert "data-fitment-card-source-brand" in INDEX_HTML
     assert "data-fitment-card-source-sku" in INDEX_HTML
+
+
+def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
+    assert "Проверьте, подойдут ли диски" in INDEX_HTML
+    assert 'data-fitment-step-indicator="1"' in INDEX_HTML
+    assert 'data-fitment-step-indicator="2"' in INDEX_HTML
+    assert 'data-fitment-step-indicator="3"' in INDEX_HTML
+    assert "fitmentActiveStep" in APP_JS
+    assert "vehicleSection.hidden = activeStep !== 1" in APP_JS
+    assert "rimSection.hidden = activeStep !== 2" in APP_JS
+    assert "verdictCard.hidden = activeStep !== 3" in APP_JS
+    assert "Продолжить к параметрам диска" in APP_JS
+    assert "Сохранить и получить вывод" in APP_JS
 
 
 def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:

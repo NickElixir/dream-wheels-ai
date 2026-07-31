@@ -579,9 +579,9 @@
             <section class="hero-panel compact fitment-hero">
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="fitment.eyebrow">Проверка совместимости</p>
-                    <h1 data-i18n="fitment.title">Базовые параметры автомобиля</h1>
+                    <h1 data-i18n="fitment.title">Проверьте, подойдут ли диски</h1>
                     <p class="lede" data-fitment-subtitle data-i18n="fitment.subtitleFallback">
-                        Предварительные данные помогут подготовить будущую техническую проверку совместимости
+                        Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод
                     </p>
                 </div>
             </section>
@@ -613,9 +613,9 @@
 
                 <div class="fitment-shell" data-fitment-shell hidden>
                     <ol class="fitment-steps" aria-label="Этапы проверки">
-                        <li class="active"><span>1</span><strong>Автомобиль</strong><small>Подтвердите комплектацию</small></li>
-                        <li><span>2</span><strong>Диск</strong><small>Проверьте параметры</small></li>
-                        <li><span>3</span><strong>Вывод</strong><small>Получите предварительную оценку</small></li>
+                        <li class="active" data-fitment-step-indicator="1"><span>1</span><strong>Автомобиль</strong><small>Подтвердите комплектацию</small></li>
+                        <li data-fitment-step-indicator="2"><span>2</span><strong>Диск</strong><small>Проверьте параметры</small></li>
+                        <li data-fitment-step-indicator="3"><span>3</span><strong>Вывод</strong><small>Получите предварительную оценку</small></li>
                     </ol>
                     <article class="fitment-basics-card">
                         <div class="fitment-basics-head">
@@ -631,11 +631,11 @@
                             <span data-fitment-readiness-fields>—</span>
                         </div>
                         <div class="fitment-basic-grid">
-                            <div class="fitment-basic-row"><span>PCD</span><strong data-fitment-basic-pcd>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Центральное отверстие</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.diameter">Заводской диаметр</span><strong data-fitment-basic-diameter>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span>Разболтовка (PCD)</span><strong data-fitment-basic-pcd>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.diameter">Диаметр диска, дюймы</span><strong data-fitment-basic-diameter>Не указано</strong></div>
                             <div class="fitment-basic-row"><span data-i18n="fitment.width">Ориентировочная ширина</span><strong data-fitment-basic-width>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.offset">Ориентировочный ET</span><strong data-fitment-basic-offset>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.offset">Вылет (ET), мм</span><strong data-fitment-basic-offset>Не указано</strong></div>
                         </div>
                     </article>
 
@@ -793,11 +793,11 @@
                                     <input type="text" data-fitment-input="rim.sku" autocomplete="off">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.boltCount">Болтов</span>
+                                    <span data-i18n="fitment.boltCount">Крепёжных отверстий</span>
                                     <input type="number" inputmode="numeric" data-fitment-input="rim.bolt_count">
                                 </label>
                                 <label class="fitment-field">
-                                    <span>PCD</span>
+                                    <span>Разболтовка (PCD), мм</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.pcd_mm">
                                 </label>
                                 <label class="fitment-field">
@@ -809,17 +809,17 @@
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_width_j">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.centerBore">Центральное отверстие</span>
+                                    <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.center_bore_mm">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.offset">ET</span>
+                                    <span data-i18n="fitment.offset">Вылет (ET), мм</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.offset_et_mm">
                                 </label>
                             </div>
                         </section>
 
-                        <div class="create-flow-actions fitment-actions">
+                        <div class="create-flow-actions fitment-actions" data-fitment-actions>
                             <button type="submit" class="primary-button" data-fitment-save>Продолжить</button>
                             <button type="button" class="link-button" data-fitment-skip>Вернуться без изменений</button>
                         </div>
