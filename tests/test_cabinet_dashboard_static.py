@@ -377,6 +377,14 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "verdictCard.hidden = activeStep !== 3" in APP_JS
     assert "Продолжить к параметрам диска" in APP_JS
     assert "Сохранить и получить вывод" in APP_JS
+    assert "Подтвердите автомобиль и выберите комплектацию" in APP_JS
+
+
+def test_detail_feedback_uses_plain_outcome_language() -> None:
+    assert "👍 Удачный результат" in APP_JS
+    assert "👎 Нужна доработка" in APP_JS
+    assert "Гостевой пример: оценка сохранится только в этом браузере" in APP_JS
+    assert "Гостевой пример: фидбек" not in APP_JS
 
 
 def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:

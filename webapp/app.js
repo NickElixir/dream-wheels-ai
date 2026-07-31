@@ -1638,10 +1638,10 @@ function fitmentFieldLabel(path) {
         "vehicle.make": locale === "ru" ? "марка" : "make",
         "vehicle.model": locale === "ru" ? "модель" : "model",
         "vehicle.year": locale === "ru" ? "год" : "year",
-        "rim.bolt_count": locale === "ru" ? "болтов" : "bolt count",
-        "rim.pcd_mm": "PCD",
-        "rim.center_bore_mm": locale === "ru" ? "центральное отверстие" : "center bore",
-        "rim.wheel_diameter_in": locale === "ru" ? "диаметр" : "diameter",
+        "rim.bolt_count": locale === "ru" ? "крепёжных отверстий" : "bolt count",
+        "rim.pcd_mm": locale === "ru" ? "разболтовка (PCD)" : "PCD",
+        "rim.center_bore_mm": locale === "ru" ? "диаметр ступичного отверстия" : "center bore",
+        "rim.wheel_diameter_in": locale === "ru" ? "диаметр диска" : "diameter",
         "rim.wheel_width_j": locale === "ru" ? "ширина" : "width",
         "rim.offset_et_mm": "ET",
     };
@@ -1842,11 +1842,19 @@ function formatFitmentNumber(value, suffix = "") {
 }
 
 function fitmentSubtitle(overview) {
-    const title = overview?.vehicle?.title || fitmentEmptyValue();
-    if (locale === "ru") {
-        return `Предварительные данные для ${title} помогут подготовить будущую техническую проверку совместимости`;
+    if (state.fitmentActiveStep === 1) {
+        return locale === "ru"
+            ? "Подтвердите автомобиль и выберите комплектацию"
+            : "Confirm the vehicle and select its exact version";
     }
-    return `Preliminary data for ${title} helps prepare a future technical compatibility check`;
+    if (state.fitmentActiveStep === 2) {
+        return locale === "ru"
+            ? "Проверьте параметры диска перед предварительной оценкой"
+            : "Review the wheel details before the preliminary result";
+    }
+    return locale === "ru"
+        ? "Посмотрите предварительный вывод и условия установки"
+        : "Review the preliminary result and installation conditions";
 }
 
 function fitmentProviderReady(overview) {
@@ -3355,7 +3363,7 @@ function renderHistoryViewer(job) {
             <div class="render-asset-frame" data-asset-frame>
                 ${activeAvailable && activeUrl ? `
                     <img src="${escapeHtml(activeUrl)}" alt="${escapeHtml(activeView === "original" ? "Исходное фото" : "Результат")}" class="render-full-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${escapeHtml(assetErrorKey(activeView))}">
-                ` : originalBlobLoading ? renderAssetMissingState("Загружаем оригинал...") : renderAssetMissingState()}
+                ` : originalBlobLoading ? renderAssetMissingState("Загружаем исходное фото…") : renderAssetMissingState()}
             </div>
             ${missingLabels.length ? `
                 <div class="render-asset-notice" role="status">
@@ -3379,10 +3387,10 @@ function renderFeedbackBlock(job) {
     return `
         <section class="render-feedback" aria-live="polite">
             <h3>Оценка результата</h3>
-            <p>${guestDemo ? "Гостевой пример: фидбек остаётся локально" : "Помогите улучшить следующие примерки"}</p>
+            <p>${guestDemo ? "Гостевой пример: оценка сохранится только в этом браузере" : "Помогите улучшить следующие примерки"}</p>
             <div class="render-feedback-actions">
-                <button type="button" class="render-feedback-button like ${selected === "liked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="liked" ${busy ? "disabled" : ""}>👍 Понравилось</button>
-                <button type="button" class="render-feedback-button dislike ${selected === "disliked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Не похоже</button>
+                <button type="button" class="render-feedback-button like ${selected === "liked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="liked" ${busy ? "disabled" : ""}>👍 Удачный результат</button>
+                <button type="button" class="render-feedback-button dislike ${selected === "disliked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Нужна доработка</button>
             </div>
             <div class="render-feedback-reasons ${reasonsVisible ? "visible" : ""}">
                 <div class="reason-title">Что улучшить</div>
