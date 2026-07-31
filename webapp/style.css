@@ -648,10 +648,45 @@ a {
     overflow: clip;
 }
 
+.latest-preview-layout {
+    display: grid;
+    grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1.15fr);
+    gap: 16px;
+    min-width: 0;
+    align-items: stretch;
+}
+
+.latest-preview-info {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    align-content: start;
+}
+
+.latest-preview-layout .latest-result-image {
+    width: 100%;
+    height: auto;
+    min-height: 190px;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    align-self: start;
+}
+
 .latest-render-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     justify-content: stretch;
     width: 100%;
+}
+
+@container (max-width: 480px) {
+    .latest-preview-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .latest-preview-layout .latest-result-image {
+        height: auto;
+        min-height: 0;
+    }
 }
 
 .latest-render-actions .compact-button {
@@ -2696,17 +2731,18 @@ h2 {
 
 .render-summary {
     display: grid;
-    grid-template-columns: clamp(180px, 22vw, 260px) minmax(0, 1fr) auto;
+    grid-template-columns: 72px minmax(0, 1fr) minmax(118px, auto);
     grid-template-areas: "thumb body action";
-    gap: 20px;
-    align-items: start;
+    gap: 16px;
+    align-items: center;
 }
 
 .render-thumb-wrap {
     grid-area: thumb;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    border-radius: 18px;
+    height: 72px;
+    aspect-ratio: 1;
+    border-radius: 14px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2732,7 +2768,7 @@ h2 {
 
 .render-title {
     font-weight: 800;
-    font-size: 24px;
+    font-size: 18px;
     line-height: 1.1;
 }
 
@@ -2747,10 +2783,10 @@ h2 {
 .render-info-island {
     display: grid;
     gap: 8px;
-    padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.025);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
 }
 
 .render-subtitle {
@@ -2761,7 +2797,7 @@ h2 {
 
 .render-rim-specs {
     color: var(--text);
-    font-size: 17px;
+    font-size: 14px;
     line-height: 1.3;
     font-weight: 750;
 }
@@ -2804,6 +2840,25 @@ h2 {
     grid-area: action;
     justify-self: end;
     align-self: center;
+}
+
+.render-card-action .compact-button {
+    width: 100%;
+    min-width: 118px;
+}
+
+.render-date-group {
+    display: grid;
+    gap: 10px;
+}
+
+.render-date-group + .render-date-group {
+    margin-top: 22px;
+}
+
+.render-date-group > h2 {
+    margin: 0 0 2px;
+    font-size: 18px;
 }
 
 .render-disclosure {
@@ -3098,6 +3153,35 @@ h2 {
     grid-template-columns: repeat(2, max-content);
     justify-content: flex-end;
     gap: 10px;
+}
+
+.latest-render-actions.render-card-buttons {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+}
+
+.render-detail-hero {
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.render-detail-hero .compact-button {
+    flex: 0 0 auto;
+}
+
+.render-detail-page {
+    display: grid;
+    gap: 14px;
+}
+
+.render-detail-page > h2,
+.render-detail-page > .meta {
+    margin: 0;
+}
+
+.render-expanded-actions > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
 }
 
 .render-fitment-cta {
@@ -3510,6 +3594,17 @@ h2 {
     background: var(--accent-soft);
 }
 
+.fitment-steps li.complete {
+    border-color: rgba(221, 255, 0, 0.22);
+    color: var(--text);
+}
+
+.fitment-steps li.complete span {
+    border-color: rgba(221, 255, 0, 0.35);
+    background: rgba(221, 255, 0, 0.12);
+    color: var(--accent);
+}
+
 .fitment-steps span {
     display: grid;
     grid-row: span 2;
@@ -3664,27 +3759,24 @@ h2 {
 
 @media (max-width: 980px) and (min-width: 761px) {
     .render-summary {
-        grid-template-columns: minmax(220px, 40%) minmax(0, 1fr);
-        grid-template-areas:
-            "thumb body"
-            "thumb action";
-        align-items: start;
+        grid-template-columns: 72px minmax(0, 1fr) minmax(118px, auto);
+        grid-template-areas: "thumb body action";
+        align-items: center;
     }
 
     .render-card-action {
-        justify-self: start;
-        align-self: start;
+        justify-self: end;
+        align-self: center;
     }
 }
 
 @media (max-width: 760px) {
     .render-summary {
-        grid-template-columns: 1fr;
+        grid-template-columns: 64px minmax(0, 1fr);
         grid-template-areas:
-            "thumb"
-            "body"
-            "action";
-        gap: 16px;
+            "thumb body"
+            "action action";
+        gap: 12px;
     }
 
     .cabinet-render-card.is-open .render-summary {
@@ -3701,7 +3793,8 @@ h2 {
     }
 
     .render-thumb-wrap {
-        width: 100%;
+        width: 64px;
+        height: 64px;
         aspect-ratio: auto;
     }
 
@@ -3715,17 +3808,22 @@ h2 {
     }
 
     .cabinet-render-card .render-thumb-image {
-        height: auto;
+        height: 100%;
     }
 
     .render-thumb {
-        min-height: 180px;
-        height: clamp(180px, 44vw, 260px);
+        min-height: 0;
+        height: 100%;
     }
 
     .render-card-action {
-        justify-self: start;
-        align-self: start;
+        width: 100%;
+        justify-self: stretch;
+        align-self: stretch;
+    }
+
+    .render-detail-hero .compact-button {
+        width: 100%;
     }
 }
 

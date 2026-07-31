@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-app-build="20260731-p1-review">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260730-legal-ui">
+    <link rel="stylesheet" href="/style.css?v=20260731-p1-review">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -55,7 +55,8 @@
             <section class="hero-panel dashboard-hero">
                 <div class="hero-copy">
                     <p class="eyebrow">Мой Dream Wheels AI</p>
-                    <h1>Создавайте виртуальные примерки и возвращайтесь к готовым результатам</h1>
+                    <h1>Примерьте новые диски на своём автомобиле</h1>
+                    <p class="lede">Загрузите два фото — результат обычно готов за 1–2 минуты.</p>
                     <div class="dashboard-actions">
                         <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create">Начать примерку</button>
                         <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
@@ -73,7 +74,7 @@
                     <div class="panel-head">
                         <div>
                             <p class="section-label">Баланс</p>
-                            <h2><span data-dashboard-balance>—</span> рендеров</h2>
+                            <h2><span data-dashboard-balance>—</span> <span data-dashboard-balance-unit>примерок</span></h2>
                         </div>
                     </div>
                     <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
@@ -102,7 +103,7 @@
                     </div>
                     <div class="wallet-status-island tone-neutral dashboard-auth-info" data-dashboard-auth-info data-visible="false">
                         <div class="wallet-status-copy">
-                            <div class="wallet-status-sub">История примерок и остаток рендеров будут доступны после входа.</div>
+                            <div class="wallet-status-sub">История и остаток примерок будут доступны после входа.</div>
                         </div>
                     </div>
                     <div class="wallet-status-island tone-error" data-dashboard-error data-visible="false">
@@ -233,7 +234,7 @@
                                     <div class="wallet-status-title" data-identity-error-title>Не удалось распознать автомобиль</div>
                                     <div class="wallet-status-text" data-identity-error-text>—</div>
                                 </div>
-                                <span class="status-pill danger">Критично</span>
+                                <span class="status-pill danger" data-identity-error-badge>Не удалось</span>
                             </div>
                         </div>
                         <div class="identity-error-actions">
@@ -269,7 +270,7 @@
                                     <h2>Фото диска добавлено</h2>
                                 </div>
                             </div>
-                            <p class="identity-note">Технические параметры не определяются по фото и не нужны для визуального рендера.</p>
+                            <p class="identity-note">Размеры и параметры крепления не определяются по фото и не нужны для создания изображения.</p>
                             <p class="identity-note neutral" data-rim-source-summary>Источник колесного диска не указан. Его можно добавить позже в проверке совместимости.</p>
                         </article>
                     </div>
@@ -308,7 +309,7 @@
                     </div>
                     <div class="result-icon">✅</div>
                     <p class="result-title" data-i18n="result.title">Готово!</p>
-                    <p class="result-caption" data-i18n="result.caption">Ваш рендер с новыми дисками готов</p>
+                    <p class="result-caption" data-i18n="result.caption">Результат примерки готов</p>
                     <div class="create-flow-actions">
                         <button type="button" class="ghost-button compact-button" data-open-fitment-result hidden data-i18n="fitment.openFromResult">Проверить совместимость автомобиля и диска</button>
                     </div>
@@ -321,11 +322,6 @@
                 </div>
             </section>
 
-            <footer class="miniapp-footer">
-                <span data-user-info data-i18n="create.footerNotTelegram">Не в Telegram</span>
-                <span class="dot">·</span>
-                <span>2026</span>
-            </footer>
         </section>
 
         <section class="view" data-view="wallet" hidden>
@@ -334,13 +330,13 @@
                     <p class="eyebrow" data-i18n="wallet.eyebrow">Кабинет</p>
                     <h1 data-i18n="wallet.title">Мой Dream Wheels AI</h1>
                     <p class="lede" data-i18n="wallet.lede">
-                        Здесь видны баланс, последний счет и быстрый платежный flow в три шага
+                        Здесь видны баланс, последняя оплата и пополнение в три шага
                     </p>
                 </div>
                 <section class="balance-tile">
                     <div class="balance-badge">💎</div>
                     <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit">рендеров</div>
+                    <div class="balance-unit">примерок</div>
                     <div class="balance-note" data-balance-note hidden></div>
                 </section>
             </section>
@@ -348,7 +344,7 @@
             <section class="panel last-invoice-panel">
                 <div class="panel-head">
                     <div>
-                        <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последний счет</p>
+                        <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последняя оплата</p>
                         <h2 data-i18n="wallet.lastInvoiceTitle">Статус виден сразу после оплаты</h2>
                     </div>
                     <span class="status-pill neutral" data-payment-status>Нет платежей</span>
@@ -357,7 +353,7 @@
                 <div class="payment-card payment-card-grant" data-last-invoice-empty>
                     <div>
                         <div class="payment-card-title" data-i18n="wallet.noPaymentsTitle">Платежей пока нет</div>
-                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовый грант по /start на 30 дней появится в истории платежей</div>
+                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовые примерки по команде /start действуют 30 дней и появятся в истории пополнений</div>
                     </div>
                 </div>
                 <div class="payment-card" data-last-invoice-card hidden>
@@ -365,7 +361,7 @@
                         <div class="payment-card-title" data-last-invoice-number>#000000</div>
                         <div class="payment-card-meta" data-last-invoice-meta>Сегодня</div>
                     </div>
-                    <button type="button" class="payment-card-action" data-refresh-invoice hidden data-i18n="wallet.refreshInvoice">Обновить счет</button>
+                    <button type="button" class="payment-card-action" data-refresh-invoice hidden data-i18n="wallet.refreshInvoice">Обновить статус</button>
                 </div>
                 <div class="invoice-card" data-last-invoice-details hidden>
                     <div class="invoice-row">
@@ -382,14 +378,14 @@
                         </div>
                         <div class="invoice-field">
                             <span>Получено</span>
-                            <strong data-last-invoice-credits>0 рендеров</strong>
+                            <strong data-last-invoice-credits>0 примерок</strong>
                         </div>
                         <div class="invoice-field">
                             <span data-i18n="wallet.invoiceAmount">Сумма</span>
                             <strong data-last-invoice-amount-copy>0 ₽</strong>
                         </div>
                         <div class="invoice-field">
-                            <span data-i18n="wallet.invoiceNumber">Счет</span>
+                            <span data-i18n="wallet.invoiceNumber">Номер оплаты</span>
                             <strong data-last-invoice-number-copy>#000000</strong>
                         </div>
                     </div>
@@ -416,7 +412,7 @@
                             <span class="topup-step-index">1</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.stepChooseTitle">Выберите пакет</div>
-                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Пакетный режим активен по умолчанию</div>
+                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Выберите подходящее количество примерок</div>
                             </div>
                         </div>
                         <div class="topup-mode-switch" hidden>
@@ -429,28 +425,28 @@
                                     <span class="topup-icon" aria-hidden="true">⚡</span>
                                     <span class="package-main">
                                         <span class="package-name">100 ₽</span>
-                                        <span class="package-meta" data-topup-meta>3 рендера</span>
+                                        <span class="package-meta" data-topup-meta>3 примерки</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="200" data-topup-credits="7" data-selected="false">
                                     <span class="topup-icon" aria-hidden="true">🏁</span>
                                     <span class="package-main">
                                         <span class="package-name">200 ₽</span>
-                                        <span class="package-meta" data-topup-meta>7 рендеров</span>
+                                        <span class="package-meta" data-topup-meta>7 примерок</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="500" data-topup-credits="20" data-selected="false">
                                     <span class="topup-icon" aria-hidden="true">💎</span>
                                     <span class="package-main">
                                         <span class="package-name">500 ₽</span>
-                                        <span class="package-meta" data-topup-meta>20 рендеров / 30 дней</span>
+                                        <span class="package-meta" data-topup-meta>20 примерок</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45" data-selected="false">
                                     <span class="topup-icon" aria-hidden="true">👑</span>
                                     <span class="package-main">
                                         <span class="package-name">1 000 ₽</span>
-                                        <span class="package-meta" data-topup-meta>45 рендеров</span>
+                                        <span class="package-meta" data-topup-meta>45 примерок</span>
                                     </span>
                                 </button>
                             </div>
@@ -461,7 +457,7 @@
                                 <div class="custom-topup-row">
                                     <input id="custom-topup-amount" type="number" inputmode="numeric" min="100" max="3000" step="50" value="200" data-custom-topup disabled>
                                 </div>
-                                <p class="custom-topup-preview" data-custom-topup-preview>7 рендеров за 200 ₽</p>
+                                <p class="custom-topup-preview" data-custom-topup-preview>7 примерок за 200 ₽</p>
                             </div>
                         </div>
                     </div>
@@ -522,14 +518,14 @@
                 <summary>
                     <span>
                         <strong class="history-summary-title" data-i18n="wallet.paymentHistory">История платежей</strong>
-                        <span class="history-summary-copy" data-i18n="wallet.paymentHistoryHint">Покупки и сроки действия рендеров</span>
+                        <span class="history-summary-copy" data-i18n="wallet.paymentHistoryHint">Покупки и сроки действия примерок</span>
                     </span>
                     <span class="summary-action" data-wallet-history-toggle data-i18n="wallet.closeHistory">Скрыть</span>
                 </summary>
                 <div class="wallet-history-stack">
                     <section class="topup-island wallet-history-island wallet-expiry-section" data-wallet-expiry-section>
                         <div class="wallet-history-island-head">
-                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные рендеры</p>
+                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные примерки</p>
                             <div class="wallet-history-caption" data-i18n="wallet.availableRendersHint">Сначала списываются пакеты с ближайшей датой окончания</div>
                         </div>
                         <div class="wallet-expiry-list" data-wallet-expiry-list></div>
@@ -559,7 +555,7 @@
                     <p class="eyebrow" data-i18n="renders.eyebrow">Готовые работы</p>
                     <h1 data-i18n="renders.title">Мои виртуальные примерки</h1>
                     <p class="lede" data-i18n="renders.lede">
-                        Быстрый список последних генераций и их состояния
+                        Последние результаты и примерки, которые ещё создаются
                     </p>
                 </div>
             </section>
@@ -569,11 +565,12 @@
         </section>
 
         <section class="view" data-view="render-detail" hidden>
-            <section class="hero-panel compact">
+            <section class="hero-panel compact render-detail-hero">
                 <div class="hero-copy">
                     <h1>Детали примерки</h1>
                     <p class="lede">Сравните исходное фото и результат</p>
                 </div>
+                <button type="button" class="primary-button compact-button" data-new-tryon>Новая примерка</button>
             </section>
             <section class="panel" data-render-detail></section>
         </section>
@@ -582,16 +579,16 @@
             <section class="hero-panel compact fitment-hero">
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="fitment.eyebrow">Проверка совместимости</p>
-                    <h1 data-i18n="fitment.title">Базовые параметры автомобиля</h1>
+                    <h1 data-i18n="fitment.title">Проверьте, подойдут ли диски</h1>
                     <p class="lede" data-fitment-subtitle data-i18n="fitment.subtitleFallback">
-                        Предварительные данные помогут подготовить будущую техническую проверку совместимости
+                        Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод
                     </p>
                 </div>
             </section>
 
             <section class="panel fitment-panel">
                 <div class="fitment-context-row">
-                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к рендеру</button>
+                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к примерке</button>
                     <span class="fitment-preview-badge" data-fitment-preview-badge hidden>Demo</span>
                 </div>
 
@@ -616,9 +613,9 @@
 
                 <div class="fitment-shell" data-fitment-shell hidden>
                     <ol class="fitment-steps" aria-label="Этапы проверки">
-                        <li class="active"><span>1</span><strong>Автомобиль</strong><small>Подтвердите комплектацию</small></li>
-                        <li><span>2</span><strong>Диск</strong><small>Проверьте параметры</small></li>
-                        <li><span>3</span><strong>Вывод</strong><small>Получите предварительную оценку</small></li>
+                        <li class="active" data-fitment-step-indicator="1"><span>1</span><strong>Автомобиль</strong><small>Подтвердите комплектацию</small></li>
+                        <li data-fitment-step-indicator="2"><span>2</span><strong>Диск</strong><small>Проверьте параметры</small></li>
+                        <li data-fitment-step-indicator="3"><span>3</span><strong>Вывод</strong><small>Получите предварительную оценку</small></li>
                     </ol>
                     <article class="fitment-basics-card">
                         <div class="fitment-basics-head">
@@ -634,11 +631,11 @@
                             <span data-fitment-readiness-fields>—</span>
                         </div>
                         <div class="fitment-basic-grid">
-                            <div class="fitment-basic-row"><span>PCD</span><strong data-fitment-basic-pcd>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Центральное отверстие</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.diameter">Заводской диаметр</span><strong data-fitment-basic-diameter>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span>Разболтовка (PCD)</span><strong data-fitment-basic-pcd>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.diameter">Диаметр диска, дюймы</span><strong data-fitment-basic-diameter>Не указано</strong></div>
                             <div class="fitment-basic-row"><span data-i18n="fitment.width">Ориентировочная ширина</span><strong data-fitment-basic-width>Не указано</strong></div>
-                            <div class="fitment-basic-row"><span data-i18n="fitment.offset">Ориентировочный ET</span><strong data-fitment-basic-offset>Не указано</strong></div>
+                            <div class="fitment-basic-row"><span data-i18n="fitment.offset">Вылет (ET), мм</span><strong data-fitment-basic-offset>Не указано</strong></div>
                         </div>
                     </article>
 
@@ -796,11 +793,11 @@
                                     <input type="text" data-fitment-input="rim.sku" autocomplete="off">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.boltCount">Болтов</span>
+                                    <span data-i18n="fitment.boltCount">Крепёжных отверстий</span>
                                     <input type="number" inputmode="numeric" data-fitment-input="rim.bolt_count">
                                 </label>
                                 <label class="fitment-field">
-                                    <span>PCD</span>
+                                    <span>Разболтовка (PCD), мм</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.pcd_mm">
                                 </label>
                                 <label class="fitment-field">
@@ -812,17 +809,17 @@
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_width_j">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.centerBore">Центральное отверстие</span>
+                                    <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.center_bore_mm">
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.offset">ET</span>
+                                    <span data-i18n="fitment.offset">Вылет (ET), мм</span>
                                     <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.offset_et_mm">
                                 </label>
                             </div>
                         </section>
 
-                        <div class="create-flow-actions fitment-actions">
+                        <div class="create-flow-actions fitment-actions" data-fitment-actions>
                             <button type="submit" class="primary-button" data-fitment-save>Продолжить</button>
                             <button type="button" class="link-button" data-fitment-skip>Вернуться без изменений</button>
                         </div>
@@ -969,6 +966,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260730-legal-ui" type="module"></script>
+    <script src="/app.js?v=20260731-p1-review" type="module"></script>
 </body>
 </html>
