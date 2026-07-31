@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260731-p1-review">
+<html lang="ru" data-app-build="20260731-photo-guide">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260731-p1-review">
+    <link rel="stylesheet" href="/style.css?v=20260731-photo-guide">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -55,8 +55,8 @@
             <section class="hero-panel dashboard-hero">
                 <div class="hero-copy">
                     <p class="eyebrow">Мой Dream Wheels AI</p>
-                    <h1>Примерьте новые диски на своём автомобиле</h1>
-                    <p class="lede">Загрузите два фото — результат обычно готов за 1–2 минуты.</p>
+                    <h1 class="dashboard-title"><span>Примерьте</span><span>новые диски</span><span>на своём автомобиле</span></h1>
+                    <p class="lede">Загрузите два фото – результат будет готов за 1–2 минуты.</p>
                     <div class="dashboard-actions">
                         <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create">Начать примерку</button>
                         <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
@@ -870,19 +870,67 @@
                 <div class="hero-copy">
                     <p class="eyebrow">Помощь</p>
                     <h1>Как подготовить фото</h1>
+                    <p class="lede">Два чётких исходных фото помогут точнее сохранить автомобиль и форму выбранного диска.</p>
                 </div>
             </section>
-            <section class="panel">
-                <div class="form-stack">
-                    <div class="form-row">
-                        <strong>Фото машины</strong>
-                        <p>Снимите автомобиль сбоку без сильного поворота и обрезки колёс</p>
-                    </div>
-                    <div class="form-row">
-                        <strong>Фото диска</strong>
-                        <p>Используйте фото диска анфас, без перспективного наклона и сильных бликов</p>
-                    </div>
+            <section class="panel photo-guide-panel">
+                <div class="photo-guide-layout">
+                    <article class="photo-guide-card">
+                        <div>
+                            <p class="section-label">Фото автомобиля</p>
+                            <h2>Покажите машину целиком</h2>
+                        </div>
+                        <div class="photo-guide-examples">
+                            <figure class="photo-guide-example is-bad">
+                                <img src="/assets/photo-guide-car-bad.jpg" alt="Автомобиль Mercedes снят под углом, такое фото лучше переснять">
+                                <figcaption><span>Лучше переснять</span>Ракурс три четверти и крупный план</figcaption>
+                            </figure>
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-car.jpg" alt="Автомобиль снят сбоку, оба колеса видны">
+                                <figcaption><span>Подходит</span>Сбоку, в дневном свете</figcaption>
+                            </figure>
+                        </div>
+                        <ul class="photo-guide-checklist">
+                            <li>Автомобиль виден целиком</li>
+                            <li>Снимите сбоку или под небольшим углом</li>
+                            <li>Все колёса попали в кадр</li>
+                            <li>Выбирайте дневной свет</li>
+                        </ul>
+                        <p class="photo-guide-warning">Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов.</p>
+                    </article>
+
+                    <article class="photo-guide-card">
+                        <div>
+                            <p class="section-label">Фото диска</p>
+                            <h2>Снимите диск прямо спереди</h2>
+                        </div>
+                        <div class="photo-guide-examples photo-guide-wheel-examples">
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-wheel-product.jpg" alt="Автомобильный диск снят прямо спереди на светлом фоне">
+                                <figcaption><span>Подходит</span>Один диск анфас, весь рисунок в фокусе</figcaption>
+                            </figure>
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-wheel-real.jpg" alt="Комплект автомобильных дисков снят сверху без упаковки">
+                                <figcaption><span>Подходит</span>Комплект дисков, без рук и упаковки</figcaption>
+                            </figure>
+                        </div>
+                        <ul class="photo-guide-checklist">
+                            <li>Диск снят прямо спереди</li>
+                            <li>Видна вся окружность</li>
+                            <li>Рисунок спиц находится в фокусе</li>
+                            <li>Снимайте без упаковки и рук в кадре</li>
+                        </ul>
+                        <p class="photo-guide-warning">Не используйте фото под углом, с сильными отражениями или частично закрытым диском.</p>
+                    </article>
                 </div>
+                <aside class="photo-guide-ready">
+                    <div>
+                        <p class="section-label">Перед загрузкой</p>
+                        <strong>JPG или PNG · до 10 МБ</strong>
+                        <span>Ссылка на товар необязательна</span>
+                    </div>
+                    <button type="button" class="primary-button" data-nav="create">Начать примерку</button>
+                </aside>
             </section>
         </section>
 
@@ -966,6 +1014,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260731-p1-review" type="module"></script>
+    <script src="/app.js?v=20260731-photo-guide" type="module"></script>
 </body>
 </html>

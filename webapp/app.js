@@ -888,6 +888,7 @@ const state = {
     renderAssetBlobUrlsByJob: {},
     renderAssetBlobLoadingByJob: {},
     feedbackByJob: {},
+    feedbackReasonPickerByJob: {},
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
     feedbackNoticeByJob: {},
@@ -1770,6 +1771,10 @@ function fitmentSaveLabel() {
     return locale === "ru" ? "Сохранить и получить вывод" : "Save and get result";
 }
 
+function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
+    return !fitmentProviderReady(overview);
+}
+
 function fitmentSourceProgressTitle() {
     if (state.fitmentSourceResolving) {
         return locale === "ru" ? "Извлекаем параметры из источника" : "Extracting parameters from the source";
@@ -2127,9 +2132,11 @@ function renderFitment() {
         );
     });
     if (variantsLoad) {
-        variantsLoad.disabled = demoMode
-            || state.fitmentVehicleVariantsLoading
+        variantsLoad.disabled = state.fitmentVehicleVariantsLoading
             || state.fitmentVehicleVariantApplying;
+        variantsLoad.textContent = state.fitmentVehicleVariantsLoading
+            ? (locale === "ru" ? "Подбираем комплектации…" : "Finding versions…")
+            : (locale === "ru" ? "Подобрать комплектацию" : "Choose vehicle version");
     }
     if (variantsList) {
         variantsList.replaceChildren();
@@ -2156,6 +2163,11 @@ function renderFitment() {
     }
 
     const activeStep = state.fitmentActiveStep;
+    if (skipButton) {
+        skipButton.textContent = activeStep === 2 && fitmentNeedsVehicleVariant(overview)
+            ? (locale === "ru" ? "Выбрать комплектацию" : "Choose vehicle version")
+            : (locale === "ru" ? "Вернуться без изменений" : "Back without changes");
+    }
     document.querySelectorAll("[data-fitment-step-indicator]").forEach((indicator) => {
         const step = Number(indicator.dataset.fitmentStepIndicator);
         indicator.classList.toggle("active", step === activeStep);
@@ -2477,7 +2489,25 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
 }
 
 async function loadFitmentVehicleVariants() {
-    if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentVehicleVariantsLoading) return;
+    if (!state.fitmentJobId || state.fitmentVehicleVariantsLoading) return;
+    const vehicle = state.fitmentForm.vehicle;
+    if (!vehicle.make || !vehicle.model || !vehicle.year) {
+        state.fitmentError = locale === "ru"
+            ? "Укажите марку, модель и год автомобиля, чтобы подобрать комплектацию."
+            : "Enter the vehicle make, model, and year to find its exact version.";
+        renderFitment();
+        return;
+    }
+    if (shouldUseDemoFitment(state.fitmentJobId)) {
+        state.fitmentMessage = locale === "ru"
+            ? "Для примера выберите параметры диска на следующем шаге."
+            : "For this example, continue to the wheel details.";
+        state.fitmentMessageTone = "success";
+        state.fitmentActiveStep = 2;
+        renderFitment();
+        scrollFitmentTo('[data-fitment-section="rim"]');
+        return;
+    }
     state.fitmentVehicleVariantsLoading = true;
     state.fitmentError = "";
     renderFitment();
@@ -2493,6 +2523,11 @@ async function loadFitmentVehicleVariants() {
                 ? "Версии не найдены. Уточните год, рынок или модификацию вручную."
                 : "No versions found. Refine year, market, or modification manually.";
             state.fitmentMessageTone = "warning";
+        } else {
+            state.fitmentMessage = locale === "ru"
+                ? "Выберите подходящую комплектацию из списка ниже."
+                : "Choose the matching vehicle version below.";
+            state.fitmentMessageTone = "success";
         }
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
@@ -2593,21 +2628,28 @@ async function saveFitment(event) {
         const overview = await response.json();
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
+        const savedFromStep = state.fitmentActiveStep;
         const nextStep = fitmentNextStep(overview);
         const canRunVerdict = overview.readiness?.ready && fitmentProviderReady(overview);
-        state.fitmentMessage = canRunVerdict
-            ? (locale === "ru" ? "Данные сохранены. Проверяем совместимость…" : "Details saved. Checking compatibility…")
-            : nextStep.message;
-        state.fitmentMessageTone = "success";
         void loadRenderHistory({ silent: true });
-        if (state.fitmentActiveStep === 1 && fitmentProviderReady(overview)) {
+        if (savedFromStep === 1) {
             state.fitmentActiveStep = 2;
+            state.fitmentMessage = fitmentProviderReady(overview)
+                ? (locale === "ru" ? "Автомобиль сохранён. Проверьте параметры диска." : "Vehicle saved. Review the wheel details.")
+                : (locale === "ru" ? "Автомобиль сохранён. Заполните параметры диска; комплектацию можно выбрать перед итоговой проверкой." : "Vehicle saved. Add wheel details; choose the exact vehicle version before the final check.");
+            state.fitmentMessageTone = "success";
             scrollFitmentTo('[data-fitment-section="rim"]');
         } else if (canRunVerdict) {
             state.fitmentActiveStep = 3;
+            state.fitmentMessage = locale === "ru" ? "Данные сохранены. Проверяем совместимость…" : "Details saved. Checking compatibility…";
+            state.fitmentMessageTone = "success";
             await runFitmentCheck();
         } else {
-            scrollFitmentTo(nextStep.selector);
+            state.fitmentMessage = fitmentProviderReady(overview)
+                ? nextStep.message
+                : (locale === "ru" ? "Чтобы получить вывод, выберите точную комплектацию автомобиля." : "Choose the exact vehicle version to get the result.");
+            state.fitmentMessageTone = "warning";
+            scrollFitmentTo("[data-fitment-shell]");
         }
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
@@ -3284,6 +3326,11 @@ function feedbackRecordForJob(job) {
     return normalizeFeedbackRecord(job.feedback);
 }
 
+function feedbackReasonPickerVisible(job) {
+    return feedbackSentimentForJob(job) === "disliked"
+        || Boolean(state.feedbackReasonPickerByJob[job?.job_id]);
+}
+
 function feedbackSentimentForJob(job) {
     return feedbackRecordForJob(job)?.sentiment || "";
 }
@@ -3295,6 +3342,7 @@ function feedbackReasonForJob(job) {
 function setFeedbackRecord(jobId, feedback) {
     const normalized = normalizeFeedbackRecord(feedback);
     state.feedbackByJob[jobId] = normalized;
+    delete state.feedbackReasonPickerByJob[jobId];
     state.renderHistory = state.renderHistory.map((job) => (
         job.job_id === jobId ? { ...job, feedback: normalized } : job
     ));
@@ -3380,7 +3428,7 @@ function renderFeedbackBlock(job) {
     const busy = Boolean(state.feedbackBusyByJob[jobId]);
     const error = state.feedbackErrorByJob[jobId] || "";
     const selectedReason = feedbackReasonForJob(job);
-    const reasonsVisible = selected === "disliked";
+    const reasonsVisible = feedbackReasonPickerVisible(job);
     const guestDemo = isGuestRenderJob(job);
     const notice = state.feedbackNoticeByJob[jobId] || "";
 
@@ -3390,7 +3438,7 @@ function renderFeedbackBlock(job) {
             <p>${guestDemo ? "Гостевой пример: оценка сохранится только в этом браузере" : "Помогите улучшить следующие примерки"}</p>
             <div class="render-feedback-actions">
                 <button type="button" class="render-feedback-button like ${selected === "liked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="liked" ${busy ? "disabled" : ""}>👍 Удачный результат</button>
-                <button type="button" class="render-feedback-button dislike ${selected === "disliked" ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Нужна доработка</button>
+                <button type="button" class="render-feedback-button dislike ${reasonsVisible ? "selected" : ""}" data-history-feedback="${escapeHtml(jobId)}" data-feedback-sentiment="disliked" ${busy ? "disabled" : ""}>👎 Нужна доработка</button>
             </div>
             <div class="render-feedback-reasons ${reasonsVisible ? "visible" : ""}">
                 <div class="reason-title">Что улучшить</div>
@@ -3566,7 +3614,7 @@ function renderRenderDetail() {
     }
     const downloadUrl = hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
     const fitmentAction = fitmentAvailable(job)
-        ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">Проверить, подойдут ли диски</button>`
+        ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">${t("fitment.openFromHistory")}</button>`
         : "";
     container.innerHTML = `
         <div class="render-detail-page">
@@ -5168,7 +5216,19 @@ function bindEvents() {
         void openFitmentView(state.jobId, { originView: "create" });
     });
     document.querySelector("[data-fitment-back]")?.addEventListener("click", closeFitmentView);
-    document.querySelector("[data-fitment-skip]")?.addEventListener("click", closeFitmentView);
+    document.querySelector("[data-fitment-skip]")?.addEventListener("click", () => {
+        if (state.fitmentActiveStep === 2 && fitmentNeedsVehicleVariant()) {
+            state.fitmentActiveStep = 1;
+            state.fitmentMessage = locale === "ru"
+                ? "Выберите комплектацию, чтобы получить точный вывод."
+                : "Choose the vehicle version to get an accurate result.";
+            state.fitmentMessageTone = "warning";
+            renderFitment();
+            scrollFitmentTo('[data-fitment-variants-load]');
+            return;
+        }
+        closeFitmentView();
+    });
     document.querySelector("[data-fitment-source-toggle]")?.addEventListener("click", () => {
         state.fitmentSourceOpen = !state.fitmentSourceOpen;
         renderFitment();
@@ -5323,9 +5383,24 @@ function bindEvents() {
 
         const feedbackButton = event.target.closest("[data-history-feedback]");
         if (feedbackButton) {
+            const jobId = feedbackButton.dataset.historyFeedback;
+            const sentiment = feedbackButton.dataset.feedbackSentiment;
+            if (sentiment === "disliked") {
+                const selected = feedbackSentimentForJob(state.renderHistory.find((job) => job.job_id === jobId));
+                if (selected === "disliked") {
+                    void submitHistoryFeedback(jobId, sentiment);
+                } else {
+                    state.feedbackReasonPickerByJob[jobId] = !state.feedbackReasonPickerByJob[jobId];
+                    state.feedbackErrorByJob[jobId] = "";
+                    renderRenders();
+                    if (state.view === "render-detail") renderRenderDetail();
+                }
+                return;
+            }
+            delete state.feedbackReasonPickerByJob[jobId];
             void submitHistoryFeedback(
-                feedbackButton.dataset.historyFeedback,
-                feedbackButton.dataset.feedbackSentiment
+                jobId,
+                sentiment
             );
             return;
         }

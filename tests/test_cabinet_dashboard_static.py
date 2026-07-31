@@ -287,7 +287,34 @@ def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> Non
     )[0]
     assert 'status === "completed"' in history_card
     assert 'const statusMarkup = status === "completed"' in history_card
-    assert "grid-template-columns: 72px minmax(0, 1fr)" in STYLE_CSS
+    assert "grid-template-columns: minmax(160px, 30%) minmax(0, 1fr)" in STYLE_CSS
+
+
+def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> None:
+    assert "/assets/photo-guide-car.jpg" in INDEX_HTML
+    assert (ROOT / "webapp" / "assets" / "photo-guide-car.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-car-bad.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-product.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-real.jpg").is_file()
+    assert "Снимите диск прямо спереди" in INDEX_HTML
+    assert 'data-nav="create">Начать примерку</button>' in INDEX_HTML
+    assert "/assets/photo-guide-wheel-product.jpg" in INDEX_HTML
+    assert "/assets/photo-guide-wheel-real.jpg" in INDEX_HTML
+    assert "photo-guide-wheel-examples" in STYLE_CSS
+
+
+def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
+    assert "const savedFromStep = state.fitmentActiveStep;" in APP_JS
+    assert "if (savedFromStep === 1)" in APP_JS
+    assert 'state.fitmentActiveStep = 2;' in APP_JS
+    assert "scrollFitmentTo('[data-fitment-section=\"rim\"]');" in APP_JS
+
+
+def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
+    assert "feedbackReasonPickerByJob" in APP_JS
+    assert "function feedbackReasonPickerVisible(job)" in APP_JS
+    assert 'sentiment === "disliked"' in APP_JS
+    assert 'data-history-feedback-reason' in APP_JS
 
 
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
