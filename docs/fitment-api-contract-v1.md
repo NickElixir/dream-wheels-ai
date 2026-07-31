@@ -2,7 +2,7 @@
 
 ## Scope
 
-API boundary for the future Detailed Fitment Check. It is provider-neutral and does not prescribe the final Fitment UI.
+API boundary for the current Standard Fitment Check. It is provider-neutral and does not prescribe the final Fitment UI. An Extended Fitment Check is a separate future workflow: it must not reuse this endpoint or present Standard-provider data as extended evidence.
 
 ## Preconditions
 
@@ -23,13 +23,14 @@ Idempotency-Key: <uuid>
   "rim_setup_id": "uuid",
   "render_job_id": "uuid-or-null",
   "trigger": "user_requested",
-  "mode": "detailed"
+  "mode": "standard"
 }
 ```
 
 Validation:
 
 - `trigger` is only `user_requested` in v1;
+- `mode` is `standard`; the legacy value `detailed` is accepted and normalized to `standard` during the transition;
 - validate object ownership server-side;
 - snapshot VehicleIdentity and RimSetup at acceptance;
 - reject duplicate active/equivalent requests through idempotency and input-version hash;

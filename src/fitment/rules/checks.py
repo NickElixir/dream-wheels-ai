@@ -141,7 +141,9 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
     """Размер (diameter/width) и ET против approved-набора провайдера для оси.
 
     Логика прототипа wheel_fitment_test_v2 (exact → uncertain(no ET) →
-    not approved), расширенная градацией допусков ET/размера.
+    not approved). Выход ET за provider reference не является автоматически
+    жёстким конфликтом: без подтверждённого interference он остаётся
+    preliminary verdict с обязательной физической проверкой зазоров.
     """
     rule = "size_offset"
     allowed = profile.allowed_for_axle(axle)
@@ -233,33 +235,10 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
             axle=axle,
             detail=detail,
         )
-    if abs(delta) > tol.ET_HARD_LIMIT_MM:
-        status, low_evidence_code = _conflict_status(rim.offset_et_mm)
-        return RuleResult(
-            rule=rule,
-            status=status,
-            reason_code=low_evidence_code or ReasonCode.offset_out_of_range,
-            axle=axle,
-            detail=detail,
-        )
-    inward_limit = tol.ET_OK_BAND_MM + tol.ET_INWARD_MAX_MM
-    outward_limit = tol.ET_OK_BAND_MM + tol.ET_OUTWARD_MAX_MM
-    within_conditional = (delta > 0 and delta <= inward_limit) or (
-        delta < 0 and abs(delta) <= outward_limit
-    )
-    if within_conditional:
-        return RuleResult(
-            rule=rule,
-            status=VerdictStatus.compatible_with_conditions,
-            reason_code=ReasonCode.offset_deviation_check_required,
-            axle=axle,
-            detail=detail,
-        )
-    status, low_evidence_code = _conflict_status(rim.offset_et_mm)
     return RuleResult(
         rule=rule,
-        status=status,
-        reason_code=low_evidence_code or ReasonCode.offset_out_of_range,
+        status=VerdictStatus.compatible_with_conditions,
+        reason_code=ReasonCode.offset_deviation_check_required,
         axle=axle,
         detail=detail,
     )

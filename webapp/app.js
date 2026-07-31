@@ -1174,12 +1174,12 @@ function updateCreateFooter() {
     if (!user) {
         const websiteUsername = state.websiteAuth?.username;
         userInfo.textContent = websiteUsername
-            ? `Telegram — @${websiteUsername}`
+            ? `Telegram – @${websiteUsername}`
             : t("create.footerNotTelegram");
         return;
     }
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || `id ${user.id}`;
-    userInfo.textContent = `Telegram — ${name}`;
+    userInfo.textContent = `Telegram – ${name}`;
 }
 
 function getDisplayName() {
@@ -1705,9 +1705,11 @@ function fitmentCandidateLabel(candidate) {
     const value = candidate?.value;
     const confidence = Number(candidate?.confidence);
     const confidenceLabel = Number.isFinite(confidence)
-        ? `${Math.round(confidence * 100)}%`
+        ? (locale === "ru"
+            ? `уверенность распознавания ${Math.round(confidence * 100)}%`
+            : `recognition confidence ${Math.round(confidence * 100)}%`)
         : "";
-    return [value, confidenceLabel].filter(Boolean).join(" — ");
+    return [value, confidenceLabel].filter(Boolean).join(" – ");
 }
 
 function renderFitmentCandidates() {
@@ -1897,10 +1899,12 @@ function fitmentVerdictMessage(item) {
     if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
     if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";
     if (code === "center_bore_too_small") return ru ? "Центральное отверстие диска меньше ступицы автомобиля." : "The wheel center bore is smaller than the vehicle hub.";
-    if (code === "offset_out_of_range") {
+    if (code === "offset_deviation_check_required" || code === "offset_out_of_range") {
         const range = `ET${formatFitmentNumber(details.reference_et_min_mm).replace(/\s/g, "")}–${formatFitmentNumber(details.reference_et_max_mm).replace(/\s/g, "")}`;
         const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
-        return ru ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}.` : `Wheel ${rim}; vehicle reference range ${range}.`;
+        return ru
+            ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}. Перед установкой проверьте внутренний и наружный зазор.`
+            : `Wheel ${rim}; vehicle reference range ${range}. Check inner and outer clearances before installation.`;
     }
     return ru ? "Требуется дополнительная техническая проверка." : "Additional technical review is required.";
 }
@@ -2555,7 +2559,7 @@ async function runFitmentCheck() {
                 rim_setup_id: overview.rim_setup_id,
                 render_job_id: overview.job_id,
                 trigger: "user_requested",
-                mode: "detailed",
+                mode: "standard",
             }),
         });
         if (!response.ok) throw new Error(await parseApiError(response));
@@ -4562,7 +4566,7 @@ function refreshButtonsForCurrentView() {
         const disabled = !ready || consentMissing || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
-            text: hasProposal ? `Создать примерку — 1 примерка${state.balance !== null ? `. Останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
+            text: hasProposal ? `Создать примерку – 1 примерка${state.balance !== null ? `, останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
             enabled: !disabled,
             onClick: !disabled && hasProposal ? submitJob : null,
         });

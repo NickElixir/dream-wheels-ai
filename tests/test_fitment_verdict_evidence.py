@@ -58,6 +58,19 @@ def test_et_inside_derived_interval_is_compatible() -> None:
     assert verdict.status is VerdictStatus.compatible
 
 
+def test_et_outside_reference_interval_requires_clearance_check() -> None:
+    result = check_size_and_offset(
+        _profile(OffsetReference(axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45)),
+        _rim(70),
+        "front",
+    )
+
+    verdict = assemble_verdict([result], provider="wheel_size", is_preliminary=True)
+    assert result.status is VerdictStatus.compatible_with_conditions
+    assert result.reason_code is ReasonCode.offset_deviation_check_required
+    assert verdict.status is VerdictStatus.compatible_with_conditions
+
+
 def test_advisories_are_not_blocking() -> None:
     from src.fitment.schemas import RuleResult
 

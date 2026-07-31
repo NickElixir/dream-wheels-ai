@@ -166,6 +166,7 @@ def _patch_auth_and_inputs(monkeypatch, conn, *, loaded_row=None, provider=Provi
 
 def _input_hash(row=None):
     _, _, snapshot = fitment_checks_api._snapshot(row or _row())
+    snapshot["check_mode"] = "standard"
     return hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
 
 
@@ -192,6 +193,24 @@ def _post(key="test-key", *, render_job_id=None):
         headers={"Idempotency-Key": key},
         json=payload,
     )
+
+
+def test_create_check_rejects_unimplemented_extended_mode(monkeypatch):
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn)
+
+    response = client.post(
+        "/fitment/checks",
+        headers={"Idempotency-Key": "extended-key"},
+        json={
+            "vehicle_identity_id": VEHICLE_ID,
+            "rim_setup_id": RIM_SETUP_ID,
+            "mode": "extended",
+        },
+    )
+
+    assert response.status_code == 422
+    assert not conn.inserted
 
 
 def test_create_check_rejects_other_users_inputs(monkeypatch):
@@ -239,6 +258,7 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     body = response.json()
     assert body["execution_status"] == "completed"
     assert body["verdict"] == "compatible"
+    assert body["mode"] == "standard"
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"] == snapshot["rim_setup"]["rear"]
     evaluation = json.loads(conn.inserted[0][15])

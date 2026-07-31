@@ -6,7 +6,7 @@ import hashlib
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Query
@@ -31,11 +31,14 @@ class CheckCreateRequest(BaseModel):
     rim_setup_id: UUID
     render_job_id: UUID | None = None
     trigger: str = "user_requested"
-    mode: str = "detailed"
+    # `detailed` is retained only for clients released before the Standard /
+    # Extended naming. It is normalized to `standard` below.
+    mode: Literal["standard", "detailed"] = "standard"
 
 
 class CheckResponse(BaseModel):
     id: str
+    mode: Literal["standard"] = "standard"
     execution_status: str
     verdict: str | None = None
     is_preliminary: bool = True
@@ -196,9 +199,9 @@ async def create_check(
 ):
     if not fitment_config.FITMENT_VERDICT_ENABLED:
         raise HTTPException(status_code=503, detail="Fitment verdict is not enabled")
-    if request.trigger != "user_requested" or request.mode != "detailed":
+    if request.trigger != "user_requested":
         raise HTTPException(
-            status_code=422, detail="Only user_requested detailed checks are supported"
+            status_code=422, detail="Only user_requested standard checks are supported"
         )
     auth = _auth(init_data, telegram_user_id, authorization)
     pool = db.get_pool()
@@ -210,6 +213,7 @@ async def create_check(
         if request.render_job_id and row["owned_job_id"] is None:
             raise HTTPException(status_code=404, detail="Render job not found")
         vehicle, setup, snapshot = _snapshot(row)
+        snapshot["check_mode"] = "standard"
         provider_mapping = vehicle.provider_mappings.get("wheel_size") or {}
         required_mapping = {
             "make_slug",
@@ -340,6 +344,7 @@ def _response(row) -> CheckResponse:
     ]
     return CheckResponse(
         id=str(row["id"]),
+        mode="standard",
         execution_status=row["execution_status"],
         verdict=row["verdict"],
         is_preliminary=bool(row["is_preliminary"]),
