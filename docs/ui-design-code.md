@@ -15,7 +15,8 @@
 
 ## Separators and numbers
 
-- Never use a full stop or middle dot as a visual separator in user-facing UI.
+- Never use a full stop, middle dot (`·`), bullet (`•`), or a similar glyph as a visual separator in user-facing UI.
+- Use only the en dash `–` for an explanatory clause or status metadata. Do not use the em dash `—` in UI copy: it reads overly editorial and breaks the product's compact visual language.
 - Technical parameter series use spaces around a slash: `20" / 8,5J / 5×114,3` in Russian and `20" / 8.5J / 5×114.3` in English.
 - Russian decimal values use a comma. A decimal point is allowed only in English locale, URLs, and code-like identifiers.
 - Vehicle and rim names use spaces only: `Toyota Prius`, `OZ Ultraleggera`. Put vehicle year/generation and rim specifications on a separate secondary line instead of joining them with a dash.
