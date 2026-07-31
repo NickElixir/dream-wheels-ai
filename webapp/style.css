@@ -1516,7 +1516,7 @@ h2 {
 .doc-link,
 .doc-row,
 .support-link {
-    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .amount-chip {
@@ -1694,6 +1694,24 @@ h2 {
 .doc-row:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px rgba(7, 8, 9, 0.92), 0 0 0 4px rgba(221, 255, 0, 0.3);
+}
+
+.support-link:focus-visible,
+.doc-link:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.58);
+    background: rgba(255, 255, 255, 0.065);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 8px 26px rgba(255, 255, 255, 0.11);
+}
+
+@media (hover: hover) {
+    .support-link:hover,
+    .doc-link:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.58);
+        background: rgba(255, 255, 255, 0.065);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 8px 26px rgba(255, 255, 255, 0.11);
+    }
 }
 
 .ghost-button:active,
@@ -3195,7 +3213,7 @@ h2 {
 
 .support-link {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 12px;
     text-align: left;
@@ -3231,12 +3249,6 @@ h2 {
     font-size: 13px;
     line-height: 1.4;
     overflow-wrap: anywhere;
-}
-
-.support-link-action,
-.doc-link > span:last-child {
-    color: var(--accent-strong);
-    font-weight: 900;
 }
 
 .support-refund-block {
