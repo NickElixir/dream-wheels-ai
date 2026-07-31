@@ -390,6 +390,10 @@ a {
         linear-gradient(180deg, rgba(29, 34, 43, 0.98), rgba(18, 21, 28, 0.98));
 }
 
+.dashboard-title span {
+    display: block;
+}
+
 .dashboard-actions {
     display: flex;
     flex-wrap: wrap;
@@ -2731,7 +2735,7 @@ h2 {
 
 .render-summary {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr) minmax(118px, auto);
+    grid-template-columns: minmax(160px, 30%) minmax(0, 1fr) minmax(118px, auto);
     grid-template-areas: "thumb body action";
     gap: 16px;
     align-items: center;
@@ -2740,8 +2744,8 @@ h2 {
 .render-thumb-wrap {
     grid-area: thumb;
     width: 100%;
-    height: 72px;
-    aspect-ratio: 1;
+    height: auto;
+    aspect-ratio: 4 / 3;
     border-radius: 14px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
@@ -2809,6 +2813,9 @@ h2 {
 
 .render-demo-note {
     margin-top: 2px;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
     padding: 10px 12px;
     border: 1px solid rgba(255, 204, 86, 0.22);
     border-radius: 14px;
@@ -3029,6 +3036,19 @@ h2 {
     padding: 9px 11px;
     border-radius: 13px;
     font-weight: 850;
+    transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.render-feedback-button:hover:not(:disabled) {
+    border-color: rgba(221, 255, 0, 0.4);
+    background: rgba(221, 255, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.render-feedback-button:focus-visible,
+.render-reason:focus-visible {
+    outline: 3px solid rgba(221, 255, 0, 0.28);
+    outline-offset: 2px;
 }
 
 .render-feedback-button.like.selected {
@@ -3253,12 +3273,15 @@ h2 {
     font-size: 15px;
 }
 
-.view[data-view="photo-guide"] .form-stack {
+.photo-guide-panel {
+    display: grid;
+    gap: 20px;
+}
+
+.photo-guide-layout {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
-    max-width: 100%;
-    margin: 0 auto;
 }
 
 @media (max-width: 900px) {
@@ -3267,17 +3290,153 @@ h2 {
     }
 }
 
-.view[data-view="photo-guide"] .form-row {
+.photo-guide-card {
     display: grid;
-    gap: 10px;
-    justify-items: center;
-    text-align: center;
-    padding: 20px 22px;
+    align-content: start;
+    gap: 16px;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
 }
 
-.view[data-view="photo-guide"] .form-row p {
+.photo-guide-card h2 {
     margin: 0;
-    max-width: 44ch;
+    font-size: 20px;
+    line-height: 1.15;
+}
+
+.photo-guide-examples {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.photo-guide-example,
+.photo-guide-wheel-visual {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    min-width: 0;
+}
+
+.photo-guide-example {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-3);
+}
+
+.photo-guide-example img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.photo-guide-example figcaption,
+.photo-guide-wheel-visual figcaption {
+    display: grid;
+    gap: 3px;
+    padding: 0 10px 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.photo-guide-example figcaption span,
+.photo-guide-wheel-visual figcaption span {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.photo-guide-example.is-good { border-color: rgba(39, 216, 138, 0.28); }
+.photo-guide-example.is-good figcaption span { color: var(--success); }
+.photo-guide-example.is-bad { border-color: rgba(255, 204, 86, 0.28); }
+.photo-guide-example.is-bad figcaption span { color: var(--warning); }
+
+.photo-guide-wheel-visual {
+    place-items: center;
+    min-height: 198px;
+    padding: 14px;
+    border: 1px solid rgba(39, 216, 138, 0.28);
+    border-radius: 16px;
+    background: radial-gradient(circle at 50% 46%, rgba(221, 255, 0, 0.11), transparent 42%), rgba(39, 216, 138, 0.035);
+}
+
+.photo-guide-wheel-visual svg {
+    width: min(100%, 230px);
+    height: 148px;
+    fill: none;
+    stroke: var(--success);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.photo-guide-wheel-visual figcaption {
+    width: 100%;
+    padding: 0;
+    text-align: center;
+}
+
+.photo-guide-wheel-visual figcaption span { color: var(--success); }
+
+.photo-guide-checklist {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.photo-guide-checklist li {
+    position: relative;
+    padding-left: 22px;
+}
+
+.photo-guide-checklist li::before {
+    position: absolute;
+    left: 0;
+    content: "✓";
+    color: var(--success);
+    font-weight: 900;
+}
+
+.photo-guide-warning {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 204, 86, 0.2);
+    border-radius: 14px;
+    background: rgba(255, 204, 86, 0.06);
+    color: #ead39b;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.photo-guide-ready {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    border: 1px solid rgba(221, 255, 0, 0.22);
+    border-radius: 20px;
+    background: rgba(221, 255, 0, 0.055);
+}
+
+.photo-guide-ready > div {
+    display: grid;
+    gap: 5px;
+}
+
+.photo-guide-ready strong { color: var(--text); }
+.photo-guide-ready span { color: var(--text-muted); font-size: 13px; }
+.photo-guide-ready .primary-button { flex: 0 0 auto; }
 }
 
 .support-grid {
@@ -3759,7 +3918,7 @@ h2 {
 
 @media (max-width: 980px) and (min-width: 761px) {
     .render-summary {
-        grid-template-columns: 72px minmax(0, 1fr) minmax(118px, auto);
+        grid-template-columns: minmax(160px, 30%) minmax(0, 1fr) minmax(118px, auto);
         grid-template-areas: "thumb body action";
         align-items: center;
     }
@@ -3871,8 +4030,17 @@ h2 {
         grid-template-columns: 1fr;
     }
 
-    .view[data-view="photo-guide"] .form-stack {
+    .photo-guide-layout {
         grid-template-columns: 1fr;
+    }
+
+    .photo-guide-ready {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .photo-guide-ready .primary-button {
+        width: 100%;
     }
 
     .payment-history-details summary,
