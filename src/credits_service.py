@@ -78,7 +78,17 @@ async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> i
             """
             INSERT INTO credit_ledger (user_id, event_type, credits_delta, balance_after,
                 idempotency_key, metadata)
-            VALUES ($1, 'expiration', $2, 0, $3, jsonb_build_object('package_id', $4::text, 'expires_at', $5))
+            VALUES (
+                $1,
+                'expiration',
+                $2,
+                0,
+                $3,
+                jsonb_build_object(
+                    'package_id', $4::text,
+                    'expires_at', $5::timestamptz
+                )
+            )
             ON CONFLICT (idempotency_key) DO NOTHING
             """,
             user_id,
@@ -438,8 +448,8 @@ async def _insert_starter_grant_expiration_ledger_entry(
                     jsonb_build_object(
                         'kind', 'starter_grant_expiration',
                         'grant_kind', 'starter_grant',
-                        'expired_credits', $5,
-                        'expires_at', $6
+                        'expired_credits', $5::integer,
+                        'expires_at', $6::timestamptz
                     )
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING
@@ -483,8 +493,8 @@ async def _insert_starter_grant_expiration_ledger_entry(
                     jsonb_build_object(
                         'kind', 'starter_grant_expiration',
                         'grant_kind', 'starter_grant',
-                        'expired_credits', $4,
-                        'expires_at', $5
+                        'expired_credits', $4::integer,
+                        'expires_at', $5::timestamptz
                     )
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING

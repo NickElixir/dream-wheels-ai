@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 
 import asyncpg
 
@@ -6,6 +7,8 @@ from src.credits_service import (
     _calculate_remaining_starter_grant_credits,
     _has_starter_grant_ledger_entry,
     _insert_starter_grant_ledger_entry,
+    _insert_starter_grant_expiration_ledger_entry,
+    expire_credit_packages,
     ensure_credit_account,
     ensure_credit_account_state,
 )
@@ -194,3 +197,56 @@ def test_ensure_credit_account_keeps_int_contract(monkeypatch):
     balance = asyncio.run(ensure_credit_account(object(), 123))
 
     assert balance == 5
+
+
+def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
+    expires_at = datetime(2026, 7, 1, tzinfo=UTC)
+
+    class FakeConn:
+        def __init__(self) -> None:
+            self.expiration_insert: tuple[str, tuple[object, ...]] | None = None
+
+        async def fetch(self, query: str, *args):
+            assert "FROM credit_packages" in query
+            return [{"id": "package-1", "remaining_credits": 2, "expires_at": expires_at}]
+
+        async def execute(self, query: str, *args):
+            if "INSERT INTO credit_ledger" in query:
+                self.expiration_insert = (query, args)
+            return "UPDATE 1"
+
+    conn = FakeConn()
+    expired = asyncio.run(expire_credit_packages(conn, user_id=123))
+
+    assert expired == 2
+    assert conn.expiration_insert is not None
+    query, args = conn.expiration_insert
+    assert "$4::text" in query
+    assert "$5::timestamptz" in query
+    assert args == (123, -2, "package_expire:package-1", "package-1", expires_at.isoformat())
+
+
+def test_expired_starter_grant_metadata_has_explicit_postgres_types():
+    expires_at = datetime(2026, 7, 1, tzinfo=UTC)
+
+    class FakeConn:
+        def transaction(self):
+            return _FakeTransaction()
+
+        async def fetchval(self, query: str, *args):
+            assert "$5::integer" in query
+            assert "$6::timestamptz" in query
+            assert args == (123, -3, 0, "starter_grant_expire:123", 3, expires_at.isoformat())
+            return 1
+
+    inserted = asyncio.run(
+        _insert_starter_grant_expiration_ledger_entry(
+            FakeConn(),
+            user_id=123,
+            credits_to_expire=3,
+            balance_after=0,
+            expires_at=expires_at,
+        )
+    )
+
+    assert inserted is True
