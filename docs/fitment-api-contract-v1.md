@@ -130,6 +130,24 @@ MODIFIED_VEHICLE_REQUIRES_REVIEW
 
 Frontend owns copy, placement and visual state after Fitment UX approval.
 
+## Fitment workflow next action
+
+The render-job fitment overview returns one machine-readable `next_action.kind`.
+The UI must use this field for its primary CTA rather than independently
+deriving the next step from multiple readiness flags.
+
+```text
+complete_vehicle_details  → save missing vehicle data
+complete_rim_specs        → save missing wheel data
+select_vehicle_variant    → select exact Wheel-Size vehicle variant
+run_standard_check        → create Standard Fitment Check
+```
+
+Recognising a make/model from the image does not make a vehicle variant exact:
+the final choice confirms market, generation and modification used by
+Wheel-Size. `select_vehicle_variant` must never ask the user to identify the
+vehicle from the beginning again.
+
 ## Read history
 
 ```http

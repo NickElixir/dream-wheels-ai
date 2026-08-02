@@ -1770,11 +1770,54 @@ function fitmentSaveLabel() {
     if (state.fitmentActiveStep === 1) {
         return locale === "ru" ? "Продолжить к параметрам диска" : "Continue to wheel details";
     }
+    if (fitmentNextAction(state.fitmentOverview, { useDraft: true }) === "select_vehicle_variant") {
+        return locale === "ru" ? "Сохранить и выбрать комплектацию" : "Save and choose vehicle version";
+    }
+    if (fitmentNextAction(state.fitmentOverview, { useDraft: true }) === "complete_rim_specs") {
+        return locale === "ru" ? "Сохранить параметры" : "Save details";
+    }
     return locale === "ru" ? "Сохранить и получить вывод" : "Save and get result";
 }
 
+function refreshFitmentSaveLabel() {
+    const saveButton = document.querySelector("[data-fitment-save]");
+    if (!saveButton || state.fitmentLoading || state.fitmentSaving) return;
+    saveButton.textContent = fitmentSaveLabel();
+}
+
+function fitmentDraftMissingFields() {
+    const required = {
+        "vehicle.make": state.fitmentForm.vehicle.make,
+        "vehicle.model": state.fitmentForm.vehicle.model,
+        "vehicle.year": state.fitmentForm.vehicle.year,
+        "rim.bolt_count": state.fitmentForm.rim.bolt_count,
+        "rim.pcd_mm": state.fitmentForm.rim.pcd_mm,
+        "rim.center_bore_mm": state.fitmentForm.rim.center_bore_mm,
+        "rim.wheel_diameter_in": state.fitmentForm.rim.wheel_diameter_in,
+        "rim.wheel_width_j": state.fitmentForm.rim.wheel_width_j,
+        "rim.offset_et_mm": state.fitmentForm.rim.offset_et_mm,
+    };
+    return Object.entries(required)
+        .filter(([, value]) => value === null || value === undefined || String(value).trim() === "")
+        .map(([field]) => field);
+}
+
+function fitmentNextAction(overview = state.fitmentOverview, { useDraft = false } = {}) {
+    const missingFields = useDraft
+        ? fitmentDraftMissingFields()
+        : (overview?.readiness?.missing_fields || []);
+    if (missingFields.length) {
+        return missingFields.some((field) => field.startsWith("vehicle."))
+            ? "complete_vehicle_details"
+            : "complete_rim_specs";
+    }
+    const serverAction = overview?.next_action?.kind;
+    if (serverAction && !useDraft) return serverAction;
+    return fitmentProviderReady(overview) ? "run_standard_check" : "select_vehicle_variant";
+}
+
 function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
-    return !fitmentProviderReady(overview);
+    return fitmentNextAction(overview) === "select_vehicle_variant";
 }
 
 function fitmentSourceProgressTitle() {
@@ -1798,7 +1841,8 @@ function scrollFitmentTo(selector) {
 }
 
 function fitmentNextStep(overview) {
-    if (!fitmentProviderReady(overview)) {
+    const action = fitmentNextAction(overview);
+    if (action === "select_vehicle_variant") {
         return {
             selector: "[data-fitment-variants-load]",
             message: locale === "ru"
@@ -1806,7 +1850,15 @@ function fitmentNextStep(overview) {
                 : "Details saved. Next, select the exact vehicle version.",
         };
     }
-    if (!overview?.readiness?.ready) {
+    if (action === "complete_vehicle_details") {
+        return {
+            selector: '[data-fitment-section="vehicle"]',
+            message: locale === "ru"
+                ? "Данные сохранены. Заполните данные автомобиля, затем продолжите проверку."
+                : "Details saved. Complete the vehicle details, then continue the check.",
+        };
+    }
+    if (action === "complete_rim_specs") {
         return {
             selector: "[data-fitment-section=\"rim\"]",
             message: locale === "ru"
@@ -2634,7 +2686,7 @@ async function saveFitment(event) {
         state.fitmentForm = fitmentFormFromOverview(overview);
         const savedFromStep = state.fitmentActiveStep;
         const nextStep = fitmentNextStep(overview);
-        const canRunVerdict = overview.readiness?.ready && fitmentProviderReady(overview);
+        const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
         if (savedFromStep === 1) {
             state.fitmentActiveStep = 2;
@@ -2643,7 +2695,20 @@ async function saveFitment(event) {
                 : (locale === "ru" ? "Автомобиль сохранён. Заполните параметры диска; комплектацию можно выбрать перед итоговой проверкой." : "Vehicle saved. Add wheel details; choose the exact vehicle version before the final check.");
             state.fitmentMessageTone = "success";
             scrollFitmentTo('[data-fitment-section="rim"]');
-        } else if (canRunVerdict) {
+        } else if (nextAction === "select_vehicle_variant") {
+            state.fitmentActiveStep = 1;
+            state.fitmentMessage = locale === "ru"
+                ? "Параметры диска сохранены. Теперь выберите точную комплектацию автомобиля."
+                : "Wheel details saved. Now choose the exact vehicle version.";
+            state.fitmentMessageTone = "success";
+            void loadFitmentVehicleVariants();
+            scrollFitmentTo('[data-fitment-section="vehicle"]');
+        } else if (nextAction === "complete_vehicle_details") {
+            state.fitmentActiveStep = 1;
+            state.fitmentMessage = nextStep.message;
+            state.fitmentMessageTone = "warning";
+            scrollFitmentTo('[data-fitment-section="vehicle"]');
+        } else if (nextAction === "run_standard_check") {
             state.fitmentActiveStep = 3;
             state.fitmentMessage = locale === "ru" ? "Данные сохранены. Проверяем совместимость…" : "Details saved. Checking compatibility…";
             state.fitmentMessageTone = "success";
@@ -5221,16 +5286,6 @@ function bindEvents() {
     });
     document.querySelector("[data-fitment-back]")?.addEventListener("click", closeFitmentView);
     document.querySelector("[data-fitment-skip]")?.addEventListener("click", () => {
-        if (state.fitmentActiveStep === 2 && fitmentNeedsVehicleVariant()) {
-            state.fitmentActiveStep = 1;
-            state.fitmentMessage = locale === "ru"
-                ? "Выберите комплектацию, чтобы получить точный вывод."
-                : "Choose the vehicle version to get an accurate result.";
-            state.fitmentMessageTone = "warning";
-            renderFitment();
-            scrollFitmentTo('[data-fitment-variants-load]');
-            return;
-        }
         closeFitmentView();
     });
     document.querySelector("[data-fitment-source-toggle]")?.addEventListener("click", () => {
@@ -5260,6 +5315,7 @@ function bindEvents() {
             if (fieldName) {
                 state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
             }
+            refreshFitmentSaveLabel();
         });
     });
     document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
