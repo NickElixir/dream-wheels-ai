@@ -410,6 +410,12 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "verdictCard.hidden = activeStep !== 3" in APP_JS
     assert "Продолжить к параметрам диска" in APP_JS
     assert "Сохранить и получить вывод" in APP_JS
+    assert "Сохранить и выбрать комплектацию" in APP_JS
+    assert "function fitmentNextAction" in APP_JS
+    assert "function fitmentDraftMissingFields" in APP_JS
+    assert "function refreshFitmentSaveLabel" in APP_JS
+    assert "useDraft: true" in APP_JS
+    assert "void loadFitmentVehicleVariants();" in APP_JS
     assert "Подтвердите автомобиль и выберите комплектацию" in APP_JS
 
 

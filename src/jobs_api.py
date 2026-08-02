@@ -11,7 +11,7 @@ import logging
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 import httpx
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
@@ -247,6 +247,17 @@ class FitmentProviderReadinessResponse(BaseModel):
     blocking_issues: list[dict[str, str]] = Field(default_factory=list)
 
 
+class FitmentNextActionResponse(BaseModel):
+    """The single product action that advances the Standard Check workflow."""
+
+    kind: Literal[
+        "complete_vehicle_details",
+        "complete_rim_specs",
+        "select_vehicle_variant",
+        "run_standard_check",
+    ]
+
+
 class FitmentOverviewResponse(BaseModel):
     job_id: str
     vehicle_identity_id: str
@@ -268,6 +279,7 @@ class FitmentOverviewResponse(BaseModel):
     readiness: FitmentReadinessResponse
     input_readiness: FitmentReadinessResponse
     provider_readiness: FitmentProviderReadinessResponse
+    next_action: FitmentNextActionResponse
     vehicle: FitmentVehicleResponse
     rim: FitmentRimResponse
 
@@ -901,6 +913,20 @@ def _provider_readiness_from_row(row) -> FitmentProviderReadinessResponse:
     return FitmentProviderReadinessResponse(status="ready")
 
 
+def _fitment_next_action_from_row(row) -> FitmentNextActionResponse:
+    """Keep the Standard Check progression authoritative on the server."""
+    readiness = _fitment_readiness_from_row(row)
+    vehicle_missing = [field for field in readiness.missing_fields if field.startswith("vehicle.")]
+    if vehicle_missing:
+        return FitmentNextActionResponse(kind="complete_vehicle_details")
+    rim_missing = [field for field in readiness.missing_fields if field.startswith("rim.")]
+    if rim_missing:
+        return FitmentNextActionResponse(kind="complete_rim_specs")
+    if _provider_readiness_from_row(row).status != "ready":
+        return FitmentNextActionResponse(kind="select_vehicle_variant")
+    return FitmentNextActionResponse(kind="run_standard_check")
+
+
 def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
     pcd_display = None
     if row["rim_bolt_count"] is not None and row["rim_pcd_mm"] is not None:
@@ -942,6 +968,7 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
         readiness=_fitment_readiness_from_row(row),
         input_readiness=_fitment_readiness_from_row(row),
         provider_readiness=_provider_readiness_from_row(row),
+        next_action=_fitment_next_action_from_row(row),
         vehicle=FitmentVehicleResponse(
             make=row["vehicle_make"],
             model=row["vehicle_model"],

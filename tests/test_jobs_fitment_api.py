@@ -153,6 +153,7 @@ def test_fitment_overview_returns_completed_owner_job(monkeypatch):
     assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
     assert body["rim_candidates"]["pcd_mm"][0]["source"] == "ocr"
     assert body["readiness"]["ready"] is True
+    assert body["next_action"]["kind"] == "select_vehicle_variant"
     assert body["readiness"]["unconfirmed_fields"] == [
         "vehicle.make",
         "vehicle.model",
@@ -383,6 +384,34 @@ def test_fitment_overview_reports_missing_fields_for_future_check(monkeypatch):
         "rim.wheel_diameter_in",
         "rim.wheel_width_j",
     ]
+    assert body["next_action"]["kind"] == "complete_rim_specs"
+
+
+def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row(
+                vehicle_provider_mappings={
+                    "wheel_size": {
+                        "make_slug": "bmw",
+                        "model_slug": "3-series",
+                        "region": "eu",
+                        "generation_slug": "g20",
+                        "modification_slug": "330i",
+                    }
+                }
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    assert response.json()["next_action"]["kind"] == "run_standard_check"
+
+    missing_vehicle = _fitment_row(vehicle_make=None)
+    assert jobs_api._fitment_next_action_from_row(missing_vehicle).kind == "complete_vehicle_details"
 
 
 def test_fitment_save_allows_clearing_optional_fields(monkeypatch):
