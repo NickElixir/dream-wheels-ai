@@ -11,7 +11,8 @@
 - Accent `#ddff00` / `#e7ff3a`; success `#27d88a`; warning `#ffcc56`; danger `#ff6666`.
 - Panels use 18–28 px radii, thin translucent borders, and restrained shadows.
 - Buttons and focus rings use product-owned colours. Avoid native browser styling.
-- Short interface copy normally has no terminal period.
+- Mandatory copy rule: every user-facing label, caption, heading, subheading, warning, status, button, helper text, and generated paragraph must end without punctuation in every locale
+- This rule applies to static HTML, translated strings, dynamic states, validation messages, and generated UI copy; punctuation inside a sentence remains allowed
 
 ## Separators and numbers
 

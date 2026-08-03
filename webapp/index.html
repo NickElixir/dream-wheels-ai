@@ -56,7 +56,7 @@
                 <div class="hero-copy">
                     <p class="eyebrow">Мой Dream Wheels AI</p>
                     <h1 class="dashboard-title"><span>Примерьте</span><span>новые диски</span><span>на своём автомобиле</span></h1>
-                    <p class="lede">Загрузите два фото – результат будет готов за 1–2 минуты.</p>
+                    <p class="lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
                     <div class="dashboard-actions">
                         <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create">Начать примерку</button>
                         <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
@@ -74,7 +74,10 @@
                     <div class="panel-head">
                         <div>
                             <p class="section-label">Баланс</p>
-                            <h2><span data-dashboard-balance>—</span> <span data-dashboard-balance-unit>примерок</span></h2>
+                            <div class="dashboard-balance-display">
+                                <span class="dashboard-balance-value" data-dashboard-balance>0</span>
+                                <span class="dashboard-balance-unit" data-dashboard-balance-unit>примерок</span>
+                            </div>
                         </div>
                     </div>
                     <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
@@ -96,14 +99,9 @@
                             <div class="wallet-status-title">Войдите, чтобы увидеть баланс</div>
                             <button type="button" class="primary-button compact-button dashboard-auth-action" data-dashboard-auth-login>
                                 <svg class="telegram-button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
-                                <span data-dashboard-auth-login-label>Войти через Telegram</span>
+                                <span data-dashboard-auth-login-label>Войти</span>
                             </button>
                             <div class="wallet-status-sub dashboard-auth-error" data-dashboard-auth-error hidden role="status"></div>
-                        </div>
-                    </div>
-                    <div class="wallet-status-island tone-neutral dashboard-auth-info" data-dashboard-auth-info data-visible="false">
-                        <div class="wallet-status-copy">
-                            <div class="wallet-status-sub">История и остаток примерок будут доступны после входа.</div>
                         </div>
                     </div>
                     <div class="wallet-status-island tone-error" data-dashboard-error data-visible="false">
@@ -145,20 +143,15 @@
             <section class="hero-panel compact">
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="create.eyebrow">Создание</p>
-                    <h1>Примерьте новые диски на своём автомобиле</h1>
-                    <p class="lede">
-                        Добавьте два фото — мы автоматически определим автомобиль. JPG или PNG, до 10 МБ
-                    </p>
+                    <h1 class="create-title">
+                        <span data-i18n="create.titleLine1">Примерьте</span>
+                        <span data-i18n="create.titleLine2">новые диски</span>
+                        <span data-i18n="create.titleLine3">на своём автомобиле</span>
+                    </h1>
                 </div>
             </section>
 
             <section class="panel" data-create-screen="upload">
-                <div class="wallet-status-island tone-warning upload-guidance" data-visible="true">
-                    <div class="wallet-status-copy">
-                        <div class="wallet-status-title">Проверьте, что колёса автомобиля полностью видны в кадре</div>
-                    </div>
-                </div>
-
                 <label class="dropzone" data-upload-zone="car">
                     <input type="file" accept="image/*" data-input="car" hidden>
                     <div class="dropzone-icon">📷</div>
@@ -183,6 +176,12 @@
                         <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
                     </div>
                     <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
+                </div>
+
+                <div class="wallet-status-island tone-warning upload-format-warning" data-visible="true">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-i18n="create.uploadFormat">JPG, PNG или WebP, до 10 МБ</div>
+                    </div>
                 </div>
 
                 <section class="photo-consent-card" data-photo-consent hidden aria-labelledby="photo-consent-title">
@@ -212,17 +211,17 @@
 
                 <div class="rim-source-preflight" data-rim-source-preflight hidden>
                     <label class="fitment-field">
-                        <span>Ссылка на товар с диском <em>необязательно</em></span>
+                        <span><span data-i18n="create.productLink">Ссылка на товар с колесным диском</span> <em data-i18n="create.productLinkOptional">(необязательно)</em></span>
                         <input type="url" inputmode="url" autocomplete="url" placeholder="https://…" data-rim-product-url>
                     </label>
-                    <p>Сохраним ссылку вместе с примеркой. Параметры по ней можно извлечь и подтвердить позже в проверке совместимости.</p>
+                    <div class="panel-note warning" data-i18n="create.productLinkWarning">Сохраните ссылку для извлечения параметров и технической проверки совместимости колесных дисков на вашем автомобиле</div>
                 </div>
 
                 <section class="identity-flow" data-identity-flow hidden>
                     <div class="wallet-status-island tone-loading" data-identity-loading data-visible="false" aria-live="polite">
                         <div class="wallet-status-spinner" aria-hidden="true"></div>
                         <div class="wallet-status-copy">
-                            <div class="wallet-status-title">Определяем автомобиль по фото</div>
+                            <div class="wallet-status-title" data-i18n="create.detectingVehicle">Определить автомобиль</div>
                             <div class="wallet-status-text">AI подбирает марку, модель и год. Параметры диска на этом шаге не распознаются.</div>
                         </div>
                     </div>
@@ -287,9 +286,7 @@
                             <div class="review-row"><span>Диск</span><strong data-review-rim>—</strong></div>
                             <div class="review-row"><span>Назначение</span><strong>Визуальная примерка</strong></div>
                         </div>
-                        <div class="identity-note warning">
-                            Совместимость ещё не проверена. Это визуальная примерка, а не техническая проверка.
-                        </div>
+                        <div class="panel-note warning" data-i18n="fitment.compatibilityNotChecked">Проверка совместимости еще не проведена</div>
                     </article>
                 </section>
             </section>
@@ -329,14 +326,10 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="wallet.eyebrow">Кабинет</p>
                     <h1 data-i18n="wallet.title">Мой Dream Wheels AI</h1>
-                    <p class="lede" data-i18n="wallet.lede">
-                        Здесь видны баланс, последняя оплата и пополнение в три шага
-                    </p>
                 </div>
                 <section class="balance-tile">
-                    <div class="balance-badge">💎</div>
                     <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit">примерок</div>
+                    <div class="balance-unit" data-balance-unit>примерок</div>
                     <div class="balance-note" data-balance-note hidden></div>
                 </section>
             </section>
@@ -398,7 +391,6 @@
                         <p class="section-label" data-i18n="wallet.wizardLabel">Пополнение</p>
                         <h2 data-i18n="wallet.wizardTitle">Три шага оплаты</h2>
                     </div>
-                    <button type="button" class="ghost-button" data-reset-wizard data-i18n="wallet.reset">Сбросить</button>
                 </div>
                 <div class="wallet-status-island wallet-status-loading" data-wallet-loading aria-live="polite" data-visible="false">
                     <div class="wallet-status-spinner" aria-hidden="true"></div>
@@ -417,7 +409,6 @@
                             <span class="topup-step-index">1</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.stepChooseTitle">Выберите пакет</div>
-                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Выберите подходящее количество примерок</div>
                             </div>
                         </div>
                         <div class="topup-mode-switch" hidden>
@@ -472,7 +463,6 @@
                             <span class="topup-step-index">2</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.emailLabel">Email для чека</div>
-                                <div class="topup-step-sub" data-i18n="wallet.emailHint">Используем его для чека и подтверждения оплаты</div>
                             </div>
                         </div>
                         <label class="custom-topup-label" for="wallet-email" data-i18n="wallet.emailLabel">Email для чека</label>
@@ -489,7 +479,6 @@
                             <span class="topup-step-index">3</span>
                             <div>
                                 <div class="topup-step-title" data-i18n="wallet.stepConfirm">Подтверждение</div>
-                                <div class="topup-step-sub" data-i18n="wallet.confirmHint">Проверьте пакет перед переходом в Robokassa</div>
                             </div>
                         </div>
                         <div class="wallet-status-island" data-wallet-feedback aria-live="polite" data-visible="false">
@@ -501,13 +490,8 @@
                             <div class="topup-summary-title" data-topup-summary-title data-i18n="wallet.summaryEmptyTitle">Выберите пакет</div>
                             <div class="topup-summary-meta" data-topup-summary-meta data-i18n="wallet.summaryEmptyMeta">Здесь появится выбранный пакет перед оплатой</div>
                         </div>
-                        <div class="secure-payment-note">
-                            <span class="secure-payment-icon" aria-hidden="true">🔒</span>
-                            <div>
-                                <strong data-i18n="wallet.securePaymentTitle">Безопасная оплата через Robokassa</strong>
-                            </div>
-                        </div>
-                        <button type="button" class="primary-button wallet-pay-button" data-pay-button data-i18n="wallet.pay">Оплатить</button>
+                        <button type="button" class="ghost-button compact-button topup-reset-button" data-reset-wizard data-i18n="wallet.reset">Сбросить</button>
+                        <button type="button" class="primary-button wallet-pay-button" data-pay-button data-i18n="wallet.pay">Оплатить через Робокассу</button>
                         <p class="payment-acceptance">
                             <span data-i18n="wallet.acceptancePrefix">Нажимая «Оплатить», вы принимаете</span>
                             <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.offerLink">Публичную оферту</a>
@@ -520,9 +504,8 @@
 
             <details class="collapsible panel payment-history-details" data-wallet-history-details open>
                 <summary>
-                    <span>
+                            <span>
                         <strong class="history-summary-title" data-i18n="wallet.paymentHistory">История платежей</strong>
-                        <span class="history-summary-copy" data-i18n="wallet.paymentHistoryHint">Покупки и сроки действия примерок</span>
                     </span>
                     <span class="summary-action" data-wallet-history-toggle data-i18n="wallet.closeHistory">Скрыть</span>
                 </summary>
@@ -539,7 +522,7 @@
                         <div class="wallet-history-island-head wallet-history-island-head-split">
                             <div>
                                 <p class="section-label" data-i18n="wallet.topUpHistory">История пополнений</p>
-                                <div class="wallet-history-caption" data-wallet-history-hint data-i18n="wallet.topUpHistoryHint">Показываем 10 последних операций</div>
+                                <div class="wallet-history-caption" data-wallet-history-hint hidden></div>
                             </div>
                             <div class="wallet-history-pager" data-wallet-history-pager hidden>
                                 <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-prev data-i18n="wallet.previousPage">Назад</button>
@@ -558,9 +541,6 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="renders.eyebrow">Готовые работы</p>
                     <h1 data-i18n="renders.title">Мои виртуальные примерки</h1>
-                    <p class="lede" data-i18n="renders.lede">
-                        Последние результаты и примерки, которые ещё создаются
-                    </p>
                 </div>
             </section>
             <section class="panel">
@@ -572,7 +552,6 @@
             <section class="hero-panel compact render-detail-hero">
                 <div class="hero-copy">
                     <h1>Детали примерки</h1>
-                    <p class="lede">Сравните исходное фото и результат</p>
                 </div>
                 <button type="button" class="primary-button compact-button" data-new-tryon>Новая примерка</button>
             </section>
@@ -584,9 +563,6 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="fitment.eyebrow">Проверка совместимости</p>
                     <h1 data-i18n="fitment.title">Проверьте, подойдут ли диски</h1>
-                    <p class="lede" data-fitment-subtitle data-i18n="fitment.subtitleFallback">
-                        Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод
-                    </p>
                 </div>
             </section>
 
@@ -853,9 +829,6 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="settings.eyebrow">Параметры кабинета</p>
                     <h1 data-i18n="settings.title">Настройки</h1>
-                    <p class="lede" data-i18n="settings.lede">
-                        Формальный экран для будущих параметров профиля и уведомлений
-                    </p>
                 </div>
             </section>
             <section class="panel">
@@ -890,7 +863,6 @@
                 <div class="hero-copy">
                     <p class="eyebrow">Помощь</p>
                     <h1>Как подготовить фото</h1>
-                    <p class="lede">Два чётких исходных фото помогут точнее сохранить автомобиль и форму выбранного диска.</p>
                 </div>
             </section>
             <section class="panel photo-guide-panel">
@@ -946,7 +918,7 @@
                 <aside class="photo-guide-ready">
                     <div>
                         <p class="section-label">Перед загрузкой</p>
-                        <strong>JPG или PNG – до 10 МБ</strong>
+                        <strong>JPG, PNG или WebP, до 10 МБ</strong>
                         <span>Ссылка на товар необязательна</span>
                     </div>
                     <button type="button" class="primary-button" data-nav="create">Начать примерку</button>
@@ -959,12 +931,13 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="support.eyebrow">Помощь</p>
                     <h1 data-i18n="support.title">Поддержка</h1>
-                    <p class="lede" data-i18n="support.lede">
-                        Поможем с оплатой, возвратом или созданием примерки. Обычно отвечаем в течение 24 часов.
-                    </p>
                 </div>
             </section>
             <section class="panel">
+                <p class="section-label" data-i18n="support.feedbackSection">Обратная связь</p>
+                <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
+                    <span class="doc-link-copy"><strong data-i18n="support.photoGuideTitle">Как подготовить фото</strong><small data-i18n="support.photoGuideDescription">Инструкция по подготовке фотографий перед загрузкой</small></span>
+                </button>
                 <div class="support-grid">
                     <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="support-link" data-telegram-link>
                         <span class="support-link-icon" aria-hidden="true">💬</span>
@@ -990,9 +963,6 @@
                 <div class="hero-copy">
                     <p class="eyebrow" data-i18n="docs.eyebrow">Юридическая информация</p>
                     <h1 data-i18n="docs.title">Документы</h1>
-                    <p class="lede" data-i18n="docs.lede">
-                        Здесь собраны условия использования сервиса, оплаты, возврата и обработки данных.
-                    </p>
                 </div>
             </section>
             <section class="panel">

@@ -488,6 +488,26 @@ a {
     margin: 0;
 }
 
+.dashboard-balance-display {
+    display: grid;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.dashboard-balance-value {
+    color: var(--accent);
+    font-size: clamp(48px, 7vw, 72px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+}
+
+.dashboard-balance-unit {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 800;
+}
+
 .dashboard-balance-card .compact-button,
 .latest-render-card .status-pill {
     flex: 0 0 auto;
@@ -700,18 +720,13 @@ a {
 }
 
 .dashboard-fitment-context {
-    padding: 12px 14px;
-    border-left: 3px solid var(--text-subtle);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.035);
-    color: var(--text-muted);
     font-size: 13px;
     font-weight: 800;
 }
 
-.dashboard-fitment-context.success { border-color: var(--success); color: var(--success); background: rgba(39, 216, 138, 0.08); }
-.dashboard-fitment-context.warning { border-color: var(--warning); color: var(--warning); background: rgba(255, 204, 86, 0.08); }
-.dashboard-fitment-context.error { border-color: var(--danger); color: #ff9696; background: rgba(255, 102, 102, 0.08); }
+.dashboard-fitment-context.panel-note {
+    font-size: 13px;
+}
 
 .latest-render-copy {
     display: grid;
@@ -841,6 +856,10 @@ h2 {
     font-weight: 700;
     color: var(--success);
     text-align: center;
+}
+
+.create-title span {
+    display: block;
 }
 
 .panel-head,
@@ -1067,6 +1086,10 @@ h2 {
     color: var(--warning);
 }
 
+.upload-format-warning {
+    margin-top: 4px;
+}
+
 .wallet-status-island.tone-error {
     border-color: rgba(255, 102, 102, 0.24);
     background: rgba(255, 102, 102, 0.08);
@@ -1225,6 +1248,10 @@ h2 {
     margin-top: 4px;
     color: var(--text-subtle);
     line-height: 1.45;
+}
+
+.topup-reset-button {
+    width: 100%;
 }
 
 .topup-packages-island {
@@ -3517,6 +3544,13 @@ h2 {
     display: grid;
     gap: 12px;
     padding: 4px 20px 20px;
+}
+
+.support-guide-link {
+    width: 100%;
+    margin-bottom: 18px;
+    justify-content: flex-start;
+    text-align: left;
 }
 
 .support-refund-block .section-label {

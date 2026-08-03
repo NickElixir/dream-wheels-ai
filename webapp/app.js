@@ -68,6 +68,7 @@ const I18N = {
     ru: {
         auth: {
             login: "Войти через Telegram",
+            loginShort: "Войти",
             loggingIn: "Входим...",
             preparing: "Подготавливаем вход...",
             logout: "Выйти",
@@ -83,6 +84,11 @@ const I18N = {
             photoGuide: "Как подготовить фото",
             docs: "Документы",
         },
+        dashboard: {
+            lastRender: "Последняя примерка",
+            startRender: "Начать примерку",
+            createRender: "Создать примерку",
+        },
         caption: {
             dashboard: "Главная",
             create: "Создание",
@@ -96,8 +102,14 @@ const I18N = {
         },
         create: {
             eyebrow: "Создание",
-            title: "Загрузите фото машины и диска",
-            lede: "Машина целиком сбоку, диск анфас. JPG или PNG, до 10 MB",
+            titleLine1: "Примерьте",
+            titleLine2: "новые диски",
+            titleLine3: "на своём автомобиле",
+            uploadFormat: "JPG, PNG или WebP, до 10 МБ",
+            detectingVehicle: "Определить автомобиль",
+            productLink: "Ссылка на товар с колесным диском",
+            productLinkOptional: "(необязательно)",
+            productLinkWarning: "Сохраните ссылку для извлечения параметров и технической проверки совместимости колесных дисков на вашем автомобиле",
             carPhoto: "Фото машины",
             wheelPhoto: "Фото диска",
             choose: "Нажми, чтобы выбрать",
@@ -106,7 +118,7 @@ const I18N = {
             carPreviewAlt: "Превью машины",
             wheelPreviewAlt: "Превью диска",
             footerNotTelegram: "Не в Telegram",
-            detectIdentity: "Распознать автомобиль",
+            detectIdentity: "Определить автомобиль",
             createRender: "Создать виртуальную примерку",
         },
         consent: {
@@ -181,6 +193,7 @@ const I18N = {
             checking: "Проверяем параметры…",
             verdictDisclaimer: "Предварительная оценка не является гарантией установки.",
             notice: "Поля необязательны и не меняют уже созданную виртуальную примерку",
+            compatibilityNotChecked: "Проверка совместимости еще не проведена",
             vehicleSection: "Автомобиль",
             vehicleSectionTitle: "Уточнить известные данные",
             rimSection: "Колесный диск",
@@ -269,38 +282,38 @@ const I18N = {
             stepEmail: "Email",
             stepConfirm: "Подтверждение",
             stepChooseTitle: "Выберите пакет",
-            stepChooseSub: "Выберите подходящее количество примерок",
+            stepChooseSub: "",
             chooseAmount: "Выбор суммы",
             nextToEmail: "Продолжить",
             modePackage: "Пакет",
             modeCustom: "Своя сумма",
             customAmountLabel: "Своя сумма",
             emailLabel: "Email для чека",
-            emailHint: "Используем его для чека и подтверждения оплаты",
+            emailHint: "",
             back: "Назад",
             nextToConfirm: "Продолжить",
             confirmAmount: "Сумма",
             confirmEmail: "Email",
             confirmCredits: "Будет получено",
-            confirmHint: "Проверьте пакет перед переходом в Robokassa",
-            pay: "Оплатить",
+            confirmHint: "",
+            pay: "Оплатить через Робокассу",
             payWithAmount: "Оплатить",
             emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
             privacyDetails: "Подробнее — в Политике обработки персональных данных",
-            securePaymentTitle: "Безопасная оплата через Robokassa",
+            securePaymentTitle: "",
             securePaymentText: "",
             acceptancePrefix: "Нажимая «Оплатить», вы принимаете",
             acceptanceAnd: "и",
             offerLink: "Публичную оферту",
             refundLink: "Условия возврата",
             paymentHistory: "История платежей",
-            paymentHistoryHint: "Покупки и сроки действия примерок",
+            paymentHistoryHint: "",
             openHistory: "Открыть",
             closeHistory: "Скрыть",
             availableRenders: "Доступные примерки",
             availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
             topUpHistory: "История пополнений",
-            topUpHistoryHint: "Показываем 10 последних операций",
+            topUpHistoryHint: "",
             previousPage: "Назад",
             nextPage: "Далее",
             pageRange: "{from}-{to} из {total}",
@@ -363,6 +376,9 @@ const I18N = {
             lede: "Поможем с оплатой, возвратом или созданием примерки. Обычно отвечаем в течение 24 часов.",
             telegram: "Telegram",
             email: "Email",
+            feedbackSection: "Обратная связь",
+            photoGuideTitle: "Как подготовить фото",
+            photoGuideDescription: "Инструкция по подготовке фотографий перед загрузкой",
             refundSection: "Возврат средств",
             refundTitle: "Условия возврата",
             refundDescription: "Когда доступен возврат и как отправить обращение",
@@ -395,6 +411,7 @@ const I18N = {
     en: {
         auth: {
             login: "Log in with Telegram",
+            loginShort: "Log in",
             loggingIn: "Logging in...",
             preparing: "Preparing login...",
             logout: "Log out",
@@ -410,6 +427,11 @@ const I18N = {
             photoGuide: "Photo guide",
             docs: "Documents",
         },
+        dashboard: {
+            lastRender: "Last try-on",
+            startRender: "Start a try-on",
+            createRender: "Create a try-on",
+        },
         caption: {
             dashboard: "Home",
             create: "Render",
@@ -423,8 +445,14 @@ const I18N = {
         },
         create: {
             eyebrow: "Main screen",
-            title: "Upload your car and wheel photos",
-            lede: "Full side view of the car, front view of the wheel. JPG or PNG, up to 10 MB",
+            titleLine1: "Try on",
+            titleLine2: "new wheels",
+            titleLine3: "on your car",
+            uploadFormat: "JPG, PNG or WebP, up to 10 MB",
+            detectingVehicle: "Identify the vehicle",
+            productLink: "Wheel product link",
+            productLinkOptional: "(optional)",
+            productLinkWarning: "Save the link to extract wheel parameters and run a technical compatibility check for your car",
             carPhoto: "Car photo",
             wheelPhoto: "Wheel photo",
             choose: "Tap to choose",
@@ -433,7 +461,7 @@ const I18N = {
             carPreviewAlt: "Car preview",
             wheelPreviewAlt: "Wheel preview",
             footerNotTelegram: "Not in Telegram",
-            detectIdentity: "Detect details",
+            detectIdentity: "Identify the vehicle",
             createRender: "Create virtual render",
         },
         consent: {
@@ -508,6 +536,7 @@ const I18N = {
             checking: "Checking parameters…",
             verdictDisclaimer: "A preliminary assessment is not an installation guarantee.",
             notice: "These fields are optional and do not change the existing virtual render",
+            compatibilityNotChecked: "The compatibility check has not been run yet",
             vehicleSection: "Vehicle",
             vehicleSectionTitle: "Refine known details",
             rimSection: "Wheel",
@@ -596,38 +625,38 @@ const I18N = {
             stepEmail: "Email",
             stepConfirm: "Confirm",
             stepChooseTitle: "Choose a package",
-            stepChooseSub: "Package mode stays enabled by default",
+            stepChooseSub: "",
             chooseAmount: "Amount selection",
             nextToEmail: "Continue",
             modePackage: "Package",
             modeCustom: "Custom",
             customAmountLabel: "Custom amount",
             emailLabel: "Receipt email",
-            emailHint: "Used for the receipt and payment confirmation",
+            emailHint: "",
             back: "Back",
             nextToConfirm: "Continue",
             confirmAmount: "Amount",
             confirmEmail: "Email",
             confirmCredits: "Credits",
-            confirmHint: "Review the package before opening Robokassa",
-            pay: "Pay",
+            confirmHint: "",
+            pay: "Pay via Robokassa",
             payWithAmount: "Pay",
             emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
             privacyDetails: "Learn more in the Personal Data Processing Policy",
-            securePaymentTitle: "Secure payment via Robokassa",
+            securePaymentTitle: "",
             securePaymentText: "",
             acceptancePrefix: "By selecting “Pay”, you accept the",
             acceptanceAnd: "and",
             offerLink: "Public Offer",
             refundLink: "Refund Terms",
             paymentHistory: "Payment history",
-            paymentHistoryHint: "Purchases and render expiry windows",
+            paymentHistoryHint: "",
             openHistory: "Open",
             closeHistory: "Hide",
             availableRenders: "Available renders",
             availableRendersHint: "Packages expiring sooner are spent first",
             topUpHistory: "Top-up history",
-            topUpHistoryHint: "Showing the latest 10 operations",
+            topUpHistoryHint: "",
             previousPage: "Back",
             nextPage: "Next",
             pageRange: "{from}-{to} of {total}",
@@ -684,6 +713,9 @@ const I18N = {
             lede: "We can help with payments, refunds, or creating a try-on. We usually respond within 24 hours.",
             telegram: "Telegram",
             email: "Email",
+            feedbackSection: "Feedback",
+            photoGuideTitle: "How to prepare photos",
+            photoGuideDescription: "Instructions for preparing photos before upload",
             refundSection: "Refunds",
             refundTitle: "Refund terms",
             refundDescription: "When a refund is available and how to request one",
@@ -725,7 +757,8 @@ function detectLocale() {
 const locale = detectLocale();
 
 function t(path) {
-    return path.split(".").reduce((value, key) => value?.[key], I18N[locale]) ?? path;
+    const value = path.split(".").reduce((current, key) => current?.[key], I18N[locale]) ?? path;
+    return typeof value === "string" ? value.replace(/[.!?…:;,]+$/u, "") : value;
 }
 
 function resolveApiBaseUrl() {
@@ -1163,6 +1196,28 @@ function applyTranslations() {
     });
 }
 
+function enforceUiCopyRule(root = document.getElementById("app")) {
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach((textNode) => {
+        const parent = textNode.parentElement;
+        if (!parent || /^(SCRIPT|STYLE|PRE|CODE|TEXTAREA|OPTION)$/u.test(parent.tagName)) return;
+        const normalized = textNode.nodeValue.replace(/[.!?…:;,]+(\s*)$/u, "$1");
+        if (normalized !== textNode.nodeValue) textNode.nodeValue = normalized;
+    });
+}
+
+function observeUiCopyRule() {
+    const root = document.getElementById("app");
+    if (!root) return;
+    enforceUiCopyRule(root);
+    const observer = new MutationObserver(() => enforceUiCopyRule(root));
+    observer.observe(root, { childList: true, characterData: true, subtree: true });
+}
+
 function initTelegram() {
     const localeLabel = document.querySelector("[data-locale-label]");
     if (localeLabel) localeLabel.textContent = t("locale");
@@ -1257,7 +1312,7 @@ function updateWebsiteAuthUi() {
             ? t("auth.loggingIn")
             : state.websiteLoginWarmupPending
                 ? t("auth.preparing")
-                : t("auth.login");
+                : t("auth.loginShort");
         if (dashboardLoginLabel) dashboardLoginLabel.textContent = label;
     }
     if (dashboardAuthError) {
@@ -3002,6 +3057,7 @@ function schedulePendingInvoiceRefresh() {
 
 function renderWallet() {
     const balanceValue = document.querySelector("[data-balance-value]");
+    const balanceUnit = document.querySelector("[data-balance-unit]");
     const balanceNote = document.querySelector("[data-balance-note]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
@@ -3020,6 +3076,7 @@ function renderWallet() {
     const refreshButton = document.querySelector("[data-refresh-invoice]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
+    if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
     if (balanceNote) {
         balanceNote.hidden = true;
         balanceNote.textContent = "";
@@ -3933,10 +3990,10 @@ function renderDashboard() {
     const dashboardSecondaryAction = document.querySelector("[data-dashboard-secondary-action]");
     const expiryCohorts = buildRenderExpiryCohorts();
 
-    if (balance) balance.textContent = state.balance === null ? "—" : String(state.balance);
+    if (balance) balance.textContent = state.balance === null ? "0" : String(state.balance);
     if (balanceUnit) {
         balanceUnit.textContent = state.balance === null
-            ? "примерок"
+            ? formatRenderCount(0).replace(/^\d+\s+/, "")
             : formatRenderCount(state.balance).replace(/^\d+\s+/, "");
     }
     if (balanceSkeleton) balanceSkeleton.hidden = !(state.walletLoading && state.balance === null);
@@ -3979,7 +4036,7 @@ function renderDashboard() {
     const latest = state.renderHistory[0] || null;
     const latestCompleted = latest?.status === "completed" && fitmentAvailable(latest);
     if (dashboardPrimaryAction) {
-        dashboardPrimaryAction.textContent = latestCompleted ? "Посмотреть последнюю примерку" : "Начать примерку";
+        dashboardPrimaryAction.textContent = latestCompleted ? t("dashboard.lastRender") : t("dashboard.startRender");
         if (latestCompleted) {
             delete dashboardPrimaryAction.dataset.nav;
             delete dashboardPrimaryAction.dataset.expandLatest;
@@ -3990,7 +4047,7 @@ function renderDashboard() {
         }
     }
     if (dashboardSecondaryAction) {
-        dashboardSecondaryAction.textContent = latestCompleted ? "Создать примерку" : "Мои примерки";
+        dashboardSecondaryAction.textContent = latestCompleted ? t("dashboard.createRender") : t("menu.renders");
         dashboardSecondaryAction.dataset.nav = latestCompleted ? "create" : "renders";
         delete dashboardSecondaryAction.dataset.expandLatest;
     }
@@ -4023,7 +4080,7 @@ function renderDashboard() {
         const fitmentContext = state.fitmentJobId === latest.job_id && state.fitmentCheck
             ? fitmentDashboardContext(state.fitmentCheck)
             : fitmentAvailable(latest)
-                ? { tone: "neutral", text: "Совместимость ещё не проверена" }
+                ? { tone: "warning", text: t("fitment.compatibilityNotChecked") }
                 : null;
         latestContent.innerHTML = `
             <div class="latest-preview-layout">
@@ -4031,9 +4088,9 @@ function renderDashboard() {
                 <div class="latest-preview-info">
                     ${rimSummary ? `<div class="latest-render-copy"><div class="latest-render-specs">${escapeHtml(rimSummary)}</div></div>` : ""}
                     <div class="latest-meta">${escapeHtml(formatDateTime(latest.completed_at || latest.created_at))}</div>
-                    ${fitmentContext ? `<div class="dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
+                    ${fitmentContext ? `<div class="panel-note dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
                     <div class="render-card-buttons latest-render-actions">
-                        <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">Посмотреть последнюю примерку</button>
+                        <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">${escapeHtml(t("dashboard.lastRender"))}</button>
                         ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
                     </div>
                 </div>
@@ -4066,7 +4123,7 @@ function fitmentDashboardContext(check) {
         unknown: { tone: "warning", text: "Совместимость: нужны данные" },
         failed: { tone: "error", text: "Совместимость: проверка временно недоступна" },
     };
-    return contexts[check?.verdict || check?.execution_status] || { tone: "neutral", text: "Совместимость ещё не проверена" };
+    return contexts[check?.verdict || check?.execution_status] || { tone: "warning", text: t("fitment.compatibilityNotChecked") };
 }
 
 async function loadRenderHistory({ silent = false } = {}) {
@@ -4676,7 +4733,9 @@ function refreshButtonsForCurrentView() {
         const disabled = !ready || consentMissing || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
-            text: hasProposal ? `Создать примерку – 1 примерка${state.balance !== null ? `, останется ${Math.max(0, state.balance - 1)}` : ""}` : "Определяем автомобиль…",
+            text: hasProposal
+                ? (locale === "ru" ? `Создать примерку – 1 примерка${state.balance !== null ? `, останется ${Math.max(0, state.balance - 1)}` : ""}` : "Create render – 1 try-on")
+                : t("create.detectingVehicle"),
             enabled: !disabled,
             onClick: !disabled && hasProposal ? submitJob : null,
         });
@@ -5557,6 +5616,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initTelegram();
     updateWebsiteAuthUi();
     bindEvents();
+    observeUiCopyRule();
     warmWebsiteLoginResources();
     handlePaymentReturn();
 
