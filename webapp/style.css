@@ -302,6 +302,7 @@ a {
     letter-spacing: -0.01em;
     color: var(--text);
     text-align: left;
+    margin-right: var(--space-md);
 }
 
 @media (max-width: 560px) {
@@ -326,6 +327,7 @@ a {
     .topbar.has-long-caption .topbar-caption {
         grid-column: 1 / -1;
         grid-row: 2;
+        margin-right: 0;
         max-width: none;
         overflow: visible;
         text-overflow: clip;
@@ -352,6 +354,7 @@ a {
     .topbar-caption {
         grid-column: 1 / -1;
         grid-row: 2;
+        margin-right: 0;
         max-width: none;
         overflow: visible;
         text-overflow: clip;
@@ -496,8 +499,7 @@ a {
 }
 
 .dashboard-balance-card,
-.latest-render-card,
-.quick-access-panel {
+.latest-render-card {
     display: grid;
     gap: var(--space-sm);
     min-width: 0;
@@ -840,36 +842,6 @@ a {
 
 .first-render-empty p {
     margin: 0;
-}
-
-.quick-links {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.quick-link {
-    appearance: none;
-    min-height: 74px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text);
-    font-weight: 900;
-    cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-}
-
-.quick-link:hover {
-    border-color: rgba(221, 255, 0, 0.24);
-    background: rgba(221, 255, 0, 0.07);
-    transform: translateY(-1px);
-}
-
-@media (min-width: 1040px) {
-    .quick-access-panel {
-        display: none;
-    }
 }
 
 .hero-copy {
@@ -1878,7 +1850,6 @@ h2 {
 .payment-card-action:focus-visible,
 .website-auth-button:focus-visible,
 .summary-action:focus-visible,
-.quick-link:focus-visible,
 .bottom-nav-item:focus-visible,
 .sheet-item:focus-visible,
 .support-link:focus-visible,
@@ -4113,7 +4084,6 @@ body.has-fallback-main-button #app {
     }
 
     .dashboard-grid,
-    .quick-links,
     .identity-confirmation-grid,
     .identity-metrics,
     .fitment-form-grid {
