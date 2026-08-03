@@ -789,6 +789,12 @@ a {
     transform: translateY(-1px);
 }
 
+@media (min-width: 1040px) {
+    .quick-access-panel {
+        display: none;
+    }
+}
+
 .hero-copy {
     flex: 1 1 auto;
 }
@@ -3792,6 +3798,28 @@ h2 {
     z-index: 20;
 }
 
+body.has-fallback-main-button #app {
+    padding-bottom: 132px;
+}
+
+@media (min-width: 1040px) {
+    .fallback-button {
+        left: calc(
+            var(--desktop-sidebar-left) + var(--desktop-sidebar-width) +
+                var(--desktop-content-gap)
+        );
+        right: auto;
+        width: min(
+            var(--desktop-content-max),
+            calc(
+                100vw - var(--desktop-sidebar-left) - var(--desktop-sidebar-width) -
+                    var(--desktop-content-gap) - 40px
+            )
+        );
+        bottom: 24px;
+    }
+}
+
 .fallback-button:disabled {
     opacity: 0.55;
 }
@@ -3952,6 +3980,10 @@ h2 {
     .fallback-button {
         /* The primary CTA must sit above the fixed mobile navigation. */
         bottom: calc(82px + var(--safe-bottom));
+    }
+
+    body.has-fallback-main-button #app {
+        padding-bottom: calc(172px + var(--safe-bottom));
     }
 
     #app {

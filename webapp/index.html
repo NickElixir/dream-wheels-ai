@@ -57,11 +57,10 @@
         <section class="view" data-view="dashboard">
             <section class="hero-panel dashboard-hero">
                 <div class="hero-copy">
-                    <p class="eyebrow">Мой Dream Wheels AI</p>
-                    <h1 class="dashboard-title"><span>Примерьте</span><span>новые диски</span><span>на своём автомобиле</span></h1>
-                    <p class="lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
+                    <h1 class="dashboard-title"><span data-i18n="dashboard.titleLine1">Примерьте новые диски</span><span data-i18n="dashboard.titleLine2">на своём автомобиле</span></h1>
+                    <p class="lede" data-i18n="dashboard.lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
                     <div class="dashboard-actions">
-                        <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create">Начать примерку</button>
+                        <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create" data-i18n="dashboard.startRender">Создать примерку</button>
                         <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
                     </div>
                 </div>
@@ -95,8 +94,7 @@
                     </div>
                     <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
                         <div class="dashboard-expiry-head">
-                            <strong>Срок действия пакетов</strong>
-                            <button type="button" class="link-button dashboard-expiry-link" data-nav="wallet">Посмотреть пакеты</button>
+                            <strong data-i18n="dashboard.expiryTitle">Срок действия</strong>
                         </div>
                         <div class="dashboard-expiry-list" data-dashboard-expiry-list></div>
                         <div class="dashboard-expiry-note" data-dashboard-expiry-note hidden></div>
@@ -153,14 +151,14 @@
                 <label class="dropzone" data-upload-zone="car">
                     <input type="file" accept="image/*" data-input="car" hidden>
                     <div class="dropzone-icon">📷</div>
-                    <div class="dropzone-text" data-i18n="create.carPhoto">Фото машины</div>
+                    <div class="dropzone-text" data-i18n="create.carPhoto">Фото автомобиля</div>
                     <div class="dropzone-sub">Нажмите, чтобы выбрать</div>
                 </label>
                 <div class="preview" data-preview="car" hidden>
                     <div class="preview-media" data-preview-media="car">
                         <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
                     </div>
-                    <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить машину</button>
+                    <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить фото автомобиля</button>
                 </div>
 
                 <label class="dropzone" data-upload-zone="wheel">
@@ -282,7 +280,6 @@
                         <div class="review-summary">
                             <div class="review-row"><span>Автомобиль</span><strong data-review-vehicle>—</strong></div>
                             <div class="review-row"><span>Диск</span><strong data-review-rim>—</strong></div>
-                            <div class="review-row"><span>Назначение</span><strong>Визуальная примерка</strong></div>
                         </div>
                         <div class="panel-note warning" data-i18n="fitment.compatibilityNotChecked">Проверка совместимости еще не проведена</div>
                     </article>

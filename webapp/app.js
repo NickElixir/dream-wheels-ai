@@ -86,8 +86,13 @@ const I18N = {
         },
         dashboard: {
             lastRender: "Последняя примерка",
-            startRender: "Начать примерку",
+            startRender: "Создать примерку",
             createRender: "Создать примерку",
+            titleLine1: "Примерьте новые диски",
+            titleLine2: "на своём автомобиле",
+            lede: "Загрузите два фото – результат будет готов за 1–2 минуты",
+            expiryTitle: "Срок действия",
+            expiryPriority: "Сначала спишутся примерки с ближайшим сроком действия",
         },
         caption: {
             dashboard: "Главная",
@@ -107,10 +112,10 @@ const I18N = {
             productLink: "Ссылка на товар с колесным диском",
             productLinkOptional: "(необязательно)",
             productLinkWarning: "Сохраните ссылку для извлечения параметров и технической проверки совместимости колесных дисков на вашем автомобиле",
-            carPhoto: "Фото машины",
+            carPhoto: "Фото автомобиля",
             wheelPhoto: "Фото диска",
             choose: "Нажми, чтобы выбрать",
-            replaceCar: "Заменить машину",
+            replaceCar: "Заменить фото автомобиля",
             replaceWheel: "Заменить диск",
             carPreviewAlt: "Превью машины",
             wheelPreviewAlt: "Превью диска",
@@ -458,8 +463,13 @@ const I18N = {
         },
         dashboard: {
             lastRender: "Last try-on",
-            startRender: "Start a try-on",
+            startRender: "Create a try-on",
             createRender: "Create a try-on",
+            titleLine1: "Try on new wheels",
+            titleLine2: "on your vehicle",
+            lede: "Upload two photos – your result will be ready in 1–2 minutes",
+            expiryTitle: "Expiry dates",
+            expiryPriority: "Try-ons with the nearest expiry date are used first",
         },
         caption: {
             dashboard: "Home",
@@ -479,10 +489,10 @@ const I18N = {
             productLink: "Wheel product link",
             productLinkOptional: "(optional)",
             productLinkWarning: "Save the link to extract wheel parameters and run a technical compatibility check for your car",
-            carPhoto: "Car photo",
+            carPhoto: "Vehicle photo",
             wheelPhoto: "Wheel photo",
             choose: "Tap to choose",
-            replaceCar: "Replace car",
+            replaceCar: "Replace vehicle photo",
             replaceWheel: "Replace wheel",
             carPreviewAlt: "Car preview",
             wheelPreviewAlt: "Wheel preview",
@@ -4070,13 +4080,7 @@ function renderDashboard() {
     }
     if (dashboardExpiryNote) {
         dashboardExpiryNote.hidden = !expiryCohorts.length;
-        dashboardExpiryNote.textContent = expiryCohorts.length
-            ? (
-                locale === "ru"
-                    ? "Сначала используются примерки с ближайшим сроком."
-                    : "Renders with the nearest expiration date are used first."
-            )
-            : "";
+        dashboardExpiryNote.textContent = expiryCohorts.length ? t("dashboard.expiryPriority") : "";
     }
 
     if (!latestTitle || !latestStatus || !latestContent) return;
@@ -4715,6 +4719,7 @@ function setMainButton({ text, enabled = true, onClick = null }) {
     btn.textContent = text;
     btn.disabled = !enabled;
     btn.hidden = false;
+    document.body.classList.add("has-fallback-main-button");
 }
 
 function hideMainButton() {
@@ -4725,6 +4730,7 @@ function hideMainButton() {
     } else if (fallbackButton) {
         fallbackButton.hidden = true;
     }
+    document.body.classList.remove("has-fallback-main-button");
 }
 
 function setBackButton(onClick) {
