@@ -297,7 +297,7 @@ a {
 }
 
 .topbar-caption {
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--text);
@@ -486,10 +486,15 @@ a {
 }
 
 .dashboard-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     margin-top: 24px;
+}
+
+.dashboard-actions > button {
+    width: 100%;
+    min-width: 0;
 }
 
 .dashboard-grid {
@@ -579,11 +584,20 @@ a {
 }
 
 .dashboard-balance-display {
+    display: grid;
+    place-items: center;
+    align-content: center;
     width: 100%;
     min-width: 0;
-    flex: 0 0 auto;
+    min-height: 164px;
+    padding: 20px;
     margin-top: 8px;
     text-align: center;
+    border: 1px solid rgba(221, 255, 0, 0.34);
+    border-radius: var(--radius-lg);
+    background:
+        radial-gradient(circle at 50% 42%, rgba(221, 255, 0, 0.09), transparent 58%),
+        linear-gradient(180deg, rgba(48, 57, 26, 0.6), rgba(25, 30, 19, 0.72));
 }
 
 .dashboard-balance-display .dashboard-balance-value {
@@ -592,6 +606,19 @@ a {
 
 .dashboard-balance-display .dashboard-balance-unit {
     font-size: 15px;
+}
+
+@media (max-width: 400px) {
+    .dashboard-actions {
+        gap: 8px;
+    }
+
+    .dashboard-actions > button {
+        min-height: 56px;
+        padding-inline: 8px;
+        font-size: 14px;
+        line-height: 1.2;
+    }
 }
 
 .dashboard-balance-card .compact-button,

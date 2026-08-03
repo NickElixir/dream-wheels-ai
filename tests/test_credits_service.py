@@ -6,11 +6,12 @@ import asyncpg
 from src.credits_service import (
     _calculate_remaining_starter_grant_credits,
     _has_starter_grant_ledger_entry,
-    _insert_starter_grant_ledger_entry,
     _insert_starter_grant_expiration_ledger_entry,
-    expire_credit_packages,
+    _insert_starter_grant_ledger_entry,
     ensure_credit_account,
     ensure_credit_account_state,
+    expire_credit_packages,
+    get_balance,
 )
 
 
@@ -197,6 +198,38 @@ def test_ensure_credit_account_keeps_int_contract(monkeypatch):
     balance = asyncio.run(ensure_credit_account(object(), 123))
 
     assert balance == 5
+
+
+def test_get_balance_reconciles_cached_account_with_active_packages(monkeypatch):
+    async def fake_ensure(_conn, _user_id: int):
+        return 40
+
+    async def fake_expire(_conn, *, user_id: int):
+        assert user_id == 123
+        return 0
+
+    class FakeConn:
+        def __init__(self) -> None:
+            self.updated: tuple[str, tuple[object, ...]] | None = None
+
+        async def fetchval(self, query: str, *args):
+            assert "SUM(remaining_credits)" in query
+            assert args == (123,)
+            return 29
+
+        async def execute(self, query: str, *args):
+            self.updated = (query, args)
+            return "UPDATE 1"
+
+    monkeypatch.setattr("src.credits_service.ensure_credit_account", fake_ensure)
+    monkeypatch.setattr("src.credits_service.expire_credit_packages", fake_expire)
+    conn = FakeConn()
+
+    balance = asyncio.run(get_balance(conn, 123))
+
+    assert balance == 29
+    assert conn.updated is not None
+    assert conn.updated[1] == (123, 29)
 
 
 def test_expire_credit_packages_casts_json_metadata_values_for_postgres():

@@ -22,7 +22,7 @@ from src.config import (
     ROBOKASSA_TEST_PASSWORD2,
     STARTER_GRANT_TTL_DAYS,
 )
-from src.credits_service import create_credit_package, ensure_credit_account
+from src.credits_service import create_credit_package, get_balance
 from src.payments.providers.robokassa import (
     RobokassaConfig,
     RobokassaPaymentProvider,
@@ -372,7 +372,7 @@ async def mark_payment_paid(
     if normalize_amount_rub(out_sum) != row["amount_rub"]:
         raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
 
-    balance = await ensure_credit_account(conn, int(row["user_id"]))
+    balance = await get_balance(conn, int(row["user_id"]))
     row = await conn.fetchrow(
         """
         SELECT p.id,
@@ -394,7 +394,7 @@ async def mark_payment_paid(
         return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
 
     credits_granted = int(row["credits_granted"])
-    balance_after = int(row["balance"] or balance) + credits_granted
+    balance_after = balance + credits_granted
     await conn.execute(
         """
         UPDATE user_credit_accounts

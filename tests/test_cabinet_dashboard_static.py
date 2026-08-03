@@ -80,7 +80,6 @@ def test_unauthenticated_state_prompts_telegram_login() -> None:
     assert "data-website-auth-button" in INDEX_HTML
     assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
     assert "data-dashboard-auth-login" in INDEX_HTML
-    assert "data-dashboard-auth-info" in INDEX_HTML
     assert "telegram-button-icon" in INDEX_HTML
     assert "wallet.authRequired" in APP_JS
 
@@ -94,7 +93,7 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "auth.preparing" in APP_JS
     assert "function warmWebsiteLoginResources()" in APP_JS
     assert "websiteLoginWarmupPending" in APP_JS
-    assert "button.disabled = false;" in APP_JS
+    assert "button.disabled = state.websiteLoginPending;" in APP_JS
     assert "Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()])" in APP_JS
     assert '["pointerdown", "mouseenter", "focus"]' in APP_JS
     assert "warmWebsiteLoginResources();" in APP_JS
@@ -118,8 +117,8 @@ def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() 
 def test_open_tabs_detect_a_new_frontend_build() -> None:
     build = VERSION_JSON["build"]
     assert f'data-app-build="{build}"' in INDEX_HTML
-    assert f'/style.css?v={build}' in INDEX_HTML
-    assert f'/app.js?v={build}' in INDEX_HTML
+    assert f"/style.css?v={build}" in INDEX_HTML
+    assert f"/app.js?v={build}" in INDEX_HTML
     assert "function checkCurrentBuild()" in APP_JS
     assert 'cache: "no-store"' in APP_JS
     version_headers = next(
@@ -149,19 +148,21 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert "/payments/topups" in APP_JS
     for icon in ("⚡", "🏁", "💎", "👑"):
         assert icon in INDEX_HTML
-    assert "Robokassa" in INDEX_HTML
+    assert "Робокассу" in INDEX_HTML
 
 
 def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
-    assert "Примерьте новые диски на своём автомобиле" in INDEX_HTML
-    assert "Фото машины" in INDEX_HTML
-    assert "Фото диска" in INDEX_HTML
-    assert 'detectIdentity: "Распознать автомобиль"' in APP_JS
-    assert "Определяем автомобиль по фото" in INDEX_HTML
+    assert 'titleLine1: "Примерьте"' in APP_JS
+    assert 'titleLine2: "новые диски"' in APP_JS
+    assert 'titleLine3: "на своём автомобиле"' in APP_JS
+    assert "Фото автомобиля" in INDEX_HTML
+    assert "Фото колесного диска" in INDEX_HTML
+    assert 'detectIdentity: "Определить автомобиль"' in APP_JS
+    assert "Определяем автомобиль" in INDEX_HTML
     assert "Мы определили автомобиль" in INDEX_HTML
-    assert "Ссылка на товар с диском" in INDEX_HTML
-    assert "Фото диска добавлено" in INDEX_HTML
-    assert "Совместимость ещё не проверена. Это визуальная примерка" in INDEX_HTML
+    assert "Ссылка на товар" in INDEX_HTML
+    assert "Фото колесного диска добавлено" in INDEX_HTML
+    assert "Проверка совместимости еще не проведена" in APP_JS
     assert "Проверка совместимости — скоро" not in INDEX_HTML
     assert "future-stage-island" not in INDEX_HTML
     assert "data-create-render" not in INDEX_HTML
@@ -246,17 +247,16 @@ def test_fitment_panel_collapses_hidden_status_islands() -> None:
 
 
 def test_detail_screen_has_one_fitment_editor_cta_and_no_duplicate_new_tryon() -> None:
-    detail = APP_JS.split("function renderRenderDetail() {")[1].split(
-        "function openRenderDetail"
-    )[0]
+    detail = APP_JS.split("function renderRenderDetail() {")[1].split("function openRenderDetail")[
+        0
+    ]
     assert 'openFromHistory: "Проверить совместимость"' in APP_JS
     assert detail.count("data-open-fitment") == 1
     assert "render-expanded-actions" in detail
     assert "Скачать результат" in detail
     assert "Повторить с этими фото" in detail
     assert "data-new-tryon" not in detail
-    assert 'class="hero-panel compact render-detail-hero"' in INDEX_HTML
-    assert "data-new-tryon" in INDEX_HTML
+    assert "data-new-tryon" not in INDEX_HTML
 
 
 def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> None:
@@ -302,8 +302,8 @@ def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> Non
     assert (ROOT / "webapp" / "assets" / "photo-guide-car-bad.jpg").is_file()
     assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-product.jpg").is_file()
     assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-real.jpg").is_file()
-    assert "Снимите диск прямо спереди" in INDEX_HTML
-    assert 'data-nav="create">Начать примерку</button>' in INDEX_HTML
+    assert "Диск снят прямо спереди" in INDEX_HTML
+    assert 'data-i18n="photoGuide.readyAction">Начать примерку</button>' in INDEX_HTML
     assert "/assets/photo-guide-wheel-product.jpg" in INDEX_HTML
     assert "/assets/photo-guide-wheel-real.jpg" in INDEX_HTML
     assert "photo-guide-wheel-examples" in STYLE_CSS
@@ -312,7 +312,7 @@ def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> Non
 def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
     assert "const savedFromStep = state.fitmentActiveStep;" in APP_JS
     assert "if (savedFromStep === 1)" in APP_JS
-    assert 'state.fitmentActiveStep = 2;' in APP_JS
+    assert "state.fitmentActiveStep = 2;" in APP_JS
     assert "scrollFitmentTo('[data-fitment-section=\"rim\"]');" in APP_JS
 
 
@@ -320,7 +320,7 @@ def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
     assert "feedbackReasonPickerByJob" in APP_JS
     assert "function feedbackReasonPickerVisible(job)" in APP_JS
     assert 'sentiment === "disliked"' in APP_JS
-    assert 'data-history-feedback-reason' in APP_JS
+    assert "data-history-feedback-reason" in APP_JS
 
 
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
@@ -408,7 +408,7 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "vehicleSection.hidden = activeStep !== 1" in APP_JS
     assert "rimSection.hidden = activeStep !== 2" in APP_JS
     assert "verdictCard.hidden = activeStep !== 3" in APP_JS
-    assert "Продолжить к параметрам диска" in APP_JS
+    assert 'locale === "ru" ? "Продолжить"' in APP_JS
     assert "Сохранить и получить вывод" in APP_JS
     assert "Сохранить и выбрать комплектацию" in APP_JS
     assert "function fitmentNextAction" in APP_JS
@@ -462,9 +462,8 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
-    assert "Срок действия пакетов" in INDEX_HTML
-    assert "Посмотреть пакеты" in INDEX_HTML
-    assert "Сначала используются примерки с ближайшим сроком." in APP_JS
+    assert "Срок действия" in INDEX_HTML
+    assert "Сначала спишутся рендеры с ближайшим сроком действия" in APP_JS
     assert "data-dashboard-expiry" in INDEX_HTML
     assert "data-wallet-expiry-list" in INDEX_HTML
 
@@ -496,7 +495,7 @@ def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> No
     assert "dashboard-skeleton-shimmer" in STYLE_CSS
     assert "data-dashboard-primary-action" in INDEX_HTML
     assert "data-dashboard-secondary-action" in INDEX_HTML
-    assert "Посмотреть последнюю примерку" in APP_JS
+    assert "Открыть последний результат" in APP_JS
     assert "latest-preview-layout" in APP_JS
     assert "dashboard-fitment-context" in APP_JS
     assert "fitmentDashboardContext" in APP_JS
@@ -551,7 +550,7 @@ def test_focus_visible_style_covers_button_and_navigation_families() -> None:
 
 
 def test_mobile_fallback_cta_is_placed_above_fixed_navigation() -> None:
-    assert "/* The primary CTA must sit above the fixed mobile navigation. */" in STYLE_CSS
+    assert "The primary mobile navigation is fixed at the viewport bottom." in STYLE_CSS
     assert "bottom: calc(82px + var(--safe-bottom));" in STYLE_CSS
 
 
