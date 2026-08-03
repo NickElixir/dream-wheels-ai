@@ -32,6 +32,13 @@
     --shadow-panel: 0 18px 60px rgba(0, 0, 0, 0.28);
 }
 
+/* Support keeps every actionable block on the same content rail */
+.support-panel .support-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0;
+}
+
 *,
 *::before,
 *::after {
@@ -251,13 +258,13 @@ a {
 
 @media (max-width: 560px) {
     .topbar {
-        align-items: flex-start;
-        flex-wrap: wrap;
+        align-items: center;
+        flex-wrap: nowrap;
     }
 
     .topbar-actions {
-        flex: 0 0 100%;
-        gap: 8px;
+        flex: 0 0 auto;
+        gap: 0;
         justify-content: flex-end;
     }
 
@@ -493,7 +500,6 @@ a {
     min-width: 0;
     flex: 0 0 auto;
     margin-top: 8px;
-    padding: 24px 18px;
     text-align: center;
 }
 
@@ -823,7 +829,7 @@ h2 {
     padding: 18px 16px;
     border-radius: 24px;
     border: 1px solid rgba(221, 255, 0, 0.26);
-    background: var(--accent);
+    background: linear-gradient(180deg, rgba(46, 52, 19, 0.58), rgba(33, 37, 20, 0.78));
     display: grid;
     justify-items: center;
     align-content: center;
@@ -839,12 +845,12 @@ h2 {
     font-size: 54px;
     font-weight: 900;
     line-height: 0.95;
-    color: #151811;
+    color: var(--accent);
 }
 
 .balance-unit {
     font-size: 15px;
-    color: #30370f;
+    color: var(--text-muted);
     font-weight: 800;
 }
 
@@ -1013,6 +1019,15 @@ h2 {
 .wizard-panel {
     display: grid;
     gap: 18px;
+}
+
+.wallet-wizard-header {
+    display: grid;
+    gap: 10px;
+}
+
+.wallet-wizard-header .wallet-auth-notice {
+    margin: 0;
 }
 
 .wallet-pay-button {
@@ -3483,8 +3498,10 @@ h2 {
 .photo-guide-ready .primary-button { flex: 0 0 auto; }
 }
 
-.support-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.support-panel .support-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0 !important;
 }
 
 .docs-list {
@@ -3538,21 +3555,25 @@ h2 {
     overflow-wrap: anywhere;
 }
 
+.support-panel,
+.support-section,
 .support-refund-block {
     display: grid;
     gap: 12px;
-    padding: 4px 20px 20px;
+}
+
+.support-panel {
+    gap: 24px;
 }
 
 .support-guide-link {
     width: 100%;
-    margin-bottom: 18px;
     justify-content: flex-start;
     text-align: left;
 }
 
-.support-refund-block .section-label {
-    margin: 8px 0 0;
+.support-section .section-label {
+    margin: 0;
 }
 
 .support-response-note,

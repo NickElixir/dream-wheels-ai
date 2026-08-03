@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260802-fitment-next-action">
+    <link rel="stylesheet" href="/style.css?v=20260803-layout-polish-3">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -145,12 +145,7 @@
         <section class="view" data-view="create">
             <section class="hero-panel compact">
                 <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="create.eyebrow">Создание</p>
-                    <h1 class="create-title">
-                        <span data-i18n="create.titleLine1">Примерьте</span>
-                        <span data-i18n="create.titleLine2">новые диски</span>
-                        <span data-i18n="create.titleLine3">на своём автомобиле</span>
-                    </h1>
+                    <p class="eyebrow" data-i18n="create.eyebrow">Создание примерки</p>
                 </div>
             </section>
 
@@ -389,20 +384,22 @@
             </section>
 
             <section class="panel wizard-panel">
-                <div class="panel-head">
-                    <div>
-                        <p class="section-label" data-i18n="wallet.wizardLabel">Пополнение</p>
+                <div class="wallet-wizard-header">
+                    <div class="panel-head">
+                        <div>
+                            <p class="section-label" data-i18n="wallet.wizardLabel">Пополнение</p>
+                        </div>
+                    </div>
+                    <div class="wallet-status-island wallet-auth-notice tone-warning" data-wallet-auth-notice data-visible="false" aria-live="polite" hidden>
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-i18n="wallet.authRequired">Откройте Mini App в Telegram или войдите через Telegram на сайте</div>
+                        </div>
                     </div>
                 </div>
                 <div class="wallet-status-island wallet-status-loading" data-wallet-loading aria-live="polite" data-visible="false">
                     <div class="wallet-status-spinner" aria-hidden="true"></div>
                     <div class="wallet-status-copy">
                         <div class="wallet-status-title" data-wallet-loading-text data-i18n="wallet.loading">Загружаем кабинет...</div>
-                    </div>
-                </div>
-                <div class="wallet-status-island wallet-auth-notice tone-warning" data-wallet-auth-notice data-visible="false" aria-live="polite" hidden>
-                    <div class="wallet-status-copy">
-                        <div class="wallet-status-title" data-i18n="wallet.authRequired">Откройте Mini App в Telegram или войдите через Telegram на сайте</div>
                     </div>
                 </div>
                 <div class="topup-wizard">
@@ -463,11 +460,8 @@
                     <div class="topup-island topup-step-island">
                         <div class="topup-step-head">
                             <span class="topup-step-index">2</span>
-                            <div>
-                                <div class="topup-step-title" data-i18n="wallet.emailLabel">Email для чека</div>
-                            </div>
+                            <label class="topup-step-title" for="wallet-email" data-i18n="wallet.emailLabel">Email для чека</label>
                         </div>
-                        <label class="custom-topup-label" for="wallet-email" data-i18n="wallet.emailLabel">Email для чека</label>
                         <input id="wallet-email" class="topup-email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-topup-email>
                         <p class="topup-email-error" data-topup-email-error hidden></p>
                         <p class="email-privacy-note">
@@ -929,44 +923,37 @@
         </section>
 
         <section class="view" data-view="support" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="support.eyebrow">Помощь</p>
-                    <h1 data-i18n="support.title">Поддержка</h1>
-                </div>
-            </section>
-            <section class="panel">
-                <p class="section-label" data-i18n="support.feedbackSection">Обратная связь</p>
-                <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
-                    <span class="doc-link-copy"><strong data-i18n="support.photoGuideTitle">Как подготовить фото</strong><small data-i18n="support.photoGuideDescription">Инструкция по подготовке фотографий перед загрузкой</small></span>
-                </button>
-                <div class="support-grid">
-                    <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="support-link" data-telegram-link>
-                        <span class="support-link-icon" aria-hidden="true">💬</span>
-                        <span class="support-link-copy"><strong data-i18n="support.telegram">Telegram</strong><small>@dreamwheelsai</small></span>
-                    </a>
-                    <a href="mailto:venus.mike@yandex.ru" class="support-link">
-                        <span class="support-link-icon" aria-hidden="true">✉️</span>
-                        <span class="support-link-copy"><strong data-i18n="support.email">Email</strong><small>venus.mike@yandex.ru</small></span>
-                    </a>
-                </div>
-                <div class="support-refund-block">
+            <section class="panel support-panel">
+                <section class="support-section">
+                    <p class="section-label" data-i18n="support.helpSection">Помощь</p>
+                    <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
+                        <span class="doc-link-copy"><strong data-i18n="support.photoGuideTitle">Как подготовить фото</strong><small data-i18n="support.photoGuideDescription">Инструкция по подготовке фотографий перед загрузкой</small></span>
+                    </button>
+                </section>
+                <section class="support-section">
+                    <p class="section-label" data-i18n="support.feedbackSection">Обратная связь</p>
+                    <div class="support-grid">
+                        <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="support-link" data-telegram-link>
+                            <span class="support-link-icon" aria-hidden="true">💬</span>
+                            <span class="support-link-copy"><strong data-i18n="support.telegram">Telegram</strong><small>@dreamwheelsai</small></span>
+                        </a>
+                        <a href="mailto:venus.mike@yandex.ru" class="support-link">
+                            <span class="support-link-icon" aria-hidden="true">✉️</span>
+                            <span class="support-link-copy"><strong data-i18n="support.email">Email</strong><small>venus.mike@yandex.ru</small></span>
+                        </a>
+                    </div>
+                </section>
+                <section class="support-section support-refund-block">
                     <p class="section-label" data-i18n="support.refundSection">Возврат средств</p>
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/refund" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
                         <span class="doc-link-copy"><strong data-i18n="support.refundTitle">Условия возврата</strong><small data-i18n="support.refundDescription">Когда доступен возврат и как отправить обращение</small></span>
                     </a>
-                    <p class="support-response-note" data-i18n="support.refundSla">Обращения по возвратам рассматриваем в течение 24 часов.</p>
-                </div>
+                    <p class="support-response-note" data-i18n="support.refundSla">Обращения по возвратам рассматриваем в течение 24 часов</p>
+                </section>
             </section>
         </section>
 
         <section class="view" data-view="docs" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="docs.eyebrow">Юридическая информация</p>
-                    <h1 data-i18n="docs.title">Документы</h1>
-                </div>
-            </section>
             <section class="panel">
                 <div class="docs-list">
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
@@ -1006,6 +993,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260802-fitment-next-action" type="module"></script>
+    <script src="/app.js?v=20260803-layout-polish" type="module"></script>
 </body>
 </html>
