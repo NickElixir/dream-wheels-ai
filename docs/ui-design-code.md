@@ -52,6 +52,12 @@ Desktop uses a permanent sidebar in a real layout column: Главная, При
 
 Use restrained fade and small translate motion. Respect `prefers-reduced-motion`.
 
+## Page headers
+
+- Each screen has one page-level title in the topbar. Do not repeat it in a hero, a compact header island, or the first content panel
+- The topbar caption uses the primary text colour and a 700 weight. It is the visual title of the screen, not a muted breadcrumb
+- On small screens, a long caption may move to a second row inside the topbar. Do not wrap it in a separate background, border, or card
+
 ## Status islands
 
 Use islands only for meaningful loading, success, warning, or error states. Identity/auth blockers use a visible danger island with actionable recovery, never an endless loading state.
@@ -70,11 +76,18 @@ A complete car composition is more important than filling a fixed visual box.
 
 ## Sprint 2 — create flow
 
-Keep the approved upload screen unchanged. The flow is one page with progressive islands:
+The upload flow is one page with progressive islands and no outer container around the whole scenario:
 
 ```text
 Upload → Определить данные → AI proposal → confirmation → review → render
 ```
+
+- Car photo and wheel photo are two equal cards on desktop and stack on mobile
+- Each photo card contains its own upload area or preview, completion label, and replacement action
+- Keep uploaded images uncropped with `object-fit: contain`; their frames follow the source aspect ratio
+- Consent, product link, recognition state, confirmation, and review are separate full-width blocks
+- Recognition is a normal status island in the content flow. It must not look like a CTA, overlap content, or extend beyond the main column
+- The website fallback CTA belongs after the current flow content and must not be fixed over cards or navigation
 
 Vehicle: make, model, year/range; primary proposal plus up to two alternatives. Rim: diameter, mandatory width, PCD. PCD displays as `5×114.3`; backend stores `bolt_count` plus `pcd_mm`. Do not show rim brand/model, SKU, ET, DIA, technical compatibility, or a full vehicle selector.
 

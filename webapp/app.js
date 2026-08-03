@@ -116,10 +116,11 @@ const I18N = {
             productLinkOptional: "(необязательно)",
             productLinkWarning: "По ссылке попробуем определить параметры диска",
             carPhoto: "Фото автомобиля",
-            wheelPhoto: "Фото диска",
-            choose: "Нажми, чтобы выбрать",
+            carAdded: "Фото автомобиля добавлено",
+            wheelPhoto: "Фото колесного диска",
+            choose: "Нажмите, чтобы выбрать",
             replaceCar: "Заменить фото автомобиля",
-            replaceWheel: "Заменить диск",
+            replaceWheel: "Заменить фото колесного диска",
             wheelAdded: "Фото колесного диска добавлено",
             wheelAddedHint: "Фото добавлено",
             productSourceMissing: "Ссылка на товар не добавлена",
@@ -163,12 +164,12 @@ const I18N = {
         },
         consent: {
             title: "Использование фотографий",
-            description: "Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации.",
-            confirmation: "Я подтверждаю, что имею право использовать выбранные фотографии, и соглашаюсь с их обработкой для создания AI-примерки.",
+            description: "Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации",
+            confirmation: "Я подтверждаю, что имею право использовать выбранные фотографии и соглашаюсь с их обработкой для создания AI-примерки",
             privacy: "Политика обработки данных",
             document: "Согласие",
             cancel: "Отменить и выбрать другие фотографии",
-            compact: "Продолжая, вы подтверждаете право использовать выбранные фотографии.",
+            compact: "Продолжая, вы подтверждаете право использовать выбранные фотографии",
             processingTerms: "Условия обработки данных",
         },
         steps: {
@@ -499,6 +500,7 @@ const I18N = {
             productLinkOptional: "(optional)",
             productLinkWarning: "We will try to identify wheel parameters from the link",
             carPhoto: "Vehicle photo",
+            carAdded: "Vehicle photo added",
             wheelPhoto: "Wheel photo",
             choose: "Tap to choose",
             replaceCar: "Replace vehicle photo",
@@ -546,12 +548,12 @@ const I18N = {
         },
         consent: {
             title: "Photo use",
-            description: "To create a try-on, your vehicle and wheel photos will be processed by Dream Wheels AI and an AI generation provider.",
-            confirmation: "I confirm that I have the right to use the selected photos and consent to their processing to create an AI try-on.",
+            description: "To create a try-on, your vehicle and wheel photos will be processed by Dream Wheels AI and an AI generation provider",
+            confirmation: "I confirm that I have the right to use the selected photos and consent to their processing to create an AI try-on",
             privacy: "Data processing policy",
             document: "Consent",
             cancel: "Cancel and choose different photos",
-            compact: "By continuing, you confirm your right to use the selected photos.",
+            compact: "By continuing, you confirm your right to use the selected photos",
             processingTerms: "Data processing terms",
         },
         steps: {
@@ -2927,12 +2929,17 @@ async function parseApiError(response) {
 
 function updateTopbarCaption() {
     const caption = document.querySelector("[data-topbar-caption]");
+    const topbar = document.querySelector(".topbar");
+    const applyCaption = (text) => {
+        if (caption) caption.textContent = text;
+        if (topbar) topbar.classList.toggle("has-long-caption", String(text).length > 12);
+    };
     if (state.view === "render-detail") {
-        if (caption) caption.textContent = locale === "ru" ? "Детали примерки" : "Try-on details";
+        applyCaption(locale === "ru" ? "Детали примерки" : "Try-on details");
         return;
     }
     const captionKey = state.view === "photo-guide" ? "photoGuide" : state.view;
-    if (caption) caption.textContent = t(`caption.${captionKey}`);
+    applyCaption(t(`caption.${captionKey}`));
 }
 
 function setMenuOpen(open) {
@@ -4716,7 +4723,7 @@ function ensureFallbackButton() {
     fallbackButton.addEventListener("click", () => {
         if (mainButtonHandler) mainButtonHandler();
     });
-    document.body.appendChild(fallbackButton);
+    (document.querySelector('[data-view="create"]') || document.body).appendChild(fallbackButton);
     return fallbackButton;
 }
 
@@ -4801,15 +4808,20 @@ function refreshButtonsForCurrentView() {
         const hasProposal = Boolean(state.identityProposal);
         const selectedVehicle = selectedVehicleCandidate();
         renderPhotoConsent(ready);
+        if (!ready) {
+            setBackButton(null);
+            hideMainButton();
+            return;
+        }
         const consentMissing = ready && !state.photoConsentAccepted;
         const disabled = !ready || consentMissing || state.submitting || state.identityResolving || (hasProposal && !selectedVehicle);
         setBackButton(null);
         setMainButton({
             text: hasProposal
-                            ? (locale === "ru" ? "Создать изображение — 1 рендер" : "Create image — 1 render")
-                : t("create.detectingVehicle"),
+                ? (locale === "ru" ? "Создать изображение — 1 рендер" : "Create image — 1 render")
+                : t("create.detectIdentity"),
             enabled: !disabled,
-            onClick: !disabled && hasProposal ? submitJob : null,
+            onClick: !disabled ? (hasProposal ? submitJob : resolveIdentity) : null,
         });
         return;
     }

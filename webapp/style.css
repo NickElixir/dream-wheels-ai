@@ -298,9 +298,9 @@ a {
 
 .topbar-caption {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.01em;
-    color: var(--text-subtle);
+    color: var(--text);
     text-align: left;
 }
 
@@ -311,6 +311,30 @@ a {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .topbar.has-long-caption {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 10px;
+    }
+
+    .topbar.has-long-caption .topbar-actions {
+        display: contents;
+    }
+
+    .topbar.has-long-caption .topbar-caption {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    .topbar.has-long-caption .website-auth-button {
+        grid-column: 2;
+        grid-row: 1;
     }
 }
 
@@ -1965,15 +1989,37 @@ h2 {
     padding-top: 20px;
 }
 
-[data-create-screen="upload"] {
+.create-upload-flow {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
+    gap: var(--space-sm);
 }
 
-[data-create-screen="upload"] > * {
+.create-upload-flow > * {
     min-width: 0;
     max-width: 100%;
+}
+
+.upload-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-sm);
+}
+
+.upload-photo-card {
+    display: grid;
+    align-content: start;
+    gap: var(--space-xs);
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, rgba(27, 31, 40, 0.98), rgba(20, 23, 31, 0.98));
+    box-shadow: var(--shadow-panel);
+}
+
+.upload-photo-card .section-label {
+    margin-bottom: 0;
 }
 
 .photo-consent-card {
@@ -1981,9 +2027,9 @@ h2 {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     padding: 18px;
-    border: 1px solid rgba(221, 255, 0, 0.2);
+    border: 1px solid rgba(221, 255, 0, 0.18);
     border-radius: 20px;
-    background: rgba(221, 255, 0, 0.055);
+    background: rgba(255, 255, 255, 0.025);
 }
 
 .photo-consent-card > *,
@@ -2023,7 +2069,7 @@ h2 {
     height: 38px;
     border-radius: 13px;
     border: 1px solid rgba(221, 255, 0, 0.2);
-    background: rgba(221, 255, 0, 0.09);
+    background: rgba(221, 255, 0, 0.055);
 }
 
 .photo-consent-check {
@@ -2074,6 +2120,13 @@ h2 {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.create-source-card .panel-note {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-subtle);
 }
 
 .fitment-panel {
@@ -2645,10 +2698,11 @@ h2 {
 .rim-source-preflight {
     display: grid;
     gap: 8px;
-    padding: 14px;
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.025);
+    padding: 20px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(27, 31, 40, 0.98), rgba(20, 23, 31, 0.98));
+    box-shadow: var(--shadow-panel);
 }
 
 .rim-source-preflight p {
@@ -3746,7 +3800,8 @@ h2 {
     display: grid;
     justify-items: center;
     gap: 10px;
-    padding: 36px 20px;
+    min-height: 196px;
+    padding: 28px 20px;
     border-radius: 22px;
     border: 1.5px dashed rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.02);
@@ -3763,11 +3818,6 @@ h2 {
     font-size: 40px;
 }
 
-.dropzone-text {
-    font-size: 22px;
-    font-weight: 800;
-}
-
 .dropzone-sub {
     color: var(--text-subtle);
 }
@@ -3776,6 +3826,13 @@ h2 {
     display: grid;
     gap: 12px;
     animation: preview-enter 220ms ease-out both;
+}
+
+.photo-upload-status {
+    margin: 0;
+    color: var(--success);
+    font-size: 13px;
+    font-weight: 800;
 }
 
 .preview-media {
@@ -3818,39 +3875,19 @@ h2 {
 }
 
 .fallback-button {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    bottom: calc(16px + var(--safe-bottom));
+    position: static;
+    width: 100%;
+    margin: 0;
     padding: 16px 18px;
     border: 0;
     border-radius: 18px;
     background: var(--accent);
     color: #161811;
     font-weight: 900;
-    z-index: 20;
 }
 
 body.has-fallback-main-button #app {
     padding-bottom: 132px;
-}
-
-@media (min-width: 1040px) {
-    .fallback-button {
-        left: calc(
-            var(--desktop-sidebar-left) + var(--desktop-sidebar-width) +
-                var(--desktop-content-gap)
-        );
-        right: auto;
-        width: min(
-            var(--desktop-content-max),
-            calc(
-                100vw - var(--desktop-sidebar-left) - var(--desktop-sidebar-width) -
-                    var(--desktop-content-gap) - 40px
-            )
-        );
-        bottom: 24px;
-    }
 }
 
 .fallback-button:disabled {
@@ -4010,9 +4047,8 @@ body.has-fallback-main-button #app {
 }
 
 @media (max-width: 760px) {
-    .fallback-button {
-        /* The primary CTA must sit above the fixed mobile navigation. */
-        bottom: calc(82px + var(--safe-bottom));
+    .upload-photo-grid {
+        grid-template-columns: 1fr;
     }
 
     body.has-fallback-main-button #app {

@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260803-header-cleanup">
+    <link rel="stylesheet" href="/style.css?v=20260803-create-flow-cleanup">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -141,31 +141,39 @@
         </section>
 
         <section class="view" data-view="create">
-            <section class="panel" data-create-screen="upload">
-                <label class="dropzone" data-upload-zone="car">
-                    <input type="file" accept="image/*" data-input="car" hidden>
-                    <div class="dropzone-icon">📷</div>
-                    <div class="dropzone-text" data-i18n="create.carPhoto">Фото автомобиля</div>
-                    <div class="dropzone-sub">Нажмите, чтобы выбрать</div>
-                </label>
-                <div class="preview" data-preview="car" hidden>
-                    <div class="preview-media" data-preview-media="car">
-                        <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
-                    </div>
-                    <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить фото автомобиля</button>
-                </div>
+            <section class="create-upload-flow" data-create-screen="upload">
+                <div class="upload-photo-grid">
+                    <article class="upload-photo-card">
+                        <p class="section-label" data-i18n="create.carPhoto">Фото автомобиля</p>
+                        <label class="dropzone" data-upload-zone="car">
+                            <input type="file" accept="image/*" data-input="car" hidden>
+                            <div class="dropzone-icon">📷</div>
+                            <div class="dropzone-sub" data-i18n="create.choose">Нажмите, чтобы выбрать</div>
+                        </label>
+                        <div class="preview" data-preview="car" hidden>
+                            <div class="preview-media" data-preview-media="car">
+                                <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
+                            </div>
+                            <p class="photo-upload-status" data-i18n="create.carAdded">Фото автомобиля добавлено</p>
+                            <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить фото автомобиля</button>
+                        </div>
+                    </article>
 
-                <label class="dropzone" data-upload-zone="wheel">
-                    <input type="file" accept="image/*" data-input="wheel" hidden>
-                    <div class="dropzone-icon">⚙️</div>
-                    <div class="dropzone-text" data-i18n="create.wheelPhoto">Фото диска</div>
-                    <div class="dropzone-sub">Нажмите, чтобы выбрать</div>
-                </label>
-                <div class="preview" data-preview="wheel" hidden>
-                    <div class="preview-media" data-preview-media="wheel">
-                        <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
-                    </div>
-                    <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
+                    <article class="upload-photo-card">
+                        <p class="section-label" data-i18n="create.wheelPhoto">Фото колесного диска</p>
+                        <label class="dropzone" data-upload-zone="wheel">
+                            <input type="file" accept="image/*" data-input="wheel" hidden>
+                            <div class="dropzone-icon">⚙️</div>
+                            <div class="dropzone-sub" data-i18n="create.choose">Нажмите, чтобы выбрать</div>
+                        </label>
+                        <div class="preview" data-preview="wheel" hidden>
+                            <div class="preview-media" data-preview-media="wheel">
+                                <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
+                            </div>
+                            <p class="photo-upload-status" data-i18n="create.wheelAdded">Фото колесного диска добавлено</p>
+                            <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить фото колесного диска</button>
+                        </div>
+                    </article>
                 </div>
 
                 <div class="wallet-status-island tone-warning upload-format-warning" data-visible="true">
@@ -199,7 +207,7 @@
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="consent.processingTerms">Условия обработки данных</a>
                 </p>
 
-                <div class="rim-source-preflight" data-rim-source-preflight hidden>
+                <div class="rim-source-preflight create-source-card" data-rim-source-preflight hidden>
                     <label class="fitment-field">
                         <span><span data-i18n="create.productLink">Ссылка на товар</span> <em data-i18n="create.productLinkOptional">(необязательно)</em></span>
                         <input type="url" inputmode="url" autocomplete="url" placeholder="https://…" data-rim-product-url>
@@ -956,6 +964,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260803-header-cleanup" type="module"></script>
+    <script src="/app.js?v=20260803-create-flow-cleanup" type="module"></script>
 </body>
 </html>
