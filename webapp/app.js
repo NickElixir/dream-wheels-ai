@@ -167,6 +167,9 @@ const I18N = {
             rimCardMeta: "Часть данных определена по фото",
             sourceCard: "Источник колесного диска",
             sourceCardMeta: "Бренд, артикул или ссылка на колесный диск",
+            summaryLabel: "Сводка",
+            summaryShow: "Показать сводку",
+            summaryHide: "Свернуть сводку",
             jumpVehicle: "Уточнить →",
             jumpRim: "Уточнить →",
             jumpSource: "Добавить →",
@@ -280,13 +283,13 @@ const I18N = {
             confirmEmail: "Email",
             confirmCredits: "Будет получено",
             confirmHint: "Проверьте пакет перед переходом в Robokassa",
-            pay: "Перейти к оплате",
-            payWithAmount: "Перейти к оплате — {amount}",
+            pay: "Оплатить",
+            payWithAmount: "Оплатить",
             emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
             privacyDetails: "Подробнее — в Политике обработки персональных данных",
             securePaymentTitle: "Безопасная оплата через Robokassa",
-            securePaymentText: "Данные банковской карты вводятся на стороне Robokassa и не сохраняются в Dream Wheels AI.",
-            acceptancePrefix: "Нажимая «Перейти к оплате», вы принимаете",
+            securePaymentText: "",
+            acceptancePrefix: "Нажимая «Оплатить», вы принимаете",
             acceptanceAnd: "и",
             offerLink: "Публичную оферту",
             refundLink: "Условия возврата",
@@ -325,7 +328,7 @@ const I18N = {
             paidInvoice: "Оплата #{invoiceId} — {amount}",
             failedInvoice: "Оплата #{invoiceId} — {amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel}",
+            packageSummary: "{amount} / {creditsLabel} / 30 дней",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -491,6 +494,9 @@ const I18N = {
             rimCardMeta: "Some data was detected from the photo",
             sourceCard: "Wheel source",
             sourceCardMeta: "Brand, SKU, or wheel link",
+            summaryLabel: "Summary",
+            summaryShow: "Show summary",
+            summaryHide: "Collapse summary",
             jumpVehicle: "Refine →",
             jumpRim: "Refine →",
             jumpSource: "Add →",
@@ -604,13 +610,13 @@ const I18N = {
             confirmEmail: "Email",
             confirmCredits: "Credits",
             confirmHint: "Review the package before opening Robokassa",
-            pay: "Proceed to payment",
-            payWithAmount: "Proceed to payment — {amount}",
+            pay: "Pay",
+            payWithAmount: "Pay",
             emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
             privacyDetails: "Learn more in the Personal Data Processing Policy",
             securePaymentTitle: "Secure payment via Robokassa",
-            securePaymentText: "Bank card details are entered on Robokassa and are not stored by Dream Wheels AI.",
-            acceptancePrefix: "By selecting “Proceed to payment”, you accept the",
+            securePaymentText: "",
+            acceptancePrefix: "By selecting “Pay”, you accept the",
             acceptanceAnd: "and",
             offerLink: "Public Offer",
             refundLink: "Refund Terms",
@@ -649,7 +655,7 @@ const I18N = {
             paidInvoice: "Invoice #{invoiceId} — {amount}",
             failedInvoice: "Invoice #{invoiceId} — {amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel}",
+            packageSummary: "{amount} / {creditsLabel} / 30 days",
         },
         renders: {
             eyebrow: "Finished work",
@@ -966,6 +972,12 @@ function fitmentRimSpecs(rim) {
         rim?.wheel_width_j ? `${formatIdentityNumber(rim.wheel_width_j)}J` : "",
         demoPcdDisplay(rim),
     ].filter(Boolean).join(" / ");
+}
+
+function fitmentPcdOptionValue(boltCount, pcdMm) {
+    const pcd = Number(pcdMm);
+    if (!Number.isFinite(pcd)) return "";
+    return Number.isInteger(pcd) ? String(pcd) : pcd.toFixed(1);
 }
 
 function demoFitmentOverviewReadiness(overview) {
@@ -1696,8 +1708,10 @@ function setFitmentOverviewCollapsed(collapsed) {
     if (toggle) {
         toggle.hidden = !state.fitmentOverview;
         toggle.textContent = collapsed
-            ? (locale === "ru" ? "Показать сводку" : "Show summary")
-            : (locale === "ru" ? "Свернуть сводку" : "Collapse summary");
+            ? t("fitment.summaryShow")
+            : t("fitment.summaryHide");
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.setAttribute("aria-controls", "fitment-overview-grid");
     }
 }
 
@@ -1768,7 +1782,7 @@ function fitmentFormFromOverview(overview) {
 
 function fitmentSaveLabel() {
     if (state.fitmentActiveStep === 1) {
-        return locale === "ru" ? "Продолжить к параметрам диска" : "Continue to wheel details";
+        return locale === "ru" ? "Продолжить" : "Continue";
     }
     if (fitmentNextAction(state.fitmentOverview, { useDraft: true }) === "select_vehicle_variant") {
         return locale === "ru" ? "Сохранить и выбрать комплектацию" : "Save and choose vehicle version";
@@ -2116,6 +2130,8 @@ function renderFitment() {
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
     const rimSection = document.querySelector('[data-fitment-section="rim"]');
     const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
+    const pcdSelect = document.querySelector("[data-fitment-pcd-select]");
+    const pcdCustom = document.querySelector("[data-fitment-pcd-custom]");
     const actions = document.querySelector("[data-fitment-actions]");
     const overview = state.fitmentOverview;
     if (overview && !state.fitmentActiveStep) {
@@ -2219,6 +2235,16 @@ function renderFitment() {
     }
 
     const activeStep = state.fitmentActiveStep;
+    if (shell) {
+        const previousStep = shell.dataset.activeStep;
+        shell.dataset.activeStep = String(activeStep);
+        if (previousStep && previousStep !== String(activeStep)) {
+            shell.classList.remove("fitment-step-transition");
+            void shell.offsetWidth;
+            shell.classList.add("fitment-step-transition");
+            window.setTimeout(() => shell.classList.remove("fitment-step-transition"), 420);
+        }
+    }
     if (skipButton) {
         skipButton.textContent = activeStep === 2 && fitmentNeedsVehicleVariant(overview)
             ? (locale === "ru" ? "Выбрать комплектацию" : "Choose vehicle version")
@@ -2378,6 +2404,12 @@ function renderFitment() {
         document.createTextNode(formatFitmentNumber(overview.rim?.offset_et_mm, "мм"))
     );
     syncFitmentFormInputs();
+    if (pcdSelect) {
+        const pcdKey = fitmentPcdOptionValue(state.fitmentForm.rim.bolt_count, state.fitmentForm.rim.pcd_mm);
+        const hasOption = [...pcdSelect.options].some((option) => option.value === pcdKey);
+        pcdSelect.value = hasOption ? pcdKey : pcdKey ? "custom" : "";
+        if (pcdCustom) pcdCustom.hidden = pcdSelect.value !== "custom";
+    }
     renderFitmentCandidates();
 }
 
@@ -2861,6 +2893,22 @@ function syncWalletStatusIsland(selector, textSelector, message, tone = "neutral
 function renderWalletStatus() {
     syncWalletStatusIsland("[data-wallet-loading]", "[data-wallet-loading-text]", state.walletLoadingMessage, "loading", state.walletLoading);
     syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
+    const authNotice = document.querySelector("[data-wallet-auth-notice]");
+    if (authNotice) {
+        const visible = !hasFrontendAuth();
+        authNotice.hidden = !visible;
+        authNotice.dataset.visible = String(visible);
+        authNotice.setAttribute("aria-hidden", String(!visible));
+    }
+}
+
+function focusWalletAuthNotice() {
+    const notice = document.querySelector("[data-wallet-auth-notice]");
+    if (!notice || notice.hidden) return;
+    notice.scrollIntoView({ behavior: "smooth", block: "center" });
+    notice.classList.remove("wallet-auth-attention");
+    window.requestAnimationFrame(() => notice.classList.add("wallet-auth-attention"));
+    window.setTimeout(() => notice.classList.remove("wallet-auth-attention"), 1100);
 }
 
 function syncPaymentHistoryDetailsAction() {
@@ -3101,11 +3149,7 @@ function renderConfirmation() {
         )
     );
     const payButton = document.querySelector("[data-pay-button]");
-    if (payButton) {
-        payButton.textContent = state.walletBusy
-            ? t("wallet.openingPayment")
-            : formatTemplate("wallet.payWithAmount", { amount: formatRub(state.selectedAmount) });
-    }
+    if (payButton) payButton.textContent = state.walletBusy ? t("wallet.openingPayment") : t("wallet.pay");
 }
 
 function syncEmailInput() {
@@ -3396,8 +3440,7 @@ function feedbackRecordForJob(job) {
 }
 
 function feedbackReasonPickerVisible(job) {
-    return feedbackSentimentForJob(job) === "disliked"
-        || Boolean(state.feedbackReasonPickerByJob[job?.job_id]);
+    return feedbackSentimentForJob(job) === "disliked";
 }
 
 function feedbackSentimentForJob(job) {
@@ -4070,7 +4113,7 @@ async function loadDashboardData({ silent = false } = {}) {
 async function loadCabinet({ silent = false } = {}) {
     const identity = getIdentitySearchParams();
     if (!identity.toString() && !getWebsiteAuthToken()) {
-        setWalletMessage(t("wallet.authRequired"), "warning");
+        setWalletMessage("");
         renderWallet();
         renderDashboard();
         return;
@@ -4178,7 +4221,9 @@ function openPaymentUrl(url) {
 async function createPayment() {
     const identity = getIdentityPayload();
     if (!identity.init_data && !identity.telegram_user_id && !getWebsiteAuthToken()) {
-        setWalletMessage(t("wallet.authRequired"), "warning");
+        setWalletMessage("");
+        renderWalletStatus();
+        focusWalletAuthNotice();
         return;
     }
 
@@ -5169,6 +5214,20 @@ function bindEvents() {
             setView(button.dataset.nav);
         });
     });
+    document.querySelector("[data-fitment-pcd-select]")?.addEventListener("change", (event) => {
+        const select = event.target;
+        const custom = document.querySelector("[data-fitment-pcd-custom]");
+        if (select.value === "custom") {
+            if (custom) custom.hidden = false;
+            return;
+        }
+        if (custom) custom.hidden = true;
+        const pcdMm = select.value;
+        state.fitmentForm.rim.pcd_mm = pcdMm || "";
+        const pcdInput = document.querySelector('[data-fitment-input="rim.pcd_mm"]');
+        if (pcdInput) pcdInput.value = pcdMm || "";
+        renderFitment();
+    });
 
     document.querySelectorAll("[data-external-link]").forEach((link) => {
         link.addEventListener("click", (event) => {
@@ -5445,23 +5504,9 @@ function bindEvents() {
         if (feedbackButton) {
             const jobId = feedbackButton.dataset.historyFeedback;
             const sentiment = feedbackButton.dataset.feedbackSentiment;
-            if (sentiment === "disliked") {
-                const selected = feedbackSentimentForJob(state.renderHistory.find((job) => job.job_id === jobId));
-                if (selected === "disliked") {
-                    void submitHistoryFeedback(jobId, sentiment);
-                } else {
-                    state.feedbackReasonPickerByJob[jobId] = !state.feedbackReasonPickerByJob[jobId];
-                    state.feedbackErrorByJob[jobId] = "";
-                    renderRenders();
-                    if (state.view === "render-detail") renderRenderDetail();
-                }
-                return;
-            }
+            if (sentiment !== "liked" && sentiment !== "disliked") return;
             delete state.feedbackReasonPickerByJob[jobId];
-            void submitHistoryFeedback(
-                jobId,
-                sentiment
-            );
+            void submitHistoryFeedback(jobId, sentiment);
             return;
         }
 

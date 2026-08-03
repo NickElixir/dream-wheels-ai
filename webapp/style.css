@@ -1079,6 +1079,20 @@ h2 {
     color: #ffb0b0;
 }
 
+.wallet-auth-notice {
+    margin-top: 12px;
+}
+
+.wallet-auth-attention {
+    animation: wallet-auth-pulse 900ms ease both;
+}
+
+@keyframes wallet-auth-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 204, 86, 0); }
+    45% { box-shadow: 0 0 0 6px rgba(255, 204, 86, 0.18); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 204, 86, 0); }
+}
+
 .identity-critical-card {
     grid-template-columns: 1fr;
     align-items: stretch;
@@ -1349,13 +1363,17 @@ h2 {
 }
 
 .topup-summary-title {
-    font-size: 20px;
-    font-weight: 900;
+    color: var(--text-subtle);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 .topup-summary-meta {
     margin-top: 6px;
-    color: var(--text-subtle);
+    color: var(--text);
+    font-size: 24px;
+    font-weight: 900;
     line-height: 1.45;
 }
 
@@ -1383,13 +1401,6 @@ h2 {
 .secure-payment-note strong {
     color: var(--success);
     font-size: 14px;
-}
-
-.secure-payment-note p {
-    margin: 4px 0 0;
-    color: var(--text-subtle);
-    font-size: 13px;
-    line-height: 1.5;
 }
 
 .wallet-pay-button {
@@ -2018,6 +2029,21 @@ h2 {
     gap: 16px;
 }
 
+.fitment-shell.fitment-step-transition > * {
+    animation: fitment-step-fade 360ms ease both;
+}
+
+@keyframes fitment-step-fade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fitment-shell.fitment-step-transition > * {
+        animation: none;
+    }
+}
+
 .fitment-basics-card,
 .fitment-overview-card,
 .fitment-verdict-card,
@@ -2161,6 +2187,8 @@ h2 {
     min-width: 0;
     gap: 8px;
     padding: 10px 12px;
+    border-color: rgba(116, 211, 255, 0.28);
+    background: rgba(116, 211, 255, 0.06);
 }
 
 .fitment-overview-grid[data-collapsed="true"] .fitment-overview-copy {
@@ -2410,7 +2438,8 @@ h2 {
     font-weight: 700;
 }
 
-.fitment-field input {
+.fitment-field input,
+.fitment-field select {
     width: 100%;
     padding: 16px 18px;
     border-radius: 18px;
@@ -2420,7 +2449,21 @@ h2 {
     outline: none;
 }
 
-.fitment-field input:focus {
+.fitment-field select {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
+.fitment-field select option {
+    background: var(--panel-2);
+    color: var(--text);
+}
+
+.fitment-field input:focus,
+.fitment-field select:focus {
     border-color: rgba(221, 255, 0, 0.34);
     box-shadow: 0 0 0 3px rgba(221, 255, 0, 0.08);
 }
@@ -3094,7 +3137,7 @@ h2 {
     min-height: 34px;
     padding: 7px 10px;
     border-radius: 12px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 750;
 }
 

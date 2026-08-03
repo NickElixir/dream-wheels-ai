@@ -406,6 +406,11 @@
                         <div class="wallet-status-title" data-wallet-loading-text data-i18n="wallet.loading">Загружаем кабинет...</div>
                     </div>
                 </div>
+                <div class="wallet-status-island wallet-auth-notice tone-warning" data-wallet-auth-notice data-visible="false" aria-live="polite" hidden>
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-i18n="wallet.authRequired">Откройте Mini App в Telegram или войдите через Telegram на сайте</div>
+                    </div>
+                </div>
                 <div class="topup-wizard">
                     <div class="topup-island topup-step-island">
                         <div class="topup-step-head">
@@ -500,12 +505,11 @@
                             <span class="secure-payment-icon" aria-hidden="true">🔒</span>
                             <div>
                                 <strong data-i18n="wallet.securePaymentTitle">Безопасная оплата через Robokassa</strong>
-                                <p data-i18n="wallet.securePaymentText">Данные банковской карты вводятся на стороне Robokassa и не сохраняются в Dream Wheels AI.</p>
                             </div>
                         </div>
-                        <button type="button" class="primary-button wallet-pay-button" data-pay-button>Перейти к оплате — 500 ₽</button>
+                        <button type="button" class="primary-button wallet-pay-button" data-pay-button data-i18n="wallet.pay">Оплатить</button>
                         <p class="payment-acceptance">
-                            <span data-i18n="wallet.acceptancePrefix">Нажимая «Перейти к оплате», вы принимаете</span>
+                            <span data-i18n="wallet.acceptancePrefix">Нажимая «Оплатить», вы принимаете</span>
                             <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.offerLink">Публичную оферту</a>
                             <span data-i18n="wallet.acceptanceAnd">и</span>
                             <a href="https://dream-wheels-ai-legal.vercel.app/legal/refund" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.refundLink">Условия возврата</a>.
@@ -620,7 +624,7 @@
                     <article class="fitment-basics-card">
                         <div class="fitment-basics-head">
                             <div>
-                                <p class="section-label">Автомобиль</p>
+                                <p class="section-label" data-i18n="fitment.summaryLabel">Сводка</p>
                                 <h2 data-fitment-vehicle-title>—</h2>
                                 <p class="fitment-basics-specs" data-fitment-vehicle-specs hidden></p>
                             </div>
@@ -665,7 +669,7 @@
                         <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
                     </section>
 
-                    <div class="fitment-overview-grid" data-fitment-overview-grid>
+                    <div class="fitment-overview-grid" id="fitment-overview-grid" data-fitment-overview-grid>
                         <article class="fitment-overview-card fitment-source-card" data-fitment-source-card>
                             <div class="fitment-overview-copy">
                                 <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
@@ -704,7 +708,7 @@
                             </div>
                         </article>
                     </div>
-                    <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden>Свернуть сводку</button>
+                    <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden aria-controls="fitment-overview-grid" aria-expanded="true">Свернуть сводку</button>
 
                     <div class="fitment-notice-stack">
                         <p class="panel-note neutral" data-i18n="fitment.notice">
@@ -794,27 +798,43 @@
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.boltCount">Крепёжных отверстий</span>
-                                    <input type="number" inputmode="numeric" data-fitment-input="rim.bolt_count">
+                                    <input type="number" inputmode="numeric" step="1" min="3" max="8" data-fitment-input="rim.bolt_count">
                                 </label>
                                 <label class="fitment-field">
-                                    <span>Разболтовка (PCD), мм</span>
-                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.pcd_mm">
+                                    <span>Разболтовка (PCD)</span>
+                                    <select data-fitment-pcd-select aria-label="Разболтовка (PCD)">
+                                        <option value="">Выберите PCD</option>
+                                        <option value="98">98</option>
+                                        <option value="100">100</option>
+                                        <option value="108">108</option>
+                                        <option value="114.3">114,3</option>
+                                        <option value="110">110</option>
+                                        <option value="112">112</option>
+                                        <option value="115">115</option>
+                                        <option value="120">120</option>
+                                        <option value="127">127</option>
+                                        <option value="130">130</option>
+                                        <option value="135">135</option>
+                                        <option value="139.7">139,7</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.pcd_mm" data-fitment-pcd-custom hidden placeholder="Диаметр PCD, мм">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.diameter">Диаметр</span>
-                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_diameter_in">
+                                    <input type="number" inputmode="numeric" step="1" min="1" data-fitment-input="rim.wheel_diameter_in">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.widthShort">Ширина</span>
-                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.wheel_width_j">
+                                    <input type="number" inputmode="decimal" step="0.5" min="1" data-fitment-input="rim.wheel_width_j">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
-                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.center_bore_mm">
+                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.center_bore_mm">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.offset">Вылет (ET), мм</span>
-                                    <input type="number" inputmode="decimal" step="0.1" data-fitment-input="rim.offset_et_mm">
+                                    <input type="number" inputmode="numeric" step="1" data-fitment-input="rim.offset_et_mm">
                                 </label>
                             </div>
                         </section>
