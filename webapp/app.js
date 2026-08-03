@@ -85,14 +85,15 @@ const I18N = {
             docs: "Документы",
         },
         dashboard: {
-            lastRender: "Последняя примерка",
+            lastRender: "Открыть последний результат",
             startRender: "Создать примерку",
             createRender: "Создать примерку",
-            titleLine1: "Примерьте новые диски",
-            titleLine2: "на своём автомобиле",
+            titleLine1: "Примерьте",
+            titleLine2: "новые диски",
+            titleLine3: "на своём автомобиле",
             lede: "Загрузите два фото – результат будет готов за 1–2 минуты",
             expiryTitle: "Срок действия",
-            expiryPriority: "Сначала спишутся примерки с ближайшим сроком действия",
+            expiryPriority: "Сначала спишутся рендеры с ближайшим сроком действия",
         },
         caption: {
             dashboard: "Главная",
@@ -107,16 +108,21 @@ const I18N = {
         },
         create: {
             eyebrow: "Создание примерки",
+            title: "Создать примерку",
             uploadFormat: "JPG, PNG или WebP, до 10 МБ",
-            detectingVehicle: "Определить автомобиль",
-            productLink: "Ссылка на товар с колесным диском",
+            detectingVehicle: "Определяем автомобиль",
+            detectingVehicleHint: "Подбираем марку, модель и год по фотографии",
+            productLink: "Ссылка на товар",
             productLinkOptional: "(необязательно)",
-            productLinkWarning: "Сохраните ссылку для извлечения параметров и технической проверки совместимости колесных дисков на вашем автомобиле",
+            productLinkWarning: "По ссылке попробуем определить параметры диска",
             carPhoto: "Фото автомобиля",
             wheelPhoto: "Фото диска",
             choose: "Нажми, чтобы выбрать",
             replaceCar: "Заменить фото автомобиля",
             replaceWheel: "Заменить диск",
+            wheelAdded: "Фото колесного диска добавлено",
+            wheelAddedHint: "Фото добавлено",
+            productSourceMissing: "Ссылка на товар не добавлена",
             carPreviewAlt: "Превью машины",
             wheelPreviewAlt: "Превью диска",
             footerNotTelegram: "Не в Telegram",
@@ -127,7 +133,7 @@ const I18N = {
             eyebrow: "Помощь",
             title: "Как подготовить фото",
             carSection: "Фото автомобиля",
-            carTitle: "Покажите машину целиком",
+            carTitle: "Покажите автомобиль целиком",
             carBadLabel: "Лучше переснять",
             carBadCaption: "Ракурс три четверти и крупный план",
             carGoodLabel: "Подходит",
@@ -137,8 +143,8 @@ const I18N = {
             carCheck3: "Все колёса попали в кадр",
             carCheck4: "Выбирайте дневной свет",
             carWarning: "Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов",
-            wheelSection: "Фото диска",
-            wheelTitle: "Снимите диск прямо спереди",
+            wheelSection: "Фото колесного диска",
+            wheelTitle: "Сфотографируйте диск лицевой стороной к камере",
             wheelGoodCaption: "Один диск анфас, весь рисунок в фокусе",
             wheelSetCaption: "Комплект дисков, без рук и упаковки",
             wheelCheck1: "Диск снят прямо спереди",
@@ -298,11 +304,11 @@ const I18N = {
         },
         wallet: {
             eyebrow: "Кабинет",
-            title: "Мой Dream Wheels AI",
+            title: "Баланс",
             lede: "Здесь видны баланс, последняя оплата и пополнение в три шага",
             gift: "Подарок",
             lastInvoiceLabel: "Последняя оплата",
-            lastInvoiceTitle: "Статус виден сразу после оплаты",
+            lastInvoiceTitle: "Платежей пока нет",
             lastInvoiceEmpty: "Оплат ещё не было. После первой покупки здесь появится её статус",
             invoiceAmount: "Сумма",
             invoiceNumber: "Номер оплаты",
@@ -343,7 +349,7 @@ const I18N = {
             paymentHistoryHint: "",
             openHistory: "Открыть",
             closeHistory: "Скрыть",
-            availableRenders: "Доступные примерки",
+            availableRenders: "Доступные рендеры",
             availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
             topUpHistory: "История пополнений",
             topUpHistoryHint: "",
@@ -378,7 +384,7 @@ const I18N = {
         },
         renders: {
             eyebrow: "Готовые работы",
-            title: "Мои виртуальные примерки",
+            title: "Мои примерки",
             lede: "Результаты и текущие статусы из вашей истории",
             empty: "Готовых примерок пока нет. Создайте первую на главном экране",
             completed: "Готово",
@@ -409,8 +415,8 @@ const I18N = {
             lede: "Поможем с оплатой, возвратом или созданием примерки. Обычно отвечаем в течение 24 часов.",
             telegram: "Telegram",
             email: "Email",
-            helpSection: "Помощь",
-            feedbackSection: "Обратная связь",
+            helpSection: "Инструкции",
+            feedbackSection: "Связаться с нами",
             photoGuideTitle: "Как подготовить фото",
             photoGuideDescription: "Инструкция по подготовке фотографий перед загрузкой",
             refundSection: "Возврат средств",
@@ -430,8 +436,8 @@ const I18N = {
             privacyDescription: "Какие данные мы используем и храним",
             consent: "Согласие на обработку данных",
             consentDescription: "Состав данных, цели и отзыв согласия",
-            seller: "Исполнитель и контакты",
-            sellerDescription: "Реквизиты и способы связи",
+            seller: "Реквизиты и контакты",
+            sellerDescription: "Информация об исполнителе",
             edition: "Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.",
         },
         failed: "Сбой",
@@ -462,14 +468,15 @@ const I18N = {
             docs: "Documents",
         },
         dashboard: {
-            lastRender: "Last try-on",
+            lastRender: "Open latest result",
             startRender: "Create a try-on",
             createRender: "Create a try-on",
-            titleLine1: "Try on new wheels",
-            titleLine2: "on your vehicle",
+            titleLine1: "Try on",
+            titleLine2: "new wheels",
+            titleLine3: "on your vehicle",
             lede: "Upload two photos – your result will be ready in 1–2 minutes",
             expiryTitle: "Expiry dates",
-            expiryPriority: "Try-ons with the nearest expiry date are used first",
+            expiryPriority: "Renders with the nearest expiry date are used first",
         },
         caption: {
             dashboard: "Home",
@@ -484,16 +491,21 @@ const I18N = {
         },
         create: {
             eyebrow: "Create a try-on",
+            title: "Create a try-on",
             uploadFormat: "JPG, PNG or WebP, up to 10 MB",
-            detectingVehicle: "Identify the vehicle",
-            productLink: "Wheel product link",
+            detectingVehicle: "Identifying the vehicle",
+            detectingVehicleHint: "Matching the make, model, and year from the photo",
+            productLink: "Product link",
             productLinkOptional: "(optional)",
-            productLinkWarning: "Save the link to extract wheel parameters and run a technical compatibility check for your car",
+            productLinkWarning: "We will try to identify wheel parameters from the link",
             carPhoto: "Vehicle photo",
             wheelPhoto: "Wheel photo",
             choose: "Tap to choose",
             replaceCar: "Replace vehicle photo",
-            replaceWheel: "Replace wheel",
+            replaceWheel: "Replace wheel photo",
+            wheelAdded: "Wheel photo added",
+            wheelAddedHint: "Photo added",
+            productSourceMissing: "Product link not added",
             carPreviewAlt: "Car preview",
             wheelPreviewAlt: "Wheel preview",
             footerNotTelegram: "Not in Telegram",
@@ -504,7 +516,7 @@ const I18N = {
             eyebrow: "Help",
             title: "How to prepare photos",
             carSection: "Car photo",
-            carTitle: "Show the whole car",
+            carTitle: "Show the whole vehicle",
             carBadLabel: "Better retake",
             carBadCaption: "Three-quarter angle and close-up",
             carGoodLabel: "Works well",
@@ -515,7 +527,7 @@ const I18N = {
             carCheck4: "Choose daylight",
             carWarning: "Avoid night shots, strong glare, cropped wheels, and distracting objects",
             wheelSection: "Wheel photo",
-            wheelTitle: "Shoot the wheel straight on",
+            wheelTitle: "Photograph the wheel face-on",
             wheelGoodCaption: "One wheel facing the camera, spokes in focus",
             wheelSetCaption: "A set of wheels without hands or packaging",
             wheelCheck1: "Shoot the wheel straight on",
@@ -675,11 +687,11 @@ const I18N = {
         },
         wallet: {
             eyebrow: "Cabinet",
-            title: "My Dream Wheels AI",
+            title: "Wallet",
             lede: "Balance, last invoice, and a three-step payment flow in one place",
             gift: "Gift",
             lastInvoiceLabel: "Last invoice",
-            lastInvoiceTitle: "Status appears immediately after payment",
+            lastInvoiceTitle: "No payments yet",
             lastInvoiceEmpty: "No payments yet. The first purchase will show up here as the last invoice",
             invoiceAmount: "Amount",
             invoiceNumber: "Invoice",
@@ -755,7 +767,7 @@ const I18N = {
         },
         renders: {
             eyebrow: "Finished work",
-            title: "Render history",
+            title: "My try-ons",
             lede: "Recent renders saved on this device",
             empty: "No renders yet. Create your first one on the main screen",
             completed: "Done",
@@ -780,8 +792,8 @@ const I18N = {
             lede: "We can help with payments, refunds, or creating a try-on. We usually respond within 24 hours.",
             telegram: "Telegram",
             email: "Email",
-            helpSection: "Help",
-            feedbackSection: "Feedback",
+            helpSection: "Guides",
+            feedbackSection: "Contact us",
             photoGuideTitle: "How to prepare photos",
             photoGuideDescription: "Instructions for preparing photos before upload",
             refundSection: "Refunds",
@@ -801,8 +813,8 @@ const I18N = {
             privacyDescription: "What data we use and store",
             consent: "Data processing consent",
             consentDescription: "Data categories, purposes, and consent withdrawal",
-            seller: "Provider and contacts",
-            sellerDescription: "Business details and contact options",
+            seller: "Details and contacts",
+            sellerDescription: "Information about the provider",
             edition: "These documents apply to Dream Wheels AI. Edition dated June 8, 2026.",
         },
         failed: "Failed",
@@ -1617,14 +1629,14 @@ function creditsForAmount(amount) {
 
 function formatRenderCount(value) {
     const count = Number(value || 0);
-    if (locale !== "ru") return `${count} ${count === 1 ? "try-on" : "try-ons"}`;
+    if (locale !== "ru") return `${count} ${count === 1 ? "render" : "renders"}`;
     const mod10 = count % 10;
     const mod100 = count % 100;
     const noun = mod10 === 1 && mod100 !== 11
-        ? "примерка"
+        ? "рендер"
         : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-          ? "примерки"
-          : "примерок";
+          ? "рендера"
+          : "рендеров";
     return `${count} ${noun}`;
 }
 
@@ -4790,7 +4802,7 @@ function refreshButtonsForCurrentView() {
         setBackButton(null);
         setMainButton({
             text: hasProposal
-                ? (locale === "ru" ? `Создать примерку – 1 примерка${state.balance !== null ? `, останется ${Math.max(0, state.balance - 1)}` : ""}` : "Create render – 1 try-on")
+                            ? (locale === "ru" ? "Создать изображение — 1 рендер" : "Create image — 1 render")
                 : t("create.detectingVehicle"),
             enabled: !disabled,
             onClick: !disabled && hasProposal ? submitJob : null,

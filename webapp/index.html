@@ -57,7 +57,7 @@
         <section class="view" data-view="dashboard">
             <section class="hero-panel dashboard-hero">
                 <div class="hero-copy">
-                    <h1 class="dashboard-title"><span data-i18n="dashboard.titleLine1">Примерьте новые диски</span><span data-i18n="dashboard.titleLine2">на своём автомобиле</span></h1>
+                    <h1 class="dashboard-title"><span data-i18n="dashboard.titleLine1">Примерьте</span><span data-i18n="dashboard.titleLine2">новые диски</span><span data-i18n="dashboard.titleLine3">на своём автомобиле</span></h1>
                     <p class="lede" data-i18n="dashboard.lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
                     <div class="dashboard-actions">
                         <button type="button" class="primary-button" data-dashboard-primary-action data-nav="create" data-i18n="dashboard.startRender">Создать примерку</button>
@@ -142,9 +142,7 @@
 
         <section class="view" data-view="create">
             <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="create.eyebrow">Создание примерки</p>
-                </div>
+                <div class="hero-copy"><h1 data-i18n="create.title">Создать примерку</h1></div>
             </section>
 
             <section class="panel" data-create-screen="upload">
@@ -207,7 +205,7 @@
 
                 <div class="rim-source-preflight" data-rim-source-preflight hidden>
                     <label class="fitment-field">
-                        <span><span data-i18n="create.productLink">Ссылка на товар с колесным диском</span> <em data-i18n="create.productLinkOptional">(необязательно)</em></span>
+                        <span><span data-i18n="create.productLink">Ссылка на товар</span> <em data-i18n="create.productLinkOptional">(необязательно)</em></span>
                         <input type="url" inputmode="url" autocomplete="url" placeholder="https://…" data-rim-product-url>
                     </label>
                     <div class="panel-note warning" data-i18n="create.productLinkWarning">Сохраните ссылку для извлечения параметров и технической проверки совместимости колесных дисков на вашем автомобиле</div>
@@ -217,8 +215,8 @@
                     <div class="wallet-status-island tone-loading" data-identity-loading data-visible="false" aria-live="polite">
                         <div class="wallet-status-spinner" aria-hidden="true"></div>
                         <div class="wallet-status-copy">
-                            <div class="wallet-status-title" data-i18n="create.detectingVehicle">Определить автомобиль</div>
-                            <div class="wallet-status-text">AI подбирает марку, модель и год. Параметры диска на этом шаге не распознаются.</div>
+                            <div class="wallet-status-title" data-i18n="create.detectingVehicle">Определяем автомобиль</div>
+                            <div class="wallet-status-text" data-i18n="create.detectingVehicleHint">Подбираем марку, модель и год по фотографии</div>
                         </div>
                     </div>
 
@@ -262,19 +260,18 @@
                             <div class="identity-card-head">
                                 <div>
                                     <p class="section-label">Диск</p>
-                                    <h2>Фото диска добавлено</h2>
+                                    <h2 data-i18n="create.wheelAdded">Фото колесного диска добавлено</h2>
                                 </div>
                             </div>
-                            <p class="identity-note">Размеры и параметры крепления не определяются по фото и не нужны для создания изображения.</p>
-                            <p class="identity-note neutral" data-rim-source-summary>Источник колесного диска не указан. Его можно добавить позже в проверке совместимости.</p>
+                            <p class="identity-note" data-i18n="create.wheelAddedHint">Фото добавлено</p>
+                            <p class="identity-note neutral" data-rim-source-summary data-i18n="create.productSourceMissing">Ссылка на товар не добавлена</p>
                         </article>
                     </div>
 
                     <article class="identity-card review-card" data-identity-review hidden>
                         <div class="identity-card-head">
                             <div>
-                                <p class="section-label">Перед созданием</p>
-                                    <h2>Всё готово</h2>
+                                <h2>Перед созданием</h2>
                             </div>
                         </div>
                         <div class="review-summary">
@@ -319,8 +316,7 @@
         <section class="view" data-view="wallet" hidden>
             <section class="hero-panel">
                 <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="wallet.eyebrow">Кабинет</p>
-                    <h1 data-i18n="wallet.title">Мой Dream Wheels AI</h1>
+                    <h1 data-i18n="wallet.title">Баланс</h1>
                 </div>
                 <section class="balance-tile">
                     <div class="balance-value"><span data-balance-value>3</span></div>
@@ -333,7 +329,7 @@
                 <div class="panel-head">
                     <div>
                         <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последняя оплата</p>
-                        <h2 data-i18n="wallet.lastInvoiceTitle">Статус виден сразу после оплаты</h2>
+                        <h2 data-i18n="wallet.lastInvoiceTitle">Платежей пока нет</h2>
                     </div>
                     <span class="status-pill neutral" data-payment-status>Нет платежей</span>
                 </div>
@@ -532,8 +528,7 @@
         <section class="view" data-view="renders" hidden>
             <section class="hero-panel compact">
                 <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="renders.eyebrow">Готовые работы</p>
-                    <h1 data-i18n="renders.title">Мои виртуальные примерки</h1>
+                    <h1 data-i18n="renders.title">Мои примерки</h1>
                 </div>
             </section>
             <section class="panel">
@@ -854,7 +849,6 @@
         <section class="view" data-view="photo-guide" hidden>
             <section class="hero-panel compact">
                 <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="photoGuide.eyebrow">Помощь</p>
                     <h1 data-i18n="photoGuide.title">Как подготовить фото</h1>
                 </div>
             </section>
@@ -863,7 +857,7 @@
                     <article class="photo-guide-card">
                         <div>
                             <p class="section-label" data-i18n="photoGuide.carSection">Фото автомобиля</p>
-                            <h2 data-i18n="photoGuide.carTitle">Покажите машину целиком</h2>
+                            <h2 data-i18n="photoGuide.carTitle">Покажите автомобиль целиком</h2>
                         </div>
                         <div class="photo-guide-examples">
                             <figure class="photo-guide-example is-bad">
@@ -886,8 +880,8 @@
 
                     <article class="photo-guide-card">
                         <div>
-                            <p class="section-label" data-i18n="photoGuide.wheelSection">Фото диска</p>
-                            <h2 data-i18n="photoGuide.wheelTitle">Снимите диск прямо спереди</h2>
+                            <p class="section-label" data-i18n="photoGuide.wheelSection">Фото колесного диска</p>
+                            <h2 data-i18n="photoGuide.wheelTitle">Сфотографируйте диск лицевой стороной к камере</h2>
                         </div>
                         <div class="photo-guide-examples photo-guide-wheel-examples">
                             <figure class="photo-guide-example is-good">
@@ -921,14 +915,15 @@
 
         <section class="view" data-view="support" hidden>
             <section class="panel support-panel">
+                <h1 data-i18n="support.title">Поддержка</h1>
                 <section class="support-section">
-                    <p class="section-label" data-i18n="support.helpSection">Помощь</p>
+                    <p class="section-label" data-i18n="support.helpSection">Инструкции</p>
                     <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
                         <span class="doc-link-copy"><strong data-i18n="support.photoGuideTitle">Как подготовить фото</strong><small data-i18n="support.photoGuideDescription">Инструкция по подготовке фотографий перед загрузкой</small></span>
                     </button>
                 </section>
                 <section class="support-section">
-                    <p class="section-label" data-i18n="support.feedbackSection">Обратная связь</p>
+                    <p class="section-label" data-i18n="support.feedbackSection">Связаться с нами</p>
                     <div class="support-grid">
                         <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="support-link" data-telegram-link>
                             <span class="support-link-icon" aria-hidden="true">💬</span>
@@ -952,6 +947,7 @@
 
         <section class="view" data-view="docs" hidden>
             <section class="panel">
+                <h1 data-i18n="docs.title">Документы</h1>
                 <div class="docs-list">
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
                         <span class="doc-link-copy"><strong data-i18n="docs.offer">Публичная оферта</strong><small data-i18n="docs.offerDescription">Условия оказания и оплаты услуги</small></span>
@@ -966,7 +962,7 @@
                         <span class="doc-link-copy"><strong data-i18n="docs.consent">Согласие на обработку данных</strong><small data-i18n="docs.consentDescription">Состав данных, цели и отзыв согласия</small></span>
                     </a>
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/seller" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
-                        <span class="doc-link-copy"><strong data-i18n="docs.seller">Исполнитель и контакты</strong><small data-i18n="docs.sellerDescription">Реквизиты и способы связи</small></span>
+                        <span class="doc-link-copy"><strong data-i18n="docs.seller">Реквизиты и контакты</strong><small data-i18n="docs.sellerDescription">Информация об исполнителе</small></span>
                     </a>
                 </div>
                 <p class="docs-edition-note" data-i18n="docs.edition">Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.</p>
