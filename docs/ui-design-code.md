@@ -14,6 +14,14 @@
 - Mandatory copy rule: every user-facing label, caption, heading, subheading, warning, status, button, helper text, and generated paragraph must end without punctuation in every locale
 - This rule applies to static HTML, translated strings, dynamic states, validation messages, and generated UI copy; punctuation inside a sentence remains allowed
 
+## Spacing and empty space
+
+- Use a four-step spacing scale: 9 px compact paired controls, 12 px within a small island, 16 px between screen sections and regular card content, 24 px only between independent groups
+- A compact auth or status island paired with its related balance or action uses 9 px, never a larger generic card gap
+- A screen-level sequence of panels uses 16 px. Larger whitespace must have a clear structural purpose, such as separating independent flows or accommodating a fixed navigation area
+- Hidden, loading, or empty states must not reserve a visual gap in a panel. Remove them from the layout until they are visible
+- Do not create standalone fixed-height spacers. Vertical rhythm comes from the spacing scale, content padding, and meaningful component separation
+
 ## UI review sequence
 
 Every UI change must be reviewed in this order before handoff:

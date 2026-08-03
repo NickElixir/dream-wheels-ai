@@ -29,6 +29,10 @@
     --radius-md: 18px;
     --radius-sm: 14px;
     --radius-xs: 12px;
+    --space-tight: 9px;
+    --space-xs: 12px;
+    --space-sm: 16px;
+    --space-md: 24px;
     --shadow-panel: 0 18px 60px rgba(0, 0, 0, 0.28);
 }
 
@@ -357,7 +361,7 @@ a {
 .view {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 22px;
+    gap: var(--space-sm);
     min-width: 0;
 }
 
@@ -411,14 +415,14 @@ a {
 .dashboard-grid {
     display: grid;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    gap: 18px;
+    gap: var(--space-sm);
 }
 
 .dashboard-balance-card,
 .latest-render-card,
 .quick-access-panel {
     display: grid;
-    gap: 18px;
+    gap: var(--space-sm);
     min-width: 0;
 }
 
@@ -521,6 +525,14 @@ a {
 .dashboard-balance-card .dashboard-balance-action {
     justify-self: stretch;
     width: 100%;
+}
+
+.dashboard-balance-card {
+    gap: var(--space-tight);
+}
+
+.dashboard-balance-card > .wallet-status-island[data-visible="false"] {
+    display: none;
 }
 
 .dashboard-auth-action {
