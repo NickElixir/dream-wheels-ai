@@ -121,6 +121,38 @@ const I18N = {
             detectIdentity: "Определить автомобиль",
             createRender: "Создать виртуальную примерку",
         },
+        photoGuide: {
+            eyebrow: "Помощь",
+            title: "Как подготовить фото",
+            carSection: "Фото автомобиля",
+            carTitle: "Покажите машину целиком",
+            carBadLabel: "Лучше переснять",
+            carBadCaption: "Ракурс три четверти и крупный план",
+            carGoodLabel: "Подходит",
+            carGoodCaption: "Сбоку, в дневном свете",
+            carCheck1: "Автомобиль виден целиком",
+            carCheck2: "Снимите сбоку или под небольшим углом",
+            carCheck3: "Все колёса попали в кадр",
+            carCheck4: "Выбирайте дневной свет",
+            carWarning: "Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов",
+            wheelSection: "Фото диска",
+            wheelTitle: "Снимите диск прямо спереди",
+            wheelGoodCaption: "Один диск анфас, весь рисунок в фокусе",
+            wheelSetCaption: "Комплект дисков, без рук и упаковки",
+            wheelCheck1: "Диск снят прямо спереди",
+            wheelCheck2: "Видна вся окружность",
+            wheelCheck3: "Рисунок спиц находится в фокусе",
+            wheelCheck4: "Снимайте без упаковки и рук в кадре",
+            wheelWarning: "Не используйте фото под углом, с сильными отражениями или частично закрытым диском",
+            readyLabel: "Перед загрузкой",
+            format: "JPG, PNG или WebP, до 10 МБ",
+            readyLink: "Ссылка на товар необязательна",
+            readyAction: "Начать примерку",
+            carBadAlt: "Автомобиль Mercedes снят под углом, такое фото лучше переснять",
+            carGoodAlt: "Автомобиль снят сбоку, оба колеса видны",
+            wheelProductAlt: "Автомобильный диск снят прямо спереди на светлом фоне",
+            wheelRealAlt: "Комплект автомобильных дисков снят сверху без упаковки",
+        },
         consent: {
             title: "Использование фотографий",
             description: "Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации.",
@@ -276,7 +308,6 @@ const I18N = {
             invoiceCredits: "Получено",
             invoiceState: "Состояние",
             wizardLabel: "Пополнение",
-            wizardTitle: "Три шага оплаты",
             reset: "Сбросить",
             stepAmount: "Сумма",
             stepEmail: "Email",
@@ -464,6 +495,38 @@ const I18N = {
             detectIdentity: "Identify the vehicle",
             createRender: "Create virtual render",
         },
+        photoGuide: {
+            eyebrow: "Help",
+            title: "How to prepare photos",
+            carSection: "Car photo",
+            carTitle: "Show the whole car",
+            carBadLabel: "Better retake",
+            carBadCaption: "Three-quarter angle and close-up",
+            carGoodLabel: "Works well",
+            carGoodCaption: "Side view in daylight",
+            carCheck1: "The whole car is visible",
+            carCheck2: "Shoot from the side or a slight angle",
+            carCheck3: "All wheels are in the frame",
+            carCheck4: "Choose daylight",
+            carWarning: "Avoid night shots, strong glare, cropped wheels, and distracting objects",
+            wheelSection: "Wheel photo",
+            wheelTitle: "Shoot the wheel straight on",
+            wheelGoodCaption: "One wheel facing the camera, spokes in focus",
+            wheelSetCaption: "A set of wheels without hands or packaging",
+            wheelCheck1: "Shoot the wheel straight on",
+            wheelCheck2: "The full circle is visible",
+            wheelCheck3: "The spoke pattern is in focus",
+            wheelCheck4: "Shoot without packaging or hands in the frame",
+            wheelWarning: "Avoid angled photos, strong reflections, or a partially covered wheel",
+            readyLabel: "Before upload",
+            format: "JPG, PNG or WebP, up to 10 MB",
+            readyLink: "A product link is optional",
+            readyAction: "Start a try-on",
+            carBadAlt: "Mercedes photographed at an angle, better to retake",
+            carGoodAlt: "Car photographed from the side with both wheels visible",
+            wheelProductAlt: "Wheel photographed straight on against a light background",
+            wheelRealAlt: "A set of wheels photographed from above without packaging",
+        },
         consent: {
             title: "Photo use",
             description: "To create a try-on, your vehicle and wheel photos will be processed by Dream Wheels AI and an AI generation provider.",
@@ -619,7 +682,6 @@ const I18N = {
             invoiceCredits: "Renders",
             invoiceState: "Status",
             wizardLabel: "Top up",
-            wizardTitle: "Three payment steps",
             reset: "Reset",
             stepAmount: "Amount",
             stepEmail: "Email",
@@ -1305,7 +1367,8 @@ function updateWebsiteAuthUi() {
     const dashboardLogin = document.querySelector("[data-dashboard-auth-login]");
     const dashboardLoginLabel = document.querySelector("[data-dashboard-auth-login-label]");
     const dashboardAuthError = document.querySelector("[data-dashboard-auth-error]");
-    if (button) button.hidden = HAS_TG || !state.websiteAuth;
+    const websiteAuthLabel = document.querySelector("[data-website-auth-label]");
+    if (button) button.hidden = HAS_TG;
     if (dashboardLogin) {
         dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending;
         const label = state.websiteLoginPending
@@ -1321,18 +1384,9 @@ function updateWebsiteAuthUi() {
     }
     if (!button || HAS_TG) return;
 
-    if (state.websiteLoginWarmupPending && !state.websiteAuth) {
-        button.disabled = false;
-        button.textContent = t("auth.preparing");
-        updateCreateFooter();
-        updateAccountBlock();
-        return;
-    }
-
-    const username = state.websiteAuth?.username;
-    button.textContent = state.websiteAuth
-        ? `${t("auth.logout")}${username ? ` @${username}` : ""}`
-        : t("auth.login");
+    button.disabled = false;
+    if (websiteAuthLabel) websiteAuthLabel.textContent = state.websiteAuth ? t("auth.logout") : t("auth.loginShort");
+    button.setAttribute("aria-label", state.websiteAuth ? t("auth.logout") : t("auth.loginShort"));
     updateCreateFooter();
     updateAccountBlock();
 }

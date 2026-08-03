@@ -14,6 +14,21 @@
 - Mandatory copy rule: every user-facing label, caption, heading, subheading, warning, status, button, helper text, and generated paragraph must end without punctuation in every locale
 - This rule applies to static HTML, translated strings, dynamic states, validation messages, and generated UI copy; punctuation inside a sentence remains allowed
 
+## UI review sequence
+
+Every UI change must be reviewed in this order before handoff:
+
+1. Run the local app and inspect the current guest state in the browser
+2. Check the desktop layout and a mobile viewport
+3. Walk through every affected screen and the adjacent navigation states
+4. Verify all requested Russian copy, then verify the matching English copy
+5. Check loading, empty, warning, error, authenticated, and unauthenticated states
+6. Verify repeated components against their canonical screen, including size, alignment, colour, icon, and button state
+7. Re-check the original request item by item and search the codebase for superseded copy
+8. If authentication is required for a state, ask the user to authenticate in Telegram and continue the review after access is available
+
+The review is incomplete until the changed flow is checked in the browser after the final code change
+
 ## Separators and numbers
 
 - Never use a full stop, middle dot (`·`), bullet (`•`), or a similar glyph as a visual separator in user-facing UI.

@@ -489,23 +489,20 @@ a {
 }
 
 .dashboard-balance-display {
-    display: grid;
-    gap: 4px;
-    margin-top: 4px;
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    margin-top: 8px;
+    padding: 24px 18px;
+    text-align: center;
 }
 
-.dashboard-balance-value {
-    color: var(--accent);
-    font-size: clamp(48px, 7vw, 72px);
-    font-weight: 900;
-    line-height: 0.95;
-    letter-spacing: -0.06em;
+.dashboard-balance-display .dashboard-balance-value {
+    font-size: 54px;
 }
 
-.dashboard-balance-unit {
-    color: var(--text-muted);
-    font-size: 16px;
-    font-weight: 800;
+.dashboard-balance-display .dashboard-balance-unit {
+    font-size: 15px;
 }
 
 .dashboard-balance-card .compact-button,
@@ -826,7 +823,7 @@ h2 {
     padding: 18px 16px;
     border-radius: 24px;
     border: 1px solid rgba(221, 255, 0, 0.26);
-    background: linear-gradient(180deg, rgba(46, 52, 19, 0.58), rgba(33, 37, 20, 0.78));
+    background: var(--accent);
     display: grid;
     justify-items: center;
     align-content: center;
@@ -842,12 +839,13 @@ h2 {
     font-size: 54px;
     font-weight: 900;
     line-height: 0.95;
-    color: var(--accent);
+    color: #151811;
 }
 
 .balance-unit {
     font-size: 15px;
-    color: var(--text-muted);
+    color: #30370f;
+    font-weight: 800;
 }
 
 .balance-note {
