@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260803-spacing-system">
+    <link rel="stylesheet" href="/style.css?v=20260803-header-cleanup">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -141,10 +141,6 @@
         </section>
 
         <section class="view" data-view="create">
-            <section class="hero-panel compact">
-                <div class="hero-copy"><h1 data-i18n="create.title">Создать примерку</h1></div>
-            </section>
-
             <section class="panel" data-create-screen="upload">
                 <label class="dropzone" data-upload-zone="car">
                     <input type="file" accept="image/*" data-input="car" hidden>
@@ -314,15 +310,10 @@
         </section>
 
         <section class="view" data-view="wallet" hidden>
-            <section class="hero-panel">
-                <div class="hero-copy">
-                    <h1 data-i18n="wallet.title">Баланс</h1>
-                </div>
-                <section class="balance-tile">
-                    <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit" data-balance-unit>примерок</div>
-                    <div class="balance-note" data-balance-note hidden></div>
-                </section>
+            <section class="balance-tile wallet-balance-tile">
+                <div class="balance-value"><span data-balance-value>3</span></div>
+                <div class="balance-unit" data-balance-unit>примерок</div>
+                <div class="balance-note" data-balance-note>Аккаунт</div>
             </section>
 
             <section class="panel last-invoice-panel">
@@ -526,23 +517,15 @@
         </section>
 
         <section class="view" data-view="renders" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <h1 data-i18n="renders.title">Мои примерки</h1>
-                </div>
-            </section>
             <section class="panel">
                 <div class="list" data-render-history></div>
             </section>
         </section>
 
         <section class="view" data-view="render-detail" hidden>
-            <section class="hero-panel compact render-detail-hero">
-                <div class="hero-copy">
-                    <h1>Детали примерки</h1>
-                </div>
+            <div class="view-action-row render-detail-actions">
                 <button type="button" class="primary-button compact-button" data-new-tryon>Новая примерка</button>
-            </section>
+            </div>
             <section class="panel" data-render-detail></section>
         </section>
 
@@ -813,12 +796,6 @@
         </section>
 
         <section class="view" data-view="settings" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="settings.eyebrow">Параметры кабинета</p>
-                    <h1 data-i18n="settings.title">Настройки</h1>
-                </div>
-            </section>
             <section class="panel">
                 <div class="form-stack">
                     <div class="form-row">
@@ -847,11 +824,6 @@
         </section>
 
         <section class="view" data-view="photo-guide" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <h1 data-i18n="photoGuide.title">Как подготовить фото</h1>
-                </div>
-            </section>
             <section class="panel photo-guide-panel">
                 <div class="photo-guide-layout">
                     <article class="photo-guide-card">
@@ -915,7 +887,6 @@
 
         <section class="view" data-view="support" hidden>
             <section class="panel support-panel">
-                <h1 data-i18n="support.title">Поддержка</h1>
                 <section class="support-section">
                     <p class="section-label" data-i18n="support.helpSection">Инструкции</p>
                     <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
@@ -947,7 +918,6 @@
 
         <section class="view" data-view="docs" hidden>
             <section class="panel">
-                <h1 data-i18n="docs.title">Документы</h1>
                 <div class="docs-list">
                     <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
                         <span class="doc-link-copy"><strong data-i18n="docs.offer">Публичная оферта</strong><small data-i18n="docs.offerDescription">Условия оказания и оплаты услуги</small></span>
@@ -986,6 +956,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260803-layout-polish" type="module"></script>
+    <script src="/app.js?v=20260803-header-cleanup" type="module"></script>
 </body>
 </html>

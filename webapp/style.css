@@ -124,13 +124,8 @@ a {
         padding-right: 0;
     }
 
-    .topbar-caption {
-        display: none;
-    }
-
     .topbar-actions {
-        flex: 0 0 auto;
-        justify-content: flex-end;
+        justify-content: space-between;
     }
 }
 
@@ -170,6 +165,7 @@ a {
 .topbar-actions {
     display: flex;
     flex: 1 1 auto;
+    min-width: 0;
     align-items: center;
     justify-content: space-between;
     gap: 18px;
@@ -270,6 +266,13 @@ a {
 }
 
 @media (max-width: 560px) {
+    .mobile-brand {
+        flex: 0 0 auto;
+        font-size: 13px;
+        letter-spacing: 0.17em;
+        white-space: nowrap;
+    }
+
     .topbar {
         align-items: center;
         flex-wrap: nowrap;
@@ -299,6 +302,16 @@ a {
     letter-spacing: -0.01em;
     color: var(--text-subtle);
     text-align: left;
+}
+
+@media (max-width: 560px) {
+    .topbar-caption {
+        display: block;
+        max-width: 9ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .menu-button {
@@ -376,6 +389,11 @@ a {
 
 .view > * {
     min-width: 0;
+}
+
+.view-action-row {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .hero-panel,
@@ -886,8 +904,14 @@ h2 {
     margin-top: 8px;
     font-size: 14px;
     font-weight: 700;
-    color: var(--success);
+    color: var(--text-muted);
     text-align: center;
+}
+
+.wallet-balance-tile {
+    width: 100%;
+    min-height: 220px;
+    padding: 28px 24px;
 }
 
 .create-title span {

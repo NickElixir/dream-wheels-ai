@@ -97,13 +97,13 @@ const I18N = {
         },
         caption: {
             dashboard: "Главная",
-            create: "Создание",
+            create: "Создать примерку",
             fitment: "Совместимость",
             wallet: "Баланс",
-            renders: "История",
+            renders: "Мои примерки",
             settings: "Настройки",
             support: "Поддержка",
-            photoGuide: "Фото",
+            photoGuide: "Как подготовить фото",
             docs: "Документы",
         },
         create: {
@@ -480,13 +480,13 @@ const I18N = {
         },
         caption: {
             dashboard: "Home",
-            create: "Render",
+            create: "Create a try-on",
             fitment: "Fitment",
-            wallet: "Cabinet",
-            renders: "Renders",
+            wallet: "Balance",
+            renders: "My try-ons",
             settings: "Settings",
             support: "Support",
-            photoGuide: "Guide",
+            photoGuide: "How to prepare a photo",
             docs: "Documents",
         },
         create: {
@@ -1336,6 +1336,13 @@ function getDisplayName() {
     }
     if (state.websiteAuth?.username) return `@${state.websiteAuth.username}`;
     return "Dream Wheels";
+}
+
+function getAccountLabel() {
+    const user = tg?.initDataUnsafe?.user;
+    const username = user?.username || state.websiteAuth?.username || "";
+    if (username) return `@${String(username).replace(/^@/, "")}`;
+    return getDisplayName();
 }
 
 function getInitials(name) {
@@ -3149,10 +3156,7 @@ function renderWallet() {
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNote) {
-        balanceNote.hidden = true;
-        balanceNote.textContent = "";
-    }
+    if (balanceNote) balanceNote.textContent = `${locale === "ru" ? "Аккаунт" : "Account"} ${getAccountLabel()}`;
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
