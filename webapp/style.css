@@ -524,11 +524,12 @@ a {
 }
 
 .dashboard-auth-action {
-    width: fit-content;
+    width: 100%;
     margin-top: 12px;
 }
 
 .dashboard-auth-island {
+    grid-template-columns: minmax(0, 1fr) !important;
     margin-bottom: 0;
 }
 
