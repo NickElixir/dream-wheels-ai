@@ -1411,9 +1411,14 @@ function updateWebsiteAuthUi() {
     }
     if (!button || HAS_TG) return;
 
-    button.disabled = false;
-    if (websiteAuthLabel) websiteAuthLabel.textContent = state.websiteAuth ? t("auth.logout") : t("auth.loginShort");
-    button.setAttribute("aria-label", state.websiteAuth ? t("auth.logout") : t("auth.loginShort"));
+    const label = state.websiteLoginPending
+        ? t("auth.loggingIn")
+        : state.websiteAuth
+            ? t("auth.logout")
+            : t("auth.loginShort");
+    button.disabled = state.websiteLoginPending;
+    if (websiteAuthLabel) websiteAuthLabel.textContent = label;
+    button.setAttribute("aria-label", label);
     updateCreateFooter();
     updateAccountBlock();
 }
@@ -1521,14 +1526,9 @@ warmWebsiteLoginResources();
 
 async function loginWithTelegram() {
     if (state.websiteLoginPending) return;
-    const button = document.querySelector("[data-website-auth-button]");
     state.websiteLoginPending = true;
     state.websiteLoginError = "";
     updateWebsiteAuthUi();
-    if (button) {
-        button.disabled = true;
-        button.textContent = t("auth.loggingIn");
-    }
 
     try {
         const [{ client_id: clientId, nonce, nonce_token: nonceToken }, telegramLogin] =
@@ -1581,7 +1581,6 @@ async function loginWithTelegram() {
         state.websiteLoginPending = false;
         invalidateWebsiteLoginNonce();
         warmWebsiteLoginResources();
-        if (button) button.disabled = false;
         updateWebsiteAuthUi();
     }
 }
@@ -3603,6 +3602,7 @@ function setFeedbackRecord(jobId, feedback) {
 function mergeHistoryFeedbackState(jobs) {
     jobs.forEach((job) => {
         if (!job?.job_id) return;
+        if (state.feedbackBusyByJob[job.job_id]) return;
         state.feedbackByJob[job.job_id] = normalizeFeedbackRecord(job.feedback);
     });
 }
@@ -3756,11 +3756,25 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         return;
     }
     const identity = getIdentityPayload({ includeTelegramUserId: true });
+    const optimisticFeedback = deleting
+        ? null
+        : guestFeedbackRecord(
+            {
+                sentiment,
+                reason: reason !== undefined
+                    ? reason
+                    : sentiment === "liked"
+                        ? null
+                        : currentFeedback?.reason || null,
+            },
+            currentFeedback,
+        );
     state.feedbackBusyByJob[jobId] = true;
     state.feedbackErrorByJob[jobId] = "";
     if (reason === undefined && sentiment !== "liked") {
         setFeedbackNotice(jobId, "");
     }
+    setFeedbackRecord(jobId, optimisticFeedback);
     renderRenders();
 
     try {
@@ -3796,6 +3810,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         }
         haptic(deleting ? "light" : "success");
     } catch (error) {
+        setFeedbackRecord(jobId, currentFeedback);
         state.feedbackErrorByJob[jobId] = error?.message || t("errors.requestFailed");
         haptic("warning");
     } finally {
@@ -4113,19 +4128,20 @@ function renderDashboard() {
     const latest = state.renderHistory[0] || null;
     const latestCompleted = latest?.status === "completed" && fitmentAvailable(latest);
     if (dashboardPrimaryAction) {
-        dashboardPrimaryAction.textContent = latestCompleted ? t("dashboard.lastRender") : t("dashboard.startRender");
-        if (latestCompleted) {
-            delete dashboardPrimaryAction.dataset.nav;
-            delete dashboardPrimaryAction.dataset.expandLatest;
-            dashboardPrimaryAction.dataset.openRenderDetail = latest.job_id;
-        } else {
-            dashboardPrimaryAction.dataset.nav = "create";
-            delete dashboardPrimaryAction.dataset.openRenderDetail;
-        }
+        dashboardPrimaryAction.textContent = t("dashboard.startRender");
+        dashboardPrimaryAction.dataset.nav = "create";
+        delete dashboardPrimaryAction.dataset.expandLatest;
+        delete dashboardPrimaryAction.dataset.openRenderDetail;
     }
     if (dashboardSecondaryAction) {
-        dashboardSecondaryAction.textContent = latestCompleted ? t("dashboard.createRender") : t("menu.renders");
-        dashboardSecondaryAction.dataset.nav = latestCompleted ? "create" : "renders";
+        dashboardSecondaryAction.textContent = latestCompleted ? t("dashboard.lastRender") : t("menu.renders");
+        if (latestCompleted) {
+            delete dashboardSecondaryAction.dataset.nav;
+            dashboardSecondaryAction.dataset.openRenderDetail = latest.job_id;
+        } else {
+            dashboardSecondaryAction.dataset.nav = "renders";
+            delete dashboardSecondaryAction.dataset.openRenderDetail;
+        }
         delete dashboardSecondaryAction.dataset.expandLatest;
     }
     if (!latest) {

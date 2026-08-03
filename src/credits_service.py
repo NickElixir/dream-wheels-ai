@@ -689,13 +689,46 @@ async def ensure_credit_account(conn: asyncpg.Connection, user_id: int) -> int:
 
 
 async def get_balance(conn: asyncpg.Connection, user_id: int) -> int:
-    """Вернуть актуальный баланс, создав grant при первом входе."""
+    """Вернуть баланс, синхронизированный с активными пакетами credits."""
     balance = await ensure_credit_account(conn, user_id)
     await expire_credit_packages(conn, user_id=user_id)
-    row = await conn.fetchrow(
-        "SELECT balance FROM user_credit_accounts WHERE user_id = $1", user_id
+    return await reconcile_credit_account_balance(conn, user_id=user_id, fallback_balance=balance)
+
+
+async def reconcile_credit_account_balance(
+    conn: asyncpg.Connection,
+    *,
+    user_id: int,
+    fallback_balance: int,
+) -> int:
+    """Сверить кэш аккаунта с доступными пакетами после миграции FIFO."""
+    try:
+        package_balance = await conn.fetchval(
+            """
+            SELECT COALESCE(SUM(remaining_credits), 0)
+            FROM credit_packages
+            WHERE user_id = $1
+              AND remaining_credits > 0
+              AND expires_at > CURRENT_TIMESTAMP
+            """,
+            user_id,
+        )
+    except asyncpg.UndefinedTableError:
+        return fallback_balance
+
+    balance = int(package_balance or 0)
+    await conn.execute(
+        """
+        UPDATE user_credit_accounts
+        SET balance = $2,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $1
+          AND balance IS DISTINCT FROM $2
+        """,
+        user_id,
+        balance,
     )
-    return int(row["balance"] if row else balance)
+    return balance
 
 
 async def reserve_job_credit(
@@ -720,10 +753,10 @@ async def reserve_job_credit(
 
     current_status = job_row["credit_status"]
     if current_status in {"reserved", "finalized"}:
-        balance = await ensure_credit_account(conn, user_id)
+        balance = await get_balance(conn, user_id)
         return balance
 
-    balance = await ensure_credit_account(conn, user_id)
+    balance = await get_balance(conn, user_id)
     effective_cost = int(job_row["credit_cost"] or credit_cost)
     if balance < effective_cost:
         raise InsufficientCreditsError(
@@ -827,11 +860,11 @@ async def finalize_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id:
     if job_row is None:
         raise RuntimeError(f"job not found for finalize job_id={job_id}")
     if job_row["credit_status"] == "finalized":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
     if job_row["credit_status"] != "reserved":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
 
-    balance = await ensure_credit_account(conn, user_id)
+    balance = await get_balance(conn, user_id)
     await conn.execute(
         """
         INSERT INTO credit_ledger (
@@ -882,11 +915,11 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
     if job_row is None:
         raise RuntimeError(f"job not found for refund job_id={job_id}")
     if job_row["credit_status"] == "refunded":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
     if job_row["credit_status"] != "reserved":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
 
-    balance = await ensure_credit_account(conn, user_id)
+    balance = await get_balance(conn, user_id)
     credit_cost = int(job_row["credit_cost"] or JOB_CREDIT_COST)
     restored_rows = await conn.fetch(
         """
