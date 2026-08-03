@@ -338,6 +338,32 @@ a {
     }
 }
 
+@media (max-width: 400px) {
+    .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 10px;
+    }
+
+    .topbar-actions {
+        display: contents;
+    }
+
+    .topbar-caption {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    .website-auth-button {
+        grid-column: 2;
+        grid-row: 1;
+    }
+}
+
 .menu-button {
     width: 46px;
     height: 46px;
@@ -3981,6 +4007,22 @@ body.has-fallback-main-button #app {
 .bottom-nav-item.active {
     color: var(--accent);
     background: var(--accent-soft);
+}
+
+@media (max-width: 360px) {
+    .mobile-bottom-nav {
+        left: 6px;
+        right: 6px;
+        gap: 2px;
+        padding: 5px;
+        border-radius: 20px;
+    }
+
+    .bottom-nav-item {
+        min-height: 42px;
+        font-size: 10px;
+        letter-spacing: -0.02em;
+    }
 }
 
 .more-sheet-backdrop {

@@ -2932,7 +2932,7 @@ function updateTopbarCaption() {
     const topbar = document.querySelector(".topbar");
     const applyCaption = (text) => {
         if (caption) caption.textContent = text;
-        if (topbar) topbar.classList.toggle("has-long-caption", String(text).length > 12);
+        if (topbar) topbar.classList.toggle("has-long-caption", String(text).length > 9);
     };
     if (state.view === "render-detail") {
         applyCaption(locale === "ru" ? "Детали примерки" : "Try-on details");
