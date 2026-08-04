@@ -109,7 +109,7 @@ const I18N = {
         create: {
             eyebrow: "Создание примерки",
             title: "Создать примерку",
-            uploadFormat: "JPG, PNG или WebP, до 10 МБ",
+            uploadFormat: "Поддерживаемые форматы JPG, PNG и WebP до 10 МБ",
             detectingVehicle: "Определяем автомобиль",
             detectingVehicleHint: "Подбираем марку, модель и год по фотографии",
             productLink: "Ссылка на товар",
@@ -154,7 +154,7 @@ const I18N = {
             wheelCheck4: "Снимайте без упаковки и рук в кадре",
             wheelWarning: "Не используйте фото под углом, с сильными отражениями или частично закрытым диском",
             readyLabel: "Перед загрузкой",
-            format: "JPG, PNG или WebP, до 10 МБ",
+            format: "Поддерживаемые форматы JPG, PNG и WebP до 10 МБ",
             readyLink: "Ссылка на товар необязательна",
             readyAction: "Начать примерку",
             carBadAlt: "Автомобиль Mercedes снят под углом, такое фото лучше переснять",
@@ -493,7 +493,7 @@ const I18N = {
         create: {
             eyebrow: "Create a try-on",
             title: "Create a try-on",
-            uploadFormat: "JPG, PNG or WebP, up to 10 MB",
+            uploadFormat: "Supported formats JPG, PNG and WebP up to 10 MB",
             detectingVehicle: "Identifying the vehicle",
             detectingVehicleHint: "Matching the make, model, and year from the photo",
             productLink: "Product link",
@@ -538,7 +538,7 @@ const I18N = {
             wheelCheck4: "Shoot without packaging or hands in the frame",
             wheelWarning: "Avoid angled photos, strong reflections, or a partially covered wheel",
             readyLabel: "Before upload",
-            format: "JPG, PNG or WebP, up to 10 MB",
+            format: "Supported formats JPG, PNG and WebP up to 10 MB",
             readyLink: "A product link is optional",
             readyAction: "Start a try-on",
             carBadAlt: "Mercedes photographed at an angle, better to retake",
@@ -3143,7 +3143,8 @@ function schedulePendingInvoiceRefresh() {
 function renderWallet() {
     const balanceValue = document.querySelector("[data-balance-value]");
     const balanceUnit = document.querySelector("[data-balance-unit]");
-    const balanceNote = document.querySelector("[data-balance-note]");
+    const balanceNoteLabel = document.querySelector("[data-balance-note-label]");
+    const balanceNoteValue = document.querySelector("[data-balance-note-value]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
     const cardBlock = document.querySelector("[data-last-invoice-card]");
@@ -3162,7 +3163,8 @@ function renderWallet() {
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNote) balanceNote.textContent = `${locale === "ru" ? "Аккаунт" : "Account"} ${getAccountLabel()}`;
+    if (balanceNoteLabel) balanceNoteLabel.textContent = locale === "ru" ? "Аккаунт" : "Account";
+    if (balanceNoteValue) balanceNoteValue.textContent = getAccountLabel();
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
