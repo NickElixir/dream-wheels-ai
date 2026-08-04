@@ -3830,6 +3830,7 @@ h2 {
 
 .dropzone {
     display: grid;
+    align-content: center;
     justify-items: center;
     gap: 10px;
     min-height: 196px;
@@ -3847,7 +3848,11 @@ h2 {
 }
 
 .dropzone-icon {
+    display: grid;
+    place-items: center;
+    width: 100%;
     font-size: 40px;
+    line-height: 1;
 }
 
 .dropzone-sub {
