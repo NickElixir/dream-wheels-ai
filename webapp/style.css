@@ -957,6 +957,14 @@ h2 {
     text-align: center;
 }
 
+.balance-note-label {
+    color: var(--text-muted);
+}
+
+.balance-note-value {
+    color: var(--info);
+}
+
 .wallet-balance-tile {
     width: 100%;
     min-height: 220px;

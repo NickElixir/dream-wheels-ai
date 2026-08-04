@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260803-auth-rating-balance">
+<html lang="ru" data-app-build="20260804-account-label-wrap">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260803-auth-rating-balance">
+    <link rel="stylesheet" href="/style.css?v=20260804-account-label-wrap">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -312,9 +312,14 @@
 
         <section class="view" data-view="wallet" hidden>
             <section class="balance-tile wallet-balance-tile">
-                <div class="balance-value"><span data-balance-value>3</span></div>
-                <div class="balance-unit" data-balance-unit>примерок</div>
-                <div class="balance-note" data-balance-note>Аккаунт</div>
+                <div class="dashboard-balance-subisland">
+                    <div class="balance-value"><span data-balance-value>3</span></div>
+                    <div class="balance-unit" data-balance-unit>примерок</div>
+                    <div class="balance-note" data-balance-note>
+                        <span class="balance-note-label" data-balance-note-label>Аккаунт</span>
+                         <span class="balance-note-value" data-balance-note-value></span>
+                     </div>
+                 </div>
             </section>
 
             <section class="panel last-invoice-panel">
@@ -954,6 +959,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260803-auth-rating-balance" type="module"></script>
+    <script src="/app.js?v=20260804-account-label-wrap" type="module"></script>
 </body>
 </html>

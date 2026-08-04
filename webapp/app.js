@@ -3143,7 +3143,8 @@ function schedulePendingInvoiceRefresh() {
 function renderWallet() {
     const balanceValue = document.querySelector("[data-balance-value]");
     const balanceUnit = document.querySelector("[data-balance-unit]");
-    const balanceNote = document.querySelector("[data-balance-note]");
+    const balanceNoteLabel = document.querySelector("[data-balance-note-label]");
+    const balanceNoteValue = document.querySelector("[data-balance-note-value]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
     const cardBlock = document.querySelector("[data-last-invoice-card]");
@@ -3162,7 +3163,8 @@ function renderWallet() {
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNote) balanceNote.textContent = `${locale === "ru" ? "Аккаунт" : "Account"} ${getAccountLabel()}`;
+    if (balanceNoteLabel) balanceNoteLabel.textContent = locale === "ru" ? "Аккаунт" : "Account";
+    if (balanceNoteValue) balanceNoteValue.textContent = getAccountLabel();
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
