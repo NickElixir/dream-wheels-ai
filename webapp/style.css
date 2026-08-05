@@ -643,12 +643,20 @@ a {
 
 .dashboard-auth-action {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 8px;
 }
 
 .dashboard-auth-island {
     grid-template-columns: minmax(0, 1fr) !important;
     margin-bottom: 0;
+}
+
+.dashboard-auth-island[data-visible="true"] {
+    padding: 12px 14px;
+}
+
+.dashboard-auth-island .wallet-status-copy {
+    text-align: center;
 }
 
 .dashboard-auth-info {
