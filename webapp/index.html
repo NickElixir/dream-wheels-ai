@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260804-balance-subisland-center">
+<html lang="ru" data-app-build="20260805-dashboard-balance-subisland">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260804-balance-subisland-center">
+    <link rel="stylesheet" href="/style.css?v=20260805-dashboard-balance-subisland">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -89,8 +89,11 @@
                         </div>
                     </div>
                     <div class="balance-tile dashboard-balance-display">
-                        <span class="balance-value dashboard-balance-value" data-dashboard-balance>0</span>
-                        <span class="balance-unit dashboard-balance-unit" data-dashboard-balance-unit>примерок</span>
+                        <div class="dashboard-balance-subisland">
+                            <span class="balance-value dashboard-balance-value" data-dashboard-balance>0</span>
+                            <span class="balance-unit dashboard-balance-unit" data-dashboard-balance-unit>примерок</span>
+                            <span class="balance-note balance-note-value dashboard-balance-account" data-dashboard-balance-account></span>
+                        </div>
                     </div>
                     <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
                         <div class="dashboard-expiry-head">
@@ -316,8 +319,7 @@
                     <div class="balance-value"><span data-balance-value>3</span></div>
                     <div class="balance-unit" data-balance-unit>примерок</div>
                     <div class="balance-note" data-balance-note>
-                        <span class="balance-note-label" data-balance-note-label>Аккаунт</span>
-                         <span class="balance-note-value" data-balance-note-value></span>
+                        <span class="balance-note-value" data-balance-note-value></span>
                      </div>
                  </div>
             </section>
@@ -959,6 +961,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260804-balance-subisland-center" type="module"></script>
+    <script src="/app.js?v=20260805-dashboard-balance-subisland" type="module"></script>
 </body>
 </html>

@@ -3143,7 +3143,6 @@ function schedulePendingInvoiceRefresh() {
 function renderWallet() {
     const balanceValue = document.querySelector("[data-balance-value]");
     const balanceUnit = document.querySelector("[data-balance-unit]");
-    const balanceNoteLabel = document.querySelector("[data-balance-note-label]");
     const balanceNoteValue = document.querySelector("[data-balance-note-value]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
@@ -3163,7 +3162,6 @@ function renderWallet() {
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNoteLabel) balanceNoteLabel.textContent = locale === "ru" ? "Аккаунт" : "Account";
     if (balanceNoteValue) balanceNoteValue.textContent = getAccountLabel();
 
     if (!lastInvoice) {
@@ -4073,6 +4071,7 @@ async function refreshProcessingHistoryJobs() {
 function renderDashboard() {
     const balance = document.querySelector("[data-dashboard-balance]");
     const balanceUnit = document.querySelector("[data-dashboard-balance-unit]");
+    const dashboardBalanceAccount = document.querySelector("[data-dashboard-balance-account]");
     const latestTitle = document.querySelector("[data-latest-title]");
     const latestStatus = document.querySelector("[data-latest-status]");
     const latestContent = document.querySelector("[data-latest-content]");
@@ -4096,6 +4095,7 @@ function renderDashboard() {
             ? formatRenderCount(0).replace(/^\d+\s+/, "")
             : formatRenderCount(state.balance).replace(/^\d+\s+/, "");
     }
+    if (dashboardBalanceAccount) dashboardBalanceAccount.textContent = getAccountLabel();
     if (balanceSkeleton) balanceSkeleton.hidden = !(state.walletLoading && state.balance === null);
     document.querySelector(".dashboard-balance-card")?.toggleAttribute(
         "data-loading",
