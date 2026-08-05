@@ -495,6 +495,12 @@ a {
 .dashboard-actions > button {
     width: 100%;
     min-width: 0;
+    min-height: 56px;
+    padding: 8px 10px;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
 }
 
 .dashboard-grid {
@@ -614,10 +620,8 @@ a {
     }
 
     .dashboard-actions > button {
-        min-height: 56px;
         padding-inline: 8px;
         font-size: 14px;
-        line-height: 1.2;
     }
 }
 
