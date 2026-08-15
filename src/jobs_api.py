@@ -710,9 +710,7 @@ def _rim_decimal(value: float | None) -> Decimal | None:
 def _fitment_values_equal(current: object, incoming: object) -> bool:
     if current is None or incoming is None:
         return current is None and incoming is None
-    if isinstance(current, Decimal | int | float) or isinstance(
-        incoming, Decimal | int | float
-    ):
+    if isinstance(current, Decimal | int | float) or isinstance(incoming, Decimal | int | float):
         try:
             return Decimal(str(current)) == Decimal(str(incoming))
         except Exception:
@@ -2098,7 +2096,10 @@ async def resolve_fitment_rim_source(
     async with pool.acquire() as conn:
         user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         await enforce_rate_limit(
-            "fitment_rim_source", user_id, RIM_SOURCE_RESOLVE_RATE_LIMIT, RIM_SOURCE_RESOLVE_RATE_WINDOW_SEC
+            "fitment_rim_source",
+            user_id,
+            RIM_SOURCE_RESOLVE_RATE_LIMIT,
+            RIM_SOURCE_RESOLVE_RATE_WINDOW_SEC,
         )
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
@@ -2206,7 +2207,12 @@ async def apply_fitment_vehicle_variant(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(init_data=init_data, telegram_user_id=telegram_user_id, authorization=authorization, required=True)
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
     assert auth is not None
     async with db.get_pool().acquire() as conn:
         async with conn.transaction():
@@ -2215,15 +2221,37 @@ async def apply_fitment_vehicle_variant(
             if not row:
                 raise HTTPException(status_code=404, detail="Fitment overview not found")
             if int(row["vehicle_revision"]) != request.expected_vehicle_revision:
-                raise HTTPException(status_code=409, detail="Fitment vehicle was updated elsewhere. Reload and try again.")
-            identity = ProviderVehicleIdentity(make=row["vehicle_make"], model=row["vehicle_model"], year=row["vehicle_year"], market=row["vehicle_market"])
+                raise HTTPException(
+                    status_code=409,
+                    detail="Fitment vehicle was updated elsewhere. Reload and try again.",
+                )
+            identity = ProviderVehicleIdentity(
+                make=row["vehicle_make"],
+                model=row["vehicle_model"],
+                year=row["vehicle_year"],
+                market=row["vehicle_market"],
+            )
             try:
                 variants = await WheelSizeProvider().find_vehicle_variants(identity)
             except ProviderError as exc:
-                raise HTTPException(status_code=503, detail="Vehicle catalogue is unavailable") from exc
-            selected = next((variant for variant in variants if all(str(variant.get(key) or "") == str(getattr(request, key)) for key in ("generation", "modification", "body", "market"))), None)
+                raise HTTPException(
+                    status_code=503, detail="Vehicle catalogue is unavailable"
+                ) from exc
+            selected = next(
+                (
+                    variant
+                    for variant in variants
+                    if all(
+                        str(variant.get(key) or "") == str(getattr(request, key))
+                        for key in ("generation", "modification", "body", "market")
+                    )
+                ),
+                None,
+            )
             if selected is None:
-                raise HTTPException(status_code=422, detail="Selected vehicle variant is no longer available")
+                raise HTTPException(
+                    status_code=422, detail="Selected vehicle variant is no longer available"
+                )
             mapping = dict(row["vehicle_provider_mappings"] or {})
             exact_mapping = {
                 key: selected[key]
@@ -2235,12 +2263,27 @@ async def apply_fitment_vehicle_variant(
                     "modification_slug",
                 )
             }
-            if not {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}.issubset(exact_mapping):
-                raise HTTPException(status_code=422, detail="Selected vehicle variant could not be resolved")
+            if not {
+                "make_slug",
+                "model_slug",
+                "region",
+                "generation_slug",
+                "modification_slug",
+            }.issubset(exact_mapping):
+                raise HTTPException(
+                    status_code=422, detail="Selected vehicle variant could not be resolved"
+                )
             mapping["wheel_size"] = exact_mapping
             await conn.execute(
                 "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, market=$4, provider_mappings=$5::jsonb, provider_mapping_revision=provider_mapping_revision+1, revision=revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$6::uuid AND owner_user_id=$7 AND revision=$8",
-                request.generation, request.modification, request.body or None, request.market, json.dumps(mapping), row["vehicle_identity_id"], user_id, request.expected_vehicle_revision,
+                request.generation,
+                request.modification,
+                request.body or None,
+                request.market,
+                json.dumps(mapping),
+                row["vehicle_identity_id"],
+                user_id,
+                request.expected_vehicle_revision,
             )
             updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     assert updated is not None
@@ -2497,7 +2540,9 @@ async def save_fitment_details(
             if fitment_changes:
                 if mapping_invalidated:
                     fitment_changes["vehicle.provider_mapping"] = {
-                        "before": {"wheel_size": row["vehicle_provider_mappings"].get("wheel_size")},
+                        "before": {
+                            "wheel_size": row["vehicle_provider_mappings"].get("wheel_size")
+                        },
                         "after": None,
                         "reason": "canonical_vehicle_identity_changed",
                     }

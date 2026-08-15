@@ -27,7 +27,9 @@ WHEEL_SIZE_MAX_RETRIES = int(os.getenv("WHEEL_SIZE_MAX_RETRIES", "3"))
 FITMENT_CATALOG_CACHE_TTL_SEC = int(os.getenv("FITMENT_CATALOG_CACHE_TTL_SEC", str(7 * 86400)))
 FITMENT_PROFILE_CACHE_TTL_SEC = int(os.getenv("FITMENT_PROFILE_CACHE_TTL_SEC", str(86400)))
 FITMENT_NEGATIVE_CACHE_TTL_SEC = int(os.getenv("FITMENT_NEGATIVE_CACHE_TTL_SEC", "300"))
-FITMENT_PROVIDER_CACHE_BACKEND = os.getenv("FITMENT_PROVIDER_CACHE_BACKEND", "redis").strip().lower()
+FITMENT_PROVIDER_CACHE_BACKEND = (
+    os.getenv("FITMENT_PROVIDER_CACHE_BACKEND", "redis").strip().lower()
+)
 
 # VLM (OpenAI-compatible AITUNNEL endpoint). В тестах подменяется стабом.
 FITMENT_VLM_BASE_URL = os.getenv("FITMENT_VLM_BASE_URL", "https://api.aitunnel.ru/v1").rstrip("/")

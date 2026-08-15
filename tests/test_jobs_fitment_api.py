@@ -411,7 +411,9 @@ def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
     assert response.json()["next_action"]["kind"] == "run_standard_check"
 
     missing_vehicle = _fitment_row(vehicle_make=None)
-    assert jobs_api._fitment_next_action_from_row(missing_vehicle).kind == "complete_vehicle_details"
+    assert (
+        jobs_api._fitment_next_action_from_row(missing_vehicle).kind == "complete_vehicle_details"
+    )
 
 
 def test_fitment_save_allows_clearing_optional_fields(monkeypatch):

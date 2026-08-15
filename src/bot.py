@@ -18,6 +18,7 @@ from src.config import (
     API_BASE_URL,
     API_INTERNAL_TOKEN,
     BOT_TOKEN,
+    LEGAL_BASE_URL,
     REDIS_URL,
     STARTER_GRANT_CREDITS,
     STARTER_GRANT_TTL_DAYS,
@@ -70,6 +71,8 @@ FEEDBACK_KEYBOARD = {
 MESSAGES = {
     "en": {
         "open_app": "🚗 Open Dream Wheels",
+        "open_support": "💬 Open support",
+        "open_document": "📄 Open document",
         "start": (
             "Hi! We have credited {credits} starter credits for {days} days. "
             "Tap the button below to open the Mini App, or send a car photo directly in this chat."
@@ -78,6 +81,11 @@ MESSAGES = {
             "Hi! Your Mini App is ready. Tap the button below to open it, or send a car photo "
             "directly in this chat. The starter grant stays active for {days} days from the first crediting."
         ),
+        "app": "Open the Mini App below.",
+        "help": "Send two photos in chat: first the car from the side, then the wheel from the front. You can also open the Mini App below.",
+        "support": "Open support in the Mini App.",
+        "privacy": "Open the privacy policy.",
+        "terms": "Open the public offer.",
         "car_received": "Car photo received! 🚗\nNow send a wheel photo.",
         "creating_job": "Creating job... ⏳",
         "api_error": "❌ API server error.",
@@ -89,6 +97,8 @@ MESSAGES = {
     },
     "ru": {
         "open_app": "🚗 Открыть Dream Wheels",
+        "open_support": "💬 Открыть поддержку",
+        "open_document": "📄 Открыть документ",
         "start": (
             "Привет! Дарим {credits} стартовых credits на {days} дней. "
             "Жми кнопку ниже, чтобы открыть Mini App, или отправь фото машины прямо в чат."
@@ -97,6 +107,11 @@ MESSAGES = {
             "Привет! Mini App уже готов. Жми кнопку ниже, чтобы открыть его, или отправь фото "
             "машины прямо в чат. Стартовый grant действует {days} дней с момента первого начисления."
         ),
+        "app": "Открываю Mini App.",
+        "help": "Отправь 2 фото в чат: сначала машину сбоку, затем диск анфас. Или открой Mini App кнопкой ниже.",
+        "support": "Открываю поддержку в Mini App.",
+        "privacy": "Открываю политику конфиденциальности.",
+        "terms": "Открываю публичную оферту.",
         "car_received": "Фото авто получено! 🚗\nТеперь отправь фото диска.",
         "creating_job": "Создаю задачу... ⏳",
         "api_error": "❌ Ошибка сервера API.",
@@ -143,6 +158,33 @@ async def _ensure_credit_state_for_bot_user(update: Update) -> CreditAccountStat
             return await ensure_credit_account_state(conn, user_id)
 
 
+def _webapp_url(section: str | None = None) -> str:
+    base_url = WEBAPP_URL.rstrip("/")
+    return f"{base_url}/?section={section}" if section else base_url
+
+
+def _legal_url(path: str) -> str:
+    return f"{LEGAL_BASE_URL.rstrip('/')}/{path.lstrip('/')}"
+
+
+async def _reply_with_webapp_button(update: Update, text: str, url: str, button_text: str) -> None:
+    message = getattr(update, "effective_message", None) or getattr(update, "message", None)
+    if message is None:
+        return
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton(button_text, web_app=WebAppInfo(url=url))]]
+    )
+    await message.reply_text(text, reply_markup=keyboard)
+
+
+async def _reply_with_url_button(update: Update, text: str, url: str, button_text: str) -> None:
+    message = getattr(update, "effective_message", None) or getattr(update, "message", None)
+    if message is None:
+        return
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(button_text, url=url)]])
+    await message.reply_text(text, reply_markup=keyboard)
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     start_message_key = "start_existing"
@@ -154,12 +196,41 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.exception(f"❌ /start starter grant failed telegram_user_id={user.id}: {e}")
 
-    keyboard = InlineKeyboardMarkup(
-        [[InlineKeyboardButton(_t(update, "open_app"), web_app=WebAppInfo(url=WEBAPP_URL))]]
-    )
-    await update.message.reply_text(
+    await _reply_with_webapp_button(
+        update,
         _format_start_text(update, start_message_key),
-        reply_markup=keyboard,
+        _webapp_url(),
+        _t(update, "open_app"),
+    )
+
+
+async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply_with_webapp_button(
+        update, _t(update, "app"), _webapp_url(), _t(update, "open_app")
+    )
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply_with_webapp_button(
+        update, _t(update, "help"), _webapp_url(), _t(update, "open_app")
+    )
+
+
+async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply_with_webapp_button(
+        update, _t(update, "support"), _webapp_url("support"), _t(update, "open_support")
+    )
+
+
+async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply_with_url_button(
+        update, _t(update, "privacy"), _legal_url("/legal/privacy"), _t(update, "open_document")
+    )
+
+
+async def terms_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply_with_url_button(
+        update, _t(update, "terms"), _legal_url("/legal/offer"), _t(update, "open_document")
     )
 
 
@@ -328,6 +399,11 @@ def main():
         .build()
     )
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("app", app_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("support", support_command))
+    application.add_handler(CommandHandler("privacy", privacy_command))
+    application.add_handler(CommandHandler("terms", terms_command))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(CallbackQueryHandler(handle_feedback, pattern=r"^feedback:"))
     application.run_polling()

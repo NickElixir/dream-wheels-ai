@@ -267,7 +267,9 @@ async def create_check(
                 },
                 "normalized_profile": profile.model_dump(mode="json") if profile else None,
                 "provider_response_hash": hashlib.sha256(
-                    json.dumps(profile.model_dump(mode="json") if profile else {}, sort_keys=True).encode()
+                    json.dumps(
+                        profile.model_dump(mode="json") if profile else {}, sort_keys=True
+                    ).encode()
                 ).hexdigest(),
                 "provider": provider.name,
                 "provider_version": profile.provider_version if profile else "v2",
@@ -349,7 +351,8 @@ def _response(row) -> CheckResponse:
         verdict=row["verdict"],
         is_preliminary=bool(row["is_preliminary"]),
         reasons=legacy_reasons,
-        conditions=result.get("conditions") or [
+        conditions=result.get("conditions")
+        or [
             rule
             for rule in rules
             if isinstance(rule, dict) and rule.get("status") == "compatible_with_conditions"

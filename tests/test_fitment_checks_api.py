@@ -129,7 +129,9 @@ class Provider:
             bolt_count=5,
             pcd_mm=114.3,
             center_bore_mm=60.1,
-            allowed_wheels=[AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=45, is_stock=True)],
+            allowed_wheels=[
+                AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=45, is_stock=True)
+            ],
             offset_references=[
                 OffsetReference(
                     axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=45, et_max_mm=45

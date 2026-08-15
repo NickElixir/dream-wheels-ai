@@ -66,6 +66,8 @@ MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
 }
 
 _FUZZY_MATCH_THRESHOLD = 0.75
+
+
 def _to_float(value: Any) -> float | None:
     """Безопасный парс: у Wheel-Size centre_bore бывает строкой или 'N/A'."""
     if value in (None, "", "N/A", "n/a"):
@@ -403,8 +405,18 @@ class WheelSizeProvider:
             return None
 
         mapping = identity.provider_mappings.get(PROVIDER_NAME)
-        required_mapping = {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}
-        if not isinstance(mapping, dict) or not required_mapping.issubset(mapping) or not identity.year:
+        required_mapping = {
+            "make_slug",
+            "model_slug",
+            "region",
+            "generation_slug",
+            "modification_slug",
+        }
+        if (
+            not isinstance(mapping, dict)
+            or not required_mapping.issubset(mapping)
+            or not identity.year
+        ):
             return None
 
         # A detailed verdict must never silently fall back to another market.

@@ -75,6 +75,29 @@ def test_serialize_payment_row_includes_receipt_email():
     payload = serialize_payment_row(row)
 
     assert payload["receipt_email"] == "user@example.com"
+    assert payload["confirmation_url"] is None
+
+
+def test_serialize_payment_row_keeps_confirmation_url_for_pending_invoice():
+    row = {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "invoice_id": 42,
+        "status": "pending",
+        "amount_rub": 500,
+        "credits_granted": 20,
+        "receipt_email": "user@example.com",
+        "pricing_version": "credits-v1",
+        "source_screen": "cabinet",
+        "provider_payment_id": "payment-42",
+        "created_at": datetime(2026, 6, 19, 9, 0, 0),
+        "paid_at": None,
+        "failed_at": None,
+        "updated_at": datetime(2026, 6, 19, 9, 1, 0),
+    }
+
+    payload = serialize_payment_row(row, confirmation_url="https://stage.example/pay?resume=1")
+
+    assert payload["confirmation_url"] == "https://stage.example/pay?resume=1"
 
 
 def test_get_starter_grant_for_user_returns_trial_grant_payload():
@@ -127,8 +150,11 @@ def test_get_starter_grant_legacy_fallback_does_not_match_any_manual_adjustment(
             self.calls += 1
             if self.calls == 1:
                 raise asyncpg.UndefinedColumnError("event_type missing")
-            assert "metadata->>'kind' = 'starter_grant'" in query
-            assert "operation_type = 'manual_adjustment'" not in query
+            if self.calls == 2:
+                assert "metadata->>'kind' = 'starter_grant'" in query
+                assert "operation_type = 'manual_adjustment'" not in query
+                return None
+            assert "FROM user_credit_accounts" in query
             return None
 
     payload = asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123))

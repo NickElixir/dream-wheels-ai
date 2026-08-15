@@ -455,10 +455,7 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
 
 def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
-    assert {
-        "source": "/api/backend/:path*",
-        "destination": "https://dream-wheels-ai-robokassa-staging.onrender.com/:path*",
-    } in rewrites
+    assert not any(rewrite["source"].startswith("/api/backend") for rewrite in rewrites)
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()

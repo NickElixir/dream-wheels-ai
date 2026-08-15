@@ -92,9 +92,7 @@ def discover(
             seen_case_ids.add(case_id)
     if clean_only:
         output_path.write_text(
-            json.dumps(
-                {"dataset_version": "vehicle-identity-commons-v1", "cases": cases}, indent=2
-            )
+            json.dumps({"dataset_version": "vehicle-identity-commons-v1", "cases": cases}, indent=2)
         )
         return
     seen_files = {f"File:{case['source']['commons_file_name']}" for case in cases}
