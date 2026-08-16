@@ -18,6 +18,8 @@ Base: `80cccd8` (`origin/staging`)
 
 Результат: **37 passed**, 2 ожидаемых deprecation warnings от httpx.
 
+Полный локальный suite: **219 passed, 3 skipped**, 10 deprecation warnings от httpx. `ruff check`, запущенный по tracked application/test paths (`src tests scripts`), и `ruff format --check` прошли. Общий `ruff check .` также сканирует сохранённый пользователем untracked-файл `tmp/pdfs/create_fitment_test_report.py` и находит в нём 2 pre-existing ошибки; этот файл в PR не включён и не изменялся.
+
 Проверены локально: Robokassa signature/URL calculation, create/callback status handling, duplicate/idempotent payment paths, credit grant/debit/refund service behavior and switch coverage. Live Robokassa платежи не выполнялись.
 
 ## Browser / staging evidence
