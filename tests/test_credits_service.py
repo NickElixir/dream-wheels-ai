@@ -256,7 +256,7 @@ def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
     query, args = conn.expiration_insert
     assert "$4::text" in query
     assert "$5::timestamptz" in query
-    assert args == (123, -2, "package_expire:package-1", "package-1", expires_at.isoformat())
+    assert args == (123, -2, "package_expire:package-1", "package-1", expires_at)
 
 
 def test_expired_starter_grant_metadata_has_explicit_postgres_types():
@@ -269,7 +269,7 @@ def test_expired_starter_grant_metadata_has_explicit_postgres_types():
         async def fetchval(self, query: str, *args):
             assert "$5::integer" in query
             assert "$6::timestamptz" in query
-            assert args == (123, -3, 0, "starter_grant_expire:123", 3, expires_at.isoformat())
+            assert args == (123, -3, 0, "starter_grant_expire:123", 3, expires_at)
             return 1
 
     inserted = asyncio.run(
