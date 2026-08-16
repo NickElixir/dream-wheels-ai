@@ -23,14 +23,20 @@ def _rim(et: float | None) -> RimSpec:
 def _profile(reference: OffsetReference | None) -> FitmentProfile:
     return FitmentProfile(
         provider="wheel_size",
-        allowed_wheels=[AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=40, is_stock=True)],
+        allowed_wheels=[
+            AxleFitment(axle="front", rim_diameter=20, rim_width=8.5, offset=40, is_stock=True)
+        ],
         offset_references=[reference] if reference else [],
     )
 
 
 def test_missing_rim_et_is_distinct_critical_blocker() -> None:
     result = check_size_and_offset(
-        _profile(OffsetReference(axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45)),
+        _profile(
+            OffsetReference(
+                axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45
+            )
+        ),
         _rim(None),
         "front",
     )
@@ -48,7 +54,11 @@ def test_missing_vehicle_et_is_distinct_critical_blocker() -> None:
 
 def test_et_inside_derived_interval_is_compatible() -> None:
     result = check_size_and_offset(
-        _profile(OffsetReference(axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45)),
+        _profile(
+            OffsetReference(
+                axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45
+            )
+        ),
         _rim(42),
         "front",
     )
@@ -60,7 +70,11 @@ def test_et_inside_derived_interval_is_compatible() -> None:
 
 def test_et_outside_reference_interval_requires_clearance_check() -> None:
     result = check_size_and_offset(
-        _profile(OffsetReference(axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45)),
+        _profile(
+            OffsetReference(
+                axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=35, et_max_mm=45
+            )
+        ),
         _rim(70),
         "front",
     )

@@ -1,0 +1,33 @@
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
+VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
+
+
+def test_ci_covers_staging_release_workflow() -> None:
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "branches: [main, staging]" in ci
+    assert "branches: [staging]" in ci
+    assert "branches: [dev]" not in ci
+
+
+def test_deployed_webapp_uses_runtime_backend_proxy_only() -> None:
+    assert "onrender.com" not in APP_JS
+    assert "onrender.com" not in json.dumps(VERCEL_JSON)
+    assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
+    assert "if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;" in APP_JS
+    assert 'fetch(apiUrl("/identity/resolve")' in APP_JS
+
+
+def test_proxy_reads_backend_url_only_at_runtime() -> None:
+    assert "process.env.BACKEND_URL" in PROXY_JS
+    assert "onrender.com" not in PROXY_JS
+    assert "https:" in PROXY_JS
+    assert "authorization" not in PROXY_JS.lower() or "forwardHeaders" in PROXY_JS
+
+
+def test_vercel_project_binding_is_not_tracked() -> None:
+    assert not (ROOT / ".vercel" / "project.json").exists()

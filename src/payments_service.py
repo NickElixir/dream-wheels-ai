@@ -268,7 +268,9 @@ async def get_starter_grant_for_user(
     }
 
 
-def serialize_payment_row(row: asyncpg.Record) -> dict[str, Any]:
+def serialize_payment_row(
+    row: asyncpg.Record, *, confirmation_url: str | None = None
+) -> dict[str, Any]:
     updated_at = row["paid_at"] or row["failed_at"] or row["updated_at"] or row["created_at"]
     return {
         "payment_id": str(row["id"]),
@@ -278,7 +280,7 @@ def serialize_payment_row(row: asyncpg.Record) -> dict[str, Any]:
         "credits_granted": int(row["credits_granted"]),
         "receipt_email": row["receipt_email"],
         "pricing_version": row["pricing_version"],
-        "confirmation_url": None,
+        "confirmation_url": confirmation_url,
         "created_at": row["created_at"].isoformat(),
         "updated_at": updated_at.isoformat() if updated_at else None,
         "paid_at": row["paid_at"].isoformat() if row["paid_at"] else None,

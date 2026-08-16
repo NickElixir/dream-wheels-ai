@@ -95,7 +95,7 @@ async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> i
             -int(row["remaining_credits"]),
             f"package_expire:{row['id']}",
             row["id"],
-            row["expires_at"].isoformat(),
+            row["expires_at"],
         )
     await conn.execute(
         "UPDATE user_credit_accounts SET balance = GREATEST(0, balance - $2), updated_at = CURRENT_TIMESTAMP WHERE user_id = $1",
@@ -460,7 +460,7 @@ async def _insert_starter_grant_expiration_ledger_entry(
                 balance_after,
                 _starter_grant_expiration_idempotency_key(user_id),
                 credits_to_expire,
-                expires_at.isoformat(),
+                expires_at,
             )
         return inserted == 1
     except asyncpg.UndefinedColumnError:
@@ -504,7 +504,7 @@ async def _insert_starter_grant_expiration_ledger_entry(
                 -credits_to_expire,
                 _starter_grant_expiration_idempotency_key(user_id),
                 credits_to_expire,
-                expires_at.isoformat(),
+                expires_at,
             )
         return inserted == 1
     except asyncpg.PostgresError:

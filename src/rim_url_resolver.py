@@ -81,14 +81,20 @@ class FetchLimits:
 
 _HOST_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
 _SPACE = re.compile(r"\s+")
-_SIZE = re.compile(r"\b(?P<width>\d{1,2}(?:[.,]\d)?)\s*[Jj]\s*[xх×*]?\s*[Rr]?(?P<diameter>1[3-9]|2[0-4])\b")
+_SIZE = re.compile(
+    r"\b(?P<width>\d{1,2}(?:[.,]\d)?)\s*[Jj]\s*[xх×*]?\s*[Rr]?(?P<diameter>1[3-9]|2[0-4])\b"
+)
 _PCD = re.compile(r"\b(?P<bolt_count>[3-8])\s*[xх×*]\s*(?P<pcd>\d{2,3}(?:[.,]\d)?)\b", re.I)
 _ET = re.compile(r"\bET\s*(?P<et>[+-]?\d{1,3})\b", re.I)
 _BORE = re.compile(r"\b(?:DIA|CB)\s*(?P<bore>\d{2,3}(?:[.,]\d)?)\b", re.I)
 _FIELD_PATTERNS = {
-    "brand": re.compile(r"\b(?:brand|manufacturer|бренд|производитель)\s*[:\-]\s*([^\n|;]{2,80})", re.I),
+    "brand": re.compile(
+        r"\b(?:brand|manufacturer|бренд|производитель)\s*[:\-]\s*([^\n|;]{2,80})", re.I
+    ),
     "model": re.compile(r"\b(?:model|модель)\s*[:\-]\s*([^\n|;]{2,120})", re.I),
-    "sku": re.compile(r"\b(?:sku|артикул|part\s*(?:no|number))\s*[:#\-]\s*([A-Z0-9._/ -]{2,64})", re.I),
+    "sku": re.compile(
+        r"\b(?:sku|артикул|part\s*(?:no|number))\s*[:#\-]\s*([A-Z0-9._/ -]{2,64})", re.I
+    ),
 }
 _MARKETING_MODEL_TERMS = re.compile(
     r"\b(?:купить|цена|доставка|в наличии|литые|кованые|диски|колесные|wheel|r\d{2}|"
@@ -96,8 +102,15 @@ _MARKETING_MODEL_TERMS = re.compile(
     re.I,
 )
 _KNOWN_FIELDS = (
-    "brand", "model", "sku", "bolt_count", "pcd_mm", "center_bore_mm",
-    "wheel_diameter_in", "wheel_width_j", "offset_et_mm",
+    "brand",
+    "model",
+    "sku",
+    "bolt_count",
+    "pcd_mm",
+    "center_bore_mm",
+    "wheel_diameter_in",
+    "wheel_width_j",
+    "offset_et_mm",
 )
 
 
@@ -152,7 +165,9 @@ class _PublicResolver(AbstractResolver):
     def __init__(self, policy: PublicHttpsPolicy) -> None:
         self._policy = policy
 
-    async def resolve(self, host: str, port: int = 0, family: int = socket.AF_INET) -> list[dict[str, Any]]:
+    async def resolve(
+        self, host: str, port: int = 0, family: int = socket.AF_INET
+    ) -> list[dict[str, Any]]:
         normalized = _normalize_host(host)
         effective_port = port or 443
         if not self._policy.permits(normalized, effective_port):
@@ -168,8 +183,14 @@ class _PublicResolver(AbstractResolver):
         if not addresses or any(not _is_public(address) for _, address in addresses):
             raise OSError("Host has a non-public DNS answer")
         return [
-            {"hostname": normalized, "host": address, "port": effective_port,
-             "family": address_family, "proto": socket.IPPROTO_TCP, "flags": 0}
+            {
+                "hostname": normalized,
+                "host": address,
+                "port": effective_port,
+                "family": address_family,
+                "proto": socket.IPPROTO_TCP,
+                "flags": 0,
+            }
             for address_family, address in dict.fromkeys(addresses)
         ]
 
@@ -245,7 +266,11 @@ def _products(value: Any) -> list[dict[str, Any]]:
         return []
     item_type = value.get("@type")
     types = [item_type] if isinstance(item_type, str) else item_type or []
-    found = [value] if any(isinstance(item, str) and item.lower() == "product" for item in types) else []
+    found = (
+        [value]
+        if any(isinstance(item, str) and item.lower() == "product" for item in types)
+        else []
+    )
     for key in ("@graph", "mainEntity", "itemListElement"):
         found.extend(_products(value.get(key)))
     return found
@@ -256,7 +281,9 @@ def _technical_candidates(text: str, source: str, confidence: float) -> list[Rim
     for match in _SIZE.finditer(text):
         candidates.extend(
             (
-                RimUrlCandidate("wheel_width_j", float(match["width"].replace(",", ".")), source, confidence),
+                RimUrlCandidate(
+                    "wheel_width_j", float(match["width"].replace(",", ".")), source, confidence
+                ),
                 RimUrlCandidate("wheel_diameter_in", float(match["diameter"]), source, confidence),
             )
         )
@@ -264,7 +291,9 @@ def _technical_candidates(text: str, source: str, confidence: float) -> list[Rim
         candidates.extend(
             (
                 RimUrlCandidate("bolt_count", int(match["bolt_count"]), source, confidence),
-                RimUrlCandidate("pcd_mm", float(match["pcd"].replace(",", ".")), source, confidence),
+                RimUrlCandidate(
+                    "pcd_mm", float(match["pcd"].replace(",", ".")), source, confidence
+                ),
             )
         )
     for pattern, field_name, group_name in (
@@ -294,20 +323,23 @@ def extract_product_page(html: str) -> tuple[RimUrlCandidate, ...]:
             if isinstance(brand, dict):
                 brand = brand.get("name")
             for field_name, raw, sku in (
-                ("brand", brand, False), ("sku", product.get("sku") or product.get("mpn") or product.get("productID"), True),
+                ("brand", brand, False),
+                ("sku", product.get("sku") or product.get("mpn") or product.get("productID"), True),
             ):
                 if value := _clean(raw, sku=sku):
                     candidates.append(RimUrlCandidate(field_name, value, "json_ld", 0.95))
             if model := _clean_model(product.get("model")):
                 candidates.append(RimUrlCandidate("model", model, "json_ld", 0.95))
-            candidates.extend(_technical_candidates(" ".join(str(v) for v in product.values()), "json_ld", 0.9))
+            candidates.extend(
+                _technical_candidates(" ".join(str(v) for v in product.values()), "json_ld", 0.9)
+            )
     meta = dict(parser.meta)
     for field_name, raw, sku in (
         ("brand", meta.get("product:brand") or meta.get("og:brand"), False),
         ("sku", meta.get("product:retailer_item_id") or meta.get("product:sku"), True),
     ):
         if value := _clean(raw, sku=sku):
-                candidates.append(RimUrlCandidate(field_name, value, "opengraph", 0.8))
+            candidates.append(RimUrlCandidate(field_name, value, "opengraph", 0.8))
     visible = "\n".join(_clean(part, sku=False) or "" for part in parser.text)
     for field_name, pattern in _FIELD_PATTERNS.items():
         if match := pattern.search(visible):
@@ -326,23 +358,47 @@ async def resolve_rim_product_url(
     timeout = aiohttp.ClientTimeout(total=limits.total_timeout_seconds)
     connector = aiohttp.TCPConnector(resolver=_PublicResolver(policy), use_dns_cache=False)
     try:
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout, trust_env=False) as session:
+        async with aiohttp.ClientSession(
+            connector=connector, timeout=timeout, trust_env=False
+        ) as session:
             for redirect_count in range(limits.max_redirects + 1):
                 async with session.get(current_url, allow_redirects=False, proxy=None) as response:
                     if response.status in {301, 302, 303, 307, 308}:
-                        if redirect_count >= limits.max_redirects or not response.headers.get("Location"):
+                        if redirect_count >= limits.max_redirects or not response.headers.get(
+                            "Location"
+                        ):
                             raise RimUrlError("Product page redirect failed")
-                        current_url = validate_product_url(urljoin(current_url, response.headers["Location"]), policy)
+                        current_url = validate_product_url(
+                            urljoin(current_url, response.headers["Location"]), policy
+                        )
                         continue
-                    if not 200 <= response.status < 300 or response.content_type.lower() not in {"text/html", "application/xhtml+xml"}:
+                    if not 200 <= response.status < 300 or response.content_type.lower() not in {
+                        "text/html",
+                        "application/xhtml+xml",
+                    }:
                         raise RimUrlError("Product page is not available as HTML")
                     body = await response.content.read(limits.max_body_bytes + 1)
                     if len(body) > limits.max_body_bytes:
                         raise RimUrlError("Product page is too large")
-                    candidates = tuple(dict.fromkeys(extract_product_page(body.decode(response.charset or "utf-8", errors="replace"))))
-                    values = {field_name: next(item.value for item in candidates if item.field == field_name) for field_name in _KNOWN_FIELDS if any(item.field == field_name for item in candidates)}
+                    candidates = tuple(
+                        dict.fromkeys(
+                            extract_product_page(
+                                body.decode(response.charset or "utf-8", errors="replace")
+                            )
+                        )
+                    )
+                    values = {
+                        field_name: next(
+                            item.value for item in candidates if item.field == field_name
+                        )
+                        for field_name in _KNOWN_FIELDS
+                        if any(item.field == field_name for item in candidates)
+                    }
                     conflicts = tuple(
-                        RimUrlConflict(field_name, tuple(item for item in candidates if item.field == field_name))
+                        RimUrlConflict(
+                            field_name,
+                            tuple(item for item in candidates if item.field == field_name),
+                        )
                         for field_name in _KNOWN_FIELDS
                         if len({item.value for item in candidates if item.field == field_name}) > 1
                     )

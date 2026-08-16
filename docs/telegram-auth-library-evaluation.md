@@ -9,7 +9,8 @@
 - Telegram Mini App через `initData`
 - website login через Telegram
 
-Email/phone login сейчас вне scope.
+Email/phone login сейчас вне scope. В roadmap зафиксирован будущий Parallel F4: единый
+Dream Wheels account с верифицированными связями Telegram, email и, позже, телефона.
 
 ## Decision
 
@@ -74,6 +75,29 @@ Telegram Login library flow имеет ограничения:
 - нужно убрать popup/callback зависимость;
 - нужен redirect-based website login flow;
 - требуется более жесткая интеграция нескольких веб-приложений.
+- пользователю нужно входить в один и тот же Dream Wheels account через Telegram и
+  verified email/phone.
+
+## Future Unified Identity Direction
+
+Это не текущая реализация и не повод менять работающий Telegram Login flow заранее.
+Когда начнется Parallel F4, целевой результат — один внутренний account и несколько
+проверенных identity links:
+
+- Telegram identity из Mini App `initData` или website Telegram Login;
+- email через magic link или одноразовый код;
+- телефон через выбранный после оценки провайдер (Telegram Gateway и/или SMS).
+
+История рендеров, баланс и платежи принадлежат внутреннему account, а не конкретному
+каналу входа. Связывать новый email/телефон с существующим account можно только после
+повторной проверки уже авторизованного пользователя и верификации нового идентификатора.
+До начала работ нужно отдельно спроектировать recovery, rate limits, защиту от
+enumeration, session revocation и миграцию от текущих Telegram identities.
+
+OIDC Authorization Code Flow становится предпочтительным, если для этой модели
+понадобится auth broker, server-side sessions/cookies, SSO между несколькими сайтами или
+централизованное управление сессиями. `TELEGRAM_LOGIN_CLIENT_SECRET` хранится только в
+backend secret storage и используется лишь при таком серверном token exchange.
 
 ## Current Rollout
 

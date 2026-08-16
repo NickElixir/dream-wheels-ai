@@ -12,8 +12,6 @@ const SUPPORTS_BACK_BUTTON = tgSupports("6.1");
 const SUPPORTS_HAPTIC = tgSupports("6.1");
 const SUPPORTS_DOWNLOAD_FILE = tgSupports("8.0") && typeof tg?.downloadFile === "function";
 
-const PROD_API_BASE_URL = "https://dream-wheels-ai-tg.onrender.com";
-const STAGING_API_BASE_URL = "https://dream-wheels-ai-robokassa-staging.onrender.com";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:10000";
 const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
@@ -844,6 +842,8 @@ function t(path) {
 }
 
 function resolveApiBaseUrl() {
+    if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;
+
     const params = new URLSearchParams(window.location.search);
     const apiBase = params.get("apiBase");
     const apiMode = params.get("api");
@@ -856,22 +856,15 @@ function resolveApiBaseUrl() {
     }
 
     const storedMode = localStorage.getItem(API_MODE_STORAGE_KEY) || apiMode || "";
-    if (storedMode === "local") return LOCAL_API_BASE_URL;
-    if (storedMode === "staging") return STAGING_API_BASE_URL;
-    if (storedMode === "prod") return PROD_API_BASE_URL;
-    if (window.location.hostname.includes("staging")) return STAGING_API_BASE_URL;
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        return LOCAL_API_BASE_URL;
-    }
-    return PROD_API_BASE_URL;
+    return storedMode === "local" ? LOCAL_API_BASE_URL : LOCAL_API_BASE_URL;
+}
+
+function isLocalBrowser() {
+    return ["localhost", "127.0.0.1"].includes(window.location.hostname);
 }
 
 function shouldUseBrowserApiProxy() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("apiBase")) return false;
-    const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") return false;
-    return host.endsWith(".vercel.app");
+    return !isLocalBrowser();
 }
 
 function appendSearchParams(url, params) {
@@ -4350,6 +4343,7 @@ async function loadCabinet({ silent = false } = {}) {
     } finally {
         setWalletBusy(false);
         setWalletLoading(false);
+        renderWallet();
         renderDashboard();
     }
 }
@@ -5078,7 +5072,7 @@ async function resolveIdentity() {
     }
 
     try {
-        const resp = await fetch(`${state.apiBaseUrl}/identity/resolve`, {
+        const resp = await fetch(apiUrl("/identity/resolve"), {
             method: "POST",
             headers: withAuthHeaders(),
             body: formData,

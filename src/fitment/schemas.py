@@ -306,13 +306,18 @@ class FitmentProfile(BaseModel):
     def allowed_for_axle(self, axle: str) -> list[AxleFitment]:
         return [w for w in self.allowed_wheels if w.axle == axle]
 
-    def offset_reference_for(self, axle: str, diameter: float, width: float) -> OffsetReference | None:
+    def offset_reference_for(
+        self, axle: str, diameter: float, width: float
+    ) -> OffsetReference | None:
         matches = [
             item
             for item in self.offset_references
             if item.axle == axle and item.rim_diameter_in == diameter and item.rim_width_j == width
         ]
-        return next((item for item in matches if item.evidence_class == "stock"), matches[0] if matches else None)
+        return next(
+            (item for item in matches if item.evidence_class == "stock"),
+            matches[0] if matches else None,
+        )
 
 
 class RuleResult(BaseModel):
