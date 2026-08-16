@@ -1,0 +1,29 @@
+{
+  "product": {
+    "brand": "Example",
+    "model": "Model X",
+    "sku": "EX-MX",
+    "variants": [
+      {
+        "sku": "EX-MX-17",
+        "model": "Model X",
+        "diameter": 17,
+        "width": 7,
+        "pcd": "5x114.3",
+        "offset": 40,
+        "centerBore": 67.1,
+        "url": "https://shop.example/product/917"
+      },
+      {
+        "sku": "EX-MX-18",
+        "model": "Model X",
+        "diameter": 18,
+        "width": 7.5,
+        "pcd": "5x114.3",
+        "offset": 42,
+        "centerBore": 67.1,
+        "url": "https://shop.example/product/918"
+      }
+    ]
+  }
+}

@@ -1907,7 +1907,8 @@ h2 {
     font-weight: 700;
 }
 
-.fitment-field input {
+.fitment-field input,
+.fitment-field select {
     width: 100%;
     min-height: 50px;
     padding: 13px 15px;
@@ -1918,7 +1919,12 @@ h2 {
     outline: none;
 }
 
-.fitment-field input:focus {
+.fitment-field select {
+    appearance: none;
+}
+
+.fitment-field input:focus,
+.fitment-field select:focus {
     border-color: rgba(221, 255, 0, 0.38);
     box-shadow: 0 0 0 3px rgba(221, 255, 0, 0.07);
 }
@@ -1962,6 +1968,38 @@ h2 {
 .fitment-advanced[open] summary {
     padding-bottom: 15px;
     color: var(--accent);
+}
+
+.fitment-url-resolver {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.fitment-url-resolver > small,
+.fitment-url-resolver > p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.fitment-url-resolver > p[data-state="success"] {
+    color: #b9f6ca;
+}
+
+.fitment-url-resolver > p[data-state="warning"] {
+    color: #ffd166;
+}
+
+.fitment-url-resolver > p[data-state="error"] {
+    color: #ff9d9d;
+}
+
+.fitment-url-variant {
+    margin-top: 2px;
 }
 
 .fitment-toggle,

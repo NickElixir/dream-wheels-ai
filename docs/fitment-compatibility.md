@@ -36,6 +36,42 @@ Use structured data whenever available:
 
 If critical data is unknown, the engine must return `unknown`, not infer certainty from a photo.
 
+## Product URL resolution
+
+Product-page enrichment is user initiated and produces evidence-level E2 hints. It never turns
+page data into a trusted compatibility fact without confirmation or a stronger catalog source.
+
+The generic resolver uses this source order:
+
+1. JSON API documents supplied as the product URL;
+2. JSON-LD `Product` / `ProductGroup` / `hasVariant` data;
+3. embedded application JSON such as `__NEXT_DATA__` and Nuxt payloads;
+4. OpenGraph metadata;
+5. visible HTML text.
+
+`RimProductPageAdapter` is the extension point for deterministic host-specific adapters. A
+headless browser is intentionally not part of the FastAPI request path. Sites that require
+JavaScript/network interception must use an isolated adapter/worker with its own allowlist,
+resource limits and recorded fixtures.
+
+Variants are related semantically, not by URL shape alone. Explicit `hasVariant`, parent/group
+identifiers, variant containers, matching brand/model and URL proximity contribute to a
+membership score. Unrelated recommendations are rejected. Different dimensions of one model are
+returned as separate variants; they are not treated as field conflicts. Conflicting values for the
+same SKU remain ambiguous and the affected fields are not merged into `RimSpec`.
+
+`POST /fitment/rim-url/resolve` returns the primary model, provenance candidates, accepted variants,
+within-SKU conflicts and `selection_required`. A variant is selected automatically only when there
+is one accepted variant or the supplied SKU/technical fields identify exactly one candidate.
+`POST /fitment/rim-setups` uses the same logic and never chooses a random configuration.
+The Mini App exposes this as an explicit “load from URL” action and requires the user to choose one
+of several variants before the parsed values are copied into the confirmation form.
+
+Outbound requests preserve the existing SSRF controls: HTTPS only, explicit host policy, public
+DNS answers, redirect revalidation, response-size/content-type limits and no environment proxy.
+They also use a stable user agent, bounded retries with exponential backoff and a bounded in-memory
+TTL cache. The cache reduces duplicate front/rear lookups but is not a durable catalog.
+
 ## Domain model
 
 ```text

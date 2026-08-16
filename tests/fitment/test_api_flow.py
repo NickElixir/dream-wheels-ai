@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 from src.auth import AuthContext
 from src.fitment import api as fitment_api
 from src.fitment import config as fitment_config
+from src.fitment.identification.rim_url import RimProductUrlResolver
+from src.fitment.identification.rim_url_fetch import FetchedPage, UrlAllowlistPolicy
 from src.fitment.providers.base import FitmentProvider
 from src.fitment.repository import InMemoryFitmentRepository
 from src.fitment.schemas import AxleFitment, FitmentProfile
@@ -99,6 +101,17 @@ class ApiFlowProvider(FitmentProvider):
         )
 
 
+async def _fetch_rim_fixture(url: str, **kwargs) -> FetchedPage:
+    del url, kwargs
+    body = Path("tests/fitment/fixtures/rim_url/complex_model/model_page.html").read_bytes()
+    return FetchedPage(
+        final_url="https://shop.example/model-x",
+        body=body,
+        content_type="text/html",
+        charset="utf-8",
+    )
+
+
 @pytest.fixture
 def client(monkeypatch) -> TestClient:
     repository = InMemoryFitmentRepository()
@@ -106,6 +119,10 @@ def client(monkeypatch) -> TestClient:
         repository=repository,
         provider=ApiFlowProvider(),
         vlm=ApiFlowVlm(),
+        rim_url_resolver=RimProductUrlResolver(
+            UrlAllowlistPolicy.from_values(allowed_hosts={"shop.example"}),
+            fetcher=_fetch_rim_fixture,
+        ),
     )
     monkeypatch.setattr(fitment_config, "FITMENT_VERDICT_ENABLED", True)
     monkeypatch.setattr(
@@ -208,3 +225,38 @@ def test_two_stage_http_flow(client: TestClient) -> None:
     )
     assert replay_response.status_code == 200
     assert replay_response.json()["check_id"] == check["check_id"]
+
+
+def test_rim_url_endpoint_returns_variants_and_selects_requested_sku(client: TestClient) -> None:
+    unresolved = client.post(
+        "/fitment/rim-url/resolve",
+        json={
+            "init_data": "test",
+            "rim": {"product_url": "https://shop.example/model-x"},
+        },
+    )
+
+    assert unresolved.status_code == 200
+    payload = unresolved.json()
+    assert payload["selection_required"] is True
+    assert {variant["rim"]["sku"] for variant in payload["variants"]} == {
+        "EX-MX-17",
+        "EX-MX-18",
+        "EX-MX-19",
+    }
+
+    selected = client.post(
+        "/fitment/rim-url/resolve",
+        json={
+            "init_data": "test",
+            "rim": {
+                "product_url": "https://shop.example/model-x",
+                "sku": "EX-MX-18",
+            },
+        },
+    )
+
+    assert selected.status_code == 200
+    assert selected.json()["selection_required"] is False
+    assert selected.json()["selected_variant_sku"] == "EX-MX-18"
+    assert selected.json()["selected"]["wheel_diameter_in"]["value"] == 18

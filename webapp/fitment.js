@@ -48,6 +48,12 @@ const COPY = {
             staggeredHint: "Указать отдельные параметры задней оси",
             advanced: "Дополнительные данные диска",
             confirm: "Я проверил данные и подтверждаю их для технической оценки",
+            resolveUrl: "Получить параметры по ссылке",
+            resolveUrlHint: "Проверим структурированные данные страницы и покажем найденные варианты.",
+            variantLabel: "Найденный вариант",
+            variantPlaceholder: "Выберите размер / SKU",
+            urlResolved: "Параметры добавлены в форму. Проверьте их перед подтверждением.",
+            urlAmbiguous: "Найдено несколько вариантов одной модели. Выберите нужный SKU.",
         },
         fields: {
             make: "Марка",
@@ -124,6 +130,8 @@ const COPY = {
             providerFailed: "Каталог временно недоступен. Повторите подтверждённую проверку позже.",
             timeout: "Проверка выполняется дольше ожидаемого. Повторите запрос с теми же данными.",
             required: "Заполните марку, модель и год автомобиля и подтвердите данные.",
+            rimUrlRequired: "Сначала вставьте HTTPS-ссылку на товар.",
+            rimUrlResolve: "Не удалось получить параметры со страницы. Введите их вручную или попробуйте другую ссылку.",
         },
     },
     en: {
@@ -172,6 +180,12 @@ const COPY = {
             staggeredHint: "Use separate rear-axle specifications",
             advanced: "Additional wheel data",
             confirm: "I reviewed and confirm these values for the technical assessment",
+            resolveUrl: "Load specifications from URL",
+            resolveUrlHint: "We will inspect structured page data first and show every linked variant.",
+            variantLabel: "Detected variant",
+            variantPlaceholder: "Choose size / SKU",
+            urlResolved: "Page values were added to the form. Review them before confirmation.",
+            urlAmbiguous: "Several variants of this model were found. Choose the required SKU.",
         },
         fields: {
             make: "Make",
@@ -248,6 +262,8 @@ const COPY = {
             providerFailed: "The catalog is temporarily unavailable. Retry the confirmed check later.",
             timeout: "The check is taking longer than expected. Retry with the same data.",
             required: "Enter the vehicle make, model, and year, then confirm the data.",
+            rimUrlRequired: "Add an HTTPS product URL first.",
+            rimUrlResolve: "Could not load specifications from this page. Enter them manually or try another URL.",
         },
     },
 };
@@ -426,6 +442,15 @@ function optionalNumber(value) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -459,6 +484,7 @@ export function createFitmentController({
     let idempotencyKey = null;
     let submissionFingerprint = null;
     const previewUrls = { car: "", wheel: "" };
+    const rimUrlVariants = { front: [], rear: [] };
 
     function ft(path) {
         return lookup(COPY[language], path);
@@ -712,6 +738,17 @@ export function createFitmentController({
                         ${numberField(`${prefix}.thread_pitch_mm`, ft("fields.threadPitch"), { min: 0.1, step: 0.05 })}
                         ${numberField(`${prefix}.bolt_length_mm`, ft("fields.boltLength"), { min: 1, step: 0.5 })}
                     </div>
+                    <div class="fitment-url-resolver">
+                        <button type="button" class="ghost-button" data-fitment-resolve-url="${prefix}">${ft("review.resolveUrl")}</button>
+                        <small>${ft("review.resolveUrlHint")}</small>
+                        <p data-fitment-url-status="${prefix}" hidden></p>
+                        <label class="fitment-field fitment-url-variant" data-fitment-variant-wrap="${prefix}" hidden>
+                            <span>${ft("review.variantLabel")}</span>
+                            <select data-fitment-variant="${prefix}">
+                                <option value="">${ft("review.variantPlaceholder")}</option>
+                            </select>
+                        </label>
+                    </div>
                 </details>
             </fieldset>
         `;
@@ -762,7 +799,19 @@ export function createFitmentController({
             invalidateSubmission();
             notify();
         });
-        root.querySelector("[data-fitment-form]")?.addEventListener("input", () => {
+        root.querySelectorAll("[data-fitment-resolve-url]").forEach((button) => {
+            button.addEventListener("click", () => resolveRimUrl(button.dataset.fitmentResolveUrl));
+        });
+        root.querySelectorAll("[data-fitment-variant]").forEach((select) => {
+            select.addEventListener("change", () => {
+                selectRimUrlVariant(select.dataset.fitmentVariant);
+            });
+        });
+        root.querySelector("[data-fitment-form]")?.addEventListener("input", (event) => {
+            const fieldName = event.target?.dataset?.fitmentField || "";
+            if (fieldName.endsWith(".product_url")) {
+                clearRimUrlResolution(fieldName.split(".", 1)[0]);
+            }
             invalidateSubmission();
             clearError("review");
             notify();
@@ -796,7 +845,7 @@ export function createFitmentController({
 
     function setBusy(value) {
         busy = value;
-        root?.querySelectorAll("input, button").forEach((element) => {
+        root?.querySelectorAll("input, button, select").forEach((element) => {
             if (!element.matches("[data-fitment-edit], [data-fitment-render]")) {
                 element.disabled = value;
             }
@@ -881,6 +930,8 @@ export function createFitmentController({
 
     function clearForm() {
         root?.querySelector("[data-fitment-form]")?.reset();
+        clearRimUrlResolution("front");
+        clearRimUrlResolution("rear");
         const rear = root?.querySelector("[data-fitment-rear-fields]");
         if (rear) rear.hidden = true;
     }
@@ -1144,6 +1195,141 @@ export function createFitmentController({
             thread_pitch_mm: optionalNumber(fieldValue(`${prefix}.thread_pitch_mm`)),
             bolt_length_mm: optionalNumber(fieldValue(`${prefix}.bolt_length_mm`)),
         };
+    }
+
+    function rimResponseValue(rim, fieldName) {
+        const value = rim?.[fieldName];
+        if (value && typeof value === "object" && "value" in value) {
+            return value.value;
+        }
+        return value;
+    }
+
+    function applyResolvedRim(prefix, rim, { overwrite = false } = {}) {
+        for (const fieldName of [
+            "brand",
+            "model",
+            "sku",
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+            "load_rating_kg",
+            "fastener_system",
+            "seat_type",
+            "thread_diameter_mm",
+            "thread_pitch_mm",
+            "bolt_length_mm",
+        ]) {
+            const value = rimResponseValue(rim, fieldName);
+            const input = root?.querySelector(`[data-fitment-field="${prefix}.${fieldName}"]`);
+            if (input && value !== undefined && value !== null && (overwrite || !input.value)) {
+                input.value = String(value);
+            }
+        }
+        invalidateSubmission();
+        notify();
+    }
+
+    function formatRimVariant(variant) {
+        const rim = variant?.rim || {};
+        const width = rimResponseValue(rim, "wheel_width_j");
+        const diameter = rimResponseValue(rim, "wheel_diameter_in");
+        const boltCount = rimResponseValue(rim, "bolt_count");
+        const pcd = rimResponseValue(rim, "pcd_mm");
+        const offset = rimResponseValue(rim, "offset_et_mm");
+        return [
+            rim.sku,
+            width != null && diameter != null ? `${width}J × ${diameter}` : null,
+            boltCount != null && pcd != null ? `${boltCount}×${pcd}` : null,
+            offset != null ? `ET${offset}` : null,
+        ]
+            .filter(Boolean)
+            .join(" · ");
+    }
+
+    function setRimUrlStatus(prefix, text, state = "info") {
+        const element = root?.querySelector(`[data-fitment-url-status="${prefix}"]`);
+        if (!element) return;
+        element.textContent = text || "";
+        element.dataset.state = state;
+        element.hidden = !text;
+    }
+
+    function clearRimUrlResolution(prefix) {
+        rimUrlVariants[prefix] = [];
+        const wrapper = root?.querySelector(`[data-fitment-variant-wrap="${prefix}"]`);
+        const select = root?.querySelector(`[data-fitment-variant="${prefix}"]`);
+        if (wrapper) wrapper.hidden = true;
+        if (select) {
+            select.innerHTML = `<option value="">${ft("review.variantPlaceholder")}</option>`;
+        }
+        setRimUrlStatus(prefix, "");
+    }
+
+    function showRimUrlVariants(prefix, variants) {
+        rimUrlVariants[prefix] = variants;
+        const wrapper = root?.querySelector(`[data-fitment-variant-wrap="${prefix}"]`);
+        const select = root?.querySelector(`[data-fitment-variant="${prefix}"]`);
+        if (!wrapper || !select) return;
+        const options = variants
+            .map(
+                (variant, index) =>
+                    `<option value="${index}">${escapeHtml(formatRimVariant(variant))}</option>`
+            )
+            .join("");
+        select.innerHTML = `<option value="">${ft("review.variantPlaceholder")}</option>${options}`;
+        wrapper.hidden = false;
+    }
+
+    function selectRimUrlVariant(prefix) {
+        const select = root?.querySelector(`[data-fitment-variant="${prefix}"]`);
+        if (!select?.value) return;
+        const index = Number(select.value);
+        if (!Number.isInteger(index) || !rimUrlVariants[prefix]?.[index]) return;
+        applyResolvedRim(prefix, rimUrlVariants[prefix][index].rim, { overwrite: true });
+        setRimUrlStatus(prefix, ft("review.urlResolved"), "success");
+        haptic("success");
+    }
+
+    async function resolveRimUrl(prefix) {
+        const rim = buildRim(prefix);
+        if (!rim.product_url) {
+            setRimUrlStatus(prefix, ft("errors.rimUrlRequired"), "error");
+            haptic("warning");
+            return;
+        }
+        const button = root?.querySelector(`[data-fitment-resolve-url="${prefix}"]`);
+        if (button) button.disabled = true;
+        clearRimUrlResolution(prefix);
+        try {
+            const identity = getIdentityPayload({ includeTelegramUserId: true });
+            const resolution = await fetchJson(`${apiBaseUrl}/fitment/rim-url/resolve`, {
+                method: "POST",
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ rim, ...identity }),
+            });
+            if (resolution.selection_required && resolution.variants?.length) {
+                showRimUrlVariants(prefix, resolution.variants);
+                setRimUrlStatus(prefix, ft("review.urlAmbiguous"), "warning");
+                haptic("warning");
+                return;
+            }
+            applyResolvedRim(prefix, resolution.selected || {}, { overwrite: false });
+            setRimUrlStatus(prefix, ft("review.urlResolved"), "success");
+            haptic("success");
+        } catch (error) {
+            console.error("[DW] fitment rim URL failed", {
+                status: error?.status || null,
+                message: error?.message || "unknown",
+            });
+            setRimUrlStatus(prefix, friendlyError(error, "errors.rimUrlResolve"), "error");
+            haptic("error");
+        } finally {
+            if (button) button.disabled = busy;
+        }
     }
 
     function buildSubmission() {

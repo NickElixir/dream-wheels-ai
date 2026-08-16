@@ -87,9 +87,22 @@ class FetchLimits:
     read_timeout_seconds: float = 10.0
     total_timeout_seconds: float = 15.0
     chunk_size: int = 64 * 1024
+    max_retries: int = 2
+    retry_backoff_seconds: float = 0.25
+    user_agent: str = "DreamWheelsAI-Fitment/1.0"
     allowed_content_types: frozenset[str] = field(
-        default_factory=lambda: frozenset({"text/html", "application/xhtml+xml"})
+        default_factory=lambda: frozenset(
+            {"text/html", "application/xhtml+xml", "application/json"}
+        )
     )
+
+    def __post_init__(self) -> None:
+        if self.max_retries < 0:
+            raise ValueError("Fetch max_retries cannot be negative")
+        if self.retry_backoff_seconds < 0:
+            raise ValueError("Fetch retry_backoff_seconds cannot be negative")
+        if not self.user_agent.strip():
+            raise ValueError("Fetch user_agent cannot be empty")
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,59 +260,107 @@ async def fetch_product_page(
         use_dns_cache=False,
     )
 
-    try:
-        async with session_factory(
-            connector=connector,
-            connector_owner=True,
-            timeout=timeout,
-            trust_env=False,
-            auto_decompress=True,
-        ) as session:
-            for redirect_count in range(limits.max_redirects + 1):
-                logger.debug(
-                    "🔥 Fetching rim product page url=%s",
-                    redact_url_for_log(current_url),
-                )
-                async with session.get(
-                    current_url,
-                    allow_redirects=False,
-                    proxy=None,
-                    headers={"Accept": "text/html, application/xhtml+xml"},
-                ) as response:
-                    if response.status in {301, 302, 303, 307, 308}:
-                        location = response.headers.get("Location")
-                        if not location:
-                            raise RimUrlFetchError("Redirect response has no Location")
-                        if redirect_count >= limits.max_redirects:
-                            raise RimUrlFetchError("Redirect limit exceeded")
-                        current_url = validate_url(urljoin(current_url, location), policy)
-                        continue
-                    if response.status < 200 or response.status >= 300:
-                        raise RimUrlFetchError(f"Unexpected HTTP status {response.status}")
-
-                    content_type = response.content_type.lower()
-                    if content_type not in limits.allowed_content_types:
-                        raise RimUrlFetchError("Response content type is not allowed")
-                    content_length = response.content_length
-                    if content_length is not None and content_length > limits.max_body_bytes:
-                        raise RimUrlFetchError("Response Content-Length exceeds limit")
-
-                    body = bytearray()
-                    async for chunk in response.content.iter_chunked(limits.chunk_size):
-                        body.extend(chunk)
-                        if len(body) > limits.max_body_bytes:
-                            raise RimUrlFetchError("Decompressed response body exceeds limit")
+    async with session_factory(
+        connector=connector,
+        connector_owner=True,
+        timeout=timeout,
+        trust_env=False,
+        auto_decompress=True,
+    ) as session:
+        for attempt in range(limits.max_retries + 1):
+            current_url = validate_url(url, policy)
+            retry_delay: float | None = None
+            try:
+                for redirect_count in range(limits.max_redirects + 1):
                     logger.debug(
-                        "✅ Fetched rim product page url=%s",
+                        "🔥 Fetching rim product page url=%s",
                         redact_url_for_log(current_url),
                     )
-                    return FetchedPage(
-                        final_url=current_url,
-                        body=bytes(body),
-                        content_type=content_type,
-                        charset=response.charset,
-                    )
-    except (aiohttp.ClientError, TimeoutError) as exc:
-        raise RimUrlFetchError("HTTPS product page fetch failed") from exc
+                    async with session.get(
+                        current_url,
+                        allow_redirects=False,
+                        proxy=None,
+                        headers={
+                            "Accept": "text/html, application/xhtml+xml, application/json",
+                            "User-Agent": limits.user_agent,
+                        },
+                    ) as response:
+                        if response.status in {301, 302, 303, 307, 308}:
+                            location = response.headers.get("Location")
+                            if not location:
+                                raise RimUrlFetchError("Redirect response has no Location")
+                            if redirect_count >= limits.max_redirects:
+                                raise RimUrlFetchError("Redirect limit exceeded")
+                            current_url = validate_url(urljoin(current_url, location), policy)
+                            continue
+                        if response.status in {408, 425, 429, 500, 502, 503, 504}:
+                            if attempt >= limits.max_retries:
+                                raise RimUrlFetchError(
+                                    f"Unexpected HTTP status {response.status} after retries"
+                                )
+                            retry_after = response.headers.get("Retry-After")
+                            retry_delay = _retry_delay(
+                                retry_after,
+                                attempt=attempt,
+                                backoff_seconds=limits.retry_backoff_seconds,
+                            )
+                            break
+                        if response.status < 200 or response.status >= 300:
+                            raise RimUrlFetchError(f"Unexpected HTTP status {response.status}")
+
+                        content_type = response.content_type.lower()
+                        if not _content_type_allowed(content_type, limits.allowed_content_types):
+                            raise RimUrlFetchError("Response content type is not allowed")
+                        content_length = response.content_length
+                        if content_length is not None and content_length > limits.max_body_bytes:
+                            raise RimUrlFetchError("Response Content-Length exceeds limit")
+
+                        body = bytearray()
+                        async for chunk in response.content.iter_chunked(limits.chunk_size):
+                            body.extend(chunk)
+                            if len(body) > limits.max_body_bytes:
+                                raise RimUrlFetchError("Decompressed response body exceeds limit")
+                        logger.debug(
+                            "✅ Fetched rim product page url=%s",
+                            redact_url_for_log(current_url),
+                        )
+                        return FetchedPage(
+                            final_url=current_url,
+                            body=bytes(body),
+                            content_type=content_type,
+                            charset=response.charset,
+                        )
+            except (aiohttp.ClientError, TimeoutError) as exc:
+                if attempt >= limits.max_retries:
+                    raise RimUrlFetchError("HTTPS product page fetch failed") from exc
+                retry_delay = _retry_delay(
+                    None,
+                    attempt=attempt,
+                    backoff_seconds=limits.retry_backoff_seconds,
+                )
+
+            if retry_delay is not None:
+                await asyncio.sleep(retry_delay)
+                continue
 
     raise RimUrlFetchError("No terminal response received")
+
+
+def _content_type_allowed(content_type: str, allowed_content_types: Collection[str]) -> bool:
+    if content_type in allowed_content_types:
+        return True
+    return content_type.endswith("+json") and "application/json" in allowed_content_types
+
+
+def _retry_delay(
+    retry_after: str | None,
+    *,
+    attempt: int,
+    backoff_seconds: float,
+) -> float:
+    if retry_after:
+        try:
+            return min(max(float(retry_after), 0.0), 30.0)
+        except ValueError:
+            pass
+    return backoff_seconds * (2**attempt)

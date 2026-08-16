@@ -1,0 +1,7 @@
+{
+  "brand": "Example",
+  "model": "Model X",
+  "selection_required": true,
+  "variant_skus": ["EX-MX-17", "EX-MX-18", "EX-MX-19"],
+  "excluded_skus": ["REC-1", "REC-2"]
+}

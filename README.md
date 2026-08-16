@@ -44,6 +44,11 @@ Telegram Mini App
 
 Fitment does not block or automatically trigger a visual render. All fitment endpoints remain behind `FITMENT_VERDICT_ENABLED`.
 
+An authenticated `POST /fitment/rim-url/resolve` endpoint can inspect a user-supplied product URL
+before confirmation. It returns semantically linked SKU variants and explicit ambiguity instead of
+guessing variant relationships from URL paths. Product-page values remain untrusted hints until the
+user confirms them or a stronger catalog source verifies them.
+
 ## Repository layout
 
 ```text

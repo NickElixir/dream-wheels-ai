@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
+from src.fitment.identification.rim_url import RimProductUrlResolver
+from src.fitment.identification.rim_url_fetch import FetchedPage, UrlAllowlistPolicy
 from src.fitment.identification.vlm_client import VlmError
 from src.fitment.providers.base import FitmentProvider
 from src.fitment.repository import InMemoryFitmentRepository
@@ -114,6 +117,50 @@ class StaticProvider(FitmentProvider):
                 for axle in ("front", "rear")
             ],
         )
+
+
+async def _fetch_complex_rim_page(url: str, **kwargs) -> FetchedPage:
+    del url, kwargs
+    return FetchedPage(
+        final_url="https://shop.example/model-x",
+        body=Path("tests/fitment/fixtures/rim_url/complex_model/model_page.html").read_bytes(),
+        content_type="text/html",
+        charset="utf-8",
+    )
+
+
+@pytest.mark.anyio
+async def test_url_enrichment_does_not_choose_random_variant_or_override_confirmation() -> None:
+    service = FitmentService(
+        repository=InMemoryFitmentRepository(),
+        provider=StaticProvider(),
+        rim_url_resolver=RimProductUrlResolver(
+            UrlAllowlistPolicy.from_values(allowed_hosts={"shop.example"}),
+            fetcher=_fetch_complex_rim_page,
+        ),
+    )
+
+    unresolved = await service.enrich_rim_spec(RimSpec(product_url="https://shop.example/model-x"))
+    assert unresolved.model == "Model X"
+    assert unresolved.sku is None
+    assert unresolved.wheel_diameter_in.value is None
+
+    selected = await service.enrich_rim_spec(
+        RimSpec(
+            sku="EX-MX-18",
+            product_url="https://shop.example/model-x",
+            pcd_mm=FieldValue(
+                value=112,
+                source=Source.user_confirmed,
+                confidence=1,
+                is_user_confirmed=True,
+            ),
+        )
+    )
+    assert selected.wheel_diameter_in.value == 18
+    assert selected.wheel_diameter_in.source == Source.product_page
+    assert selected.pcd_mm.value == 112
+    assert selected.pcd_mm.source == Source.user_confirmed
 
 
 @pytest.mark.anyio

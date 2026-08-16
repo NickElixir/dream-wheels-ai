@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <title>Example Model X — все размеры</title>
+  <meta property="og:title" content="Example Model X">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProductGroup",
+    "name": "Model X",
+    "brand": {"@type": "Brand", "name": "Example"},
+    "productGroupID": "EX-MX",
+    "hasVariant": [
+      {
+        "@type": "Product",
+        "sku": "EX-MX-17",
+        "name": "Model X",
+        "url": "https://shop.example/product/917",
+        "description": "7Jx17 ET40 5x114.3 DIA 67.1"
+      },
+      {
+        "@type": "Product",
+        "sku": "EX-MX-18",
+        "name": "Model X",
+        "url": "https://shop.example/product/918",
+        "description": "7.5Jx18 ET42 5x114.3 DIA 67.1"
+      }
+    ],
+    "subjectOf": {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "Product",
+          "brand": {"name": "Other"},
+          "name": "Recommended Wheel",
+          "sku": "REC-1",
+          "description": "8Jx19 ET35 5x112 DIA 66.6"
+        }
+      ]
+    }
+  }
+  </script>
+  <script id="__NEXT_DATA__" type="application/json">
+  {
+    "props": {
+      "pageProps": {
+        "product": {
+          "brand": "Example",
+          "model": "Model X",
+          "sku": "EX-MX",
+          "variants": [
+            {
+              "sku": "EX-MX-17",
+              "model": "Model X",
+              "diameter": 17,
+              "width": 7,
+              "pcd": 114.3,
+              "boltCount": 5,
+              "offset": 40,
+              "centerBore": 67.1,
+              "url": "https://shop.example/product/917"
+            },
+            {
+              "sku": "EX-MX-19",
+              "model": "Model X",
+              "diameter": 19,
+              "width": 8,
+              "pcd": "5x114.3",
+              "boltCount": 5,
+              "offset": 45,
+              "centerBore": 67.1,
+              "url": "https://shop.example/catalog/items/919"
+            }
+          ]
+        },
+        "recommendations": [
+          {
+            "brand": "Other",
+            "model": "Recommended Wheel",
+            "sku": "REC-2",
+            "diameter": 20,
+            "width": 9
+          }
+        ]
+      }
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>Example Model X</h1>
+  <section aria-label="Размеры и варианты">Выберите размер</section>
+</body>
+</html>

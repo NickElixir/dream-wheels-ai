@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator
 from src import db, redis_client
 from src.auth import resolve_telegram_auth
 from src.fitment import config as fitment_config
-from src.fitment.identification.rim_url import RimProductUrlResolver
+from src.fitment.identification.rim_url import RimProductUrlResolver, RimUrlResolution
 from src.fitment.identification.rim_url_fetch import (
     FetchLimits,
     RimUrlFetchError,
@@ -91,7 +91,12 @@ def get_service() -> FitmentService:
                         connect_timeout_seconds=fitment_config.FITMENT_RIM_URL_TIMEOUT_CONNECT_SEC,
                         read_timeout_seconds=fitment_config.FITMENT_RIM_URL_TIMEOUT_READ_SEC,
                         total_timeout_seconds=fitment_config.FITMENT_RIM_URL_TIMEOUT_TOTAL_SEC,
+                        max_retries=fitment_config.FITMENT_RIM_URL_MAX_RETRIES,
+                        retry_backoff_seconds=(fitment_config.FITMENT_RIM_URL_RETRY_BACKOFF_SEC),
+                        user_agent=fitment_config.FITMENT_RIM_URL_USER_AGENT,
                     ),
+                    cache_ttl_seconds=fitment_config.FITMENT_RIM_URL_CACHE_TTL_SEC,
+                    cache_max_entries=fitment_config.FITMENT_RIM_URL_CACHE_MAX_ENTRIES,
                 )
             else:
                 logger.warning(
@@ -254,6 +259,10 @@ class RimSetupRequest(AuthFields):
     is_confirmed: bool = False
 
 
+class RimUrlResolveRequest(AuthFields):
+    rim: RimSpecInput
+
+
 class CheckCreateRequest(AuthFields):
     vehicle_identity_id: UUID
     rim_setup_id: UUID
@@ -268,6 +277,79 @@ class CheckCreateRequest(AuthFields):
 
 class CreatedResponse(BaseModel):
     id: str
+
+
+class RimUrlCandidateResponse(BaseModel):
+    field: str
+    value: str | int | float
+    source: str
+    confidence: float
+    raw_value: str | None = None
+    source_url: str | None = None
+
+
+class RimUrlConflictResponse(BaseModel):
+    field: str
+    candidates: list[RimUrlCandidateResponse]
+
+
+class RimUrlVariantResponse(BaseModel):
+    rim: RimSpec
+    source_url: str | None = None
+    membership_score: int
+    confidence: float
+    relation_sources: list[str]
+    conflict_fields: list[str]
+
+
+class RimUrlResolveResponse(BaseModel):
+    requested_url: str
+    final_url: str
+    selected: RimSpec
+    selected_variant_sku: str | None = None
+    selection_required: bool
+    candidates: list[RimUrlCandidateResponse]
+    conflicts: list[RimUrlConflictResponse]
+    variants: list[RimUrlVariantResponse]
+
+    @classmethod
+    def from_resolution(cls, resolution: RimUrlResolution) -> RimUrlResolveResponse:
+        def candidate_payload(candidate) -> RimUrlCandidateResponse:
+            return RimUrlCandidateResponse(
+                field=candidate.field,
+                value=candidate.value,
+                source=candidate.source,
+                confidence=candidate.confidence,
+                raw_value=candidate.raw_value,
+                source_url=candidate.source_url,
+            )
+
+        return cls(
+            requested_url=resolution.requested_url,
+            final_url=resolution.final_url,
+            selected=resolution.rim,
+            selected_variant_sku=resolution.selected_variant_sku,
+            selection_required=resolution.selection_required,
+            candidates=[candidate_payload(item) for item in resolution.candidates],
+            conflicts=[
+                RimUrlConflictResponse(
+                    field=conflict.field,
+                    candidates=[candidate_payload(item) for item in conflict.candidates],
+                )
+                for conflict in resolution.conflicts
+            ],
+            variants=[
+                RimUrlVariantResponse(
+                    rim=variant.rim,
+                    source_url=variant.source_url,
+                    membership_score=variant.score,
+                    confidence=variant.confidence,
+                    relation_sources=list(variant.relation_sources),
+                    conflict_fields=[conflict.field for conflict in variant.conflicts],
+                )
+                for variant in resolution.variants
+            ],
+        )
 
 
 class CheckResponse(BaseModel):
@@ -467,6 +549,40 @@ async def create_rim_setup(
         setup, owner_telegram_user_id=auth.telegram_user_id
     )
     return CreatedResponse(id=setup_id)
+
+
+@router.post("/rim-url/resolve", response_model=RimUrlResolveResponse)
+async def resolve_rim_url(
+    request: RimUrlResolveRequest,
+    authorization: Annotated[str | None, Header()] = None,
+) -> RimUrlResolveResponse:
+    """Resolve a user-supplied product page without silently choosing a variant."""
+    _ensure_enabled()
+    auth = resolve_telegram_auth(
+        init_data=request.init_data,
+        telegram_user_id=request.telegram_user_id,
+        authorization=authorization,
+        auth_name="fitment rim URL",
+    )
+    await _enforce_fitment_rate_limit(
+        scope="fitment_rim_url",
+        telegram_user_id=auth.telegram_user_id,
+        limit=FITMENT_ENRICHMENT_RATE_LIMIT,
+        window_sec=FITMENT_ENRICHMENT_RATE_WINDOW_SEC,
+    )
+    if not request.rim.product_url:
+        raise HTTPException(status_code=422, detail="Rim product URL is required")
+
+    service = get_service()
+    try:
+        resolution = await service.resolve_rim_product(request.rim.to_spec(is_confirmed=False))
+    except RimUrlSecurityError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RimUrlFetchError as exc:
+        raise HTTPException(status_code=502, detail="Rim product page is unavailable") from exc
+    if resolution is None:
+        raise HTTPException(status_code=503, detail="Rim product URL resolver is disabled")
+    return RimUrlResolveResponse.from_resolution(resolution)
 
 
 @router.post("/checks", response_model=CheckResponse)

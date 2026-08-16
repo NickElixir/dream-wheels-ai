@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 
 from src.fitment.identification.normalization import merge_rim_specs, rim_spec_from_hints
 from src.fitment.identification.rim_ocr import parse_rim_marking
-from src.fitment.identification.rim_url import RimProductUrlResolver
+from src.fitment.identification.rim_url import RimProductUrlResolver, RimUrlResolution
 from src.fitment.identification.rim_vlm import extract_rim_hints
 from src.fitment.identification.vehicle_vlm import identify_vehicle_detailed
 from src.fitment.identification.vlm_client import (
@@ -71,12 +71,18 @@ class FitmentService:
     def repository(self) -> FitmentRepository:
         return self._repo
 
+    async def resolve_rim_product(self, spec: RimSpec) -> RimUrlResolution | None:
+        """Resolve one user-requested product URL and keep variant ambiguity explicit."""
+        if self._rim_url_resolver is None or not spec.product_url:
+            return None
+        return await self._rim_url_resolver.resolve(spec.product_url, selector=spec)
+
     async def enrich_rim_spec(self, spec: RimSpec) -> RimSpec:
         """Resolve a product URL without overriding stronger user evidence."""
-        if self._rim_url_resolver is None or not spec.product_url:
+        resolution = await self.resolve_rim_product(spec)
+        if resolution is None:
             return spec
 
-        resolution = await self._rim_url_resolver.resolve(spec.product_url)
         resolved = resolution.rim.model_copy(deep=True)
         conflicted_fields = {conflict.field for conflict in resolution.conflicts}
         for field_name in conflicted_fields:

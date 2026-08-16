@@ -1,4 +1,4 @@
-import { createFitmentController } from "./fitment.js?v=20260714-1";
+import { createFitmentController } from "./fitment.js?v=20260815-1";
 
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
