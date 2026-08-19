@@ -221,3 +221,8 @@ marimo/_lsp/
 __marimo__/
 .vercel
 .env*.local
+
+# Local staging artifacts
+.DS_Store
+/output/
+/tmp/
