@@ -1227,6 +1227,14 @@ h2 {
     color: var(--text-muted);
 }
 
+.beta-notice {
+    align-items: start;
+}
+
+.beta-notice .wallet-status-text {
+    line-height: 1.5;
+}
+
 .wallet-status-island.tone-success {
     border-color: rgba(39, 216, 138, 0.22);
     background: rgba(39, 216, 138, 0.08);
@@ -2190,6 +2198,21 @@ h2 {
     border: 0;
     background: transparent;
     color: var(--text-subtle);
+}
+
+.fitment-form-section .panel-note,
+.fitment-verdict-card .panel-note {
+    margin: 0;
+}
+
+.error-support-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+}
+
+.error-support-link[hidden] {
+    display: none;
 }
 
 .fitment-panel {

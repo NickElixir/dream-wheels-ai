@@ -21,7 +21,7 @@
                 <div class="sidebar-label">Основное</div>
                 <button type="button" class="sidebar-item active" data-nav="dashboard">Главная</button>
                 <button type="button" class="sidebar-item" data-nav="create">Примерить диски</button>
-                <button type="button" class="sidebar-item" data-nav="renders">Мои примерки</button>
+                <button type="button" class="sidebar-item" data-nav="renders">История рендеров</button>
                 <button type="button" class="sidebar-item" data-nav="wallet">Баланс</button>
             </div>
             <div class="sidebar-section">
@@ -60,8 +60,8 @@
                     <h1 class="dashboard-title"><span data-i18n="dashboard.titleLine1">Примерьте</span><span data-i18n="dashboard.titleLine2">новые диски</span><span data-i18n="dashboard.titleLine3">на своём автомобиле</span></h1>
                     <p class="lede" data-i18n="dashboard.lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
                     <div class="dashboard-actions">
-                        <button type="button" class="ghost-button" data-dashboard-primary-action data-nav="create" data-i18n="dashboard.startRender">Создать примерку</button>
-                        <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">Мои примерки</button>
+                        <button type="button" class="ghost-button" data-dashboard-primary-action data-nav="create" data-i18n="dashboard.startRender">Создать виртуальную примерку</button>
+                        <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">История рендеров</button>
                     </div>
                 </div>
             </section>
@@ -91,7 +91,7 @@
                     <div class="balance-tile dashboard-balance-display">
                         <div class="dashboard-balance-subisland">
                             <span class="balance-value dashboard-balance-value" data-dashboard-balance>0</span>
-                            <span class="balance-unit dashboard-balance-unit" data-dashboard-balance-unit>примерок</span>
+                            <span class="balance-unit dashboard-balance-unit" data-dashboard-balance-unit>рендеров</span>
                             <span class="balance-note balance-note-value dashboard-balance-account" data-dashboard-balance-account></span>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
                             <div class="wallet-status-title" data-dashboard-error-text>Баланс временно недоступен</div>
                         </div>
                     </div>
-                    <button type="button" class="ghost-button compact-button dashboard-balance-action" data-nav="wallet">Пополнить баланс</button>
+                    <button type="button" class="ghost-button compact-button dashboard-balance-action" data-nav="wallet">Пополнить счёт</button>
                 </article>
 
                 <article class="panel latest-render-card" data-latest-render-card>
@@ -175,6 +175,12 @@
                 <div class="wallet-status-island tone-warning upload-format-warning" data-visible="true">
                     <div class="wallet-status-copy">
                         <div class="wallet-status-title" data-i18n="create.uploadFormat">Поддерживаемые форматы JPG, PNG и WebP до 10 МБ</div>
+                    </div>
+                </div>
+
+                <div class="wallet-status-island tone-neutral beta-notice" data-visible="true" role="status">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-text" data-i18n="warnings.beta">Dream Wheels находится в бета-режиме. Некоторые функции проходят финальное тестирование, а результат ИИ может содержать визуальные неточности.</div>
                     </div>
                 </div>
 
@@ -307,7 +313,10 @@
                     <div class="error-icon">⚠️</div>
                     <div class="error-text" data-error-text data-error-title data-i18n="errors.generic">Что-то пошло не так</div>
                     <p class="error-copy" data-error-copy></p>
-                    <button type="button" class="ghost-button compact-button" data-error-action>Повторить</button>
+                    <div class="create-flow-actions">
+                        <button type="button" class="ghost-button compact-button" data-error-action>Повторить</button>
+                        <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="link-button error-support-link" data-error-support hidden>Поддержка</a>
+                    </div>
                 </div>
             </section>
 
@@ -317,7 +326,7 @@
             <section class="balance-tile wallet-balance-tile">
                 <div class="dashboard-balance-subisland">
                     <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit" data-balance-unit>примерок</div>
+                    <div class="balance-unit" data-balance-unit>рендеров</div>
                     <div class="balance-note" data-balance-note>
                         <span class="balance-note-value" data-balance-note-value></span>
                      </div>
@@ -336,7 +345,7 @@
                 <div class="payment-card payment-card-grant" data-last-invoice-empty>
                     <div>
                         <div class="payment-card-title" data-i18n="wallet.noPaymentsTitle">Платежей пока нет</div>
-                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовые примерки по команде /start действуют 30 дней и появятся в истории пополнений</div>
+                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовые рендеры по команде /start действуют 30 дней и появятся в истории пополнений</div>
                     </div>
                 </div>
                 <div class="payment-card" data-last-invoice-card hidden>
@@ -361,7 +370,7 @@
                         </div>
                         <div class="invoice-field">
                             <span>Получено</span>
-                            <strong data-last-invoice-credits>0 примерок</strong>
+                            <strong data-last-invoice-credits>0 рендеров</strong>
                         </div>
                         <div class="invoice-field">
                             <span data-i18n="wallet.invoiceAmount">Сумма</span>
@@ -500,7 +509,7 @@
                 <div class="wallet-history-stack">
                     <section class="topup-island wallet-history-island wallet-expiry-section" data-wallet-expiry-section>
                         <div class="wallet-history-island-head">
-                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные примерки</p>
+                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные рендеры</p>
                             <div class="wallet-history-caption" data-i18n="wallet.availableRendersHint">Сначала списываются пакеты с ближайшей датой окончания</div>
                         </div>
                         <div class="wallet-expiry-list" data-wallet-expiry-list></div>
@@ -586,6 +595,7 @@
                             <strong data-fitment-readiness-title>Данных для проверки пока недостаточно</strong>
                             <span data-fitment-readiness-fields>—</span>
                         </div>
+                        <p class="panel-note warning" data-fitment-missing-data-warning hidden data-i18n="warnings.missingData">Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.</p>
                         <div class="fitment-basic-grid">
                             <div class="fitment-basic-row"><span>Разболтовка (PCD)</span><strong data-fitment-basic-pcd>Не указано</strong></div>
                             <div class="fitment-basic-row"><span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span><strong data-fitment-basic-center-bore>Не указано</strong></div>
@@ -604,6 +614,7 @@
                             <button type="button" class="primary-button compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
+                        <p class="panel-note warning" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
                         <div class="fitment-verdict-groups" data-fitment-verdict-groups hidden>
                             <section class="fitment-verdict-group" data-fitment-verdict-blocking hidden>
                                 <strong>Нужно уточнить</strong>
@@ -735,6 +746,7 @@
                                     <li data-fitment-source-step="verdict">Проверяем совместимость</li>
                                 </ol>
                             </div>
+                            <p class="panel-note warning" data-fitment-parser-warning hidden data-i18n="warnings.parser">Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.</p>
                             <div class="fitment-form-grid">
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.rimBrand">Бренд</span>
