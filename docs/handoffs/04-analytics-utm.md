@@ -7,6 +7,8 @@
 - Branch: `feature/analytics-utm-attribution`
 - Commit: `962b0a613b15605fa4ed1d6a274fc7a472d4c7c3` (amended below to include this handoff reference)
 - Ready to merge into staging: **YES**, after applying migration `0025_product_analytics.sql` in staging.
+- Final status (2026-08-20): **Ready for staging: YES / MERGED**.
+- Staging merge: PR [#84](https://github.com/NickElixir/dream-wheels-ai/pull/84), commit `6bf379f88c576b063f47403ad7c3332d3f993f70`.
 
 `04-analytics-utm.md` was not present in the fetched `origin/staging`; this document is the newly created, implementation-backed handoff.
 
@@ -38,11 +40,12 @@
 - `pytest -q` — **222 passed, 3 skipped**.
 - Browser E2E: not run; this worktree intentionally has no staging deployment and the task forbids production rollout. Before merge/deploy, manually open an UTM URL on the staging domain, authenticate both through the website and Telegram Mini App, submit a render, and complete the configured test payment flow; verify rows in `analytics_visitors` and `analytics_events`.
 
-## Exact next step
+## Completion
 
-1. Apply migration `0025_product_analytics.sql` to staging.
-2. Merge this branch into `staging`.
-3. Run the listed staging-only E2E checks; do not promote to production as part of this workstream.
+- Migration `0025_product_analytics.sql` was applied to staging.
+- The analytics implementation and final E2E record were merged into `staging` in PR [#84](https://github.com/NickElixir/dream-wheels-ai/pull/84).
+- Website and Telegram Mini App UTM E2E checks passed; no production rollout was performed.
+- **Ready for staging: YES / MERGED**.
 
 ## Follow-up: nested proxy and staging failure (2026-08-19)
 
