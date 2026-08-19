@@ -76,7 +76,7 @@ const I18N = {
             dashboard: "Главная",
             create: "Примерить диски",
             wallet: "Баланс",
-            renders: "Мои примерки",
+            renders: "История рендеров",
             settings: "Настройки",
             support: "Поддержка",
             photoGuide: "Как подготовить фото",
@@ -84,8 +84,8 @@ const I18N = {
         },
         dashboard: {
             lastRender: "Открыть последний результат",
-            startRender: "Создать примерку",
-            createRender: "Создать примерку",
+            startRender: "Создать виртуальную примерку",
+            createRender: "Создать виртуальную примерку",
             titleLine1: "Примерьте",
             titleLine2: "новые диски",
             titleLine3: "на своём автомобиле",
@@ -95,18 +95,18 @@ const I18N = {
         },
         caption: {
             dashboard: "Главная",
-            create: "Создать примерку",
+            create: "Создать виртуальную примерку",
             fitment: "Совместимость",
             wallet: "Баланс",
-            renders: "Мои примерки",
+            renders: "История рендеров",
             settings: "Настройки",
             support: "Поддержка",
             photoGuide: "Как подготовить фото",
             docs: "Документы",
         },
         create: {
-            eyebrow: "Создание примерки",
-            title: "Создать примерку",
+            eyebrow: "Виртуальная примерка",
+            title: "Создать виртуальную примерку",
             uploadFormat: "Поддерживаемые форматы JPG, PNG и WebP до 10 МБ",
             detectingVehicle: "Определяем автомобиль",
             detectingVehicleHint: "Подбираем марку, модель и год по фотографии",
@@ -127,6 +127,13 @@ const I18N = {
             footerNotTelegram: "Не в Telegram",
             detectIdentity: "Определить автомобиль",
             createRender: "Создать виртуальную примерку",
+        },
+        warnings: {
+            beta: "Dream Wheels находится в бета-режиме. Некоторые функции проходят финальное тестирование, а результат ИИ может содержать визуальные неточности.",
+            parser: "Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.",
+            fitment: "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",
+            missingData: "Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.",
+            generationUnavailable: "Генерация временно недоступна. Рендер не будет списан.",
         },
         photoGuide: {
             eyebrow: "Помощь",
@@ -259,7 +266,7 @@ const I18N = {
             demoLiveActionsUnavailable: "В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.",
         },
         actions: {
-            createRender: "Создать примерку",
+            createRender: "Создать виртуальную примерку",
             createAnother: "Сделать ещё один",
             download: "Скачать",
             downloadImage: "Скачать изображение",
@@ -304,7 +311,7 @@ const I18N = {
         wallet: {
             eyebrow: "Кабинет",
             title: "Баланс",
-            lede: "Здесь видны баланс, последняя оплата и пополнение в три шага",
+            lede: "1 рендер — 1 генерация виртуальной примерки",
             gift: "Подарок",
             lastInvoiceLabel: "Последняя оплата",
             lastInvoiceTitle: "Платежей пока нет",
@@ -357,7 +364,7 @@ const I18N = {
             pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
-            noPaymentsMeta: "Стартовые примерки по команде /start действуют 30 дней и появятся в истории пополнений",
+            noPaymentsMeta: "Стартовые рендеры по команде /start действуют 30 дней и появятся в истории пополнений",
             loading: "Загружаем кабинет...",
             refreshInvoice: "Обновить статус",
             refreshingInvoice: "Обновляем статус оплаты...",
@@ -383,9 +390,9 @@ const I18N = {
         },
         renders: {
             eyebrow: "Готовые работы",
-            title: "Мои примерки",
+            title: "История рендеров",
             lede: "Результаты и текущие статусы из вашей истории",
-            empty: "Готовых примерок пока нет. Создайте первую на главном экране",
+            empty: "Готовых рендеров пока нет. Создайте первую виртуальную примерку на главном экране",
             completed: "Готово",
             processing: "В обработке",
             failed: "Не удалось",
@@ -440,12 +447,12 @@ const I18N = {
             edition: "Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.",
         },
         failed: "Сбой",
-        starter: "Стартовые примерки",
+        starter: "Стартовые рендеры",
         pending: "В ожидании",
         paid: "Оплачено",
         created: "Создан",
         locale: "RU",
-        credits: "примерок",
+        credits: "рендеров",
     },
     en: {
         auth: {
@@ -511,6 +518,13 @@ const I18N = {
             footerNotTelegram: "Not in Telegram",
             detectIdentity: "Identify the vehicle",
             createRender: "Create virtual render",
+        },
+        warnings: {
+            beta: "Dream Wheels is in beta. Some features are in final testing, and AI results may contain visual inaccuracies.",
+            parser: "Parameters were detected automatically. Review the values before the technical assessment.",
+            fitment: "This is a preliminary compatibility check. It is based on the available technical parameters. Before buying, confirm compatibility with the seller or an installation centre.",
+            missingData: "There is not enough data for a reliable compatibility check. Review the missing wheel parameters manually.",
+            generationUnavailable: "Generation is temporarily unavailable. A render will not be charged.",
         },
         photoGuide: {
             eyebrow: "Help",
@@ -990,6 +1004,7 @@ const state = {
     fitmentSourceStatus: "",
     fitmentSourceStatusTone: "neutral",
     fitmentSourceAppliedFields: [],
+    fitmentSourceDetected: false,
     fitmentSourceAutoResolvedForJob: "",
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
@@ -2248,11 +2263,14 @@ function renderFitment() {
     const sourceProgressCopy = document.querySelector("[data-fitment-source-progress-copy]");
     const sourceProgressFields = document.querySelector("[data-fitment-source-progress-fields]");
     const sourceSpinner = document.querySelector("[data-fitment-source-spinner]");
+    const parserWarning = document.querySelector("[data-fitment-parser-warning]");
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantsList = document.querySelector("[data-fitment-variant-list]");
     const verdictCard = document.querySelector("[data-fitment-verdict-card]");
     const verdictTitle = document.querySelector("[data-fitment-verdict-title]");
     const verdictCopy = document.querySelector("[data-fitment-verdict-copy]");
+    const verdictWarning = document.querySelector("[data-fitment-verdict-warning]");
+    const missingDataWarning = document.querySelector("[data-fitment-missing-data-warning]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
     const basicsCard = document.querySelector(".fitment-basics-card");
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
@@ -2306,6 +2324,7 @@ function renderFitment() {
         sourceStatus.textContent = state.fitmentSourceStatus;
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
     }
+    if (parserWarning) parserWarning.hidden = !state.fitmentSourceDetected;
     if (sourceProgress) {
         const visible = Boolean(state.fitmentSourceStatus) || state.fitmentSourceResolving;
         sourceProgress.hidden = !visible;
@@ -2390,6 +2409,9 @@ function renderFitment() {
     if (actions) actions.hidden = activeStep === 3;
 
     if (verdictCard) verdictCard.hidden = activeStep !== 3 || demoMode || !overview.readiness?.ready;
+    if (verdictWarning) {
+        verdictWarning.hidden = !state.fitmentCheck || state.fitmentCheck.execution_status === "failed";
+    }
     if (verdictCheckButton) {
         verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready || !fitmentProviderReady(overview);
         verdictCheckButton.textContent = state.fitmentChecking ? t("fitment.checking") : t("fitment.check");
@@ -2464,6 +2486,9 @@ function renderFitment() {
                     ? "Можно будет запускать отдельную проверку позже"
                     : "A separate check can be started later";
         }
+    }
+    if (missingDataWarning) {
+        missingDataWarning.hidden = !((overview.readiness?.missing_fields || []).length);
     }
     document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(
         document.createTextNode(demoVehicleTitle(overview.vehicle))
@@ -2604,6 +2629,7 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentSourceStatus = "";
     state.fitmentSourceStatusTone = "neutral";
     state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceDetected = false;
     state.fitmentSourceAutoResolvedForJob = "";
     setView("fitment");
     void loadFitmentOverview(jobId);
@@ -2649,6 +2675,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     }
     state.fitmentSourceResolving = true;
     state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceDetected = false;
     state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
@@ -2667,6 +2694,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         const resolvedEntries = Object.entries(result.values || {}).filter(
             ([, value]) => value !== null && value !== undefined && value !== ""
         );
+        state.fitmentSourceDetected = resolvedEntries.length > 0;
         const appliedFields = [];
         for (const [fieldName, value] of resolvedEntries) {
             const currentValue = state.fitmentForm.rim[fieldName];
@@ -5146,6 +5174,7 @@ async function submitJob() {
     const errorTitle = document.querySelector("[data-error-title]");
     const errorCopy = document.querySelector("[data-error-copy]");
     const errorAction = document.querySelector("[data-error-action]");
+    const errorSupport = document.querySelector("[data-error-support]");
     function showError(message) {
         state.submitting = false;
         if (statusBlock) statusBlock.hidden = true;
@@ -5159,6 +5188,7 @@ async function submitJob() {
             errorAction.textContent = errorState.actionLabel;
             errorAction.dataset.generationErrorAction = errorState.action;
         }
+        if (errorSupport) errorSupport.hidden = !errorState.showSupport;
         refreshButtonsForCurrentView();
         haptic("error");
         if (state.jobId) void loadRenderHistory({ silent: true });
@@ -5282,19 +5312,25 @@ async function refreshExistingJobStatus() {
 
 function classifyGenerationError(message) {
     const normalized = String(message || "").toLowerCase();
+    if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
+        return {
+            title: t("warnings.generationUnavailable"),
+            copy: "Повторите попытку через несколько минут или обратитесь в поддержку.",
+            actionLabel: "Повторить",
+            action: "retry",
+            showSupport: true,
+        };
+    }
     if (/(wheel|rim|disk|колес|диск)/.test(normalized)) {
-        return { title: "Не удалось обработать изображение диска", copy: "Загрузите другое фото: диск должен быть снят спереди и находиться в фокусе.", actionLabel: "Заменить фото диска", action: "wheel" };
+        return { title: "Не удалось обработать изображение диска", copy: "Загрузите другое фото: диск должен быть снят спереди и находиться в фокусе.", actionLabel: "Заменить фото диска", action: "wheel", showSupport: false };
     }
     if (/(vehicle|car|identity|автомоб|машин)/.test(normalized)) {
-        return { title: "Не удалось распознать автомобиль на фото", copy: "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.", actionLabel: "Заменить фото автомобиля", action: "car" };
+        return { title: "Не удалось распознать автомобиль на фото", copy: "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.", actionLabel: "Заменить фото автомобиля", action: "car", showSupport: false };
     }
-    if (/(credit|balance|insufficient|баланс|рендер)/.test(normalized)) {
-        return { title: "Недостаточно примерок на балансе", copy: "Пополните баланс, чтобы создать новую примерку.", actionLabel: "Пополнить баланс", action: "wallet" };
+    if (/(credits?|balance|insufficient|баланс|недостаточно\s+(кредит|рендер))/.test(normalized)) {
+        return { title: "Недостаточно рендеров на балансе", copy: "Пополните счёт, чтобы создать новую виртуальную примерку.", actionLabel: "Пополнить счёт", action: "wallet", showSupport: false };
     }
-    if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
-        return { title: "Сервис временно недоступен", copy: "Фото сохранены. Повторите попытку через несколько минут.", actionLabel: "Повторить", action: "retry" };
-    }
-    return { title: "Не удалось создать примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", action: "retry" };
+    return { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", action: "retry", showSupport: true };
 }
 
 function handleFileSelected(kind, file) {
