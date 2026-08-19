@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
@@ -61,7 +62,6 @@ def _clean_properties(properties: dict[str, Any]) -> dict[str, Any]:
 
 async def record_system_event(conn, *, user_id: int, event_name: EventName, properties: dict[str, Any]) -> None:
     """Record durable server-side outcomes when no browser is open to report them."""
-    import json
     await conn.execute(
         "INSERT INTO analytics_events (user_id, event_name, properties) VALUES ($1, $2, $3::jsonb) ON CONFLICT DO NOTHING",
         user_id, event_name, json.dumps(_clean_properties(properties)),
@@ -101,7 +101,7 @@ async def ingest_event(
                     last_touch = EXCLUDED.last_touch,
                     last_seen_at = GREATEST(analytics_visitors.last_seen_at, EXCLUDED.last_seen_at)
                 """,
-                request.visitor_id, user_id, __import__("json").dumps(touch),
+                request.visitor_id, user_id, json.dumps(touch),
                 request.attribution.landing_url, request.attribution.referrer,
                 request.attribution.first_seen_at, request.attribution.last_seen_at,
             )
@@ -109,6 +109,6 @@ async def ingest_event(
                 """INSERT INTO analytics_events (visitor_id, user_id, event_name, properties)
                    VALUES ($1, $2, $3, $4::jsonb)""",
                 request.visitor_id, user_id, request.event_name,
-                __import__("json").dumps(properties),
+                json.dumps(properties),
             )
     return {"accepted": True}
