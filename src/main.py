@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src import (
+    analytics_api,
     assets_service,
     auth_api,
     db,
@@ -88,6 +89,7 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_api.router)
+app.include_router(analytics_api.router)
 app.include_router(identity_api.router)
 app.include_router(fitment_checks_api.router)
 app.include_router(jobs_api.router)
@@ -236,6 +238,12 @@ async def process_jobs_loop():
                         job_id,
                     )
                     await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
+                    await analytics_api.record_system_event(
+                        conn,
+                        user_id=user_id,
+                        event_name="render_completed",
+                        properties={"job_id": job_id},
+                    )
             logger.info(f"✅ Задача {job_id} завершена!")
 
         except Exception as e:
@@ -256,6 +264,12 @@ async def process_jobs_loop():
                             type(e).__name__,
                             str(e),
                             job_id,
+                        )
+                        await analytics_api.record_system_event(
+                            conn,
+                            user_id=int(job_data["user_id"]),
+                            event_name="render_failed",
+                            properties={"job_id": job_id, "error_code": type(e).__name__},
                         )
             await asyncio.sleep(5)
 
