@@ -17,10 +17,19 @@ from src.users_service import ensure_user
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 EventName = Literal[
-    "app_opened", "auth_completed", "upload_started", "upload_completed",
-    "render_started", "render_completed", "render_failed", "result_opened",
-    "feedback_submitted", "repeat_render_started", "payment_started",
-    "payment_completed", "payment_failed",
+    "app_opened",
+    "auth_completed",
+    "upload_started",
+    "upload_completed",
+    "render_started",
+    "render_completed",
+    "render_failed",
+    "result_opened",
+    "feedback_submitted",
+    "repeat_render_started",
+    "payment_started",
+    "payment_completed",
+    "payment_failed",
 ]
 
 
@@ -60,11 +69,15 @@ def _clean_properties(properties: dict[str, Any]) -> dict[str, Any]:
     return cleaned
 
 
-async def record_system_event(conn, *, user_id: int, event_name: EventName, properties: dict[str, Any]) -> None:
+async def record_system_event(
+    conn, *, user_id: int, event_name: EventName, properties: dict[str, Any]
+) -> None:
     """Record durable server-side outcomes when no browser is open to report them."""
     await conn.execute(
         "INSERT INTO analytics_events (user_id, event_name, properties) VALUES ($1, $2, $3::jsonb) ON CONFLICT DO NOTHING",
-        user_id, event_name, json.dumps(_clean_properties(properties)),
+        user_id,
+        event_name,
+        json.dumps(_clean_properties(properties)),
     )
 
 
@@ -101,14 +114,20 @@ async def ingest_event(
                     last_touch = EXCLUDED.last_touch,
                     last_seen_at = GREATEST(analytics_visitors.last_seen_at, EXCLUDED.last_seen_at)
                 """,
-                request.visitor_id, user_id, json.dumps(touch),
-                request.attribution.landing_url, request.attribution.referrer,
-                request.attribution.first_seen_at, request.attribution.last_seen_at,
+                request.visitor_id,
+                user_id,
+                json.dumps(touch),
+                request.attribution.landing_url,
+                request.attribution.referrer,
+                request.attribution.first_seen_at,
+                request.attribution.last_seen_at,
             )
             await conn.execute(
                 """INSERT INTO analytics_events (visitor_id, user_id, event_name, properties)
                    VALUES ($1, $2, $3, $4::jsonb)""",
-                request.visitor_id, user_id, request.event_name,
+                request.visitor_id,
+                user_id,
+                request.event_name,
                 json.dumps(properties),
             )
     return {"accepted": True}

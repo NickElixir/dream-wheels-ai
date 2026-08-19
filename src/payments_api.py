@@ -210,7 +210,9 @@ async def robokassa_result(request: Request):
                     )
                     if payment_user_id is not None:
                         await analytics_api.record_system_event(
-                            conn, user_id=int(payment_user_id), event_name="payment_completed",
+                            conn,
+                            user_id=int(payment_user_id),
+                            event_name="payment_completed",
                             properties={"invoice_id": invoice_id, "is_test": bool(is_test)},
                         )
             except PaymentValidationError as exc:

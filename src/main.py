@@ -239,7 +239,10 @@ async def process_jobs_loop():
                     )
                     await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
                     await analytics_api.record_system_event(
-                        conn, user_id=user_id, event_name="render_completed", properties={"job_id": job_id}
+                        conn,
+                        user_id=user_id,
+                        event_name="render_completed",
+                        properties={"job_id": job_id},
                     )
             logger.info(f"✅ Задача {job_id} завершена!")
 
@@ -263,7 +266,9 @@ async def process_jobs_loop():
                             job_id,
                         )
                         await analytics_api.record_system_event(
-                            conn, user_id=int(job_data["user_id"]), event_name="render_failed",
+                            conn,
+                            user_id=int(job_data["user_id"]),
+                            event_name="render_failed",
                             properties={"job_id": job_id, "error_code": type(e).__name__},
                         )
             await asyncio.sleep(5)
