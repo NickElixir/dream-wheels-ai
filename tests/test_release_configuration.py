@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
 PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
+PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encoding="utf-8")
 
 
 def test_ci_covers_staging_release_workflow() -> None:
@@ -23,10 +24,10 @@ def test_deployed_webapp_uses_runtime_backend_proxy_only() -> None:
 
 
 def test_proxy_reads_backend_url_only_at_runtime() -> None:
-    assert "process.env.BACKEND_URL" in PROXY_JS
-    assert "onrender.com" not in PROXY_JS
-    assert "https:" in PROXY_JS
-    assert "authorization" not in PROXY_JS.lower() or "forwardHeaders" in PROXY_JS
+    assert "process.env.BACKEND_URL" in PROXY_HELPER_JS
+    assert "onrender.com" not in PROXY_HELPER_JS
+    assert "https:" in PROXY_HELPER_JS
+    assert "authorization" not in PROXY_HELPER_JS.lower() or "forwardHeaders" in PROXY_HELPER_JS
 
 
 def test_vercel_project_binding_is_not_tracked() -> None:
