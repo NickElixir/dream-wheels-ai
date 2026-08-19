@@ -62,6 +62,15 @@
 - Verification: JavaScript syntax and module-resolution checks passed; `vercel build --yes` passed and emitted both explicit functions. Staging E2E remains to be run after merge/deploy: obtain nonce and complete Telegram ID-token verification through the staging alias.
 - Ready to merge into `staging`: **YES**.
 
+## Staging website UTM E2E (2026-08-20)
+
+- Staging commit: `1d5622e054fa0c28b935b5a22e4b45174e82d2e9`.
+- Flow verified in a fresh private browser session: landing URL with all five UTM fields → website Telegram login → reopen in the same session with a second UTM URL.
+- `analytics_visitors` verification: first-touch retained `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, and `utm_term`; `landing_url` and `first_seen_at` remained those of the first landing; `user_id` was attached after Telegram login.
+- Last-touch verification: the second URL updated all five last-touch fields and `last_seen_at`, while first-touch values remained unchanged. Event order was `app_opened`, `auth_completed`, then a second `app_opened` after reopen.
+- The initial chat-clicked URL had its query string stripped before page load; manual paste into the browser address bar is required for UTM test links.
+- Telegram Mini App deep-link / `start_param` verification passed in the configured staging bot: `app_opened` recorded `surface=telegram` and `deep_link_start_param=utm_e2e_telegram`; the subsequent `auth_completed` recorded `auth_channel=mini_app` with the same parameter. Both events were associated with the authenticated visitor/user.
+
 ## Follow-up: decoded upstream response header (2026-08-19)
 
 - Branch: `fix/vercel-proxy-content-encoding`
