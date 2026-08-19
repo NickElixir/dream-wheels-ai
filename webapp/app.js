@@ -5315,7 +5315,7 @@ function classifyGenerationError(message) {
     if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
         return {
             title: t("warnings.generationUnavailable"),
-            copy: "Повторите попытку через несколько минут или обратитесь в поддержку.",
+            copy: "Сервис временно недоступен. Повторите попытку через несколько минут или обратитесь в поддержку.",
             actionLabel: "Повторить",
             action: "retry",
             showSupport: true,
