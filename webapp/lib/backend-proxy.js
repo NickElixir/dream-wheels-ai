@@ -11,6 +11,11 @@ const HOP_BY_HOP_HEADERS = new Set([
     "upgrade",
 ]);
 
+// Node's fetch transparently decodes compressed upstream responses. Forwarding
+// the original content-encoding would make browsers try to decode the already
+// decoded body a second time.
+const RESPONSE_HEADERS_TO_SKIP = new Set([...HOP_BY_HOP_HEADERS, "content-encoding"]);
+
 function backendBaseUrl() {
     const value = (process.env.BACKEND_URL || "").trim();
     let parsed;
@@ -60,7 +65,7 @@ module.exports = async (req, res) => {
         });
         res.status(response.status);
         for (const [name, value] of response.headers) {
-            if (!HOP_BY_HOP_HEADERS.has(name.toLowerCase())) res.setHeader(name, value);
+            if (!RESPONSE_HEADERS_TO_SKIP.has(name.toLowerCase())) res.setHeader(name, value);
         }
         res.send(Buffer.from(await response.arrayBuffer()));
     } catch {

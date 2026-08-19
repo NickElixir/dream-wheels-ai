@@ -61,3 +61,11 @@
 - Fix: explicit proxy functions at `webapp/api/backend/auth/telegram/nonce.js` and `webapp/api/backend/auth/telegram/verify-id-token.js`, both using the shared, domain-agnostic `webapp/lib/backend-proxy.js`.
 - Verification: JavaScript syntax and module-resolution checks passed; `vercel build --yes` passed and emitted both explicit functions. Staging E2E remains to be run after merge/deploy: obtain nonce and complete Telegram ID-token verification through the staging alias.
 - Ready to merge into `staging`: **YES**.
+
+## Follow-up: decoded upstream response header (2026-08-19)
+
+- Branch: `fix/vercel-proxy-content-encoding`
+- Cause: Node `fetch` decompresses the gzip body returned by Render but retains the original `content-encoding: gzip` header. The shared Vercel proxy returned that stale header with plain JSON, which made Chrome fail the Telegram nonce request with `net::ERR_CONTENT_DECODING_FAILED` despite HTTP `200`.
+- Fix: do not forward `content-encoding` from upstream responses; Vercel/browser may apply compression to the final response themselves.
+- Verification: regression check confirms the proxy returns the decoded body without `content-encoding` or stale `content-length`; `vercel build --yes` passed and emitted both Telegram auth functions.
+- Ready to merge into `staging`: **YES**.
