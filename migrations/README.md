@@ -24,6 +24,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0018_render_feedback.sql` — durable `render_feedback`, backfill из legacy `jobs.feedback` и owner/job constraints для Sprint 3
 - `0019_fitment_identity_candidates.sql` — JSON candidates и revisions для Sprint 4 full editor canonical identity
 - `0020_fitment_change_events.sql` — append-only история canonical fitment edits и подтверждений
+- `0025_product_analytics.sql` — first-party UTM attribution and minimal product funnel events
 - `0021_fitment_checks.sql` — durable технические fitment verdicts
 - `0022_fitment_evidence_fallbacks.sql` — provider evidence и resolution state для verdicts
 - `0023_enable_credit_accounts_rls.sql` — повторно включает RLS для server-only credit balances при staging drift

@@ -50,6 +50,42 @@ const FEEDBACK_REASONS = [
     { code: "other", label: "Другое" },
 ];
 const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
+const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
+const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+
+function analyticsVisitorId() {
+    let visitorId = localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY);
+    if (!visitorId) {
+        visitorId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        localStorage.setItem(ANALYTICS_VISITOR_STORAGE_KEY, visitorId);
+    }
+    return visitorId;
+}
+
+function currentAttribution() {
+    const now = new Date().toISOString();
+    const url = new URL(window.location.href);
+    const incoming = Object.fromEntries(UTM_KEYS.map((key) => [key, url.searchParams.get(key) || null]));
+    const hasIncomingUtm = UTM_KEYS.some((key) => incoming[key]);
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(ANALYTICS_ATTRIBUTION_STORAGE_KEY) || "null"); } catch { /* replace corrupt state */ }
+    const landing = { ...incoming, landing_url: url.href, referrer: document.referrer || null, first_seen_at: now, last_seen_at: now };
+    const attribution = saved ? { ...saved, ...(hasIncomingUtm ? incoming : {}), landing_url: saved.landing_url || landing.landing_url, referrer: saved.referrer || landing.referrer, first_seen_at: saved.first_seen_at || now, last_seen_at: now } : landing;
+    localStorage.setItem(ANALYTICS_ATTRIBUTION_STORAGE_KEY, JSON.stringify(attribution));
+    return attribution;
+}
+
+function deepLinkStartParam() {
+    return tg?.initDataUnsafe?.start_param || new URLSearchParams(window.location.search).get("tgWebAppStartParam") || null;
+}
+
+function trackEvent(eventName, properties = {}) {
+    const identity = typeof getIdentityPayload === "function" ? getIdentityPayload({ includeTelegramUserId: true }) : {};
+    const body = JSON.stringify({ visitor_id: analyticsVisitorId(), event_name: eventName, attribution: currentAttribution(), properties: { ...properties, ...(deepLinkStartParam() ? { deep_link_start_param: deepLinkStartParam() } : {}) }, ...identity });
+    // Analytics must never block a render, payment, or authentication flow.
+    return fetch(apiUrl("/analytics/events"), { method: "POST", headers: withAuthHeaders({ "Content-Type": "application/json" }), body, keepalive: true }).catch(() => undefined);
+}
 
 async function checkCurrentBuild() {
     try {
@@ -1553,6 +1589,7 @@ async function loginWithTelegram() {
             username: verified.username || "",
         };
         sessionStorage.setItem(WEBSITE_AUTH_STORAGE_KEY, JSON.stringify(state.websiteAuth));
+        void trackEvent("auth_completed", { auth_channel: "website" });
         state.renderHistory = [];
         state.renderHistoryError = "";
         state.renderHistoryLoading = true;
@@ -3791,6 +3828,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         } else {
             const data = await response.json();
             setFeedbackRecord(jobId, data.feedback || null);
+            void trackEvent("feedback_submitted", { job_id: jobId, sentiment, reason: reason || null });
             const savedFeedback = normalizeFeedbackRecord(data.feedback);
             setFeedbackNotice(
                 jobId,
@@ -3893,6 +3931,7 @@ function renderRenderDetail() {
 }
 
 function openRenderDetail(jobId, originView = "renders") {
+    void trackEvent("result_opened", { job_id: jobId, origin_view: originView });
     state.renderDetailJobId = jobId;
     state.fitmentOriginView = originView;
     state.renderDetailError = "";
@@ -3925,6 +3964,7 @@ function openBlankTryOn() {
 }
 
 async function repeatRenderWithSavedPhotos(jobId) {
+    void trackEvent("repeat_render_started", { source_job_id: jobId });
     const job = state.renderHistory.find((item) => item.job_id === jobId);
     const car = job?.assets?.car_original;
     const wheel = job?.assets?.rim_original;
@@ -4375,6 +4415,7 @@ async function createPayment() {
 
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
+    void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: normalizeTopUpAmount(state.selectedAmount) });
     try {
         const response = await fetch(apiUrl("/payments/topups"), {
             method: "POST",
@@ -4413,6 +4454,7 @@ function handlePaymentReturn() {
         setWalletMessage(t("wallet.paymentSuccess"), "success");
         setView("wallet");
     } else if (paymentState === "fail") {
+        void trackEvent("payment_failed", { return_channel: "browser" });
         setWalletMessage(t("wallet.paymentFail"), "warning");
         setView("wallet");
     }
@@ -5202,6 +5244,7 @@ async function submitJob() {
             throw new Error(detail);
         }
         state.jobId = data.job_id;
+        void trackEvent("render_started", { job_id: state.jobId });
     } catch (error) {
         showError(error.message);
         return;
@@ -5298,6 +5341,7 @@ function classifyGenerationError(message) {
 }
 
 function handleFileSelected(kind, file) {
+    void trackEvent("upload_started", { asset_kind: kind });
     file.arrayBuffer().then((buffer) => {
         resetIdentityState();
         state.files[kind] = {
@@ -5307,6 +5351,7 @@ function handleFileSelected(kind, file) {
             type: file.type,
         };
         void saveDraftFile(kind, file, buffer);
+        if (state.files.car?.blob && state.files.wheel?.blob) void trackEvent("upload_completed");
         renderPreviewFromFile(kind, state.files[kind]);
         renderIdentityFlow();
         refreshButtonsForCurrentView();
@@ -5707,6 +5752,8 @@ function bindEvents() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    void trackEvent("app_opened", { surface: HAS_TG ? "telegram" : "website" });
+    if (HAS_TG && tg?.initData) void trackEvent("auth_completed", { auth_channel: "mini_app" });
     void checkCurrentBuild();
     applyTranslations();
     initTelegram();

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, field_validator
 
-from src import db
+from src import analytics_api, db
 from src.auth import resolve_telegram_auth
 from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST
 from src.credits_service import get_balance, list_credit_packages
@@ -197,13 +197,22 @@ async def robokassa_result(request: Request):
     async with pool.acquire() as conn:
         async with conn.transaction():
             try:
-                await mark_payment_paid(
+                payment = await mark_payment_paid(
                     conn,
                     invoice_id=invoice_id,
                     provider_payment_id=payment_id,
                     out_sum=out_sum,
                     is_test=ROBOKASSA_IS_TEST if is_test is None else is_test,
                 )
+                if payment.get("status") == "paid":
+                    payment_user_id = await conn.fetchval(
+                        "SELECT user_id FROM payments WHERE invoice_id = $1", invoice_id
+                    )
+                    if payment_user_id is not None:
+                        await analytics_api.record_system_event(
+                            conn, user_id=int(payment_user_id), event_name="payment_completed",
+                            properties={"invoice_id": invoice_id, "is_test": bool(is_test)},
+                        )
             except PaymentValidationError as exc:
                 raise HTTPException(status_code=400, detail="Payment payload mismatch") from exc
             except PaymentNotFoundError as exc:
