@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
@@ -9,15 +10,16 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-ARCHIVE_ROOT = Path(
+DEFAULT_ARCHIVE_ROOT = Path(
     "/Users/nikolai/Documents/Dream Wheel AI/images/virtual_tryon_archive/skolkovo-no-mask-2026-06-17"
 )
 MANIFEST_PATH = ROOT_DIR / "tmp/skolkovo_nomask_selected.jsonl"
 
-ASSET_DIR = ROOT_DIR / "docs/assets/skolkovo-no-mask-report"
-MARKDOWN_PATH = ROOT_DIR / "docs/skolkovo-no-mask-report.md"
-PDF_PATH = ROOT_DIR / "docs/skolkovo-no-mask-report.pdf"
-SUMMARY_CSV_PATH = ASSET_DIR / "skolkovo-no-mask-summary.csv"
+DEFAULT_ASSET_DIR = ROOT_DIR / "docs/assets/skolkovo-no-mask-report"
+DEFAULT_MARKDOWN_PATH = ROOT_DIR / "docs/skolkovo-no-mask-report.md"
+DEFAULT_SUMMARY_CSV_NAME = "skolkovo-no-mask-summary.csv"
+DEFAULT_TITLE = "Skolkovo No-Mask Wheel Try-On Report"
+DEFAULT_REFERENCE_LABEL = "silver multi-spoke alloy wheel"
 
 
 @dataclass
@@ -47,6 +49,18 @@ class CaseRecord:
     reve: ReveRecord
 
 
+@dataclass
+class ReportConfig:
+    archive_root: Path
+    manifest_path: Path
+    asset_dir: Path
+    markdown_path: Path
+    summary_csv_path: Path
+    title: str
+    reference_label: str
+    report_slug: str
+
+
 def _font(size: int, *, bold: bool = False):
     candidates = [
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
@@ -74,25 +88,27 @@ def _csv_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
-def _load_cases() -> list[CaseRecord]:
+def _load_cases(config: ReportConfig) -> list[CaseRecord]:
     manifest_rows = [
         json.loads(line)
-        for line in MANIFEST_PATH.read_text(encoding="utf-8").splitlines()
+        for line in config.manifest_path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    original_dir = ARCHIVE_ROOT / "source_original"
-    resized_dir = ARCHIVE_ROOT / "source_resized"
+    original_dir = config.archive_root / "source_original"
+    resized_dir = config.archive_root / "source_resized"
 
     openai_base: dict[str, dict[str, str]] = {}
     for csv_path in sorted(
-        (ARCHIVE_ROOT / "gpt-image-2-nomask-per-case").glob("*/openai_image_nomask_results.csv")
+        (config.archive_root / "gpt-image-2-nomask-per-case").glob(
+            "*/openai_image_nomask_results.csv"
+        )
     ):
         row = _csv_rows(csv_path)[0]
         openai_base[row["case_id"]] = row
 
     openai_retry2: dict[str, dict[str, str]] = {}
     for csv_path in sorted(
-        (ARCHIVE_ROOT / "gpt-image-2-nomask-retry2-per-case").glob(
+        (config.archive_root / "gpt-image-2-nomask-retry2-per-case").glob(
             "*/openai_image_nomask_results.csv"
         )
     ):
@@ -101,7 +117,7 @@ def _load_cases() -> list[CaseRecord]:
 
     reve_rows = {
         row["case_id"]: row
-        for row in _csv_rows(ARCHIVE_ROOT / "reve-nomask/reve_image_nomask_results.csv")
+        for row in _csv_rows(config.archive_root / "reve-nomask/reve_image_nomask_results.csv")
     }
 
     cases: list[CaseRecord] = []
@@ -118,6 +134,20 @@ def _load_cases() -> list[CaseRecord]:
             retry2_used = True
             final_row = retry_row
 
+        base_output = base_row.get("output_image", "")
+        base_status = "completed" if base_row["status"] == "completed" and base_output else "failed"
+        base_error = base_row.get("error", "")
+        if base_row["status"] == "completed" and not base_output:
+            base_error = base_error or "completed without image payload"
+
+        final_output = final_row.get("output_image", "")
+        final_status = (
+            "completed" if final_row["status"] == "completed" and final_output else "failed"
+        )
+        final_error = final_row.get("error", "")
+        if final_row["status"] == "completed" and not final_output:
+            final_error = final_error or "completed without image payload"
+
         cases.append(
             CaseRecord(
                 case_id=case_id,
@@ -126,11 +156,11 @@ def _load_cases() -> list[CaseRecord]:
                 vehicle_label=row["vehicle_label"],
                 source_filename=Path(row["car_image"]).name,
                 openai=OpenAIRecord(
-                    first_status=base_row["status"],
-                    final_status=final_row["status"],
-                    output_image=final_row.get("output_image", ""),
+                    first_status=base_status,
+                    final_status=final_status,
+                    output_image=final_output,
                     retry2_used=retry2_used,
-                    error=final_row.get("error", ""),
+                    error=final_error,
                 ),
                 reve=ReveRecord(
                     status=reve_rows[case_id]["status"],
@@ -184,11 +214,11 @@ def _draw_strip(
     draw.text((x, y + 24 + height + 6), footer, fill="#666666", font=SMALL_FONT)
 
 
-def _build_cover(cases: list[CaseRecord]) -> str:
+def _build_cover(cases: list[CaseRecord], config: ReportConfig) -> str:
     preview_src = ROOT_DIR / "tmp/skolkovo_selected_preview.jpg"
     page = Image.new("RGB", (1600, 1100), "white")
     draw = ImageDraw.Draw(page)
-    draw.text((32, 24), "Skolkovo No-Mask Wheel Try-On Report", fill="#222222", font=TITLE_FONT)
+    draw.text((32, 24), config.title, fill="#222222", font=TITLE_FONT)
     draw.text(
         (32, 62),
         "Deduplicated unique transport set from 61 photos: 24 representative vehicles.",
@@ -218,11 +248,11 @@ def _build_cover(cases: list[CaseRecord]) -> str:
     preview = _fit(preview_src, (1530, 900))
     _paste_center(page, preview, (32, 180, 1568, 1068))
     name = "cover-page.jpg"
-    page.save(ASSET_DIR / name, quality=92)
+    page.save(config.asset_dir / name, quality=92)
     return name
 
 
-def _build_case_pages(cases: list[CaseRecord]) -> list[str]:
+def _build_case_pages(cases: list[CaseRecord], config: ReportConfig) -> list[str]:
     pages: list[str] = []
     page_w = 1600
     page_h = 1120
@@ -284,13 +314,13 @@ def _build_case_pages(cases: list[CaseRecord]) -> list[str]:
                 font=SMALL_FONT,
             )
         name = f"case-page-{idx:02d}-{case.case_id}.jpg"
-        page.save(ASSET_DIR / name, quality=92)
+        page.save(config.asset_dir / name, quality=92)
         pages.append(name)
     return pages
 
 
-def _write_summary(cases: list[CaseRecord]) -> None:
-    ASSET_DIR.mkdir(parents=True, exist_ok=True)
+def _write_summary(cases: list[CaseRecord], config: ReportConfig) -> None:
+    config.asset_dir.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "case_id",
         "vehicle_label",
@@ -302,7 +332,7 @@ def _write_summary(cases: list[CaseRecord]) -> None:
         "reve_status",
         "reve_output_image",
     ]
-    with SUMMARY_CSV_PATH.open("w", encoding="utf-8", newline="") as handle:
+    with config.summary_csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for case in cases:
@@ -319,12 +349,19 @@ def _write_summary(cases: list[CaseRecord]) -> None:
                     "reve_output_image": case.reve.output_image,
                 }
             )
-    archive_summary = ARCHIVE_ROOT / "metadata" / SUMMARY_CSV_PATH.name
+    archive_summary = config.archive_root / "metadata" / config.summary_csv_path.name
     archive_summary.parent.mkdir(parents=True, exist_ok=True)
-    archive_summary.write_text(SUMMARY_CSV_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+    archive_summary.write_text(
+        config.summary_csv_path.read_text(encoding="utf-8"), encoding="utf-8"
+    )
 
 
-def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseRecord]) -> None:
+def _write_markdown(
+    cover_page: str,
+    case_pages: list[str],
+    cases: list[CaseRecord],
+    config: ReportConfig,
+) -> None:
     openai_ok = sum(1 for case in cases if case.openai.final_status == "completed")
     reve_ok = sum(1 for case in cases if case.reve.status == "completed")
     openai_fail = (
@@ -338,7 +375,7 @@ def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseReco
         "  - \\usepackage{graphicx}",
         "---",
         "",
-        "# Skolkovo No-Mask Wheel Try-On",
+        f"# {config.title}",
         "",
         "Date: 2026-06-17",
         "",
@@ -348,7 +385,7 @@ def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseReco
         "",
         "- input pool: 61 local photos;",
         "- deduplicated representative transport subjects: 24;",
-        "- common wheel reference: silver multi-spoke alloy wheel;",
+        f"- common wheel reference: {config.reference_label};",
         "- OpenAI path: `gpt-image-2` no-mask edit with source + reference image;",
         "- Reve path: direct no-mask remix with source + reference image.",
         "",
@@ -360,7 +397,7 @@ def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseReco
         f"| Reve no-mask | {reve_ok}/{len(cases)} | all deduplicated Skolkovo cases completed |",
         "",
         "\\begin{center}",
-        f"\\includegraphics[width=\\textwidth,height=0.90\\textheight,keepaspectratio]{{docs/assets/skolkovo-no-mask-report/{cover_page}}}",
+        f"\\includegraphics[width=\\textwidth,height=0.90\\textheight,keepaspectratio]{{docs/assets/{config.report_slug}/{cover_page}}}",
         "\\end{center}",
         "",
         "\\newpage",
@@ -370,7 +407,7 @@ def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseReco
         lines.extend(
             [
                 "\\begin{center}",
-                f"\\includegraphics[width=\\textwidth,height=0.94\\textheight,keepaspectratio]{{docs/assets/skolkovo-no-mask-report/{page}}}",
+                f"\\includegraphics[width=\\textwidth,height=0.94\\textheight,keepaspectratio]{{docs/assets/{config.report_slug}/{page}}}",
                 "\\end{center}",
                 "",
                 "\\newpage",
@@ -381,23 +418,47 @@ def _write_markdown(cover_page: str, case_pages: list[str], cases: list[CaseReco
         [
             "## Output Files",
             "",
-            f"- Summary CSV: `{SUMMARY_CSV_PATH.relative_to(ROOT_DIR)}`",
-            f"- Archive root: `{ARCHIVE_ROOT}`",
+            f"- Summary CSV: `{config.summary_csv_path.relative_to(ROOT_DIR)}`",
+            f"- Archive root: `{config.archive_root}`",
             "",
         ]
     )
-    MARKDOWN_PATH.write_text("\n".join(lines), encoding="utf-8")
+    config.markdown_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _parse_args() -> ReportConfig:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--archive-root", type=Path, default=DEFAULT_ARCHIVE_ROOT)
+    parser.add_argument("--manifest-path", type=Path, default=MANIFEST_PATH)
+    parser.add_argument("--asset-dir", type=Path, default=DEFAULT_ASSET_DIR)
+    parser.add_argument("--markdown-path", type=Path, default=DEFAULT_MARKDOWN_PATH)
+    parser.add_argument("--summary-csv-name", default=DEFAULT_SUMMARY_CSV_NAME)
+    parser.add_argument("--title", default=DEFAULT_TITLE)
+    parser.add_argument("--reference-label", default=DEFAULT_REFERENCE_LABEL)
+    parser.add_argument("--report-slug", default=DEFAULT_ASSET_DIR.name)
+    args = parser.parse_args()
+    return ReportConfig(
+        archive_root=args.archive_root,
+        manifest_path=args.manifest_path,
+        asset_dir=args.asset_dir,
+        markdown_path=args.markdown_path,
+        summary_csv_path=args.asset_dir / args.summary_csv_name,
+        title=args.title,
+        reference_label=args.reference_label,
+        report_slug=args.report_slug,
+    )
 
 
 def main() -> int:
-    cases = _load_cases()
-    ASSET_DIR.mkdir(parents=True, exist_ok=True)
-    _write_summary(cases)
-    cover_page = _build_cover(cases)
-    case_pages = _build_case_pages(cases)
-    _write_markdown(cover_page, case_pages, cases)
-    print(MARKDOWN_PATH)
-    print(SUMMARY_CSV_PATH)
+    config = _parse_args()
+    cases = _load_cases(config)
+    config.asset_dir.mkdir(parents=True, exist_ok=True)
+    _write_summary(cases, config)
+    cover_page = _build_cover(cases, config)
+    case_pages = _build_case_pages(cases, config)
+    _write_markdown(cover_page, case_pages, cases, config)
+    print(config.markdown_path)
+    print(config.summary_csv_path)
     return 0
 
 
