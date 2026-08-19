@@ -69,7 +69,7 @@
 - `analytics_visitors` verification: first-touch retained `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, and `utm_term`; `landing_url` and `first_seen_at` remained those of the first landing; `user_id` was attached after Telegram login.
 - Last-touch verification: the second URL updated all five last-touch fields and `last_seen_at`, while first-touch values remained unchanged. Event order was `app_opened`, `auth_completed`, then a second `app_opened` after reopen.
 - The initial chat-clicked URL had its query string stripped before page load; manual paste into the browser address bar is required for UTM test links.
-- Telegram Mini App deep-link / `start_param` verification is still pending: it must be run inside the configured staging bot because a normal browser cannot generate signed `initData` or a Telegram WebApp start parameter.
+- Telegram Mini App deep-link / `start_param` verification passed in the configured staging bot: `app_opened` recorded `surface=telegram` and `deep_link_start_param=utm_e2e_telegram`; the subsequent `auth_completed` recorded `auth_channel=mini_app` with the same parameter. Both events were associated with the authenticated visitor/user.
 
 ## Follow-up: decoded upstream response header (2026-08-19)
 
