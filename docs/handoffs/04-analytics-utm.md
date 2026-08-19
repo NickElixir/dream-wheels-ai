@@ -43,3 +43,13 @@
 1. Apply migration `0025_product_analytics.sql` to staging.
 2. Merge this branch into `staging`.
 3. Run the listed staging-only E2E checks; do not promote to production as part of this workstream.
+
+## Follow-up: nested proxy and staging failure (2026-08-19)
+
+- Branch: `fix/vercel-backend-nested-routes`
+- PR: https://github.com/NickElixir/dream-wheels-ai/pull/81
+- Base: `origin/staging` at `db1295acd7b592f8150de4172c2c1759cf5889ab`
+- Fix: explicit Vercel nested catch-all routes for `auth`, `analytics`, `fitment`, `identity`, `jobs`, `payments`, and `health`, sharing `webapp/lib/backend-proxy.js`.
+- Render log root cause fixed: `TypeError: Object of type datetime is not JSON serializable` in analytics attribution ingestion; timestamps now use Pydantic JSON mode.
+- Verification: `pytest -q` — **223 passed, 3 skipped**; Ruff and JavaScript syntax checks passed; Vercel preview deployment completed.
+- Preview E2E is pending because Vercel Deployment Protection requires an authenticated preview session. After PR #81 merges, verify `/api/backend/auth/telegram/nonce`, `/api/backend/jobs`, and `POST /api/backend/analytics/events` on the staging alias.

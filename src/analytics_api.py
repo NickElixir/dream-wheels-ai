@@ -96,7 +96,7 @@ async def ingest_event(
         )
     else:
         auth = None
-    touch = request.attribution.model_dump(exclude_none=True)
+    touch = request.attribution.model_dump(mode="json", exclude_none=True)
     properties = _clean_properties(request.properties)
     pool = db.get_pool()
     async with pool.acquire() as conn:

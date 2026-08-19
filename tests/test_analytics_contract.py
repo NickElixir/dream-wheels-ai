@@ -1,4 +1,6 @@
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from src import analytics_api
 
@@ -45,6 +47,21 @@ def test_event_contract_is_allowlisted() -> None:
         "payment_completed",
         "payment_failed",
     }
+
+
+def test_attribution_json_mode_serializes_timestamps() -> None:
+    request = analytics_api.AnalyticsEventRequest(
+        visitor_id=uuid4(),
+        event_name="app_opened",
+        attribution=analytics_api.Attribution(
+            landing_url="https://example.test/",
+            first_seen_at=datetime.now(UTC),
+            last_seen_at=datetime.now(UTC),
+        ),
+    )
+    touch = request.attribution.model_dump(mode="json", exclude_none=True)
+    assert isinstance(touch["first_seen_at"], str)
+    assert isinstance(touch["last_seen_at"], str)
 
 
 def test_webapp_preserves_attribution_and_uses_relative_api_route() -> None:
