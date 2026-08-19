@@ -53,3 +53,11 @@
 - Render log root cause fixed: `TypeError: Object of type datetime is not JSON serializable` in analytics attribution ingestion; timestamps now use Pydantic JSON mode.
 - Verification: `pytest -q` — **223 passed, 3 skipped**; Ruff and JavaScript syntax checks passed; Vercel preview deployment completed.
 - Preview E2E is pending because Vercel Deployment Protection requires an authenticated preview session. After PR #81 merges, verify `/api/backend/auth/telegram/nonce`, `/api/backend/jobs`, and `POST /api/backend/analytics/events` on the staging alias.
+
+## Follow-up: Telegram auth route completion (2026-08-19)
+
+- Branch: `fix/vercel-telegram-auth-routes`
+- Cause: the merged nested catch-all Vercel function did not match the three-segment endpoints `/api/backend/auth/telegram/nonce` and `/api/backend/auth/telegram/verify-id-token`; Vercel returned an edge `404`, while the direct Render nonce endpoint returned `200`.
+- Fix: explicit proxy functions at `webapp/api/backend/auth/telegram/nonce.js` and `webapp/api/backend/auth/telegram/verify-id-token.js`, both using the shared, domain-agnostic `webapp/lib/backend-proxy.js`.
+- Verification: JavaScript syntax and module-resolution checks passed; `vercel build --yes` passed and emitted both explicit functions. Staging E2E remains to be run after merge/deploy: obtain nonce and complete Telegram ID-token verification through the staging alias.
+- Ready to merge into `staging`: **YES**.
