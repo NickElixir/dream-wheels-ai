@@ -5,7 +5,7 @@
 - Date: 2026-08-19
 - Base: `origin/staging` at `80cccd8093b2b8b313a29ed90601eca6d3040ac0`
 - Branch: `feature/analytics-utm-attribution`
-- Commit: recorded after the implementation commit below
+- Commit: `962b0a613b15605fa4ed1d6a274fc7a472d4c7c3` (amended below to include this handoff reference)
 - Ready to merge into staging: **YES**, after applying migration `0025_product_analytics.sql` in staging.
 
 `04-analytics-utm.md` was not present in the fetched `origin/staging`; this document is the newly created, implementation-backed handoff.
