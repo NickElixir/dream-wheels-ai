@@ -4,6 +4,7 @@
 
 - Branch: `feature/commercial-ux-warnings`
 - Base: `origin/staging @ 80cccd8093b2b8b313a29ed90601eca6d3040ac0`
+- Commit: `843a35e feat: add commercial beta warning states`
 - PR: not created
 
 ## Warnings implemented
