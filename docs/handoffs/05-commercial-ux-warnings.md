@@ -1,4 +1,12 @@
-# Commercial UX / Beta Warnings — completion handoff
+# Commercial UX / Beta Warnings — final handoff
+
+## Final status
+
+`COMMERCIAL_UX_WARNINGS = READY`
+
+**STATUS: FUNCTIONALLY DONE.** PR #80 was merged into `staging`; the deployed
+staging flow was checked in Chrome and at mobile width. This workstream can be
+archived after this documentation update is merged.
 
 ## Context
 
@@ -6,6 +14,7 @@
 - Base: `origin/staging @ 80cccd8093b2b8b313a29ed90601eca6d3040ac0`
 - Commit: `843a35e feat: add commercial beta warning states`
 - PR: https://github.com/NickElixir/dream-wheels-ai/pull/80
+- Merged commit: `d97bf8e feat: add commercial beta warning states (#80)`
 
 ## Warnings implemented
 
@@ -34,10 +43,9 @@
   verdict, and provider failure.
 - Dashboard/wallet balance and top-up route, history terminology, support, and
   legal documents.
-- Mobile: CSS stacks cards and action buttons at `760px` and below; new
-  warnings use existing wrapping components. In-app browser access to the
-  local static server was unavailable in this environment, so a live mobile
-  screenshot remains a staging/Telegram Mini App follow-up.
+- Mobile: verified on deployed staging at `390 × 844`; photo cards stack
+  vertically, beta warning remains visible, and bottom navigation remains
+  available.
 
 ## Accessibility observations
 
@@ -62,6 +70,41 @@ The existing API refunds the reserved credit when queue publishing fails and
 the worker refunds it after a failed generation. The frontend now masks raw
 unavailable/provider-style messages with the approved no-charge statement.
 
+## Staging E2E results
+
+- Create flow loads and shows the approved general beta warning.
+- Balance is visible and remains backend-derived.
+- Support, privacy, offer, and refund links are visible from the relevant
+  cabinet views.
+- History and the failed-render recovery CTA are reachable.
+- No client console errors were observed during the warnings smoke test.
+- No render was submitted during the unavailable-generation check; therefore
+  no credit was charged by that check.
+
+## Known external dependency — 05b Payment Failure Handling
+
+During the commercial E2E audit, a payment-backend gap was identified and
+explicitly moved outside this workstream.
+
+When a Robokassa test payment is cancelled or marked as unsuccessful, the
+current backend keeps its record in `pending`. It does not transition the
+payment to `failed` and does not set `failed_at`. Credits are not granted and
+the balance does not change, but the cabinet cannot present a completed
+failure state or reliably offer retry.
+
+Tracked separately as: **05b — Payment Failure Handling**.
+
+Expected UX after 05b:
+
+- payment status is `Не удалось` / `Оплата не завершена`;
+- balance is unchanged and no renders are granted;
+- the user sees that funds were not charged;
+- a new top-up/retry is available;
+- the failed payment stays in history with an updated timestamp.
+
+This backend state-machine gap does **not** block closure of Commercial UX /
+Warnings (05).
+
 ## Tests
 
 - `node --check webapp/app.js`
@@ -73,11 +116,8 @@ pre-existing `ASYNC240` findings in `scripts/vehicle_identity_benchmark.py`.
 Full `pytest -q` cannot collect because this worktree has no installed runtime
 dependencies such as `fastapi`, `httpx`, `redis`, and `anyio`.
 
-## Ready for staging
+## Merge readiness
 
-YES, subject to a staging/Telegram Mini App visual smoke at mobile width.
-
-## Exact next action
-
-Commit this branch, open a PR to `staging`, and capture the five warning states
-in a staging Mini App at mobile width before merge.
+The implementation is already merged and deployed to `staging`. This
+documentation-only follow-up is ready to merge; after that, archive the Phase
+05 chat and schedule 05b independently of parser integration work.
