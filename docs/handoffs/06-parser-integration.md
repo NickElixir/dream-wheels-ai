@@ -240,3 +240,17 @@ LIVE_MANUAL_FALLBACK_VERIFIED: NO
 KOLESA_DAROM_RENDER_SMOKE: DEFERRED
 READY_FOR_FITMENT: NO
 ```
+
+### Staging E2E after PR #89 — 2026-08-20
+
+- `staging` now contains PR #89 at `bed5c4c`; its staging Vercel deployment is ready.
+- An authenticated Chrome/Computer Use session (`@nick_elixir`) opened completed job `582f34da-6836-4267-b26b-cba5ffea5af9`. `GET /api/backend/jobs/{job_id}/fitment` returned `200` and `PATCH /api/backend/jobs/{job_id}/fitment` returned `200`; the former Vercel `404` is resolved.
+- A real «Колёса Даром» URL reached `POST /api/backend/jobs/{job_id}/fitment/rim-source/resolve`. Vercel recorded backend response `422`, classifying the retailer outcome as a fetch/access failure rather than a Vercel route failure.
+- The deployed UI remained in the resolving state after that `422`, leaving rim fields disabled. This violates the manual-fallback acceptance criterion. Local fix `2f0e4ee` adds a 20-second client-side abort and always restores manual fields in `finally`; it has not yet been deployed to staging.
+
+```text
+FITMENT_ROUTE_PROXY_IN_STAGING: YES
+KOLESA_DAROM_RENDER_SMOKE: FETCH_ISSUE
+LIVE_MANUAL_FALLBACK_VERIFIED: NO (awaiting deployment of 2f0e4ee)
+READY_FOR_FITMENT: NO
+```
