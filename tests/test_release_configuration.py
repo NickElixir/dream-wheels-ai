@@ -6,6 +6,20 @@ APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
 PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
 PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encoding="utf-8")
+FITMENT_PROXY_JS = (
+    ROOT / "webapp" / "api" / "backend" / "jobs" / "[jobId]" / "fitment.js"
+).read_text(encoding="utf-8")
+RIM_SOURCE_RESOLVE_PROXY_JS = (
+    ROOT
+    / "webapp"
+    / "api"
+    / "backend"
+    / "jobs"
+    / "[jobId]"
+    / "fitment"
+    / "rim-source"
+    / "resolve.js"
+).read_text(encoding="utf-8")
 
 
 def test_ci_covers_staging_release_workflow() -> None:
@@ -28,6 +42,11 @@ def test_proxy_reads_backend_url_only_at_runtime() -> None:
     assert "onrender.com" not in PROXY_HELPER_JS
     assert "https:" in PROXY_HELPER_JS
     assert "authorization" not in PROXY_HELPER_JS.lower() or "forwardHeaders" in PROXY_HELPER_JS
+
+
+def test_fitment_and_rim_source_resolver_have_explicit_vercel_proxy_routes() -> None:
+    assert 'require("../../../../lib/backend-proxy")' in FITMENT_PROXY_JS
+    assert 'require("../../../../../../lib/backend-proxy")' in RIM_SOURCE_RESOLVE_PROXY_JS
 
 
 def test_vercel_project_binding_is_not_tracked() -> None:
