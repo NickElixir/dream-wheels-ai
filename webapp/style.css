@@ -2365,6 +2365,37 @@ h2 {
     background: rgba(39, 216, 138, 0.08);
 }
 
+.fitment-rim-variant-picker {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid rgba(116, 211, 255, 0.28);
+    border-radius: 16px;
+    background: rgba(116, 211, 255, 0.06);
+}
+
+.fitment-rim-variant-picker p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.fitment-rim-variant-list {
+    display: grid;
+    gap: 8px;
+}
+
+.fitment-rim-variant {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.16);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+}
+
 .fitment-readiness strong {
     color: var(--text);
     font-size: 14px;

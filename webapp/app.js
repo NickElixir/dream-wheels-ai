@@ -1041,6 +1041,8 @@ const state = {
     fitmentSourceStatusTone: "neutral",
     fitmentSourceAppliedFields: [],
     fitmentSourceDetected: false,
+    fitmentSourceVariants: [],
+    fitmentRimManualFields: [],
     fitmentSourceAutoResolvedForJob: "",
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
@@ -2379,6 +2381,7 @@ function renderFitment() {
     }
     if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
     renderFitmentSourceSteps();
+    renderFitmentRimVariants();
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
@@ -2618,6 +2621,39 @@ function renderFitmentSourceSteps() {
     });
 }
 
+function renderFitmentRimVariants() {
+    const picker = document.querySelector("[data-fitment-rim-variant-picker]");
+    if (!picker) return;
+    const variants = state.fitmentSourceVariants || [];
+    picker.hidden = !variants.length;
+    picker.replaceChildren();
+    if (!variants.length) return;
+
+    const title = document.createElement("strong");
+    title.textContent = locale === "ru"
+        ? "Выберите вариант диска"
+        : "Choose the wheel variant";
+    const copy = document.createElement("p");
+    copy.textContent = locale === "ru"
+        ? "Параметры будут добавлены только в незаполненные вручную поля."
+        : "Only fields you have not entered manually will be filled.";
+    const list = document.createElement("div");
+    list.className = "fitment-rim-variant-list";
+    for (const [index, variant] of variants.entries()) {
+        const values = variant.values || {};
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "fitment-rim-variant";
+        button.dataset.fitmentRimVariant = String(index);
+        const titleParts = [values.brand, values.model, variant.sku || values.sku].filter(Boolean);
+        const technical = fitmentRimSpecs(values);
+        button.textContent = [titleParts.join(" "), technical].filter(Boolean).join(" / ")
+            || (locale === "ru" ? `Вариант ${index + 1}` : `Variant ${index + 1}`);
+        list.append(button);
+    }
+    picker.append(title, copy, list);
+}
+
 async function loadFitmentOverview(jobId) {
     if (!jobId) return;
     state.fitmentLoading = true;
@@ -2667,6 +2703,8 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentSourceStatusTone = "neutral";
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
+    state.fitmentSourceVariants = [];
+    state.fitmentRimManualFields = [];
     state.fitmentSourceAutoResolvedForJob = "";
     setView("fitment");
     void loadFitmentOverview(jobId);
@@ -2701,6 +2739,44 @@ function fitmentSourceErrorMessage(error) {
         : "Parameters could not be extracted automatically. Check the link or enter them manually.";
 }
 
+function applyRimSourceValues(values) {
+    const appliedFields = [];
+    for (const [fieldName, value] of Object.entries(values || {})) {
+        const currentValue = state.fitmentForm.rim[fieldName];
+        if (
+            Object.hasOwn(state.fitmentForm.rim, fieldName)
+            && !state.fitmentRimManualFields.includes(fieldName)
+            && (currentValue === null || currentValue === undefined || currentValue === "")
+            && value !== null
+            && value !== undefined
+            && value !== ""
+        ) {
+            state.fitmentForm.rim[fieldName] = value;
+            appliedFields.push(fieldName);
+        }
+    }
+    return appliedFields;
+}
+
+function selectFitmentRimVariant(index) {
+    const variant = state.fitmentSourceVariants[index];
+    if (!variant) return;
+    const appliedFields = applyRimSourceValues(variant.values);
+    state.fitmentSourceAppliedFields = appliedFields;
+    state.fitmentSourceDetected = Object.keys(variant.values || {}).length > 0;
+    state.fitmentSourceVariants = [];
+    state.fitmentSourceStatus = appliedFields.length
+        ? (locale === "ru"
+            ? "Вариант выбран. Проверьте заполненные параметры и сохраните их."
+            : "Variant selected. Review the filled parameters and save them.")
+        : (locale === "ru"
+            ? "Вариант выбран. Ручные значения сохранены; при необходимости дополните параметры."
+            : "Variant selected. Manual values were preserved; complete any missing parameters.");
+    state.fitmentSourceStatusTone = "success";
+    renderFitment();
+    scrollFitmentTo('[data-fitment-section="rim"]');
+}
+
 async function resolveFitmentRimSource({ automatic = false } = {}) {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
@@ -2713,6 +2789,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceResolving = true;
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
+    state.fitmentSourceVariants = [];
     state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
@@ -2728,24 +2805,19 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
+        state.fitmentSourceVariants = result.selection_required ? (result.variants || []) : [];
         const resolvedEntries = Object.entries(result.values || {}).filter(
             ([, value]) => value !== null && value !== undefined && value !== ""
         );
         state.fitmentSourceDetected = resolvedEntries.length > 0;
-        const appliedFields = [];
-        for (const [fieldName, value] of resolvedEntries) {
-            const currentValue = state.fitmentForm.rim[fieldName];
-            if (
-                Object.hasOwn(state.fitmentForm.rim, fieldName)
-                && (currentValue === null || currentValue === undefined || currentValue === "")
-            ) {
-                state.fitmentForm.rim[fieldName] = value;
-                appliedFields.push(fieldName);
-            }
-        }
+        const appliedFields = applyRimSourceValues(result.values);
         state.fitmentSourceAppliedFields = appliedFields;
         const conflictFields = (result.conflicts || []).map((conflict) => conflict.field);
-        state.fitmentSourceStatus = !resolvedEntries.length
+        state.fitmentSourceStatus = result.selection_required
+            ? locale === "ru"
+                ? "Найдено несколько вариантов. Выберите подходящий SKU, затем проверьте параметры."
+                : "Several variants were found. Choose the matching SKU, then review the parameters."
+            : !resolvedEntries.length
             ? locale === "ru"
                 ? "По этой ссылке не удалось распознать параметры. Проверьте ссылку или заполните поля вручную."
                 : "No wheel parameters could be recognised from this link. Check the URL or fill in the fields manually."
@@ -2754,8 +2826,8 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
             : locale === "ru"
                 ? "Параметры заполнены. Проверьте их и сохраните для запуска проверки совместимости."
                 : "Parameters filled. Review them and save to run the compatibility check.";
-        state.fitmentSourceStatusTone = !resolvedEntries.length || conflictFields.length ? "warning" : "success";
-        state.fitmentSourceOpen = !resolvedEntries.length ? true : automatic ? false : state.fitmentSourceOpen;
+        state.fitmentSourceStatusTone = result.selection_required || !resolvedEntries.length || conflictFields.length ? "warning" : "success";
+        state.fitmentSourceOpen = !resolvedEntries.length ? true : result.selection_required ? true : automatic ? false : state.fitmentSourceOpen;
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
@@ -5607,8 +5679,11 @@ function bindEvents() {
         input.addEventListener("input", (event) => {
             setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
             const fieldName = input.dataset.fitmentInput?.replace("rim.", "");
-            if (fieldName) {
+            if (fieldName && input.dataset.fitmentInput?.startsWith("rim.")) {
                 state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
+                if (!state.fitmentRimManualFields.includes(fieldName)) {
+                    state.fitmentRimManualFields.push(fieldName);
+                }
             }
             refreshFitmentSaveLabel();
         });
@@ -5694,6 +5769,12 @@ function bindEvents() {
             void openFitmentView(fitmentButton.dataset.openFitment, {
                 originView: fitmentButton.dataset.originView || state.view,
             });
+            return;
+        }
+
+        const rimVariant = event.target.closest("[data-fitment-rim-variant]");
+        if (rimVariant) {
+            selectFitmentRimVariant(Number(rimVariant.dataset.fitmentRimVariant));
             return;
         }
 

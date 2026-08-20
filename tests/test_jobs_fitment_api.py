@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from src import jobs_api
 from src.auth import AuthContext
 from src.main import app
-from src.rim_url_resolver import RimUrlCandidate, RimUrlResolution
+from src.rim_url_resolver import RimUrlCandidate, RimUrlResolution, RimUrlVariant
 
 client = TestClient(app)
 
@@ -236,6 +236,57 @@ def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["values"] == {"pcd_mm": 114.3, "bolt_count": 5}
+
+
+def test_fitment_source_resolver_returns_variants_without_arbitrary_selection(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_resolve(url, *, policy, limits):
+        del policy, limits
+        candidate = RimUrlCandidate("sku", "ROAD-18", "json_ld_variant", 0.98)
+        return RimUrlResolution(
+            requested_url=url,
+            final_url=url,
+            values={"brand": "Example", "model": "Road"},
+            candidates=(),
+            conflicts=(),
+            variants=(
+                RimUrlVariant(
+                    sku="ROAD-17",
+                    values={"sku": "ROAD-17", "wheel_diameter_in": 17.0},
+                    candidates=(candidate,),
+                ),
+                RimUrlVariant(
+                    sku="ROAD-18",
+                    values={"sku": "ROAD-18", "wheel_diameter_in": 18.0},
+                    candidates=(candidate,),
+                ),
+            ),
+            selection_required=True,
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/road"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["selection_required"] is True
+    assert body["selected_variant_sku"] is None
+    assert [variant["sku"] for variant in body["variants"]] == ["ROAD-17", "ROAD-18"]
 
 
 def test_fitment_vehicle_variants_are_catalogue_server_side(monkeypatch):

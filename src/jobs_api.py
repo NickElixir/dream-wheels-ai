@@ -325,12 +325,22 @@ class RimSourceConflictResponse(BaseModel):
     candidates: list[RimSourceCandidateResponse]
 
 
+class RimSourceVariantResponse(BaseModel):
+    sku: str | None = None
+    values: dict[str, str | int | float]
+    candidates: list[RimSourceCandidateResponse]
+    conflicts: list[RimSourceConflictResponse] = Field(default_factory=list)
+
+
 class RimSourceResolveResponse(BaseModel):
     requested_url: str
     final_url: str
     values: dict[str, str | int | float]
     candidates: list[RimSourceCandidateResponse]
     conflicts: list[RimSourceConflictResponse]
+    variants: list[RimSourceVariantResponse] = Field(default_factory=list)
+    selection_required: bool = False
+    selected_variant_sku: str | None = None
 
 
 class VehicleVariantResponse(BaseModel):
@@ -2153,6 +2163,39 @@ async def resolve_fitment_rim_source(
             )
             for conflict in resolution.conflicts
         ],
+        variants=[
+            RimSourceVariantResponse(
+                sku=variant.sku,
+                values=variant.values,
+                candidates=[
+                    RimSourceCandidateResponse(
+                        field=candidate.field,
+                        value=candidate.value,
+                        source=candidate.source,
+                        confidence=candidate.confidence,
+                    )
+                    for candidate in variant.candidates
+                ],
+                conflicts=[
+                    RimSourceConflictResponse(
+                        field=conflict.field,
+                        candidates=[
+                            RimSourceCandidateResponse(
+                                field=candidate.field,
+                                value=candidate.value,
+                                source=candidate.source,
+                                confidence=candidate.confidence,
+                            )
+                            for candidate in conflict.candidates
+                        ],
+                    )
+                    for conflict in variant.conflicts
+                ],
+            )
+            for variant in resolution.variants
+        ],
+        selection_required=resolution.selection_required,
+        selected_variant_sku=resolution.selected_variant_sku,
     )
 
 

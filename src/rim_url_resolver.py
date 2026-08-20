@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
-import json
 import re
 import socket
 from dataclasses import dataclass, field
@@ -18,6 +17,8 @@ from urllib.parse import SplitResult, urljoin, urlsplit, urlunsplit
 
 import aiohttp
 from aiohttp.abc import AbstractResolver
+
+from src.rim_url_extract import ExtractedCandidate, ExtractedPage, extract_rim_document
 
 
 class RimUrlError(RuntimeError):
@@ -43,12 +44,23 @@ class RimUrlConflict:
 
 
 @dataclass(frozen=True, slots=True)
+class RimUrlVariant:
+    sku: str | None
+    values: dict[str, str | int | float]
+    candidates: tuple[RimUrlCandidate, ...]
+    conflicts: tuple[RimUrlConflict, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class RimUrlResolution:
     requested_url: str
     final_url: str
     values: dict[str, str | int | float]
     candidates: tuple[RimUrlCandidate, ...]
     conflicts: tuple[RimUrlConflict, ...]
+    variants: tuple[RimUrlVariant, ...] = ()
+    selection_required: bool = False
+    selected_variant_sku: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,43 +322,142 @@ def _technical_candidates(text: str, source: str, confidence: float) -> list[Rim
 
 
 def extract_product_page(html: str) -> tuple[RimUrlCandidate, ...]:
-    parser = _ProductHtmlParser()
-    parser.feed(html)
+    return _to_url_candidates(extract_rim_document(html).candidates)
+
+
+def _to_url_candidates(
+    extracted: tuple[ExtractedCandidate, ...],
+) -> tuple[RimUrlCandidate, ...]:
     candidates: list[RimUrlCandidate] = []
-    for block in parser.json_ld:
-        try:
-            products = _products(json.loads(block))
-        except (json.JSONDecodeError, TypeError):
+    seen: set[tuple[str, str | int | float, str]] = set()
+    for item in extracted:
+        key = (item.field, item.value, item.source)
+        if key in seen:
             continue
-        for product in products:
-            brand = product.get("brand")
-            if isinstance(brand, dict):
-                brand = brand.get("name")
-            for field_name, raw, sku in (
-                ("brand", brand, False),
-                ("sku", product.get("sku") or product.get("mpn") or product.get("productID"), True),
-            ):
-                if value := _clean(raw, sku=sku):
-                    candidates.append(RimUrlCandidate(field_name, value, "json_ld", 0.95))
-            if model := _clean_model(product.get("model")):
-                candidates.append(RimUrlCandidate("model", model, "json_ld", 0.95))
-            candidates.extend(
-                _technical_candidates(" ".join(str(v) for v in product.values()), "json_ld", 0.9)
+        seen.add(key)
+        candidates.append(
+            RimUrlCandidate(
+                field=item.field,
+                value=item.value,
+                source=item.source,
+                confidence=item.confidence,
             )
-    meta = dict(parser.meta)
-    for field_name, raw, sku in (
-        ("brand", meta.get("product:brand") or meta.get("og:brand"), False),
-        ("sku", meta.get("product:retailer_item_id") or meta.get("product:sku"), True),
-    ):
-        if value := _clean(raw, sku=sku):
-            candidates.append(RimUrlCandidate(field_name, value, "opengraph", 0.8))
-    visible = "\n".join(_clean(part, sku=False) or "" for part in parser.text)
-    for field_name, pattern in _FIELD_PATTERNS.items():
-        if match := pattern.search(visible):
-            if value := _clean(match.group(1), sku=field_name == "sku"):
-                candidates.append(RimUrlCandidate(field_name, value, "visible_text", 0.65))
-    candidates.extend(_technical_candidates(visible, "visible_text", 0.6))
+        )
     return tuple(candidates)
+
+
+def _values_and_conflicts(
+    candidates: tuple[RimUrlCandidate, ...],
+) -> tuple[dict[str, str | int | float], tuple[RimUrlConflict, ...]]:
+    values: dict[str, str | int | float] = {}
+    conflicts: list[RimUrlConflict] = []
+    for field_name in _KNOWN_FIELDS:
+        matches = tuple(item for item in candidates if item.field == field_name)
+        if not matches:
+            continue
+        best_confidence = max(item.confidence for item in matches)
+        relevant = tuple(item for item in matches if item.confidence >= best_confidence - 0.03)
+        identities = {
+            str(item.value).casefold().replace(" ", "")
+            if field_name in {"brand", "model", "sku"}
+            else item.value
+            for item in relevant
+        }
+        if len(identities) > 1:
+            conflicts.append(RimUrlConflict(field_name, relevant))
+            continue
+        values[field_name] = max(
+            relevant,
+            key=lambda item: (item.confidence, item.source == "html_specifications"),
+        ).value
+    return values, tuple(conflicts)
+
+
+def _build_variants(extracted: ExtractedPage) -> tuple[RimUrlVariant, ...]:
+    primary_candidates = _to_url_candidates(extracted.candidates)
+    primary_values, _ = _values_and_conflicts(primary_candidates)
+    by_identity: dict[str, list[RimUrlCandidate]] = {}
+    for index, extracted_variant in enumerate(extracted.variants):
+        candidates = list(_to_url_candidates(extracted_variant.candidates))
+        for field_name in ("brand", "model"):
+            if field_name in primary_values and not any(
+                item.field == field_name for item in candidates
+            ):
+                candidates.append(
+                    RimUrlCandidate(
+                        field=field_name,
+                        value=primary_values[field_name],
+                        source="product_group",
+                        confidence=0.98,
+                    )
+                )
+        sku = next((item.value for item in candidates if item.field == "sku"), None)
+        identity = str(sku) if sku is not None else extracted_variant.source_url or str(index)
+        by_identity.setdefault(identity, []).extend(candidates)
+
+    variants: list[RimUrlVariant] = []
+    for variant_candidates in by_identity.values():
+        candidates = tuple(dict.fromkeys(variant_candidates))
+        values, conflicts = _values_and_conflicts(candidates)
+        variants.append(
+            RimUrlVariant(
+                sku=str(values["sku"]) if values.get("sku") is not None else None,
+                values=values,
+                candidates=candidates,
+                conflicts=conflicts,
+            )
+        )
+    return tuple(variants)
+
+
+def _resolve_document(
+    requested_url: str,
+    final_url: str,
+    extracted: ExtractedPage,
+) -> RimUrlResolution:
+    candidates = _to_url_candidates(extracted.candidates)
+    values, conflicts = _values_and_conflicts(candidates)
+    variants = _build_variants(extracted)
+    if len(variants) == 1:
+        selected = variants[0]
+        return RimUrlResolution(
+            requested_url,
+            final_url,
+            selected.values,
+            selected.candidates,
+            selected.conflicts,
+            variants,
+            False,
+            selected.sku,
+        )
+    if len(variants) > 1:
+        for field_name in (
+            "sku",
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+        ):
+            values.pop(field_name, None)
+        candidates = tuple(
+            item
+            for item in candidates
+            if item.field
+            not in {
+                "sku",
+                "bolt_count",
+                "pcd_mm",
+                "center_bore_mm",
+                "wheel_diameter_in",
+                "wheel_width_j",
+                "offset_et_mm",
+            }
+        )
+    return RimUrlResolution(
+        requested_url, final_url, values, candidates, conflicts, variants, bool(variants)
+    )
 
 
 async def resolve_rim_product_url(
@@ -372,37 +483,23 @@ async def resolve_rim_product_url(
                             urljoin(current_url, response.headers["Location"]), policy
                         )
                         continue
-                    if not 200 <= response.status < 300 or response.content_type.lower() not in {
-                        "text/html",
-                        "application/xhtml+xml",
-                    }:
-                        raise RimUrlError("Product page is not available as HTML")
+                    if not 200 <= response.status < 300 or (
+                        response.content_type.lower()
+                        not in {"text/html", "application/xhtml+xml", "application/json"}
+                        and not response.content_type.lower().endswith("+json")
+                    ):
+                        raise RimUrlError("Product page is not available as a supported document")
                     body = await response.content.read(limits.max_body_bytes + 1)
                     if len(body) > limits.max_body_bytes:
                         raise RimUrlError("Product page is too large")
-                    candidates = tuple(
-                        dict.fromkeys(
-                            extract_product_page(
-                                body.decode(response.charset or "utf-8", errors="replace")
-                            )
-                        )
+                    content_type = response.content_type.lower()
+                    if content_type.endswith("+json"):
+                        content_type = "application/json"
+                    extracted = extract_rim_document(
+                        body.decode(response.charset or "utf-8", errors="replace"),
+                        content_type=content_type,
                     )
-                    values = {
-                        field_name: next(
-                            item.value for item in candidates if item.field == field_name
-                        )
-                        for field_name in _KNOWN_FIELDS
-                        if any(item.field == field_name for item in candidates)
-                    }
-                    conflicts = tuple(
-                        RimUrlConflict(
-                            field_name,
-                            tuple(item for item in candidates if item.field == field_name),
-                        )
-                        for field_name in _KNOWN_FIELDS
-                        if len({item.value for item in candidates if item.field == field_name}) > 1
-                    )
-                    return RimUrlResolution(url, current_url, values, candidates, conflicts)
+                    return _resolve_document(url, current_url, extracted)
     except (aiohttp.ClientError, TimeoutError) as exc:
         raise RimUrlError("Product page fetch failed") from exc
     raise RimUrlError("Product page redirect failed")
