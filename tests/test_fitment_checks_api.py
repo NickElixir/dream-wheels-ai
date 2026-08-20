@@ -304,6 +304,62 @@ def test_field_accepts_legacy_scalar_provenance():
     assert field.source.value == "user_confirmed"
 
 
+def test_snapshot_keeps_confirmed_rear_rim_authoritative_for_staggered_setup():
+    row = _row()
+    rear_provenance = {
+        name: {"source": "user_confirmed", "confidence": 1, "is_user_confirmed": True}
+        for name in (
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+        )
+    }
+    row.update(
+        {
+            "is_staggered": True,
+            "front_rim_brand": "Front",
+            "front_rim_model": "F20",
+            "front_rim_sku": "front-20",
+            "front_rim_product_url": None,
+            "front_rim_bolt_count": 5,
+            "front_rim_pcd_mm": 114.3,
+            "front_rim_center_bore_mm": 60.1,
+            "front_rim_wheel_diameter_in": 20,
+            "front_rim_wheel_width_j": 8.5,
+            "front_rim_offset_et_mm": 40,
+            "front_rim_load_rating_kg": None,
+            "front_rim_fastener_system": None,
+            "front_rim_seat_type": None,
+            "front_rim_field_provenance": rear_provenance,
+            "rear_rim_brand": "Rear",
+            "rear_rim_model": "R20",
+            "rear_rim_sku": "rear-20",
+            "rear_rim_product_url": None,
+            "rear_rim_bolt_count": 5,
+            "rear_rim_pcd_mm": 114.3,
+            "rear_rim_center_bore_mm": 60.1,
+            "rear_rim_wheel_diameter_in": 20,
+            "rear_rim_wheel_width_j": 9.5,
+            "rear_rim_offset_et_mm": 45,
+            "rear_rim_load_rating_kg": None,
+            "rear_rim_fastener_system": None,
+            "rear_rim_seat_type": None,
+            "rear_rim_field_provenance": rear_provenance,
+        }
+    )
+
+    _, setup, snapshot = fitment_checks_api._snapshot(row)
+
+    assert setup.is_staggered is True
+    assert setup.front.model == "F20"
+    assert setup.rear.model == "R20"
+    assert setup.rear.wheel_width_j.value == 9.5
+    assert snapshot["rim_setup"]["rear"]["model"] == "R20"
+
+
 def test_create_check_rejects_foreign_render_job(monkeypatch):
     conn = FakeConn()
     _patch_auth_and_inputs(monkeypatch, conn)

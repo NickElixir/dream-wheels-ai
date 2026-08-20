@@ -2142,7 +2142,7 @@ function fitmentVerdictMessage(item) {
     }
     if (code === "pcd_unknown") return ru ? "Не удалось подтвердить PCD." : "PCD could not be confirmed.";
     if (code === "center_bore_unknown") return ru ? "Не удалось подтвердить центральное отверстие." : "Center bore could not be confirmed.";
-    if (code === "size_unknown" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
+    if (code === "size_unknown" || code === "size_not_in_reference" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
     if (code === "provider_unavailable") return ru ? "Wheel‑Size временно недоступен. Повторите проверку позже." : "Wheel‑Size is temporarily unavailable. Try again later.";
     if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
     if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";

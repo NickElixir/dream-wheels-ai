@@ -133,14 +133,35 @@ async def _load(conn, user_id: int, request: CheckCreateRequest):
           vehicle.generation, vehicle.modification, vehicle.market, vehicle.is_user_confirmed,
           vehicle.provider_mappings, vehicle.revision AS vehicle_revision,
           vehicle.provider_mapping_revision, rs.is_staggered,
-          rim.brand, rim.model AS rim_model, rim.sku, rim.product_url, rim.bolt_count,
-          rim.pcd_mm, rim.center_bore_mm, rim.wheel_diameter_in, rim.wheel_width_j,
-          rim.offset_et_mm, rim.load_rating_kg, rim.fastener_system, rim.seat_type,
-          rim.field_provenance AS rim_field_provenance, rim.revision AS rim_revision,
+          front_rim.brand AS front_rim_brand, front_rim.model AS front_rim_model,
+          front_rim.sku AS front_rim_sku, front_rim.product_url AS front_rim_product_url,
+          front_rim.bolt_count AS front_rim_bolt_count, front_rim.pcd_mm AS front_rim_pcd_mm,
+          front_rim.center_bore_mm AS front_rim_center_bore_mm,
+          front_rim.wheel_diameter_in AS front_rim_wheel_diameter_in,
+          front_rim.wheel_width_j AS front_rim_wheel_width_j,
+          front_rim.offset_et_mm AS front_rim_offset_et_mm,
+          front_rim.load_rating_kg AS front_rim_load_rating_kg,
+          front_rim.fastener_system AS front_rim_fastener_system,
+          front_rim.seat_type AS front_rim_seat_type,
+          front_rim.field_provenance AS front_rim_field_provenance,
+          front_rim.revision AS front_rim_revision,
+          rear_rim.brand AS rear_rim_brand, rear_rim.model AS rear_rim_model,
+          rear_rim.sku AS rear_rim_sku, rear_rim.product_url AS rear_rim_product_url,
+          rear_rim.bolt_count AS rear_rim_bolt_count, rear_rim.pcd_mm AS rear_rim_pcd_mm,
+          rear_rim.center_bore_mm AS rear_rim_center_bore_mm,
+          rear_rim.wheel_diameter_in AS rear_rim_wheel_diameter_in,
+          rear_rim.wheel_width_j AS rear_rim_wheel_width_j,
+          rear_rim.offset_et_mm AS rear_rim_offset_et_mm,
+          rear_rim.load_rating_kg AS rear_rim_load_rating_kg,
+          rear_rim.fastener_system AS rear_rim_fastener_system,
+          rear_rim.seat_type AS rear_rim_seat_type,
+          rear_rim.field_provenance AS rear_rim_field_provenance,
+          rear_rim.revision AS rear_rim_revision,
           jobs.id AS owned_job_id
         FROM vehicle_identities vehicle
         JOIN rim_setups rs ON rs.id = $2::uuid AND rs.owner_user_id = $1
-        JOIN rim_specs rim ON rim.id = rs.front_rim_spec_id AND rim.owner_user_id = $1
+        JOIN rim_specs front_rim ON front_rim.id = rs.front_rim_spec_id AND front_rim.owner_user_id = $1
+        JOIN rim_specs rear_rim ON rear_rim.id = rs.rear_rim_spec_id AND rear_rim.owner_user_id = $1
         LEFT JOIN jobs ON jobs.id = $3::uuid AND jobs.user_id = $1
         WHERE vehicle.id = $4::uuid AND vehicle.owner_user_id = $1
         """,
@@ -151,8 +172,38 @@ async def _load(conn, user_id: int, request: CheckCreateRequest):
     )
 
 
+def _rim_snapshot(row, prefix: str, *, fallback_prefix: str = "") -> RimSpec:
+    """Read one canonical axle RimSpec without consulting parser candidates."""
+
+    def value(name: str):
+        key = f"{prefix}_{name}"
+        if key in row:
+            return row[key]
+        if fallback_prefix:
+            fallback_key = f"{fallback_prefix}_{name}"
+            if fallback_key in row:
+                return row[fallback_key]
+        return row.get(name)
+
+    provenance = value("field_provenance") or {}
+    return RimSpec(
+        brand=value("brand"),
+        model=value("model"),
+        sku=value("sku"),
+        product_url=value("product_url"),
+        bolt_count=_field(value("bolt_count"), provenance, "bolt_count"),
+        pcd_mm=_field(value("pcd_mm"), provenance, "pcd_mm"),
+        center_bore_mm=_field(value("center_bore_mm"), provenance, "center_bore_mm"),
+        wheel_diameter_in=_field(value("wheel_diameter_in"), provenance, "wheel_diameter_in"),
+        wheel_width_j=_field(value("wheel_width_j"), provenance, "wheel_width_j"),
+        offset_et_mm=_field(value("offset_et_mm"), provenance, "offset_et_mm"),
+        load_rating_kg=_field(value("load_rating_kg"), provenance, "load_rating_kg"),
+        fastener_system=_field(value("fastener_system"), provenance, "fastener_system"),
+        seat_type=_field(value("seat_type"), provenance, "seat_type"),
+    )
+
+
 def _snapshot(row) -> tuple[VehicleIdentity, RimSetup, dict]:
-    rim_provenance = row["rim_field_provenance"] or {}
     vehicle = VehicleIdentity(
         make=row["make"],
         model=row["vehicle_model"],
@@ -166,22 +217,11 @@ def _snapshot(row) -> tuple[VehicleIdentity, RimSetup, dict]:
             row["provider_mappings"], field_name="vehicle provider_mappings"
         ),
     )
-    rim = RimSpec(
-        brand=row["brand"],
-        model=row["rim_model"],
-        sku=row["sku"],
-        product_url=row["product_url"],
-        bolt_count=_field(row["bolt_count"], rim_provenance, "bolt_count"),
-        pcd_mm=_field(row["pcd_mm"], rim_provenance, "pcd_mm"),
-        center_bore_mm=_field(row["center_bore_mm"], rim_provenance, "center_bore_mm"),
-        wheel_diameter_in=_field(row["wheel_diameter_in"], rim_provenance, "wheel_diameter_in"),
-        wheel_width_j=_field(row["wheel_width_j"], rim_provenance, "wheel_width_j"),
-        offset_et_mm=_field(row["offset_et_mm"], rim_provenance, "offset_et_mm"),
-        load_rating_kg=_field(row["load_rating_kg"], rim_provenance, "load_rating_kg"),
-        fastener_system=_field(row["fastener_system"], rim_provenance, "fastener_system"),
-        seat_type=_field(row["seat_type"], rim_provenance, "seat_type"),
-    )
-    setup = RimSetup(front=rim, rear=rim, is_staggered=bool(row["is_staggered"]))
+    # The fallback keeps old immutable snapshots/test doubles readable. New DB
+    # reads always contain independently selected front and rear columns.
+    front = _rim_snapshot(row, "front_rim", fallback_prefix="rim")
+    rear = _rim_snapshot(row, "rear_rim", fallback_prefix="rim")
+    setup = RimSetup(front=front, rear=rear, is_staggered=bool(row["is_staggered"]))
     snapshot = {
         "vehicle": vehicle.model_dump(mode="json"),
         "rim_setup": setup.model_dump(mode="json"),
