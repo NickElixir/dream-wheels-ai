@@ -1,8 +1,10 @@
 import pytest
 
+from src.rim_url_extract import extract_rim_document
 from src.rim_url_resolver import (
     PublicHttpsPolicy,
     RimUrlSecurityError,
+    _resolve_document,
     extract_product_page,
     validate_product_url,
 )
@@ -58,3 +60,59 @@ def test_extractor_does_not_use_marketing_product_title_as_model() -> None:
 
     assert not [candidate for candidate in candidates if candidate.field == "model"]
     assert ("sku", "761476") in {(candidate.field, candidate.value) for candidate in candidates}
+
+
+def test_product_group_requires_explicit_variant_selection() -> None:
+    document = extract_rim_document(
+        """
+        <script type="application/ld+json">
+        {
+          "@type": "ProductGroup",
+          "brand": {"name": "Example"},
+          "model": "Road",
+          "hasVariant": [
+            {"@type": "Product", "sku": "ROAD-17", "description": "7Jx17 ET40 5x112 DIA 66.6"},
+            {"@type": "Product", "sku": "ROAD-18", "description": "8Jx18 ET35 5x112 DIA 66.6"}
+          ]
+        }
+        </script>
+        """
+    )
+
+    resolution = _resolve_document(
+        "https://shop.example/road", "https://shop.example/road", document
+    )
+
+    assert resolution.selection_required is True
+    assert resolution.values == {"brand": "Example", "model": "Road"}
+    assert {variant.sku for variant in resolution.variants} == {"ROAD-17", "ROAD-18"}
+    assert resolution.selected_variant_sku is None
+    assert next(variant for variant in resolution.variants if variant.sku == "ROAD-18").values == {
+        "brand": "Example",
+        "model": "Road",
+        "sku": "ROAD-18",
+        "bolt_count": 5,
+        "pcd_mm": 112.0,
+        "center_bore_mm": 66.6,
+        "wheel_diameter_in": 18.0,
+        "wheel_width_j": 8.0,
+        "offset_et_mm": 35.0,
+    }
+
+
+def test_incomplete_labelled_specification_stays_incomplete() -> None:
+    document = extract_rim_document(
+        """
+        <main itemscope itemtype="https://schema.org/Product">
+          <div><span>Диаметр</span><span>15</span></div>
+          <div><span>Крепёж (PCD)</span><span>4x100</span></div>
+          <div><span>Вылет, мм</span><span>35</span></div>
+        </main>
+        """
+    )
+
+    resolution = _resolve_document("https://shop.example/rim", "https://shop.example/rim", document)
+
+    assert resolution.values["wheel_diameter_in"] == 15.0
+    assert "wheel_width_j" not in resolution.values
+    assert "center_bore_mm" not in resolution.values

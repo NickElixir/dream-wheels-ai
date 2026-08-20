@@ -1,0 +1,191 @@
+# Workstream 06 — Parser Integration
+
+**Status:** READY_TO_START  
+**Scope:** Dream Wheels AI Release 1 integration work  
+**Branch policy:** start from current `origin/staging`; do **not** merge `codex/robust-rim-url-parser` wholesale.  
+**Production policy:** no production rollout, deployment, or change to `main` in this workstream.
+
+## Objective
+
+Bring the validated rim URL parser core into the current staging application and complete the user flow:
+
+```text
+Rim product URL
+  → resolved product / variants
+  → SKU or variant selection
+  → normalized RimSpec
+  → user review and confirmation
+  → existing fitment flow
+```
+
+The integration must preserve the current staging architecture and UX. Parser output is a helpful prefill, not an authority over user-entered data.
+
+## Starting point and authority
+
+1. Work from a **new branch and worktree created from freshly fetched `origin/staging`**.
+2. Confirm the checked-out base commit and record it in the PR/handoff before implementation.
+3. Treat the parser worktree/branch at `codex/robust-rim-url-parser` as the source of validated parser logic and regression evidence only.
+4. Selectively port the needed components, adapting them to the current staging codebase. Prefer small, reviewable commits.
+5. Do not use a wholesale merge, rebase, or cherry-pick sequence that imports the historical branch architecture, stale API/UI code, or unrelated commits.
+
+Known context: the parser branch was maintained independently and is materially behind `staging`. It was frozen after parser-core validation; any deferred Render access behaviour for «Колёса Даром» remains an environment verification item, not a reason to expand parser core scope.
+
+## In scope
+
+- Selective port of validated resolver/extraction logic, parser models, source adapters, normalization, fixtures, and regression fixes that are still compatible with current staging.
+- Reconciliation of the parser response with the **current** backend API contract and current frontend state/UI.
+- URL submission, resolution, product/variant representation, SKU selection, RimSpec prefill, review, and explicit user confirmation.
+- Single-variant and multi-variant UX:
+  - one unambiguous compatible variant may be selected automatically;
+  - multiple variants must be shown to the user for selection;
+  - the application must not silently choose an arbitrary first variant.
+- Manual entry/editing at every point where the product permits it.
+- Clear, recoverable failure handling: a parser failure, timeout, unsupported URL, incomplete data, or source-access problem must leave the user able to enter/edit the wheel parameters manually and continue.
+- Unit/integration tests plus staging-appropriate E2E coverage for the complete flow.
+- Documentation of final endpoint/UI contract, supported-source behaviour, known limitations, and validation results.
+
+## Explicitly out of scope
+
+- Direct merge of `codex/robust-rim-url-parser` into `staging`.
+- Replacing or redesigning unrelated current staging systems (auth, payments, cabinet, fitment, or general frontend architecture).
+- New browser automation, OCR, LLM extraction, or unrestricted crawling as a fallback.
+- Expanding supported sources without a separately agreed validation plan.
+- Production deploy, merge to `main`, or production traffic changes.
+
+## Required functional behaviour
+
+### 1. URL resolution
+
+- Accept a user-supplied rim product URL through the current app entrypoint or a compatible current endpoint.
+- Validate and normalize input without discarding the original user-visible URL unnecessarily.
+- Return a structured result suitable for the frontend: resolution status, product identity where available, variants/SKUs, normalized candidate RimSpec data, and actionable error/fallback information.
+- Preserve safe missing values as `null`/`None`; never infer or fabricate unknown dimensions.
+
+### 2. Variants and SKU selection
+
+- A single clearly resolved variant may prefill the form.
+- For multiple variants, display enough identifying data for a deliberate selection (for example SKU plus diameter, width, PCD, ET, DIA where known).
+- Changing the selected variant must update only fields that remain parser-derived and have not been manually overridden by the user.
+
+### 3. RimSpec and user confirmation
+
+- Map parser output into the current canonical RimSpec/form state rather than introducing competing representations.
+- Show all available values for review before treating them as input to downstream fitment operations.
+- Manual edits are authoritative. A later parser result or variant selection must not overwrite a user-edited field without an explicit user choice to reapply parser data.
+- Incomplete parsed results remain useful as a prefill, but must visibly request the missing required fields before confirmation.
+
+### 4. Failure and manual fallback
+
+- The user must be able to continue with manual parameters when parsing fails or yields no usable result.
+- Failures must be user-comprehensible and must not strand the UI in loading/error state.
+- Capture safe diagnostic detail in backend logs/telemetry if the current application supports it; do not expose internal fetch/parser traces to users.
+
+## Implementation approach
+
+1. **Reconnaissance**
+   - Fetch `origin` and create the fresh worktree/branch from `origin/staging`.
+   - Locate the present API, RimSpec model/state, URL entrypoint, variant UI, and fitment handoff in staging.
+   - Compare them with the frozen parser core to identify the minimal import set and any contract mismatch.
+
+2. **Port parser core selectively**
+   - Copy/adapt only validated parser modules and their direct dependencies.
+   - Retain the deterministic allowlisted approach used by the benchmark; do not add browser/OCR/LLM fallback.
+   - Bring only relevant fixtures/tests, adjusting paths and imports to the new architecture.
+
+3. **Integrate backend/API**
+   - Add or adapt the current endpoint/service boundary, using the app's current conventions for validation, authentication, errors, and response envelopes.
+   - Define and test a stable response contract for resolved variants, partial specs, and failures.
+
+4. **Integrate frontend flow**
+   - Connect URL input to the current API client and app state.
+   - Implement selection/review/confirmation and manual fallback using the existing UI patterns.
+   - Verify manual-overrides-authoritative behaviour.
+
+5. **Validate end-to-end**
+   - Run targeted unit and integration tests throughout.
+   - Run the existing parser regressions/benchmark smoke where compatible.
+   - Execute E2E scenarios against the staging-branch environment; use fixture/network-stub paths where external retailer availability would make tests flaky.
+
+## Minimum test matrix
+
+| Scenario | Expected result |
+| --- | --- |
+| Supported URL, one resolved variant | Correct SKU/RimSpec prefill; review is shown; user can edit and confirm. |
+| Supported URL, several variants | No arbitrary auto-choice; user selects a variant; spec updates correctly. |
+| Partial RimSpec | Known values prefill; unknown fields stay empty/null; user completes them manually. |
+| Manual edit after parse | Manual value persists through UI/state transitions and is used for confirmation. |
+| Change variant after a manual edit | Edited field is preserved unless the user explicitly elects to reapply parsed values. |
+| Unsupported/malformed URL | Clear message and immediate manual-entry fallback. |
+| Fetch/parser/source failure or timeout | Recoverable failure state; no blocked flow; manual fallback works. |
+| Existing manual-only path | No regression. |
+| Confirmed RimSpec → downstream fitment | Current fitment path receives the confirmed canonical spec, not an unreviewed parser payload. |
+
+At least one automated E2E path must cover successful URL → variant/SKU → review → confirmation → fitment handoff, and at least one must cover parser failure → manual completion → fitment handoff.
+
+## Acceptance criteria
+
+- [ ] New branch/worktree is based on a recorded, current `origin/staging` commit.
+- [ ] No wholesale merge of `codex/robust-rim-url-parser` occurred.
+- [ ] Validated parser logic is selectively integrated and existing staging functionality remains intact.
+- [ ] Backend/API has a tested structured contract for success, multiple variants, partial values, and failures.
+- [ ] Multi-variant products require intentional user choice; no arbitrary first-SKU selection.
+- [ ] Parser data pre-fills the canonical RimSpec state and is visibly reviewed before downstream use.
+- [ ] Manual edits are authoritative and survive relevant state changes.
+- [ ] All parse failures have a working manual fallback.
+- [ ] Relevant parser regressions, application tests, lint/type checks, and E2E tests pass.
+- [ ] No production deployment, `main` merge, or production configuration change was made.
+- [ ] Final notes document supported sources, deferred limitations, test commands/results, and follow-up items.
+
+## Completion record (fill before handoff/PR)
+
+```text
+WORKSTREAM_STATUS: READY_FOR_STAGING_REVIEW
+
+INTEGRATION_BRANCH: feature/parser-integration
+BASE_BRANCH: origin/staging
+BASE_COMMIT: 8054194a12d0eb4907fc1441853f8df45dd1a2d3 (docs: finalize analytics UTM handoff (#85))
+PARSER_SOURCE_BRANCH: codex/robust-rim-url-parser
+SELECTIVELY_PORTED_COMPONENTS:
+- deterministic structured-document extraction: JSON-LD Product/ProductGroup/variants,
+  embedded JSON, microdata, labelled HTML fields, and bounded marking parsing
+- variant/SKU reconciliation and conflict-safe response values
+- existing SSRF-safe public HTTPS fetcher and current staging endpoint/UI were retained
+
+API_ENDPOINT_OR_SERVICE: POST /jobs/{job_id}/fitment/rim-source/resolve
+API_CONTRACT_DOCUMENTATION: RimSourceResolveResponse now includes variants[], selection_required,
+  and selected_variant_sku; response remains an unpersisted review draft.
+FRONTEND_ENTRYPOINT: webapp/index.html + webapp/app.js fitment rim-source flow
+CANONICAL_RIMSPEC_STATE: state.fitmentForm.rim → existing PATCH /jobs/{job_id}/fitment
+
+SUPPORTED_SOURCES_VALIDATED: deterministic fixture/unit coverage for JSON-LD ProductGroup variants,
+  labelled partial specs, and prior public-URL resolver regression cases.
+UNSUPPORTED_OR_DEFERRED_SOURCES: live retailer E2E and Render-origin Kolesa Darom fetch smoke.
+KNOWN_LIMITATIONS:
+- No production deploy or live retailer probe was run in this workstream.
+- Multi-variant values are intentionally not persisted until the user selects a variant and confirms
+  the normal fitment form.
+
+TESTS_RUN:
+- .venv/bin/python -m pytest -q
+- .venv/bin/python -m ruff check .
+- .venv/bin/python -m ruff format --check .
+- node --check webapp/app.js
+- git diff --check
+TEST_RESULTS: 230 passed, 3 skipped (10 existing httpx deprecation warnings)
+E2E_RESULTS: deterministic API/frontend-flow regressions are covered; live staging/Telegram E2E is deferred
+  because this workstream must not deploy or change production infrastructure.
+LINT_TYPECHECK_RESULTS: all checks passed
+
+MANUAL_OVERRIDE_VERIFIED: YES (variant selection fills only fields not manually edited)
+MANUAL_FALLBACK_VERIFIED: YES (existing recoverable resolver error and manual form path retained)
+MULTI_VARIANT_SELECTION_VERIFIED: YES (API and resolver regression coverage; no arbitrary first-SKU selection)
+PRODUCTION_CHANGES_MADE: NO
+
+PR_URL: not opened
+REVIEW_NOTES: ready for review into staging; confirm in a staging Mini App before release.
+NEXT_OWNER / NEXT_ACTION: review diff, then execute staging-browser/Telegram E2E without production rollout.
+```
+
+## Stop condition
+
+Stop when the acceptance criteria and completion record are complete and the changes are ready for review into `staging`. Do not broaden the workstream into source expansion or production rollout. If current staging architecture creates a material product/API decision that cannot be resolved from existing conventions, document the alternatives and request direction before making that product decision.
