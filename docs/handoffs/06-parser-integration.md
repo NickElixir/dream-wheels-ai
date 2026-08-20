@@ -1,6 +1,6 @@
 # Workstream 06 — Parser Integration
 
-**Status:** READY_TO_START  
+**Status:** IN_PROGRESS — final staging verification
 **Scope:** Dream Wheels AI Release 1 integration work  
 **Branch policy:** start from current `origin/staging`; do **not** merge `codex/robust-rim-url-parser` wholesale.  
 **Production policy:** no production rollout, deployment, or change to `main` in this workstream.
@@ -189,3 +189,54 @@ NEXT_OWNER / NEXT_ACTION: review diff, then execute staging-browser/Telegram E2E
 ## Stop condition
 
 Stop when the acceptance criteria and completion record are complete and the changes are ready for review into `staging`. Do not broaden the workstream into source expansion or production rollout. If current staging architecture creates a material product/API decision that cannot be resolved from existing conventions, document the alternatives and request direction before making that product decision.
+
+## Final verification audit — 2026-08-20
+
+**Verification branch:** `feature/parser-integration-final-verification`
+**Verification base:** `origin/staging` at `46a8133` (`fix: clarify selected vehicle choice (#88)`)
+**Integrated parser commit in staging:** `c565ec0` (`feat: integrate rim URL parser variants (#87)`)
+
+### Confirmed before live E2E
+
+- The parser was selectively integrated; no wholesale merge of `codex/robust-rim-url-parser` was used.
+- The current authenticated endpoint is `POST /jobs/{job_id}/fitment/rim-source/resolve`.
+- Its response carries `values`, `variants`, `selection_required`, and `selected_variant_sku`; the response is an unpersisted review draft.
+- The canonical persistence path remains `state.fitmentForm.rim` → `PATCH /jobs/{job_id}/fitment`.
+- Automated resolver/API regressions cover structured multi-variant output, preserve `selected_variant_sku: null` when selection is required, and assert that no first SKU is selected arbitrarily.
+- The frontend keeps a parser error recoverable: the manual fitment form remains available, and no recognised values leave the source entry open for manual completion.
+- Local staging-branch verification completed before merge #87: `230 passed, 3 skipped`, Ruff checks, `node --check webapp/app.js`, and `git diff --check`.
+
+### Browser verification completed
+
+- Chrome staging smoke: public staging loaded and the create/fitment UI rendered.
+- Computer Use confirmed the active Chrome staging surface.
+- Guest/demo fitment flow: manual RimSpec editing was exercised; changing ET to `37` displayed the saved state. This is evidence for the manual editor only, not for parser persistence.
+- Mobile check at `390px` completed with no observed horizontal overflow in the visible fitment flow.
+
+### Still required for acceptance
+
+- Authenticate in staging and open a completed non-demo job.
+- Resolve a real supported product URL through the live endpoint and verify the single-variant path.
+- Resolve a real multi-variant URL; select a SKU and verify the selected values in RimSpec.
+- Change a parsed RimSpec field, confirm it, resolve/select again, and verify that the manual value remains authoritative and reaches downstream fitment.
+- Exercise a live resolver failure and verify manual continuation.
+- Classify the «Колёса Даром» result from the staging/render network as `FETCH ISSUE` or `PARSER ISSUE`; do not infer it from the historic local 401.
+
+### Live staging blocker discovered
+
+- A real authenticated Chrome session (`@nick_elixir`) opened completed job `582f34da-6836-4267-b26b-cba5ffea5af9` and then selected **«Проверить совместимость»**.
+- Chrome DevTools captured `GET /api/backend/jobs/{job_id}/fitment` returning Vercel `404` with `x-vercel-error: NOT_FOUND`; the response body was Vercel's `The page could not be found`.
+- This failed before the Render backend and before the parser resolver. It is a **Vercel jobs/fitment routing issue**, not a parser or retailer-fetch result.
+- The initial PR #89 approach used dynamic proxy function paths below `api/backend/jobs/[jobId]`. Both Vercel projects rejected that build because it conflicts with the existing `api/backend/jobs/[...path].js` catch-all.
+- PR [#89](https://github.com/NickElixir/dream-wheels-ai/pull/89) now uses two scoped Vercel rewrites to static proxy handlers (`/api/fitment-proxy` and `/api/rim-source-resolve-proxy`). Those handlers call the shared backend proxy with the validated job ID and an explicit backend path.
+- The revised configuration passed local `vercel build`, the focused automated suite (`79 passed`), targeted Ruff checks, Node syntax checks, and `git diff --check`. It is awaiting the two Vercel preview builds and then staging deployment; no production rollout is included.
+
+```text
+STAGING_FLOW_VERIFIED: NO
+FITMENT_ROUTE_PROXY_IN_STAGING: PENDING_PR_89
+LIVE_VARIANT_SELECTION_VERIFIED: NO
+CONFIRMED_RIMSPEC_VERIFIED: NO
+LIVE_MANUAL_FALLBACK_VERIFIED: NO
+KOLESA_DAROM_RENDER_SMOKE: DEFERRED
+READY_FOR_FITMENT: NO
+```

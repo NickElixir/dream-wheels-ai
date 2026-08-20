@@ -1,6 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
+    {
+      "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
+      "destination": "/api/rim-source-resolve-proxy?jobId=:jobId"
+    },
+    {
+      "source": "/api/backend/jobs/:jobId/fitment",
+      "destination": "/api/fitment-proxy?jobId=:jobId"
+    },
     { "source": "/t", "destination": "/index.html" },
     { "source": "/t/", "destination": "/index.html" }
   ],

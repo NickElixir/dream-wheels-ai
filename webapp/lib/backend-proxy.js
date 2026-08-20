@@ -45,7 +45,12 @@ async function readBody(req) {
     return Buffer.concat(chunks);
 }
 
-module.exports = async (req, res) => {
+function requestSearch(requestUrl, keysToStrip) {
+    for (const key of keysToStrip) requestUrl.searchParams.delete(key);
+    return requestUrl.search;
+}
+
+async function proxyBackendRequest(req, res, { backendPath, stripQueryKeys = [] } = {}) {
     const backendUrl = backendBaseUrl();
     if (!backendUrl) {
         res.status(503).json({ detail: "Backend proxy is not configured" });
@@ -53,9 +58,9 @@ module.exports = async (req, res) => {
     }
 
     const requestUrl = new URL(req.url || "/", "https://webapp.invalid");
-    const path = requestUrl.pathname.replace(/^\/api\/backend(?:\/|$)/, "");
+    const path = backendPath ?? requestUrl.pathname.replace(/^\/api\/backend(?:\/|$)/, "");
     const target = new URL(path, `${backendUrl.toString().replace(/\/$/, "")}/`);
-    target.search = requestUrl.search;
+    target.search = requestSearch(requestUrl, stripQueryKeys);
 
     try {
         const response = await fetch(target, {
@@ -71,4 +76,7 @@ module.exports = async (req, res) => {
     } catch {
         res.status(502).json({ detail: "Backend is unavailable" });
     }
-};
+}
+
+module.exports = proxyBackendRequest;
+module.exports.proxyBackendRequest = proxyBackendRequest;

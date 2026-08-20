@@ -464,7 +464,19 @@ def test_identity_error_state_is_classified_as_critical_and_actionable() -> None
 
 def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
-    assert not any(rewrite["source"].startswith("/api/backend") for rewrite in rewrites)
+    backend_rewrites = [
+        rewrite for rewrite in rewrites if rewrite["source"].startswith("/api/backend")
+    ]
+    assert backend_rewrites == [
+        {
+            "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
+            "destination": "/api/rim-source-resolve-proxy?jobId=:jobId",
+        },
+        {
+            "source": "/api/backend/jobs/:jobId/fitment",
+            "destination": "/api/fitment-proxy?jobId=:jobId",
+        },
+    ]
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
