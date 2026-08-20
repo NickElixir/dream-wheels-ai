@@ -174,9 +174,9 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
 def test_selected_vehicle_choice_uses_selected_status_not_correctness_claim() -> None:
     assert 'selected ? "✓ Выбрано" : "Выбрать"' in APP_JS
     assert "✓ Верно" not in APP_JS
-    selected_choice_css = STYLE_CSS.split('.identity-choice[data-selected="true"] small', 1)[1].split(
-        "}", 1
-    )[0]
+    selected_choice_css = STYLE_CSS.split('.identity-choice[data-selected="true"] small', 1)[
+        1
+    ].split("}", 1)[0]
     assert "color: var(--success)" in selected_choice_css
 
 
