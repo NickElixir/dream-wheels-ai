@@ -171,6 +171,15 @@ def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> No
     assert "data-manual-rim-fields" not in INDEX_HTML
 
 
+def test_selected_vehicle_choice_uses_selected_status_not_correctness_claim() -> None:
+    assert 'selected ? "✓ Выбрано" : "Выбрать"' in APP_JS
+    assert "✓ Верно" not in APP_JS
+    selected_choice_css = STYLE_CSS.split('.identity-choice[data-selected="true"] small', 1)[
+        1
+    ].split("}", 1)[0]
+    assert "color: var(--success)" in selected_choice_css
+
+
 def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'data-view="fitment"' in INDEX_HTML
     assert "data-open-fitment-result" in INDEX_HTML

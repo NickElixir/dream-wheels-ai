@@ -2916,6 +2916,10 @@ h2 {
     font-weight: 750;
 }
 
+.identity-choice[data-selected="true"] small {
+    color: var(--success);
+}
+
 .identity-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
