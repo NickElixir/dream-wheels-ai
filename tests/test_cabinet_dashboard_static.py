@@ -229,6 +229,10 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "if (automatic) state.fitmentSourceOpen = true;" in APP_JS
     assert "No wheel parameters could be recognised from this link" in APP_JS
     assert "state.fitmentSourceOpen = !resolvedEntries.length ? true" in APP_JS
+    assert "const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;" in APP_JS
+    assert "const controller = new AbortController();" in APP_JS
+    assert "signal: controller.signal," in APP_JS
+    assert "window.clearTimeout(requestTimeout);" in APP_JS
 
 
 def test_fitment_entrypoint_uses_compatibility_language() -> None:

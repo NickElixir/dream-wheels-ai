@@ -38,6 +38,7 @@ const PAYMENT_PENDING_STALE_MS = 15 * 60 * 1000;
 const PAYMENT_PENDING_AUTO_REFRESH_DELAY_MS = 10 * 1000;
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 110000;
+const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;
 const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
 const HISTORY_ASSET_VIEWS = ["result", "original"];
@@ -2793,6 +2794,8 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
+    const controller = new AbortController();
+    const requestTimeout = window.setTimeout(() => controller.abort(), RIM_SOURCE_RESOLVE_TIMEOUT_MS);
     try {
         const response = await fetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/rim-source/resolve`, { includeIdentity: true }),
@@ -2800,6 +2803,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
                 method: "POST",
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ product_url: productUrl }),
+                signal: controller.signal,
             }
         );
         if (!response.ok) throw new Error(await parseApiError(response));
@@ -2833,6 +2837,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         state.fitmentSourceStatusTone = "error";
         if (automatic) state.fitmentSourceOpen = true;
     } finally {
+        window.clearTimeout(requestTimeout);
         state.fitmentSourceResolving = false;
         renderFitment();
         if (state.fitmentSourceStatusTone !== "error") {
