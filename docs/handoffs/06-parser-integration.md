@@ -222,8 +222,16 @@ Stop when the acceptance criteria and completion record are complete and the cha
 - Exercise a live resolver failure and verify manual continuation.
 - Classify the «Колёса Даром» result from the staging/render network as `FETCH ISSUE` or `PARSER ISSUE`; do not infer it from the historic local 401.
 
+### Live staging blocker discovered
+
+- A real authenticated Chrome session (`@nick_elixir`) opened completed job `582f34da-6836-4267-b26b-cba5ffea5af9` and then selected **«Проверить совместимость»**.
+- Chrome DevTools captured `GET /api/backend/jobs/{job_id}/fitment` returning Vercel `404` with `x-vercel-error: NOT_FOUND`; the response body was Vercel's `The page could not be found`.
+- This failed before the Render backend and before the parser resolver. It is a **Vercel jobs/fitment routing issue**, not a parser or retailer-fetch result.
+- Fix PR [#89](https://github.com/NickElixir/dream-wheels-ai/pull/89) adds explicit proxy functions for the live fitment endpoint and its rim-source resolver endpoint. Its CI passed; it is awaiting merge and staging deployment.
+
 ```text
 STAGING_FLOW_VERIFIED: NO
+FITMENT_ROUTE_PROXY_IN_STAGING: PENDING_PR_89
 LIVE_VARIANT_SELECTION_VERIFIED: NO
 CONFIRMED_RIMSPEC_VERIFIED: NO
 LIVE_MANUAL_FALLBACK_VERIFIED: NO
