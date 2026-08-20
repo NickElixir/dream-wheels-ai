@@ -4821,7 +4821,7 @@ function renderIdentityFlow() {
             .slice(0, 3)
             .map((candidate, index) => {
                 const selected = index === state.selectedVehicleIndex;
-                const actionText = selected ? "✓ Верно" : "Выбрать";
+                const actionText = selected ? "✓ Выбрано" : "Выбрать";
                 return `
                     <button type="button" class="identity-choice" data-vehicle-choice="${index}" data-selected="${selected}">
                         <span>${escapeHtml(formatVehicle(candidate))}</span>
