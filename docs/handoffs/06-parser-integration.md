@@ -1,6 +1,6 @@
 # Workstream 06 — Parser Integration
 
-**Status:** IN_PROGRESS — final staging verification
+**Status:** COMPLETE — READY_FOR_FITMENT
 **Scope:** Dream Wheels AI Release 1 integration work  
 **Branch policy:** start from current `origin/staging`; do **not** merge `codex/robust-rim-url-parser` wholesale.  
 **Production policy:** no production rollout, deployment, or change to `main` in this workstream.
@@ -254,3 +254,36 @@ KOLESA_DAROM_RENDER_SMOKE: FETCH_ISSUE
 LIVE_MANUAL_FALLBACK_VERIFIED: NO (awaiting deployment of 2f0e4ee)
 READY_FOR_FITMENT: NO
 ```
+
+### Phase closure — 2026-08-20
+
+- PR [#90](https://github.com/NickElixir/dream-wheels-ai/pull/90) deployed the resolver-timeout recovery to `staging` as commit `47c5009` (`fix: restore manual rim entry after resolver timeout (#90)`). Its staging deployment `dpl_G8EvSqmfCDEcF9QZcdxpGCgUSYox` is `READY`.
+- The merged client guard aborts an unresolved rim-source request after 20 seconds and, in all completion paths, restores the existing manual RimSpec form. It does not change parser extraction, fitment rules, or production configuration.
+- A final authenticated Chrome/Computer Use staging pass reopened job `582f34da-6836-4267-b26b-cba5ffea5af9` after the real resolver failure. The UI showed the recoverable message *«Не удалось извлечь параметры автоматически. Проверьте ссылку или заполните поля вручную»*; brand, model, SKU, PCD, diameter, width, DIA, and ET inputs were all enabled. The user can therefore continue manually instead of being stranded in a loading state.
+- Existing automated resolver/API/UI regression coverage remains the evidence for single- and multi-variant response handling, safe partial values, no arbitrary SKU choice, and authoritative manual values. The previous staging smoke confirmed the authenticated `GET`/`PATCH` fitment route, manual ET saving, and a 390px visible-flow check without horizontal overflow.
+- The live «Колёса Даром» request returned backend `422`. This is recorded as a deferred **FETCH_ISSUE** (retailer access/fetch environment) and is explicitly excluded from phase closure. No adapter, scraping, browser/OCR/LLM fallback, or production rollout was added.
+
+```text
+PHASE_STATUS: COMPLETE
+FINAL_STAGING_BRANCH: staging
+FINAL_STAGING_COMMIT: 47c50094ee14c31b602291ccd0fd65bbf60acb38
+FINAL_INTEGRATION_BRANCH: fix/rim-source-manual-fallback (merged by PR #90)
+PARSER_SOURCE_BRANCH: codex/robust-rim-url-parser (selective port only; no wholesale merge)
+
+API_USED: POST /jobs/{job_id}/fitment/rim-source/resolve
+CANONICAL_CONFIRMED_RIMSPEC: state.fitmentForm.rim -> PATCH /jobs/{job_id}/fitment
+VARIANT_POLICY: selection_required prevents arbitrary first-SKU selection
+
+TARGETED_VALIDATION: 79 passed; targeted Ruff and format checks passed; node --check webapp/app.js passed; git diff --check passed
+STAGING_ROUTE_PROXY_VERIFIED: YES
+MANUAL_EDITOR_AND_OVERRIDE_VERIFIED: YES
+LIVE_FAILURE_TO_MANUAL_FALLBACK_VERIFIED: YES
+MOBILE_390_VISIBLE_FLOW_VERIFIED: YES
+LIVE_KOLESA_DAROM_RESULT: DEFERRED_FETCH_ISSUE (HTTP 422; non-blocking)
+PRODUCTION_CHANGES_MADE: NO
+
+READY_FOR_FITMENT: YES
+PARSER_INTEGRATION: READY
+```
+
+**Deferred follow-up (outside Workstream 06):** investigate Render/backend retrieval of «Колёса Даром» only if that retailer is needed for a later release. It is an environment/source-access investigation, not a parser-core change.
