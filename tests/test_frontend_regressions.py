@@ -38,3 +38,11 @@ def test_dashboard_balance_uses_a_rounded_sub_island_and_topbar_uses_24px_captio
     assert "min-height: 164px;" in STYLE_CSS
     assert "border-radius: var(--radius-lg);" in STYLE_CSS
     assert ".topbar-caption {\n    font-size: 24px;" in STYLE_CSS
+
+
+def test_fitment_reauth_prompt_preserves_the_unsaved_form_for_the_same_job() -> None:
+    assert "data-fitment-auth-required" in INDEX_HTML
+    assert "FITMENT_REAUTH_DRAFT_STORAGE_PREFIX" in APP_JS
+    assert "persistFitmentReauthDraft();" in APP_JS
+    assert "restoreFitmentReauthDraft();" in APP_JS
+    assert "response.status === 401" in APP_JS
