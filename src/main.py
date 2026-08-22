@@ -10,10 +10,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src import auth_api, db, jobs_api, payments_api, redis_client, share_api, storage
-from src.config import REDIS_JOB_QUEUE, REDIS_URL, WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
+from src.config import (
+    REDIS_JOB_QUEUE,
+    REDIS_URL,
+    RESULT_IMAGE_MAX_BYTES,
+    WEBAPP_URL,
+    WORKER_ENABLED,
+    runtime_env_summary,
+)
 from src.credits_service import finalize_job_credit, refund_job_credit
 from src.fitment import api as fitment_api
-from src.reve_client import fetch_image_base64, remix_wheels_on_car
+from src.rendering import (
+    GeneratedImage,
+    ImageGenerationProvider,
+    create_image_generation_provider,
+)
+from src.rendering.base import wheel_fitment_request
+from src.rendering.storage_image import prepare_image_for_storage
+from src.reve_client import fetch_image_bytes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,12 +41,13 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 worker_task: asyncio.Task | None = None
+image_generation_provider: ImageGenerationProvider | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown приложения. Заменяет устаревшие @app.on_event с FastAPI 0.93+."""
-    global worker_task
+    global image_generation_provider, worker_task
 
     logger.info("🟢 Runtime env summary: %s", runtime_env_summary())
     await db.init_pool()
@@ -45,6 +60,8 @@ async def lifespan(app: FastAPI):
         logger.info("🟢 Redis отключён: API-only режим без очереди рендеров")
 
     if WORKER_ENABLED and REDIS_URL:
+        image_generation_provider = create_image_generation_provider()
+        logger.info("🟢 Image generation provider initialized: %s", image_generation_provider.name)
         worker_task = asyncio.create_task(process_jobs_loop())
     elif WORKER_ENABLED:
         logger.warning("⚠️ Redis отсутствует: worker loop не запущен")
@@ -55,6 +72,7 @@ async def lifespan(app: FastAPI):
 
     if worker_task:
         worker_task.cancel()
+    image_generation_provider = None
     await db.close_pool()
     if redis_client.is_initialized():
         await redis_client.close_client()
@@ -85,8 +103,8 @@ app.include_router(share_api.router)
 app.include_router(fitment_api.router)
 
 
-async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
-    """Получить car/wheel в base64. Поддерживает оба источника payload'а:
+async def _load_input_images(job_data: dict) -> tuple[bytes, bytes]:
+    """Получить car/wheel bytes. Поддерживает оба источника payload'а:
 
     - bot:    {car_url, wheel_url}        — Telegram file URLs
     - webapp: {car_storage_path, wheel_storage_path, source: "webapp"}
@@ -99,24 +117,38 @@ async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
         wheel_bytes = await storage.download_bytes(
             bucket=storage.RAW_BUCKET, path=job_data["wheel_storage_path"]
         )
-        return (
-            base64.b64encode(car_bytes).decode("utf-8"),
-            base64.b64encode(wheel_bytes).decode("utf-8"),
-        )
-    car_b64 = await fetch_image_base64(job_data["car_url"])
-    wheel_b64 = await fetch_image_base64(job_data["wheel_url"])
-    return car_b64, wheel_b64
+        return car_bytes, wheel_bytes
+    car_bytes = await fetch_image_bytes(job_data["car_url"])
+    wheel_bytes = await fetch_image_bytes(job_data["wheel_url"])
+    return car_bytes, wheel_bytes
 
 
-async def _save_render_output(job_id: str, job_data: dict, img_bytes: bytes) -> str:
+async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
+    """Legacy helper retained for callers that still need Reve-style base64 inputs."""
+    car_bytes, wheel_bytes = await _load_input_images(job_data)
+    return (
+        base64.b64encode(car_bytes).decode("utf-8"),
+        base64.b64encode(wheel_bytes).decode("utf-8"),
+    )
+
+
+async def _save_render_output(job_id: str, image: GeneratedImage) -> str:
     """Сохранить рендер в постоянное public-хранилище Supabase results."""
-    return await storage.upload_result_image(job_id=job_id, data=img_bytes)
+    image = prepare_image_for_storage(image, max_bytes=RESULT_IMAGE_MAX_BYTES)
+    return await storage.upload_result_image(
+        job_id=job_id,
+        data=image.data,
+        content_type=image.content_type,
+    )
 
 
 async def process_jobs_loop():
     logger.info("🟢 ВОРКЕР ЗАПУЩЕН")
     pool = db.get_pool()
     rds = redis_client.get_client()
+    provider = image_generation_provider
+    if provider is None:
+        raise RuntimeError("Image generation provider is not initialized")
 
     while True:
         job_id = None
@@ -137,9 +169,12 @@ async def process_jobs_loop():
                     "UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id
                 )
 
-            car_b64, wheel_b64 = await _load_inputs_as_b64(job_data)
-            img_bytes = await remix_wheels_on_car(car_b64, wheel_b64)
-            output_url = await _save_render_output(job_id, job_data, img_bytes)
+            car_image, wheel_image = await _load_input_images(job_data)
+            generated_images = await provider.edit(wheel_fitment_request(car_image, wheel_image))
+            if not generated_images:
+                raise RuntimeError("Image generation provider returned no result")
+            generated = generated_images[0]
+            output_url = await _save_render_output(job_id, generated)
 
             async with pool.acquire() as conn:
                 async with conn.transaction():
@@ -150,7 +185,14 @@ async def process_jobs_loop():
                         job_id,
                     )
                     await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
-            logger.info(f"✅ Задача {job_id} завершена!")
+            logger.info(
+                "✅ Задача %s завершена provider=%s model=%s request_id=%s task_id=%s",
+                job_id,
+                generated.provider,
+                generated.model,
+                generated.request_id,
+                generated.task_id,
+            )
 
         except Exception as e:
             logger.exception(f"❌ Ошибка воркера на job_id={job_id}: {e}")

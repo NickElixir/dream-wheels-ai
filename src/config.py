@@ -26,6 +26,39 @@ def _env_str(name: str) -> str:
     return os.getenv(name, "").strip()
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_csv(name: str, default: str = "") -> tuple[str, ...]:
+    raw_value = os.getenv(name, default)
+    return tuple(item.strip() for item in raw_value.split(",") if item.strip())
+
+
+# Image generation provider. Keep Reve as the default until Wan is benchmarked and configured.
+IMAGE_GENERATION_PROVIDER = _env_str("IMAGE_GENERATION_PROVIDER").lower() or "reve"
+WAN_API_KEY = _env_str("WAN_API_KEY") or _env_str("DASHSCOPE_API_KEY")
+WAN_BASE_URL = _env_str("WAN_BASE_URL").rstrip("/")
+WAN_MODEL = _env_str("WAN_MODEL") or "wan2.7-image"
+WAN_OUTPUT_SIZE = _env_str("WAN_OUTPUT_SIZE") or "2K"
+WAN_WATERMARK = _env_bool("WAN_WATERMARK")
+WAN_POLL_INTERVAL_SEC = float(os.getenv("WAN_POLL_INTERVAL_SEC", "5"))
+WAN_TASK_TIMEOUT_SEC = float(os.getenv("WAN_TASK_TIMEOUT_SEC", "300"))
+WAN_REQUEST_TIMEOUT_SEC = float(os.getenv("WAN_REQUEST_TIMEOUT_SEC", "30"))
+WAN_MAX_POLL_ERRORS = int(os.getenv("WAN_MAX_POLL_ERRORS", "3"))
+WAN_MAX_INPUT_BYTES = int(os.getenv("WAN_MAX_INPUT_BYTES", str(10 * 1024 * 1024)))
+WAN_MAX_OUTPUT_BYTES = int(os.getenv("WAN_MAX_OUTPUT_BYTES", str(20 * 1024 * 1024)))
+WAN_RESULT_MAX_REDIRECTS = int(os.getenv("WAN_RESULT_MAX_REDIRECTS", "2"))
+WAN_RESULT_ALLOWED_HOST_SUFFIXES = _env_csv(
+    "WAN_RESULT_ALLOWED_HOST_SUFFIXES",
+    "aliyuncs.com",
+)
+RESULT_IMAGE_MAX_BYTES = int(os.getenv("RESULT_IMAGE_MAX_BYTES", str(5 * 1024 * 1024)))
+
+
 def _infer_supabase_project_ref() -> str:
     project_ref = _env_str("SUPABASE_PROJECT_REF")
     if project_ref:
@@ -97,4 +130,7 @@ def runtime_env_summary() -> dict[str, str | bool | None]:
         "supabase_host": supabase_host,
         "storage_configured": bool(SUPABASE_STORAGE_URL and SUPABASE_SERVICE_ROLE_KEY),
         "payments_test_mode": ROBOKASSA_IS_TEST,
+        "image_generation_provider": IMAGE_GENERATION_PROVIDER,
+        "wan_model": WAN_MODEL if IMAGE_GENERATION_PROVIDER == "wan" else None,
+        "wan_configured": bool(WAN_API_KEY and WAN_BASE_URL),
     }

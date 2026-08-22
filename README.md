@@ -91,6 +91,7 @@ pytest -q
 - [Product roadmap](docs/product-roadmap.md)
 - [Target data model](docs/data-model.md)
 - [AI rendering pipeline](docs/ai-rendering-pipeline.md)
+- [Wan image provider connector](docs/wan-image-provider.md)
 - [Fitment compatibility engine](docs/fitment-compatibility.md)
 - [Fitment provider discovery](docs/fitment-provider-discovery.md)
 - [Credits and payments boundaries](docs/payments-boundaries.md)
