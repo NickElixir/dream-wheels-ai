@@ -46,3 +46,9 @@ def test_fitment_reauth_prompt_preserves_the_unsaved_form_for_the_same_job() -> 
     assert "persistFitmentReauthDraft();" in APP_JS
     assert "restoreFitmentReauthDraft();" in APP_JS
     assert "response.status === 401" in APP_JS
+
+
+def test_rim_source_errors_are_safe_and_visible_from_the_first_step() -> None:
+    assert 'reasonCode === "rim_source_fetch_failed"' in APP_JS
+    assert "state.fitmentMessage = state.fitmentSourceStatus;" in APP_JS
+    assert 'state.fitmentMessageTone = "warning";' in APP_JS

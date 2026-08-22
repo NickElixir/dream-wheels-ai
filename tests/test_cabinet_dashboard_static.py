@@ -226,7 +226,8 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "await runFitmentCheck();" in APP_JS
     assert "function fitmentSourceBrand(overview)" in APP_JS
     assert "new URL(productUrl).hostname" in APP_JS
-    assert "if (automatic) state.fitmentSourceOpen = true;" in APP_JS
+    assert "state.fitmentSourceOpen = true;" in APP_JS
+    assert "state.fitmentMessage = state.fitmentSourceStatus;" in APP_JS
     assert "No wheel parameters could be recognised from this link" in APP_JS
     assert "state.fitmentSourceOpen = !resolvedEntries.length ? true" in APP_JS
     assert "const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;" in APP_JS
