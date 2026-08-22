@@ -17,6 +17,7 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
+const FITMENT_REAUTH_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentReauthDraft:";
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
@@ -1050,6 +1051,7 @@ const state = {
     fitmentVehicleVariantApplying: false,
     fitmentCheck: null,
     fitmentChecking: false,
+    fitmentAuthRequired: false,
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
@@ -1277,6 +1279,41 @@ function loadDemoFitmentOverview() {
 
 function persistDemoFitmentOverview(overview) {
     sessionStorage.setItem(FITMENT_PREVIEW_STORAGE_KEY, JSON.stringify(overview));
+}
+
+function fitmentReauthDraftKey(jobId = state.fitmentJobId) {
+    return jobId ? `${FITMENT_REAUTH_DRAFT_STORAGE_PREFIX}${jobId}` : "";
+}
+
+function persistFitmentReauthDraft() {
+    const key = fitmentReauthDraftKey();
+    if (!key) return;
+    try {
+        sessionStorage.setItem(
+            key,
+            JSON.stringify({ form: state.fitmentForm, activeStep: state.fitmentActiveStep })
+        );
+    } catch {
+        // The re-auth prompt still works if browser storage is unavailable.
+    }
+}
+
+function restoreFitmentReauthDraft() {
+    const key = fitmentReauthDraftKey();
+    if (!key) return false;
+    try {
+        const draft = JSON.parse(sessionStorage.getItem(key) || "null");
+        if (!draft?.form?.vehicle || !draft?.form?.rim) return false;
+        state.fitmentForm = draft.form;
+        state.fitmentActiveStep = Number.isInteger(draft.activeStep)
+            ? draft.activeStep
+            : state.fitmentActiveStep;
+        sessionStorage.removeItem(key);
+        return true;
+    } catch {
+        sessionStorage.removeItem(key);
+        return false;
+    }
 }
 
 function guestRenderAssetUrl(job, kind) {
@@ -1618,6 +1655,7 @@ async function loginWithTelegram() {
         if (state.identityError && state.files.car?.blob && state.files.wheel?.blob) {
             await resolveIdentity();
         }
+        return true;
     } catch (error) {
         console.error("[DW] Telegram website login failed", error);
         const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
@@ -1625,12 +1663,32 @@ async function loginWithTelegram() {
             : "Не удалось войти через Telegram. Попробуйте ещё раз.";
         state.websiteLoginError = message;
         setWalletMessage(message, "error");
+        return false;
     } finally {
         state.websiteLoginPending = false;
         invalidateWebsiteLoginNonce();
         warmWebsiteLoginResources();
         updateWebsiteAuthUi();
     }
+}
+
+function showFitmentAuthRequired() {
+    persistFitmentReauthDraft();
+    state.fitmentAuthRequired = true;
+    state.fitmentError = "";
+    state.fitmentMessage = "";
+}
+
+async function resumeFitmentAfterLogin() {
+    const signedIn = await loginWithTelegram();
+    if (!signedIn) return;
+    restoreFitmentReauthDraft();
+    state.fitmentAuthRequired = false;
+    state.fitmentMessage = locale === "ru"
+        ? "Вход выполнен. Продолжите с того же шага."
+        : "Signed in. Continue from the same step.";
+    state.fitmentMessageTone = "success";
+    renderFitment();
 }
 
 function logoutWebsiteAuth() {
@@ -2143,7 +2201,7 @@ function fitmentVerdictMessage(item) {
     }
     if (code === "pcd_unknown") return ru ? "Не удалось подтвердить PCD." : "PCD could not be confirmed.";
     if (code === "center_bore_unknown") return ru ? "Не удалось подтвердить центральное отверстие." : "Center bore could not be confirmed.";
-    if (code === "size_unknown" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
+    if (code === "size_unknown" || code === "size_not_in_reference" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
     if (code === "provider_unavailable") return ru ? "Wheel‑Size временно недоступен. Повторите проверку позже." : "Wheel‑Size is temporarily unavailable. Try again later.";
     if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
     if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";
@@ -2312,6 +2370,9 @@ function renderFitment() {
     const verdictWarning = document.querySelector("[data-fitment-verdict-warning]");
     const missingDataWarning = document.querySelector("[data-fitment-missing-data-warning]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
+    const authRequired = document.querySelector("[data-fitment-auth-required]");
+    const authRequiredText = document.querySelector("[data-fitment-auth-required-text]");
+    const authLoginLabel = document.querySelector("[data-fitment-auth-login-label]");
     const basicsCard = document.querySelector(".fitment-basics-card");
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
     const rimSection = document.querySelector('[data-fitment-section="rim"]');
@@ -2331,6 +2392,15 @@ function renderFitment() {
     if (loading) loading.dataset.visible = String(state.fitmentLoading);
     if (error) error.dataset.visible = String(Boolean(state.fitmentError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.fitmentError);
+    if (authRequired) authRequired.hidden = !state.fitmentAuthRequired || HAS_TG;
+    if (authRequiredText) {
+        authRequiredText.textContent = locale === "ru"
+            ? "Сессия истекла. Войдите через Telegram, чтобы продолжить."
+            : "Your session has expired. Sign in with Telegram to continue.";
+    }
+    if (authLoginLabel) {
+        authLoginLabel.textContent = locale === "ru" ? "Войти через Telegram" : "Sign in with Telegram";
+    }
     if (message) {
         message.dataset.visible = String(Boolean(state.fitmentMessage));
         message.className = `wallet-status-island tone-${state.fitmentMessageTone || "neutral"}`;
@@ -2806,6 +2876,10 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
                 signal: controller.signal,
             }
         );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
@@ -2916,6 +2990,10 @@ async function runFitmentCheck() {
                 mode: "standard",
             }),
         });
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
         state.fitmentCheck = await response.json();
     } catch (error) {
@@ -2940,6 +3018,10 @@ async function applyFitmentVehicleVariant(variant) {
                 body: JSON.stringify({ expected_vehicle_revision: overview.vehicle_revision, ...variant }),
             }
         );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
         state.fitmentOverview = await response.json();
         state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
@@ -2979,6 +3061,10 @@ async function saveFitment(event) {
                 body: JSON.stringify(fitmentPayload()),
             }
         );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
         if (!response.ok) {
             const detail = await parseApiError(response);
             throw new Error(response.status === 409 ? t("fitment.stale") : detail);
@@ -5675,6 +5761,9 @@ function bindEvents() {
     });
     document.querySelector("[data-fitment-check]")?.addEventListener("click", () => {
         void runFitmentCheck();
+    });
+    document.querySelector("[data-fitment-auth-login]")?.addEventListener("click", () => {
+        void resumeFitmentAfterLogin();
     });
     document.querySelector("[data-fitment-form]")?.addEventListener("submit", (event) => {
         void saveFitment(event);

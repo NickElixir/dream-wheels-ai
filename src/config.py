@@ -89,7 +89,7 @@ TELEGRAM_LOGIN_JWKS_URL = (
     _env_str("TELEGRAM_LOGIN_JWKS_URL") or "https://oauth.telegram.org/.well-known/jwks.json"
 )
 TELEGRAM_AUTH_TOKEN_SECRET = _env_str("TELEGRAM_AUTH_TOKEN_SECRET")
-TELEGRAM_AUTH_TOKEN_TTL_SEC = int(os.getenv("TELEGRAM_AUTH_TOKEN_TTL_SEC", "3600"))
+TELEGRAM_AUTH_TOKEN_TTL_SEC = int(os.getenv("TELEGRAM_AUTH_TOKEN_TTL_SEC", "28800"))
 TELEGRAM_LOGIN_NONCE_TTL_SEC = int(os.getenv("TELEGRAM_LOGIN_NONCE_TTL_SEC", "600"))
 
 # Rim product pages are fetched only from the compatibility screen of a user's

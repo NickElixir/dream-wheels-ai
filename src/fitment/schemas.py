@@ -138,6 +138,7 @@ class ReasonCode(StrEnum):
     provider_reference_conflict = "provider_reference_conflict"
     rear_fitment_missing = "rear_fitment_missing"
     size_unknown = "size_unknown"
+    size_not_in_reference = "size_not_in_reference"
     load_rating_unknown = "load_rating_unknown"
     fastener_unknown = "fastener_unknown"
     conflict_low_evidence = "conflict_low_evidence"

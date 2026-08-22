@@ -53,6 +53,14 @@ def check_bolt_pattern(profile: FitmentProfile, rim: RimSpec, axle: str) -> Rule
             axle=axle,
             detail={"missing": "rim bolt pattern"},
         )
+    if not rim.bolt_count.is_trusted or not rim.pcd_mm.is_trusted:
+        return RuleResult(
+            rule=rule,
+            status=VerdictStatus.unknown,
+            reason_code=ReasonCode.conflict_low_evidence,
+            axle=axle,
+            detail={"missing": "trusted rim bolt pattern"},
+        )
 
     bolt_conflict = rim.bolt_count.value != profile.bolt_count
     pcd_conflict = not _close(rim.pcd_mm.value, profile.pcd_mm, tol.PCD_TOL_MM)
@@ -87,6 +95,14 @@ def check_center_bore(profile: FitmentProfile, rim: RimSpec, axle: str) -> RuleR
             status=VerdictStatus.unknown,
             reason_code=ReasonCode.center_bore_unknown,
             axle=axle,
+        )
+    if not rim.center_bore_mm.is_trusted:
+        return RuleResult(
+            rule=rule,
+            status=VerdictStatus.unknown,
+            reason_code=ReasonCode.conflict_low_evidence,
+            axle=axle,
+            detail={"missing": "trusted rim center bore"},
         )
 
     hub = profile.center_bore_mm
@@ -131,12 +147,6 @@ def _best_size_match(
     return None
 
 
-def _nearest_diameter_gap(allowed: list[AxleFitment], diameter: float) -> float | None:
-    if not allowed:
-        return None
-    return min(abs(rec.rim_diameter - diameter) for rec in allowed)
-
-
 def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> RuleResult:
     """Размер (diameter/width) и ET против approved-набора провайдера для оси.
 
@@ -162,35 +172,37 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
             reason_code=ReasonCode.size_unknown,
             axle=axle,
         )
+    if not rim.wheel_diameter_in.is_trusted or not rim.wheel_width_j.is_trusted:
+        return RuleResult(
+            rule=rule,
+            status=VerdictStatus.unknown,
+            reason_code=ReasonCode.conflict_low_evidence,
+            axle=axle,
+            detail={"missing": "trusted rim diameter and width"},
+        )
 
     diameter = rim.wheel_diameter_in.value
     width = rim.wheel_width_j.value
     match = _best_size_match(allowed, diameter, width)
 
     if match is None:
-        gap = _nearest_diameter_gap(allowed, diameter)
-        detail = {
-            "diameter_in": diameter,
-            "width_j": width,
-            "nearest_diameter_gap_in": gap,
-        }
-        if gap is not None and gap > tol.DIAMETER_PLUS_MINUS_IN:
-            status, low_evidence_code = _conflict_status(rim.wheel_diameter_in)
-            return RuleResult(
-                rule=rule,
-                status=status,
-                reason_code=low_evidence_code or ReasonCode.diameter_out_of_range,
-                axle=axle,
-                detail=detail,
-            )
-        # A nearby size is not positive clearance evidence for a different tyre
-        # package.  The user needs an exact provider/OEM profile.
+        # A Wheel-Size allowed set is not a clearance model for adjacent sizes.
+        # In particular, without tyre, brake and body-clearance evidence, no
+        # invented distance from the nearest size can turn into a hard conflict
+        # or a positive verdict.
         return RuleResult(
             rule=rule,
             status=VerdictStatus.unknown,
-            reason_code=ReasonCode.size_unknown,
+            reason_code=ReasonCode.size_not_in_reference,
             axle=axle,
-            detail=detail,
+            detail={
+                "rim_diameter_in": diameter,
+                "rim_width_j": width,
+                "reference_sizes": [
+                    {"rim_diameter_in": item.rim_diameter, "rim_width_j": item.rim_width}
+                    for item in allowed
+                ],
+            },
         )
 
     # Размер approved. Дальше — ET.
@@ -201,6 +213,14 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
             reason_code=ReasonCode.rim_offset_missing,
             axle=axle,
             detail={"matched": match.model_dump()},
+        )
+    if not rim.offset_et_mm.is_trusted:
+        return RuleResult(
+            rule=rule,
+            status=VerdictStatus.unknown,
+            reason_code=ReasonCode.conflict_low_evidence,
+            axle=axle,
+            detail={"missing": "trusted rim offset"},
         )
 
     reference = profile.offset_reference_for(axle, diameter, width)
@@ -256,6 +276,14 @@ def check_fasteners(profile: FitmentProfile, rim: RimSpec, axle: str) -> RuleRes
             status=VerdictStatus.unknown,
             reason_code=ReasonCode.fastener_unknown,
             axle=axle,
+        )
+    if not rim.fastener_system.is_trusted:
+        return RuleResult(
+            rule=rule,
+            status=VerdictStatus.unknown,
+            reason_code=ReasonCode.conflict_low_evidence,
+            axle=axle,
+            detail={"missing": "trusted rim fastener system"},
         )
     vehicle_system = profile.fastener_type.strip().lower()
     rim_system = str(rim.fastener_system.value).strip().lower()
