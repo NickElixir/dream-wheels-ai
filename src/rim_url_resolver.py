@@ -24,9 +24,17 @@ from src.rim_url_extract import ExtractedCandidate, ExtractedPage, extract_rim_d
 class RimUrlError(RuntimeError):
     """A product page could not be fetched or parsed safely."""
 
+    reason_code = "rim_source_unavailable"
+
+    def __init__(self, message: str, *, reason_code: str | None = None) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code or self.reason_code
+
 
 class RimUrlSecurityError(RimUrlError):
     """The submitted URL violates the outbound network policy."""
+
+    reason_code = "rim_source_url_rejected"
 
 
 @dataclass(frozen=True, slots=True)
@@ -478,7 +486,10 @@ async def resolve_rim_product_url(
                         if redirect_count >= limits.max_redirects or not response.headers.get(
                             "Location"
                         ):
-                            raise RimUrlError("Product page redirect failed")
+                            raise RimUrlError(
+                                "Product page redirect failed",
+                                reason_code="rim_source_redirect_failed",
+                            )
                         current_url = validate_product_url(
                             urljoin(current_url, response.headers["Location"]), policy
                         )
@@ -488,10 +499,16 @@ async def resolve_rim_product_url(
                         not in {"text/html", "application/xhtml+xml", "application/json"}
                         and not response.content_type.lower().endswith("+json")
                     ):
-                        raise RimUrlError("Product page is not available as a supported document")
+                        raise RimUrlError(
+                            "Product page is not available as a supported document",
+                            reason_code="rim_source_unsupported_document",
+                        )
                     body = await response.content.read(limits.max_body_bytes + 1)
                     if len(body) > limits.max_body_bytes:
-                        raise RimUrlError("Product page is too large")
+                        raise RimUrlError(
+                            "Product page is too large",
+                            reason_code="rim_source_document_too_large",
+                        )
                     content_type = response.content_type.lower()
                     if content_type.endswith("+json"):
                         content_type = "application/json"
@@ -501,5 +518,7 @@ async def resolve_rim_product_url(
                     )
                     return _resolve_document(url, current_url, extracted)
     except (aiohttp.ClientError, TimeoutError) as exc:
-        raise RimUrlError("Product page fetch failed") from exc
-    raise RimUrlError("Product page redirect failed")
+        raise RimUrlError(
+            "Product page fetch failed", reason_code="rim_source_fetch_failed"
+        ) from exc
+    raise RimUrlError("Product page redirect failed", reason_code="rim_source_redirect_failed")

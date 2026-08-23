@@ -2795,6 +2795,37 @@ function closeFitmentView() {
 
 function fitmentSourceErrorMessage(error) {
     const message = error?.message || "";
+    let reasonCode = "";
+    try {
+        reasonCode = JSON.parse(message)?.code || "";
+    } catch {
+        // Legacy backend errors are plain text.
+    }
+    if (reasonCode === "rim_source_url_rejected") {
+        return locale === "ru"
+            ? "Ссылка должна вести на публичную HTTPS-страницу товара. Проверьте адрес или заполните параметры вручную."
+            : "Use a public HTTPS product page, or enter the wheel details manually.";
+    }
+    if (reasonCode === "rim_source_redirect_failed") {
+        return locale === "ru"
+            ? "Страница диска перенаправляет слишком много раз. Откройте карточку товара напрямую или заполните параметры вручную."
+            : "The product page redirects too many times. Open the product page directly, or enter the wheel details manually.";
+    }
+    if (reasonCode === "rim_source_unsupported_document") {
+        return locale === "ru"
+            ? "Ссылка не ведёт на поддерживаемую страницу товара. Укажите страницу диска или заполните параметры вручную."
+            : "The link is not a supported product page. Use a wheel product page, or enter the details manually.";
+    }
+    if (reasonCode === "rim_source_document_too_large") {
+        return locale === "ru"
+            ? "Страница диска слишком велика для автоматического разбора. Заполните параметры вручную."
+            : "The product page is too large for automatic extraction. Enter the wheel details manually.";
+    }
+    if (reasonCode === "rim_source_fetch_failed") {
+        return locale === "ru"
+            ? "Страница диска сейчас недоступна. Повторите позже или заполните параметры вручную."
+            : "The product page is unavailable right now. Try again later, or enter the wheel details manually.";
+    }
     if (/too many requests/i.test(message)) {
         return locale === "ru"
             ? "Слишком много попыток. Повторите извлечение позже."
@@ -2909,7 +2940,11 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
-        if (automatic) state.fitmentSourceOpen = true;
+        if (automatic) {
+            state.fitmentSourceOpen = true;
+            state.fitmentMessage = state.fitmentSourceStatus;
+            state.fitmentMessageTone = "warning";
+        }
     } finally {
         window.clearTimeout(requestTimeout);
         state.fitmentSourceResolving = false;

@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from src import jobs_api
 from src.auth import AuthContext
 from src.main import app
-from src.rim_url_resolver import RimUrlCandidate, RimUrlResolution, RimUrlVariant
+from src.rim_url_resolver import RimUrlCandidate, RimUrlError, RimUrlResolution, RimUrlVariant
 
 client = TestClient(app)
 
@@ -236,6 +236,36 @@ def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["values"] == {"pcd_mm": 114.3, "bolt_count": 5}
+
+
+def test_fitment_source_resolver_returns_safe_error_code(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_resolve(*_args, **_kwargs):
+        raise RimUrlError(
+            "upstream hostname and path must not reach the client",
+            reason_code="rim_source_fetch_failed",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/wheel"},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": {"code": "rim_source_fetch_failed"}}
 
 
 def test_fitment_source_resolver_returns_variants_without_arbitrary_selection(monkeypatch):
