@@ -150,10 +150,10 @@ def _best_size_match(
 def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> RuleResult:
     """Размер (diameter/width) и ET против approved-набора провайдера для оси.
 
-    Логика прототипа wheel_fitment_test_v2 (exact → uncertain(no ET) →
-    not approved). Выход ET за provider reference не является автоматически
-    жёстким конфликтом: без подтверждённого interference он остаётся
-    preliminary verdict с обязательной физической проверкой зазоров.
+    Standard V1 evaluates ET only against the exact provider-derived interval
+    for this axle, diameter and width. It does not model physical clearance,
+    so an ET outside that interval is unknown rather than a positive
+    conditional result or a hard incompatibility.
     """
     rule = "size_offset"
     allowed = profile.allowed_for_axle(axle)
@@ -244,6 +244,8 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
         "reference_et_min_mm": reference.et_min_mm,
         "reference_et_max_mm": reference.et_max_mm,
         "reference_type": reference.reference_type,
+        "rim_diameter_in": diameter,
+        "rim_width_j": width,
         "delta_mm": round(delta, 1),
     }
 
@@ -257,8 +259,8 @@ def check_size_and_offset(profile: FitmentProfile, rim: RimSpec, axle: str) -> R
         )
     return RuleResult(
         rule=rule,
-        status=VerdictStatus.compatible_with_conditions,
-        reason_code=ReasonCode.offset_deviation_check_required,
+        status=VerdictStatus.unknown,
+        reason_code=ReasonCode.et_outside_reference_range,
         axle=axle,
         detail=detail,
     )

@@ -223,7 +223,8 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "void resolveFitmentRimSource({ automatic: true });" in APP_JS
     assert 'state.fitmentSourceAutoResolvedForJob = "";' in APP_JS
     assert "Сохранить и получить вывод" in APP_JS
-    assert "await runFitmentCheck();" in APP_JS
+    assert "await runFitmentCheck();" not in APP_JS
+    assert "You can start the compatibility check separately." in APP_JS
     assert "function fitmentSourceBrand(overview)" in APP_JS
     assert "new URL(productUrl).hostname" in APP_JS
     assert "state.fitmentSourceOpen = true;" in APP_JS
@@ -426,9 +427,10 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "Сохранить и получить вывод" in APP_JS
     assert "Сохранить и выбрать комплектацию" in APP_JS
     assert "function fitmentNextAction" in APP_JS
-    assert "function fitmentDraftMissingFields" in APP_JS
+    assert "function fitmentDraftMissingFields" not in APP_JS
+    assert "function fitmentUiState" in APP_JS
     assert "function refreshFitmentSaveLabel" in APP_JS
-    assert "useDraft: true" in APP_JS
+    assert "useDraft: true" not in APP_JS
     assert "void loadFitmentVehicleVariants();" in APP_JS
     assert "Подтвердите автомобиль и выберите комплектацию" in APP_JS
 

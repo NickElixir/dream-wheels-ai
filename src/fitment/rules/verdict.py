@@ -6,8 +6,10 @@
 3. есть explicit-условия                      → compatible_with_conditions
 4. иначе                                      → compatible (preliminary)
 
-Unknown в некритичных правилах (fasteners, load) не блокирует вердикт,
-но попадает в missing_fields для честного отображения.
+The aggregator remains generic so a separately approved future ruleset may use
+non-critical rules. Standard V1 passes only its three critical rule groups
+(PCD, DIA, size/ET), so fastener and load results cannot appear in a Standard
+payload.
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ _MISSING_FIELD_BY_REASON = {
     ReasonCode.offset_unknown: "offset_et",
     ReasonCode.rim_offset_missing: "offset_et",
     ReasonCode.vehicle_reference_offset_missing: "vehicle_reference_offset",
+    ReasonCode.et_outside_reference_range: "offset_et",
     ReasonCode.size_unknown: "diameter_width",
     ReasonCode.size_not_in_reference: "provider_allowed_wheels",
     ReasonCode.load_rating_unknown: "load_rating",

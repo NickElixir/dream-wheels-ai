@@ -225,6 +225,30 @@ class WheelSizeProvider:
         await self._cache.set(cache_key, data, FITMENT_CATALOG_CACHE_TTL_SEC)
         return data
 
+    # -- Public catalogue surface -------------------------------------------
+
+    async def catalogue_regions(self) -> list[dict[str, Any]]:
+        """Provider-backed vehicle markets for the interactive Fitment flow."""
+        return await self._cataloging("regions", {})
+
+    async def catalogue_makes(self, *, region: str) -> list[dict[str, Any]]:
+        return await self._cataloging("makes", {"region": region})
+
+    async def catalogue_models(self, *, make: str, region: str) -> list[dict[str, Any]]:
+        return await self._cataloging("models", {"make": make, "region": region})
+
+    async def catalogue_years(
+        self,
+        *,
+        make: str,
+        model: str,
+        region: str,
+    ) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "years",
+            {"make": make, "model": model, "region": region},
+        )
+
     # -- Resolution ladder ----------------------------------------------------
 
     def _regions_for(self, identity: VehicleIdentity) -> list[str]:
@@ -360,6 +384,62 @@ class WheelSizeProvider:
                         # generation again.
                         "make_slug": base["make"],
                         "model_slug": base["model"],
+                        "region": region,
+                        "generation": generation_name,
+                        "modification": modification_name,
+                        "body": str(modification.get("body") or generation.get("body") or ""),
+                        "market": region,
+                        "generation_slug": generation_slug,
+                        "modification_slug": modification_slug,
+                    }
+                )
+        return variants
+
+    async def find_vehicle_variants_exact(
+        self,
+        *,
+        make_slug: str,
+        model_slug: str,
+        region: str,
+        year: int,
+    ) -> list[dict[str, str]]:
+        """List variants for an already validated catalogue selection.
+
+        This is deliberately separate from :meth:`find_vehicle_variants`,
+        which remains a legacy normalisation helper for pre-catalogue
+        identities. Interactive Fitment saves exact provider identifiers first
+        and must not fuzzy-match them again during lookup.
+        """
+        base = {"make": make_slug, "model": model_slug, "region": region}
+        if not _contains_year(await self._cataloging("years", base), year):
+            return []
+
+        generations = await self._cataloging("generations", {**base, "year": year})
+        variants: list[dict[str, str]] = []
+        for generation in generations:
+            generation_slug = str(generation.get("slug") or "")
+            if not generation_slug:
+                continue
+            generation_name = str(
+                generation.get("name") or generation.get("name_en") or generation_slug
+            )
+            modifications = await self._cataloging(
+                "modifications", {**base, "year": year, "generation": generation_slug}
+            )
+            for modification in modifications:
+                modification_slug = str(modification.get("slug") or "")
+                if not modification_slug:
+                    continue
+                modification_name = str(
+                    modification.get("name")
+                    or modification.get("name_en")
+                    or modification.get("trim")
+                    or modification_slug
+                )
+                variants.append(
+                    {
+                        "make_slug": make_slug,
+                        "model_slug": model_slug,
                         "region": region,
                         "generation": generation_name,
                         "modification": modification_name,

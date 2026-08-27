@@ -133,6 +133,7 @@ class ReasonCode(StrEnum):
     offset_unknown = "offset_unknown"
     rim_offset_missing = "rim_offset_missing"
     vehicle_reference_offset_missing = "vehicle_reference_offset_missing"
+    et_outside_reference_range = "et_outside_reference_range"
     vehicle_variant_required = "vehicle_variant_required"
     vehicle_market_confirmation_required = "vehicle_market_confirmation_required"
     provider_reference_conflict = "provider_reference_conflict"
@@ -160,7 +161,7 @@ class VehicleIdentity(BaseModel):
     is_user_confirmed: bool = False
     source: Source = Source.unknown
     confidence: float = 0.0
-    provider_mappings: dict[str, dict[str, str]] = Field(default_factory=dict)
+    provider_mappings: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     @property
     def is_resolvable(self) -> bool:
@@ -226,6 +227,9 @@ class RimSpec(BaseModel):
     model: str | None = None
     sku: str | None = None
     product_url: str | None = None
+    source_fingerprint: str | None = None
+    selected_variant_sku: str | None = None
+    revision: int | None = None
 
     bolt_count: FieldValue = Field(default_factory=FieldValue)
     pcd_mm: FieldValue = Field(default_factory=FieldValue)
@@ -254,6 +258,7 @@ class RimSetup(BaseModel):
     front: RimSpec
     rear: RimSpec
     is_staggered: bool = False
+    revision: int | None = None
 
 
 class AxleFitment(BaseModel):

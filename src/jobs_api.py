@@ -31,8 +31,11 @@ from src.config import (
     WORKER_ENABLED,
 )
 from src.credits_service import InsufficientCreditsError, refund_job_credit, reserve_job_credit
+from src.fitment.config import WHEEL_SIZE_REGION_DEFAULT
+from src.fitment.context import PROVIDER_REFERENCE_VERSION, is_current_snapshot
 from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
+from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
@@ -40,6 +43,7 @@ from src.rim_url_resolver import (
     PublicHttpsPolicy,
     RimUrlError,
     resolve_rim_product_url,
+    rim_source_fingerprint,
 )
 from src.share_api import share_url_for_job
 from src.users_service import ensure_user
@@ -219,6 +223,28 @@ class FitmentVehicleResponse(BaseModel):
     title: str
 
 
+class FitmentVehicleFieldStateResponse(BaseModel):
+    value: str | int | None = None
+    state: Literal["missing", "proposed", "confirmed"]
+    source: str | None = None
+    is_user_confirmed: bool = False
+
+
+class FitmentSelectedModificationResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    provider: Literal["wheel_size"]
+    make_slug: str
+    model_slug: str
+    region: str
+    generation: str
+    modification: str
+    body: str = ""
+    market: str
+    generation_slug: str
+    modification_slug: str
+
+
 class FitmentRimResponse(BaseModel):
     brand: str | None = None
     model: str | None = None
@@ -235,6 +261,26 @@ class FitmentRimResponse(BaseModel):
     title: str
 
 
+class FitmentRimFieldStateResponse(BaseModel):
+    value: int | float | None = None
+    state: Literal["missing", "suggested", "entered", "confirmed"]
+    source: str | None = None
+    is_user_confirmed: bool = False
+    suggested_value: int | float | None = None
+
+
+class FitmentRimSetupResponse(BaseModel):
+    setup_mode: Literal["uniform", "staggered"]
+    rim_setup_state: Literal["empty", "partial", "complete_unconfirmed", "confirmed_ready"]
+    variant_state: Literal["not_applicable", "none", "selection_required", "selected"]
+    selected_variant_sku: str | None = None
+    source_fingerprint: str | None = None
+    source_revision: int = 1
+    rim_spec_revision: int
+    field_states: dict[str, FitmentRimFieldStateResponse] = Field(default_factory=dict)
+    rim: FitmentRimResponse
+
+
 class FitmentReadinessResponse(BaseModel):
     ready: bool
     missing_fields: list[str] = Field(default_factory=list)
@@ -245,6 +291,13 @@ class FitmentReadinessResponse(BaseModel):
 class FitmentProviderReadinessResponse(BaseModel):
     status: str
     blocking_issues: list[dict[str, str]] = Field(default_factory=list)
+
+
+class FitmentCurrentCheckResponse(BaseModel):
+    id: str
+    execution_status: Literal["queued", "processing", "completed", "failed"]
+    verdict: str | None = None
+    is_current: bool = True
 
 
 class FitmentNextActionResponse(BaseModel):
@@ -269,17 +322,30 @@ class FitmentOverviewResponse(BaseModel):
     completed_at: datetime | None = None
     fitment_available: bool
     is_staggered: bool
+    setup_mode: Literal["uniform", "staggered"]
+    rim_setup_state: Literal["empty", "partial", "complete_unconfirmed", "confirmed_ready"]
+    rim_setup_revision: int = 1
     snapshot_locked: bool = True
     vehicle_revision: int
     rim_revision: int
     vehicle_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
     rim_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
     vehicle_provenance: dict[str, object] = Field(default_factory=dict)
+    vehicle_state: Literal["empty", "unconfirmed", "confirmed_incomplete", "confirmed_ready"]
+    vehicle_field_states: dict[str, FitmentVehicleFieldStateResponse] = Field(default_factory=dict)
+    modification_state: Literal["none", "suggested", "confirmed"]
+    selection_source: Literal["wheel_size_single", "user", "vehicle_recognition"] | None = None
+    selected_modification: FitmentSelectedModificationResponse | None = None
+    modification_vehicle_revision: int | None = None
     rim_provenance: dict[str, object] = Field(default_factory=dict)
+    rim_field_states: dict[str, FitmentRimFieldStateResponse] = Field(default_factory=dict)
+    front_rim: FitmentRimSetupResponse
+    rear_rim: FitmentRimSetupResponse
     readiness: FitmentReadinessResponse
     input_readiness: FitmentReadinessResponse
     provider_readiness: FitmentProviderReadinessResponse
     next_action: FitmentNextActionResponse
+    current_check: FitmentCurrentCheckResponse | None = None
     vehicle: FitmentVehicleResponse
     rim: FitmentRimResponse
 
@@ -341,6 +407,7 @@ class RimSourceResolveResponse(BaseModel):
     variants: list[RimSourceVariantResponse] = Field(default_factory=list)
     selection_required: bool = False
     selected_variant_sku: str | None = None
+    source_fingerprint: str | None = None
 
 
 class VehicleVariantResponse(BaseModel):
@@ -351,7 +418,22 @@ class VehicleVariantResponse(BaseModel):
 
 
 class VehicleVariantsResponse(BaseModel):
-    variants: list[VehicleVariantResponse]
+    outcome: Literal["no_match", "single", "multiple"]
+    vehicle_revision: int
+    variants: list[VehicleVariantResponse] = Field(default_factory=list)
+    total_count: int
+    has_more: bool = False
+
+
+class VehicleCatalogueOptionResponse(BaseModel):
+    value: str
+    label: str
+    provider_id: str | None = None
+
+
+class VehicleCatalogueResponse(BaseModel):
+    outcome: Literal["success", "no_data"]
+    items: list[VehicleCatalogueOptionResponse] = Field(default_factory=list)
 
 
 class VehicleVariantApplyRequest(BaseModel):
@@ -621,8 +703,7 @@ def _job_assets_select_clause() -> str:
 def _fitment_available_clause() -> str:
     return (
         "CASE "
-        "WHEN jobs.status = 'completed' "
-        "AND jobs.vehicle_identity_id IS NOT NULL "
+        "WHEN jobs.vehicle_identity_id IS NOT NULL "
         "AND jobs.rim_setup_id IS NOT NULL "
         "THEN true ELSE false END AS fitment_available"
     )
@@ -636,11 +717,13 @@ def _job_assets_join_clause() -> str:
     """
 
 
-def _fitment_provenance_meta(*, source: str) -> dict[str, object]:
+def _fitment_provenance_meta(*, source: str, confirmed: bool | None = None) -> dict[str, object]:
+    if confirmed is None:
+        confirmed = source == "user_confirmed"
     return {
         "source": source,
         "confidence": 1.0,
-        "is_user_confirmed": True,
+        "is_user_confirmed": confirmed,
     }
 
 
@@ -858,11 +941,481 @@ def _parse_update_count(result: str) -> int:
         return 0
 
 
+_REGION_LABEL_RU = {
+    "russia": "Россия+",
+    "rus": "Россия+",
+    "eudm": "Европа",
+    "usdm": "США+",
+    "jdm": "Япония",
+    "chdm": "Китай",
+    "cdm": "Канада",
+    "mxndm": "Мексика",
+    "ladm": "Центральная и Южная Америка",
+    "skdm": "Южная Корея",
+    "kdm": "Южная Корея",
+    "sam": "Юго-Восточная Азия",
+    "medm": "Ближний Восток",
+    "nadm": "Северная Африка",
+    "sadm": "Южная Африка",
+    "audm": "Океания",
+}
+_REGION_ORDER = ("russia", "rus", "eudm", "usdm", "jdm", "chdm")
+_LEGACY_REGION_ALIASES = {
+    "russia": "rus",
+    "eu": "eudm",
+    "europe": "eudm",
+    "usa": "usdm",
+    "us": "usdm",
+    "japan": "jdm",
+    "china": "chdm",
+    "korea": "skdm",
+}
+
+
+def _catalogue_entry_value(entry: dict[str, object]) -> str | None:
+    for key in ("slug", "code", "id", "name", "name_en"):
+        value = entry.get(key)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return None
+
+
+def _catalogue_entry_label(entry: dict[str, object], *, region: bool = False) -> str | None:
+    value = _catalogue_entry_value(entry)
+    if value is None:
+        return None
+    if region:
+        label = _REGION_LABEL_RU.get(value.lower())
+        if label:
+            return label
+    for key in ("name", "name_en", "label"):
+        raw = entry.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return value
+
+
+def _catalogue_options(
+    entries: list[dict[str, object]],
+    *,
+    region: bool = False,
+    year: bool = False,
+) -> list[VehicleCatalogueOptionResponse]:
+    options: list[VehicleCatalogueOptionResponse] = []
+    for entry in entries:
+        if year:
+            raw_year = entry.get("year", entry.get("name", entry.get("slug")))
+            try:
+                value = str(int(raw_year))
+            except (TypeError, ValueError):
+                continue
+            options.append(VehicleCatalogueOptionResponse(value=value, label=value))
+            continue
+        value = _catalogue_entry_value(entry)
+        label = _catalogue_entry_label(entry, region=region)
+        if value is None or label is None:
+            continue
+        options.append(
+            VehicleCatalogueOptionResponse(
+                value=value,
+                label=label,
+                provider_id=value if entry.get("slug") is not None else None,
+            )
+        )
+    if region:
+        options.sort(
+            key=lambda option: (
+                _REGION_ORDER.index(option.value.lower())
+                if option.value.lower() in _REGION_ORDER
+                else len(_REGION_ORDER),
+                option.label,
+            )
+        )
+    return options
+
+
+def _exact_catalogue_entry(
+    entries: list[dict[str, object]],
+    selected: str | int | None,
+    *,
+    year: bool = False,
+) -> dict[str, object] | None:
+    if selected is None:
+        return None
+    normalized = str(selected).strip().casefold()
+    for entry in entries:
+        if year:
+            candidate = entry.get("year", entry.get("name", entry.get("slug")))
+            try:
+                if int(candidate) == int(selected):
+                    return entry
+            except (TypeError, ValueError):
+                continue
+            continue
+        candidates = {
+            str(value).strip().casefold()
+            for key in ("slug", "code", "id", "name", "name_en", "label")
+            if (value := entry.get(key)) is not None and str(value).strip()
+        }
+        if normalized in candidates:
+            return entry
+    return None
+
+
+def _exact_region_entry(
+    entries: list[dict[str, object]],
+    selected: str | None,
+) -> dict[str, object] | None:
+    entry = _exact_catalogue_entry(entries, selected)
+    if entry is not None or selected is None:
+        return entry
+    alias = _LEGACY_REGION_ALIASES.get(selected.strip().casefold())
+    return _exact_catalogue_entry(entries, alias) if alias else None
+
+
+def _catalogue_provider_error(exc: ProviderError) -> HTTPException:
+    message = str(exc)
+    if "HTTP 401" in message or "HTTP 403" in message:
+        code = "authentication_failed"
+    elif "HTTP 429" in message:
+        code = "throttled"
+    elif "invalid JSON" in message or "unexpected cataloging payload" in message:
+        code = "malformed_response"
+    else:
+        code = "provider_unavailable"
+    return HTTPException(status_code=503, detail={"code": code})
+
+
+async def _resolve_exact_vehicle_catalogue_selection(
+    provider: WheelSizeProvider,
+    *,
+    make: str,
+    model: str,
+    region: str,
+    year: int,
+) -> dict[str, str | int] | None:
+    """Resolve only exact catalogue choices; never use the legacy fuzzy picker."""
+    regions = await provider.catalogue_regions()
+    region_entry = _exact_region_entry(regions, region)
+    if region_entry is None:
+        return None
+    region_value = _catalogue_entry_value(region_entry)
+    if region_value is None:
+        return None
+    makes = await provider.catalogue_makes(region=region_value)
+    make_entry = _exact_catalogue_entry(makes, make)
+    if make_entry is None:
+        return None
+    make_slug = _catalogue_entry_value(make_entry)
+    make_label = _catalogue_entry_label(make_entry)
+    if make_slug is None or make_label is None:
+        return None
+    models = await provider.catalogue_models(make=make_slug, region=region_value)
+    model_entry = _exact_catalogue_entry(models, model)
+    if model_entry is None:
+        return None
+    model_slug = _catalogue_entry_value(model_entry)
+    model_label = _catalogue_entry_label(model_entry)
+    if model_slug is None or model_label is None:
+        return None
+    years = await provider.catalogue_years(make=make_slug, model=model_slug, region=region_value)
+    if _exact_catalogue_entry(years, year, year=True) is None:
+        return None
+    return {
+        "make": make_label,
+        "model": model_label,
+        "year": year,
+        "region": region_value,
+        "make_slug": make_slug,
+        "model_slug": model_slug,
+    }
+
+
+def _vehicle_field_states_from_row(
+    row,
+) -> dict[str, FitmentVehicleFieldStateResponse]:
+    fields = {
+        "make": row["vehicle_make"],
+        "model": row["vehicle_model"],
+        "year": row["vehicle_year"],
+        "region": row["vehicle_market"],
+    }
+    provenance = row.get("vehicle_field_provenance") or {}
+    legacy_confirmed = bool(row["vehicle_is_user_confirmed"])
+    states: dict[str, FitmentVehicleFieldStateResponse] = {}
+    for name, value in fields.items():
+        meta = _field_provenance_value(provenance, "market" if name == "region" else name)
+        # Field provenance is authoritative when it exists. The old aggregate
+        # boolean remains a read-only fallback for records created before
+        # per-field confirmation was available.
+        confirmed = value not in (None, "") and (
+            _is_user_confirmed_provenance(meta) if meta else legacy_confirmed
+        )
+        states[name] = FitmentVehicleFieldStateResponse(
+            value=value,
+            state="missing" if value in (None, "") else "confirmed" if confirmed else "proposed",
+            source=str(meta.get("source")) if meta.get("source") else None,
+            is_user_confirmed=confirmed,
+        )
+    return states
+
+
+def _vehicle_state_from_row(
+    row,
+) -> Literal["empty", "unconfirmed", "confirmed_incomplete", "confirmed_ready"]:
+    fields = _vehicle_field_states_from_row(row)
+    if all(field.state == "missing" for field in fields.values()):
+        return "empty"
+    if all(field.state == "confirmed" for field in fields.values()):
+        return "confirmed_ready"
+    if any(field.state == "confirmed" for field in fields.values()):
+        return "confirmed_incomplete"
+    return "unconfirmed"
+
+
+_RIM_CRITICAL_FIELDS = (
+    "bolt_count",
+    "pcd_mm",
+    "center_bore_mm",
+    "wheel_diameter_in",
+    "wheel_width_j",
+    "offset_et_mm",
+)
+
+
+def _rim_row_value(row, prefix: str, field_name: str):
+    key = f"{prefix}_{field_name}"
+    if key in row:
+        return row[key]
+    # The original front-only fixture/legacy read remains a valid uniform
+    # setup. It must not become a fabricated rear source or confirmation.
+    return row.get(f"rim_{field_name}") if prefix == "front_rim" else None
+
+
+def _rim_provenance_from_row(row, prefix: str) -> dict[str, object]:
+    key = "rim_field_provenance" if prefix == "front_rim" else f"{prefix}_field_provenance"
+    raw = row.get(key) or {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _rim_field_state(value: object, meta: dict[str, object]) -> FitmentRimFieldStateResponse:
+    numeric = _jsonable_fitment_value(value)
+    if value is None:
+        return FitmentRimFieldStateResponse(value=None, state="missing")
+    source = str(meta.get("source")) if meta.get("source") else None
+    if _is_user_confirmed_provenance(meta):
+        state: Literal["missing", "suggested", "entered", "confirmed"] = "confirmed"
+    elif source in {"user_input", "user_edited"}:
+        state = "entered"
+    else:
+        state = "suggested"
+    suggested_value = meta.get("suggested_value")
+    if isinstance(suggested_value, Decimal):
+        suggested_value = _jsonable_fitment_value(suggested_value)
+    if not isinstance(suggested_value, int | float):
+        suggested_value = None
+    return FitmentRimFieldStateResponse(
+        value=numeric if isinstance(numeric, int | float) else None,
+        state=state,
+        source=source,
+        is_user_confirmed=_is_user_confirmed_provenance(meta),
+        suggested_value=suggested_value,
+    )
+
+
+def _rim_field_states_from_row(row, prefix: str) -> dict[str, FitmentRimFieldStateResponse]:
+    provenance = _rim_provenance_from_row(row, prefix)
+    states = {
+        field: _rim_field_state(
+            _rim_row_value(row, prefix, field), _field_provenance_value(provenance, field)
+        )
+        for field in _RIM_CRITICAL_FIELDS
+    }
+    bolt, pcd = states["bolt_count"], states["pcd_mm"]
+    if bolt.state == "missing" or pcd.state == "missing":
+        pcd_state = "missing"
+    elif bolt.state == "confirmed" and pcd.state == "confirmed":
+        pcd_state = "confirmed"
+    elif "entered" in {bolt.state, pcd.state}:
+        pcd_state = "entered"
+    else:
+        pcd_state = "suggested"
+    states["pcd"] = FitmentRimFieldStateResponse(
+        value=None,
+        state=pcd_state,
+        source="user_confirmed" if pcd_state == "confirmed" else None,
+        is_user_confirmed=pcd_state == "confirmed",
+    )
+    # Stable presentation aliases prevent every client from rebuilding the
+    # frozen mapping from nullable database names.
+    states["diameter"] = states["wheel_diameter_in"]
+    states["width"] = states["wheel_width_j"]
+    states["dia"] = states["center_bore_mm"]
+    states["et"] = states["offset_et_mm"]
+    return states
+
+
+def _rim_setup_state_from_states(
+    states: dict[str, FitmentRimFieldStateResponse],
+) -> Literal["empty", "partial", "complete_unconfirmed", "confirmed_ready"]:
+    critical = [states[field] for field in _RIM_CRITICAL_FIELDS]
+    present = [field for field in critical if field.state != "missing"]
+    if not present:
+        return "empty"
+    if len(present) != len(critical):
+        return "partial"
+    if all(field.state == "confirmed" for field in critical):
+        return "confirmed_ready"
+    return "complete_unconfirmed"
+
+
+def _rim_variant_state_from_row(
+    row, prefix: str
+) -> Literal["not_applicable", "none", "selection_required", "selected"]:
+    provenance = _rim_provenance_from_row(row, prefix)
+    source_meta = provenance.get("_source")
+    if not isinstance(source_meta, dict):
+        return "not_applicable"
+    state = source_meta.get("variant_state")
+    if state in {"none", "selection_required", "selected"}:
+        return state
+    return "none"
+
+
+def _rim_response_from_row(row, prefix: str) -> FitmentRimResponse:
+    bolt_count = _rim_row_value(row, prefix, "bolt_count")
+    pcd_mm = _rim_row_value(row, prefix, "pcd_mm")
+    pcd_display = (
+        identity_service.pcd_display_value(bolt_count=int(bolt_count), pcd_mm=pcd_mm)
+        if bolt_count is not None and pcd_mm is not None
+        else None
+    )
+    values = {
+        field: _rim_row_value(row, prefix, field)
+        for field in ("wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm")
+    }
+    return FitmentRimResponse(
+        brand=_rim_row_value(row, prefix, "brand"),
+        model=_rim_row_value(row, prefix, "model"),
+        sku=_rim_row_value(row, prefix, "sku"),
+        product_url=_rim_row_value(row, prefix, "product_url"),
+        bolt_count=bolt_count,
+        pcd_mm=float(pcd_mm) if pcd_mm is not None else None,
+        pcd_display=pcd_display,
+        center_bore_mm=(
+            float(_rim_row_value(row, prefix, "center_bore_mm"))
+            if _rim_row_value(row, prefix, "center_bore_mm") is not None
+            else None
+        ),
+        wheel_diameter_in=(
+            float(values["wheel_diameter_in"]) if values["wheel_diameter_in"] is not None else None
+        ),
+        wheel_width_j=(
+            float(values["wheel_width_j"]) if values["wheel_width_j"] is not None else None
+        ),
+        offset_et_mm=(
+            float(_rim_row_value(row, prefix, "offset_et_mm"))
+            if _rim_row_value(row, prefix, "offset_et_mm") is not None
+            else None
+        ),
+        has_product_url=bool(_rim_row_value(row, prefix, "product_url")),
+        title=identity_service.rim_fitment_summary(values),
+    )
+
+
+def _rim_setup_response_from_row(row, prefix: str) -> FitmentRimSetupResponse:
+    states = _rim_field_states_from_row(row, prefix)
+    provenance = _rim_provenance_from_row(row, prefix)
+    source_meta = provenance.get("_source") if isinstance(provenance.get("_source"), dict) else {}
+    return FitmentRimSetupResponse(
+        setup_mode="staggered" if bool(row.get("is_staggered")) else "uniform",
+        rim_setup_state=_rim_setup_state_from_states(states),
+        variant_state=_rim_variant_state_from_row(row, prefix),
+        selected_variant_sku=_rim_row_value(row, prefix, "selected_variant_sku"),
+        source_fingerprint=_rim_row_value(row, prefix, "source_fingerprint"),
+        source_revision=int(
+            _rim_row_value(row, prefix, "source_revision")
+            or source_meta.get("source_revision")
+            or 1
+        ),
+        rim_spec_revision=int(_rim_row_value(row, prefix, "revision") or 1),
+        field_states=states,
+        rim=_rim_response_from_row(row, prefix),
+    )
+
+
+def _fitment_context_identity_from_job_row(row) -> dict[str, object]:
+    return {
+        "vehicle_identity_id": row.get("vehicle_identity_id"),
+        "vehicle_revision": row.get("vehicle_revision"),
+        "vehicle_provider_mapping_revision": row.get("vehicle_provider_mapping_revision"),
+        "vehicle_provider_mapping": (row.get("vehicle_provider_mappings") or {}).get("wheel_size"),
+        "modification_state": (
+            (row.get("vehicle_provider_mappings") or {}).get("wheel_size") or {}
+        ).get("modification_state"),
+        "selection_source": (
+            (row.get("vehicle_provider_mappings") or {}).get("wheel_size") or {}
+        ).get("selection_source"),
+        "selected_modification": (
+            (row.get("vehicle_provider_mappings") or {}).get("wheel_size") or {}
+        ).get("selected_modification"),
+        "modification_vehicle_revision": (
+            (row.get("vehicle_provider_mappings") or {}).get("wheel_size") or {}
+        ).get("modification_vehicle_revision"),
+        "rim_setup_id": row.get("rim_setup_id"),
+        "rim_setup_revision": row.get("rim_setup_revision") or row.get("rim_revision"),
+        "setup_mode": "staggered" if bool(row.get("is_staggered")) else "uniform",
+        "front_rim_revision": row.get("front_rim_revision") or row.get("rim_revision"),
+        "rear_rim_revision": row.get("rear_rim_revision") or row.get("rim_revision"),
+        "front_source_fingerprint": row.get("rim_source_fingerprint"),
+        "rear_source_fingerprint": row.get("rear_rim_source_fingerprint"),
+        "front_selected_variant_sku": row.get("rim_selected_variant_sku"),
+        "rear_selected_variant_sku": row.get("rear_rim_selected_variant_sku"),
+    }
+
+
+async def _current_check_for_job(conn, row) -> FitmentCurrentCheckResponse | None:
+    checks = await conn.fetch(
+        """
+        SELECT id, execution_status, verdict, input_snapshot
+        FROM fitment_checks
+        WHERE vehicle_identity_id=$1::uuid AND rim_setup_id=$2::uuid
+          AND owner_user_id=$3
+        ORDER BY created_at DESC
+        """,
+        row.get("vehicle_identity_id"),
+        row.get("rim_setup_id"),
+        row.get("owner_user_id"),
+    )
+    current_snapshot = {
+        "context_identity": {
+            **_fitment_context_identity_from_job_row(row),
+            "engine_version": ENGINE_VERSION,
+            "rules_version": TOLERANCES_VERSION,
+            "provider_version": PROVIDER_REFERENCE_VERSION,
+        }
+    }
+    for check in checks:
+        snapshot = _json_object_field(
+            check.get("input_snapshot"),
+            job_id=str(row.get("job_id")),
+            field_name="fitment_checks.input_snapshot",
+        )
+        if is_current_snapshot(snapshot, current_snapshot):
+            return FitmentCurrentCheckResponse(
+                id=str(check["id"]),
+                execution_status=check["execution_status"],
+                verdict=check.get("verdict"),
+            )
+    return None
+
+
 def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
     required_fields = {
         "vehicle.make": row["vehicle_make"],
         "vehicle.model": row["vehicle_model"],
         "vehicle.year": row["vehicle_year"],
+        "vehicle.region": row["vehicle_market"],
         "rim.bolt_count": row["rim_bolt_count"],
         "rim.pcd_mm": row["rim_pcd_mm"],
         "rim.center_bore_mm": row["rim_center_bore_mm"],
@@ -875,6 +1428,7 @@ def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
         "vehicle.make": _field_provenance_value(row["vehicle_field_provenance"], "make"),
         "vehicle.model": _field_provenance_value(row["vehicle_field_provenance"], "model"),
         "vehicle.year": _field_provenance_value(row["vehicle_field_provenance"], "year"),
+        "vehicle.region": _field_provenance_value(row["vehicle_field_provenance"], "market"),
         "rim.bolt_count": _field_provenance_value(row["rim_field_provenance"], "bolt_count"),
         "rim.pcd_mm": _field_provenance_value(row["rim_field_provenance"], "pcd_mm"),
         "rim.center_bore_mm": _field_provenance_value(
@@ -894,12 +1448,17 @@ def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
             "offset_et_mm",
         ),
     }
+    vehicle_field_states = _vehicle_field_states_from_row(row)
     unconfirmed = [
         field
         for field, value in required_fields.items()
         if value is not None
         and value != ""
-        and not _is_user_confirmed_provenance(provenance_map[field])
+        and (
+            vehicle_field_states[field.removeprefix("vehicle.")].state != "confirmed"
+            if field.startswith("vehicle.")
+            else not _is_user_confirmed_provenance(provenance_map[field])
+        )
     ]
     return FitmentReadinessResponse(
         ready=not missing,
@@ -909,11 +1468,104 @@ def _fitment_readiness_from_row(row) -> FitmentReadinessResponse:
     )
 
 
+_MODIFICATION_SOURCES = {"wheel_size_single", "user", "vehicle_recognition"}
+_SELECTED_MODIFICATION_KEYS = {
+    "make_slug",
+    "model_slug",
+    "region",
+    "generation",
+    "modification",
+    "body",
+    "market",
+    "generation_slug",
+    "modification_slug",
+}
+
+
+def _wheel_size_mapping_from_row(row) -> dict[str, object]:
+    mappings = row.get("vehicle_provider_mappings") or {}
+    mapping = mappings.get("wheel_size") if isinstance(mappings, dict) else None
+    return dict(mapping) if isinstance(mapping, dict) else {}
+
+
+def _modification_from_row(
+    row,
+) -> tuple[
+    Literal["none", "suggested", "confirmed"],
+    Literal["wheel_size_single", "user", "vehicle_recognition"] | None,
+    FitmentSelectedModificationResponse | None,
+    int | None,
+]:
+    """Read only revision-bound Slice 3 metadata as current modification state.
+
+    Legacy mappings intentionally fall through to ``none``: a mapping without
+    evidence for its source and bound vehicle revision must never be presented
+    as a new confirmed user choice.
+    """
+    mapping = _wheel_size_mapping_from_row(row)
+    try:
+        bound_revision = int(mapping.get("modification_vehicle_revision"))
+    except (TypeError, ValueError):
+        bound_revision = None
+    if bound_revision != int(row["vehicle_revision"]):
+        return "none", None, None, None
+
+    state = mapping.get("modification_state")
+    if state == "suggested":
+        return "suggested", None, None, bound_revision
+    if state != "confirmed":
+        return "none", None, None, None
+
+    source = mapping.get("selection_source")
+    selected = mapping.get("selected_modification")
+    if source not in _MODIFICATION_SOURCES or not isinstance(selected, dict):
+        return "none", None, None, None
+    if not _SELECTED_MODIFICATION_KEYS.issubset(selected):
+        return "none", None, None, None
+    try:
+        selected_response = FitmentSelectedModificationResponse(
+            provider="wheel_size",
+            **{key: str(selected[key]) for key in _SELECTED_MODIFICATION_KEYS},
+        )
+    except (TypeError, ValueError):
+        return "none", None, None, None
+    return "confirmed", source, selected_response, bound_revision
+
+
+def _base_wheel_size_mapping(
+    row,
+    variants: list[dict[str, str]] | None = None,
+) -> dict[str, str]:
+    mapping = _wheel_size_mapping_from_row(row)
+    base = {
+        key: str(mapping[key])
+        for key in ("make_slug", "model_slug", "region")
+        if mapping.get(key) not in (None, "")
+    }
+    if len(base) == 3:
+        return base
+    if variants:
+        first = variants[0]
+        return {
+            key: str(first[key])
+            for key in ("make_slug", "model_slug", "region")
+            if first.get(key) not in (None, "")
+        }
+    return {}
+
+
+def _canonical_selected_modification(variant: dict[str, str]) -> dict[str, str] | None:
+    if not _SELECTED_MODIFICATION_KEYS.issubset(variant):
+        return None
+    return {key: str(variant[key]) for key in _SELECTED_MODIFICATION_KEYS}
+
+
 def _provider_readiness_from_row(row) -> FitmentProviderReadinessResponse:
-    mapping = row.get("vehicle_provider_mappings") or {}
-    wheel_size = mapping.get("wheel_size") if isinstance(mapping, dict) else None
-    required = {"make_slug", "model_slug", "region", "generation_slug", "modification_slug"}
-    if not isinstance(wheel_size, dict) or not required.issubset(wheel_size):
+    modification_state, selection_source, _, _ = _modification_from_row(row)
+    if modification_state != "confirmed" or selection_source not in {
+        "wheel_size_single",
+        "user",
+    }:
         return FitmentProviderReadinessResponse(
             status="variant_required",
             blocking_issues=[{"code": "vehicle_variant_required"}],
@@ -923,25 +1575,24 @@ def _provider_readiness_from_row(row) -> FitmentProviderReadinessResponse:
 
 def _fitment_next_action_from_row(row) -> FitmentNextActionResponse:
     """Keep the Standard Check progression authoritative on the server."""
-    readiness = _fitment_readiness_from_row(row)
-    vehicle_missing = [field for field in readiness.missing_fields if field.startswith("vehicle.")]
-    if vehicle_missing:
+    if _vehicle_state_from_row(row) != "confirmed_ready":
         return FitmentNextActionResponse(kind="complete_vehicle_details")
-    rim_missing = [field for field in readiness.missing_fields if field.startswith("rim.")]
-    if rim_missing:
-        return FitmentNextActionResponse(kind="complete_rim_specs")
     if _provider_readiness_from_row(row).status != "ready":
         return FitmentNextActionResponse(kind="select_vehicle_variant")
+    front_state = _rim_setup_state_from_states(_rim_field_states_from_row(row, "front_rim"))
+    rear_state = _rim_setup_state_from_states(_rim_field_states_from_row(row, "rear_rim"))
+    if front_state == "empty" or (bool(row.get("is_staggered")) and rear_state == "empty"):
+        return FitmentNextActionResponse(kind="complete_rim_specs")
+    if front_state == "complete_unconfirmed" or (
+        bool(row.get("is_staggered")) and rear_state == "complete_unconfirmed"
+    ):
+        return FitmentNextActionResponse(kind="complete_rim_specs")
     return FitmentNextActionResponse(kind="run_standard_check")
 
 
-def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
-    pcd_display = None
-    if row["rim_bolt_count"] is not None and row["rim_pcd_mm"] is not None:
-        pcd_display = identity_service.pcd_display_value(
-            bolt_count=int(row["rim_bolt_count"]),
-            pcd_mm=row["rim_pcd_mm"],
-        )
+def _fitment_overview_from_row(
+    row, *, current_check: FitmentCurrentCheckResponse | None = None
+) -> FitmentOverviewResponse:
     vehicle_title = identity_service.vehicle_fitment_summary(
         {
             "make": row["vehicle_make"],
@@ -950,13 +1601,25 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
             "generation": row["vehicle_generation"],
         }
     )
-    rim_title = identity_service.rim_fitment_summary(
-        {
-            "wheel_diameter_in": row["rim_wheel_diameter_in"],
-            "wheel_width_j": row["rim_wheel_width_j"],
-            "bolt_count": row["rim_bolt_count"],
-            "pcd_mm": row["rim_pcd_mm"],
-        }
+    front_rim = _rim_setup_response_from_row(row, "front_rim")
+    rear_rim = (
+        _rim_setup_response_from_row(row, "rear_rim")
+        if bool(row.get("is_staggered"))
+        else front_rim
+    )
+    setup_state = _rim_setup_state_from_states(front_rim.field_states)
+    if bool(row.get("is_staggered")):
+        rear_state = _rim_setup_state_from_states(rear_rim.field_states)
+        if setup_state == "empty" and rear_state == "empty":
+            setup_state = "empty"
+        elif "partial" in {setup_state, rear_state} or "empty" in {setup_state, rear_state}:
+            setup_state = "partial"
+        elif "complete_unconfirmed" in {setup_state, rear_state}:
+            setup_state = "complete_unconfirmed"
+        else:
+            setup_state = "confirmed_ready"
+    modification_state, selection_source, selected_modification, modification_vehicle_revision = (
+        _modification_from_row(row)
     )
     return FitmentOverviewResponse(
         job_id=row["job_id"],
@@ -967,16 +1630,29 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
         completed_at=row["completed_at"],
         fitment_available=bool(row["fitment_available"]),
         is_staggered=bool(row["is_staggered"]),
+        setup_mode="staggered" if bool(row["is_staggered"]) else "uniform",
+        rim_setup_state=setup_state,
+        rim_setup_revision=int(row.get("rim_setup_revision") or row["rim_revision"] or 1),
         vehicle_revision=int(row["vehicle_revision"]),
         rim_revision=int(row["rim_revision"]),
         vehicle_candidates=row["vehicle_field_candidates"] or {},
         rim_candidates=row["rim_field_candidates"] or {},
         vehicle_provenance=row["vehicle_field_provenance"] or {},
+        vehicle_state=_vehicle_state_from_row(row),
+        vehicle_field_states=_vehicle_field_states_from_row(row),
+        modification_state=modification_state,
+        selection_source=selection_source,
+        selected_modification=selected_modification,
+        modification_vehicle_revision=modification_vehicle_revision,
         rim_provenance=row["rim_field_provenance"] or {},
+        rim_field_states=front_rim.field_states,
+        front_rim=front_rim,
+        rear_rim=rear_rim,
         readiness=_fitment_readiness_from_row(row),
         input_readiness=_fitment_readiness_from_row(row),
         provider_readiness=_provider_readiness_from_row(row),
         next_action=_fitment_next_action_from_row(row),
+        current_check=current_check,
         vehicle=FitmentVehicleResponse(
             make=row["vehicle_make"],
             model=row["vehicle_model"],
@@ -988,29 +1664,7 @@ def _fitment_overview_from_row(row) -> FitmentOverviewResponse:
             is_user_confirmed=bool(row["vehicle_is_user_confirmed"]),
             title=vehicle_title,
         ),
-        rim=FitmentRimResponse(
-            brand=row["rim_brand"],
-            model=row["rim_model"],
-            sku=row["rim_sku"],
-            product_url=row["rim_product_url"],
-            bolt_count=row["rim_bolt_count"],
-            pcd_mm=float(row["rim_pcd_mm"]) if row["rim_pcd_mm"] is not None else None,
-            pcd_display=pcd_display,
-            center_bore_mm=float(row["rim_center_bore_mm"])
-            if row["rim_center_bore_mm"] is not None
-            else None,
-            wheel_diameter_in=float(row["rim_wheel_diameter_in"])
-            if row["rim_wheel_diameter_in"] is not None
-            else None,
-            wheel_width_j=float(row["rim_wheel_width_j"])
-            if row["rim_wheel_width_j"] is not None
-            else None,
-            offset_et_mm=float(row["rim_offset_et_mm"])
-            if row["rim_offset_et_mm"] is not None
-            else None,
-            has_product_url=bool(row["rim_product_url"]),
-            title=rim_title,
-        ),
+        rim=front_rim.rim,
     )
 
 
@@ -1048,6 +1702,7 @@ async def _fetch_fitment_job_row(
             rim_setup.front_rim_spec_id::text AS front_rim_spec_id,
             rim_setup.rear_rim_spec_id::text AS rear_rim_spec_id,
             rim_setup.is_staggered,
+            rim_setup.revision AS rim_setup_revision,
             rim.owner_user_id AS rim_owner_user_id,
             rim.brand AS rim_brand,
             rim.model AS rim_model,
@@ -1061,7 +1716,26 @@ async def _fetch_fitment_job_row(
             rim.offset_et_mm AS rim_offset_et_mm,
             rim.field_provenance AS rim_field_provenance,
             rim.field_candidates AS rim_field_candidates,
-            rim.revision AS rim_revision
+            rim.revision AS rim_revision,
+            rim.source_fingerprint AS rim_source_fingerprint,
+            rim.selected_variant_sku AS rim_selected_variant_sku,
+            rim.source_revision AS rim_source_revision,
+            rear_rim.brand AS rear_rim_brand,
+            rear_rim.model AS rear_rim_model,
+            rear_rim.sku AS rear_rim_sku,
+            rear_rim.product_url AS rear_rim_product_url,
+            rear_rim.bolt_count AS rear_rim_bolt_count,
+            rear_rim.pcd_mm AS rear_rim_pcd_mm,
+            rear_rim.center_bore_mm AS rear_rim_center_bore_mm,
+            rear_rim.wheel_diameter_in AS rear_rim_wheel_diameter_in,
+            rear_rim.wheel_width_j AS rear_rim_wheel_width_j,
+            rear_rim.offset_et_mm AS rear_rim_offset_et_mm,
+            rear_rim.field_provenance AS rear_rim_field_provenance,
+            rear_rim.field_candidates AS rear_rim_field_candidates,
+            rear_rim.revision AS rear_rim_revision,
+            rear_rim.source_fingerprint AS rear_rim_source_fingerprint,
+            rear_rim.selected_variant_sku AS rear_rim_selected_variant_sku,
+            rear_rim.source_revision AS rear_rim_source_revision
         FROM jobs
         LEFT JOIN vehicle_identities AS vehicle
           ON vehicle.id = jobs.vehicle_identity_id
@@ -1069,6 +1743,8 @@ async def _fetch_fitment_job_row(
           ON rim_setup.id = jobs.rim_setup_id
         LEFT JOIN rim_specs AS rim
           ON rim.id = rim_setup.front_rim_spec_id
+        LEFT JOIN rim_specs AS rear_rim
+          ON rear_rim.id = rim_setup.rear_rim_spec_id
         WHERE jobs.id = $1::uuid
           AND jobs.user_id = $2
         """,
@@ -1085,6 +1761,8 @@ async def _fetch_fitment_job_row(
         "vehicle_provider_mappings",
         "rim_field_provenance",
         "rim_field_candidates",
+        "rear_rim_field_provenance",
+        "rear_rim_field_candidates",
     ):
         normalized_row[field_name] = _json_object_field(
             normalized_row.get(field_name),
@@ -2023,18 +2701,16 @@ async def get_fitment_overview(
     async with pool.acquire() as conn:
         user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+        current_check = (
+            await _current_check_for_job(conn, row) if row and hasattr(conn, "fetch") else None
+        )
 
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
-    if row["status"] != "completed":
-        raise HTTPException(
-            status_code=409,
-            detail="Fitment overview is available only for completed jobs",
-        )
     if not row["fitment_available"]:
         raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
 
-    return _fitment_overview_from_row(row)
+    return _fitment_overview_from_row(row, current_check=current_check)
 
 
 @router.get("/{job_id}/fitment/history", response_model=FitmentHistoryResponse)
@@ -2083,6 +2759,183 @@ async def get_fitment_history(
     )
 
 
+async def _require_fitment_catalogue_access(
+    *,
+    job_id: str,
+    init_data: str | None,
+    telegram_user_id: int | None,
+    authorization: str | None,
+):
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    async with db.get_pool().acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+    if not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail={"code": "fitment_context_unavailable"})
+    return row
+
+
+def _catalogue_parameter(value: str, *, field: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise HTTPException(status_code=422, detail={"code": "validation_error", "field": field})
+    return normalized
+
+
+async def _catalogue_region_or_no_data(
+    provider: WheelSizeProvider,
+    region: str,
+) -> tuple[str | None, list[dict[str, object]]]:
+    regions = await provider.catalogue_regions()
+    entry = _exact_region_entry(regions, region)
+    return (_catalogue_entry_value(entry), regions) if entry else (None, regions)
+
+
+@router.get("/{job_id}/fitment/catalogue/regions", response_model=VehicleCatalogueResponse)
+async def get_fitment_catalogue_regions(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    try:
+        entries = await WheelSizeProvider().catalogue_regions()
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    options = _catalogue_options(entries, region=True)
+    return VehicleCatalogueResponse(
+        outcome="success" if options else "no_data",
+        items=options,
+    )
+
+
+@router.get("/{job_id}/fitment/catalogue/makes", response_model=VehicleCatalogueResponse)
+async def get_fitment_catalogue_makes(
+    job_id: str,
+    region: str = Query(default=WHEEL_SIZE_REGION_DEFAULT),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    provider = WheelSizeProvider()
+    try:
+        canonical_region, _ = await _catalogue_region_or_no_data(
+            provider, _catalogue_parameter(region, field="region")
+        )
+        if canonical_region is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        entries = await provider.catalogue_makes(region=canonical_region)
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    options = _catalogue_options(entries)
+    return VehicleCatalogueResponse(
+        outcome="success" if options else "no_data",
+        items=options,
+    )
+
+
+@router.get("/{job_id}/fitment/catalogue/models", response_model=VehicleCatalogueResponse)
+async def get_fitment_catalogue_models(
+    job_id: str,
+    make: str = Query(),
+    region: str = Query(default=WHEEL_SIZE_REGION_DEFAULT),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    provider = WheelSizeProvider()
+    try:
+        canonical_region, _ = await _catalogue_region_or_no_data(
+            provider, _catalogue_parameter(region, field="region")
+        )
+        if canonical_region is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        makes = await provider.catalogue_makes(region=canonical_region)
+        make_entry = _exact_catalogue_entry(makes, _catalogue_parameter(make, field="make"))
+        make_value = _catalogue_entry_value(make_entry) if make_entry else None
+        if make_value is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        entries = await provider.catalogue_models(make=make_value, region=canonical_region)
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    options = _catalogue_options(entries)
+    return VehicleCatalogueResponse(
+        outcome="success" if options else "no_data",
+        items=options,
+    )
+
+
+@router.get("/{job_id}/fitment/catalogue/years", response_model=VehicleCatalogueResponse)
+async def get_fitment_catalogue_years(
+    job_id: str,
+    make: str = Query(),
+    model: str = Query(),
+    region: str = Query(default=WHEEL_SIZE_REGION_DEFAULT),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    provider = WheelSizeProvider()
+    try:
+        canonical_region, _ = await _catalogue_region_or_no_data(
+            provider, _catalogue_parameter(region, field="region")
+        )
+        if canonical_region is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        makes = await provider.catalogue_makes(region=canonical_region)
+        make_entry = _exact_catalogue_entry(makes, _catalogue_parameter(make, field="make"))
+        make_value = _catalogue_entry_value(make_entry) if make_entry else None
+        if make_value is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        models = await provider.catalogue_models(make=make_value, region=canonical_region)
+        model_entry = _exact_catalogue_entry(models, _catalogue_parameter(model, field="model"))
+        model_value = _catalogue_entry_value(model_entry) if model_entry else None
+        if model_value is None:
+            return VehicleCatalogueResponse(outcome="no_data")
+        entries = await provider.catalogue_years(
+            make=make_value, model=model_value, region=canonical_region
+        )
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    options = _catalogue_options(entries, year=True)
+    return VehicleCatalogueResponse(
+        outcome="success" if options else "no_data",
+        items=options,
+    )
+
+
 @router.post("/{job_id}/fitment/rim-source/resolve", response_model=RimSourceResolveResponse)
 async def resolve_fitment_rim_source(
     job_id: str,
@@ -2114,7 +2967,7 @@ async def resolve_fitment_rim_source(
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
-    if row["status"] != "completed" or not row["fitment_available"]:
+    if not row["fitment_available"]:
         raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
 
     try:
@@ -2192,7 +3045,140 @@ async def resolve_fitment_rim_source(
         ],
         selection_required=resolution.selection_required,
         selected_variant_sku=resolution.selected_variant_sku,
+        source_fingerprint=resolution.source_fingerprint,
     )
+
+
+async def _find_current_vehicle_variants(row) -> list[dict[str, str]]:
+    """Look up variants without letting a new UI selection fall back to fuzzy IDs."""
+    provider = WheelSizeProvider()
+    mapping = _base_wheel_size_mapping(row)
+    if len(mapping) == 3:
+        return await provider.find_vehicle_variants_exact(
+            make_slug=mapping["make_slug"],
+            model_slug=mapping["model_slug"],
+            region=mapping["region"],
+            year=int(row["vehicle_year"]),
+        )
+
+    # Read-only compatibility path for identities saved before Slice 2 stored
+    # exact catalogue IDs. It can never create an authoritative legacy source.
+    identity = ProviderVehicleIdentity(
+        make=row["vehicle_make"],
+        model=row["vehicle_model"],
+        year=row["vehicle_year"],
+        body=row["vehicle_body"],
+        generation=row["vehicle_generation"],
+        modification=row["vehicle_modification"],
+        market=row["vehicle_market"],
+    )
+    return await provider.find_vehicle_variants(identity)
+
+
+async def _persist_lookup_outcome(
+    *,
+    pool,
+    job_id: str,
+    user_id: int,
+    expected_vehicle_revision: int,
+    outcome: Literal["no_match", "single", "multiple"],
+    variants: list[dict[str, str]],
+) -> None:
+    """Persist only the authoritative state implied by an exact current lookup."""
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            if not row:
+                raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+            if int(row["vehicle_revision"]) != expected_vehicle_revision:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+
+            mapping = dict(row["vehicle_provider_mappings"] or {})
+            base_mapping = _base_wheel_size_mapping(row, variants)
+            before_mapping = mapping.get("wheel_size")
+            _before_state, _, _, _ = _modification_from_row(row)
+            target_generation = row["vehicle_generation"]
+            target_modification = row["vehicle_modification"]
+            target_body = row["vehicle_body"]
+
+            if outcome == "single":
+                selected = _canonical_selected_modification(variants[0])
+                if selected is None:
+                    raise HTTPException(status_code=422, detail={"code": "candidate_not_current"})
+                target_mapping: dict[str, object] = {
+                    **base_mapping,
+                    "generation_slug": selected["generation_slug"],
+                    "modification_slug": selected["modification_slug"],
+                    "modification_state": "confirmed",
+                    "selection_source": "wheel_size_single",
+                    "modification_vehicle_revision": expected_vehicle_revision,
+                    "selected_modification": selected,
+                }
+                target_generation = selected["generation"]
+                target_modification = selected["modification"]
+                target_body = selected["body"] or None
+                event_type = "modification_auto_confirmed"
+            elif outcome == "multiple":
+                target_mapping = {
+                    **base_mapping,
+                    "modification_state": "suggested",
+                    "modification_vehicle_revision": expected_vehicle_revision,
+                }
+                target_generation = None
+                target_modification = None
+                target_body = None
+                event_type = "modification_suggested"
+            else:
+                target_mapping = base_mapping
+                target_generation = None
+                target_modification = None
+                target_body = None
+                event_type = "modification_invalidated"
+
+            mapping_changed = before_mapping != target_mapping
+            fields_changed = any(
+                (
+                    row["vehicle_generation"] != target_generation,
+                    row["vehicle_modification"] != target_modification,
+                    row["vehicle_body"] != target_body,
+                )
+            )
+            if not mapping_changed and not fields_changed:
+                return
+
+            mapping["wheel_size"] = target_mapping
+            result = await conn.execute(
+                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, provider_mappings=$4::jsonb, provider_mapping_revision=provider_mapping_revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$5::uuid AND owner_user_id=$6 AND revision=$7",
+                target_generation,
+                target_modification,
+                target_body,
+                json.dumps(mapping),
+                row["vehicle_identity_id"],
+                user_id,
+                expected_vehicle_revision,
+            )
+            if _parse_update_count(result) != 1:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+            await _insert_fitment_change_event(
+                conn,
+                job_id=job_id,
+                vehicle_identity_id=row["vehicle_identity_id"],
+                rim_spec_id=row["front_rim_spec_id"],
+                event_type=event_type,
+                actor_type="system" if outcome == "single" else "user",
+                actor_user_id=user_id if outcome == "multiple" else None,
+                vehicle_revision_before=expected_vehicle_revision,
+                vehicle_revision_after=expected_vehicle_revision,
+                rim_revision_before=row["rim_revision"],
+                rim_revision_after=row["rim_revision"],
+                changes={
+                    "vehicle.modification": {
+                        "before": before_mapping,
+                        "after": target_mapping,
+                        "outcome": outcome,
+                    }
+                },
+            )
 
 
 @router.post("/{job_id}/fitment/vehicle-variants", response_model=VehicleVariantsResponse)
@@ -2202,7 +3188,7 @@ async def find_fitment_vehicle_variants(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """List exact Wheel-Size variants for an already saved vehicle identity."""
+    """List candidates and persist only their revision-bound state outcome."""
     auth = _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
@@ -2216,25 +3202,33 @@ async def find_fitment_vehicle_variants(
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
-    if row["status"] != "completed" or not row["fitment_available"]:
+    if not row["fitment_available"]:
         raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+    if _vehicle_state_from_row(row) != "confirmed_ready":
+        raise HTTPException(status_code=409, detail={"code": "vehicle_not_ready"})
 
-    identity = ProviderVehicleIdentity(
-        make=row["vehicle_make"],
-        model=row["vehicle_model"],
-        year=row["vehicle_year"],
-        body=row["vehicle_body"],
-        generation=row["vehicle_generation"],
-        modification=row["vehicle_modification"],
-        market=row["vehicle_market"],
-    )
     try:
-        variants = await WheelSizeProvider().find_vehicle_variants(identity)
+        variants = await _find_current_vehicle_variants(row)
     except ProviderError as exc:
-        raise HTTPException(status_code=503, detail="Vehicle catalogue is unavailable") from exc
+        raise _catalogue_provider_error(exc) from exc
 
+    count = len(variants)
+    outcome: Literal["no_match", "single", "multiple"] = (
+        "no_match" if count == 0 else "single" if count == 1 else "multiple"
+    )
+    await _persist_lookup_outcome(
+        pool=pool,
+        job_id=job_id,
+        user_id=user_id,
+        expected_vehicle_revision=int(row["vehicle_revision"]),
+        outcome=outcome,
+        variants=variants,
+    )
     return VehicleVariantsResponse(
-        variants=[VehicleVariantResponse(**variant) for variant in variants[:3]]
+        outcome=outcome,
+        vehicle_revision=int(row["vehicle_revision"]),
+        variants=[VehicleVariantResponse(**variant) for variant in variants],
+        total_count=count,
     )
 
 
@@ -2253,76 +3247,102 @@ async def apply_fitment_vehicle_variant(
         required=True,
     )
     assert auth is not None
-    async with db.get_pool().acquire() as conn:
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if int(row["vehicle_revision"]) != request.expected_vehicle_revision:
+        raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    modification_state, _, selected_modification, _ = _modification_from_row(row)
+    if (
+        modification_state == "confirmed"
+        and selected_modification
+        and all(
+            str(getattr(selected_modification, key)) == str(getattr(request, key))
+            for key in ("generation", "modification", "body", "market")
+        )
+    ):
+        return _fitment_overview_from_row(row)
+    if modification_state != "suggested":
+        raise HTTPException(status_code=409, detail={"code": "modification_selection_not_pending"})
+
+    try:
+        variants = await _find_current_vehicle_variants(row)
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    selected = next(
+        (
+            variant
+            for variant in variants
+            if all(
+                str(variant.get(key) or "") == str(getattr(request, key))
+                for key in ("generation", "modification", "body", "market")
+            )
+        ),
+        None,
+    )
+    canonical_selected = _canonical_selected_modification(selected) if selected else None
+    if canonical_selected is None:
+        raise HTTPException(status_code=422, detail={"code": "candidate_not_current"})
+
+    async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
-            row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
-            if not row:
-                raise HTTPException(status_code=404, detail="Fitment overview not found")
-            if int(row["vehicle_revision"]) != request.expected_vehicle_revision:
+            current = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            if not current:
+                raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+            if int(current["vehicle_revision"]) != request.expected_vehicle_revision:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+            current_state, _, _, _ = _modification_from_row(current)
+            if current_state != "suggested":
                 raise HTTPException(
-                    status_code=409,
-                    detail="Fitment vehicle was updated elsewhere. Reload and try again.",
+                    status_code=409, detail={"code": "modification_selection_not_pending"}
                 )
-            identity = ProviderVehicleIdentity(
-                make=row["vehicle_make"],
-                model=row["vehicle_model"],
-                year=row["vehicle_year"],
-                market=row["vehicle_market"],
-            )
-            try:
-                variants = await WheelSizeProvider().find_vehicle_variants(identity)
-            except ProviderError as exc:
-                raise HTTPException(
-                    status_code=503, detail="Vehicle catalogue is unavailable"
-                ) from exc
-            selected = next(
-                (
-                    variant
-                    for variant in variants
-                    if all(
-                        str(variant.get(key) or "") == str(getattr(request, key))
-                        for key in ("generation", "modification", "body", "market")
-                    )
-                ),
-                None,
-            )
-            if selected is None:
-                raise HTTPException(
-                    status_code=422, detail="Selected vehicle variant is no longer available"
-                )
-            mapping = dict(row["vehicle_provider_mappings"] or {})
-            exact_mapping = {
-                key: selected[key]
-                for key in (
-                    "make_slug",
-                    "model_slug",
-                    "region",
-                    "generation_slug",
-                    "modification_slug",
-                )
+
+            mapping = dict(current["vehicle_provider_mappings"] or {})
+            before_mapping = mapping.get("wheel_size")
+            target_mapping: dict[str, object] = {
+                **_base_wheel_size_mapping(current, variants),
+                "generation_slug": canonical_selected["generation_slug"],
+                "modification_slug": canonical_selected["modification_slug"],
+                "modification_state": "confirmed",
+                "selection_source": "user",
+                "modification_vehicle_revision": request.expected_vehicle_revision,
+                "selected_modification": canonical_selected,
             }
-            if not {
-                "make_slug",
-                "model_slug",
-                "region",
-                "generation_slug",
-                "modification_slug",
-            }.issubset(exact_mapping):
-                raise HTTPException(
-                    status_code=422, detail="Selected vehicle variant could not be resolved"
-                )
-            mapping["wheel_size"] = exact_mapping
-            await conn.execute(
-                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, market=$4, provider_mappings=$5::jsonb, provider_mapping_revision=provider_mapping_revision+1, revision=revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$6::uuid AND owner_user_id=$7 AND revision=$8",
-                request.generation,
-                request.modification,
-                request.body or None,
-                request.market,
+            mapping["wheel_size"] = target_mapping
+            result = await conn.execute(
+                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, provider_mappings=$4::jsonb, provider_mapping_revision=provider_mapping_revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$5::uuid AND owner_user_id=$6 AND revision=$7",
+                canonical_selected["generation"],
+                canonical_selected["modification"],
+                canonical_selected["body"] or None,
                 json.dumps(mapping),
-                row["vehicle_identity_id"],
+                current["vehicle_identity_id"],
                 user_id,
                 request.expected_vehicle_revision,
+            )
+            if _parse_update_count(result) != 1:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+            await _insert_fitment_change_event(
+                conn,
+                job_id=job_id,
+                vehicle_identity_id=current["vehicle_identity_id"],
+                rim_spec_id=current["front_rim_spec_id"],
+                event_type="modification_user_confirmed",
+                actor_type="user",
+                actor_user_id=user_id,
+                vehicle_revision_before=request.expected_vehicle_revision,
+                vehicle_revision_after=request.expected_vehicle_revision,
+                rim_revision_before=current["rim_revision"],
+                rim_revision_after=current["rim_revision"],
+                changes={
+                    "vehicle.modification": {
+                        "before": before_mapping,
+                        "after": target_mapping,
+                        "selection_source": "user",
+                    }
+                },
             )
             updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     assert updated is not None
@@ -2346,7 +3366,9 @@ async def save_fitment_details(
     assert auth is not None
 
     vehicle_updates = request.vehicle.model_dump(exclude_unset=True)
-    rim_updates = request.rim.model_dump(exclude_unset=True)
+    front_request = request.front_rim or request.rim
+    rear_request = request.rear_rim
+    rim_updates = front_request.model_dump(exclude_unset=True)
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
@@ -2355,20 +3377,18 @@ async def save_fitment_details(
             row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
             if not row:
                 raise HTTPException(status_code=404, detail="Fitment overview not found")
-            if row["status"] != "completed":
-                raise HTTPException(
-                    status_code=409,
-                    detail="Fitment overview is available only for completed jobs",
-                )
             if not row["fitment_available"]:
                 raise HTTPException(
                     status_code=409,
                     detail="Fitment overview is unavailable for this job",
                 )
-            if row["is_staggered"] and row["front_rim_spec_id"] != row["rear_rim_spec_id"]:
+            requested_setup_mode = request.setup_mode or (
+                "staggered" if row["is_staggered"] else "uniform"
+            )
+            if requested_setup_mode == "staggered" and rear_request is None:
                 raise HTTPException(
-                    status_code=409,
-                    detail="Staggered rim setup is not supported in Sprint 4",
+                    status_code=422,
+                    detail={"code": "validation_error", "field": "rear_rim"},
                 )
             if (
                 request.expected_vehicle_revision != row["vehicle_revision"]
@@ -2413,24 +3433,82 @@ async def save_fitment_details(
                         status_code=422,
                         detail="Vehicle make and model are required",
                     )
-                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
-                vehicle_confirmed = _confirmation_payload(
+            else:
+                vehicle_values = {}
+            vehicle_changed = (
+                _changed_payload(row, vehicle_values, vehicle_row_keys) if vehicle_values else {}
+            )
+            core_vehicle_fields = {"make", "model", "year", "market"}
+            core_changed = set(vehicle_changed).intersection(core_vehicle_fields)
+            if core_changed:
+                # A prior generation/modification belongs to the old canonical
+                # vehicle context and cannot remain visible as current.
+                vehicle_values["body"] = None
+                vehicle_values["generation"] = None
+                vehicle_values["modification"] = None
+
+            vehicle_changed = (
+                _changed_payload(row, vehicle_values, vehicle_row_keys) if vehicle_values else {}
+            )
+            vehicle_confirmed = (
+                _confirmation_payload(
                     row,
-                    vehicle_values,
+                    {field_name: vehicle_values[field_name] for field_name in vehicle_updates},
                     vehicle_row_keys,
                     row["vehicle_field_provenance"],
                 )
-            else:
-                vehicle_values = {}
-                vehicle_changed = {}
-                vehicle_confirmed = {}
+                if vehicle_values
+                else {}
+            )
+            complete_vehicle_context = bool(vehicle_values) and all(
+                vehicle_values[field] not in (None, "") for field in core_vehicle_fields
+            )
+            needs_catalogue_validation = complete_vehicle_context and bool(
+                core_changed or set(vehicle_confirmed).intersection(core_vehicle_fields)
+            )
+            catalogue_selection: dict[str, str | int] | None = None
+            if needs_catalogue_validation:
+                try:
+                    catalogue_selection = await _resolve_exact_vehicle_catalogue_selection(
+                        WheelSizeProvider(),
+                        make=str(vehicle_values["make"]),
+                        model=str(vehicle_values["model"]),
+                        region=str(vehicle_values["market"]),
+                        year=int(vehicle_values["year"]),
+                    )
+                except ProviderError as exc:
+                    raise _catalogue_provider_error(exc) from exc
+                if catalogue_selection is None:
+                    raise HTTPException(
+                        status_code=422,
+                        detail={"code": "validation_error", "reason": "no_data"},
+                    )
+                vehicle_values["make"] = catalogue_selection["make"]
+                vehicle_values["model"] = catalogue_selection["model"]
+                vehicle_values["year"] = catalogue_selection["year"]
+                vehicle_values["market"] = catalogue_selection["region"]
+                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
+                vehicle_confirmed = _confirmation_payload(
+                    row,
+                    {field_name: vehicle_values[field_name] for field_name in vehicle_updates},
+                    vehicle_row_keys,
+                    row["vehicle_field_provenance"],
+                )
 
             vehicle_provenance = row["vehicle_field_provenance"] or {}
-            vehicle_write_needed = bool(vehicle_changed or vehicle_confirmed)
-            provider_mappings = dict(row["vehicle_provider_mappings"] or {})
-            mapping_invalidated = bool(vehicle_changed) and "wheel_size" in provider_mappings
+            provider_mappings_before = dict(row["vehicle_provider_mappings"] or {})
+            provider_mappings = dict(provider_mappings_before)
+            mapping_invalidated = bool(core_changed) and "wheel_size" in provider_mappings
             if mapping_invalidated:
                 provider_mappings.pop("wheel_size", None)
+            if catalogue_selection is not None and "wheel_size" not in provider_mappings:
+                provider_mappings["wheel_size"] = {
+                    "make_slug": str(catalogue_selection["make_slug"]),
+                    "model_slug": str(catalogue_selection["model_slug"]),
+                    "region": str(catalogue_selection["region"]),
+                }
+            mapping_changed = provider_mappings != provider_mappings_before
+            vehicle_write_needed = bool(vehicle_changed or vehicle_confirmed or mapping_changed)
             if vehicle_write_needed:
                 vehicle_provenance = _merge_field_provenance(
                     row["vehicle_field_provenance"],
@@ -2442,6 +3520,16 @@ async def save_fitment_details(
                     vehicle_confirmed,
                     source="user_confirmed",
                 )
+                vehicle_is_user_confirmed = all(
+                    vehicle_values[field] not in (None, "")
+                    and _is_user_confirmed_provenance(
+                        _field_provenance_value(
+                            vehicle_provenance,
+                            "market" if field == "market" else field,
+                        )
+                    )
+                    for field in core_vehicle_fields
+                )
                 result = await conn.execute(
                     """
                     UPDATE vehicle_identities
@@ -2452,15 +3540,15 @@ async def save_fitment_details(
                         generation = $5,
                         modification = $6,
                         market = $7,
-                        is_user_confirmed = true,
-                        field_provenance = $8::jsonb,
-                        provider_mappings = $9::jsonb,
-                        provider_mapping_revision = provider_mapping_revision + $10,
+                        is_user_confirmed = $8,
+                        field_provenance = $9::jsonb,
+                        provider_mappings = $10::jsonb,
+                        provider_mapping_revision = provider_mapping_revision + $11,
                         revision = revision + 1,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $11::uuid
-                      AND owner_user_id = $12
-                      AND revision = $13
+                    WHERE id = $12::uuid
+                      AND owner_user_id = $13
+                      AND revision = $14
                     """,
                     vehicle_values["make"],
                     vehicle_values["model"],
@@ -2469,9 +3557,10 @@ async def save_fitment_details(
                     vehicle_values["generation"],
                     vehicle_values["modification"],
                     vehicle_values["market"],
+                    vehicle_is_user_confirmed,
                     json.dumps(vehicle_provenance),
                     json.dumps(provider_mappings),
-                    1 if mapping_invalidated else 0,
+                    1 if mapping_changed else 0,
                     row["vehicle_identity_id"],
                     user_id,
                     request.expected_vehicle_revision,
@@ -2483,14 +3572,54 @@ async def save_fitment_details(
                     )
 
             if rim_updates:
+                rim_updates.pop("source_fingerprint", None)
+                rim_updates.pop("selected_variant_sku", None)
+                rim_updates.pop("variant_state", None)
                 rim_values = {
                     field_name: rim_updates.get(field_name, row[row_key])
                     for field_name, row_key in rim_row_keys.items()
                 }
+                source_fingerprint = front_request.source_fingerprint
+                if (
+                    source_fingerprint is None
+                    and "product_url" in front_request.model_fields_set
+                    and front_request.product_url
+                    and front_request.product_url != row.get("rim_product_url")
+                ):
+                    source_fingerprint = rim_source_fingerprint(front_request.product_url)
+                selected_variant_sku = front_request.selected_variant_sku
+                variant_state = front_request.variant_state
+                sku_changed = bool(
+                    "sku" in front_request.model_fields_set
+                    and front_request.sku != row.get("rim_sku")
+                )
+                source_changed = bool(
+                    sku_changed
+                    or bool(
+                        source_fingerprint
+                        and (
+                            source_fingerprint != row.get("rim_source_fingerprint")
+                            or selected_variant_sku != row.get("rim_selected_variant_sku")
+                        )
+                    )
+                )
+                same_resolved_source = bool(
+                    source_fingerprint and source_fingerprint == row.get("rim_source_fingerprint")
+                )
                 rim_changed = _changed_payload(row, rim_values, rim_row_keys)
+                if same_resolved_source:
+                    # A repeat parser run is only a proposal. Keep confirmed
+                    # canonical evidence and expose the proposed value in
+                    # provenance for an explicit keep/use decision.
+                    for field_name, _value in list(rim_changed.items()):
+                        if _is_user_confirmed_provenance(
+                            _field_provenance_value(row["rim_field_provenance"], field_name)
+                        ):
+                            rim_values[field_name] = row[rim_row_keys[field_name]]
+                            rim_changed.pop(field_name)
                 rim_confirmed = _confirmation_payload(
                     row,
-                    rim_values,
+                    {field_name: rim_values[field_name] for field_name in rim_updates},
                     rim_row_keys,
                     row["rim_field_provenance"],
                 )
@@ -2498,14 +3627,44 @@ async def save_fitment_details(
                 rim_values = {}
                 rim_changed = {}
                 rim_confirmed = {}
+                source_fingerprint = None
+                selected_variant_sku = None
+                variant_state = None
+                sku_changed = False
+                source_changed = False
+                same_resolved_source = False
 
             rim_provenance = row["rim_field_provenance"] or {}
-            rim_write_needed = bool(rim_changed or rim_confirmed)
-            if rim_write_needed:
+            if same_resolved_source:
+                rim_provenance = dict(rim_provenance)
+                for field_name, value in front_request.model_dump(exclude_unset=True).items():
+                    if field_name not in rim_row_keys or field_name not in rim_values:
+                        continue
+                    if not _fitment_values_equal(
+                        row[rim_row_keys[field_name]], value
+                    ) and _is_user_confirmed_provenance(
+                        _field_provenance_value(rim_provenance, field_name)
+                    ):
+                        meta = dict(_field_provenance_value(rim_provenance, field_name))
+                        meta["suggested_value"] = value
+                        rim_provenance[field_name] = meta
+            if source_changed:
+                rim_provenance = dict(rim_provenance)
+                for field_name in _RIM_CRITICAL_FIELDS:
+                    if row.get(rim_row_keys[field_name]) is not None:
+                        rim_provenance[field_name] = _fitment_provenance_meta(source="user_edited")
+                rim_provenance["_source"] = {
+                    "variant_state": variant_state
+                    or ("selected" if selected_variant_sku else "none"),
+                    "source_revision": int(row.get("rim_source_revision") or 1) + 1,
+                }
+            rim_source_write_needed = bool(source_changed or same_resolved_source)
+            rim_write_needed = bool(rim_changed or rim_confirmed or rim_source_write_needed)
+            if rim_write_needed or rim_source_write_needed:
                 rim_provenance = _merge_field_provenance(
-                    row["rim_field_provenance"],
+                    rim_provenance,
                     rim_changed,
-                    source="user_edited",
+                    source="resolver" if source_fingerprint else "user_edited",
                 )
                 rim_provenance = _merge_field_provenance(
                     rim_provenance,
@@ -2526,11 +3685,14 @@ async def save_fitment_details(
                         wheel_width_j = $9,
                         offset_et_mm = $10,
                         field_provenance = $11::jsonb,
+                        source_fingerprint = $12,
+                        selected_variant_sku = $13,
+                        source_revision = source_revision + $14,
                         revision = revision + 1,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $12::uuid
-                      AND owner_user_id = $13
-                      AND revision = $14
+                    WHERE id = $15::uuid
+                      AND owner_user_id = $16
+                      AND revision = $17
                     """,
                     rim_values["brand"],
                     rim_values["model"],
@@ -2543,6 +3705,11 @@ async def save_fitment_details(
                     _rim_decimal(rim_values["wheel_width_j"]),
                     _rim_decimal(rim_values["offset_et_mm"]),
                     json.dumps(rim_provenance),
+                    source_fingerprint if source_changed else row.get("rim_source_fingerprint"),
+                    selected_variant_sku
+                    if source_fingerprint
+                    else row.get("rim_selected_variant_sku"),
+                    1 if source_changed else 0,
                     row["front_rim_spec_id"],
                     user_id,
                     request.expected_rim_revision,
@@ -2552,6 +3719,187 @@ async def save_fitment_details(
                         status_code=409,
                         detail="Fitment rim was updated elsewhere. Reload and try again.",
                     )
+
+            # A uniform setup retains one effective RimSpec. Switching to
+            # staggered clones that durable spec once, then persists the rear
+            # axle independently. The clone preserves historical inputs while
+            # the new rear values receive their own revision/provenance.
+            setup_changed = requested_setup_mode != (
+                "staggered" if row["is_staggered"] else "uniform"
+            )
+            rear_write_needed = False
+            rear_fitment_changes: dict[str, object] = {}
+            if requested_setup_mode == "staggered":
+                assert rear_request is not None
+                rear_spec_id = row["rear_rim_spec_id"]
+                if rear_spec_id == row["front_rim_spec_id"]:
+                    rear_spec_id = str(
+                        await conn.fetchval(
+                            """
+                            INSERT INTO rim_specs (
+                                owner_user_id, brand, model, sku, product_url,
+                                bolt_count, pcd_mm, center_bore_mm, wheel_diameter_in,
+                                wheel_width_j, offset_et_mm, field_provenance,
+                                field_candidates, source_fingerprint,
+                                selected_variant_sku, source_revision
+                            )
+                            SELECT owner_user_id, brand, model, sku, product_url,
+                                bolt_count, pcd_mm, center_bore_mm, wheel_diameter_in,
+                                wheel_width_j, offset_et_mm, field_provenance,
+                                field_candidates, source_fingerprint,
+                                selected_variant_sku, source_revision
+                            FROM rim_specs WHERE id = $1::uuid AND owner_user_id = $2
+                            RETURNING id::text
+                            """,
+                            row["front_rim_spec_id"],
+                            user_id,
+                        )
+                    )
+                    setup_changed = True
+                rear_row_keys = {field: f"rear_rim_{field}" for field in rim_row_keys}
+                rear_current = {
+                    row_key: (
+                        _rim_row_value(row, "front_rim", field)
+                        if rear_spec_id != row["rear_rim_spec_id"]
+                        else _rim_row_value(row, "rear_rim", field)
+                    )
+                    for field, row_key in rear_row_keys.items()
+                }
+                rear_updates = rear_request.model_dump(exclude_unset=True)
+                rear_updates.pop("source_fingerprint", None)
+                rear_updates.pop("selected_variant_sku", None)
+                rear_updates.pop("variant_state", None)
+                rear_values = {
+                    field: rear_updates.get(field, rear_current[row_key])
+                    for field, row_key in rear_row_keys.items()
+                }
+                rear_changed = _changed_payload(rear_current, rear_values, rear_row_keys)
+                rear_provenance = _rim_provenance_from_row(row, "rear_rim")
+                if not rear_provenance and rear_spec_id != row["rear_rim_spec_id"]:
+                    rear_provenance = dict(row["rim_field_provenance"] or {})
+                rear_confirmed = _confirmation_payload(
+                    rear_current,
+                    {field_name: rear_values[field_name] for field_name in rear_updates},
+                    rear_row_keys,
+                    rear_provenance,
+                )
+                rear_source_fingerprint = rear_request.source_fingerprint
+                rear_variant_state = rear_request.variant_state
+                if (
+                    rear_source_fingerprint is None
+                    and "product_url" in rear_request.model_fields_set
+                    and rear_request.product_url
+                    and rear_request.product_url != rear_current["rear_rim_product_url"]
+                ):
+                    rear_source_fingerprint = rim_source_fingerprint(rear_request.product_url)
+                rear_sku_changed = bool(
+                    "sku" in rear_request.model_fields_set
+                    and rear_request.sku != rear_current["rear_rim_sku"]
+                )
+                rear_source_changed = bool(
+                    rear_sku_changed
+                    or bool(
+                        rear_source_fingerprint
+                        and (
+                            rear_source_fingerprint != row.get("rear_rim_source_fingerprint")
+                            or rear_request.selected_variant_sku
+                            != row.get("rear_rim_selected_variant_sku")
+                        )
+                    )
+                )
+                if rear_source_changed:
+                    rear_provenance = dict(rear_provenance)
+                    for field_name in _RIM_CRITICAL_FIELDS:
+                        if rear_values[field_name] is not None:
+                            rear_provenance[field_name] = _fitment_provenance_meta(
+                                source="resolver"
+                            )
+                    rear_provenance["_source"] = {
+                        "variant_state": rear_variant_state
+                        or ("selected" if rear_request.selected_variant_sku else "none"),
+                        "source_revision": int(row.get("rear_rim_source_revision") or 1) + 1,
+                    }
+                if rear_changed or rear_confirmed or rear_source_changed:
+                    rear_provenance = _merge_field_provenance(
+                        rear_provenance,
+                        rear_changed,
+                        source="resolver" if rear_source_fingerprint else "user_edited",
+                    )
+                    rear_provenance = _merge_field_provenance(
+                        rear_provenance, rear_confirmed, source="user_confirmed"
+                    )
+                    result = await conn.execute(
+                        """
+                        UPDATE rim_specs
+                        SET brand = $1, model = $2, sku = $3, product_url = $4,
+                            bolt_count = $5, pcd_mm = $6, center_bore_mm = $7,
+                            wheel_diameter_in = $8, wheel_width_j = $9, offset_et_mm = $10,
+                            field_provenance = $11::jsonb,
+                            source_fingerprint = $12,
+                            selected_variant_sku = $13,
+                            source_revision = source_revision + $14,
+                            revision = revision + 1, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $15::uuid AND owner_user_id = $16
+                        """,
+                        rear_values["brand"],
+                        rear_values["model"],
+                        rear_values["sku"],
+                        rear_values["product_url"],
+                        rear_values["bolt_count"],
+                        _rim_decimal(rear_values["pcd_mm"]),
+                        _rim_decimal(rear_values["center_bore_mm"]),
+                        _rim_decimal(rear_values["wheel_diameter_in"]),
+                        _rim_decimal(rear_values["wheel_width_j"]),
+                        _rim_decimal(rear_values["offset_et_mm"]),
+                        json.dumps(rear_provenance),
+                        rear_source_fingerprint
+                        if rear_source_changed
+                        else row.get("rear_rim_source_fingerprint"),
+                        rear_request.selected_variant_sku
+                        if rear_source_fingerprint
+                        else row.get("rear_rim_selected_variant_sku"),
+                        1 if rear_source_changed else 0,
+                        rear_spec_id,
+                        user_id,
+                    )
+                    if _parse_update_count(result) != 1:
+                        raise HTTPException(
+                            status_code=409, detail="Fitment rear rim was updated elsewhere"
+                        )
+                    rear_write_needed = True
+                    rear_fitment_changes = _build_fitment_changes(
+                        section="rear_rim",
+                        before_values={
+                            field: rear_current[key] for field, key in rear_row_keys.items()
+                        },
+                        after_values=rear_values,
+                        before_provenance=_rim_provenance_from_row(row, "rear_rim"),
+                        after_provenance=rear_provenance,
+                    )
+                if setup_changed or rear_write_needed:
+                    await conn.execute(
+                        """
+                        UPDATE rim_setups
+                        SET front_rim_spec_id = $1::uuid, rear_rim_spec_id = $2::uuid,
+                            is_staggered = true, revision = revision + 1
+                        WHERE id = $3::uuid AND owner_user_id = $4
+                        """,
+                        row["front_rim_spec_id"],
+                        rear_spec_id,
+                        row["rim_setup_id"],
+                        user_id,
+                    )
+            elif setup_changed:
+                await conn.execute(
+                    """
+                    UPDATE rim_setups
+                    SET rear_rim_spec_id = front_rim_spec_id, is_staggered = false,
+                        revision = revision + 1
+                    WHERE id = $1::uuid AND owner_user_id = $2
+                    """,
+                    row["rim_setup_id"],
+                    user_id,
+                )
 
             fitment_changes: dict[str, object] = {}
             fitment_changes.update(
@@ -2576,14 +3924,22 @@ async def save_fitment_details(
                     after_provenance=rim_provenance if rim_write_needed else {},
                 )
             )
-            if fitment_changes:
-                if mapping_invalidated:
+            fitment_changes.update(rear_fitment_changes)
+            if setup_changed:
+                fitment_changes["rim_setup.mode"] = {
+                    "before": "staggered" if row["is_staggered"] else "uniform",
+                    "after": requested_setup_mode,
+                }
+            if fitment_changes or mapping_changed:
+                if mapping_changed:
                     fitment_changes["vehicle.provider_mapping"] = {
-                        "before": {
-                            "wheel_size": row["vehicle_provider_mappings"].get("wheel_size")
-                        },
-                        "after": None,
-                        "reason": "canonical_vehicle_identity_changed",
+                        "before": {"wheel_size": provider_mappings_before.get("wheel_size")},
+                        "after": {"wheel_size": provider_mappings.get("wheel_size")},
+                        "reason": (
+                            "canonical_vehicle_identity_changed"
+                            if mapping_invalidated
+                            else "catalogue_vehicle_context_confirmed"
+                        ),
                     }
                 await _insert_fitment_change_event(
                     conn,

@@ -17,7 +17,21 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
-const FITMENT_REAUTH_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentReauthDraft:";
+const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
+const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
+const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
+const FITMENT_REGIONS = [
+    ["russia", "Россия+"], ["eudm", "Европа"], ["usdm", "США+"],
+    ["jdm", "Япония"], ["chdm", "Китай"], ["cdm", "Канада"],
+    ["mxndm", "Мексика"], ["ladm", "Центральная и Южная Америка"],
+    ["skdm", "Южная Корея"], ["sam", "Юго-Восточная Азия"],
+    ["medm", "Ближний Восток"], ["nadm", "Северная Африка"],
+    ["sadm", "Южная Африка"], ["audm", "Океания"],
+];
+const FITMENT_DIAMETER_PRESETS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+const FITMENT_WIDTH_PRESETS = [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12];
+const FITMENT_DIA_PRESETS = [54, 54.1, 56.6, 57.1, 58.5, 58.6, 60.1, 62.5, 62.6, 63.3, 63.35, 63.4, 64.1, 65.1, 66.1, 66.45, 66.5, 66.6, 67.1, 71.6, 72.6, 74.1, 75.1, 77.8, 84.1, 95.1, 98, 98.1, 98.5, 100.1, 106.1, 108.4, 108.5, 110, 110.1, 130];
+const FITMENT_PCD_PRESETS = [[4, 98], [4, 100], [4, 108], [5, 98], [5, 100], [5, 108], [5, 110], [5, 112], [5, 114.3], [5, 115], [5, 120], [5, 127], [5, 130], [5, 135], [5, 139.7], [6, 114.3], [6, 130]];
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
@@ -1044,14 +1058,32 @@ const state = {
     fitmentSourceAppliedFields: [],
     fitmentSourceDetected: false,
     fitmentSourceVariants: [],
+    fitmentSourceConflicts: [],
+    fitmentSourceIdentity: { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" },
     fitmentRimManualFields: [],
     fitmentSourceAutoResolvedForJob: "",
+    fitmentSourceController: null,
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
     fitmentVehicleVariantApplying: false,
+    fitmentLookup: { status: "idle", outcome: "" },
     fitmentCheck: null,
     fitmentChecking: false,
     fitmentAuthRequired: false,
+    fitmentFormState: { status: "clean", validation: "valid", baseline: null },
+    fitmentCatalogue: {
+        regions: { status: "idle", items: [] },
+        makes: { status: "idle", items: [] },
+        models: { status: "idle", items: [] },
+        years: { status: "idle", items: [] },
+    },
+    fitmentCatalogueRequestToken: 0,
+    fitmentCatalogueControllers: {},
+    fitmentCheckPollTimer: null,
+    fitmentCheckPollToken: 0,
+    fitmentRestoreConflict: null,
+    fitmentContextByJob: {},
+    fitmentContextLoadingByJob: {},
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
@@ -1139,9 +1171,10 @@ function fitmentRimSpecs(rim) {
 }
 
 function fitmentPcdOptionValue(boltCount, pcdMm) {
-    const pcd = Number(pcdMm);
-    if (!Number.isFinite(pcd)) return "";
-    return Number.isInteger(pcd) ? String(pcd) : pcd.toFixed(1);
+    const bolt = Number(boltCount);
+    const pcd = normalizeFitmentNumber(pcdMm);
+    if (!Number.isFinite(bolt) || !Number.isFinite(pcd)) return "";
+    return `${bolt}x${String(pcd)}`;
 }
 
 function demoFitmentOverviewReadiness(overview) {
@@ -1281,39 +1314,144 @@ function persistDemoFitmentOverview(overview) {
     sessionStorage.setItem(FITMENT_PREVIEW_STORAGE_KEY, JSON.stringify(overview));
 }
 
-function fitmentReauthDraftKey(jobId = state.fitmentJobId) {
-    return jobId ? `${FITMENT_REAUTH_DRAFT_STORAGE_PREFIX}${jobId}` : "";
+function fitmentTransientDraftKey(jobId = state.fitmentJobId) {
+    return jobId ? `${FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX}${jobId}` : "";
 }
 
-function persistFitmentReauthDraft() {
-    const key = fitmentReauthDraftKey();
-    if (!key) return;
+function fitmentRevisionBaseline(overview = state.fitmentOverview) {
+    return {
+        jobId: state.fitmentJobId || overview?.job_id || "",
+        vehicleIdentityId: overview?.vehicle_identity_id || null,
+        vehicleRevision: overview?.vehicle_revision ?? null,
+        modificationState: overview?.modification_state || "none",
+        rimSetupId: overview?.rim_setup_id || null,
+        rimSetupRevision: overview?.rim_setup_revision ?? null,
+        setupMode: overview?.setup_mode || "uniform",
+        frontSourceFingerprint: overview?.front_rim?.source_fingerprint || null,
+        frontSelectedVariantSku: overview?.front_rim?.selected_variant_sku || null,
+        rearSourceFingerprint: overview?.rear_rim?.source_fingerprint || null,
+        rearSelectedVariantSku: overview?.rear_rim?.selected_variant_sku || null,
+    };
+}
+
+function fitmentDraftMatchesOverview(draft, overview = state.fitmentOverview) {
+    if (!draft?.baseline || !overview) return false;
+    return JSON.stringify(draft.baseline) === JSON.stringify(fitmentRevisionBaseline(overview));
+}
+
+function fitmentSafeConflictDraft(form) {
+    const safe = cloneFitmentForm(form);
+    // A stale provider mapping or resolver SKU must never be revived from storage.
+    safe.vehicle.modification = "";
+    safe.rim.sku = "";
+    return safe;
+}
+
+function fitmentDraftPayload(reason) {
+    const now = Date.now();
+    return {
+        version: FITMENT_TRANSIENT_DRAFT_VERSION,
+        reason,
+        jobId: state.fitmentJobId,
+        createdAt: now,
+        expiresAt: now + FITMENT_TRANSIENT_DRAFT_TTL_MS,
+        baseline: fitmentRevisionBaseline(),
+        form: cloneFitmentForm(state.fitmentForm),
+        formState: {
+            status: fitmentFormIsDirty() ? "dirty" : "clean",
+            validation: state.fitmentFormState.validation,
+        },
+        activeStep: state.fitmentActiveStep,
+        origin: {
+            view: state.fitmentOriginView,
+            jobId: state.fitmentOriginJobId,
+        },
+        source: {
+            open: state.fitmentSourceOpen,
+            identity: { ...state.fitmentSourceIdentity },
+            detected: state.fitmentSourceDetected,
+            appliedFields: [...state.fitmentSourceAppliedFields],
+            manualFields: [...state.fitmentRimManualFields],
+            conflicts: (state.fitmentSourceConflicts || []).map(({ field, current, suggested }) => ({ field, current, suggested })),
+        },
+    };
+}
+
+function persistFitmentTransientDraft(reason = "navigation") {
+    const key = fitmentTransientDraftKey();
+    if (!key || !state.fitmentOverview) return;
     try {
-        sessionStorage.setItem(
-            key,
-            JSON.stringify({ form: state.fitmentForm, activeStep: state.fitmentActiveStep })
-        );
+        sessionStorage.setItem(key, JSON.stringify(fitmentDraftPayload(reason)));
     } catch {
-        // The re-auth prompt still works if browser storage is unavailable.
+        // Leaving Fitment remains safe when browser session storage is unavailable.
     }
 }
 
-function restoreFitmentReauthDraft() {
-    const key = fitmentReauthDraftKey();
-    if (!key) return false;
+function readFitmentTransientDraft({ reason } = {}) {
+    const key = fitmentTransientDraftKey();
+    if (!key) return null;
     try {
         const draft = JSON.parse(sessionStorage.getItem(key) || "null");
-        if (!draft?.form?.vehicle || !draft?.form?.rim) return false;
-        state.fitmentForm = draft.form;
-        state.fitmentActiveStep = Number.isInteger(draft.activeStep)
-            ? draft.activeStep
-            : state.fitmentActiveStep;
-        sessionStorage.removeItem(key);
-        return true;
+        const valid = draft?.version === FITMENT_TRANSIENT_DRAFT_VERSION
+            && draft?.jobId === state.fitmentJobId
+            && draft?.form?.vehicle
+            && draft?.form?.rim
+            && Number.isFinite(draft?.expiresAt)
+            && draft.expiresAt > Date.now();
+        if (!valid || (reason && draft.reason !== reason)) {
+            if (!valid) sessionStorage.removeItem(key);
+            return null;
+        }
+        return draft;
     } catch {
         sessionStorage.removeItem(key);
-        return false;
+        return null;
     }
+}
+
+function discardFitmentTransientDraft() {
+    const key = fitmentTransientDraftKey();
+    if (key) sessionStorage.removeItem(key);
+}
+
+function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview } = {}) {
+    const draft = readFitmentTransientDraft({ reason });
+    if (!draft) return "none";
+    discardFitmentTransientDraft();
+    if (!fitmentDraftMatchesOverview(draft, overview)) {
+        state.fitmentRestoreConflict = {
+            form: fitmentSafeConflictDraft(draft.form),
+            activeStep: draft.activeStep,
+        };
+        return "conflict";
+    }
+    state.fitmentForm = cloneFitmentForm(draft.form);
+    state.fitmentActiveStep = Number.isInteger(draft.activeStep) ? draft.activeStep : state.fitmentActiveStep;
+    state.fitmentFormState = {
+        status: draft.formState?.status === "dirty" ? "dirty" : "clean",
+        validation: draft.formState?.validation === "invalid" ? "invalid" : "valid",
+        baseline: cloneFitmentForm(state.fitmentFormState.baseline || fitmentFormFromOverview(overview)),
+    };
+    state.fitmentOriginView = draft.origin?.view || state.fitmentOriginView;
+    state.fitmentOriginJobId = draft.origin?.jobId || state.fitmentOriginJobId;
+    state.fitmentSourceOpen = Boolean(draft.source?.open);
+    state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, ...(draft.source?.identity || {}) };
+    state.fitmentSourceDetected = Boolean(draft.source?.detected);
+    state.fitmentSourceAppliedFields = Array.isArray(draft.source?.appliedFields) ? draft.source.appliedFields : [];
+    state.fitmentRimManualFields = Array.isArray(draft.source?.manualFields) ? draft.source.manualFields : [];
+    state.fitmentSourceConflicts = Array.isArray(draft.source?.conflicts) ? draft.source.conflicts : [];
+    return "restored";
+}
+
+function applyFitmentRestoreConflict() {
+    if (!state.fitmentRestoreConflict) return;
+    state.fitmentForm = cloneFitmentForm(state.fitmentRestoreConflict.form);
+    state.fitmentActiveStep = Number.isInteger(state.fitmentRestoreConflict.activeStep)
+        ? state.fitmentRestoreConflict.activeStep
+        : state.fitmentActiveStep;
+    state.fitmentFormState.status = "dirty";
+    state.fitmentFormState.validation = "valid";
+    state.fitmentRestoreConflict = null;
 }
 
 function guestRenderAssetUrl(job, kind) {
@@ -1673,21 +1811,31 @@ async function loginWithTelegram() {
 }
 
 function showFitmentAuthRequired() {
-    persistFitmentReauthDraft();
+    clearFitmentRuntimeRequests();
+    persistFitmentTransientDraft("reauth");
     state.fitmentAuthRequired = true;
     state.fitmentError = "";
     state.fitmentMessage = "";
+    if (state.view === "fitment") renderFitment();
 }
 
 async function resumeFitmentAfterLogin() {
     const signedIn = await loginWithTelegram();
     if (!signedIn) return;
-    restoreFitmentReauthDraft();
     state.fitmentAuthRequired = false;
-    state.fitmentMessage = locale === "ru"
-        ? "Вход выполнен. Продолжите с того же шага."
-        : "Signed in. Continue from the same step.";
-    state.fitmentMessageTone = "success";
+    const restoration = await loadFitmentOverview(state.fitmentJobId, {
+        restoreReason: "reauth",
+        suppressAutomaticResolver: true,
+    });
+    if (restoration === "restored") {
+        state.fitmentMessage = locale === "ru" ? "Данные восстановлены" : "Details restored";
+        state.fitmentMessageTone = "success";
+    } else if (restoration === "conflict") {
+        state.fitmentMessage = locale === "ru"
+            ? "Данные на сервере изменились. Черновик не применён автоматически."
+            : "Server details changed. The draft was not applied automatically.";
+        state.fitmentMessageTone = "warning";
+    }
     renderFitment();
 }
 
@@ -1843,8 +1991,43 @@ function fitmentAvailable(job) {
     return Boolean(job?.fitment_available);
 }
 
+function cloneFitmentForm(form) {
+    return JSON.parse(JSON.stringify(form || createEmptyFitmentForm()));
+}
+
+function fitmentFormIsDirty() {
+    return JSON.stringify(state.fitmentForm) !== JSON.stringify(state.fitmentFormState.baseline);
+}
+
+function markFitmentDirty() {
+    state.fitmentFormState.status = fitmentFormIsDirty() ? "dirty" : "clean";
+}
+
+function fitmentNumberString(value) {
+    if (value === null || value === undefined || value === "") return "";
+    return String(value).replace(",", ".");
+}
+
+function formatFitmentInputNumber(value) {
+    const raw = fitmentNumberString(value);
+    return raw ? raw.replace(".", locale === "ru" ? "," : ".") : "";
+}
+
+function fitmentCatalogueItems(kind) {
+    return state.fitmentCatalogue?.[kind]?.items || [];
+}
+
+function fitmentOptionLabel(item) {
+    return typeof item === "string" || typeof item === "number" ? String(item) : (item?.label || item?.value || "");
+}
+
+function fitmentOptionValue(item) {
+    return typeof item === "string" || typeof item === "number" ? String(item) : String(item?.value ?? "");
+}
+
 function createEmptyFitmentForm() {
     return {
+        setup_mode: "uniform",
         vehicle: {
             make: "",
             model: "",
@@ -1859,6 +2042,14 @@ function createEmptyFitmentForm() {
             model: "",
             sku: "",
             product_url: "",
+            bolt_count: "",
+            pcd_mm: "",
+            wheel_diameter_in: "",
+            wheel_width_j: "",
+            center_bore_mm: "",
+            offset_et_mm: "",
+        },
+        rear_rim: {
             bolt_count: "",
             pcd_mm: "",
             wheel_diameter_in: "",
@@ -1997,6 +2188,7 @@ function renderFitmentCandidates() {
 
 function fitmentFormFromOverview(overview) {
     return {
+        setup_mode: overview?.setup_mode || "uniform",
         vehicle: {
             make: overview?.vehicle?.make || "",
             model: overview?.vehicle?.model || "",
@@ -2018,6 +2210,23 @@ function fitmentFormFromOverview(overview) {
             center_bore_mm: overview?.rim?.center_bore_mm ?? "",
             offset_et_mm: overview?.rim?.offset_et_mm ?? "",
         },
+        rear_rim: {
+            bolt_count: overview?.rear_rim?.rim?.bolt_count ?? "",
+            pcd_mm: overview?.rear_rim?.rim?.pcd_mm ?? "",
+            wheel_diameter_in: overview?.rear_rim?.rim?.wheel_diameter_in ?? "",
+            wheel_width_j: overview?.rear_rim?.rim?.wheel_width_j ?? "",
+            center_bore_mm: overview?.rear_rim?.rim?.center_bore_mm ?? "",
+            offset_et_mm: overview?.rear_rim?.rim?.offset_et_mm ?? "",
+        },
+    };
+}
+
+function fitmentSourceIdentityFromOverview(overview) {
+    const rim = overview?.front_rim || {};
+    return {
+        sourceFingerprint: rim.source_fingerprint || null,
+        selectedVariantSku: rim.selected_variant_sku || null,
+        variantState: rim.variant_state || "not_applicable",
     };
 }
 
@@ -2025,10 +2234,10 @@ function fitmentSaveLabel() {
     if (state.fitmentActiveStep === 1) {
         return locale === "ru" ? "Продолжить" : "Continue";
     }
-    if (fitmentNextAction(state.fitmentOverview, { useDraft: true }) === "select_vehicle_variant") {
+    if (fitmentNextAction(state.fitmentOverview) === "select_vehicle_variant") {
         return locale === "ru" ? "Сохранить и выбрать комплектацию" : "Save and choose vehicle version";
     }
-    if (fitmentNextAction(state.fitmentOverview, { useDraft: true }) === "complete_rim_specs") {
+    if (fitmentNextAction(state.fitmentOverview) === "complete_rim_specs") {
         return locale === "ru" ? "Сохранить параметры" : "Save details";
     }
     return locale === "ru" ? "Сохранить и получить вывод" : "Save and get result";
@@ -2040,35 +2249,57 @@ function refreshFitmentSaveLabel() {
     saveButton.textContent = fitmentSaveLabel();
 }
 
-function fitmentDraftMissingFields() {
-    const required = {
-        "vehicle.make": state.fitmentForm.vehicle.make,
-        "vehicle.model": state.fitmentForm.vehicle.model,
-        "vehicle.year": state.fitmentForm.vehicle.year,
-        "rim.bolt_count": state.fitmentForm.rim.bolt_count,
-        "rim.pcd_mm": state.fitmentForm.rim.pcd_mm,
-        "rim.center_bore_mm": state.fitmentForm.rim.center_bore_mm,
-        "rim.wheel_diameter_in": state.fitmentForm.rim.wheel_diameter_in,
-        "rim.wheel_width_j": state.fitmentForm.rim.wheel_width_j,
-        "rim.offset_et_mm": state.fitmentForm.rim.offset_et_mm,
-    };
-    return Object.entries(required)
-        .filter(([, value]) => value === null || value === undefined || String(value).trim() === "")
-        .map(([field]) => field);
+function validateFitmentForm() {
+    const requiredVehicle = ["make", "model", "year", "market"];
+    const missing = requiredVehicle
+        .filter((field) => state.fitmentForm.vehicle[field] === "" || state.fitmentForm.vehicle[field] === null || state.fitmentForm.vehicle[field] === undefined)
+        .map((field) => `vehicle.${field}`);
+    state.fitmentFormState.validation = missing.length ? "invalid" : "valid";
+    return missing;
 }
 
-function fitmentNextAction(overview = state.fitmentOverview, { useDraft = false } = {}) {
-    const missingFields = useDraft
-        ? fitmentDraftMissingFields()
-        : (overview?.readiness?.missing_fields || []);
-    if (missingFields.length) {
-        return missingFields.some((field) => field.startsWith("vehicle."))
-            ? "complete_vehicle_details"
-            : "complete_rim_specs";
-    }
-    const serverAction = overview?.next_action?.kind;
-    if (serverAction && !useDraft) return serverAction;
-    return fitmentProviderReady(overview) ? "run_standard_check" : "select_vehicle_variant";
+function fitmentNextAction(overview = state.fitmentOverview) {
+    return overview?.next_action?.kind || "complete_vehicle_details";
+}
+
+// This is the only boundary between persisted Fitment domain state and the
+// frozen UI. The form/request flags below are deliberately transient; every
+// readiness, confirmation, verdict and currentness decision stays server-owned.
+function fitmentUiState(overview = state.fitmentOverview, check = state.fitmentCheck) {
+    const front = overview?.front_rim || null;
+    const rear = overview?.setup_mode === "staggered" ? overview?.rear_rim || null : null;
+    const executionStatus = check?.execution_status || "idle";
+    return {
+        server: overview || null,
+        nextAction: fitmentNextAction(overview),
+        vehicle: {
+            state: overview?.vehicle_state || "empty",
+            fieldStates: overview?.vehicle_field_states || {},
+            modificationState: overview?.modification_state || "none",
+            selectionSource: overview?.selection_source || null,
+        },
+        rim: {
+            setupMode: overview?.setup_mode || "uniform",
+            setupState: overview?.rim_setup_state || "empty",
+            front,
+            rear,
+            fieldStates: front?.field_states || overview?.rim_field_states || {},
+        },
+        check: {
+            item: check || null,
+            executionStatus,
+            pending: executionStatus === "queued" || executionStatus === "processing",
+            isCurrent: check ? check.is_current !== false : true,
+            stale: Boolean(check && check.is_current === false),
+        },
+        form: { ...state.fitmentFormState, dirty: fitmentFormIsDirty() },
+        request: {
+            catalogue: state.fitmentCatalogue,
+            lookup: state.fitmentLookup,
+            resolver: state.fitmentSourceResolving ? "resolving" : state.fitmentSourceStatusTone === "error" ? "failed" : state.fitmentSourceDetected ? "resolved" : "idle",
+            submitting: state.fitmentChecking,
+        },
+    };
 }
 
 function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
@@ -2143,7 +2374,7 @@ function normalizeFitmentText(value) {
 
 function normalizeFitmentNumber(value) {
     if (value === "" || value === null || value === undefined) return null;
-    const parsed = Number(value);
+    const parsed = Number(String(value).trim().replace(",", "."));
     return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -2151,8 +2382,9 @@ function formatFitmentNumber(value, suffix = "") {
     if (value === null || value === undefined || value === "") return fitmentEmptyValue();
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return fitmentEmptyValue();
-    const formatted = Number.isInteger(numeric) ? numeric.toFixed(0) : String(numeric);
-    return suffix ? `${formatted} ${suffix}` : formatted;
+    const formatted = Number.isInteger(numeric) ? String(numeric) : String(numeric);
+    const localized = locale === "ru" ? formatted.replace(".", ",") : formatted;
+    return suffix ? `${localized} ${suffix}` : localized;
 }
 
 function fitmentSubtitle(overview) {
@@ -2169,10 +2401,6 @@ function fitmentSubtitle(overview) {
     return locale === "ru"
         ? "Посмотрите предварительный вывод и условия установки"
         : "Review the preliminary result and installation conditions";
-}
-
-function fitmentProviderReady(overview) {
-    return overview?.provider_readiness?.status === "ready";
 }
 
 function fitmentVerdictMessage(item) {
@@ -2202,11 +2430,14 @@ function fitmentVerdictMessage(item) {
     if (code === "pcd_unknown") return ru ? "Не удалось подтвердить PCD." : "PCD could not be confirmed.";
     if (code === "center_bore_unknown") return ru ? "Не удалось подтвердить центральное отверстие." : "Center bore could not be confirmed.";
     if (code === "size_unknown" || code === "size_not_in_reference" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
-    if (code === "provider_unavailable") return ru ? "Wheel‑Size временно недоступен. Повторите проверку позже." : "Wheel‑Size is temporarily unavailable. Try again later.";
+    if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости. Повторите позже." : "The technical compatibility service could not be reached. Try again later.";
+    if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы. Попробуйте позже." : "The technical compatibility service is rate-limited. Try again later.";
+    if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен." : "The technical compatibility service is temporarily unavailable.";
+    if (code === "malformed_response" || code === "internal_execution_error") return ru ? "Не удалось завершить техническую проверку. Повторите позже." : "The technical check could not be completed. Try again later.";
     if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
     if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";
     if (code === "center_bore_too_small") return ru ? "Центральное отверстие диска меньше ступицы автомобиля." : "The wheel center bore is smaller than the vehicle hub.";
-    if (code === "offset_deviation_check_required" || code === "offset_out_of_range") {
+    if (code === "offset_deviation_check_required" || code === "offset_out_of_range" || code === "et_outside_reference_range") {
         const range = `ET${formatFitmentNumber(details.reference_et_min_mm).replace(/\s/g, "")}–${formatFitmentNumber(details.reference_et_max_mm).replace(/\s/g, "")}`;
         const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
         return ru
@@ -2214,6 +2445,67 @@ function fitmentVerdictMessage(item) {
             : `Wheel ${rim}; vehicle reference range ${range}. Check inner and outer clearances before installation.`;
     }
     return ru ? "Требуется дополнительная техническая проверка." : "Additional technical review is required.";
+}
+
+function fitmentFieldStateLabel(fieldState) {
+    const labels = {
+        missing: locale === "ru" ? "Не заполнено" : "Missing",
+        suggested: locale === "ru" ? "Определено автоматически" : "Suggested automatically",
+        entered: locale === "ru" ? "Введено вручную" : "Entered manually",
+        confirmed: locale === "ru" ? "Подтверждено пользователем" : "Confirmed by user",
+    };
+    return labels[fieldState] || "";
+}
+
+function fitmentRimStateLabel(rimState) {
+    const labels = {
+        empty: locale === "ru" ? "Параметры диска не указаны" : "Wheel details are not entered",
+        partial: locale === "ru" ? "Требует уточнения" : "Needs clarification",
+        complete_unconfirmed: locale === "ru" ? "Требует подтверждения" : "Needs confirmation",
+        confirmed_ready: locale === "ru" ? "Подтверждено пользователем" : "Confirmed by user",
+    };
+    return labels[rimState] || "";
+}
+
+function fitmentModificationStateLabel(ui) {
+    if (ui.vehicle.modificationState === "confirmed" && ui.vehicle.selectionSource === "wheel_size_single") {
+        return locale === "ru" ? "Выбрано автоматически" : "Selected automatically";
+    }
+    if (ui.vehicle.modificationState === "confirmed") {
+        return locale === "ru" ? "Комплектация подтверждена" : "Vehicle version confirmed";
+    }
+    if (ui.vehicle.modificationState === "suggested") {
+        return locale === "ru" ? "Выберите комплектацию" : "Choose a vehicle version";
+    }
+    return locale === "ru" ? "Комплектация ещё не выбрана" : "Vehicle version is not selected";
+}
+
+function fitmentRetryMessage(check) {
+    if (check?.retry_mode !== "retry_later") return "";
+    if (!check.retry_at) return locale === "ru" ? "Попробуйте позже" : "Try again later";
+    const retryAt = Date.parse(check.retry_at);
+    if (!Number.isFinite(retryAt)) return locale === "ru" ? "Попробуйте позже" : "Try again later";
+    const minutes = Math.max(1, Math.ceil((retryAt - Date.now()) / 60000));
+    if (minutes >= 60) {
+        const hours = Math.ceil(minutes / 60);
+        return locale === "ru" ? `Лимит запросов обновится примерно через ${hours} ч` : `The request limit resets in about ${hours}h`;
+    }
+    return locale === "ru" ? `Лимит запросов обновится примерно через ${minutes} мин` : `The request limit resets in about ${minutes} min`;
+}
+
+function renderFitmentFieldStates(ui) {
+    document.querySelectorAll("[data-fitment-field-state]").forEach((node) => node.remove());
+    for (const [name, details] of Object.entries(ui.rim.fieldStates)) {
+        const input = document.querySelector(`[data-fitment-input="rim.${name}"]`);
+        const field = input?.closest(".fitment-field");
+        if (!field || !details?.state) continue;
+        field.dataset.state = details.state;
+        const status = document.createElement("small");
+        status.className = "fitment-field-state";
+        status.dataset.fitmentFieldState = details.state;
+        status.textContent = fitmentFieldStateLabel(details.state);
+        field.append(status);
+    }
 }
 
 function renderFitmentVerdictGroup(sectionTarget, listTarget, items, kind) {
@@ -2234,6 +2526,7 @@ function fitmentPayload() {
     return {
         expected_vehicle_revision: state.fitmentOverview?.vehicle_revision,
         expected_rim_revision: state.fitmentOverview?.rim_revision,
+        setup_mode: state.fitmentForm.setup_mode,
         vehicle: {
             make: normalizeFitmentText(state.fitmentForm.vehicle.make),
             model: normalizeFitmentText(state.fitmentForm.vehicle.model),
@@ -2254,7 +2547,31 @@ function fitmentPayload() {
             wheel_width_j: normalizeFitmentNumber(state.fitmentForm.rim.wheel_width_j),
             center_bore_mm: normalizeFitmentNumber(state.fitmentForm.rim.center_bore_mm),
             offset_et_mm: normalizeFitmentNumber(state.fitmentForm.rim.offset_et_mm),
+            source_fingerprint: state.fitmentSourceIdentity.sourceFingerprint,
+            selected_variant_sku: state.fitmentSourceIdentity.selectedVariantSku,
+            variant_state: state.fitmentSourceIdentity.variantState,
         },
+        ...(state.fitmentForm.setup_mode === "staggered" ? {
+            front_rim: {
+                bolt_count: normalizeFitmentNumber(state.fitmentForm.rim.bolt_count),
+                pcd_mm: normalizeFitmentNumber(state.fitmentForm.rim.pcd_mm),
+                wheel_diameter_in: normalizeFitmentNumber(state.fitmentForm.rim.wheel_diameter_in),
+                wheel_width_j: normalizeFitmentNumber(state.fitmentForm.rim.wheel_width_j),
+                center_bore_mm: normalizeFitmentNumber(state.fitmentForm.rim.center_bore_mm),
+                offset_et_mm: normalizeFitmentNumber(state.fitmentForm.rim.offset_et_mm),
+                source_fingerprint: state.fitmentSourceIdentity.sourceFingerprint,
+                selected_variant_sku: state.fitmentSourceIdentity.selectedVariantSku,
+                variant_state: state.fitmentSourceIdentity.variantState,
+            },
+            rear_rim: {
+                bolt_count: normalizeFitmentNumber(state.fitmentForm.rear_rim.bolt_count),
+                pcd_mm: normalizeFitmentNumber(state.fitmentForm.rear_rim.pcd_mm),
+                wheel_diameter_in: normalizeFitmentNumber(state.fitmentForm.rear_rim.wheel_diameter_in),
+                wheel_width_j: normalizeFitmentNumber(state.fitmentForm.rear_rim.wheel_width_j),
+                center_bore_mm: normalizeFitmentNumber(state.fitmentForm.rear_rim.center_bore_mm),
+                offset_et_mm: normalizeFitmentNumber(state.fitmentForm.rear_rim.offset_et_mm),
+            },
+        } : {}),
     };
 }
 
@@ -2335,6 +2652,62 @@ function applyDemoFitmentSave(payload) {
     return nextOverview;
 }
 
+function renderFitmentControls() {
+    const overview = state.fitmentOverview || {};
+    const form = state.fitmentForm;
+    const setOptions = (select, items, placeholder, currentValue) => {
+        if (!select) return;
+        const current = currentValue === null || currentValue === undefined ? "" : String(currentValue);
+        const options = [`<option value="">${placeholder}</option>`];
+        const seen = new Set();
+        for (const item of items) {
+            const value = fitmentOptionValue(item);
+            if (!value || seen.has(value)) continue;
+            seen.add(value);
+            options.push(`<option value="${value.replaceAll('"', '&quot;')}">${fitmentOptionLabel(item).replaceAll('<', '&lt;')}</option>`);
+        }
+        if (current && !seen.has(current)) options.push(`<option value="${current.replaceAll('"', '&quot;')}">${current.replaceAll('<', '&lt;')}</option>`);
+        select.innerHTML = options.join("");
+        select.value = current;
+    };
+    const regions = shouldUseDemoFitment(state.fitmentJobId)
+        ? FITMENT_REGIONS.map(([value, label]) => ({ value, label }))
+        : fitmentCatalogueItems("regions");
+    setOptions(document.querySelector('[data-fitment-catalogue="regions"]'), regions, "Выберите рынок", form.vehicle.market);
+    setOptions(document.querySelector('[data-fitment-catalogue="makes"]'), fitmentCatalogueItems("makes"), "Выберите марку", form.vehicle.make);
+    setOptions(document.querySelector('[data-fitment-catalogue="models"]'), fitmentCatalogueItems("models"), "Выберите модель", form.vehicle.model);
+    setOptions(document.querySelector('[data-fitment-catalogue="years"]'), fitmentCatalogueItems("years"), "Выберите год", form.vehicle.year);
+    const makeSelect = document.querySelector('[data-fitment-catalogue="makes"]');
+    const modelSelect = document.querySelector('[data-fitment-catalogue="models"]');
+    const yearSelect = document.querySelector('[data-fitment-catalogue="years"]');
+    const regionSelect = document.querySelector('[data-fitment-catalogue="regions"]');
+    if (regionSelect) regionSelect.disabled = state.fitmentLoading || state.fitmentSaving || state.fitmentCatalogue.regions.status === "loading";
+    if (makeSelect) makeSelect.disabled = state.fitmentLoading || state.fitmentSaving || state.fitmentCatalogue.makes.status === "loading";
+    if (modelSelect) modelSelect.disabled = !form.vehicle.make || state.fitmentCatalogue.models.status === "loading" || state.fitmentLoading || state.fitmentSaving;
+    if (yearSelect) yearSelect.disabled = !form.vehicle.make || !form.vehicle.model || !form.vehicle.market || state.fitmentCatalogue.years.status !== "loaded" || state.fitmentLoading || state.fitmentSaving;
+
+    const presetSelect = (path, values, label, suffix = "") => {
+        const select = document.querySelector(`[data-fitment-preset="${path}"]`);
+        if (!select) return;
+        const current = getDeepValue(form, path);
+        const currentText = current === null || current === undefined ? "" : String(current);
+        const options = [`<option value="">${label}</option>`];
+        for (const value of values) options.push(`<option value="${value}">${formatFitmentInputNumber(value)}${suffix}</option>`);
+        options.push('<option value="custom">Другое значение</option>');
+        select.innerHTML = options.join("");
+        select.value = values.map(String).includes(currentText) ? currentText : currentText ? "custom" : "";
+        const custom = document.querySelector(`[data-fitment-custom="${path}"]`);
+        if (custom) {
+            custom.hidden = select.value !== "custom";
+            custom.value = select.value === "custom" ? formatFitmentInputNumber(current) : "";
+        }
+    };
+    presetSelect("rim.wheel_diameter_in", FITMENT_DIAMETER_PRESETS, "Выберите диаметр", '"');
+    presetSelect("rim.wheel_width_j", FITMENT_WIDTH_PRESETS, "Выберите ширину", "J");
+    const datalist = document.querySelector("#fitment-dia-options");
+    if (datalist) datalist.innerHTML = FITMENT_DIA_PRESETS.map((value) => `<option value="${formatFitmentInputNumber(value)}"></option>`).join("");
+}
+
 function renderFitment() {
     const loading = document.querySelector("[data-fitment-loading]");
     const error = document.querySelector("[data-fitment-error]");
@@ -2368,23 +2741,34 @@ function renderFitment() {
     const verdictTitle = document.querySelector("[data-fitment-verdict-title]");
     const verdictCopy = document.querySelector("[data-fitment-verdict-copy]");
     const verdictWarning = document.querySelector("[data-fitment-verdict-warning]");
+    const verdictCurrentness = document.querySelector("[data-fitment-currentness]");
+    const verdictFields = document.querySelector("[data-fitment-verdict-fields]");
     const missingDataWarning = document.querySelector("[data-fitment-missing-data-warning]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
     const authRequired = document.querySelector("[data-fitment-auth-required]");
     const authRequiredText = document.querySelector("[data-fitment-auth-required-text]");
     const authLoginLabel = document.querySelector("[data-fitment-auth-login-label]");
+    const restoreConflict = document.querySelector("[data-fitment-restore-conflict]");
+    const restoreConflictText = document.querySelector("[data-fitment-restore-conflict-text]");
     const basicsCard = document.querySelector(".fitment-basics-card");
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
     const rimSection = document.querySelector('[data-fitment-section="rim"]');
     const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
     const pcdSelect = document.querySelector("[data-fitment-pcd-select]");
     const pcdCustom = document.querySelector("[data-fitment-pcd-custom]");
+    const setupModeSelect = document.querySelector("[data-fitment-setup-mode]");
+    const rearRimSection = document.querySelector("[data-fitment-rear-rim]");
     const actions = document.querySelector("[data-fitment-actions]");
     const overview = state.fitmentOverview;
+    const ui = fitmentUiState(overview);
+    const vehicleState = document.querySelector("[data-fitment-vehicle-state]");
+    const modificationState = document.querySelector("[data-fitment-modification-state]");
+    const rimState = document.querySelector("[data-fitment-rim-state]");
+    const rimAxes = document.querySelector("[data-fitment-rim-axes]");
     if (overview && !state.fitmentActiveStep) {
         state.fitmentActiveStep = state.fitmentCheck
             ? 3
-            : fitmentProviderReady(overview)
+            : fitmentNextAction(overview) === "run_standard_check"
                 ? 2
                 : 1;
     }
@@ -2400,6 +2784,12 @@ function renderFitment() {
     }
     if (authLoginLabel) {
         authLoginLabel.textContent = locale === "ru" ? "Войти через Telegram" : "Sign in with Telegram";
+    }
+    if (restoreConflict) restoreConflict.hidden = !state.fitmentRestoreConflict;
+    if (restoreConflictText) {
+        restoreConflictText.textContent = locale === "ru"
+            ? "Данные на сервере изменились. Черновик не применён автоматически."
+            : "Server details changed. The draft was not applied automatically.";
     }
     if (message) {
         message.dataset.visible = String(Boolean(state.fitmentMessage));
@@ -2453,6 +2843,7 @@ function renderFitment() {
     if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
     renderFitmentSourceSteps();
     renderFitmentRimVariants();
+    renderFitmentParserConflicts();
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
         input.disabled = state.fitmentSourceResolving;
         input.closest(".fitment-field")?.toggleAttribute("data-resolving", state.fitmentSourceResolving);
@@ -2492,6 +2883,17 @@ function renderFitment() {
         return;
     }
 
+    renderFitmentControls();
+    if (setupModeSelect) setupModeSelect.value = state.fitmentForm.setup_mode || ui.rim.setupMode;
+    if (rearRimSection) rearRimSection.hidden = (state.fitmentForm.setup_mode || ui.rim.setupMode) !== "staggered";
+    const invalidFields = state.fitmentFormState.validation === "invalid" ? validateFitmentForm() : [];
+    document.querySelectorAll("[data-fitment-input]").forEach((input) => {
+        const field = input.closest(".fitment-field");
+        const invalid = invalidFields.includes(input.dataset.fitmentInput);
+        if (field) field.setAttribute("data-invalid", String(invalid));
+        input.setAttribute("aria-invalid", invalid ? "true" : "false");
+    });
+
     const activeStep = state.fitmentActiveStep;
     if (shell) {
         const previousStep = shell.dataset.activeStep;
@@ -2519,15 +2921,19 @@ function renderFitment() {
     if (overviewGrid) overviewGrid.hidden = activeStep !== 2;
     if (actions) actions.hidden = activeStep === 3;
 
-    if (verdictCard) verdictCard.hidden = activeStep !== 3 || demoMode || !overview.readiness?.ready;
+    if (verdictCard) verdictCard.hidden = activeStep !== 3 || demoMode;
     if (verdictWarning) {
         verdictWarning.hidden = !state.fitmentCheck || state.fitmentCheck.execution_status === "failed";
     }
     if (verdictCheckButton) {
-        verdictCheckButton.disabled = demoMode || state.fitmentChecking || !overview.readiness?.ready || !fitmentProviderReady(overview);
-        verdictCheckButton.textContent = state.fitmentChecking ? t("fitment.checking") : t("fitment.check");
+        const pending = ui.check.pending;
+        const failed = state.fitmentCheck?.execution_status === "failed";
+        verdictCheckButton.disabled = demoMode || ui.request.submitting || pending || ui.nextAction !== "run_standard_check";
+        verdictCheckButton.textContent = pending
+            ? (state.fitmentCheck.execution_status === "queued" ? "Проверка поставлена в очередь" : "Проверяем совместимость")
+            : failed && state.fitmentCheck?.retry_mode !== "not_applicable" ? "Повторить" : t("fitment.check");
     }
-    if (verdictCopy && !fitmentProviderReady(overview)) {
+    if (verdictCopy && !state.fitmentCheck && ui.nextAction !== "run_standard_check") {
         verdictCopy.textContent = locale === "ru"
             ? "Сначала выберите точную комплектацию автомобиля — это нужно для подтверждения заводских параметров."
             : "Select the exact vehicle version first to confirm factory specifications.";
@@ -2540,14 +2946,28 @@ function renderFitment() {
             unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
             incompatible: locale === "ru" ? "Несовместимо" : "Incompatible",
             failed: locale === "ru" ? "Проверка не выполнена" : "Check failed",
+            queued: locale === "ru" ? "Проверка поставлена в очередь" : "Check queued",
+            processing: locale === "ru" ? "Проверяем совместимость" : "Checking compatibility",
         };
         verdictCard.dataset.status = check.verdict || check.execution_status;
         verdictTitle.textContent = labels[check.verdict || check.execution_status] || t("fitment.verdictTitle");
-        verdictCopy.textContent = check.execution_status === "failed"
+        verdictCopy.textContent = check.execution_status === "queued"
+            ? "Проверка начнётся автоматически"
+            : check.execution_status === "processing"
+            ? "Сверяем параметры с данными выбранной комплектации"
+            : check.execution_status === "failed"
             ? fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" })
             : check.verdict === "compatible"
                 ? (locale === "ru" ? "Параметры совпадают с подтверждёнными данными выбранной комплектации." : "Parameters match the confirmed data for the selected vehicle version.")
                 : "";
+        const retryMessage = fitmentRetryMessage(check);
+        if (retryMessage) verdictCopy.textContent = `${verdictCopy.textContent}${verdictCopy.textContent ? " " : ""}${retryMessage}`;
+        if (verdictCurrentness) {
+            verdictCurrentness.hidden = ui.check.isCurrent;
+            verdictCurrentness.textContent = locale === "ru"
+                ? "Параметры автомобиля или диска изменились. Этот результат сохранён в истории, но больше не актуален."
+                : "Vehicle or wheel details changed. This result remains in history but is no longer current.";
+        }
         renderFitmentVerdictGroup(
             "[data-fitment-verdict-blocking]",
             "[data-fitment-verdict-blocking-list]",
@@ -2570,6 +2990,24 @@ function renderFitment() {
         if (groups) {
             groups.hidden = ![...(check.blocking_issues || []), ...(check.conditions || []), ...(check.advisories || [])].length;
         }
+        if (verdictFields) {
+            const fieldResults = check.field_results || check.fields || [];
+            verdictFields.replaceChildren();
+            verdictFields.hidden = !fieldResults.length;
+            const labelsByStatus = {
+                pass: locale === "ru" ? "Подходит" : "Fits",
+                conditional: locale === "ru" ? "Требуется условие" : "Condition required",
+                unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
+                fail: locale === "ru" ? "Конфликт" : "Conflict",
+            };
+            for (const field of fieldResults) {
+                const line = document.createElement("div");
+                line.className = "fitment-verdict-field";
+                line.dataset.status = field.status || field.result || "unknown";
+                line.textContent = `${field.label || field.field || ""}: ${labelsByStatus[field.status || field.result] || labelsByStatus.unknown}`;
+                verdictFields.append(line);
+            }
+        }
     }
 
     setFitmentOverviewCollapsed(state.fitmentOverviewCollapsed);
@@ -2577,6 +3015,28 @@ function renderFitment() {
     if (shell) shell.hidden = false;
     if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
     if (readiness) readiness.dataset.ready = String(Boolean(overview.readiness?.ready));
+    if (vehicleState) {
+        vehicleState.textContent = ui.vehicle.state === "confirmed_ready"
+            ? (locale === "ru" ? "Автомобиль подтверждён" : "Vehicle confirmed")
+            : ui.vehicle.state === "unconfirmed"
+                ? (locale === "ru" ? "Данные требуют подтверждения" : "Details need confirmation")
+                : (locale === "ru" ? "Укажите автомобиль" : "Enter vehicle details");
+        vehicleState.dataset.state = ui.vehicle.state;
+    }
+    if (modificationState) {
+        modificationState.textContent = fitmentModificationStateLabel(ui);
+        modificationState.dataset.state = ui.vehicle.modificationState;
+    }
+    if (rimState) {
+        rimState.textContent = fitmentRimStateLabel(ui.rim.setupState);
+        rimState.dataset.state = ui.rim.setupState;
+    }
+    if (rimAxes) {
+        rimAxes.hidden = ui.rim.setupMode !== "staggered";
+        rimAxes.textContent = ui.rim.setupMode === "staggered"
+            ? `${locale === "ru" ? "Передняя ось" : "Front axle"}: ${fitmentRimStateLabel(ui.rim.front?.rim_setup_state)} / ${locale === "ru" ? "Задняя ось" : "Rear axle"}: ${fitmentRimStateLabel(ui.rim.rear?.rim_setup_state)}`
+            : "";
+    }
     if (readinessTitle) {
         readinessTitle.textContent = overview.readiness?.ready
             ? t("fitment.readinessReady")
@@ -2668,6 +3128,7 @@ function renderFitment() {
         document.createTextNode(formatFitmentNumber(overview.rim?.offset_et_mm, "мм"))
     );
     syncFitmentFormInputs();
+    renderFitmentFieldStates(ui);
     if (pcdSelect) {
         const pcdKey = fitmentPcdOptionValue(state.fitmentForm.rim.bolt_count, state.fitmentForm.rim.pcd_mm);
         const hasOption = [...pcdSelect.options].some((option) => option.value === pcdKey);
@@ -2725,8 +3186,104 @@ function renderFitmentRimVariants() {
     picker.append(title, copy, list);
 }
 
-async function loadFitmentOverview(jobId) {
+function renderFitmentParserConflicts() {
+    const container = document.querySelector("[data-fitment-parser-conflicts]");
+    if (!container) return;
+    const conflicts = state.fitmentSourceConflicts || [];
+    container.replaceChildren();
+    for (const conflict of conflicts) {
+        const fieldName = conflict.field || "";
+        const persisted = state.fitmentOverview?.rim_field_states?.[fieldName]
+            || state.fitmentOverview?.front_rim?.field_states?.[fieldName];
+        // The resolver only supplies parser candidates. A compare/replace card
+        // is meaningful only where the server tells us a current value is user-confirmed.
+        if (persisted?.state !== "confirmed") continue;
+        const current = persisted.value;
+        const suggested = conflict.candidates?.[0]?.value;
+        if (suggested === null || suggested === undefined || String(suggested) === String(current)) continue;
+        const row = document.createElement("div");
+        row.className = "fitment-parser-conflict";
+        const label = fitmentFieldLabel(`rim.${fieldName}`);
+        row.innerHTML = `<strong>${escapeHtml(label)}</strong><span>${escapeHtml(String(current))} — Подтверждено пользователем</span><span>Новое автоматическое значение: ${escapeHtml(String(suggested))}</span>`;
+        const actions = document.createElement("div");
+        actions.className = "fitment-parser-conflict-actions";
+        const keep = document.createElement("button");
+        keep.type = "button";
+        keep.className = "ghost-button compact-button";
+        keep.textContent = locale === "ru" ? `Оставить ${current}` : `Keep ${current}`;
+        keep.dataset.fitmentConflictKeep = fieldName;
+        const use = document.createElement("button");
+        use.type = "button";
+        use.className = "ghost-button compact-button";
+        use.textContent = locale === "ru" ? `Использовать ${suggested}` : `Use ${suggested}`;
+        use.dataset.fitmentConflictUse = fieldName;
+        use.dataset.fitmentConflictValue = String(suggested);
+        actions.append(keep, use);
+        row.append(actions);
+        container.append(row);
+    }
+    container.hidden = !container.children.length;
+}
+
+function fitmentCatalogueErrorMessage() {
+    return locale === "ru"
+        ? "Не удалось загрузить варианты. Повторите попытку"
+        : "Options could not be loaded. Try again";
+}
+
+async function loadFitmentCatalogue(kind, params = {}) {
+    if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
+    state.fitmentCatalogueControllers[kind]?.abort?.();
+    const controller = new AbortController();
+    state.fitmentCatalogueControllers[kind] = controller;
+    state.fitmentCatalogue[kind] = { status: "loading", items: [] };
+    renderFitment();
+    try {
+        const query = new URLSearchParams(params);
+        const suffix = query.toString() ? `?${query}` : "";
+        const response = await fetch(
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment/catalogue/${kind}${suffix}`, { includeIdentity: true }),
+            { headers: withAuthHeaders(), signal: controller.signal }
+        );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const result = await response.json();
+        if (state.fitmentCatalogueControllers[kind] !== controller) return;
+        state.fitmentCatalogue[kind] = {
+            status: result.outcome === "no_data" ? "no_data" : "loaded",
+            items: Array.isArray(result.items) ? result.items : [],
+        };
+    } catch (error) {
+        if (error?.name === "AbortError" || state.fitmentCatalogueControllers[kind] !== controller) return;
+        state.fitmentCatalogue[kind] = { status: "failed", items: [] };
+        state.fitmentMessage = fitmentCatalogueErrorMessage();
+        state.fitmentMessageTone = "warning";
+    } finally {
+        if (state.fitmentCatalogueControllers[kind] === controller) renderFitment();
+    }
+}
+
+function loadFitmentVehicleCatalogue() {
+    if (shouldUseDemoFitment(state.fitmentJobId)) {
+        const overview = state.fitmentOverview || {};
+        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "Toyota", label: overview.vehicle?.make || "Toyota" }] };
+        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "Prius", label: overview.vehicle?.model || "Prius" }] };
+        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2016), label: String(overview.vehicle?.year || 2016) }] };
+        return;
+    }
+    void loadFitmentCatalogue("regions");
+    const vehicle = state.fitmentForm.vehicle;
+    if (vehicle.market) void loadFitmentCatalogue("makes", { region: vehicle.market });
+    if (vehicle.market && vehicle.make) void loadFitmentCatalogue("models", { region: vehicle.market, make: vehicle.make });
+    if (vehicle.market && vehicle.make && vehicle.model) void loadFitmentCatalogue("years", { region: vehicle.market, make: vehicle.make, model: vehicle.model });
+}
+
+async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutomaticResolver = false } = {}) {
     if (!jobId) return;
+    let restoration = "none";
     state.fitmentLoading = true;
     state.fitmentError = "";
     state.fitmentMessage = "";
@@ -2737,16 +3294,32 @@ async function loadFitmentOverview(jobId) {
             persistDemoFitmentOverview(overview);
             state.fitmentOverview = overview;
             state.fitmentForm = fitmentFormFromOverview(overview);
-            return;
+            state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+            state.fitmentCheck = overview.current_check || null;
+            state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+            if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
+            loadFitmentVehicleCatalogue();
+            if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
+            return restoration;
         }
         const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return restoration;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
         const overview = await response.json();
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
-        if (overview?.rim?.product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
+        state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+        state.fitmentCheck = overview.current_check || null;
+        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+        if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
+        loadFitmentVehicleCatalogue();
+        if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
+        if (!suppressAutomaticResolver && restoration !== "restored" && overview?.rim?.product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
             state.fitmentSourceAutoResolvedForJob = jobId;
             void resolveFitmentRimSource({ automatic: true });
         }
@@ -2758,16 +3331,26 @@ async function loadFitmentOverview(jobId) {
         state.fitmentLoading = false;
         renderFitment();
     }
+    return restoration;
 }
 
 function openFitmentView(jobId, { originView = state.view } = {}) {
     if (!jobId) return;
+    clearFitmentCheckPolling();
     state.fitmentJobId = jobId;
     state.fitmentOriginView = originView;
     state.fitmentOriginJobId = jobId;
     state.fitmentOverview = null;
+    state.fitmentCheck = null;
     state.fitmentActiveStep = 0;
     state.fitmentForm = createEmptyFitmentForm();
+    state.fitmentFormState = { status: "clean", validation: "valid", baseline: null };
+    state.fitmentCatalogue = {
+        regions: { status: "idle", items: [] },
+        makes: { status: "idle", items: [] },
+        models: { status: "idle", items: [] },
+        years: { status: "idle", items: [] },
+    };
     state.fitmentError = "";
     state.fitmentMessage = "";
     state.fitmentSourceStatus = "";
@@ -2775,10 +3358,13 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
     state.fitmentSourceVariants = [];
+    state.fitmentSourceConflicts = [];
+    state.fitmentSourceIdentity = { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" };
     state.fitmentRimManualFields = [];
+    state.fitmentRestoreConflict = null;
     state.fitmentSourceAutoResolvedForJob = "";
     setView("fitment");
-    void loadFitmentOverview(jobId);
+    void loadFitmentOverview(jobId, { restoreReason: "navigation" });
 }
 
 function closeFitmentView() {
@@ -2867,6 +3453,11 @@ function selectFitmentRimVariant(index) {
     state.fitmentSourceAppliedFields = appliedFields;
     state.fitmentSourceDetected = Object.keys(variant.values || {}).length > 0;
     state.fitmentSourceVariants = [];
+    state.fitmentSourceIdentity = {
+        ...state.fitmentSourceIdentity,
+        selectedVariantSku: variant.sku || null,
+        variantState: "selected",
+    };
     state.fitmentSourceStatus = appliedFields.length
         ? (locale === "ru"
             ? "Вариант выбран. Проверьте заполненные параметры и сохраните их."
@@ -2877,6 +3468,16 @@ function selectFitmentRimVariant(index) {
     state.fitmentSourceStatusTone = "success";
     renderFitment();
     scrollFitmentTo('[data-fitment-section="rim"]');
+}
+
+function resolveFitmentParserConflict(fieldName, value = undefined) {
+    if (value !== undefined && Object.hasOwn(state.fitmentForm.rim, fieldName)) {
+        state.fitmentForm.rim[fieldName] = value;
+        if (!state.fitmentRimManualFields.includes(fieldName)) state.fitmentRimManualFields.push(fieldName);
+        markFitmentDirty();
+    }
+    state.fitmentSourceConflicts = state.fitmentSourceConflicts.filter((conflict) => conflict.field !== fieldName);
+    renderFitment();
 }
 
 async function resolveFitmentRimSource({ automatic = false } = {}) {
@@ -2895,7 +3496,9 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
+    state.fitmentSourceController?.abort?.();
     const controller = new AbortController();
+    state.fitmentSourceController = controller;
     const requestTimeout = window.setTimeout(() => controller.abort(), RIM_SOURCE_RESOLVE_TIMEOUT_MS);
     try {
         const response = await fetch(
@@ -2915,6 +3518,12 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
         state.fitmentSourceVariants = result.selection_required ? (result.variants || []) : [];
+        state.fitmentSourceConflicts = result.conflicts || [];
+        state.fitmentSourceIdentity = {
+            sourceFingerprint: result.source_fingerprint || null,
+            selectedVariantSku: result.selected_variant_sku || null,
+            variantState: result.selection_required ? "selection_required" : result.selected_variant_sku ? "selected" : "none",
+        };
         const resolvedEntries = Object.entries(result.values || {}).filter(
             ([, value]) => value !== null && value !== undefined && value !== ""
         );
@@ -2947,6 +3556,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         }
     } finally {
         window.clearTimeout(requestTimeout);
+        if (state.fitmentSourceController === controller) state.fitmentSourceController = null;
         state.fitmentSourceResolving = false;
         renderFitment();
         if (state.fitmentSourceStatusTone !== "error") {
@@ -2957,6 +3567,13 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
 
 async function loadFitmentVehicleVariants() {
     if (!state.fitmentJobId || state.fitmentVehicleVariantsLoading) return;
+    if (fitmentFormIsDirty()) {
+        state.fitmentError = locale === "ru"
+            ? "Сначала сохраните изменения автомобиля, затем подберите комплектацию."
+            : "Save vehicle changes before finding a vehicle version.";
+        renderFitment();
+        return;
+    }
     const vehicle = state.fitmentForm.vehicle;
     if (!vehicle.make || !vehicle.model || !vehicle.year) {
         state.fitmentError = locale === "ru"
@@ -2976,6 +3593,7 @@ async function loadFitmentVehicleVariants() {
         return;
     }
     state.fitmentVehicleVariantsLoading = true;
+    state.fitmentLookup = { status: "loading", outcome: "" };
     state.fitmentError = "";
     renderFitment();
     try {
@@ -2983,12 +3601,22 @@ async function loadFitmentVehicleVariants() {
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
-        state.fitmentVehicleVariants = (await response.json()).variants || [];
-        if (!state.fitmentVehicleVariants.length) {
+        const result = await response.json();
+        state.fitmentLookup = { status: result.outcome === "no_match" ? "no_match" : "loaded", outcome: result.outcome || "" };
+        state.fitmentVehicleVariants = result.outcome === "multiple" ? (result.variants || []) : [];
+        if (result.outcome === "single") {
+            await loadFitmentOverview(state.fitmentJobId);
+            state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
+            state.fitmentMessageTone = "success";
+        } else if (result.outcome === "no_match") {
             state.fitmentMessage = locale === "ru"
-                ? "Версии не найдены. Уточните год, рынок или модификацию вручную."
-                : "No versions found. Refine year, market, or modification manually.";
+                ? "Для выбранного автомобиля данные о комплектации не найдены."
+                : "No vehicle version data was found for the selected vehicle.";
             state.fitmentMessageTone = "warning";
         } else {
             state.fitmentMessage = locale === "ru"
@@ -2997,6 +3625,7 @@ async function loadFitmentVehicleVariants() {
             state.fitmentMessageTone = "success";
         }
     } catch (error) {
+        state.fitmentLookup = { status: "failed", outcome: "" };
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         state.fitmentVehicleVariantsLoading = false;
@@ -3004,9 +3633,90 @@ async function loadFitmentVehicleVariants() {
     }
 }
 
+function clearFitmentCheckPolling() {
+    if (state.fitmentCheckPollTimer) window.clearTimeout(state.fitmentCheckPollTimer);
+    state.fitmentCheckPollTimer = null;
+    state.fitmentCheckPollToken += 1;
+}
+
+function clearFitmentRuntimeRequests() {
+    clearFitmentCheckPolling();
+    Object.values(state.fitmentCatalogueControllers).forEach((controller) => controller?.abort?.());
+    state.fitmentCatalogueControllers = {};
+    state.fitmentSourceController?.abort?.();
+    state.fitmentSourceController = null;
+}
+
+function fitmentCheckIsPending(check = state.fitmentCheck) {
+    return check?.execution_status === "queued" || check?.execution_status === "processing";
+}
+
+function fitmentCheckContextKey() {
+    const overview = state.fitmentOverview;
+    return [
+        state.fitmentJobId,
+        overview?.vehicle_identity_id,
+        overview?.rim_setup_id,
+        overview?.vehicle_revision,
+        overview?.rim_setup_revision,
+        overview?.rim_revision,
+        overview?.setup_mode,
+        overview?.front_rim?.source_fingerprint,
+        overview?.front_rim?.selected_variant_sku,
+        overview?.rear_rim?.source_fingerprint,
+        overview?.rear_rim?.selected_variant_sku,
+    ].join(":");
+}
+
+async function refreshFitmentCheckCurrentness() {
+    const checkId = state.fitmentCheck?.id;
+    if (!checkId || !state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
+    try {
+        const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
+        if (!response.ok) return;
+        state.fitmentCheck = await response.json();
+    } catch {
+        // Currentness is refreshed on the next explicit check/history read.
+    }
+}
+
+function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
+    clearFitmentCheckPolling();
+    const token = state.fitmentCheckPollToken;
+    const poll = async () => {
+        if (token !== state.fitmentCheckPollToken || state.view !== "fitment" || contextKey !== fitmentCheckContextKey()) return;
+        try {
+            const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+            if (response.status === 401) {
+                showFitmentAuthRequired();
+                return;
+            }
+            if (!response.ok) throw new Error(await parseApiError(response));
+            const check = await response.json();
+            if (token !== state.fitmentCheckPollToken || contextKey !== fitmentCheckContextKey()) return;
+            state.fitmentCheck = check;
+            state.fitmentChecking = fitmentCheckIsPending(check);
+            renderFitment();
+            if (fitmentCheckIsPending(check)) {
+                state.fitmentCheckPollTimer = window.setTimeout(poll, POLL_INTERVAL_MS);
+            }
+        } catch (error) {
+            if (token !== state.fitmentCheckPollToken) return;
+            state.fitmentChecking = false;
+            state.fitmentError = error?.message || t("errors.requestFailed");
+            renderFitment();
+        }
+    };
+    void poll();
+}
+
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (!overview?.readiness?.ready || !fitmentProviderReady(overview) || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
+    if (fitmentNextAction(overview) !== "run_standard_check" || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
     state.fitmentChecking = true;
     state.fitmentError = "";
     renderFitment();
@@ -3031,10 +3741,13 @@ async function runFitmentCheck() {
         }
         if (!response.ok) throw new Error(await parseApiError(response));
         state.fitmentCheck = await response.json();
+        if (fitmentCheckIsPending(state.fitmentCheck)) {
+            pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
+        }
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
-        state.fitmentChecking = false;
+        if (!fitmentCheckIsPending(state.fitmentCheck)) state.fitmentChecking = false;
         renderFitment();
     }
 }
@@ -3057,10 +3770,20 @@ async function applyFitmentVehicleVariant(variant) {
             showFitmentAuthRequired();
             return;
         }
+        if (response.status === 409) {
+            state.fitmentVehicleVariants = [];
+            await loadFitmentOverview(state.fitmentJobId);
+            state.fitmentMessage = locale === "ru"
+                ? "Данные автомобиля изменились. Список комплектаций обновлён; выберите вариант ещё раз."
+                : "Vehicle details changed. The version list was refreshed; choose again.";
+            state.fitmentMessageTone = "warning";
+            return;
+        }
         if (!response.ok) throw new Error(await parseApiError(response));
         state.fitmentOverview = await response.json();
         state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
-        state.fitmentCheck = null;
+        state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(state.fitmentOverview);
+        await refreshFitmentCheckCurrentness();
         state.fitmentActiveStep = 2;
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
@@ -3073,6 +3796,17 @@ async function applyFitmentVehicleVariant(variant) {
 async function saveFitment(event) {
     event?.preventDefault?.();
     if (!state.fitmentJobId || state.fitmentSaving) return;
+    const missing = validateFitmentForm();
+    if (missing.length) {
+        state.fitmentFormState.status = "dirty";
+        state.fitmentError = locale === "ru"
+            ? `Заполните обязательные поля: ${missing.map(fitmentFieldLabel).join(", ")}`
+            : `Complete the required fields: ${missing.map(fitmentFieldLabel).join(", ")}`;
+        renderFitment();
+        return;
+    }
+    state.fitmentFormState.validation = "valid";
+    state.fitmentFormState.status = "saving";
     state.fitmentSaving = true;
     state.fitmentError = "";
     state.fitmentMessage = "";
@@ -3083,6 +3817,8 @@ async function saveFitment(event) {
             persistDemoFitmentOverview(overview);
             state.fitmentOverview = overview;
             state.fitmentForm = fitmentFormFromOverview(overview);
+            state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+            state.fitmentFormState.status = "clean";
             state.fitmentMessage = t("fitment.saveSuccess");
             state.fitmentMessageTone = "success";
             state.fitmentActiveStep = Math.min(3, Math.max(2, state.fitmentActiveStep + 1));
@@ -3107,13 +3843,17 @@ async function saveFitment(event) {
         const overview = await response.json();
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
+        state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+        await refreshFitmentCheckCurrentness();
+        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+        state.fitmentFormState.status = "clean";
         const savedFromStep = state.fitmentActiveStep;
         const nextStep = fitmentNextStep(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
         if (savedFromStep === 1) {
             state.fitmentActiveStep = 2;
-            state.fitmentMessage = fitmentProviderReady(overview)
+            state.fitmentMessage = fitmentNextAction(overview) === "run_standard_check"
                 ? (locale === "ru" ? "Автомобиль сохранён. Проверьте параметры диска." : "Vehicle saved. Review the wheel details.")
                 : (locale === "ru" ? "Автомобиль сохранён. Заполните параметры диска; комплектацию можно выбрать перед итоговой проверкой." : "Vehicle saved. Add wheel details; choose the exact vehicle version before the final check.");
             state.fitmentMessageTone = "success";
@@ -3133,20 +3873,21 @@ async function saveFitment(event) {
             scrollFitmentTo('[data-fitment-section="vehicle"]');
         } else if (nextAction === "run_standard_check") {
             state.fitmentActiveStep = 3;
-            state.fitmentMessage = locale === "ru" ? "Данные сохранены. Проверяем совместимость…" : "Details saved. Checking compatibility…";
+            state.fitmentMessage = locale === "ru" ? "Данные сохранены. Проверку совместимости можно запустить отдельно." : "Details saved. You can start the compatibility check separately.";
             state.fitmentMessageTone = "success";
-            await runFitmentCheck();
         } else {
-            state.fitmentMessage = fitmentProviderReady(overview)
+            state.fitmentMessage = fitmentNextAction(overview) === "run_standard_check"
                 ? nextStep.message
                 : (locale === "ru" ? "Чтобы получить вывод, выберите точную комплектацию автомобиля." : "Choose the exact vehicle version to get the result.");
             state.fitmentMessageTone = "warning";
             scrollFitmentTo("[data-fitment-shell]");
         }
     } catch (error) {
+        state.fitmentFormState.status = "save_failed";
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         state.fitmentSaving = false;
+        if (state.fitmentFormState.status === "saving") markFitmentDirty();
         renderFitment();
     }
 }
@@ -3217,7 +3958,13 @@ function setMoreOpen(open) {
 
 function setView(view) {
     const viewChanged = state.view !== view;
+    const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
+    if (leavingFitment) {
+        persistFitmentTransientDraft("navigation");
+        clearFitmentRuntimeRequests();
+    }
     state.view = view;
+    if (view !== "fitment") clearFitmentCheckPolling();
     if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
         el.hidden = el.dataset.view !== view;
@@ -4137,8 +4884,9 @@ function renderRenderDetail() {
         return;
     }
     const downloadUrl = hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
+    const fitmentOverview = state.fitmentContextByJob[job.job_id] || null;
     const fitmentAction = fitmentAvailable(job)
-        ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">${t("fitment.openFromHistory")}</button>`
+        ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">${escapeHtml(fitmentReturnAction(fitmentOverview))}</button>`
         : "";
     container.innerHTML = `
         <div class="render-detail-page">
@@ -4162,6 +4910,7 @@ function openRenderDetail(jobId, originView = "renders") {
     state.fitmentOriginView = originView;
     state.renderDetailError = "";
     setView("render-detail");
+    void loadFitmentReturnContext(jobId);
     if (!state.renderHistory.some((item) => item.job_id === jobId)) {
         void loadRenderDetailJob(jobId);
     }
@@ -4431,8 +5180,9 @@ function renderDashboard() {
 
     const resultUrl = assetUrlForJob(latest, "result");
     if (latest.status === "completed" && isAssetAvailable(latest, "result") && resultUrl) {
-        const fitmentContext = state.fitmentJobId === latest.job_id && state.fitmentCheck
-            ? fitmentDashboardContext(state.fitmentCheck)
+        const latestFitmentOverview = state.fitmentContextByJob[latest.job_id] || null;
+        const fitmentContext = latestFitmentOverview
+            ? fitmentDashboardContext(latestFitmentOverview.current_check)
             : fitmentAvailable(latest)
                 ? { tone: "warning", text: t("fitment.compatibilityNotChecked") }
                 : null;
@@ -4445,7 +5195,7 @@ function renderDashboard() {
                     ${fitmentContext ? `<div class="panel-note dashboard-fitment-context ${escapeHtml(fitmentContext.tone)}">${escapeHtml(fitmentContext.text)}</div>` : ""}
                     <div class="render-card-buttons latest-render-actions">
                         <button type="button" class="primary-button compact-button" data-open-render-detail="${escapeHtml(latest.job_id)}">${escapeHtml(t("dashboard.lastRender"))}</button>
-                        ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${t("fitment.openFromHistory")}</button>` : ""}
+                        ${fitmentAvailable(latest) ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(latest.job_id)}" data-origin-view="dashboard">${escapeHtml(fitmentReturnAction(latestFitmentOverview))}</button>` : ""}
                     </div>
                 </div>
             </div>
@@ -4480,6 +5230,35 @@ function fitmentDashboardContext(check) {
     return contexts[check?.verdict || check?.execution_status] || { tone: "warning", text: t("fitment.compatibilityNotChecked") };
 }
 
+function fitmentReturnAction(overview) {
+    const currentCheck = overview?.current_check || null;
+    if (currentCheck?.execution_status === "completed") {
+        return locale === "ru" ? "Открыть проверку" : "Open check";
+    }
+    if (overview?.next_action?.kind === "run_standard_check") {
+        return locale === "ru" ? "Проверить совместимость" : "Check compatibility";
+    }
+    return locale === "ru" ? "Продолжить проверку" : "Continue check";
+}
+
+async function loadFitmentReturnContext(jobId) {
+    if (!jobId || shouldUseDemoFitment(jobId) || state.fitmentContextLoadingByJob[jobId]) return;
+    state.fitmentContextLoadingByJob[jobId] = true;
+    try {
+        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
+            headers: withAuthHeaders(),
+        });
+        if (!response.ok) return;
+        state.fitmentContextByJob[jobId] = await response.json();
+    } catch {
+        // The editor itself remains available; its authoritative context loads on entry.
+    } finally {
+        delete state.fitmentContextLoadingByJob[jobId];
+        renderRenderDetail();
+        renderDashboard();
+    }
+}
+
 async function loadRenderHistory({ silent = false } = {}) {
     if (!hasFrontendAuth()) {
         state.renderHistoryLoading = false;
@@ -4498,6 +5277,8 @@ async function loadRenderHistory({ silent = false } = {}) {
     try {
         const history = await fetchRenderHistory({ limit: 20, offset: 0 });
         state.renderHistory = Array.isArray(history.jobs) ? history.jobs : [];
+        const latestFitmentJob = state.renderHistory.find((job) => fitmentAvailable(job));
+        if (latestFitmentJob) void loadFitmentReturnContext(latestFitmentJob.job_id);
         mergeHistoryFeedbackState(state.renderHistory);
         if (!state.renderHistory.some((job) => job.job_id === state.expandedJobId)) {
             state.expandedJobId = "";
@@ -5656,10 +6437,17 @@ function bindEvents() {
             return;
         }
         if (custom) custom.hidden = true;
-        const pcdMm = select.value;
+        const [boltCount, pcdMm] = select.value.split("x");
+        state.fitmentForm.rim.bolt_count = boltCount || state.fitmentForm.rim.bolt_count;
         state.fitmentForm.rim.pcd_mm = pcdMm || "";
         const pcdInput = document.querySelector('[data-fitment-input="rim.pcd_mm"]');
         if (pcdInput) pcdInput.value = pcdMm || "";
+        markFitmentDirty();
+        renderFitment();
+    });
+    document.querySelector("[data-fitment-setup-mode]")?.addEventListener("change", (event) => {
+        state.fitmentForm.setup_mode = event.target.value === "staggered" ? "staggered" : "uniform";
+        markFitmentDirty();
         renderFitment();
     });
 
@@ -5787,6 +6575,7 @@ function bindEvents() {
     });
     document.querySelector("[data-fitment-source-url]")?.addEventListener("input", (event) => {
         state.fitmentForm.rim.product_url = event.target.value;
+        markFitmentDirty();
     });
     document.querySelector("[data-fitment-source-submit]")?.addEventListener("click", () => {
         void resolveFitmentRimSource();
@@ -5797,8 +6586,20 @@ function bindEvents() {
     document.querySelector("[data-fitment-check]")?.addEventListener("click", () => {
         void runFitmentCheck();
     });
+    document.querySelector("[data-fitment-create-image]")?.addEventListener("click", () => {
+        // Rendering stays available independently from the fitment result.
+        setView("create");
+    });
     document.querySelector("[data-fitment-auth-login]")?.addEventListener("click", () => {
         void resumeFitmentAfterLogin();
+    });
+    document.querySelector("[data-fitment-restore-conflict-apply]")?.addEventListener("click", () => {
+        applyFitmentRestoreConflict();
+        state.fitmentMessage = locale === "ru"
+            ? "Сохранённые значения открыты как несохранённый черновик. Проверьте их перед сохранением."
+            : "Saved values are open as an unsaved draft. Review them before saving.";
+        state.fitmentMessageTone = "warning";
+        renderFitment();
     });
     document.querySelector("[data-fitment-form]")?.addEventListener("submit", (event) => {
         void saveFitment(event);
@@ -5806,7 +6607,9 @@ function bindEvents() {
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
         input.addEventListener("focus", () => setFitmentOverviewCollapsed(true));
         input.addEventListener("input", (event) => {
-            setDeepValue(state.fitmentForm, input.dataset.fitmentInput, event.target.value);
+            if (input.tagName === "SELECT") return;
+            const path = input.dataset.fitmentInput;
+            setDeepValue(state.fitmentForm, path, event.target.value);
             const fieldName = input.dataset.fitmentInput?.replace("rim.", "");
             if (fieldName && input.dataset.fitmentInput?.startsWith("rim.")) {
                 state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
@@ -5814,7 +6617,49 @@ function bindEvents() {
                     state.fitmentRimManualFields.push(fieldName);
                 }
             }
+            markFitmentDirty();
             refreshFitmentSaveLabel();
+        });
+        input.addEventListener("change", (event) => {
+            const path = input.dataset.fitmentInput;
+            const value = event.target.value;
+            if (input.dataset.fitmentPreset) {
+                const custom = document.querySelector(`[data-fitment-custom="${path}"]`);
+                if (value === "custom") {
+                    custom?.removeAttribute("hidden");
+                    custom?.focus();
+                } else {
+                    setDeepValue(state.fitmentForm, path, value);
+                    if (custom) custom.hidden = true;
+                }
+            } else if (input.dataset.fitmentCatalogue === "makes") {
+                state.fitmentForm.vehicle.make = value;
+                state.fitmentForm.vehicle.model = "";
+                state.fitmentForm.vehicle.year = "";
+                state.fitmentCatalogue.models = { status: "idle", items: [] };
+                state.fitmentCatalogue.years = { status: "idle", items: [] };
+                if (value && state.fitmentForm.vehicle.market) void loadFitmentCatalogue("models", { region: state.fitmentForm.vehicle.market, make: value });
+            } else if (input.dataset.fitmentCatalogue === "models") {
+                state.fitmentForm.vehicle.model = value;
+                state.fitmentForm.vehicle.year = "";
+                state.fitmentCatalogue.years = { status: "idle", items: [] };
+                if (value && state.fitmentForm.vehicle.market && state.fitmentForm.vehicle.make) void loadFitmentCatalogue("years", { region: state.fitmentForm.vehicle.market, make: state.fitmentForm.vehicle.make, model: value });
+            } else if (input.dataset.fitmentCatalogue === "regions") {
+                state.fitmentForm.vehicle.market = value;
+                state.fitmentForm.vehicle.year = "";
+                state.fitmentCatalogue.years = { status: "idle", items: [] };
+                if (state.fitmentForm.vehicle.make && state.fitmentForm.vehicle.model) void loadFitmentCatalogue("years", { region: value, make: state.fitmentForm.vehicle.make, model: state.fitmentForm.vehicle.model });
+            } else {
+                setDeepValue(state.fitmentForm, path, value);
+            }
+            markFitmentDirty();
+            renderFitment();
+        });
+    });
+    document.querySelectorAll("[data-fitment-custom]").forEach((input) => {
+        input.addEventListener("input", (event) => {
+            setDeepValue(state.fitmentForm, input.dataset.fitmentCustom, event.target.value);
+            markFitmentDirty();
         });
     });
     document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
@@ -5907,6 +6752,21 @@ function bindEvents() {
             return;
         }
 
+        const keepConflict = event.target.closest("[data-fitment-conflict-keep]");
+        if (keepConflict) {
+            resolveFitmentParserConflict(keepConflict.dataset.fitmentConflictKeep);
+            return;
+        }
+
+        const useConflict = event.target.closest("[data-fitment-conflict-use]");
+        if (useConflict) {
+            resolveFitmentParserConflict(
+                useConflict.dataset.fitmentConflictUse,
+                useConflict.dataset.fitmentConflictValue
+            );
+            return;
+        }
+
         const fitmentCandidate = event.target.closest("[data-fitment-candidate]");
         if (fitmentCandidate) {
             const path = fitmentCandidate.dataset.fitmentCandidate;
@@ -5914,6 +6774,8 @@ function bindEvents() {
             setDeepValue(state.fitmentForm, path, value);
             const input = document.querySelector(`[data-fitment-input="${path}"]`);
             if (input) input.value = value;
+            markFitmentDirty();
+            renderFitment();
             return;
         }
 
@@ -6031,6 +6893,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (document.hidden) {
             clearRenderHistoryPolling();
         }
+    });
+    window.addEventListener("pagehide", () => {
+        if (state.view === "fitment") persistFitmentTransientDraft("navigation");
     });
 
     await hydrateFilesFromDraft();

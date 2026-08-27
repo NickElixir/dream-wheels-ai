@@ -2300,6 +2300,20 @@ h2 {
 .fitment-verdict-head h2 { margin: 4px 0 0; font-size: 20px; }
 .fitment-verdict-copy, .fitment-verdict-disclaimer { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.45; }
 .fitment-verdict-groups { display: grid; gap: 8px; }
+.fitment-verdict-fields { display: grid; gap: 7px; }
+.fitment-verdict-field {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 11px;
+    border: 1px solid rgba(152, 176, 210, 0.22);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.fitment-verdict-field[data-status="pass"] { border-color: rgba(39, 216, 138, 0.3); }
+.fitment-verdict-field[data-status="conditional"] { border-color: rgba(255, 204, 86, 0.32); }
+.fitment-verdict-field[data-status="fail"] { border-color: rgba(255, 102, 102, 0.38); }
 .fitment-verdict-group {
     display: grid;
     gap: 5px;
@@ -2340,6 +2354,25 @@ h2 {
     line-height: 1.45;
 }
 
+.fitment-state-line,
+.fitment-axis-summary {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.fitment-state-line[data-state="confirmed_ready"],
+.fitment-state-line[data-state="confirmed"] {
+    color: var(--success);
+}
+
+.fitment-state-line[data-state="suggested"],
+.fitment-state-line[data-state="partial"],
+.fitment-state-line[data-state="complete_unconfirmed"] {
+    color: var(--warning);
+}
+
 .fitment-notice-stack {
     display: grid;
     gap: 8px;
@@ -2372,6 +2405,46 @@ h2 {
     border: 1px solid rgba(116, 211, 255, 0.28);
     border-radius: 16px;
     background: rgba(116, 211, 255, 0.06);
+}
+
+.fitment-parser-conflicts {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 204, 86, 0.3);
+    border-radius: 16px;
+    background: rgba(255, 204, 86, 0.07);
+}
+
+.fitment-parser-conflict {
+    display: grid;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.fitment-parser-conflict-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.fitment-setup-mode {
+    max-width: 460px;
+}
+
+.fitment-rear-rim {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(116, 211, 255, 0.24);
+    border-radius: 18px;
+    background: rgba(116, 211, 255, 0.05);
+}
+
+.fitment-rear-rim h3 {
+    margin: 0;
+    font-size: 17px;
 }
 
 .fitment-rim-variant-picker p {
@@ -2728,6 +2801,26 @@ h2 {
 .fitment-field select:focus {
     border-color: rgba(221, 255, 0, 0.34);
     box-shadow: 0 0 0 3px rgba(221, 255, 0, 0.08);
+}
+
+.fitment-field[data-invalid="true"] input,
+.fitment-field[data-invalid="true"] select {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(255, 104, 104, 0.12);
+}
+
+.fitment-field-state {
+    color: var(--text-subtle);
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.fitment-field[data-state="confirmed"] .fitment-field-state { color: var(--success); }
+.fitment-field[data-state="suggested"] .fitment-field-state,
+.fitment-field[data-state="entered"] .fitment-field-state { color: var(--warning); }
+
+.fitment-field [data-fitment-custom]:not([hidden]) {
+    margin-top: 2px;
 }
 
 .fitment-candidate-row {

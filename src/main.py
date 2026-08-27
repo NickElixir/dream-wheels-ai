@@ -201,16 +201,30 @@ async def process_jobs_loop():
     logger.info("🟢 ВОРКЕР ЗАПУЩЕН")
     pool = db.get_pool()
     rds = redis_client.get_client()
+    try:
+        await fitment_checks_api.recover_stale_fitment_checks()
+    except Exception:
+        # Recovery is best-effort; normal queue processing must still start.
+        logger.exception("❌ Не удалось восстановить зависшие Fitment checks")
 
     while True:
         job_id = None
         job_data = None
         try:
-            result = await rds.blpop(redis_client.key(REDIS_JOB_QUEUE), timeout=10)
+            result = await rds.blpop(
+                [
+                    redis_client.key(REDIS_JOB_QUEUE),
+                    redis_client.key(fitment_checks_api.FITMENT_CHECK_QUEUE),
+                ],
+                timeout=10,
+            )
             if not result:
                 continue
 
             job_data = json.loads(result[1])
+            if job_data.get("kind") == "fitment_check":
+                await fitment_checks_api.execute_fitment_check(str(job_data["check_id"]))
+                continue
             job_id = job_data["job_id"]
             user_id = int(job_data["user_id"])
             source = job_data.get("source", "bot")
