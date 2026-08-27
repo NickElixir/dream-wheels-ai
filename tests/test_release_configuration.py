@@ -10,6 +10,15 @@ FITMENT_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-proxy.js").read_text(enco
 RIM_SOURCE_RESOLVE_PROXY_JS = (ROOT / "webapp" / "api" / "rim-source-resolve-proxy.js").read_text(
     encoding="utf-8"
 )
+FITMENT_CATALOGUE_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-catalogue-proxy.js").read_text(
+    encoding="utf-8"
+)
+FITMENT_VARIANTS_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-vehicle-variants-proxy.js").read_text(
+    encoding="utf-8"
+)
+FITMENT_VARIANTS_APPLY_PROXY_JS = (
+    ROOT / "webapp" / "api" / "fitment-vehicle-variants-apply-proxy.js"
+).read_text(encoding="utf-8")
 
 
 def test_ci_covers_staging_release_workflow() -> None:
@@ -49,6 +58,29 @@ def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy
     assert "backendPath" in FITMENT_PROXY_JS
     assert "backendPath" in RIM_SOURCE_RESOLVE_PROXY_JS
     assert not list((ROOT / "webapp" / "api" / "backend" / "jobs" / "[jobId]").glob("**/*.js"))
+
+
+def test_nested_fitment_catalogue_and_variant_routes_use_explicit_proxies() -> None:
+    rewrites = VERCEL_JSON["rewrites"]
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
+        "destination": "/api/fitment-catalogue-proxy?jobId=:jobId&kind=:kind",
+    } in rewrites
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
+        "destination": "/api/fitment-vehicle-variants-proxy?jobId=:jobId",
+    } in rewrites
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
+        "destination": "/api/fitment-vehicle-variants-apply-proxy?jobId=:jobId",
+    } in rewrites
+    for source in (
+        FITMENT_CATALOGUE_PROXY_JS,
+        FITMENT_VARIANTS_PROXY_JS,
+        FITMENT_VARIANTS_APPLY_PROXY_JS,
+    ):
+        assert 'require("../lib/backend-proxy")' in source
+        assert "backendPath" in source
 
 
 def test_vercel_project_binding_is_not_tracked() -> None:
