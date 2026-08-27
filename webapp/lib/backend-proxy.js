@@ -69,8 +69,15 @@ async function proxyBackendRequest(req, res, { backendPath, stripQueryKeys = [] 
             body: await readBody(req),
         });
         res.status(response.status);
+        // Fitment GET responses are user-scoped and revision-sensitive. Do
+        // not allow a Vercel/browser cache to replay an older overview after
+        // a vehicle or RimSpec mutation has completed.
+        res.setHeader("Cache-Control", "no-store, max-age=0");
+        res.setHeader("Vary", "Authorization");
         for (const [name, value] of response.headers) {
-            if (!RESPONSE_HEADERS_TO_SKIP.has(name.toLowerCase())) res.setHeader(name, value);
+            if (!RESPONSE_HEADERS_TO_SKIP.has(name.toLowerCase()) && !["cache-control", "vary"].includes(name.toLowerCase())) {
+                res.setHeader(name, value);
+            }
         }
         res.send(Buffer.from(await response.arrayBuffer()));
     } catch {
