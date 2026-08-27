@@ -21,6 +21,10 @@
       "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
       "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants"
     },
+    {
+      "source": "/api/backend/fitment/checks/:checkId",
+      "destination": "/api/backend/fitment/checks?checkId=:checkId"
+    },
     { "source": "/t", "destination": "/index.html" },
     { "source": "/t/", "destination": "/index.html" }
   ],
