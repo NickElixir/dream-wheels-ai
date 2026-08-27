@@ -37,7 +37,7 @@ def test_live_rim_offset_field_builds_et_reference() -> None:
                             "rim_diameter": 19,
                             "rim_width": 8,
                             "rim_offset": 40,
-                        }
+                        },
                     }
                 ],
             }
