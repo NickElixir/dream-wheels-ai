@@ -34,6 +34,7 @@
 | Multiple modification selection | Exeed/RX 2023 returned 13 variants; Toyota/Camry 2020 returned 5 variants; explicit variant apply returned 200 and `modification_state=confirmed` | PASS |
 | RimSpec source resolver and exact controls | Koleso.ru resolver returned exact `5×120`, `19`, `10J`, `74.1`, `ET45`; manual override path was re-tested after PR #103 | PASS |
 | Async Check lifecycle and Vercel polling | `POST /fitment/checks` returned 200; polling `GET /fitment/checks/{id}` returned 200 through Vercel and reached `completed`; `is_current=true` | PASS |
+| Historical currentness after context change | Changing the persisted RimSpec revision made the prior completed Check return 200 with `is_current=false` while retaining its `incompatible` verdict | PASS |
 | PCD mismatch | Exeed/RX check returned `incompatible`, `reason_code=pcd_mismatch` for both axles | PASS |
 | Larger-bore conditional | Check returned `hub_rings_required` with vehicle hub `65.1` and rim bore `74.1` | PASS — condition observed; final verdict remained gated by missing provider ET |
 | Missing provider ET reference | Exact Exeed/RX size and PCD returned safe `unknown`, `vehicle_reference_offset_missing`, not a compatibility claim | PASS |
@@ -58,7 +59,7 @@ scenario is marked PASS based on local fixtures or the frozen prototype.
 | --- | --- |
 | Save-before-lookup; single/multiple modification | PASS — authenticated Toyota/Camry and Exeed/RX provider cascades and explicit variant apply completed |
 | Exact/larger DIA/PCD mismatch/missing ET/ET outside range | PARTIAL — PCD mismatch, larger-bore condition and safe missing-provider-ET `unknown` completed; exact compatible and ET-range cases await provider references |
-| Worker lifecycle; stale Vehicle/RimSpec; staggered | PARTIAL — queued/processing/completed and currentness completed; stale/staggered branches remain |
+| Worker lifecycle; stale Vehicle/RimSpec; staggered | PARTIAL — queued/processing/completed and stale RimSpec currentness completed; staggered branch remains |
 | Fitment → Rendering → Fitment | BLOCKED — current frontend cannot complete catalogue flow |
 | 401 restoration/no replay | BLOCKED — safe authenticated expiry injection not available in this run |
 | Provider failure boundary | BLOCKED_UNSAFE_TO_INJECT — no safe staging injection configured |
