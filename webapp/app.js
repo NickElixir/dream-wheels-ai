@@ -6647,7 +6647,13 @@ function bindEvents() {
             } else if (input.dataset.fitmentCatalogue === "regions") {
                 state.fitmentForm.vehicle.market = value;
                 state.fitmentForm.vehicle.year = "";
+                state.fitmentCatalogue.makes = { status: "idle", items: [] };
+                state.fitmentCatalogue.models = { status: "idle", items: [] };
                 state.fitmentCatalogue.years = { status: "idle", items: [] };
+                if (value) void loadFitmentCatalogue("makes", { region: value });
+                if (value && state.fitmentForm.vehicle.make) {
+                    void loadFitmentCatalogue("models", { region: value, make: state.fitmentForm.vehicle.make });
+                }
                 if (state.fitmentForm.vehicle.make && state.fitmentForm.vehicle.model) void loadFitmentCatalogue("years", { region: value, make: state.fitmentForm.vehicle.make, model: state.fitmentForm.vehicle.model });
             } else {
                 setDeepValue(state.fitmentForm, path, value);
