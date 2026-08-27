@@ -73,3 +73,22 @@ that require provider data or fault injection remain explicitly bounded.
 The Vercel function-limit blocker is resolved and the live catalogue route is
 healthy. Continue the mandatory matrix from the existing authenticated
 context. Production Render was not modified.
+
+## Wheel-Size reference gate — Lexus / BMW / Kia
+
+The live provider payloads use `rim_offset` (not `offset` or `et`). The
+pre-fix staging backend therefore exposed no ET interval even when the raw
+provider record contained one. The raw records and mapped state are captured
+here so the gate is auditable:
+
+| Candidate | Provider context | Raw provider-derived reference | Backend mapping observed before fix | Mapping after `950026e` parser fix |
+| --- | --- | --- | --- | --- |
+| Lexus RX350, AL30, Russia+, 2023 | `lexus/rx/russia`, modification `01e91c5fa7`; technical `5×114.3`, DIA `60.1` | stock front `8Jx19 ET40` (`rim_diameter=19`, `rim_width=8`, `rim_offset=40`); rear empty | `offset_references=[]`; live Check returned `vehicle_reference_offset_missing` | front `19×8J → et_min_mm=40, et_max_mm=40`, `source_offsets_mm=[40]` |
+| BMW 5 Series F10/F11 LCI, 520d, Europe, 2014 | `bmw/5-series/eudm`, generation `115f895031`, modification `0672911fa5`; technical `5×120`, DIA `72.6` | stock front `8Jx17 ET30`; additional records repeat `8Jx17 ET30` and list non-OE `18–20` sizes | `offset_references=[]` (same `rim_offset` shape) | front `17×8J → et_min_mm=30, et_max_mm=30`, `source_offsets_mm=[30]` |
+| Kia Seltos 2.0 MPi, Russia+, 2020 | `kia/seltos/russia`, generation `10c72a9d42`, modification `c17536e6ff`; technical `5×114.3`, DIA `67.1` | stock front `7Jx17 ET50`; non-OE `6.5Jx16 ET44`, `7.5Jx18 ET52` | `offset_references=[]` (same `rim_offset` shape) | front `17×7J → et_min_mm=50, et_max_mm=50`, `source_offsets_mm=[50]` |
+
+The parser fix is merged to `staging` and deployed on Render staging. The
+authenticated Vercel alias used by this run still points at the production
+Render target; switching that project to staging requires a new Vercel build,
+which is currently blocked by the account's daily deployment limit. Therefore
+Lexus A/B/C verdicts are not claimed as post-fix live evidence yet.
