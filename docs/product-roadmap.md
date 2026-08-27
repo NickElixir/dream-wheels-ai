@@ -24,6 +24,7 @@ Rendering answers how wheels look. Fitment answers preliminary technical possibi
 ## Canonical documents
 
 - `docs/ui-design-code.md` — approved UI rules through Sprint 3
+- `docs/ui/ui-development-process.md` — frozen mandatory UI delivery process
 - `docs/sprint-3-ui.md` — approved Sprint 3 layout and interaction reference
 - `docs/adr/0003-render-feedback-data-boundary.md` — feedback persistence and ML boundary
 - `docs/render-feedback-api-contract-v1.md` — Sprint 3 API/data contract
