@@ -96,7 +96,7 @@
 
 `NEXT = Deploy Slice 7 to authenticated staging and run the mandatory E2E matrix`
 
-`BLOCKER = staging frontend is deployment-protected and does not contain this worktree; backend/worker/migrations are not verified`
+`BLOCKER = staging Vercel frontend returns 404 for nested Fitment catalogue routes; PR #97 adds explicit proxies but its Vercel deployment fails at Deploying outputs, so the alias cannot yet be re-tested`
 
 The deterministic implementation and its automated verification were recorded in the prior implementation handoff. The beta gate remains **NO** until an authenticated staging end-to-end run succeeds against the configured Wheel Size API. Slices 2–6 add runtime/API and presentation behaviour but do not alter the frozen domain or UI contract, and the gate remains unchanged.
 

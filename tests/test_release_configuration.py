@@ -51,5 +51,23 @@ def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy
     assert not list((ROOT / "webapp" / "api" / "backend" / "jobs" / "[jobId]").glob("**/*.js"))
 
 
+def test_nested_fitment_catalogue_and_variant_routes_share_fitment_proxy() -> None:
+    rewrites = VERCEL_JSON["rewrites"]
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
+        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind",
+    } in rewrites
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
+        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
+    } in rewrites
+    assert {
+        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
+        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply",
+    } in rewrites
+    assert "Unsupported Fitment route" in FITMENT_PROXY_JS
+    assert "catalogue/regions" in FITMENT_PROXY_JS
+
+
 def test_vercel_project_binding_is_not_tracked() -> None:
     assert not (ROOT / ".vercel" / "project.json").exists()

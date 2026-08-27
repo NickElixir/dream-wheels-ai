@@ -7,57 +7,54 @@
 | Date | 2026-08-27 |
 | Environment | Staging only |
 | Frontend staging project | `dream-wheels-ai-webapp-staging` |
-| Frontend deployment eligible for this run | Not deployed from the Slice 7 worktree; the latest discovered staging production deployment is protected |
-| Backend deployment/version | Not verified |
-| Worker deployment/version | Not verified |
-| Authenticated method | Not executed — no approved staging Telegram session was available in this task |
-| Migrations | Not verified on staging |
-| Redis / Wheel Size configuration | Not inspected; no secrets requested or recorded |
+| Backend deployment/version | `1889885` (PR #96), live |
+| Worker/health | `/health` 200; `/health/full` 200 (`db=alive`, `redis=alive`) |
+| Authenticated method | Live Telegram session, `@nick_elixir` |
+| Current frontend alias | `20260827-fitment-slice-7` (before PR #97) |
+| Current frontend deployment | Does not contain PR #97 routing fix |
 
-The staging project was discoverable. Its latest listed production deployment
-was `dream-wheels-ai-webapp-staging-34xg0qf63.vercel.app` (created before this
-worktree), and browser access was stopped by Vercel Deployment Protection. It
-is therefore not evidence for this implementation. No production deployment,
-migration, credential change or provider outage was attempted.
-
-## Local implementation evidence
-
-| Check | Result |
-| --- | --- |
-| Slice 7 semantic-draft/static tests | Passed |
-| Fitment API cross-flow regression | Passed |
-| JavaScript syntax check | Passed |
-| Full regression / formatting / lint | Pending final run after browser QA |
-
-## Required staging scenario matrix
+## Evidence collected in this pass
 
 | Scenario | Expected | Observed | Status |
 | --- | --- | --- | --- |
-| Deployment and migrations through `0027` | Identifiers and applied migrations recorded | No eligible deployment | NOT_EXECUTED |
-| Redis worker lifecycle | `queued → processing → terminal` through worker | No eligible deployment | NOT_EXECUTED |
-| Live Wheel Size catalogue / exact modification | Provider-backed cascade and exact mapping | No authenticated session | NOT_EXECUTED |
-| Exact compatible | `completed / compatible / current` | No authenticated session | NOT_EXECUTED |
-| Larger DIA | `compatible_with_conditions` with centering-ring condition | No authenticated session | NOT_EXECUTED |
-| PCD mismatch | `incompatible` with field conflict | No authenticated session | NOT_EXECUTED |
-| Missing ET | valid partial → `unknown` | No authenticated session | NOT_EXECUTED |
-| ET outside reference | `unknown / et_outside_reference_range` | No authenticated session | NOT_EXECUTED |
-| Provider outage | operational `failed`, never `unknown` | No safe staging injection verified | NOT_EXECUTED |
-| Multiple / single modification | explicit multiple; auto-confirm single | No authenticated session | NOT_EXECUTED |
-| Parser success / manual fallback | safe suggestions or manual fallback | No stable authenticated fixture | NOT_EXECUTED |
-| Stale Vehicle / RimSpec | historical `is_current=false` | No authenticated session | NOT_EXECUTED |
-| Staggered axes | front/rear preserved; rear edit stales old check | No authenticated session | NOT_EXECUTED |
-| Fitment → Rendering → Fitment | same semantic state; no implicit action | Browser staging run pending deployment | NOT_EXECUTED |
-| Dream Wheels 401 restoration | compatible draft restored; no replay | Safe expiry mechanism unavailable | NOT_EXECUTED |
-| 401 during check polling | polling stops; no second POST | Safe expiry mechanism unavailable | NOT_EXECUTED |
-| Mobile 390 × 844 | happy-path interaction, no overflow | Browser staging run pending deployment | NOT_EXECUTED |
+| Infrastructure health | staging backend and dependencies available | Render `/health` 200; `/health/full` 200; Postgres and Redis alive | PASS |
+| Auth | authenticated Telegram session | `@nick_elixir` session established in staging UI | PASS |
+| Result → Fitment | authenticated overview loads | Existing Porsche Cayenne result opened; overview request 200 and Fitment UI rendered | PASS |
+| Live catalogue route | catalogue request reaches backend | `GET /api/backend/jobs/{id}/fitment/catalogue/regions` returned Vercel 404 `NOT_FOUND` before Render | BLOCKED |
+| Render/backend separation | Render receives catalogue request | No upstream request possible because Vercel route terminated at edge | BLOCKED |
+| Parser fallback | legacy unsupported URL may return safe 422/manual fallback | Existing resolver request returned expected 422 | PASS |
+| Browser console | no critical errors | No critical browser console errors observed | PASS |
+
+## Corrective action
+
+PR #97 (`fix(webapp): proxy nested Fitment routes`) adds explicit Vercel
+proxies for catalogue and vehicle-variant routes and regression coverage. The
+GitHub CI `lint-and-test` check passes. Vercel staging deployments for the PR
+currently fail after `Build Completed` at `Deploying outputs… status Error`, so
+the staging alias has not advanced and the fix cannot yet be re-tested live.
+
+## Mandatory matrix status
+
+The technical Standard Fitment matrix is not executed from a valid live
+catalogue context until the frontend proxy deploy is available. No scenario is
+marked PASS based on local fixtures or the frozen prototype.
+
+| Scenario | Status |
+| --- | --- |
+| Save-before-lookup; single/multiple modification | BLOCKED — catalogue proxy 404 |
+| Exact/larger DIA/PCD mismatch/missing ET/ET outside range | BLOCKED — no confirmed live modification/RimSpec context |
+| Worker lifecycle; stale Vehicle/RimSpec; staggered | BLOCKED — no valid live check can be created |
+| Fitment → Rendering → Fitment | BLOCKED — current frontend cannot complete catalogue flow |
+| 401 restoration/no replay | BLOCKED — safe authenticated expiry injection not available in this run |
+| Provider failure boundary | BLOCKED_UNSAFE_TO_INJECT — no safe staging injection configured |
+| Mobile full happy path | BLOCKED — catalogue flow stops before technical check |
 
 ## Release decision
 
 `FITMENT_BETA_READY = NO`
 
-Blocker: the Slice 7 worktree has not been deployed; the discovered staging
-frontend is Vercel-protected in the browser; backend/worker deployment,
-migrations, Redis verification, live Wheel Size evidence and controlled
-session-restoration evidence are not yet available. This document must be updated only from a deployed staging run with
-sanitized observations; it must never include Telegram `initData`, cookies,
-access tokens, Wheel Size credentials or raw provider payloads.
+Blocker: Vercel staging deployment of PR #97 fails at the platform deploy
+step, leaving the authenticated staging alias without the explicit nested
+Fitment proxy routes. Re-test the catalogue request after a successful
+frontend deployment, then continue the mandatory matrix from the existing
+authenticated context. Production Render was not modified.

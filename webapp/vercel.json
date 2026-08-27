@@ -9,6 +9,18 @@
       "source": "/api/backend/jobs/:jobId/fitment",
       "destination": "/api/fitment-proxy?jobId=:jobId"
     },
+    {
+      "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind"
+    },
+    {
+      "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply"
+    },
+    {
+      "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants"
+    },
     { "source": "/t", "destination": "/index.html" },
     { "source": "/t/", "destination": "/index.html" }
   ],
