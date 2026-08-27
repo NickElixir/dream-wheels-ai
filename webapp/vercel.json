@@ -11,15 +11,15 @@
     },
     {
       "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
-      "destination": "/api/fitment-catalogue-proxy?jobId=:jobId&kind=:kind"
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind"
     },
     {
       "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
-      "destination": "/api/fitment-vehicle-variants-apply-proxy?jobId=:jobId"
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply"
     },
     {
       "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
-      "destination": "/api/fitment-vehicle-variants-proxy?jobId=:jobId"
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants"
     },
     { "source": "/t", "destination": "/index.html" },
     { "source": "/t/", "destination": "/index.html" }

@@ -495,15 +495,15 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
         },
         {
             "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
-            "destination": "/api/fitment-catalogue-proxy?jobId=:jobId&kind=:kind",
+            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind",
         },
         {
             "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
-            "destination": "/api/fitment-vehicle-variants-apply-proxy?jobId=:jobId",
+            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply",
         },
         {
             "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
-            "destination": "/api/fitment-vehicle-variants-proxy?jobId=:jobId",
+            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
         },
     ]
     assert {"source": "/t", "destination": "/index.html"} in rewrites
