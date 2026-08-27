@@ -13,9 +13,9 @@ RIM_SOURCE_RESOLVE_PROXY_JS = (ROOT / "webapp" / "api" / "rim-source-resolve-pro
 FITMENT_CATALOGUE_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-catalogue-proxy.js").read_text(
     encoding="utf-8"
 )
-FITMENT_VARIANTS_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-vehicle-variants-proxy.js").read_text(
-    encoding="utf-8"
-)
+FITMENT_VARIANTS_PROXY_JS = (
+    ROOT / "webapp" / "api" / "fitment-vehicle-variants-proxy.js"
+).read_text(encoding="utf-8")
 FITMENT_VARIANTS_APPLY_PROXY_JS = (
     ROOT / "webapp" / "api" / "fitment-vehicle-variants-apply-proxy.js"
 ).read_text(encoding="utf-8")
