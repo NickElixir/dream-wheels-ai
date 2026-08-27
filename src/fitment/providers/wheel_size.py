@@ -584,6 +584,11 @@ class WheelSizeProvider:
                     offset_raw = axle_data.get("offset")
                     if offset_raw is None:
                         offset_raw = axle_data.get("et")
+                    if offset_raw is None:
+                        # Wheel-Size v2 uses ``rim_offset`` in the live
+                        # /search/by_model payload (while older fixtures and
+                        # some provider responses use ``offset``/``et``).
+                        offset_raw = axle_data.get("rim_offset")
                     offset = _to_float(offset_raw)
                     is_stock = axle_data.get("is_stock")
                     record = AxleFitment(
