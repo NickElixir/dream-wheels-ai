@@ -40,7 +40,7 @@
 
 `SLICE_6_FROZEN_FRONTEND = COMPLETE`
 
-`SLICE_7_CROSS_FLOW_STAGING_E2E = BLOCKED`
+`SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS`
 
 `IMPLEMENTATION = IN_PROGRESS`
 
@@ -94,9 +94,9 @@
 
 `RENDER_FITMENT_DECOUPLING = IMPLEMENTED`
 
-`NEXT = Deploy Slice 7 to authenticated staging and run the mandatory E2E matrix`
+`NEXT = Continue mandatory authenticated E2E matrix: exact compatible, ET-range, outage and cross-flow restoration`
 
-`BLOCKER = mandatory authenticated Standard Fitment matrix remains incomplete; nested Vercel catalogue/variant routing is fixed and live`
+`BLOCKER = exact compatible verdict and provider-outage injection remain unproven; nested Vercel catalogue/variant routing is fixed and live`
 
 The deterministic implementation and its automated verification were recorded in the prior implementation handoff. The beta gate remains **NO** until an authenticated staging end-to-end run succeeds against the configured Wheel Size API. Slices 2–6 add runtime/API and presentation behaviour but do not alter the frozen domain or UI contract, and the gate remains unchanged.
 
@@ -191,6 +191,15 @@ Remaining implementation gap is the **authenticated staging E2E gate**. The
 runtime now has bounded revision-safe cross-flow restoration, request teardown
 and Fitment/Rendering independence; it still needs evidence against the real
 deployed backend, worker, Redis and Wheel Size configuration.
+
+Authenticated staging continuation is now in progress. Live Russia+ catalogue
+cascade, Vehicle save-before-lookup, multiple modification selection, RimSpec
+source/manual confirmation, asynchronous Check polling, PCD mismatch,
+larger-bore condition, missing-ET `unknown`, and stale `is_current=false`
+behaviour are recorded in [fitment-staging-e2e-v1.md](../evidence/fitment-staging-e2e-v1.md).
+The exact compatible branch remains open because the tested Wheel Size variants
+did not provide a reference ET interval; outage fault injection is also not
+configured in staging.
 
 ### Slice 1 — Standard engine correction
 
