@@ -17,6 +17,9 @@ MIGRATION_0020 = (ROOT / "migrations" / "0020_fitment_change_events.sql").read_t
 MIGRATION_0023 = (ROOT / "migrations" / "0023_enable_credit_accounts_rls.sql").read_text(
     encoding="utf-8"
 )
+MIGRATION_0026 = (ROOT / "migrations" / "0026_fitment_rim_setup_schema_compat.sql").read_text(
+    encoding="utf-8"
+)
 SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
     encoding="utf-8"
 )
@@ -360,6 +363,13 @@ def test_fitment_change_events_migration_is_append_only() -> None:
 def test_credit_accounts_migration_restores_backend_only_rls() -> None:
     assert "ALTER TABLE IF EXISTS user_credit_accounts ENABLE ROW LEVEL SECURITY;" in MIGRATION_0023
     assert "CREATE POLICY" not in MIGRATION_0023
+
+
+def test_fitment_rim_setup_schema_migration_matches_slice_7_queries() -> None:
+    assert "ADD COLUMN IF NOT EXISTS source_fingerprint TEXT" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS selected_variant_sku TEXT" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS source_revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0026
 
 
 def test_sprint_2_reference_prototype_is_committed() -> None:
