@@ -38,6 +38,7 @@
 | PCD mismatch | Exeed/RX check returned `incompatible`, `reason_code=pcd_mismatch` for both axles | PASS |
 | Larger-bore conditional | Check returned `hub_rings_required` with vehicle hub `65.1` and rim bore `74.1` | PASS — condition observed; final verdict remained gated by missing provider ET |
 | Missing provider ET reference | Exact Exeed/RX size and PCD returned safe `unknown`, `vehicle_reference_offset_missing`, not a compatibility claim | PASS |
+| Missing RimSpec ET | Persisted partial Toyota/Camry RimSpec was accepted; Check completed `unknown` with `reason_code=rim_offset_missing` and `missing_fields=["offset_et"]` | PASS |
 | Exact compatible verdict | Exeed/RX and Toyota/Camry references returned no provider ET interval, so the engine conservatively stopped at `unknown` | BLOCKED — real Wheel Size staging data has no reference offset for tested variants |
 | Wheel Size outage operational failure | No safe staging fault injection is configured | BLOCKED_UNSAFE_TO_INJECT |
 
@@ -58,7 +59,7 @@ scenario is marked PASS based on local fixtures or the frozen prototype.
 | Scenario | Status |
 | --- | --- |
 | Save-before-lookup; single/multiple modification | PASS — authenticated Toyota/Camry and Exeed/RX provider cascades and explicit variant apply completed |
-| Exact/larger DIA/PCD mismatch/missing ET/ET outside range | PARTIAL — PCD mismatch, larger-bore condition and safe missing-provider-ET `unknown` completed; exact compatible and ET-range cases await provider references |
+| Exact/larger DIA/PCD mismatch/missing ET/ET outside range | PARTIAL — PCD mismatch, larger-bore condition and both missing-ET unknown boundaries completed; exact compatible and ET-range cases await provider references |
 | Worker lifecycle; stale Vehicle/RimSpec; staggered | PARTIAL — queued/processing/completed and stale RimSpec currentness completed; staggered branch remains |
 | Fitment → Rendering → Fitment | BLOCKED — current frontend cannot complete catalogue flow |
 | 401 restoration/no replay | BLOCKED — safe authenticated expiry injection not available in this run |
