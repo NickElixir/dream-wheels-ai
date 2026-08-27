@@ -10,8 +10,8 @@
 | Backend deployment/version | `0868618` (PR #101), live |
 | Worker/health | `/health` 200; `/health/full` 200 (`db=alive`, `redis=alive`) |
 | Authenticated method | Live Telegram session, `@nick_elixir` |
-| Current frontend alias | staging production deployment from merged PR #103 |
-| Current frontend deployment | `https://dream-wheels-ai-webapp-staging-9as7xobgg.vercel.app` (Ready Production) |
+| Current frontend alias | staging production deployment from merged PR #106 |
+| Current frontend deployment | `https://dream-wheels-ai-webapp-staging-3r9lj1tv5.vercel.app` (Ready Production) |
 
 ## Evidence collected in this pass
 
@@ -52,16 +52,16 @@ the live catalogue request was re-tested successfully.
 
 ## Mandatory matrix status
 
-The proxy deployment blocker is closed. The remaining technical Standard
-Fitment matrix still requires execution from the live catalogue context; no
-scenario is marked PASS based on local fixtures or the frozen prototype.
+The proxy deployment blocker is closed. The authenticated matrix below is
+based on live catalogue, persistence, worker and Check responses; scenarios
+that require provider data or fault injection remain explicitly bounded.
 
 | Scenario | Status |
 | --- | --- |
 | Save-before-lookup; single/multiple modification | PASS — authenticated Toyota/Camry and Exeed/RX provider cascades and explicit variant apply completed |
 | Exact/larger DIA/PCD mismatch/missing ET/ET outside range | PARTIAL — PCD mismatch, larger-bore condition and both missing-ET unknown boundaries completed; exact compatible and ET-range cases await provider references |
 | Worker lifecycle; stale Vehicle/RimSpec; staggered | PARTIAL — queued/processing/completed and stale RimSpec currentness completed; staggered branch remains |
-| Fitment → Rendering → Fitment | BLOCKED — current frontend cannot complete catalogue flow |
+| Fitment → Rendering → Fitment | NOT_EXECUTED — existing render result was used as the entry point; a fresh round-trip render was not created during this pass |
 | 401 restoration/no replay | BLOCKED — safe authenticated expiry injection not available in this run |
 | Provider failure boundary | BLOCKED_UNSAFE_TO_INJECT — no safe staging injection configured |
 | Mobile full happy path | NOT_EXECUTED — desktop authenticated matrix continued; 390px pass remains separate visual gate |
