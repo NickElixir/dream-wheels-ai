@@ -505,6 +505,10 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
             "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
             "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
         },
+        {
+            "source": "/api/backend/fitment/checks/:checkId",
+            "destination": "/api/backend/fitment/checks?checkId=:checkId",
+        },
     ]
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites

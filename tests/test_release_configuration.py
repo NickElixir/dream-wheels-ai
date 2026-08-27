@@ -62,6 +62,10 @@ def test_nested_fitment_catalogue_and_variant_routes_share_fitment_proxy() -> No
         "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
     } in rewrites
     assert {
+        "source": "/api/backend/fitment/checks/:checkId",
+        "destination": "/api/backend/fitment/checks?checkId=:checkId",
+    } in rewrites
+    assert {
         "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
         "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply",
     } in rewrites
