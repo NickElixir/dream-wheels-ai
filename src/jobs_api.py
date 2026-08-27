@@ -3453,7 +3453,11 @@ async def save_fitment_details(
             vehicle_confirmed = (
                 _confirmation_payload(
                     row,
-                    {field_name: vehicle_values[field_name] for field_name in vehicle_updates},
+                    {
+                        field_name: vehicle_values[field_name]
+                        for field_name in vehicle_updates
+                        if field_name in core_vehicle_fields
+                    },
                     vehicle_row_keys,
                     row["vehicle_field_provenance"],
                 )
@@ -3490,7 +3494,11 @@ async def save_fitment_details(
                 vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
                 vehicle_confirmed = _confirmation_payload(
                     row,
-                    {field_name: vehicle_values[field_name] for field_name in vehicle_updates},
+                    {
+                        field_name: vehicle_values[field_name]
+                        for field_name in vehicle_updates
+                        if field_name in core_vehicle_fields
+                    },
                     vehicle_row_keys,
                     row["vehicle_field_provenance"],
                 )
