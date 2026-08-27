@@ -31,6 +31,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0024_credit_packages_fifo.sql` — durable credit packages и FIFO-распределение списаний
 - `0025_product_analytics.sql` — first-party продуктовая аналитика visitor/event
 - `0026_fitment_rim_setup_schema_compat.sql` — source state в `rim_specs` и revision в `rim_setups` для Slice 7 lifecycle
+- `0028_fitment_change_event_allowlist.sql` — allow-list для modification lifecycle events Slice 7
 
 ## Стратегия применения
 
@@ -58,6 +59,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед выкладкой Sprint 4 full editor применить `0019_fitment_identity_candidates.sql`: API читает `field_candidates` и `revision` из `vehicle_identities` / `rim_specs`.
 - Перед выкладкой fitment history и confirm-without-change flow применить `0020_fitment_change_events.sql`: API пишет `initial_prefill`, `user_save` и `user_confirm` события в append-only audit table.
 - Перед выкладкой Slice 7 lifecycle применить `0026_fitment_rim_setup_schema_compat.sql`: API читает и обновляет `rim_specs.source_*` / `selected_variant_sku` и `rim_setups.revision`.
+- Перед выкладкой vehicle-variant lookup применить `0028_fitment_change_event_allowlist.sql`: API пишет `modification_suggested` и связанные revision-bound события в append-only history.
 - `0023` не создаёт публичных RLS-политик: `user_credit_accounts` доступна только серверному database/service-role пути, а не Mini App через PostgREST.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
