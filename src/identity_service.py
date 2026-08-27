@@ -13,7 +13,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import asyncpg
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from src.identity.schemas import VehicleIdentityResolution
 
@@ -188,6 +188,11 @@ class FitmentRimUpdate(BaseModel):
     wheel_diameter_in: float | None = Field(default=None, gt=0)
     wheel_width_j: float | None = Field(default=None, gt=0)
     offset_et_mm: float | None = None
+    # Resolver payload is always a suggestion. The explicit save endpoint keeps
+    # the values durable, but does not turn them into user-confirmed evidence.
+    source_fingerprint: str | None = Field(default=None, min_length=8, max_length=128)
+    selected_variant_sku: str | None = None
+    variant_state: Literal["not_applicable", "none", "selection_required", "selected"] | None = None
 
     @field_validator("brand", "model", "sku", mode="before")
     @classmethod
@@ -232,19 +237,26 @@ class FitmentDetailsUpdateRequest(BaseModel):
     expected_rim_revision: int = Field(ge=1)
     vehicle: FitmentVehicleUpdate = Field(default_factory=FitmentVehicleUpdate)
     rim: FitmentRimUpdate = Field(default_factory=FitmentRimUpdate)
+    # ``rim`` remains the backwards-compatible uniform payload. New callers
+    # use the axle-aware fields; the API never creates two specs for uniform.
+    setup_mode: Literal["uniform", "staggered"] | None = None
+    front_rim: FitmentRimUpdate | None = None
+    rear_rim: FitmentRimUpdate | None = None
 
-    @field_validator("rim")
-    @classmethod
-    def require_any_payload(
-        cls,
-        value: FitmentRimUpdate,
-        info: ValidationInfo,
-    ) -> FitmentRimUpdate:
-        vehicle = info.data.get("vehicle")
-        vehicle_fields = vehicle.model_fields_set if vehicle else set()
-        if not vehicle_fields and not value.model_fields_set:
+    @model_validator(mode="after")
+    def require_any_payload(self) -> FitmentDetailsUpdateRequest:
+        vehicle_fields = self.vehicle.model_fields_set
+        front_rim = self.front_rim
+        rear_rim = self.rear_rim
+        if (
+            not vehicle_fields
+            and not self.rim.model_fields_set
+            and not (front_rim and front_rim.model_fields_set)
+            and not (rear_rim and rear_rim.model_fields_set)
+            and self.setup_mode is None
+        ):
             raise ValueError("at least one fitment field must be provided")
-        return value
+        return self
 
 
 def _field_meta(source: IdentitySource, confidence: float, *, confirmed: bool) -> dict:

@@ -61,6 +61,20 @@ def _row() -> dict:
                 "region": "russia",
                 "generation_slug": "al20",
                 "modification_slug": "rx350",
+                "modification_state": "confirmed",
+                "selection_source": "user",
+                "modification_vehicle_revision": 4,
+                "selected_modification": {
+                    "make_slug": "lexus",
+                    "model_slug": "rx",
+                    "region": "russia",
+                    "generation": "AL20",
+                    "modification": "RX350",
+                    "body": "",
+                    "market": "russia",
+                    "generation_slug": "al20",
+                    "modification_slug": "rx350",
+                },
             }
         },
         "vehicle_revision": 4,
@@ -238,6 +252,41 @@ def test_create_check_requires_confirmed_provider_variant(monkeypatch):
     assert not conn.inserted
 
 
+def test_create_check_rejects_unbound_or_suggested_modification_mapping(monkeypatch):
+    for state in ("suggested", "none"):
+        row = _row()
+        row["provider_mappings"]["wheel_size"].update(
+            {
+                "modification_state": state,
+                "selection_source": None,
+                "modification_vehicle_revision": 4,
+            }
+        )
+        conn = FakeConn()
+        _patch_auth_and_inputs(monkeypatch, conn, loaded_row=row)
+
+        response = _post(f"{state}-mapping")
+
+        assert response.status_code == 409
+        assert not conn.inserted
+
+    legacy_row = _row()
+    for key in (
+        "modification_state",
+        "selection_source",
+        "modification_vehicle_revision",
+        "selected_modification",
+    ):
+        legacy_row["provider_mappings"]["wheel_size"].pop(key, None)
+    legacy_conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, legacy_conn, loaded_row=legacy_row)
+
+    legacy_response = _post("legacy-mapping")
+
+    assert legacy_response.status_code == 409
+    assert not legacy_conn.inserted
+
+
 def test_create_check_reuses_idempotency_key(monkeypatch):
     existing = _check_record()
     conn = FakeConn(existing=existing)
@@ -261,6 +310,7 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert body["execution_status"] == "completed"
     assert body["verdict"] == "compatible"
     assert body["mode"] == "standard"
+    assert body["versions"] == {"provider": "wheel_size", "engine": "v2", "rules": "v2"}
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"] == snapshot["rim_setup"]["rear"]
     evaluation = json.loads(conn.inserted[0][15])
@@ -268,6 +318,21 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert evaluation["vehicle_identity_revision"] == 4
     assert evaluation["rim_setup_revision"] == 3
     assert evaluation["provider_mapping_revision"] == 2
+
+
+def test_create_check_returns_unknown_for_et_outside_reference(monkeypatch):
+    row = _row()
+    row["offset_et_mm"] = 50
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=row)
+
+    response = _post()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["execution_status"] == "completed"
+    assert body["verdict"] == "unknown"
+    assert [issue["code"] for issue in body["blocking_issues"]] == ["et_outside_reference_range"]
 
 
 def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
@@ -405,4 +470,6 @@ def test_create_check_records_provider_failure(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["execution_status"] == "failed"
+    assert response.json()["verdict"] is None
     assert response.json()["error"]["code"] == "provider_unavailable"
+    assert conn.inserted[0][12:14] == ("v2", "v2")

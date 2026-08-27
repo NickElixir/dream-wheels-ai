@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260805-dashboard-button-wrapping">
+<html lang="ru" data-app-build="20260827-fitment-slice-7">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260805-dashboard-button-wrapping">
+    <link rel="stylesheet" href="/style.css?v=20260827-fitment-slice-7">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -614,7 +614,9 @@
                             <button type="button" class="primary-button compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
-                        <p class="panel-note warning" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
+                        <p class="panel-note warning" data-fitment-currentness hidden></p>
+                        <p class="panel-note info" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
+                        <div class="fitment-verdict-fields" data-fitment-verdict-fields hidden></div>
                         <div class="fitment-verdict-groups" data-fitment-verdict-groups hidden>
                             <section class="fitment-verdict-group" data-fitment-verdict-blocking hidden>
                                 <strong>Нужно уточнить</strong>
@@ -690,19 +692,26 @@
                             <div class="fitment-form-head">
                                 <p class="section-label" data-i18n="fitment.vehicleSection">Автомобиль</p>
                                 <h2 data-i18n="fitment.vehicleSectionTitle">Уточнить известные данные</h2>
+                                <p class="fitment-state-line" data-fitment-vehicle-state aria-live="polite"></p>
                             </div>
                             <div class="fitment-form-grid">
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.make">Марка</span>
-                                    <input type="text" data-fitment-input="vehicle.make" autocomplete="off">
+                                    <select data-fitment-input="vehicle.make" data-fitment-catalogue="makes" disabled>
+                                        <option value="">Выберите марку</option>
+                                    </select>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.model">Модель</span>
-                                    <input type="text" data-fitment-input="vehicle.model" autocomplete="off">
+                                    <select data-fitment-input="vehicle.model" data-fitment-catalogue="models" disabled>
+                                        <option value="">Выберите модель</option>
+                                    </select>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.year">Год</span>
-                                    <input type="number" inputmode="numeric" data-fitment-input="vehicle.year">
+                                    <select data-fitment-input="vehicle.year" data-fitment-catalogue="years" disabled>
+                                        <option value="">Выберите год</option>
+                                    </select>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.body">Кузов</span>
@@ -718,10 +727,13 @@
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.market">Рынок</span>
-                                    <input type="text" data-fitment-input="vehicle.market" autocomplete="off">
+                                    <select data-fitment-input="vehicle.market" data-fitment-catalogue="regions">
+                                        <option value="russia">Россия+</option>
+                                    </select>
                                 </label>
                             </div>
                             <div class="fitment-variant-picker">
+                                <p class="fitment-state-line" data-fitment-modification-state aria-live="polite"></p>
                                 <button type="button" class="ghost-button compact-button" data-fitment-variants-load data-i18n="fitment.findVariants">Подобрать версию автомобиля</button>
                                 <div class="fitment-variant-list" data-fitment-variant-list hidden></div>
                             </div>
@@ -731,7 +743,9 @@
                             <div class="fitment-form-head">
                                 <p class="section-label">Колесный диск</p>
                                 <h2 data-i18n="fitment.rimSectionTitle">Уточнить параметры</h2>
+                                <p class="fitment-state-line" data-fitment-rim-state aria-live="polite"></p>
                             </div>
+                            <p class="fitment-axis-summary" data-fitment-rim-axes hidden></p>
                             <div class="fitment-source-progress" data-fitment-source-progress hidden aria-live="polite">
                                 <div class="fitment-source-progress-head">
                                     <span class="fitment-source-spinner" data-fitment-source-spinner hidden aria-hidden="true"></span>
@@ -748,6 +762,14 @@
                             </div>
                             <p class="panel-note warning" data-fitment-parser-warning hidden data-i18n="warnings.parser">Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.</p>
                             <div class="fitment-rim-variant-picker" data-fitment-rim-variant-picker hidden aria-live="polite"></div>
+                            <div class="fitment-parser-conflicts" data-fitment-parser-conflicts hidden aria-live="polite"></div>
+                            <label class="fitment-field fitment-setup-mode">
+                                <span>Комплект дисков</span>
+                                <select data-fitment-setup-mode aria-label="Комплект дисков">
+                                    <option value="uniform">Одинаковые параметры спереди и сзади</option>
+                                    <option value="staggered">Разные параметры по осям</option>
+                                </select>
+                            </label>
                             <div class="fitment-form-grid">
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.rimBrand">Бренд</span>
@@ -769,39 +791,67 @@
                                     <span>Разболтовка (PCD)</span>
                                     <select data-fitment-pcd-select aria-label="Разболтовка (PCD)">
                                         <option value="">Выберите PCD</option>
-                                        <option value="98">98</option>
-                                        <option value="100">100</option>
-                                        <option value="108">108</option>
-                                        <option value="114.3">114,3</option>
-                                        <option value="110">110</option>
-                                        <option value="112">112</option>
-                                        <option value="115">115</option>
-                                        <option value="120">120</option>
-                                        <option value="127">127</option>
-                                        <option value="130">130</option>
-                                        <option value="135">135</option>
-                                        <option value="139.7">139,7</option>
+                                        <option value="4x98">4×98</option>
+                                        <option value="4x100">4×100</option>
+                                        <option value="4x108">4×108</option>
+                                        <option value="5x98">5×98</option>
+                                        <option value="5x100">5×100</option>
+                                        <option value="5x108">5×108</option>
+                                        <option value="5x110">5×110</option>
+                                        <option value="5x112">5×112</option>
+                                        <option value="5x114.3">5×114,3</option>
+                                        <option value="5x115">5×115</option>
+                                        <option value="5x120">5×120</option>
+                                        <option value="5x127">5×127</option>
+                                        <option value="5x130">5×130</option>
+                                        <option value="5x135">5×135</option>
+                                        <option value="5x139.7">5×139,7</option>
+                                        <option value="6x114.3">6×114,3</option>
+                                        <option value="6x130">6×130</option>
                                         <option value="custom">Другое значение</option>
                                     </select>
                                     <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.pcd_mm" data-fitment-pcd-custom hidden placeholder="Диаметр PCD, мм">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.diameter">Диаметр</span>
-                                    <input type="number" inputmode="numeric" step="1" min="1" data-fitment-input="rim.wheel_diameter_in">
+                                    <select data-fitment-preset="rim.wheel_diameter_in" data-fitment-input="rim.wheel_diameter_in">
+                                        <option value="">Выберите диаметр</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_diameter_in" hidden placeholder="Диаметр, дюймы">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.widthShort">Ширина</span>
-                                    <input type="number" inputmode="decimal" step="0.5" min="1" data-fitment-input="rim.wheel_width_j">
+                                    <select data-fitment-preset="rim.wheel_width_j" data-fitment-input="rim.wheel_width_j">
+                                        <option value="">Выберите ширину</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_width_j" hidden placeholder="Ширина, J">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
-                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.center_bore_mm">
+                                    <input type="search" inputmode="decimal" list="fitment-dia-options" data-fitment-input="rim.center_bore_mm" autocomplete="off" placeholder="Введите DIA">
+                                    <datalist id="fitment-dia-options"></datalist>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.offset">Вылет (ET), мм</span>
-                                    <input type="number" inputmode="numeric" step="1" data-fitment-input="rim.offset_et_mm">
+                                    <input type="text" inputmode="decimal" data-fitment-input="rim.offset_et_mm" placeholder="Например, 40">
                                 </label>
                             </div>
+                            <section class="fitment-rear-rim" data-fitment-rear-rim hidden aria-labelledby="fitment-rear-rim-title">
+                                <div class="fitment-form-head">
+                                    <p class="section-label">Задняя ось</p>
+                                    <h3 id="fitment-rear-rim-title">Параметры задних дисков</h3>
+                                </div>
+                                <div class="fitment-form-grid">
+                                    <label class="fitment-field"><span>Крепёжных отверстий</span><input type="number" inputmode="numeric" step="1" min="3" max="8" data-fitment-input="rear_rim.bolt_count"></label>
+                                    <label class="fitment-field"><span>PCD, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.pcd_mm" placeholder="Например, 114,3"></label>
+                                    <label class="fitment-field"><span>Диаметр, дюймы</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_diameter_in"></label>
+                                    <label class="fitment-field"><span>Ширина, J</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_width_j"></label>
+                                    <label class="fitment-field"><span>DIA, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.center_bore_mm"></label>
+                                    <label class="fitment-field"><span>Вылет (ET), мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.offset_et_mm" placeholder="Допустимы десятичные значения"></label>
+                                </div>
+                            </section>
                         </section>
 
                         <div class="wallet-status-island tone-warning" data-fitment-auth-required hidden role="status">
@@ -814,8 +864,16 @@
                             </div>
                         </div>
 
+                        <div class="wallet-status-island tone-warning" data-fitment-restore-conflict hidden role="status">
+                            <div class="wallet-status-copy">
+                                <div class="wallet-status-title" data-fitment-restore-conflict-text>Данные на сервере изменились. Черновик не применён автоматически.</div>
+                                <button type="button" class="ghost-button compact-button" data-fitment-restore-conflict-apply>Открыть сохранённые значения</button>
+                            </div>
+                        </div>
+
                         <div class="create-flow-actions fitment-actions" data-fitment-actions>
                             <button type="submit" class="primary-button" data-fitment-save>Продолжить</button>
+                            <button type="button" class="ghost-button" data-fitment-create-image>Создать изображение</button>
                             <button type="button" class="link-button" data-fitment-skip>Вернуться без изменений</button>
                         </div>
                     </form>
@@ -984,6 +1042,6 @@
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
 
-    <script src="/app.js?v=20260805-dashboard-button-wrapping" type="module"></script>
+    <script src="/app.js?v=20260827-fitment-slice-7" type="module"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ and let a user confirm values before persisting them as fitment input.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import ipaddress
 import re
 import socket
@@ -69,6 +70,21 @@ class RimUrlResolution:
     variants: tuple[RimUrlVariant, ...] = ()
     selection_required: bool = False
     selected_variant_sku: str | None = None
+    source_fingerprint: str | None = None
+
+
+def normalized_rim_source_identity(url: str) -> str:
+    """A stable source identity, independent of display-only URL fragments."""
+    parsed = urlsplit(url)
+    host = (parsed.hostname or "").lower()
+    port = parsed.port
+    netloc = host if port in (None, 443) else f"{host}:{port}"
+    path = parsed.path or "/"
+    return urlunsplit((parsed.scheme.lower(), netloc, path, parsed.query, ""))
+
+
+def rim_source_fingerprint(url: str) -> str:
+    return hashlib.sha256(normalized_rim_source_identity(url).encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -437,6 +453,7 @@ def _resolve_document(
             variants,
             False,
             selected.sku,
+            rim_source_fingerprint(final_url),
         )
     if len(variants) > 1:
         for field_name in (
@@ -464,7 +481,14 @@ def _resolve_document(
             }
         )
     return RimUrlResolution(
-        requested_url, final_url, values, candidates, conflicts, variants, bool(variants)
+        requested_url=requested_url,
+        final_url=final_url,
+        values=values,
+        candidates=candidates,
+        conflicts=conflicts,
+        variants=variants,
+        selection_required=bool(variants),
+        source_fingerprint=rim_source_fingerprint(final_url),
     )
 
 

@@ -4,6 +4,17 @@
 
 This document defines the first safe rule boundary for a **preliminary** detailed fitment check. It is not a substitute for OEM approval, physical installation, brake-clearance measurement, wheel manufacturer instructions or local legal requirements.
 
+## Standard Fitment V1 scope note
+
+This is the broader evidence model. The canonical
+[Fitment Verdict V1](fitment/fitment-verdict-v1.md) defines the conservative
+subset and product behaviour for Standard Fitment V1. Its critical fields are
+PCD, DIA, diameter, width and ET. Tyre compatibility, load rating,
+brakes/X-factor, and extended fastener or clearance logic remain outside
+Standard Fitment V1.
+
+For Standard V1, ET is evaluated only for the exact axle, diameter and width: inside the provider-derived interval is compatible for that field; outside the interval is `unknown` with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance; a missing rim ET or provider interval is also `unknown`. Standard V1 does not calculate clearance, so an outside ET must not be returned as `compatible_with_conditions`.
+
 ## Separate execution and verdict states
 
 Execution status:
@@ -50,7 +61,7 @@ Hard conflicts require E3 or E4 evidence. `compatible` requires E3/E4 for the cr
 | Bolt pattern / PCD | Bolt count or PCD differs from the vehicle hub | None in v1; adapters or redrilling are out of scope | Vehicle or rim PCD unknown |
 | Center bore / DIA | Wheel bore is smaller than hub bore | Wheel bore larger than hub bore: installation requires a correctly sized centering ring | Hub/bore value unknown |
 | Diameter / width | Provider/OEM profile confirms the wheel/tyre package cannot clear or is unsupported | Package is outside OEM catalogue but provider/rules have sufficient clearance and tyre evidence; requires physical installation check | No tyre/clearance/profile evidence |
-| Offset / ET | Confirmed inner suspension/brake or outer body/steering interference | ET outside the provider reference interval with no confirmed hard conflict: physical inner and outer clearance check is required | ET unknown; vehicle reference ET unavailable |
+| Offset / ET | Confirmed inner suspension/brake or outer body/steering interference | **Broader evidence model only:** ET outside the provider reference interval with no confirmed hard conflict may require a physical inner and outer clearance check | **Standard V1:** ET outside the interval; ET unknown; or vehicle reference interval unavailable |
 | Brake clearance | Confirmed wheel design/caliper conflict | Explicit wheel X-factor/caliper evidence says clearance is acceptable with listed configuration | No wheel-design/X-factor or vehicle brake data |
 | Fasteners | Confirmed incompatible mounting hardware/seat with no supported hardware package | Confirmed alternative hardware package, correct seat, thread engagement and installation instructions | Hardware/seat unknown where it is required |
 | Load rating | Wheel rating below the required axle/wheel load | None in v1 | Required or wheel load rating unavailable |
@@ -69,7 +80,9 @@ A wheel bore smaller than the vehicle hub cannot mount and is `incompatible`. A 
 
 ### ET, width and diameter
 
-Offset, width and tyre package must be evaluated together and per axle. An ET outside the provider reference interval is not a positive fitment guarantee, but it is not automatically a hard conflict either. When there is no confirmed interference, return `compatible_with_conditions` and require a physical check of inner suspension/brake and outer arch/steering clearances before installation. A confirmed interference remains `incompatible`; a missing rim ET or vehicle reference ET remains `unknown`.
+For Standard V1, evaluate ET per exact axle, diameter and width. ET inside the provider-derived interval is compatible for that field. ET outside the interval is `unknown`, with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance. Standard V1 does not calculate clearance, so it must not use `compatible_with_conditions` for that case. A missing rim ET or vehicle reference interval is `unknown`.
+
+In the broader evidence model, offset, width and tyre package may be evaluated together and per axle. If future supported evidence proves a specific clearance configuration, that future rule is separate from Standard V1.
 
 ### Fasteners and spacers
 

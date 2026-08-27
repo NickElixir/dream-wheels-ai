@@ -10,8 +10,6 @@ from __future__ import annotations
 from src.fitment.rules.checks import (
     check_bolt_pattern,
     check_center_bore,
-    check_fasteners,
-    check_load_rating,
     check_size_and_offset,
 )
 from src.fitment.rules.tolerances import ENGINE_VERSION
@@ -19,6 +17,15 @@ from src.fitment.schemas import FitmentProfile, RimSetup, RuleResult
 
 # Правила, unknown в которых блокирует позитивный вердикт (критичные данные).
 CRITICAL_RULES = {"bolt_pattern", "center_bore", "size_offset"}
+
+# Standard V1 is intentionally limited to PCD, DIA, diameter, width and ET.
+# Additional rule implementations remain available for a separately approved
+# Extended ruleset, but must never leak into a Standard result payload.
+STANDARD_RULES = (
+    check_bolt_pattern,
+    check_center_bore,
+    check_size_and_offset,
+)
 
 
 class CompatibilityEngine:
@@ -31,18 +38,12 @@ class CompatibilityEngine:
 
     version = ENGINE_VERSION
 
+    rules = STANDARD_RULES
+
     def evaluate(self, profile: FitmentProfile, setup: RimSetup) -> list[RuleResult]:
         results: list[RuleResult] = []
         for axle, rim in (("front", setup.front), ("rear", setup.rear)):
-            results.extend(
-                (
-                    check_bolt_pattern(profile, rim, axle),
-                    check_center_bore(profile, rim, axle),
-                    check_size_and_offset(profile, rim, axle),
-                    check_fasteners(profile, rim, axle),
-                    check_load_rating(profile, rim, axle),
-                )
-            )
+            results.extend(rule(profile, rim, axle) for rule in self.rules)
         return results
 
 

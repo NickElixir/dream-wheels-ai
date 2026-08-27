@@ -24,7 +24,7 @@ async def run(
     *,
     max_cases: int | None = None,
 ) -> None:
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(await asyncio.to_thread(manifest_path.read_text))
     resolver = get_vehicle_identity_resolver()
     results = []
     errors = 0
@@ -59,7 +59,8 @@ async def run(
             )
     metrics = _metrics(results, errors)
     first_result = next((item.get("result") for item in results if item.get("result")), {})
-    output_path.write_text(
+    await asyncio.to_thread(
+        output_path.write_text,
         json.dumps(
             {
                 "dataset_version": manifest["dataset_version"],
@@ -72,7 +73,8 @@ async def run(
             },
             ensure_ascii=False,
             indent=2,
-        )
+        ),
+        encoding="utf-8",
     )
 
 
