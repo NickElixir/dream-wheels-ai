@@ -16,8 +16,8 @@ def test_manual_rim_edits_clear_source_identity_for_authoritative_save() -> None
     app_js = Path("webapp/app.js").read_text(encoding="utf-8")
 
     assert "function markRimFieldEdited(path)" in app_js
-    assert 'sourceFingerprint: null' in app_js
+    assert "sourceFingerprint: null" in app_js
     assert 'variantState: "none"' in app_js
-    assert 'markRimFieldEdited(input.dataset.fitmentInput)' in app_js
-    assert 'markRimFieldEdited(path)' in app_js
+    assert "markRimFieldEdited(input.dataset.fitmentInput)" in app_js
+    assert "markRimFieldEdited(path)" in app_js
     assert 'markRimFieldEdited("rim.product_url")' in app_js
