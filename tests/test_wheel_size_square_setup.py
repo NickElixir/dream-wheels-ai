@@ -50,3 +50,4 @@ def test_live_rim_offset_field_builds_et_reference() -> None:
     assert reference.et_min_mm == 40
     assert reference.et_max_mm == 40
     assert reference.source_offsets_mm == [40]
+    assert reference.evidence_class == "stock"

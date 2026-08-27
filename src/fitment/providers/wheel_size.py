@@ -590,7 +590,12 @@ class WheelSizeProvider:
                         # some provider responses use ``offset``/``et``).
                         offset_raw = axle_data.get("rim_offset")
                     offset = _to_float(offset_raw)
+                    # In live Wheel-Size v2 responses the stock marker is
+                    # usually attached to the surrounding wheels[] pair;
+                    # retain support for fixtures that put it on the axle.
                     is_stock = axle_data.get("is_stock")
+                    if is_stock is None:
+                        is_stock = wheel_pair.get("is_stock")
                     record = AxleFitment(
                         axle=axle,
                         rim_diameter=diameter,
