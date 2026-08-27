@@ -3446,6 +3446,20 @@ function applyRimSourceValues(values) {
     return appliedFields;
 }
 
+function markRimFieldEdited(path) {
+    if (!path || (!path.startsWith("rim.") && !path.startsWith("rear_rim."))) return;
+    const fieldName = path.replace(/^(?:rim|rear_rim)\./, "");
+    state.fitmentSourceIdentity = {
+        ...state.fitmentSourceIdentity,
+        sourceFingerprint: null,
+        selectedVariantSku: null,
+        variantState: "none",
+    };
+    if (path.startsWith("rim.") && fieldName && !state.fitmentRimManualFields.includes(fieldName)) {
+        state.fitmentRimManualFields.push(fieldName);
+    }
+}
+
 function selectFitmentRimVariant(index) {
     const variant = state.fitmentSourceVariants[index];
     if (!variant) return;
@@ -6575,6 +6589,7 @@ function bindEvents() {
     });
     document.querySelector("[data-fitment-source-url]")?.addEventListener("input", (event) => {
         state.fitmentForm.rim.product_url = event.target.value;
+        markRimFieldEdited("rim.product_url");
         markFitmentDirty();
     });
     document.querySelector("[data-fitment-source-submit]")?.addEventListener("click", () => {
@@ -6616,6 +6631,7 @@ function bindEvents() {
                 if (!state.fitmentRimManualFields.includes(fieldName)) {
                     state.fitmentRimManualFields.push(fieldName);
                 }
+                markRimFieldEdited(input.dataset.fitmentInput);
             }
             markFitmentDirty();
             refreshFitmentSaveLabel();
@@ -6658,6 +6674,7 @@ function bindEvents() {
             } else {
                 setDeepValue(state.fitmentForm, path, value);
             }
+            markRimFieldEdited(path);
             markFitmentDirty();
             renderFitment();
         });
