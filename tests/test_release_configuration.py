@@ -34,6 +34,10 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert workflow.count("vercel deploy --prebuilt") == 4
     assert "dream-wheels-ai-staging" not in workflow
     assert "STAGING_BACKEND_URL" in workflow
+    assert 'if [ "$actual_backend" != "$STAGING_BACKEND_URL" ]; then' in workflow
+    for diagnostic in ("missing", "points_to_production", "trailing_slash", "other"):
+        assert f'diagnostic="{diagnostic}"' in workflow
+    assert "staging BACKEND_URL mismatch: $diagnostic; refusing deployment" in workflow
     assert 'test "$actual_backend" = "$PRODUCTION_BACKEND_URL" || {' in workflow
     assert "missing or mismatched; refusing deployment" in workflow
     assert 'env_file=".vercel/.env.production.local"' in workflow
