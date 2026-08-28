@@ -57,6 +57,8 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert "AFTER_SHA: ${{ github.sha }}" in workflow
     assert "fetch-depth: 0" in workflow
     assert 'git ls-tree -r --name-only "$AFTER_SHA"' in workflow
+    assert "working-directory: webapp" not in workflow
+    assert "working-directory: admin" not in workflow
 
 
 def test_frontend_vercel_configs_disable_native_git_deployments() -> None:
