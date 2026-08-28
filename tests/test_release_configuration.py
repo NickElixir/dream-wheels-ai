@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+ADMIN_VERCEL_JSON = json.loads((ROOT / "admin" / "vercel.json").read_text(encoding="utf-8"))
 PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
 PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encoding="utf-8")
 FITMENT_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-proxy.js").read_text(encoding="utf-8")
@@ -12,11 +13,40 @@ RIM_SOURCE_RESOLVE_PROXY_JS = (ROOT / "webapp" / "api" / "rim-source-resolve-pro
 )
 
 
-def test_ci_covers_staging_release_workflow() -> None:
+def test_ci_covers_release_branches() -> None:
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "branches: [main, staging]" in ci
-    assert "branches: [staging]" in ci
+    for branch_pattern in ("'feature/**'", "'fix/**'", "'e2e/**'", "'docs/**'"):
+        assert branch_pattern in ci
     assert "branches: [dev]" not in ci
+
+
+def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "deploy-frontends.yml").read_text(encoding="utf-8")
+    assert "push:" in workflow
+    assert "uses: ./.github/workflows/ci.yml" in workflow
+    assert "needs: ci" in workflow
+    assert "workflow_run" not in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "github.ref_name == 'staging'" in workflow
+    assert "github.ref_name == 'main'" in workflow
+    assert 'git diff --name-only "$BEFORE_SHA" "$AFTER_SHA"' in workflow
+    assert workflow.count("vercel deploy --prebuilt") == 4
+    assert "dream-wheels-ai-staging" not in workflow
+    assert "STAGING_BACKEND_URL" in workflow
+    assert 'test "$actual_backend" = "$PRODUCTION_BACKEND_URL" || {' in workflow
+    assert "missing or mismatched; refusing deployment" in workflow
+    assert 'env_file=".vercel/.env.production.local"' in workflow
+    assert 'env_file=".vercel/.env.preview.local"' in workflow
+    assert "BEFORE_SHA: ${{ github.event.before }}" in workflow
+    assert "AFTER_SHA: ${{ github.sha }}" in workflow
+    assert "fetch-depth: 0" in workflow
+    assert 'git ls-tree -r --name-only "$AFTER_SHA"' in workflow
+
+
+def test_frontend_vercel_configs_disable_native_git_deployments() -> None:
+    assert VERCEL_JSON["git"]["deploymentEnabled"] is False
+    assert ADMIN_VERCEL_JSON["git"]["deploymentEnabled"] is False
 
 
 def test_deployed_webapp_uses_runtime_backend_proxy_only() -> None:

@@ -1,0 +1,295 @@
+name: Deploy Frontends
+
+# This workflow is intentionally prepared locally during Stage B1. It becomes
+# active only after the file is reviewed, committed, and pushed in Stage B2.
+# Vercel-native Git deployments must be disabled per project before activation.
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or commit to deploy as an intentional preview
+        required: true
+        default: staging
+        type: string
+      run_e2e:
+        description: Leave a handoff marker for authenticated E2E after preview deployment
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-frontend-${{ inputs.ref || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  VERCEL_CLI_VERSION: 53.1.1
+  STAGING_BACKEND_URL: https://dream-wheels-ai-robokassa-staging.onrender.com
+  PRODUCTION_BACKEND_URL: https://dream-wheels-ai-tg.onrender.com
+
+jobs:
+  ci:
+    name: CI gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+    permissions:
+      contents: read
+
+  deploy-staging:
+    name: Deploy staging frontend
+    needs: ci
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Verify staging project environment before build
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          env_file=".vercel/.env.production.local"
+          test -f "$env_file"
+          actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
+          rm -f "$env_file"
+          test "$actual_backend" = "$STAGING_BACKEND_URL" || {
+            echo "staging BACKEND_URL mismatch; refusing deployment" >&2
+            exit 1
+          }
+
+      - name: Build staging artifact
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy exactly one staging artifact
+        id: deploy
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: |
+          output="$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")"
+          printf '%s\n' "$output"
+          url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n 1)"
+          test -n "$url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Verify staging alias and backend health
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            "https://dream-wheels-ai-webapp-staging.vercel.app/api/backend/health"
+
+  deploy-production:
+    name: Deploy production frontend
+    needs: ci
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Verify production project environment before build
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          env_file=".vercel/.env.production.local"
+          test -f "$env_file"
+          actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
+          rm -f "$env_file"
+          test "$actual_backend" = "$PRODUCTION_BACKEND_URL" || {
+            echo "production BACKEND_URL missing or mismatched; refusing deployment" >&2
+            exit 1
+          }
+
+      - name: Build production artifact
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy exactly one production artifact
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+
+  deploy-admin:
+    name: Deploy admin when admin paths changed
+    needs: ci
+    if: >-
+      github.event_name == 'push' &&
+      github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Detect admin-relevant changes
+        id: paths
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          zero_sha="0000000000000000000000000000000000000000"
+          if [ "$BEFORE_SHA" = "$zero_sha" ]; then
+            changed_files="$(git ls-tree -r --name-only "$AFTER_SHA")"
+          else
+            git cat-file -e "${BEFORE_SHA}^{commit}"
+            changed_files="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
+          fi
+          if printf '%s\n' "$changed_files" | grep -q '^admin/'; then
+            echo "admin=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "admin=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.paths.outputs.admin == 'true'
+        with:
+          node-version: 24
+
+      - name: Install pinned Vercel CLI
+        if: steps.paths.outputs.admin == 'true'
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Build admin artifact
+        if: steps.paths.outputs.admin == 'true'
+        working-directory: admin
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_ADMIN_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy exactly one admin artifact
+        if: steps.paths.outputs.admin == 'true'
+        working-directory: admin
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_ADMIN_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+
+  deploy-preview:
+    name: Manual preview deployment
+    needs: ci
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Verify preview environment before build
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          env_file=".vercel/.env.preview.local"
+          test -f "$env_file"
+          actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
+          rm -f "$env_file"
+          test "$actual_backend" = "$STAGING_BACKEND_URL" || {
+            echo "preview BACKEND_URL mismatch; refusing deployment" >&2
+            exit 1
+          }
+
+      - name: Build preview artifact
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy one intentional preview
+        id: deploy
+        working-directory: webapp
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
+        run: |
+          output="$(vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN")"
+          printf '%s\n' "$output"
+          url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n 1)"
+          test -n "$url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: E2E handoff marker
+        if: inputs.run_e2e == true
+        run: echo "Preview is ready for the authenticated E2E runner; no E2E runner is invoked by this workflow."
