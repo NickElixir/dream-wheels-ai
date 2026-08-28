@@ -4,13 +4,28 @@ on:
   pull_request:
     branches: [main, staging]
   push:
-    branches: [staging]
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'e2e/**'
+      - 'docs/**'
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit, branch, or tag to test when called by another workflow
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - uses: actions/setup-python@v6
         with:

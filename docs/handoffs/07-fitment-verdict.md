@@ -42,6 +42,15 @@
 
 `SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS`
 
+`VERCEL_DEPLOYMENT_GATE = BLOCKED`
+
+`VERCEL_RETRY_ETA = 2026-08-28T17:35:45Z (server: try again in 24 hours)`
+
+`DIRECT_RENDER_A_B_C = NOT_EXECUTED_AUTH_PATH_UNAVAILABLE`
+
+The quota-safe Vercel topology audit and proposed deployment policy are
+recorded in [vercel-deployment-topology-audit-v1.md](../evidence/vercel-deployment-topology-audit-v1.md).
+
 `IMPLEMENTATION = IN_PROGRESS`
 
 `ET_OUTSIDE_REFERENCE_SEMANTICS = CORRECTED`
@@ -94,9 +103,9 @@
 
 `RENDER_FITMENT_DECOUPLING = IMPLEMENTED`
 
-`NEXT = Continue mandatory authenticated E2E matrix: exact compatible, ET-range, outage and cross-flow restoration`
+`NEXT = After Vercel retry ETA, perform one coordinated staging-target deployment, then continue authenticated Lexus A/B/C; direct Render A/B/C was unavailable in this run`
 
-`BLOCKER = exact compatible verdict and provider-outage injection remain unproven; nested Vercel catalogue/variant routing is fixed and live`
+`BLOCKER = VERCEL_DEPLOYMENT_GATE BLOCKED (api-deployments-free-per-day; retry after 2026-08-28T17:35:45Z); exact compatible and provider-outage injection remain unproven`
 
 The deterministic implementation and its automated verification were recorded in the prior implementation handoff. The beta gate remains **NO** until an authenticated staging end-to-end run succeeds against the configured Wheel Size API. Slices 2–6 add runtime/API and presentation behaviour but do not alter the frozen domain or UI contract, and the gate remains unchanged.
 
@@ -197,9 +206,11 @@ cascade, Vehicle save-before-lookup, multiple modification selection, RimSpec
 source/manual confirmation, asynchronous Check polling, PCD mismatch,
 larger-bore condition, missing-ET `unknown`, and stale `is_current=false`
 behaviour are recorded in [fitment-staging-e2e-v1.md](../evidence/fitment-staging-e2e-v1.md).
-The exact compatible branch remains open because the tested Wheel Size variants
-did not provide a reference ET interval; outage fault injection is also not
-configured in staging.
+Live provider ET references are now confirmed after parser fix `950026e` and
+Render staging deployment `007c9ef`; the remaining browser proof is waiting for
+the Vercel staging-target rebuild. The exact compatible branch is not claimed
+until that authenticated post-fix run completes. Outage fault injection is
+also not configured in staging.
 
 ### Slice 1 — Standard engine correction
 
@@ -322,6 +333,19 @@ not the render job terminal state. Result-page Fitment CTAs load the current
 overview and map `next_action`/`current_check` rather than relying on local
 check state. Authenticated staging evidence remains required before the beta
 gate can change.
+
+### Vercel pipeline Stage B1 checkpoint
+
+The quota-safe deployment workflow is prepared locally in
+`docs/evidence/vercel-deployment-pipeline-migration-b1.md`. It is not yet
+active: Vercel-native Git deployment settings, GitHub Actions variables/secrets,
+commit, push and deployment remain Stage B2 actions. The quota gate stays
+blocked at the preserved server ETA `2026-08-28T17:35:45Z`; this does not alter
+the Slice 7 authenticated E2E requirement. Production backend validation is
+fail-closed, and admin deployment path detection covers the complete push
+range. Stage B2 must disconnect legacy Git, push a `feature/infra-*` migration
+branch first, verify native deployment shutdown, and only then merge to
+`staging`.
 
 ## Open decisions
 
