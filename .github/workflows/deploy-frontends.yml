@@ -77,10 +77,16 @@ jobs:
           test -f "$env_file"
           actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
           rm -f "$env_file"
-          test "$actual_backend" = "$STAGING_BACKEND_URL" || {
-            echo "staging BACKEND_URL mismatch; refusing deployment" >&2
+          if [ "$actual_backend" != "$STAGING_BACKEND_URL" ]; then
+            case "$actual_backend" in
+              "") diagnostic="missing" ;;
+              "$PRODUCTION_BACKEND_URL") diagnostic="points_to_production" ;;
+              "$STAGING_BACKEND_URL"/) diagnostic="trailing_slash" ;;
+              *) diagnostic="other" ;;
+            esac
+            echo "staging BACKEND_URL mismatch: $diagnostic; refusing deployment" >&2
             exit 1
-          }
+          fi
 
       - name: Build staging artifact
         working-directory: webapp
