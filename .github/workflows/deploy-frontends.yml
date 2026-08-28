@@ -72,14 +72,35 @@ jobs:
           test -n "$VERCEL_TOKEN"
           test -n "$VERCEL_ORG_ID"
           test -n "$VERCEL_PROJECT_ID"
+          vercel whoami --token="$VERCEL_TOKEN" | sed 's/^/Vercel token identity: /'
+          inventory_file="$(mktemp)"
+          vercel env ls production --token="$VERCEL_TOKEN" > "$inventory_file"
+          if awk 'NR > 2 { print $1 }' "$inventory_file" | grep -Fxq "BACKEND_URL"; then
+            inventory_state="listed"
+          else
+            inventory_state="not_listed"
+          fi
+          rm -f "$inventory_file"
+          echo "Vercel production environment inventory: BACKEND_URL=$inventory_state"
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           env_file=".vercel/.env.production.local"
           test -f "$env_file"
           actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
+          if [ -n "$actual_backend" ]; then
+            echo "Pulled production environment: BACKEND_URL=present"
+          else
+            echo "Pulled production environment: BACKEND_URL=absent"
+          fi
           rm -f "$env_file"
           if [ "$actual_backend" != "$STAGING_BACKEND_URL" ]; then
             case "$actual_backend" in
-              "") diagnostic="missing" ;;
+              "")
+                if [ "$inventory_state" = "listed" ]; then
+                  diagnostic="listed_but_not_pulled"
+                else
+                  diagnostic="missing"
+                fi
+                ;;
               "$PRODUCTION_BACKEND_URL") diagnostic="points_to_production" ;;
               "$STAGING_BACKEND_URL"/) diagnostic="trailing_slash" ;;
               *) diagnostic="other" ;;
