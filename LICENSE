@@ -1,0 +1,62 @@
+Dream Wheels AI Proprietary Software License
+
+Version 1.0 — 2026
+
+Copyright © 2026 the respective copyright holders.
+
+All rights reserved.
+
+## 1. Scope
+
+This license applies to the original software source code, documentation, database schemas, application logic, algorithms, configuration files, and other original materials developed as part of the Dream Wheels AI project and contained in this repository, except where a file or component explicitly states otherwise.
+
+## 2. No General License Grant
+
+Except as expressly authorized in writing by the applicable copyright holder, no permission is granted to any person or entity to:
+
+- use the Software for commercial purposes;
+- reproduce or distribute the Software;
+- modify, adapt, translate, or create derivative works based on the Software;
+- sublicense, sell, rent, lease, publish, or otherwise make the Software available to third parties;
+- incorporate the Software or substantial portions of it into another product or service;
+- deploy or operate the Software for production or commercial use.
+
+Access to the source code, including access through a public source-code repository, does not constitute a grant of any intellectual property rights or an open-source license.
+
+Rights provided directly by the hosting platform under its applicable terms of service are not affected by this license.
+
+## 3. Authorized Use
+
+Use of the Software is permitted only where expressly authorized by the applicable copyright holder through a separate written agreement, employment relationship, contractor agreement, contributor agreement, commercial license, or other valid legal basis.
+
+## 4. Third-Party Software and Materials
+
+This repository may contain or depend on third-party software, libraries, datasets, images, documentation, APIs, models, or other materials.
+
+Such third-party materials remain subject to their respective licenses and terms.
+
+Nothing in this license changes, replaces, extends, or restricts the licenses applicable to third-party materials.
+
+The presence of open-source or Creative Commons licensed dependencies or materials does not cause the original Dream Wheels AI software to be licensed under those licenses unless explicitly required by the applicable third-party license.
+
+## 5. Intellectual Property
+
+All copyright, intellectual property rights, and other rights in the original Dream Wheels AI materials remain with their respective copyright holders.
+
+No transfer or assignment of intellectual property rights occurs under this license.
+
+## 6. No Trademark License
+
+This license does not grant any right to use the names, trademarks, service marks, logos, trade dress, or branding associated with Dream Wheels AI.
+
+## 7. Disclaimer
+
+To the maximum extent permitted by applicable law, the Software is provided without warranties of any kind, whether express or implied.
+
+The copyright holders shall not be liable for any damages arising from unauthorized or permitted use of the Software, except where liability cannot legally be excluded.
+
+## 8. Commercial Licensing
+
+Commercial use, redistribution, integration, sublicensing, access to proprietary technology, or other rights may be granted under a separate written agreement with the applicable copyright holder.
+
+For licensing inquiries, contact the Dream Wheels AI project representatives.

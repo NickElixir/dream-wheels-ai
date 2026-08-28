@@ -2,6 +2,8 @@
 name = "dream-wheels-ai-tg"
 version = "0.1.0"
 description = "Telegram bot for AI car wheel try-on (Reve API)"
+license = "LicenseRef-Dream-Wheels-Proprietary"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 
 # ============================================================
