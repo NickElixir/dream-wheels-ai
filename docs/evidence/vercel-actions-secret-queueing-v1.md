@@ -49,6 +49,23 @@ alter backend targets, Vercel environment variables, Fitment contracts, or
 the frozen UI. It must not be replaced with a manual Vercel redeploy, because
 that would neither exercise the Actions credential nor prove the pipeline.
 
+## Production Config recovery
+
+The staging project's `Production` `BACKEND_URL` was recreated as Vercel
+`Config`, preserving the existing Render staging target. This is appropriate
+because the backend origin is routing configuration rather than a credential.
+The prior `Secret` value had been listed by the Vercel API but omitted by
+`vercel pull` on the GitHub-hosted runner (`listed_but_not_pulled`).
+
+An out-of-band Vercel CLI pull of the recreated `Production` Config retrieves
+the exact expected Render staging target. The separate `Preview` secret is
+outside the staging production-deployment path and is unchanged by this
+recovery.
+
+The next newly queued staging workflow remains the required final validation:
+it must pass the fail-closed guard before it can create its single intended
+deployment.
+
 ## Pending evidence after merge
 
 Record only after the newly queued staging workflow finishes:
@@ -65,6 +82,7 @@ Record only after the newly queued staging workflow finishes:
 VERCEL_DEPLOYMENT_PIPELINE_MIGRATION = IN_PROGRESS
 VERCEL_TOKEN_QUEUEING_BOUNDARY = DOCUMENTED
 VERCEL_STAGING_ENVIRONMENT = VERIFIED_OUT_OF_BAND
-VERCEL_DEPLOYMENT_GATE = PENDING_FRESH_STAGING_RUN
+VERCEL_PRODUCTION_BACKEND_URL = CONFIG_VERIFIED_OUT_OF_BAND
+VERCEL_DEPLOYMENT_GATE = PENDING_FRESH_STAGING_RUN_AFTER_CONFIG_RECOVERY
 FITMENT_BETA_READY = NO
 ```
