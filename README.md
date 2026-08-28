@@ -77,3 +77,9 @@ pytest -q
 - [Customer development plan](docs/customer-development.md)
 - [Architecture decision records](docs/adr/)
 - [AI assistant repository guide](docs/CHAT_CONTEXT_HANDOFF.md)
+
+## License
+
+Dream Wheels AI proprietary software. All rights reserved. See [LICENSE](LICENSE).
+
+Third-party libraries, datasets, images and other materials remain subject to their respective licenses.
