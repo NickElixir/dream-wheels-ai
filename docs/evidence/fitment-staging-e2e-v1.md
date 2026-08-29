@@ -133,6 +133,10 @@ a fresh authenticated UI context because the current draft/source-resolver
 state clears the revision-bound vehicle selection when the center bore is
 edited; they are not claimed as staging Check results.
 
+The regression guard in `tests/test_wheel_size_square_setup.py` also covers a
+same-pair stock/non-OE conflict: stock ET40 remains the authoritative 40–40
+reference when non-OE ET45 is present; the values are not widened to 40–45.
+
 ## Live provider payload hashes (diagnostic smoke)
 
 These are hashes of the API `data` arrays used by the normalizer (canonical
