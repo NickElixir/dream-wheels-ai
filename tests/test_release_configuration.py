@@ -8,6 +8,7 @@ ADMIN_VERCEL_JSON = json.loads((ROOT / "admin" / "vercel.json").read_text(encodi
 PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
 PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encoding="utf-8")
 FITMENT_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-proxy.js").read_text(encoding="utf-8")
+JOB_STATUS_PROXY_JS = (ROOT / "webapp" / "api" / "job-status-proxy.js").read_text(encoding="utf-8")
 RIM_SOURCE_RESOLVE_PROXY_JS = (ROOT / "webapp" / "api" / "rim-source-resolve-proxy.js").read_text(
     encoding="utf-8"
 )
@@ -84,6 +85,10 @@ def test_proxy_reads_backend_url_only_at_runtime() -> None:
 def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy_routes() -> None:
     rewrites = VERCEL_JSON["rewrites"]
     assert {
+        "source": "/api/backend/jobs/:jobId/status",
+        "destination": "/api/job-status-proxy?jobId=:jobId",
+    } in rewrites
+    assert {
         "source": "/api/backend/jobs/:jobId/fitment",
         "destination": "/api/fitment-proxy?jobId=:jobId",
     } in rewrites
@@ -95,6 +100,7 @@ def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy
     assert 'require("../lib/backend-proxy")' in RIM_SOURCE_RESOLVE_PROXY_JS
     assert "backendPath" in FITMENT_PROXY_JS
     assert "backendPath" in RIM_SOURCE_RESOLVE_PROXY_JS
+    assert "backendPath" in JOB_STATUS_PROXY_JS
     assert not list((ROOT / "webapp" / "api" / "backend" / "jobs" / "[jobId]").glob("**/*.js"))
 
 
