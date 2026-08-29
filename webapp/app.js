@@ -6310,7 +6310,7 @@ async function submitJob() {
         let statusData;
         try {
             const response = await fetch(
-                apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }),
+                apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
             statusData = await response.json();
@@ -6358,7 +6358,7 @@ async function refreshExistingJobStatus() {
         setView("renders");
         return;
     }
-    const response = await fetch(apiUrl(`/jobs/${state.jobId}/status`, { includeIdentity: true }), {
+    const response = await fetch(apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     const data = await response.json().catch(() => ({}));
