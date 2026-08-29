@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0e">
+<title>Dream Wheels AI — Standard Fitment V2 realistic prototype</title>
+<style>
+:root{
+  --bg:#070809;--bg-soft:#0d0f12;--panel:#161a22;--panel-2:#1b2029;--panel-3:#202631;
+  --line:rgba(255,255,255,.1);--line-strong:rgba(220,255,0,.2);
+  --text:#eef2f6;--muted:#a3adba;--subtle:#7e8896;
+  --accent:#ddff00;--accent-strong:#e7ff3a;--accent-soft:rgba(221,255,0,.08);
+  --success:#27d88a;--warning:#ffcc56;--danger:#ff6666;--info:#4da3ff;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+  --sidebar-left:30px;--sidebar-width:280px;--content-gap:40px;--content-max:1080px;
+  --r-xl:28px;--r-lg:22px;--r-md:18px;--r-sm:14px;
+  --shadow:0 18px 60px rgba(0,0,0,.28);
+  --space-tight:9px;--space-xs:12px;--space-sm:16px;--space-md:24px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;color:var(--text);
+  background:
+    radial-gradient(circle at 50% -10%,rgba(52,59,21,.2),transparent 30%),
+    linear-gradient(180deg,#070809 0%,#090b0f 100%);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);
+}
+button,input,summary{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+[hidden]{display:none!important}
+
+/* current cabinet shell */
+.desktop-sidebar{
+  position:fixed;inset:30px auto 30px var(--sidebar-left);width:var(--sidebar-width);
+  display:flex;flex-direction:column;gap:24px;padding:22px;border:1px solid var(--line);
+  border-radius:28px;background:rgba(17,20,26,.92);box-shadow:var(--shadow);z-index:10;
+}
+.brand-wordmark{font-size:16px;font-weight:900;letter-spacing:.24em;line-height:1;border:0;background:none;padding:0;text-align:left;color:inherit}
+.brand-light{color:var(--accent)}.brand-dim{color:#9198a3}
+.sidebar-nav{display:grid;gap:28px}.sidebar-section{display:grid;gap:8px}
+.sidebar-label{color:var(--subtle);font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:0 12px}
+.sidebar-item{
+  appearance:none;position:relative;width:100%;border:0;border-radius:16px;background:transparent;color:var(--muted);
+  padding:13px 14px 13px 18px;text-align:left;font-weight:800;transition:.18s ease
+}
+.sidebar-item::before{content:"";position:absolute;left:6px;top:11px;bottom:11px;width:2px;border-radius:99px;background:transparent}
+.sidebar-item:hover{transform:translateX(3px);color:var(--text)}
+.sidebar-item.active{color:var(--accent-strong);background:var(--accent-soft)}
+.sidebar-item.active::before{background:var(--accent)}
+.sidebar-account{margin-top:auto;display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(255,255,255,.03)}
+.account-avatar{width:42px;height:42px;border-radius:15px;display:grid;place-items:center;border:1px solid rgba(221,255,0,.24);background:rgba(221,255,0,.1);color:var(--accent);font-weight:900}
+.account-name{font-weight:900}.account-sub{color:var(--subtle);font-size:12px}
+
+#app{width:min(100%,980px);min-height:100vh;margin:0 auto;padding:28px 20px 104px}
+@media(min-width:1040px){
+  #app{
+    width:min(var(--content-max),calc(100vw - var(--sidebar-left) - var(--sidebar-width) - var(--content-gap) - 40px));
+    margin-left:calc(var(--sidebar-left) + var(--sidebar-width) + var(--content-gap));margin-right:auto;padding-left:0;padding-right:0;
+  }
+}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+.mobile-brand{display:none}
+.topbar-caption{font-size:24px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+.topbar-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+.demo-chip{color:var(--subtle);font-size:12px;font-weight:800;letter-spacing:.04em}
+.exit-button{min-height:42px;border:1px solid rgba(221,255,0,.25);border-radius:14px;background:rgba(221,255,0,.04);color:var(--accent);padding:0 15px;font-weight:850}
+
+/* current cabinet cards */
+.panel{
+  border-radius:var(--r-xl);border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(27,31,40,.98),rgba(20,23,31,.98));
+  box-shadow:var(--shadow);padding:24px;min-width:0;
+}
+.view{display:grid;gap:var(--space-sm);min-width:0}
+.section-label{margin:0 0 10px;color:var(--subtle);font-size:12px;text-transform:uppercase;letter-spacing:.18em}
+h1,h2,h3{margin:0;letter-spacing:-.03em}
+h2{font-size:clamp(22px,4vw,28px);line-height:1.16}
+h3{font-size:18px;line-height:1.2}
+.lede{color:var(--muted);max-width:56ch;font-size:15px;line-height:1.5}
+.primary-button,.ghost-button,.link-button{
+  min-height:46px;border-radius:14px;padding:0 18px;font-weight:850;border:1px solid transparent;transition:.18s ease
+}
+.primary-button{background:var(--accent);color:#111708}
+.ghost-button{background:rgba(255,255,255,.02);border-color:rgba(221,255,0,.28);color:var(--accent)}
+.ghost-button.neutral{border-color:rgba(255,255,255,.1);color:var(--text)}
+.link-button{min-height:auto;padding:0;border:0;background:transparent;color:var(--accent)}
+.primary-button:hover,.ghost-button:hover{transform:translateY(-1px)}
+.status-pill{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-weight:750;color:var(--muted);font-size:13px}
+.status-pill.success{color:var(--success);border-color:rgba(39,216,138,.3);background:rgba(39,216,138,.08)}
+.status-pill.warning{color:var(--warning);border-color:rgba(255,204,86,.25);background:rgba(255,204,86,.07)}
+.status-pill.danger{color:#ffb0b0;border-color:rgba(255,102,102,.28);background:rgba(255,102,102,.1)}
+.status-pill.info{color:#82bdff;border-color:rgba(77,163,255,.28);background:rgba(77,163,255,.08)}
+.wallet-status-island{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:16px 18px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)
+}
+.wallet-status-island.tone-warning{border-color:rgba(255,204,86,.22);background:rgba(255,204,86,.08)}
+.wallet-status-island.tone-error{border-color:rgba(255,102,102,.24);background:rgba(255,102,102,.08)}
+.wallet-status-island.tone-info{border-color:rgba(77,163,255,.22);background:rgba(77,163,255,.08)}
+.wallet-status-island.tone-success{border-color:rgba(39,216,138,.22);background:rgba(39,216,138,.08)}
+.island-title{font-size:14px;font-weight:800}.island-text{color:var(--muted);font-size:13px;line-height:1.48}
+
+/* V2 context visual — deliberately matches create/history image treatment */
+.fitment-context{padding:18px}
+.fitment-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pair-card{min-width:0;border:1px solid rgba(255,255,255,.08);border-radius:22px;background:rgba(255,255,255,.025);overflow:hidden}
+.pair-media{display:block;width:100%;aspect-ratio:16/8.6;background:#11151b;border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden}
+.pair-media svg{width:100%;height:100%;display:block}
+.pair-copy{padding:14px 16px 16px}
+.pair-copy .section-label{margin-bottom:7px}
+.pair-name{font-size:20px;font-weight:850;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pair-meta{margin-top:5px;color:var(--muted);font-size:14px}
+
+/* section navigator as one cabinet island, not 3 floating cards */
+.flow-nav{padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.flow-tab{
+  min-width:0;appearance:none;border:1px solid transparent;border-radius:18px;background:transparent;color:var(--muted);
+  padding:13px 14px;text-align:left;transition:.18s ease
+}
+.flow-tab:hover:not(:disabled){background:rgba(255,255,255,.03);color:var(--text)}
+.flow-tab.active{background:var(--accent-soft);border-color:rgba(221,255,0,.22);color:var(--accent-strong)}
+.flow-tab:disabled{opacity:.43;cursor:default}
+.flow-name{display:flex;align-items:center;gap:8px;font-weight:850;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.state-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--subtle)}
+.state-dot.success{background:var(--success)}.state-dot.warning{background:var(--warning)}.state-dot.danger{background:var(--danger)}.state-dot.info{background:var(--info)}
+.flow-state{display:block;margin-top:5px;font-size:12px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flow-tab.active .flow-state{color:var(--muted)}
+
+/* workspace */
+.workspace{display:grid;gap:16px}
+.workspace-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.workspace-copy{display:grid;gap:7px}
+.workspace-title{font-size:28px;line-height:1.12;font-weight:850;letter-spacing:-.03em}
+.workspace-sub{color:var(--muted);font-size:14px;line-height:1.5;max-width:62ch}
+.summary-list{display:grid;border-top:1px solid rgba(255,255,255,.07)}
+.summary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:center}
+.summary-row span{color:var(--muted)}.summary-row strong{text-align:right}
+.actions{display:flex;flex-wrap:wrap;gap:9px}
+.choice-list{display:grid;gap:9px}
+.choice-card{
+  width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;text-align:left;
+  border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:15px;background:rgba(255,255,255,.025);color:var(--text)
+}
+.choice-card:hover{border-color:rgba(221,255,0,.32)}
+.choice-card.selected{border-color:rgba(221,255,0,.38);background:rgba(221,255,0,.055)}
+.choice-card strong{display:block;font-size:16px}.choice-card span{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.choice-check{align-self:center;color:var(--accent);font-weight:900}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:grid;gap:6px}
+.field.wide{grid-column:1/-1}
+.field label{font-size:12px;color:var(--muted);font-weight:750}
+.input{
+  width:100%;min-height:45px;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:0 12px;background:#10141a;color:var(--text)
+}
+.readonly{min-height:45px;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:0 12px;background:rgba(255,255,255,.025)}
+.readonly b{font-size:14px}.readonly em{font-style:normal;color:var(--success);font-size:12px;font-weight:850}
+.details{
+  border-top:1px solid rgba(255,255,255,.08);padding-top:14px
+}
+.details summary{cursor:pointer;color:var(--muted);font-weight:800;list-style:none}
+.details summary::-webkit-details-marker{display:none}
+.details summary::after{content:" ↓";color:var(--subtle)}
+.details[open] summary::after{content:" ↑"}
+.details-body{padding-top:12px;color:var(--muted);font-size:13px;line-height:1.55}
+.verdict-hero{display:grid;gap:9px}
+.verdict-title{font-size:clamp(30px,5vw,44px);line-height:1;font-weight:900;letter-spacing:-.04em}
+.verdict-title.success{color:var(--success)}.verdict-title.warning{color:var(--warning)}.verdict-title.danger{color:var(--danger)}.verdict-title.info{color:#82bdff}
+.evidence{display:grid;gap:9px}
+.evidence-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 15px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.025)}
+.evidence-row span{color:var(--muted)}.evidence-row strong{text-align:right}
+
+/* independent render action — quieter than fitment workspace */
+.render-exit{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px}
+.render-exit-copy{min-width:0}.render-exit-copy strong{display:block;font-size:15px}.render-exit-copy span{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+
+/* prototype controller */
+.prototype-tools{
+  position:fixed;right:18px;bottom:18px;z-index:50;width:min(370px,calc(100vw - 36px));
+  border:1px solid rgba(77,163,255,.28);background:rgba(15,19,25,.96);border-radius:20px;box-shadow:var(--shadow);overflow:hidden
+}
+.prototype-tools summary{list-style:none;cursor:pointer;padding:12px 14px;color:#91c8ff;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.prototype-tools summary::-webkit-details-marker{display:none}
+.prototype-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 12px 12px}
+.prototype-grid button{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);color:var(--muted);border-radius:11px;padding:9px 10px;text-align:left;font-size:12px}
+.prototype-grid button.active{color:var(--accent);border-color:rgba(221,255,0,.22);background:rgba(221,255,0,.06)}
+
+.mobile-bottom{display:none}
+
+@media(max-width:1039px){
+  .desktop-sidebar{display:none}
+  #app{width:min(100%,980px)}
+  .mobile-brand{display:block}
+}
+@media(max-width:760px){
+  #app{padding:18px 12px calc(92px + var(--safe-bottom))}
+  .topbar{margin-bottom:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;row-gap:10px}
+  .mobile-brand{grid-column:1}
+  .topbar-caption{grid-column:1/-1;grid-row:2;font-size:22px}
+  .topbar-actions{grid-column:2;grid-row:1;align-self:center}
+  .demo-chip{display:none}
+  .exit-button{min-height:38px;padding:0 12px;font-size:12px}
+  .panel{padding:16px;border-radius:22px}
+  .fitment-context{padding:10px}
+  .fitment-pair{gap:10px}
+  .pair-card{border-radius:18px}
+  .pair-media{aspect-ratio:1/1}
+  .pair-copy{padding:10px 10px 11px}
+  .pair-copy .section-label{font-size:9px;letter-spacing:.12em;margin-bottom:5px}
+  .pair-name{font-size:14px}
+  .pair-meta{font-size:11px;line-height:1.35;min-height:30px}
+  .flow-nav{padding:6px;gap:4px}
+  .flow-tab{padding:10px 8px;border-radius:15px}
+  .flow-name{font-size:12px;gap:6px}
+  .flow-state{font-size:10px;white-space:normal;line-height:1.2;min-height:24px}
+  .workspace-title{font-size:23px}
+  .fields{grid-template-columns:1fr}
+  .field.wide{grid-column:auto}
+  .summary-row{grid-template-columns:1fr;gap:3px}
+  .summary-row strong{text-align:left}
+  .actions{display:grid;grid-template-columns:1fr}
+  .actions>*{width:100%}
+  .render-exit{display:grid;padding:16px}
+  .render-exit .ghost-button{width:100%}
+  .evidence-row{grid-template-columns:1fr;gap:3px}
+  .evidence-row strong{text-align:left}
+  .prototype-tools{right:12px;bottom:calc(76px + var(--safe-bottom));width:min(360px,calc(100vw - 24px))}
+  .prototype-grid{grid-template-columns:1fr 1fr}
+  .mobile-bottom{
+    position:fixed;z-index:40;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
+    padding:8px 6px calc(8px + var(--safe-bottom));border-top:1px solid var(--line);background:rgba(9,11,14,.96);backdrop-filter:blur(16px)
+  }
+  .mobile-bottom button{min-height:48px;border:0;border-radius:13px;background:transparent;color:var(--muted);font-size:10px;font-weight:750}
+  .mobile-bottom button.active{color:var(--accent);background:rgba(221,255,0,.08)}
+}
+@media(max-width:400px){
+  .prototype-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<aside class="desktop-sidebar" aria-label="Навигация кабинета">
+  <button class="brand-wordmark"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></button>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Основное</div>
+      <button class="sidebar-item">Главная</button>
+      <button class="sidebar-item">Примерить диски</button>
+      <button class="sidebar-item active">Мои примерки</button>
+      <button class="sidebar-item">Баланс</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Помощь</div>
+      <button class="sidebar-item">Поддержка</button>
+      <button class="sidebar-item">Как подготовить фото</button>
+      <button class="sidebar-item">Документы</button>
+    </div>
+  </nav>
+  <div class="sidebar-account"><div class="account-avatar">DW</div><div><div class="account-name">Dream Wheels</div><div class="account-sub">Кабинет</div></div></div>
+</aside>
+
+<main id="app">
+  <header class="topbar">
+    <button class="brand-wordmark mobile-brand"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></button>
+    <div class="topbar-caption">Совместимость</div>
+    <div class="topbar-actions"><span class="demo-chip">Demo</span><button class="exit-button">Выйти</button></div>
+  </header>
+
+  <section class="view">
+    <section class="panel fitment-context" aria-label="Текущая пара">
+      <div class="fitment-pair">
+        <article class="pair-card">
+          <div class="pair-media">
+            <svg viewBox="0 0 600 360" role="img" aria-label="Фото автомобиля">
+              <defs><linearGradient id="carbg2" x1="0" x2="1"><stop offset="0" stop-color="#242a34"/><stop offset="1" stop-color="#0e1217"/></linearGradient></defs>
+              <rect width="600" height="360" fill="url(#carbg2)"/>
+              <rect y="266" width="600" height="94" fill="#0a0d11"/>
+              <path d="M95 240 C125 188 186 150 274 142 L390 145 C438 153 477 183 505 224 L537 237 547 273 518 294 111 294 75 271 82 247 Z" fill="#d7dce4"/>
+              <path d="M216 157 L295 157 281 212 151 212 C170 184 192 167 216 157Z" fill="#6e7885"/>
+              <path d="M310 158 L386 159 C418 166 445 184 466 212 L321 212Z" fill="#6e7885"/>
+              <circle cx="173" cy="291" r="42" fill="#080a0d"/><circle cx="173" cy="291" r="22" fill="#6c7580"/>
+              <circle cx="449" cy="291" r="42" fill="#080a0d"/><circle cx="449" cy="291" r="22" fill="#6c7580"/>
+              <rect x="424" y="228" width="72" height="11" rx="5" fill="#ddff00" opacity=".72"/>
+            </svg>
+          </div>
+          <div class="pair-copy">
+            <p class="section-label">Автомобиль</p>
+            <div class="pair-name">Lexus RX</div>
+            <div class="pair-meta">2023, AL30, RX350</div>
+          </div>
+        </article>
+        <article class="pair-card">
+          <div class="pair-media">
+            <svg viewBox="0 0 600 360" role="img" aria-label="Фото колесного диска">
+              <defs><radialGradient id="wheelbg2"><stop offset="0" stop-color="#333a45"/><stop offset="1" stop-color="#0e1217"/></radialGradient></defs>
+              <rect width="600" height="360" fill="url(#wheelbg2)"/>
+              <circle cx="300" cy="180" r="142" fill="#090b0f" stroke="#aeb5be" stroke-width="15"/>
+              <circle cx="300" cy="180" r="108" fill="#252b33" stroke="#69727d" stroke-width="5"/>
+              <g fill="#d1d6dc" transform="translate(300 180)">
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(0)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(45)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(90)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(135)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(180)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(225)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(270)"/>
+                <rect x="-9" y="-103" width="18" height="86" rx="7" transform="rotate(315)"/>
+              </g>
+              <circle cx="300" cy="180" r="34" fill="#11151a" stroke="#e1e4e8" stroke-width="4"/>
+              <circle cx="300" cy="180" r="7" fill="#ddff00"/>
+            </svg>
+          </div>
+          <div class="pair-copy">
+            <p class="section-label">Колесный диск</p>
+            <div class="pair-name">MOMO RF-01 SUV</div>
+            <div class="pair-meta">19" / 8J / 5×114,3</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <nav class="panel flow-nav" aria-label="Разделы проверки">
+      <button class="flow-tab" data-section="vehicle"><div class="flow-name"><span class="state-dot"></span>Автомобиль</div><span class="flow-state">—</span></button>
+      <button class="flow-tab" data-section="rim"><div class="flow-name"><span class="state-dot"></span>Колесный диск</div><span class="flow-state">—</span></button>
+      <button class="flow-tab" data-section="result"><div class="flow-name"><span class="state-dot"></span>Вывод</div><span class="flow-state">—</span></button>
+    </nav>
+
+    <section class="panel workspace" id="workspace"></section>
+
+    <section class="panel render-exit">
+      <div class="render-exit-copy">
+        <strong>Создание изображения доступно независимо от технической проверки</strong>
+        <span>Совместимость колесного диска не влияет на возможность визуальной примерки</span>
+      </div>
+      <button class="ghost-button neutral">Создать изображение</button>
+    </section>
+  </section>
+</main>
+
+<nav class="mobile-bottom" aria-label="Мобильная навигация">
+  <button>Главная</button><button>Создать</button><button class="active">Мои</button><button>Баланс</button><button>Ещё</button>
+</nav>
+
+<details class="prototype-tools">
+  <summary>Сценарии прототипа</summary>
+  <div class="prototype-grid" id="scenarioGrid"></div>
+</details>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+
+function vehicleReady(){
+  return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div></div></div>
+  <div class="summary-list">
+    <div class="summary-row"><span>Автомобиль</span><strong>Lexus RX</strong></div>
+    <div class="summary-row"><span>Год и комплектация</span><strong>2023, AL30, RX350</strong></div>
+  </div>
+  <div class="actions"><button class="ghost-button neutral" data-edit-vehicle>Изменить данные</button></div>
+  <div id="vehicleEditor"></div>`;
+}
+function rimReady(){
+  return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div></div></div>
+  <div class="summary-list">
+    <div class="summary-row"><span>Параметры</span><strong>19" / 8J / 5×114,3</strong></div>
+    <div class="summary-row"><span>ET / DIA</span><strong>40 / 60,1</strong></div>
+  </div>
+  <div class="actions"><button class="ghost-button neutral" data-edit-rim>Изменить параметры</button></div>
+  <div id="rimEditor"></div>
+  <details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Параметры сохранены и подтверждены пользователем</div></details>`;
+}
+function rimEditor(partial=false){
+  return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div><div class="workspace-sub">Часть параметров необходимо проверить</div></div></div>
+  <div class="fields">
+    <div class="field"><label>Диаметр</label><div class="readonly"><b>19"</b><em>Подтверждено</em></div></div>
+    <div class="field"><label>Ширина</label><div class="readonly"><b>8J</b><em>Подтверждено</em></div></div>
+    <div class="field"><label>Разболтовка</label><div class="readonly"><b>5×114,3</b><em>Подтверждено</em></div></div>
+    <div class="field"><label>Вылет ET</label><input class="input" data-draft="et" inputmode="decimal" value="${partial?'':'40'}" placeholder="Например, 40"></div>
+    <div class="field"><label>Ступичное отверстие DIA</label><input class="input" data-draft="dia" inputmode="decimal" value="60,1"></div>
+  </div>
+  <div class="actions"><button class="primary-button" data-advance="processing">Сохранить параметры</button></div>
+  <details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Автоматически найденные значения остаются предложением до явного сохранения</div></details>`;
+}
+function noResult(){
+  return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+  <div class="wallet-status-island"><div class="island-title">Проверка ещё не выполнена</div><div class="island-text">Сначала подтвердите необходимые данные</div></div>`;
+}
+
+const scenarios={
+ vehicleProposal:{label:"Vehicle proposal",active:"vehicle",nav:{vehicle:["warning","Нужно подтвердить"],rim:["success","Параметры сохранены"],result:["","Не выполнен",true]},views:{
+   vehicle:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Автомобиль определён по фотографии<br>Проверьте найденные данные и выберите комплектацию</div></div><span class="status-pill warning">Требуется подтверждение</span></div>
+   <div class="summary-list"><div class="summary-row"><span>Марка и модель</span><strong>Lexus RX</strong></div><div class="summary-row"><span>Год</span><strong>2023</strong></div></div>
+   <div class="actions"><button class="primary-button" data-advance="modification">Подтвердить данные</button><button class="ghost-button neutral" data-edit-vehicle>Изменить данные</button></div><div id="vehicleEditor"></div>`,
+   rim:()=>rimReady(),result:()=>noResult()}},
+ modification:{label:"Modification selection",active:"vehicle",nav:{vehicle:["warning","Выберите комплектацию"],rim:["success","Параметры сохранены"],result:["","Не выполнен",true]},views:{
+   vehicle:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Lexus RX<br>2023, AL30</div></div></div>
+   <div class="section-label" style="margin:0">Выберите комплектацию</div>
+   <div class="choice-list"><button class="choice-card selected"><div><strong>RX350</strong><span>3.5 V6, Россия+</span></div><div class="choice-check">✓</div></button><button class="choice-card"><div><strong>RX450h</strong><span>Hybrid, Россия+</span></div><div class="choice-check"></div></button><button class="choice-card"><div><strong>RX500h</strong><span>Hybrid, Россия+</span></div><div class="choice-check"></div></button></div>
+   <div class="actions"><button class="primary-button" data-advance="rimResolved">Подтвердить комплектацию</button></div>`,
+   rim:()=>rimReady(),result:()=>noResult()}},
+ rimResolved:{label:"Rim resolver success",active:"rim",nav:{vehicle:["success","Подтверждён"],rim:["warning","Нужно проверить"],result:["","Не выполнен",true]},views:{vehicle:()=>vehicleReady(),rim:()=>rimEditor(false),result:()=>noResult()}},
+ rimFallback:{label:"Resolver fallback",active:"rim",nav:{vehicle:["success","Подтверждён"],rim:["warning","Нужен ручной ввод"],result:["","Не выполнен",true]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div></div></div>
+   <div class="wallet-status-island tone-warning"><div class="island-title">Не удалось определить параметры автоматически</div><div class="island-text">Это не блокирует проверку — укажите параметры колесного диска вручную</div></div>
+   <div class="actions"><button class="primary-button" id="manualFill">Заполнить параметры вручную</button><button class="ghost-button neutral">Повторить</button></div><div id="manualArea"></div>`,
+   result:()=>noResult()}},
+ processing:{label:"Check processing",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["info","Проверяем"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div><div class="workspace-sub">Проверяем совместимость</div></div><span class="status-pill info">В процессе</span></div>
+   <div class="wallet-status-island tone-info"><div class="island-title">Проверка выполняется</div><div class="island-text">Технический вывод появится после завершения проверки</div></div>
+   <div class="actions"><button class="primary-button" disabled style="opacity:.55">Проверяем совместимость</button></div>`}},
+ conditions:{label:"Compatible + conditions",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["warning","Подходит с условиями"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+   <div class="verdict-hero"><div class="verdict-title warning">Подходит с условиями</div><div class="workspace-sub">Для установки необходимо выполнить дополнительные условия</div></div>
+   <div class="evidence"><div class="evidence-row"><span>Разболтовка</span><strong>Подходит</strong></div><div class="evidence-row"><span>Размер колесного диска</span><strong>Подходит</strong></div><div class="evidence-row"><span>Ступичное отверстие</span><strong>Потребуются центровочные кольца</strong></div></div>
+   <details class="details"><summary>Технические детали</summary><div class="details-body">PCD: 5×114,3 / DIA колесного диска: 73,1 мм / DIA автомобиля: 60,1 мм</div></details>
+   <div class="wallet-status-island tone-info"><div class="island-title">Предварительная техническая оценка</div><div class="island-text">Перед покупкой подтвердите совместимость у продавца или установочного центра</div></div>
+   <div class="actions"><button class="ghost-button neutral">Проверить ещё раз</button></div>`}},
+ incompatible:{label:"Incompatible",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["danger","Не подходит"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+   <div class="verdict-hero"><div class="verdict-title danger">Не подходит</div><div class="workspace-sub">Обнаружено несовпадение технических параметров</div></div>
+   <div class="evidence"><div class="evidence-row"><span>Разболтовка колесного диска</span><strong>5×114,3</strong></div><div class="evidence-row"><span>Для автомобиля</span><strong>5×112</strong></div></div>
+   <details class="details"><summary>Технические детали</summary><div class="details-body">Проверка основана на текущих подтверждённых данных автомобиля и колесного диска</div></details>
+   <div class="wallet-status-island tone-info"><div class="island-title">Визуальная примерка остаётся доступной</div><div class="island-text">Вы все еще можете создать изображение, чтобы оценить внешний вид дисков</div></div>`}},
+ unknown:{label:"Unknown / missing data",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["warning","Не хватает данных"],result:["warning","Недостаточно данных"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimEditor(true),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+   <div class="verdict-hero"><div class="verdict-title info">Недостаточно данных</div><div class="workspace-sub">По доступным техническим параметрам нельзя сделать однозначный вывод</div></div>
+   <div class="wallet-status-island tone-warning"><div class="island-title">Не хватает данных</div><div class="island-text">Вылет колесного диска – ET</div></div>
+   <div class="actions"><button class="primary-button" data-nav-target="rim">Уточнить параметры</button></div>`}},
+ stale:{label:"Stale verdict",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["warning","Нужно проверить заново"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+   <div class="wallet-status-island tone-warning"><div class="island-title">Результат больше не актуален</div><div class="island-text">Данные автомобиля или колесного диска изменились после последней проверки</div></div>
+   <div class="summary-list"><div class="summary-row"><span>Предыдущий результат</span><strong style="color:var(--muted)">Подходит с условиями</strong></div></div>
+   <div class="actions"><button class="primary-button">Проверить совместимость</button></div>`}},
+ provider:{label:"Provider unavailable",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["danger","Проверка недоступна"]},views:{
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
+   <div class="wallet-status-island tone-error"><div class="island-title">Сервис технической проверки совместимости временно недоступен</div><div class="island-text">Введённые данные сохранены</div></div>
+   <div class="actions"><button class="primary-button">Попробовать ещё раз</button></div>`}}
+};
+
+let scenarioKey=localStorage.getItem("dw-fitment-v2-realistic")||"vehicleProposal";
+let activeSection=scenarios[scenarioKey].active;
+let draft=JSON.parse(localStorage.getItem("dw-fitment-v2-realistic-draft")||"{}");
+
+function setScenario(key){scenarioKey=key;activeSection=scenarios[key].active;localStorage.setItem("dw-fitment-v2-realistic",key);render()}
+function renderNav(){
+  const cfg=scenarios[scenarioKey];
+  $$(".flow-tab").forEach(btn=>{
+    const sec=btn.dataset.section,n=cfg.nav[sec]||["",""];
+    btn.classList.toggle("active",sec===activeSection);btn.disabled=false;
+    const dot=$(".state-dot",btn);dot.className="state-dot"+(n[0]?" "+n[0]:"");
+    $(".flow-state",btn).textContent=n[1]||"";
+  });
+}
+function renderWorkspace(){
+  const cfg=scenarios[scenarioKey],fn=cfg.views[activeSection]||noResult;
+  $("#workspace").innerHTML=fn();bindWorkspace();
+}
+function bindWorkspace(){
+  $$(".choice-card").forEach(c=>c.onclick=()=>{$$(".choice-card").forEach(x=>{x.classList.remove("selected");$(".choice-check",x).textContent=""});c.classList.add("selected");$(".choice-check",c).textContent="✓"});
+  $$("[data-nav-target]").forEach(b=>b.onclick=()=>{activeSection=b.dataset.navTarget;render()});
+  $$("[data-advance]").forEach(b=>b.onclick=()=>setScenario(b.dataset.advance));
+  $$("[data-draft]").forEach(i=>{const k=i.dataset.draft;if(draft[k]!==undefined)i.value=draft[k];i.oninput=()=>{draft[k]=i.value;localStorage.setItem("dw-fitment-v2-realistic-draft",JSON.stringify(draft))}});
+  $$("[data-edit-vehicle]").forEach(b=>b.onclick=()=>{const e=$("#vehicleEditor");if(e)e.innerHTML=`<div class="fields" style="margin-top:16px"><div class="field"><label>Марка</label><input class="input" value="Lexus"></div><div class="field"><label>Модель</label><input class="input" value="RX"></div><div class="field"><label>Год</label><input class="input" value="2023"></div></div><div class="actions" style="margin-top:12px"><button class="primary-button">Сохранить автомобиль</button></div>`});
+  $$("[data-edit-rim]").forEach(b=>b.onclick=()=>{const e=$("#rimEditor");if(e){e.innerHTML=rimEditor(false);bindWorkspace()}});
+  const mf=$("#manualFill");if(mf)mf.onclick=()=>{const a=$("#manualArea");a.innerHTML=rimEditor(true);bindWorkspace();a.scrollIntoView({behavior:"smooth",block:"nearest"})};
+}
+function renderScenarioGrid(){
+  const g=$("#scenarioGrid");g.innerHTML="";
+  Object.entries(scenarios).forEach(([k,v])=>{const b=document.createElement("button");b.textContent=v.label;b.classList.toggle("active",k===scenarioKey);b.onclick=()=>{setScenario(k);renderScenarioGrid()};g.appendChild(b)});
+}
+function render(){renderNav();renderWorkspace();renderScenarioGrid()}
+$$(".flow-tab").forEach(b=>b.onclick=()=>{if(!b.disabled){activeSection=b.dataset.section;render()}});
+render();
+</script>
+</body>
+</html>
