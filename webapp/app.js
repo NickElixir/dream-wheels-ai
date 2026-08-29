@@ -1050,6 +1050,9 @@ const state = {
     fitmentMessage: "",
     fitmentMessageTone: "neutral",
     fitmentForm: createEmptyFitmentForm(),
+    // Vehicle and RimSpec edits have separate mutation boundaries. A RimSpec
+    // save must never replay the vehicle payload from a stale draft.
+    fitmentVehicleDirty: false,
     fitmentOverviewCollapsed: false,
     fitmentSourceOpen: false,
     fitmentSourceResolving: false,
@@ -1339,10 +1342,20 @@ function fitmentDraftMatchesOverview(draft, overview = state.fitmentOverview) {
     return JSON.stringify(draft.baseline) === JSON.stringify(fitmentRevisionBaseline(overview));
 }
 
-function fitmentSafeConflictDraft(form) {
+function fitmentDraftVehicleMatchesOverview(draft, overview = state.fitmentOverview) {
+    if (!draft?.baseline || !overview) return false;
+    const current = fitmentRevisionBaseline(overview);
+    return ["jobId", "vehicleIdentityId", "vehicleRevision", "modificationState"]
+        .every((key) => draft.baseline[key] === current[key]);
+}
+
+function fitmentSafeConflictDraft(form, overview = state.fitmentOverview) {
     const safe = cloneFitmentForm(form);
-    // A stale provider mapping or resolver SKU must never be revived from storage.
-    safe.vehicle.modification = "";
+    // The server-owned vehicle selection remains authoritative even when a
+    // transient draft was created against an older RimSpec revision/source.
+    const authoritative = fitmentFormFromOverview(overview);
+    safe.vehicle = authoritative.vehicle;
+    // A stale resolver SKU must never be revived from storage.
     safe.rim.sku = "";
     return safe;
 }
@@ -1362,6 +1375,7 @@ function fitmentDraftPayload(reason) {
             validation: state.fitmentFormState.validation,
         },
         activeStep: state.fitmentActiveStep,
+        vehicleDirty: state.fitmentVehicleDirty,
         origin: {
             view: state.fitmentOriginView,
             jobId: state.fitmentOriginJobId,
@@ -1420,8 +1434,9 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     discardFitmentTransientDraft();
     if (!fitmentDraftMatchesOverview(draft, overview)) {
         state.fitmentRestoreConflict = {
-            form: fitmentSafeConflictDraft(draft.form),
+            form: fitmentSafeConflictDraft(draft.form, overview),
             activeStep: draft.activeStep,
+            vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview),
         };
         return "conflict";
     }
@@ -1432,6 +1447,7 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         validation: draft.formState?.validation === "invalid" ? "invalid" : "valid",
         baseline: cloneFitmentForm(state.fitmentFormState.baseline || fitmentFormFromOverview(overview)),
     };
+    state.fitmentVehicleDirty = draft.vehicleDirty === true;
     state.fitmentOriginView = draft.origin?.view || state.fitmentOriginView;
     state.fitmentOriginJobId = draft.origin?.jobId || state.fitmentOriginJobId;
     state.fitmentSourceOpen = Boolean(draft.source?.open);
@@ -2522,20 +2538,11 @@ function renderFitmentVerdictGroup(sectionTarget, listTarget, items, kind) {
     }
 }
 
-function fitmentPayload() {
-    return {
+function fitmentPayload({ includeVehicle = true } = {}) {
+    const payload = {
         expected_vehicle_revision: state.fitmentOverview?.vehicle_revision,
         expected_rim_revision: state.fitmentOverview?.rim_revision,
         setup_mode: state.fitmentForm.setup_mode,
-        vehicle: {
-            make: normalizeFitmentText(state.fitmentForm.vehicle.make),
-            model: normalizeFitmentText(state.fitmentForm.vehicle.model),
-            year: normalizeFitmentNumber(state.fitmentForm.vehicle.year),
-            body: normalizeFitmentText(state.fitmentForm.vehicle.body),
-            generation: normalizeFitmentText(state.fitmentForm.vehicle.generation),
-            modification: normalizeFitmentText(state.fitmentForm.vehicle.modification),
-            market: normalizeFitmentText(state.fitmentForm.vehicle.market),
-        },
         rim: {
             brand: normalizeFitmentText(state.fitmentForm.rim.brand),
             model: normalizeFitmentText(state.fitmentForm.rim.model),
@@ -2573,6 +2580,18 @@ function fitmentPayload() {
             },
         } : {}),
     };
+    if (includeVehicle) {
+        payload.vehicle = {
+            make: normalizeFitmentText(state.fitmentForm.vehicle.make),
+            model: normalizeFitmentText(state.fitmentForm.vehicle.model),
+            year: normalizeFitmentNumber(state.fitmentForm.vehicle.year),
+            body: normalizeFitmentText(state.fitmentForm.vehicle.body),
+            generation: normalizeFitmentText(state.fitmentForm.vehicle.generation),
+            modification: normalizeFitmentText(state.fitmentForm.vehicle.modification),
+            market: normalizeFitmentText(state.fitmentForm.vehicle.market),
+        };
+    }
+    return payload;
 }
 
 function fitmentValuesEqual(current, incoming) {
@@ -3297,6 +3316,7 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
             state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
             state.fitmentCheck = overview.current_check || null;
             state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+            state.fitmentVehicleDirty = false;
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
             loadFitmentVehicleCatalogue();
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -3316,6 +3336,7 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+        state.fitmentVehicleDirty = false;
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
         loadFitmentVehicleCatalogue();
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -3344,6 +3365,7 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentCheck = null;
     state.fitmentActiveStep = 0;
     state.fitmentForm = createEmptyFitmentForm();
+    state.fitmentVehicleDirty = false;
     state.fitmentFormState = { status: "clean", validation: "valid", baseline: null };
     state.fitmentCatalogue = {
         regions: { status: "idle", items: [] },
@@ -3458,6 +3480,10 @@ function markRimFieldEdited(path) {
     if (path.startsWith("rim.") && fieldName && !state.fitmentRimManualFields.includes(fieldName)) {
         state.fitmentRimManualFields.push(fieldName);
     }
+}
+
+function markVehicleFieldEdited(path) {
+    if (path?.startsWith("vehicle.")) state.fitmentVehicleDirty = true;
 }
 
 function selectFitmentRimVariant(index) {
@@ -3797,6 +3823,7 @@ async function applyFitmentVehicleVariant(variant) {
         state.fitmentOverview = await response.json();
         state.fitmentForm = fitmentFormFromOverview(state.fitmentOverview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(state.fitmentOverview);
+        state.fitmentVehicleDirty = false;
         await refreshFitmentCheckCurrentness();
         state.fitmentActiveStep = 2;
     } catch (error) {
@@ -3832,6 +3859,7 @@ async function saveFitment(event) {
             state.fitmentOverview = overview;
             state.fitmentForm = fitmentFormFromOverview(overview);
             state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+            state.fitmentVehicleDirty = false;
             state.fitmentFormState.status = "clean";
             state.fitmentMessage = t("fitment.saveSuccess");
             state.fitmentMessageTone = "success";
@@ -3843,7 +3871,7 @@ async function saveFitment(event) {
             {
                 method: "PATCH",
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
-                body: JSON.stringify(fitmentPayload()),
+                body: JSON.stringify(fitmentPayload({ includeVehicle: state.fitmentVehicleDirty })),
             }
         );
         if (response.status === 401) {
@@ -3858,6 +3886,7 @@ async function saveFitment(event) {
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+        state.fitmentVehicleDirty = false;
         await refreshFitmentCheckCurrentness();
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
@@ -6625,6 +6654,7 @@ function bindEvents() {
             if (input.tagName === "SELECT") return;
             const path = input.dataset.fitmentInput;
             setDeepValue(state.fitmentForm, path, event.target.value);
+            markVehicleFieldEdited(path);
             const fieldName = input.dataset.fitmentInput?.replace("rim.", "");
             if (fieldName && input.dataset.fitmentInput?.startsWith("rim.")) {
                 state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
@@ -6639,6 +6669,7 @@ function bindEvents() {
         input.addEventListener("change", (event) => {
             const path = input.dataset.fitmentInput;
             const value = event.target.value;
+            markVehicleFieldEdited(path);
             if (input.dataset.fitmentPreset) {
                 const custom = document.querySelector(`[data-fitment-custom="${path}"]`);
                 if (value === "custom") {

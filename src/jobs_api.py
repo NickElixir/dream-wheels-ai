@@ -3440,6 +3440,17 @@ async def save_fitment_details(
             )
             core_vehicle_fields = {"make", "model", "year", "market"}
             core_changed = set(vehicle_changed).intersection(core_vehicle_fields)
+            modification_state, _, _, _ = _modification_from_row(row)
+            if not core_changed and modification_state == "confirmed":
+                # A RimSpec-only client may still send a stale vehicle form
+                # (for example after a transient draft conflict). The exact
+                # selected modification is server-owned and can only change
+                # through the variant-selection endpoint.
+                for field_name in ("body", "generation", "modification"):
+                    row_key = vehicle_row_keys[field_name]
+                    if row[row_key] not in (None, ""):
+                        vehicle_values[field_name] = row[row_key]
+                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
             if core_changed:
                 # A prior generation/modification belongs to the old canonical
                 # vehicle context and cannot remain visible as current.
