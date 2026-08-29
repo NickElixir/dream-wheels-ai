@@ -487,6 +487,10 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     ]
     assert backend_rewrites == [
         {
+            "source": "/api/backend/jobs/:jobId/status",
+            "destination": "/api/job-status-proxy?jobId=:jobId",
+        },
+        {
             "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
             "destination": "/api/rim-source-resolve-proxy?jobId=:jobId",
         },

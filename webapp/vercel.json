@@ -5,6 +5,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/backend/jobs/:jobId/status",
+      "destination": "/api/job-status-proxy?jobId=:jobId"
+    },
+    {
       "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
       "destination": "/api/rim-source-resolve-proxy?jobId=:jobId"
     },

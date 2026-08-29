@@ -137,6 +137,66 @@ The regression guard in `tests/test_wheel_size_square_setup.py` also covers a
 same-pair stock/non-OE conflict: stock ET40 remains the authoritative 40–40
 reference when non-OE ET45 is present; the values are not widened to 40–45.
 
+## 2026-08-29 RimSpec/Vehicle state-isolation follow-up
+
+The first live A attempt after the frontend isolation fix exposed a separate
+backend edge case: a RimSpec-only PATCH omitted `vehicle`, but the save handler
+still entered the partial vehicle-map branch and later indexed the missing
+`market` key.  This produced a Render 500 and was corrected by `ba26545`
+(`fix(fitment): accept rim-only saves for confirmed vehicles`), merged to
+`staging` as `f7da80ff35a519dea55032c6cf514e36fe68d777`.  The guard now enters
+the unchanged-vehicle path only when a vehicle payload is actually present.
+
+| Field | Evidence |
+| --- | --- |
+| Local gate before deploy | `299 passed, 3 skipped`; `ruff check .` PASS; `ruff format --check .` PASS; `node --check webapp/app.js` PASS; `git diff --check` PASS |
+| Render staging deployment | `dep-da9alkoae00c73aglap0`, `live` |
+| Render deployed SHA | `f7da80ff35a519dea55032c6cf514e36fe68d777` |
+| Render health | `/health=200`; `/health/full=200`; `db=alive`; `redis=alive` |
+| Vercel staging deployment | Existing `dpl_2oKqd8hami9gnPP9hxxHn9iezQDY`, `Ready`; no new frontend deployment was required for this backend-only patch |
+| Vercel source SHA | `e9dbf5153f639c62bb90f9598d9fc10ffbd3b160` (frontend isolation fix already deployed) |
+| Staging frontend backend target | `https://dream-wheels-ai-robokassa-staging.onrender.com`; alias `/api/backend/health/full=200` with `x-render-origin-server: uvicorn`, `db=alive`, `redis=alive` |
+| Redis | No manual flush; the normalized-profile versioned key remained in use |
+
+### Authenticated Lexus A/B/C sequence
+
+The sequence used one authenticated staging context for Lexus RX350 AL30,
+Russia+, 2023, provider modification `01e91c5fa7`, with no Vehicle
+re-selection, lookup, or re-apply between checks.  The Vehicle identity stayed
+`f775db8b-41b0-439c-b6a1-fb8cfd9ff7a4`, revision `10`; the RimSetup stayed
+`7ebd98a6-3401-469a-ae45-5b290549bde9`.
+
+| Check | Rim edit | Vehicle revision | Rim revision | Modification | Result |
+| --- | --- | ---: | ---: | --- | --- |
+| A `1fda44c5-a8d6-4166-89c0-74915343ee43` | exact DIA `60.1`, 19×8J, ET40 | 10 | 16 | `confirmed` | `compatible`, `is_current=true` |
+| B `ad53beeb-3d33-43a0-911b-5cb63e21dbaa` | DIA only `60.1 → 74.1` | 10 → 10 | 16 → 18 | preserved `confirmed` | `compatible_with_conditions`, `hub_rings_required`, `is_current=true` |
+| C `7651120f-8002-434d-a687-827f7092d809` | DIA `74.1 → 60.1`, ET `40 → 45` | 10 → 10 | 18 → 20 | preserved `confirmed` | `unknown`, `et_outside_reference_range`, `is_current=true` |
+
+After B, Check A was historical (`is_current=false`); after C, Check B was
+historical (`is_current=false`).  The authoritative C response contained
+`rim_et_mm=45`, `reference_et_min_mm=40`, and `reference_et_max_mm=40` on both
+axles.  The A response contained no `vehicle_reference_offset_missing` and
+returned the captured provider-backed exact reference:
+`source_offsets_mm=[40]`, `et_min_mm=40`, `et_max_mm=40`,
+`raw_response_ref=sha256:ef5d5422b0c0f261f453156b29105fbf5425eb11568d3c36012b28fc44627c0d`.
+
+The live C response also preserved the frozen API semantics (`missing_fields`
+retains the legacy `offset_et` diagnostic while the authoritative reason is
+`et_outside_reference_range`); no verdict rule was changed.
+
+Network capture of the initial exact RimSpec save showed the PATCH body had no
+`vehicle` member.  The B/C saves used the same frontend RimSpec-only path, and
+the backend regression tests assert that no vehicle-identity UPDATE occurs:
+`test_rim_only_save_preserves_revision_bound_modification_from_stale_vehicle_form`
+and `test_rim_only_save_without_vehicle_payload_preserves_confirmed_modification`.
+The negative invariant remains covered by
+`test_each_core_vehicle_change_invalidates_current_modification`.
+
+`RIMSPEC_VEHICLE_STATE_ISOLATION = PASSED`
+`LEXUS_A_B_C_LIVE = PASSED`
+`SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS`
+`FITMENT_BETA_READY = NO`
+
 ## Live provider payload hashes (diagnostic smoke)
 
 These are hashes of the API `data` arrays used by the normalizer (canonical
