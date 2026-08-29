@@ -4331,6 +4331,12 @@ body.has-fallback-main-button #app {
         grid-template-columns: 1fr;
     }
 
+    /* Keep the three overview cards usable on narrow mobile viewports. */
+    .fitment-overview-grid,
+    .fitment-overview-grid[data-collapsed="true"] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .mobile-bottom-nav {
         display: grid;
     }
