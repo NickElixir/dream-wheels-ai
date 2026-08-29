@@ -268,6 +268,7 @@ h3{font-size:18px;line-height:1.2}
   <header class="topbar">
     <button class="brand-wordmark mobile-brand"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></button>
     <div class="topbar-caption">Совместимость</div>
+    <!-- Demo is review-harness metadata only, not an approved production UI element -->
     <div class="topbar-actions"><span class="demo-chip">Demo</span><button class="exit-button">Выйти</button></div>
   </header>
 
@@ -382,8 +383,15 @@ function rimEditor(partial=false){
     <div class="field"><label>Вылет ET</label><input class="input" data-draft="et" inputmode="decimal" value="${partial?'':'40'}" placeholder="Например, 40"></div>
     <div class="field"><label>Ступичное отверстие DIA</label><input class="input" data-draft="dia" inputmode="decimal" value="60,1"></div>
   </div>
-  <div class="actions"><button class="primary-button" data-advance="processing">Сохранить параметры</button></div>
+  <div class="actions"><button class="primary-button" data-advance="readyToCheck">Сохранить параметры</button></div>
   <details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Автоматически найденные значения остаются предложением до явного сохранения</div></details>`;
+}
+function readyToCheck(){
+  return '<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div><div class="workspace-sub">Параметры сохранены и готовы к отдельной проверке</div></div><span class="status-pill success">Сохранено</span></div>'+
+  '<div class="summary-list"><div class="summary-row"><span>Параметры</span><strong>19" / 8J / 5×114,3</strong></div><div class="summary-row"><span>ET / DIA</span><strong>40 / 60,1</strong></div></div>'+
+  '<div class="wallet-status-island tone-info"><div class="island-title">Следующее действие</div><div class="island-text">Запустите Standard Check отдельно, когда будете готовы</div></div>'+
+  '<div class="actions"><button class="primary-button" data-advance="processing">Проверить совместимость</button><button class="ghost-button neutral" data-edit-rim>Изменить параметры</button></div><div id="rimEditor"></div>'+
+  '<details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Параметры сохранены и подтверждены пользователем</div></details>';
 }
 function noResult(){
   return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
@@ -403,6 +411,7 @@ const scenarios={
    <div class="actions"><button class="primary-button" data-advance="rimResolved">Подтвердить комплектацию</button></div>`,
    rim:()=>rimReady(),result:()=>noResult()}},
  rimResolved:{label:"Rim resolver success",active:"rim",nav:{vehicle:["success","Подтверждён"],rim:["warning","Нужно проверить"],result:["","Не выполнен",true]},views:{vehicle:()=>vehicleReady(),rim:()=>rimEditor(false),result:()=>noResult()}},
+ readyToCheck:{label:"Ready for Standard Check",active:"rim",nav:{vehicle:["success","Подтверждён"],rim:["success","Параметры сохранены"],result:["","Не выполнен",true]},views:{vehicle:()=>vehicleReady(),rim:()=>readyToCheck(),result:()=>noResult()}},
  rimFallback:{label:"Resolver fallback",active:"rim",nav:{vehicle:["success","Подтверждён"],rim:["warning","Нужен ручной ввод"],result:["","Не выполнен",true]},views:{
    vehicle:()=>vehicleReady(),rim:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div></div></div>
    <div class="wallet-status-island tone-warning"><div class="island-title">Не удалось определить параметры автоматически</div><div class="island-text">Это не блокирует проверку — укажите параметры колесного диска вручную</div></div>
@@ -450,7 +459,8 @@ function renderNav(){
   const cfg=scenarios[scenarioKey];
   $$(".flow-tab").forEach(btn=>{
     const sec=btn.dataset.section,n=cfg.nav[sec]||["",""];
-    btn.classList.toggle("active",sec===activeSection);btn.disabled=false;
+    const resultAvailable=["processing","conditions","incompatible","stale","provider"].includes(scenarioKey);
+    btn.classList.toggle("active",sec===activeSection);btn.disabled=sec==="result"&&!resultAvailable;
     const dot=$(".state-dot",btn);dot.className="state-dot"+(n[0]?" "+n[0]:"");
     $(".flow-state",btn).textContent=n[1]||"";
   });
