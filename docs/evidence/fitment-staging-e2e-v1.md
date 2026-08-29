@@ -88,7 +88,55 @@ here so the gate is auditable:
 | Kia Seltos 2.0 MPi, Russia+, 2020 | `kia/seltos/russia`, generation `10c72a9d42`, modification `c17536e6ff`; technical `5×114.3`, DIA `67.1` | stock front `7Jx17 ET50`; non-OE `6.5Jx16 ET44`, `7.5Jx18 ET52` | `offset_references=[]` (same `rim_offset` shape) | front `17×7J → et_min_mm=50, et_max_mm=50`, `source_offsets_mm=[50]` |
 
 The parser fix is merged to `staging` and deployed on Render staging. The
-authenticated Vercel alias used by this run still points at the production
-Render target; switching that project to staging requires a new Vercel build,
-which is currently blocked by the account's daily deployment limit. Therefore
-Lexus A/B/C verdicts are not claimed as post-fix live evidence yet.
+authenticated Vercel alias used by the current run routes through the existing
+`/api/backend` proxy to the Render staging service. No new Vercel deployment
+was created for this verification.
+
+## 2026-08-29 normalized-profile cache-fix deployment
+
+| Field | Evidence |
+| --- | --- |
+| Root cause | stale unversioned normalized-profile Redis cache (`ws:profile:<params>`) retained profiles produced before `rim_offset` normalization |
+| Fix | versioned profile key and normalization constant `wheel_size_profile_v2`; raw provider offsets are preserved as exact decimals |
+| Render staging deployment | `dep-da99bne7bikc73ape2a0`, `live` |
+| Deployed backend SHA | `5423418a770d614210e0a0f21dc2baad66a59b00` (merge of fix `6640936`) |
+| Health | `/health` 200; `/health/full` 200 with `db=alive`, `redis=alive` |
+| Manual Redis flush | not required; the versioned key bypassed the stale entry |
+| Existing Vercel alias | `dream-wheels-ai-webapp-staging.vercel.app`; proxy health response carries Render/uvicorn headers and returns 200 |
+
+The live Wheel-Size API response for Lexus RX350 AL30 (`01e91c5fa7`) contains
+`rim_offset=40` for the stock front `19x8` record. Its canonical payload hash
+is `sha256:ef5d5422b0c0f261f453156b29105fbf5425eb11568d3c36012b28fc44627c0d`.
+The deployed normalizer maps it to `source_offsets_mm=[40]` and
+`et_min_mm=et_max_mm=40` (and mirrors the square profile to the rear axle).
+
+The authenticated staging UI produced the expected Lexus ET40 result
+(`Совместимо`) after the deployment. The public Check response currently does
+not expose `evaluation_snapshot`, so a Check id/raw snapshot tuple cannot be
+independently extracted from the UI; the provider payload, hash and mapping are
+verified by the deployed parser tests and the live API response above.
+
+The same authenticated UI session currently has a stale draft/source-resolver
+conflict after editing the center bore: saving the B variant clears the
+revision-bound vehicle selection and prevents a valid new Check from being
+submitted. Consequently live B/C Check ids are not claimed here. The
+deterministic engine was exercised locally against the live Lexus payload and
+returns the required outcomes: A `compatible`, B
+`compatible_with_conditions`/`hub_rings_required`, C `unknown`/
+`et_outside_reference_range` with reference 40–40. Continue with a fresh
+authenticated context before marking the Slice 7 matrix complete.
+
+## Live provider payload hashes (diagnostic smoke)
+
+These are hashes of the API `data` arrays used by the normalizer (canonical
+JSON, sorted keys, compact separators), not hashes of public HTML pages:
+
+| Query | Provider result | Exact stock pair | `raw_response_ref` |
+| --- | --- | --- | --- |
+| `lexus/rx/russia`, 2023, `01e91c5fa7` | RX350 / AL30 | 19x8 ET40 | `sha256:ef5d5422b0c0f261f453156b29105fbf5425eb11568d3c36012b28fc44627c0d` |
+| `bmw/5-series/eudm`, 2014, `0672911fa5` | **520d** / VI LCI (F10/F11) (the supplied slug does not return 520i) | 17x8 ET30 | `sha256:b8518f71893e052045664f9eee9397bfa9959d268eec79dbaa6b483a913cdb00` |
+| `kia/seltos/russia`, 2020, `c17536e6ff` | 2.0 MPi / I (SP2) | **17x7 ET50** (no 17x6.5 record in this response) | `sha256:6467b77d90ea7fd6a6980e6e574830501a1b0daefc0e1cb2c15ccefc8fdf7309` |
+
+BMW's response also contains non-OE records for the same 17x8 pair, but they
+carry the same ET30 scalar; the stock evidence class remains authoritative.
+Kia's captured payload does not justify a 17x6.5 expectation.
