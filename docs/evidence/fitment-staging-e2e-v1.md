@@ -211,3 +211,81 @@ JSON, sorted keys, compact separators), not hashes of public HTML pages:
 BMW's response also contains non-OE records for the same 17x8 pair, but they
 carry the same ET30 scalar; the stock evidence class remains authoritative.
 Kia's captured payload does not justify a 17x6.5 expectation.
+
+## 2026-08-29 Final mandatory Slice 7 completion pass
+
+The earlier matrix at the top of this document is retained as chronology from
+before the normalized-profile cache fix, state-isolation fixes, and mobile CSS
+fixes.  The matrix below is the authoritative reconciliation for the current
+staging state.
+
+### Deployment and infrastructure
+
+| Field | Evidence |
+| --- | --- |
+| Current staging backend SHA | `5423418a770d614210e0a0f21dc2baad66a59b00` (Render deployment `dep-da99bne7bikc73ape2a0`) |
+| Current frontend SHA | `689d2bb8b284348fdc0004faac857c317518e199` (Vercel deployment `dpl_2LdA4MSQtM5wk18QtU3MrPQucQkr`, `READY`) |
+| Staging alias | `https://dream-wheels-ai-webapp-staging.vercel.app` → `dream-wheels-ai-webapp-staging-4ts7ofc4w.vercel.app` |
+| Backend target | `https://dream-wheels-ai-robokassa-staging.onrender.com` (workflow guard and proxy health evidence) |
+| Render health | `/health=200`; `/health/full=200`; `db=alive`; `redis=alive` |
+| Production changed | `NO` |
+| Manual Redis flush | `NO`; versioned normalized-profile key bypassed stale cache |
+
+The coordinated staging workflow run `33249461966` succeeded.  It created
+exactly one staging Vercel artifact and skipped production, admin, and manual
+preview jobs.  The alias `/api/backend/health/full` returned the Render
+staging health payload; no production backend URL was used.
+
+### Reconciled live matrix
+
+| Scenario | Final status | Evidence |
+| --- | --- | --- |
+| Single modification | `PASS` | Live provider cascade/explicit apply plus `test_single_auto_confirm_is_idempotent_and_no_match_clears_current_selection` |
+| Multiple modifications | `PASS` | Authenticated Toyota/Camry and Exeed/RX cascades with explicit variant apply |
+| Exact Lexus reference | `PASS` | `source_offsets_mm=[40]`, `et_min_mm=40`, `et_max_mm=40`, raw ref `sha256:ef5d5422b0c0f261f453156b29105fbf5425eb11568d3c36012b28fc44627c0d` |
+| Lexus A — exact DIA/ET | `PASS` | Check `1fda44c5-a8d6-4166-89c0-74915343ee43`: `compatible`, current |
+| Lexus B — larger DIA | `PASS` | Check `ad53beeb-3d33-43a0-911b-5cb63e21dbaa`: `compatible_with_conditions`, `hub_rings_required`, current |
+| Lexus C — ET outside exact reference | `PASS` | Check `7651120f-8002-434d-a687-827f7092d809`: `unknown`, `et_outside_reference_range`, reference `40–40`, current |
+| PCD mismatch / missing ET boundaries | `PASS` | Existing authenticated and API matrix evidence; missing evidence remains technical `unknown` |
+| Staggered setup | `PASS` | Kia setup `9bcef738-339b-482e-a548-939c0396a911`, independent front/rear specs |
+| Rear-only edit invalidates old check | `PASS` | Old `ec53bfbc-c0c3-4418-b6dc-8d1fa3038bce` became stale; new current check `7b98c364-3cd0-4e32-b3a8-2dff5e15b125` |
+| Stale RimSpec currentness | `PASS` | A stale after B; B stale after C; immutable snapshot identity used |
+| Stale Vehicle currentness | `PASS` | `test_each_core_vehicle_change_invalidates_current_modification` |
+| Stock ET40 vs non-OE ET45 | `PASS` | `test_stock_offset_wins_over_non_oem_for_same_exact_pair`; remains `40–40`, never `40–45` |
+| Mobile 390×844 happy path | `PASS` | Authenticated Kia Fitment form and completed Check at exact 390×844; `scrollWidth=390`, no console errors; controls remained usable |
+| Fitment → Rendering → Fitment fresh round-trip | `NOT_AVAILABLE` | Legitimate new jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` and `c30f5511-36d2-465f-8fe1-dccd56db1cac` failed before output with provider `PARTNER_API_CLOSED`; Fitment availability/CTA remains independent in code and automated coverage |
+| 401 live restoration | `BLOCKED_WITH_FORMAL_DECISION` | No safe staging expiry/injection seam; automated no-replay/restoration coverage passes |
+| Provider outage live injection | `BLOCKED_WITH_FORMAL_DECISION` | No safe staging fault-injection seam; operational failure boundary is covered by API tests |
+| Parser/source regression | `PASS` | Wheel-Size fixtures, source resolver, and pair-level stock precedence tests |
+
+### Session-restoration and failure-boundary decisions
+
+401 automated coverage is provided by
+`test_ordinary_return_is_silent_but_401_restoration_is_explicit`,
+`test_401_stops_requests_and_never_replays_a_mutation`,
+`test_navigation_tears_down_requests_and_resumes_only_current_pending_check`,
+and `test_fitment_reauth_prompt_preserves_the_unsaved_form_for_the_same_job`.
+No safe staging method exists to expire the authenticated session without
+mutating production-like state, so live 401 injection is formally accepted as
+blocked for this pass; the release remains beta-blocked.
+
+Provider failure taxonomy and the invariant that `failed` never becomes
+technical `unknown` are covered by `test_create_check_records_provider_failure`
+and the Fitment checks/jobs API suites.  A live provider outage was not injected
+because no safe staging seam is configured; this is a formal test-environment
+decision, not a claim that the live outage scenario passed.
+
+The fresh rendering attempt was a real user flow and did not trigger any
+automatic Fitment lookup, resolver, or Check.  The external Render provider
+returned `PARTNER_API_CLOSED`, so the round-trip is `NOT_AVAILABLE` until that
+provider is restored or a safe staging rendering fixture is supplied.
+
+### Final status for this pass
+
+```ini
+FINAL_MANDATORY_MATRIX = BLOCKED_WITH_FORMAL_DECISION
+SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS
+PHASE_07_FITMENT = IN_PROGRESS
+FITMENT_BETA_READY = NO
+NEXT = restore a safe rendering/provider test seam, then repeat fresh Fitment → Rendering → Fitment; retain A/B/C and staggered evidence
+```

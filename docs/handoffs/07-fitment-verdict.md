@@ -354,3 +354,60 @@ branch first, verify native deployment shutdown, and only then merge to
   request count, latency, quota/cost and pagination). It does not block
   Standard UI implementation.
 - Vehicle Recognition needs a measured quality threshold before it can preselect a modification. Until then it may only recommend one.
+
+## 2026-08-29 Final mandatory Slice 7 completion pass
+
+Historical checkpoints above remain unchanged. This section is the current
+handoff state after the final authenticated staging pass and supersedes older
+`NOT_EXECUTED`/`PARTIAL` labels without deleting their chronology.
+
+```ini
+CURRENT_STAGING_SHA = 5423418a770d614210e0a0f21dc2baad66a59b00
+CURRENT_FRONTEND_SHA = 689d2bb8b284348fdc0004faac857c317518e199
+RENDER_STAGING_DEPLOYMENT = dep-da99bne7bikc73ape2a0
+VERCEL_STAGING_DEPLOYMENT = dpl_2LdA4MSQtM5wk18QtU3MrPQucQkr (READY)
+STAGING_FRONTEND_BACKEND_TARGET = https://dream-wheels-ai-robokassa-staging.onrender.com
+PRODUCTION_CHANGED = NO
+```
+
+Render staging `/health` and `/health/full` both returned 200 with `db=alive`
+and `redis=alive`. Vercel workflow run `33249461966` created one staging
+artifact, updated the staging alias, and skipped production/admin/preview
+deployments. The versioned Wheel-Size normalized-profile key was used; no
+manual Redis flush was required.
+
+### Authoritative mandatory matrix
+
+| Item | Status / evidence |
+| --- | --- |
+| `SINGLE_MODIFICATION_STATUS` | `PASS` — provider cascade and `test_single_auto_confirm_is_idempotent_and_no_match_clears_current_selection` |
+| `MULTIPLE_MODIFICATION_STATUS` | `PASS` — authenticated Toyota/Camry and Exeed/RX cascades with explicit variant selection |
+| `STAGGERED_STATUS` | `PASS` — Kia Seltos setup `9bcef738-339b-482e-a548-939c0396a911`, independent front/rear RimSpecs |
+| `STAGGERED_CHECK_ID` | `ec53bfbc-c0c3-4418-b6dc-8d1fa3038bce` (`completed`, `compatible`, current before rear-only edit) |
+| `REAR_ONLY_STALE_STATUS` | `PASS` — rear ET52→53 preserved Vehicle/modification/front state; old check stale, new current check `7b98c364-3cd0-4e32-b3a8-2dff5e15b125` |
+| `STALE_RIM_STATUS` | `PASS` — Lexus A stale after B and B stale after C by immutable snapshot identity |
+| `STALE_VEHICLE_STATUS` | `PASS` — `test_each_core_vehicle_change_invalidates_current_modification` |
+| `EXACT_VERDICT_MATRIX` | Lexus A `compatible`; B `compatible_with_conditions` + `hub_rings_required`; C `unknown` + `et_outside_reference_range` with reference `40–40` |
+| `FRESH_FITMENT_RENDERING_ROUNDTRIP` | `NOT_AVAILABLE` — fresh jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` / `c30f5511-36d2-465f-8fe1-dccd56db1cac` failed at external Render provider with `PARTNER_API_CLOSED`; no automatic Fitment action was triggered |
+| `MOBILE_390_HAPPY_PATH` | `PASS` — authenticated 390×844 Vehicle/Rim controls and completed Check; no horizontal overflow (`scrollWidth=390`) or console errors |
+| `401_LIVE_RESTORATION` | `BLOCKED_NO_SAFE_EXPIRY_INJECTION` |
+| `401_AUTOMATED_COVERAGE` | `PASS` — explicit restoration, no replay, teardown/current-pending polling, and same-job draft preservation tests |
+| `401_RELEASE_DECISION` | `BLOCKED_WITH_FORMAL_DECISION` — no safe staging expiry seam; beta remains blocked |
+| `PROVIDER_OUTAGE_E2E` | `BLOCKED_UNSAFE_TO_INJECT` |
+| `PROVIDER_FAILURE_AUTOMATED_COVERAGE` | `PASS` — `test_create_check_records_provider_failure` and Fitment checks/jobs API suites; failed never maps to technical `unknown` |
+| `PROVIDER_FAILURE_RELEASE_DECISION` | `BLOCKED_WITH_FORMAL_DECISION` — no safe staging fault-injection seam |
+| `PARSER_SOURCE_REGRESSION` | `PASS` — exact `rim_offset` fixtures, persistence round-trip, source resolver, and stock/non-OE precedence |
+| `FINAL_MANDATORY_MATRIX` | `BLOCKED_WITH_FORMAL_DECISION` (fresh rendering unavailable; 401/provider live seams formally blocked) |
+
+The single-modification and stale-Vehicle invariants are already covered by
+the named downstream tests; no duplicate test was added. The stock/non-OE
+regression is covered by `test_stock_offset_wins_over_non_oem_for_same_exact_pair`:
+stock ET40 remains `source_offsets_mm=[40]`, `40–40`, and never widens to
+`40–45`.
+
+```ini
+SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS
+PHASE_07_FITMENT = IN_PROGRESS
+FITMENT_BETA_READY = NO
+NEXT = restore a safe rendering/provider test seam, repeat fresh Fitment → Rendering → Fitment, then continue the remaining mandatory matrix; do not start Phase 08
+```
