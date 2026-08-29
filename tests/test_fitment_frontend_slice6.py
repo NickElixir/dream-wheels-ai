@@ -108,3 +108,6 @@ def test_fitment_overview_stacks_on_narrow_mobile_viewports() -> None:
     assert ".fitment-overview-grid," in mobile
     assert '.fitment-overview-grid[data-collapsed="true"]' in mobile
     assert "grid-template-columns: minmax(0, 1fr);" in mobile
+    assert ".fitment-panel > *," in mobile
+    assert ".fitment-shell > *" in mobile
+    assert ".fitment-context-row > button" in mobile
