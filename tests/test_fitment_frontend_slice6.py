@@ -101,3 +101,10 @@ def test_verdict_currentness_session_and_visual_tryon_have_presentation_boundari
     assert "data-fitment-create-image" in INDEX_HTML
     assert 'setView("create")' in APP_JS
     assert ".fitment-verdict-field" in STYLE_CSS
+
+
+def test_fitment_overview_stacks_on_narrow_mobile_viewports() -> None:
+    mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[1]
+    assert ".fitment-overview-grid," in mobile
+    assert '.fitment-overview-grid[data-collapsed="true"]' in mobile
+    assert "grid-template-columns: minmax(0, 1fr);" in mobile
