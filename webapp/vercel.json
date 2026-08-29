@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/backend/jobs/:jobId/status",
-      "destination": "/api/job-status-proxy?jobId=:jobId"
+      "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=status"
     },
     {
       "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
