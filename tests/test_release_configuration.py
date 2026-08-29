@@ -84,10 +84,6 @@ def test_proxy_reads_backend_url_only_at_runtime() -> None:
 def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy_routes() -> None:
     rewrites = VERCEL_JSON["rewrites"]
     assert {
-        "source": "/api/backend/jobs/:jobId/status",
-        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=status",
-    } in rewrites
-    assert {
         "source": "/api/backend/jobs/:jobId/fitment",
         "destination": "/api/fitment-proxy?jobId=:jobId",
     } in rewrites
@@ -122,7 +118,6 @@ def test_nested_fitment_catalogue_and_variant_routes_share_fitment_proxy() -> No
     } in rewrites
     assert "Unsupported Fitment route" in FITMENT_PROXY_JS
     assert "catalogue/regions" in FITMENT_PROXY_JS
-    assert 'route === "status"' in FITMENT_PROXY_JS
 
 
 def test_vercel_project_binding_is_not_tracked() -> None:

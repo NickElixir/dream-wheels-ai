@@ -25,7 +25,6 @@ module.exports = async (req, res) => {
         "catalogue/years",
         "vehicle-variants",
         "vehicle-variants/apply",
-        "status",
     ]);
     if (!allowedRoutes.has(route)) {
         res.status(400).json({ detail: "Unsupported Fitment route" });
@@ -33,9 +32,7 @@ module.exports = async (req, res) => {
     }
 
     await proxyBackendRequest(req, res, {
-        backendPath: route === "status"
-            ? `/jobs/${jobId}/status`
-            : `/jobs/${jobId}/fitment${route ? `/${route}` : ""}`,
+        backendPath: `/jobs/${jobId}/fitment${route ? `/${route}` : ""}`,
         stripQueryKeys: ["jobId", "fitmentPath"],
     });
 };
