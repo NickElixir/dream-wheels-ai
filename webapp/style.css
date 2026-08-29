@@ -4337,6 +4337,16 @@ body.has-fallback-main-button #app {
         grid-template-columns: minmax(0, 1fr);
     }
 
+    .fitment-panel > *,
+    .fitment-shell > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .fitment-context-row > button {
+        max-width: 100%;
+    }
+
     .mobile-bottom-nav {
         display: grid;
     }
