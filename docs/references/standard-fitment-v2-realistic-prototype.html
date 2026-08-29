@@ -355,9 +355,13 @@ h3{font-size:18px;line-height:1.2}
 <script>
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 
+function draftValue(key,fallback){
+  const value=draft[key];
+  return value===undefined?fallback:String(value).replace(/"/g,"&quot;");
+}
 function vehicleEditor(){
   return '<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Уточните известные данные</div></div></div>'+
-  '<div class="fields"><div class="field"><label>Марка</label><input class="input" value="Lexus"></div><div class="field"><label>Модель</label><input class="input" value="RX"></div><div class="field"><label>Год</label><input class="input" value="2023"></div></div>'+
+  '<div class="fields"><div class="field"><label>Марка</label><input class="input" data-draft="vehicleMake" value="'+draftValue("vehicleMake","Lexus")+'"></div><div class="field"><label>Модель</label><input class="input" data-draft="vehicleModel" value="'+draftValue("vehicleModel","RX")+'"></div><div class="field"><label>Год</label><input class="input" data-draft="vehicleYear" inputmode="numeric" value="'+draftValue("vehicleYear","2023")+'"></div></div>'+
   '<div class="actions"><button class="primary-button" data-advance="modification">Сохранить автомобиль</button></div>';
 }
 function vehicleReady(){
@@ -457,8 +461,9 @@ const scenarios={
 let scenarioKey=localStorage.getItem("dw-fitment-v2-realistic")||"vehicleProposal";
 let activeSection=scenarios[scenarioKey].active;
 let draft=JSON.parse(localStorage.getItem("dw-fitment-v2-realistic-draft")||"{}");
+let editorMode=null;
 
-function setScenario(key){scenarioKey=key;activeSection=scenarios[key].active;localStorage.setItem("dw-fitment-v2-realistic",key);render()}
+function setScenario(key){scenarioKey=key;activeSection=scenarios[key].active;editorMode=null;localStorage.setItem("dw-fitment-v2-realistic",key);render()}
 function renderNav(){
   const cfg=scenarios[scenarioKey];
   $$(".flow-tab").forEach(btn=>{
@@ -470,7 +475,12 @@ function renderNav(){
   });
 }
 function renderWorkspace(){
-  const cfg=scenarios[scenarioKey],fn=cfg.views[activeSection]||noResult;
+  const cfg=scenarios[scenarioKey];
+  const fn=editorMode==="vehicle"&&activeSection==="vehicle"
+    ? vehicleEditor
+    : editorMode==="rim"&&activeSection==="rim"
+      ? ()=>rimEditor(scenarioKey==="rimFallback")
+      : cfg.views[activeSection]||noResult;
   $("#workspace").innerHTML=fn();bindWorkspace();
 }
 function bindWorkspace(){
@@ -478,9 +488,9 @@ function bindWorkspace(){
   $$("[data-nav-target]").forEach(b=>b.onclick=()=>{activeSection=b.dataset.navTarget;render()});
   $$("[data-advance]").forEach(b=>b.onclick=()=>setScenario(b.dataset.advance));
   $$("[data-draft]").forEach(i=>{const k=i.dataset.draft;if(draft[k]!==undefined)i.value=draft[k];i.oninput=()=>{draft[k]=i.value;localStorage.setItem("dw-fitment-v2-realistic-draft",JSON.stringify(draft))}});
-  $$("[data-edit-vehicle]").forEach(b=>b.onclick=()=>{$("#workspace").innerHTML=vehicleEditor();bindWorkspace()});
-  $$("[data-edit-rim]").forEach(b=>b.onclick=()=>{$("#workspace").innerHTML=rimEditor(false);bindWorkspace()});
-  const mf=$("#manualFill");if(mf)mf.onclick=()=>{const a=$("#manualArea");a.innerHTML=rimEditor(true);bindWorkspace();a.scrollIntoView({behavior:"smooth",block:"nearest"})};
+  $$("[data-edit-vehicle]").forEach(b=>b.onclick=()=>{editorMode="vehicle";renderWorkspace()});
+  $$("[data-edit-rim]").forEach(b=>b.onclick=()=>{editorMode="rim";renderWorkspace()});
+  const mf=$("#manualFill");if(mf)mf.onclick=()=>{editorMode="rim";renderWorkspace()};
 }
 function renderScenarioGrid(){
   const g=$("#scenarioGrid");g.innerHTML="";
