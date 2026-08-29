@@ -6,6 +6,7 @@ import pytest
 from src.fitment.providers import wheel_size
 from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
+from src.fitment.schemas import VehicleIdentity
 
 
 def test_default_provider_cache_is_shared_between_requests():
@@ -84,3 +85,58 @@ def test_catalogue_provider_failure_is_not_cached_as_no_data(monkeypatch):
 
     assert cache.values == {}
     assert cache.sets == []
+
+
+def test_profile_cache_version_bypasses_pre_rim_offset_normalization():
+    """A deployed parser fix must not wait up to a day for an old profile key."""
+    cache = RecordingCache()
+    params = {
+        "make": "lexus",
+        "model": "rx",
+        "year": 2023,
+        "region": "russia",
+        "modification": "rx350",
+    }
+    old_key = f"ws:profile:{sorted(params.items())}"
+    raw_key = f"ws:search:by_model:{sorted(params.items())}"
+    cache.values[old_key] = {
+        "provider": "wheel_size",
+        "provider_version": "v2",
+        "allowed_wheels": [{"axle": "front", "rim_diameter": 19, "rim_width": 8, "offset": None}],
+        "offset_references": [],
+    }
+    cache.values[raw_key] = [
+        {
+            "technical": {"stud_holes": 5, "pcd": 114.3, "centre_bore": 60.1},
+            "wheels": [
+                {
+                    "is_stock": True,
+                    "front": {"rim_diameter": 19, "rim_width": 8, "rim_offset": 40},
+                }
+            ],
+        }
+    ]
+    provider = WheelSizeProvider(api_key="test-key", cache=cache)
+    identity = VehicleIdentity(
+        make="Lexus",
+        model="RX",
+        year=2023,
+        provider_mappings={
+            "wheel_size": {
+                "make_slug": "lexus",
+                "model_slug": "rx",
+                "region": "russia",
+                "generation_slug": "al30",
+                "modification_slug": "rx350",
+            }
+        },
+    )
+
+    profile = asyncio.run(provider.get_fitment_profile(identity))
+
+    assert profile is not None
+    reference = profile.offset_reference_for("front", 19, 8)
+    assert reference is not None
+    assert reference.source_offsets_mm == [40]
+    assert all(old_key != key for key in cache.gets)
+    assert any(wheel_size.PROFILE_NORMALIZATION_VERSION in key for key in cache.sets)
