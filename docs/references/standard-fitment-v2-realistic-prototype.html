@@ -335,8 +335,7 @@ h3{font-size:18px;line-height:1.2}
 
     <section class="panel render-exit">
       <div class="render-exit-copy">
-        <strong>Создание изображения доступно независимо от технической проверки</strong>
-        <span>Совместимость колесного диска не влияет на возможность визуальной примерки</span>
+        <strong>Визуальная примерка не требует завершения проверки</strong>
       </div>
       <button class="ghost-button neutral">Создать изображение</button>
     </section>
@@ -347,6 +346,7 @@ h3{font-size:18px;line-height:1.2}
   <button>Главная</button><button>Создать</button><button class="active">Мои</button><button>Баланс</button><button>Ещё</button>
 </nav>
 
+<!-- Review harness only — not production UI -->
 <details class="prototype-tools">
   <summary>Сценарии прототипа</summary>
   <div class="prototype-grid" id="scenarioGrid"></div>
@@ -355,6 +355,11 @@ h3{font-size:18px;line-height:1.2}
 <script>
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 
+function vehicleEditor(){
+  return '<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Уточните известные данные</div></div></div>'+
+  '<div class="fields"><div class="field"><label>Марка</label><input class="input" value="Lexus"></div><div class="field"><label>Модель</label><input class="input" value="RX"></div><div class="field"><label>Год</label><input class="input" value="2023"></div></div>'+
+  '<div class="actions"><button class="primary-button" data-advance="modification">Сохранить автомобиль</button></div>';
+}
 function vehicleReady(){
   return `<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div></div></div>
   <div class="summary-list">
@@ -387,10 +392,9 @@ function rimEditor(partial=false){
   <details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Автоматически найденные значения остаются предложением до явного сохранения</div></details>`;
 }
 function readyToCheck(){
-  return '<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div><div class="workspace-sub">Параметры сохранены и готовы к отдельной проверке</div></div><span class="status-pill success">Сохранено</span></div>'+
+  return '<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Колесный диск</div></div><span class="status-pill success">Сохранено</span></div>'+
   '<div class="summary-list"><div class="summary-row"><span>Параметры</span><strong>19" / 8J / 5×114,3</strong></div><div class="summary-row"><span>ET / DIA</span><strong>40 / 60,1</strong></div></div>'+
-  '<div class="wallet-status-island tone-info"><div class="island-title">Следующее действие</div><div class="island-text">Запустите Standard Check отдельно, когда будете готовы</div></div>'+
-  '<div class="actions"><button class="primary-button" data-advance="processing">Проверить совместимость</button><button class="ghost-button neutral" data-edit-rim>Изменить параметры</button></div><div id="rimEditor"></div>'+
+  '<div class="actions"><button class="primary-button" data-advance="processing">Проверить совместимость</button><button class="ghost-button neutral" data-edit-rim>Изменить параметры</button></div>'+
   '<details class="details"><summary>Источник и технические данные</summary><div class="details-body">Источник: wildberries.ru<br>Параметры сохранены и подтверждены пользователем</div></details>';
 }
 function noResult(){
@@ -400,7 +404,7 @@ function noResult(){
 
 const scenarios={
  vehicleProposal:{label:"Vehicle proposal",active:"vehicle",nav:{vehicle:["warning","Нужно подтвердить"],rim:["success","Параметры сохранены"],result:["","Не выполнен",true]},views:{
-   vehicle:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Автомобиль определён по фотографии<br>Проверьте найденные данные и выберите комплектацию</div></div><span class="status-pill warning">Требуется подтверждение</span></div>
+   vehicle:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Автомобиль</div><div class="workspace-sub">Автомобиль определён по фотографии<br>Проверьте найденные данные и выберите комплектацию</div></div></div>
    <div class="summary-list"><div class="summary-row"><span>Марка и модель</span><strong>Lexus RX</strong></div><div class="summary-row"><span>Год</span><strong>2023</strong></div></div>
    <div class="actions"><button class="primary-button" data-advance="modification">Подтвердить данные</button><button class="ghost-button neutral" data-edit-vehicle>Изменить данные</button></div><div id="vehicleEditor"></div>`,
    rim:()=>rimReady(),result:()=>noResult()}},
@@ -418,9 +422,9 @@ const scenarios={
    <div class="actions"><button class="primary-button" id="manualFill">Заполнить параметры вручную</button><button class="ghost-button neutral">Повторить</button></div><div id="manualArea"></div>`,
    result:()=>noResult()}},
  processing:{label:"Check processing",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["info","Проверяем"]},views:{
-   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div><div class="workspace-sub">Проверяем совместимость</div></div><span class="status-pill info">В процессе</span></div>
+   vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div><div class="workspace-sub">Проверяем совместимость</div></div></div>
    <div class="wallet-status-island tone-info"><div class="island-title">Проверка выполняется</div><div class="island-text">Технический вывод появится после завершения проверки</div></div>
-   <div class="actions"><button class="primary-button" disabled style="opacity:.55">Проверяем совместимость</button></div>`}},
+   `}},
  conditions:{label:"Compatible + conditions",active:"result",nav:{vehicle:["success","Подтверждён"],rim:["success","Подтверждён"],result:["warning","Подходит с условиями"]},views:{
    vehicle:()=>vehicleReady(),rim:()=>rimReady(),result:()=>`<div class="workspace-head"><div class="workspace-copy"><div class="workspace-title">Вывод</div></div></div>
    <div class="verdict-hero"><div class="verdict-title warning">Подходит с условиями</div><div class="workspace-sub">Для установки необходимо выполнить дополнительные условия</div></div>
@@ -459,7 +463,7 @@ function renderNav(){
   const cfg=scenarios[scenarioKey];
   $$(".flow-tab").forEach(btn=>{
     const sec=btn.dataset.section,n=cfg.nav[sec]||["",""];
-    const resultAvailable=["processing","conditions","incompatible","stale","provider"].includes(scenarioKey);
+    const resultAvailable=["processing","conditions","incompatible","unknown","stale","provider"].includes(scenarioKey);
     btn.classList.toggle("active",sec===activeSection);btn.disabled=sec==="result"&&!resultAvailable;
     const dot=$(".state-dot",btn);dot.className="state-dot"+(n[0]?" "+n[0]:"");
     $(".flow-state",btn).textContent=n[1]||"";
@@ -474,8 +478,8 @@ function bindWorkspace(){
   $$("[data-nav-target]").forEach(b=>b.onclick=()=>{activeSection=b.dataset.navTarget;render()});
   $$("[data-advance]").forEach(b=>b.onclick=()=>setScenario(b.dataset.advance));
   $$("[data-draft]").forEach(i=>{const k=i.dataset.draft;if(draft[k]!==undefined)i.value=draft[k];i.oninput=()=>{draft[k]=i.value;localStorage.setItem("dw-fitment-v2-realistic-draft",JSON.stringify(draft))}});
-  $$("[data-edit-vehicle]").forEach(b=>b.onclick=()=>{const e=$("#vehicleEditor");if(e)e.innerHTML=`<div class="fields" style="margin-top:16px"><div class="field"><label>Марка</label><input class="input" value="Lexus"></div><div class="field"><label>Модель</label><input class="input" value="RX"></div><div class="field"><label>Год</label><input class="input" value="2023"></div></div><div class="actions" style="margin-top:12px"><button class="primary-button">Сохранить автомобиль</button></div>`});
-  $$("[data-edit-rim]").forEach(b=>b.onclick=()=>{const e=$("#rimEditor");if(e){e.innerHTML=rimEditor(false);bindWorkspace()}});
+  $$("[data-edit-vehicle]").forEach(b=>b.onclick=()=>{$("#workspace").innerHTML=vehicleEditor();bindWorkspace()});
+  $$("[data-edit-rim]").forEach(b=>b.onclick=()=>{$("#workspace").innerHTML=rimEditor(false);bindWorkspace()});
   const mf=$("#manualFill");if(mf)mf.onclick=()=>{const a=$("#manualArea");a.innerHTML=rimEditor(true);bindWorkspace();a.scrollIntoView({behavior:"smooth",block:"nearest"})};
 }
 function renderScenarioGrid(){
