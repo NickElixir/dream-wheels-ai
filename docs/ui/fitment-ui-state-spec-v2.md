@@ -1,22 +1,24 @@
-# Standard Fitment UI State Specification V2 — Candidate Handoff
+# Standard Fitment UI State Specification V2 — Frozen Contract
 
 ## Status and authority
 
 ```text
-STANDARD_FITMENT_V2_ARCHITECTURE = REVIEWED
-STANDARD_FITMENT_V2_STATE_CTA_MATRIX = SYNCED
-STANDARD_FITMENT_V2_COPY_ERROR_MATRIX = SYNCED
-STANDARD_FITMENT_V2_REFERENCE = REVIEWED
-STANDARD_FITMENT_V2_REFERENCE_STATUS = AWAITING_PRODUCT_APPROVAL
-STANDARD_FITMENT_UI_V2 = CANDIDATE_NOT_FROZEN
+STANDARD_FITMENT_V2_ARCHITECTURE = FROZEN
+STANDARD_FITMENT_V2_STATE_CTA_MATRIX = FROZEN
+STANDARD_FITMENT_V2_COPY_ERROR_MATRIX = FROZEN
+STANDARD_FITMENT_V2_REFERENCE = FROZEN
+STANDARD_FITMENT_V2_REFERENCE_STATUS = APPROVED
+STANDARD_FITMENT_UI_V2 = FROZEN
+UI_V2_FROZEN = YES
 ```
 
-This is the reviewed V2 candidate contract for the Standard Fitment screen. It
-does not replace the canonical V1 domain/API contracts or the existing V1
-specification until the product owner explicitly approves the V2 candidate.
+This is the frozen V2 UI contract for the Standard Fitment screen. It records
+explicit product approval for the UI/UX contract and prototype reference. It
+does not replace the canonical V1 domain/API contracts or create a new backend
+domain contract.
 The `STANDARD_FITMENT_UI = FROZEN` status in the V1 artifact applies to that
-already-versioned V1 checkpoint; this document deliberately does not set a V2
-freeze status.
+already-versioned V1 checkpoint; this V2 document records the separate V2
+freeze approved above.
 
 Authority remains:
 
@@ -26,8 +28,8 @@ Authority remains:
    snapshots, lifecycle and machine codes
 3. [UI Design Code](../ui-design-code.md) for visual language, terminology and
    responsive boundaries
-4. This document for the reviewed V2 interaction composition and handoff
-5. The [V2 candidate prototype](../references/standard-fitment-v2-realistic-prototype.html)
+4. This document for the frozen V2 interaction composition and handoff
+5. The [frozen V2 prototype](../references/standard-fitment-v2-realistic-prototype.html)
    for rendered visual reference
 
 ## Scope
@@ -212,20 +214,15 @@ The following are implementation validations, not new V2 design decisions:
 
 No production runtime file is changed by this handoff.
 
-## Freeze gate
+## Freeze record
 
-The reviewed prototype is a candidate visual reference, not a frozen runtime
-contract. A separate explicit product approval is required before setting:
+The product owner explicitly approved this V2 UI/UX contract on 2026-08-29.
+The approval covers the design contract and prototype reference only; runtime
+implementation remains a separate phase.
 
 ```text
+STANDARD_FITMENT_V2_REFERENCE = FROZEN
+STANDARD_FITMENT_V2_REFERENCE_STATUS = APPROVED
 STANDARD_FITMENT_UI_V2 = FROZEN
 UI_V2_FROZEN = YES
-```
-
-Until that approval:
-
-```text
-STANDARD_FITMENT_V2_REFERENCE = REVIEWED
-STANDARD_FITMENT_V2_REFERENCE_STATUS = AWAITING_PRODUCT_APPROVAL
-UI_V2_FROZEN = NO
 ```
