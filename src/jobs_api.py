@@ -3441,7 +3441,7 @@ async def save_fitment_details(
             core_vehicle_fields = {"make", "model", "year", "market"}
             core_changed = set(vehicle_changed).intersection(core_vehicle_fields)
             modification_state, _, _, _ = _modification_from_row(row)
-            if not core_changed and modification_state == "confirmed":
+            if vehicle_values and not core_changed and modification_state == "confirmed":
                 # A RimSpec-only client may still send a stale vehicle form
                 # (for example after a transient draft conflict). The exact
                 # selected modification is server-owned and can only change
