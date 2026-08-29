@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import asyncio
 import difflib
+import hashlib
+import json
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -50,6 +52,10 @@ from src.fitment.schemas import (
 logger = logging.getLogger(__name__)
 
 PROVIDER_NAME = "wheel_size"
+# The normalized profile is cached independently from the raw provider payload.
+# Bump this whenever normalization semantics change, so an old profile cannot
+# bypass a corrected parser for its full cache TTL.
+PROFILE_NORMALIZATION_VERSION = "wheel_size_profile_v2"
 
 # Рынок VLM/пользователя → регион Wheel-Size + fallback при пустом ответе.
 MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
@@ -76,6 +82,40 @@ def _to_float(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _offset_values(axle_data: dict[str, Any]) -> list[float]:
+    """Return provider-supplied ET values without rounding or interpolation.
+
+    Current Wheel-Size records use one scalar ``rim_offset``.  The older
+    ``offset``/``et`` aliases are retained for compatible payloads.  A list is
+    accepted only when the provider explicitly supplies one.  Explicit
+    min/max endpoints are used only when no scalar/list representation is
+    present; we never synthesize intermediate values or combine dimensions.
+    """
+    for field in ("offset", "et", "rim_offset"):
+        raw = axle_data.get(field)
+        if raw is None:
+            continue
+        values = raw if isinstance(raw, list | tuple | set) else [raw]
+        parsed = [_to_float(value) for value in values]
+        offsets = [value for value in parsed if value is not None]
+        if offsets:
+            return offsets
+
+    endpoints: list[float] = []
+    for field in (
+        "offset_min",
+        "offset_max",
+        "et_min",
+        "et_max",
+        "rim_offset_min",
+        "rim_offset_max",
+    ):
+        value = _to_float(axle_data.get(field))
+        if value is not None:
+            endpoints.append(value)
+    return endpoints
 
 
 def _option_values(option: dict[str, Any]) -> set[str]:
@@ -474,6 +514,10 @@ class WheelSizeProvider:
         )
         return data
 
+    @staticmethod
+    def _profile_cache_key(params: dict[str, Any]) -> str:
+        return f"ws:profile:{PROFILE_NORMALIZATION_VERSION}:{sorted(params.items())}"
+
     async def get_fitment_profile(
         self,
         identity: VehicleIdentity,
@@ -510,7 +554,7 @@ class WheelSizeProvider:
             if mapping.get("modification_slug"):
                 params["modification"] = mapping["modification_slug"]
 
-            cache_key = f"ws:profile:{sorted(params.items())}"
+            cache_key = self._profile_cache_key(params)
             cached = await self._cache.get(cache_key)
             if cached is not None:
                 return FitmentProfile.model_validate(cached)
@@ -581,30 +625,27 @@ class WheelSizeProvider:
                     width = _to_float(axle_data.get("rim_width"))
                     if diameter is None or width is None:
                         continue
-                    offset_raw = axle_data.get("offset")
-                    if offset_raw is None:
-                        offset_raw = axle_data.get("et")
-                    if offset_raw is None:
-                        # Wheel-Size v2 uses ``rim_offset`` in the live
-                        # /search/by_model payload (while older fixtures and
-                        # some provider responses use ``offset``/``et``).
-                        offset_raw = axle_data.get("rim_offset")
-                    offset = _to_float(offset_raw)
                     # In live Wheel-Size v2 responses the stock marker is
                     # usually attached to the surrounding wheels[] pair;
                     # retain support for fixtures that put it on the axle.
                     is_stock = axle_data.get("is_stock")
                     if is_stock is None:
                         is_stock = wheel_pair.get("is_stock")
-                    record = AxleFitment(
-                        axle=axle,
-                        rim_diameter=diameter,
-                        rim_width=width,
-                        offset=offset,
-                        is_stock=is_stock,
-                        tire=axle_data.get("tire"),
-                    )
-                    allowed.append(record)
+                    # Preserve every provider ET value for this exact
+                    # axle/diameter/width tuple.  A missing ET still creates
+                    # an allowed-size record, but never an invented interval.
+                    offsets = _offset_values(axle_data)
+                    for offset in offsets or [None]:
+                        allowed.append(
+                            AxleFitment(
+                                axle=axle,
+                                rim_diameter=diameter,
+                                rim_width=width,
+                                offset=offset,
+                                is_stock=is_stock,
+                                tire=axle_data.get("tire"),
+                            )
+                        )
 
         if not allowed and not any(bolt_patterns):
             return None
@@ -663,6 +704,12 @@ class WheelSizeProvider:
             provider=PROVIDER_NAME,
             provider_version="v2",
             fetched_at=datetime.now(UTC).isoformat(),
+            raw_response_ref=(
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+            ),
             bolt_count=bolt_count,
             pcd_mm=pcd_mm,
             center_bore_mm=_consensus(center_bores),

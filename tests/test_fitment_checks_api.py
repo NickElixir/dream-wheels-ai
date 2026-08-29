@@ -148,10 +148,20 @@ class Provider:
             ],
             offset_references=[
                 OffsetReference(
-                    axle="front", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=45, et_max_mm=45
+                    axle="front",
+                    rim_diameter_in=20,
+                    rim_width_j=8.5,
+                    et_min_mm=45,
+                    et_max_mm=45,
+                    source_offsets_mm=[45],
                 ),
                 OffsetReference(
-                    axle="rear", rim_diameter_in=20, rim_width_j=8.5, et_min_mm=45, et_max_mm=45
+                    axle="rear",
+                    rim_diameter_in=20,
+                    rim_width_j=8.5,
+                    et_min_mm=45,
+                    et_max_mm=45,
+                    source_offsets_mm=[45],
                 ),
             ],
         )
@@ -318,6 +328,13 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert evaluation["vehicle_identity_revision"] == 4
     assert evaluation["rim_setup_revision"] == 3
     assert evaluation["provider_mapping_revision"] == 2
+    reference = evaluation["normalized_profile"]["offset_references"][0]
+    assert reference["source_offsets_mm"] == [45]
+    assert reference["et_min_mm"] == 45
+    assert reference["et_max_mm"] == 45
+    assert "vehicle_reference_offset_missing" not in [
+        issue["code"] for issue in body["blocking_issues"]
+    ]
 
 
 def test_create_check_returns_unknown_for_et_outside_reference(monkeypatch):
