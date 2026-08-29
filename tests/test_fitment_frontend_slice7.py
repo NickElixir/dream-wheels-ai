@@ -18,19 +18,36 @@ def test_transient_fitment_draft_is_bounded_session_scoped_and_safe() -> None:
 def test_restore_compares_authoritative_revisions_before_merging() -> None:
     assert "function fitmentRevisionBaseline(" in APP_JS
     assert "function fitmentDraftMatchesOverview(" in APP_JS
+    assert "function fitmentDraftVehicleMatchesOverview(" in APP_JS
     assert "frontSourceFingerprint" in APP_JS
     assert "rearSourceFingerprint" in APP_JS
     assert "if (!fitmentDraftMatchesOverview(draft, overview))" in APP_JS
     assert "state.fitmentRestoreConflict" in APP_JS
+    assert "vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview)" in APP_JS
     assert "data-fitment-restore-conflict-apply" in INDEX_HTML
 
 
-def test_stale_conflict_does_not_restore_modification_or_sku_selection() -> None:
+def test_stale_conflict_keeps_server_modification_and_drops_stale_sku() -> None:
     safe_conflict = APP_JS.split("function fitmentSafeConflictDraft(")[1].split(
         "function fitmentDraftPayload("
     )[0]
-    assert 'safe.vehicle.modification = ""' in safe_conflict
+    assert "const authoritative = fitmentFormFromOverview(overview);" in safe_conflict
+    assert "safe.vehicle = authoritative.vehicle;" in safe_conflict
     assert 'safe.rim.sku = ""' in safe_conflict
+
+
+def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
+    payload = APP_JS.split("function fitmentPayload(")[1].split("function fitmentValuesEqual")[0]
+    save = APP_JS.split("async function saveFitment(")[1].split(
+        "async function fetchRenderHistory"
+    )[0]
+    assert "fitmentVehicleDirty" in APP_JS
+    assert "function markVehicleFieldEdited(path)" in APP_JS
+    assert "if (includeVehicle)" in payload
+    assert "fitmentPayload({ includeVehicle: state.fitmentVehicleDirty })" in save
+    assert "applyDemoFitmentSave(fitmentPayload())" in save
+    assert "state.fitmentVehicleDirty = false;" in save
+    assert "state.fitmentVehicleDirty = true" in APP_JS
 
 
 def test_ordinary_return_is_silent_but_401_restoration_is_explicit() -> None:

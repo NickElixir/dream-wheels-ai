@@ -115,3 +115,31 @@ def test_multiple_provider_offsets_for_one_exact_pair_form_only_that_pair_interv
     assert reference is not None
     assert reference.source_offsets_mm == [38, 40, 42]
     assert (reference.et_min_mm, reference.et_max_mm) == (38, 42)
+
+
+def test_stock_offset_wins_over_non_oem_for_same_exact_pair() -> None:
+    """Non-OE evidence must not widen an exact stock reference interval."""
+    profile = WheelSizeProvider(api_key="test")._normalize_profile(
+        [
+            {
+                "technical": {"stud_holes": 5, "pcd": 114.3},
+                "wheels": [
+                    {
+                        "is_stock": True,
+                        "front": {"rim_diameter": 19, "rim_width": 8, "rim_offset": 40},
+                    },
+                    {
+                        "is_stock": False,
+                        "front": {"rim_diameter": 19, "rim_width": 8, "rim_offset": 45},
+                    },
+                ],
+            }
+        ]
+    )
+
+    assert profile is not None
+    reference = profile.offset_reference_for("front", 19, 8)
+    assert reference is not None
+    assert reference.source_offsets_mm == [40]
+    assert (reference.et_min_mm, reference.et_max_mm) == (40, 40)
+    assert reference.evidence_class == "stock"
