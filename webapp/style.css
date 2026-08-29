@@ -4347,6 +4347,20 @@ body.has-fallback-main-button #app {
         max-width: 100%;
     }
 
+    .fitment-verdict-card > *,
+    .fitment-verdict-head > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .fitment-verdict-head {
+        flex-wrap: wrap;
+    }
+
+    .fitment-verdict-head .primary-button {
+        width: 100%;
+    }
+
     .mobile-bottom-nav {
         display: grid;
     }

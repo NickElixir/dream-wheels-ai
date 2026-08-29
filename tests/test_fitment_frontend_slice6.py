@@ -111,3 +111,7 @@ def test_fitment_overview_stacks_on_narrow_mobile_viewports() -> None:
     assert ".fitment-panel > *," in mobile
     assert ".fitment-shell > *" in mobile
     assert ".fitment-context-row > button" in mobile
+    assert ".fitment-verdict-card > *," in mobile
+    assert ".fitment-verdict-head > *" in mobile
+    assert ".fitment-verdict-head {" in mobile
+    assert ".fitment-verdict-head .primary-button" in mobile
