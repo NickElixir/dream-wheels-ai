@@ -2918,7 +2918,10 @@ function renderFitment() {
     if (basicsCard) basicsCard.hidden = activeStep !== 1;
     if (vehicleSection) vehicleSection.hidden = activeStep !== 1;
     if (rimSection) rimSection.hidden = activeStep !== 2;
-    if (overviewGrid) overviewGrid.hidden = activeStep !== 2;
+    // A completed or historical verdict must still expose the existing
+    // "Уточнить" actions. They are the sole UI path back to the authoritative
+    // Vehicle and RimSpec editors for a new current check.
+    if (overviewGrid) overviewGrid.hidden = activeStep === 1;
     if (actions) actions.hidden = activeStep === 3;
 
     if (verdictCard) verdictCard.hidden = activeStep !== 3 || demoMode;
