@@ -432,6 +432,7 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "fitmentActiveStep" in APP_JS
     assert "vehicleSection.hidden = activeStep !== 1" in APP_JS
     assert "rimSection.hidden = activeStep !== 2" in APP_JS
+    assert "overviewGrid.hidden = activeStep === 1" in APP_JS
     assert "verdictCard.hidden = activeStep !== 3" in APP_JS
     assert 'locale === "ru" ? "Продолжить"' in APP_JS
     assert "Сохранить и получить вывод" in APP_JS
