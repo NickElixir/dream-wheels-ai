@@ -111,10 +111,15 @@ The deployed normalizer maps it to `source_offsets_mm=[40]` and
 `et_min_mm=et_max_mm=40` (and mirrors the square profile to the rear axle).
 
 The authenticated staging UI produced the expected Lexus ET40 result
-(`Совместимо`) after the deployment. The public Check response currently does
-not expose `evaluation_snapshot`, so a Check id/raw snapshot tuple cannot be
-independently extracted from the UI; the provider payload, hash and mapping are
-verified by the deployed parser tests and the live API response above.
+(`Совместимо`) after the deployment. Direct read-only staging DB verification
+captured Check `6e562fa0-1d7d-4ff2-bb53-a2e1cee8b69b` as `completed` /
+`compatible`; its authoritative `evaluation_snapshot.normalized_profile`
+contains `raw_response_ref=sha256:ef5d5422b0c0f261f453156b29105fbf5425eb11568d3c36012b28fc44627c0d`,
+the 19x8 stock offset reference `source_offsets_mm=[40.0]`, and
+`et_min_mm=et_max_mm=40.0`. The normalizer mirrored the square profile to the
+rear axle. The public Check response does not expose `evaluation_snapshot`, so
+this snapshot evidence was collected from the staging database using the
+read-only service connection.
 
 The same authenticated UI session currently has a stale draft/source-resolver
 conflict after editing the center bore: saving the B variant clears the
@@ -123,8 +128,10 @@ submitted. Consequently live B/C Check ids are not claimed here. The
 deterministic engine was exercised locally against the live Lexus payload and
 returns the required outcomes: A `compatible`, B
 `compatible_with_conditions`/`hub_rings_required`, C `unknown`/
-`et_outside_reference_range` with reference 40–40. Continue with a fresh
-authenticated context before marking the Slice 7 matrix complete.
+`et_outside_reference_range` with reference 40–40. Live B/C checks still require
+a fresh authenticated UI context because the current draft/source-resolver
+state clears the revision-bound vehicle selection when the center bore is
+edited; they are not claimed as staging Check results.
 
 ## Live provider payload hashes (diagnostic smoke)
 
