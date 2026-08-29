@@ -906,6 +906,78 @@ def test_rim_only_save_preserves_revision_bound_modification_from_stale_vehicle_
     assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
 
 
+def test_rim_only_save_without_vehicle_payload_preserves_confirmed_modification(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    mapping = _confirmed_modification_mapping()
+    rows = [
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+        ),
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+            rim_center_bore_mm=Decimal("74.1"),
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "rim": {"center_bore_mm": 74.1},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 2
+    assert body["modification_state"] == "confirmed"
+    assert body["vehicle"]["modification"] == "330i"
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
+    assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
+
+
 def test_fitment_save_confirms_prefilled_values_without_value_change(monkeypatch):
     execute_calls: list[tuple[str, tuple]] = []
     rows = [
