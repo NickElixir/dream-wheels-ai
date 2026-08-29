@@ -4,6 +4,8 @@
 
 `FITMENT_BETA_READY: NO`
 
+`FITMENT_IMPLEMENTATION_READY = YES`
+
 `STANDARD_FITMENT_ARCHITECTURE = FROZEN`
 
 `ARCHITECTURE_BLOCKERS_FOR_UI = NONE`
@@ -40,18 +42,18 @@
 
 `SLICE_6_FROZEN_FRONTEND = COMPLETE`
 
-`SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS`
+`SLICE_7_CROSS_FLOW_STAGING_E2E = COMPLETE_WITH_ACCEPTED_LIMITATIONS`
 
-`VERCEL_DEPLOYMENT_GATE = BLOCKED`
+`PHASE_07_FITMENT = COMPLETE`
 
-`VERCEL_RETRY_ETA = 2026-08-28T17:35:45Z (server: try again in 24 hours)`
+`VERCEL_DEPLOYMENT_GATE = PASSED`
 
-`DIRECT_RENDER_A_B_C = NOT_EXECUTED_AUTH_PATH_UNAVAILABLE`
+`DIRECT_RENDER_A_B_C = SUPERSEDED_BY_LIVE_STAGING_LEXUS_A_B_C`
 
 The quota-safe Vercel topology audit and proposed deployment policy are
 recorded in [vercel-deployment-topology-audit-v1.md](../evidence/vercel-deployment-topology-audit-v1.md).
 
-`IMPLEMENTATION = IN_PROGRESS`
+`IMPLEMENTATION = COMPLETE`
 
 `ET_OUTSIDE_REFERENCE_SEMANTICS = CORRECTED`
 
@@ -103,11 +105,15 @@ recorded in [vercel-deployment-topology-audit-v1.md](../evidence/vercel-deployme
 
 `RENDER_FITMENT_DECOUPLING = IMPLEMENTED`
 
-`NEXT = After Vercel retry ETA, perform one coordinated staging-target deployment, then continue authenticated Lexus A/B/C; direct Render A/B/C was unavailable in this run`
+`NEXT = Phase 08 — Generation Provider`
 
-`BLOCKER = VERCEL_DEPLOYMENT_GATE BLOCKED (api-deployments-free-per-day; retry after 2026-08-28T17:35:45Z); exact compatible and provider-outage injection remain unproven`
+`ACCEPTED_LIMITATIONS = external Render provider unavailable for fresh round-trip; no safe staging seams for 401 expiry or provider fault injection`
 
-The deterministic implementation and its automated verification were recorded in the prior implementation handoff. The beta gate remains **NO** until an authenticated staging end-to-end run succeeds against the configured Wheel Size API. Slices 2–6 add runtime/API and presentation behaviour but do not alter the frozen domain or UI contract, and the gate remains unchanged.
+The deterministic implementation and its automated verification were recorded in
+the prior implementation handoff. Phase 07 implementation is complete with the
+three explicitly accepted test-environment limitations recorded in the final
+section below. The beta gate remains **NO** until the post-Phase 08 Generation
+Provider revalidation succeeds.
 
 ## Canonical product contract
 
@@ -334,18 +340,14 @@ overview and map `next_action`/`current_check` rather than relying on local
 check state. Authenticated staging evidence remains required before the beta
 gate can change.
 
-### Vercel pipeline Stage B1 checkpoint
+### Historical Vercel pipeline Stage B1 checkpoint
 
-The quota-safe deployment workflow is prepared locally in
-`docs/evidence/vercel-deployment-pipeline-migration-b1.md`. It is not yet
-active: Vercel-native Git deployment settings, GitHub Actions variables/secrets,
-commit, push and deployment remain Stage B2 actions. The quota gate stays
-blocked at the preserved server ETA `2026-08-28T17:35:45Z`; this does not alter
-the Slice 7 authenticated E2E requirement. Production backend validation is
-fail-closed, and admin deployment path detection covers the complete push
-range. Stage B2 must disconnect legacy Git, push a `feature/infra-*` migration
-branch first, verify native deployment shutdown, and only then merge to
-`staging`.
+The quota-safe deployment workflow was prepared in
+`docs/evidence/vercel-deployment-pipeline-migration-b1.md`. The former quota
+blocker and Stage B2 setup are historical; the current staging deployment and
+alias are recorded in the final completion section above. Production backend
+validation remains fail-closed, and production was not changed during this
+pass.
 
 ## Open decisions
 
@@ -388,16 +390,16 @@ manual Redis flush was required.
 | `STALE_RIM_STATUS` | `PASS` — Lexus A stale after B and B stale after C by immutable snapshot identity |
 | `STALE_VEHICLE_STATUS` | `PASS` — `test_each_core_vehicle_change_invalidates_current_modification` |
 | `EXACT_VERDICT_MATRIX` | Lexus A `compatible`; B `compatible_with_conditions` + `hub_rings_required`; C `unknown` + `et_outside_reference_range` with reference `40–40` |
-| `FRESH_FITMENT_RENDERING_ROUNDTRIP` | `NOT_AVAILABLE` — fresh jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` / `c30f5511-36d2-465f-8fe1-dccd56db1cac` failed at external Render provider with `PARTNER_API_CLOSED`; no automatic Fitment action was triggered |
+| `FRESH_FITMENT_RENDERING_ROUNDTRIP` | `BLOCKED_BY_EXTERNAL_RENDER_PROVIDER` — legitimate fresh jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` / `c30f5511-36d2-465f-8fe1-dccd56db1cac` reached the external rendering flow but failed before a result with `PARTNER_API_CLOSED`; this is not an unresolved Fitment implementation defect |
 | `MOBILE_390_HAPPY_PATH` | `PASS` — authenticated 390×844 Vehicle/Rim controls and completed Check; no horizontal overflow (`scrollWidth=390`) or console errors |
-| `401_LIVE_RESTORATION` | `BLOCKED_NO_SAFE_EXPIRY_INJECTION` |
+| `401_LIVE_RESTORATION` | `ACCEPTED_WITH_AUTOMATED_COVERAGE` — no safe staging expiry seam exists; automated draft persistence/no-replay/overview-first/current-pending coverage passes |
 | `401_AUTOMATED_COVERAGE` | `PASS` — explicit restoration, no replay, teardown/current-pending polling, and same-job draft preservation tests |
-| `401_RELEASE_DECISION` | `BLOCKED_WITH_FORMAL_DECISION` — no safe staging expiry seam; beta remains blocked |
-| `PROVIDER_OUTAGE_E2E` | `BLOCKED_UNSAFE_TO_INJECT` |
+| `401_RELEASE_DECISION` | `ACCEPTED_WITH_AUTOMATED_COVERAGE` — re-test when a safe staging expiry seam exists |
+| `PROVIDER_OUTAGE_LIVE_E2E` | `ACCEPTED_WITH_AUTOMATED_COVERAGE` — no safe staging fault-injection seam exists |
 | `PROVIDER_FAILURE_AUTOMATED_COVERAGE` | `PASS` — `test_create_check_records_provider_failure` and Fitment checks/jobs API suites; failed never maps to technical `unknown` |
-| `PROVIDER_FAILURE_RELEASE_DECISION` | `BLOCKED_WITH_FORMAL_DECISION` — no safe staging fault-injection seam |
+| `PROVIDER_FAILURE_RELEASE_DECISION` | `ACCEPTED_WITH_AUTOMATED_COVERAGE` — re-test when a safe staging fault-injection seam exists |
 | `PARSER_SOURCE_REGRESSION` | `PASS` — exact `rim_offset` fixtures, persistence round-trip, source resolver, and stock/non-OE precedence |
-| `FINAL_MANDATORY_MATRIX` | `BLOCKED_WITH_FORMAL_DECISION` (fresh rendering unavailable; 401/provider live seams formally blocked) |
+| `FINAL_MANDATORY_MATRIX` | `COMPLETE_WITH_ACCEPTED_LIMITATIONS` |
 
 The single-modification and stale-Vehicle invariants are already covered by
 the named downstream tests; no duplicate test was added. The stock/non-OE
@@ -406,8 +408,33 @@ stock ET40 remains `source_offsets_mm=[40]`, `40–40`, and never widens to
 `40–45`.
 
 ```ini
-SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS
-PHASE_07_FITMENT = IN_PROGRESS
+SLICE_7_CROSS_FLOW_STAGING_E2E = COMPLETE_WITH_ACCEPTED_LIMITATIONS
+PHASE_07_FITMENT = COMPLETE
+FITMENT_IMPLEMENTATION_READY = YES
 FITMENT_BETA_READY = NO
-NEXT = restore a safe rendering/provider test seam, repeat fresh Fitment → Rendering → Fitment, then continue the remaining mandatory matrix; do not start Phase 08
+NEXT = Phase 08 — Generation Provider
 ```
+
+### Accepted limitations and post-Phase 08 revalidation
+
+The following scenarios are deliberately not labelled `PASS`:
+
+1. `FRESH_FITMENT_RENDERING_ROUNDTRIP = BLOCKED_BY_EXTERNAL_RENDER_PROVIDER`.
+   Re-test after Generation Provider availability is restored.
+2. `401_LIVE_RESTORATION = ACCEPTED_WITH_AUTOMATED_COVERAGE`. No safe staging
+   expiry seam exists. Preserve automated proof of draft persistence, no
+   mutation replay, authoritative overview-first restore, and current pending
+   polling only.
+3. `PROVIDER_OUTAGE_LIVE_E2E = ACCEPTED_WITH_AUTOMATED_COVERAGE`. No safe
+   staging fault-injection seam exists. Preserve proof that provider
+   operational failure becomes `execution_status=failed` and never technical
+   `verdict=unknown`.
+
+## POST_PHASE_08_REVALIDATION
+
+- Restore Generation Provider availability.
+- Execute one fresh `Rendering → Fitment → Rendering → Fitment` round-trip.
+- Confirm that no save, catalogue lookup, resolver, or Standard Check is
+  automatically replayed.
+- If the round-trip passes, promote `FITMENT_BETA_READY` according to the
+  release gate.

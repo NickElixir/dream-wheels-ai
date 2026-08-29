@@ -70,9 +70,12 @@ that require provider data or fault injection remain explicitly bounded.
 
 `FITMENT_BETA_READY = NO`
 
+`FITMENT_IMPLEMENTATION_READY = YES`
+
 The Vercel function-limit blocker is resolved and the live catalogue route is
-healthy. Continue the mandatory matrix from the existing authenticated
-context. Production Render was not modified.
+healthy. The implementation is ready; beta remains deferred until the
+post-Phase 08 Generation Provider revalidation. Production Render was not
+modified.
 
 ## Wheel-Size reference gate — Lexus / BMW / Kia
 
@@ -197,6 +200,9 @@ The negative invariant remains covered by
 `SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS`
 `FITMENT_BETA_READY = NO`
 
+The in-progress marker above is historical for the state-isolation follow-up;
+the final classification is recorded in the completion section below.
+
 ## Live provider payload hashes (diagnostic smoke)
 
 These are hashes of the API `data` arrays used by the normalizer (canonical
@@ -253,9 +259,9 @@ staging health payload; no production backend URL was used.
 | Stale Vehicle currentness | `PASS` | `test_each_core_vehicle_change_invalidates_current_modification` |
 | Stock ET40 vs non-OE ET45 | `PASS` | `test_stock_offset_wins_over_non_oem_for_same_exact_pair`; remains `40–40`, never `40–45` |
 | Mobile 390×844 happy path | `PASS` | Authenticated Kia Fitment form and completed Check at exact 390×844; `scrollWidth=390`, no console errors; controls remained usable |
-| Fitment → Rendering → Fitment fresh round-trip | `NOT_AVAILABLE` | Legitimate new jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` and `c30f5511-36d2-465f-8fe1-dccd56db1cac` failed before output with provider `PARTNER_API_CLOSED`; Fitment availability/CTA remains independent in code and automated coverage |
-| 401 live restoration | `BLOCKED_WITH_FORMAL_DECISION` | No safe staging expiry/injection seam; automated no-replay/restoration coverage passes |
-| Provider outage live injection | `BLOCKED_WITH_FORMAL_DECISION` | No safe staging fault-injection seam; operational failure boundary is covered by API tests |
+| Fitment → Rendering → Fitment fresh round-trip | `BLOCKED_BY_EXTERNAL_RENDER_PROVIDER` | Legitimate new jobs `c61d985d-2443-459a-af36-7ab462c0ddf2` and `c30f5511-36d2-465f-8fe1-dccd56db1cac` reached the external flow but failed before output with `PARTNER_API_CLOSED`; this is not an unresolved Fitment implementation defect |
+| 401 live restoration | `ACCEPTED_WITH_AUTOMATED_COVERAGE` | No safe staging expiry seam; automated draft persistence/no-replay/overview-first/current-pending coverage passes |
+| Provider outage live injection | `ACCEPTED_WITH_AUTOMATED_COVERAGE` | No safe staging fault-injection seam; operational failure boundary is covered by API tests |
 | Parser/source regression | `PASS` | Wheel-Size fixtures, source resolver, and pair-level stock precedence tests |
 
 ### Session-restoration and failure-boundary decisions
@@ -283,9 +289,36 @@ provider is restored or a safe staging rendering fixture is supplied.
 ### Final status for this pass
 
 ```ini
-FINAL_MANDATORY_MATRIX = BLOCKED_WITH_FORMAL_DECISION
-SLICE_7_CROSS_FLOW_STAGING_E2E = IN_PROGRESS
-PHASE_07_FITMENT = IN_PROGRESS
+FINAL_MANDATORY_MATRIX = COMPLETE_WITH_ACCEPTED_LIMITATIONS
+SLICE_7_CROSS_FLOW_STAGING_E2E = COMPLETE_WITH_ACCEPTED_LIMITATIONS
+PHASE_07_FITMENT = COMPLETE
+FITMENT_IMPLEMENTATION_READY = YES
 FITMENT_BETA_READY = NO
-NEXT = restore a safe rendering/provider test seam, then repeat fresh Fitment → Rendering → Fitment; retain A/B/C and staggered evidence
+NEXT = Phase 08 — Generation Provider
 ```
+
+## Accepted limitations
+
+The three deferred scenarios are intentionally not labelled `PASS`:
+
+1. `FRESH_FITMENT_RENDERING_ROUNDTRIP = BLOCKED_BY_EXTERNAL_RENDER_PROVIDER`.
+   Fresh jobs reached the external rendering flow and failed with
+   `PARTNER_API_CLOSED` before a result existed. Re-test after Generation
+   Provider availability is restored; this is not an unresolved Fitment defect.
+2. `401_LIVE_RESTORATION = ACCEPTED_WITH_AUTOMATED_COVERAGE`. No safe staging
+   expiry seam exists. Preserve automated proof of draft persistence, no
+   mutation replay, authoritative overview-first restore, and current pending
+   polling only.
+3. `PROVIDER_OUTAGE_LIVE_E2E = ACCEPTED_WITH_AUTOMATED_COVERAGE`. No safe
+   staging fault-injection seam exists. Preserve proof that provider
+   operational failure becomes `execution_status=failed` and never technical
+   `verdict=unknown`.
+
+## POST_PHASE_08_REVALIDATION
+
+- Restore Generation Provider availability.
+- Execute one fresh `Rendering → Fitment → Rendering → Fitment` round-trip.
+- Confirm no automatic save, catalogue lookup, resolver, or Standard Check
+  replay.
+- If the round-trip passes, promote `FITMENT_BETA_READY` according to the
+  release gate.
