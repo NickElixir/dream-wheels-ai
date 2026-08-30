@@ -319,7 +319,7 @@ def _percentile_50(values: list[float]) -> float | None:
 
 
 def _numeric_mean(values: list[Any]) -> float | None:
-    numeric = [float(value) for value in values if isinstance(value, (int, float))]
+    numeric = [float(value) for value in values if isinstance(value, int | float)]
     return round(mean(numeric), 3) if numeric else None
 
 
@@ -330,7 +330,7 @@ def calculate_summary(records: list[dict[str, Any]], scores: dict[str, Any]) -> 
     latencies = [
         record["latency_ms"]
         for record in successes
-        if isinstance(record.get("latency_ms"), (int, float))
+        if isinstance(record.get("latency_ms"), int | float)
     ]
     score_rows = [row for row in scores.get("scores", []) if isinstance(row, dict)]
     accepted = [
