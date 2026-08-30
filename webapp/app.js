@@ -17,7 +17,7 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
-const FITMENT_DEMO_OVERVIEW_VERSION = 3;
+const FITMENT_DEMO_OVERVIEW_VERSION = 4;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
 const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
 const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
@@ -72,27 +72,27 @@ const FITMENT_VEHICLE_STATES = new Set(["empty", "unconfirmed", "confirmed_incom
 const FITMENT_RIM_SETUP_STATES = new Set(["empty", "partial", "complete_unconfirmed", "confirmed_ready"]);
 const DEMO_VEHICLE_VARIANTS = [
     {
-        market: "JP",
-        generation: "I ZVW41",
-        modification: "1.8 Hybrid",
-        engine: "2ZR-FXE, Hybrid",
-        years: "2013–2021",
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Electric",
+        engine: "Electric",
+        years: "2024–2026",
         provider: "demo_fixture",
     },
     {
-        market: "JP",
-        generation: "I ZVW41",
-        modification: "1.8 Hybrid G",
-        engine: "2ZR-FXE, Hybrid",
-        years: "2013–2021",
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Electric Performance",
+        engine: "Electric",
+        years: "2024–2026",
         provider: "demo_fixture",
     },
     {
-        market: "JP",
-        generation: "I ZVW41",
-        modification: "1.8 Hybrid S",
-        engine: "2ZR-FXE, Hybrid",
-        years: "2013–2021",
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Dual Motor Electric",
+        engine: "Electric",
+        years: "2024–2026",
         provider: "demo_fixture",
     },
 ];
@@ -103,9 +103,9 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-mebius.jpg";
-const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-v5.jpg";
-const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-mebius-v5.jpg";
+const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";
+const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";
+const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";
 const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
 const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
@@ -1201,28 +1201,28 @@ function fitmentPcdOptionValue(boltCount, pcdMm) {
 function buildDefaultDemoFitmentOverview() {
     const completedAt = guestRenderHistory()[0]?.completed_at || "2026-07-05T03:11:00+03:00";
     const vehicle = {
-        make: "Daihatsu",
-        model: "Mebius",
-        year: 2016,
-        body: "ZVW41",
-        generation: "I",
-        modification: "1.8 Hybrid",
-        market: "JP",
+        make: "ZEEKR",
+        model: "SUV",
+        year: 2025,
+        body: "EV SUV",
+        generation: "EV",
+        modification: "Electric",
+        market: "CN",
         is_user_confirmed: false,
     };
     vehicle.title = demoVehicleTitle(vehicle);
 
     const rim = {
-        brand: "V-Sport",
-        model: "V5 Black",
-        sku: "VSPORT-V5-18",
-        product_url: "https://shop.example.test/vsport-v5-black-18",
+        brand: "Xtrike",
+        model: "10-Spoke",
+        sku: "118753506318",
+        product_url: "https://shop.example.test/xtrike-118753506318",
         bolt_count: 5,
-        pcd_mm: 114.3,
-        pcd_display: "5×114,3",
+        pcd_mm: 112,
+        pcd_display: "5×112",
         center_bore_mm: null,
-        wheel_diameter_in: 18,
-        wheel_width_j: 7.5,
+        wheel_diameter_in: 20,
+        wheel_width_j: 9,
         offset_et_mm: null,
         has_product_url: true,
         title: "",
@@ -1287,27 +1287,25 @@ function buildDefaultDemoFitmentOverview() {
         vehicle_variants: [],
         vehicle_candidates: {
             make: [
-                { value: "Daihatsu", source: "vlm_visual", confidence: 0.98 },
-                { value: "Toyota", source: "vlm_visual", confidence: 0.34 },
+                { value: "ZEEKR", source: "vlm_visual", confidence: 0.98 },
             ],
             model: [
-                { value: "Mebius", source: "vlm_visual", confidence: 0.94 },
-                { value: "Prius Alpha", source: "vlm_visual", confidence: 0.41 },
+                { value: "SUV", source: "vlm_visual", confidence: 0.94 },
             ],
             year: [
-                { value: 2016, source: "vlm_visual", confidence: 0.87 },
-                { value: 2017, source: "vlm_visual", confidence: 0.45 },
+                { value: 2025, source: "vlm_visual", confidence: 0.87 },
+                { value: 2026, source: "vlm_visual", confidence: 0.45 },
             ],
         },
         rim_candidates: {
-            pcd_mm: [{ value: 114.3, source: "ocr", confidence: 0.91 }],
-            center_bore_mm: [{ value: 60.1, source: "ocr", confidence: 0.52 }],
-            wheel_diameter_in: [{ value: 18, source: "ocr", confidence: 0.88 }],
-            wheel_width_j: [{ value: 7.5, source: "ocr", confidence: 0.74 }],
+            pcd_mm: [{ value: 112, source: "ocr", confidence: 0.91 }],
+            center_bore_mm: [{ value: 66.6, source: "ocr", confidence: 0.52 }],
+            wheel_diameter_in: [{ value: 20, source: "ocr", confidence: 0.88 }],
+            wheel_width_j: [{ value: 9, source: "ocr", confidence: 0.74 }],
             offset_et_mm: [{ value: 45, source: "ocr", confidence: 0.43 }],
             product_url: [
                 {
-                    value: "https://shop.example.test/vsport-v5-black-18",
+                    value: "https://shop.example.test/xtrike-118753506318",
                     source: "provider_catalog",
                     confidence: 0.66,
                 },
@@ -1524,16 +1522,16 @@ function guestRenderHistory() {
         fitment_available: true,
         render_input_snapshot: {
             vehicle: {
-                make: "Daihatsu",
-                model: "Mebius",
-                year: 2016,
+                make: "ZEEKR",
+                model: "SUV",
+                year: 2025,
             },
             rim: {
-                wheel_diameter_in: 18,
-                wheel_width_j: 7.5,
+                wheel_diameter_in: 20,
+                wheel_width_j: 9,
                 bolt_count: 5,
-                pcd_mm: 114.3,
-                pcd_display: "5×114,3",
+                pcd_mm: 112,
+                pcd_display: "5×112",
             },
         },
         demo_assets: {
@@ -4044,9 +4042,9 @@ async function loadFitmentCatalogue(kind, params = {}) {
 function loadFitmentVehicleCatalogue() {
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         const overview = state.fitmentOverview || {};
-        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "Daihatsu", label: overview.vehicle?.make || "Daihatsu" }] };
-        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "Mebius", label: overview.vehicle?.model || "Mebius" }] };
-        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2016), label: String(overview.vehicle?.year || 2016) }] };
+        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "ZEEKR", label: overview.vehicle?.make || "ZEEKR" }] };
+        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "SUV", label: overview.vehicle?.model || "SUV" }] };
+        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2025), label: String(overview.vehicle?.year || 2025) }] };
         return;
     }
     void loadFitmentCatalogue("regions");

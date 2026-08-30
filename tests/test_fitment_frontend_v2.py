@@ -152,17 +152,17 @@ def test_render_cta_remains_outside_fitment_result_workspace() -> None:
 
 
 def test_guest_demo_pair_uses_distinct_local_assets() -> None:
-    assert 'const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-mebius.jpg";' in APP_JS
-    assert 'const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-v5.jpg";' in APP_JS
-    assert 'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-mebius-v5.jpg";' in APP_JS
+    assert 'const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";' in APP_JS
+    assert 'const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";' in APP_JS
+    assert 'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";' in APP_JS
     assert "rim_original: GUEST_DEMO_RIM_ASSET_URL" in APP_JS
     assert "result: GUEST_DEMO_RESULT_ASSET_URL" in APP_JS
-    assert 'model: "Mebius"' in APP_JS
-    assert 'model: "V5 Black"' in APP_JS
+    assert 'model: "SUV"' in APP_JS
+    assert 'model: "10-Spoke"' in APP_JS
     for filename in [
-        "demo-vehicle-mebius.jpg",
-        "demo-rim-v5.jpg",
-        "demo-render-mebius-v5.jpg",
+        "demo-vehicle-zeekr.jpg",
+        "demo-rim-xtrike.png",
+        "demo-render-zeekr-xtrike.jpg",
     ]:
         assert (ROOT / "webapp" / "assets" / filename).is_file()
 
