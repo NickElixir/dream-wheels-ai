@@ -1,0 +1,85 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
+INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
+
+
+def test_v2_shell_uses_context_pair_and_free_navigator() -> None:
+    assert "data-fitment-context-pair" in INDEX_HTML
+    assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
+    assert 'data-fitment-section-tab="rim"' in INDEX_HTML
+    assert 'data-fitment-section-tab="result"' in INDEX_HTML
+    assert 'data-fitment-result-tab aria-selected="false" disabled' in INDEX_HTML
+    assert 'class="fitment-steps"' not in INDEX_HTML
+    assert "Demo" not in INDEX_HTML
+
+
+def test_result_gate_is_based_on_check_or_history_not_local_step() -> None:
+    assert "function fitmentResultAvailable()" in APP_JS
+    assert "return Boolean(state.fitmentCheck || state.fitmentCheckHistory.length);" in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" in APP_JS
+    assert 'section === "result" && !fitmentResultAvailable()' in APP_JS
+    assert "state.fitmentActiveSection = fitmentSectionForAction(overview);" in APP_JS
+    assert "loadFitmentCheckHistory(overview)" in APP_JS
+
+
+def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
+    assert 'return overview?.next_action?.kind || "complete_vehicle_details";' in APP_JS
+    assert "const nextAction = fitmentNextAction(overview);" in APP_JS
+    save = APP_JS.split("async function saveFitment(", 1)[1].split(
+        "async function fetchRenderHistory", 1
+    )[0]
+    assert "await runFitmentCheck();" not in save
+    assert "Проверку совместимости можно запустить отдельно" in save
+    assert 'state.fitmentActiveSection = "rim";' in save
+    assert "data-fitment-check-ready" in INDEX_HTML
+    assert 'ui.nextAction === "run_standard_check"' in APP_JS
+
+
+def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
+    assert "data-fitment-vehicle-summary" in INDEX_HTML
+    assert "data-fitment-rim-summary" in INDEX_HTML
+    assert 'data-fitment-edit="vehicle"' in INDEX_HTML
+    assert 'data-fitment-edit="rim"' in INDEX_HTML
+    assert "state.fitmentRimEditing = true;" in APP_JS
+    assert "Заполните параметры вручную одним редактором" in APP_JS
+    assert "data-fitment-source-disclosure" in INDEX_HTML
+
+
+def test_check_states_keep_processing_and_provider_failure_distinct() -> None:
+    assert 'check.execution_status === "queued"' in APP_JS
+    assert 'check.execution_status === "processing"' in APP_JS
+    assert 'check.execution_status === "failed"' in APP_JS
+    assert 'check.verdict === "compatible_with_conditions"' in APP_JS
+    assert 'check.verdict === "unknown"' in APP_JS
+    assert 'check.verdict === "incompatible"' in APP_JS
+    assert 'data-status="unknown"' not in INDEX_HTML
+    assert 'fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" })' in APP_JS
+
+
+def test_render_cta_remains_outside_fitment_result_workspace() -> None:
+    assert "data-fitment-create-image" in INDEX_HTML
+    assert 'setView("create")' in APP_JS
+    assert "data-fitment-actions" in INDEX_HTML
+    assert "independently from the fitment result" in APP_JS
+
+
+def test_mobile_v2_keeps_pair_side_by_side_and_editors_single_column() -> None:
+    assert ".fitment-pair {" in STYLE_CSS
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in STYLE_CSS
+    mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[-1]
+    assert ".fitment-pair-media { min-height: 0; aspect-ratio: 1 / 1; }" in mobile
+    assert ".fitment-form-grid { grid-template-columns: 1fr; }" in mobile
+    assert ".fitment-flow-tab" in mobile
+
+
+def test_draft_restores_v2_section_without_replaying_authoritative_actions() -> None:
+    assert "activeSection: state.fitmentActiveSection" in APP_JS
+    assert (
+        'state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(draft.activeSection)'
+        in APP_JS
+    )
+    assert 'restoreReason: "reauth"' in APP_JS
+    assert "function runFitmentCheck()" in APP_JS

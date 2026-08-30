@@ -190,7 +190,8 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "data-fitment-readiness" in INDEX_HTML
     assert "data-fitment-card-vehicle-meta" in INDEX_HTML
     assert "data-fitment-card-rim-meta" in INDEX_HTML
-    assert "data-fitment-preview-badge" in INDEX_HTML
+    assert "data-fitment-context-pair" in INDEX_HTML
+    assert 'data-fitment-section-tab="result"' in INDEX_HTML
     assert "data-fitment-preview-note" in INDEX_HTML
     assert "/fitment`" in APP_JS
     assert "data-open-fitment" in APP_JS
@@ -225,7 +226,7 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "state.fitmentSourceAutoResolvedForJob !== jobId" in APP_JS
     assert "void resolveFitmentRimSource({ automatic: true });" in APP_JS
     assert 'state.fitmentSourceAutoResolvedForJob = "";' in APP_JS
-    assert "Сохранить и получить вывод" in APP_JS
+    assert "Сохранить параметры" in APP_JS
     assert "await runFitmentCheck();" not in APP_JS
     assert "You can start the compatibility check separately." in APP_JS
     assert "function fitmentSourceBrand(overview)" in APP_JS
@@ -328,10 +329,10 @@ def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> Non
 
 
 def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
-    assert "const savedFromStep = state.fitmentActiveStep;" in APP_JS
-    assert "if (savedFromStep === 1)" in APP_JS
+    assert "const savedFromSection = state.fitmentActiveSection;" in APP_JS
+    assert 'if (savedFromSection === "vehicle")' in APP_JS
     assert "state.fitmentActiveStep = 2;" in APP_JS
-    assert "scrollFitmentTo('[data-fitment-section=\"rim\"]');" in APP_JS
+    assert 'state.fitmentActiveSection = "rim";' in APP_JS
 
 
 def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
@@ -420,23 +421,20 @@ def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> Non
     assert "fitment-candidate-row" in STYLE_CSS
     assert "position: sticky" in STYLE_CSS
     assert "--desktop-content-max: 1080px" in STYLE_CSS
-    assert "data-fitment-card-source-brand" in INDEX_HTML
-    assert "data-fitment-card-source-sku" in INDEX_HTML
+    assert "data-fitment-source-disclosure" in INDEX_HTML
+    assert "data-fitment-source-submit" in INDEX_HTML
 
 
 def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "Проверьте, подойдут ли диски" in INDEX_HTML
-    assert 'data-fitment-step-indicator="1"' in INDEX_HTML
-    assert 'data-fitment-step-indicator="2"' in INDEX_HTML
-    assert 'data-fitment-step-indicator="3"' in INDEX_HTML
+    assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
+    assert 'data-fitment-section-tab="rim"' in INDEX_HTML
+    assert 'data-fitment-section-tab="result"' in INDEX_HTML
     assert "fitmentActiveStep" in APP_JS
-    assert "vehicleSection.hidden = activeStep !== 1" in APP_JS
-    assert "rimSection.hidden = activeStep !== 2" in APP_JS
-    assert "overviewGrid.hidden = activeStep === 1" in APP_JS
-    assert "verdictCard.hidden = activeStep !== 3" in APP_JS
-    assert 'locale === "ru" ? "Продолжить"' in APP_JS
-    assert "Сохранить и получить вывод" in APP_JS
-    assert "Сохранить и выбрать комплектацию" in APP_JS
+    assert "fitmentActiveSection" in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" in APP_JS
+    assert "state.fitmentActiveSection = fitmentSectionForAction(overview);" in APP_JS
+    assert "Сохранить параметры" in APP_JS
     assert "function fitmentNextAction" in APP_JS
     assert "function fitmentDraftMissingFields" not in APP_JS
     assert "function fitmentUiState" in APP_JS
@@ -457,7 +455,8 @@ def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> Non
     assert 'data-i18n="fitment.back"' in INDEX_HTML
     assert "Вернуться к примерке" in INDEX_HTML
     assert "Demo preview" not in INDEX_HTML
-    assert "data-fitment-preview-badge hidden>Demo</span>" in INDEX_HTML
+    assert "data-fitment-context-pair" in INDEX_HTML
+    assert "Demo" not in INDEX_HTML
     assert "fitment-context-row" in STYLE_CSS
     assert 'data-i18n="fitment.preliminary"' not in INDEX_HTML
     assert "render-info-island" in APP_JS
