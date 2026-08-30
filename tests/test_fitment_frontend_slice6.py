@@ -105,7 +105,7 @@ def test_verdict_currentness_session_and_visual_tryon_have_presentation_boundari
 
 def test_fitment_v2_shell_stays_within_narrow_mobile_viewports() -> None:
     mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[1]
-    assert ".fitment-pair-media { min-height: 0; aspect-ratio: 1 / 1; }" in mobile
+    assert ".fitment-pair-media { height: 150px; min-height: 0; }" in mobile
     assert ".fitment-flow-nav { gap: 4px; padding: 6px; }" in mobile
     assert ".fitment-render-action { display: grid; padding: 16px; }" in mobile
     assert ".fitment-panel > *," in mobile

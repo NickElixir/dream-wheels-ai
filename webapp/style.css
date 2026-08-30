@@ -2297,8 +2297,8 @@ h2 {
 .fitment-pair-media {
     position: relative;
     display: grid;
+    height: 250px;
     min-height: 0;
-    aspect-ratio: 16 / 8.6;
     place-items: center;
     overflow: hidden;
     background:
@@ -2313,6 +2313,16 @@ h2 {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.fitment-pair-card[data-fitment-rim-preview] .fitment-pair-media {
+    place-items: center;
+}
+
+.fitment-pair-card[data-fitment-rim-preview] .fitment-pair-image {
+    width: min(46%, 240px);
+    height: 100%;
+    object-fit: contain;
 }
 
 .fitment-pair-copy {
@@ -2420,7 +2430,7 @@ h2 {
 @media (max-width: 760px) {
     .fitment-v2-context { padding: 10px; }
     .fitment-pair { gap: 10px; }
-    .fitment-pair-media { min-height: 0; aspect-ratio: 1 / 1; }
+    .fitment-pair-media { height: 150px; min-height: 0; }
     .fitment-pair-copy { padding: 10px 10px 11px; }
     .fitment-pair-copy strong { font-size: 14px; }
     .fitment-pair-copy small { font-size: 11px; line-height: 1.35; }

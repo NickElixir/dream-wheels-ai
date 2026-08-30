@@ -176,11 +176,20 @@ def test_rim_preview_uses_rim_asset_and_never_the_vehicle_asset() -> None:
     assert 'kind === "vehicle" ? "original" : "original"' not in preview
 
 
+def test_rim_preview_keeps_full_island_and_centers_narrow_image() -> None:
+    assert "height: 250px;" in STYLE_CSS
+    assert ".fitment-pair-card[data-fitment-rim-preview] .fitment-pair-image" in STYLE_CSS
+    assert "width: min(46%, 240px);" in STYLE_CSS
+    assert "object-fit: contain;" in STYLE_CSS
+    mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[-1]
+    assert ".fitment-pair-media { height: 150px; min-height: 0; }" in mobile
+
+
 def test_mobile_v2_keeps_pair_side_by_side_and_editors_single_column() -> None:
     assert ".fitment-pair {" in STYLE_CSS
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in STYLE_CSS
     mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[-1]
-    assert ".fitment-pair-media { min-height: 0; aspect-ratio: 1 / 1; }" in mobile
+    assert ".fitment-pair-media { height: 150px; min-height: 0; }" in mobile
     assert ".fitment-form-grid { grid-template-columns: 1fr; }" in mobile
     assert ".fitment-flow-tab" in mobile
 
