@@ -544,18 +544,7 @@
         </section>
 
         <section class="view" data-view="fitment" hidden>
-            <section class="hero-panel compact fitment-hero">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="fitment.eyebrow">Проверка совместимости</p>
-                    <h1 data-i18n="fitment.title">Проверьте, подойдут ли диски</h1>
-                </div>
-            </section>
-
             <section class="panel fitment-panel">
-                <div class="fitment-context-row">
-                    <button type="button" class="ghost-button compact-button" data-fitment-back data-i18n="fitment.back">Вернуться к примерке</button>
-                </div>
-
                 <div class="wallet-status-island tone-loading" data-fitment-loading data-visible="false" aria-live="polite">
                     <div class="wallet-status-spinner" aria-hidden="true"></div>
                     <div class="wallet-status-copy">
@@ -576,37 +565,30 @@
                 </div>
 
                 <div class="fitment-shell" data-fitment-shell hidden>
-                    <nav class="fitment-flow-nav" data-fitment-navigator aria-label="Разделы проверки">
-                        <button type="button" class="fitment-flow-tab active" data-fitment-section-tab="vehicle" aria-selected="true">
-                            <span class="fitment-flow-index">01</span><span class="fitment-flow-copy"><strong>Автомобиль</strong><small>Данные и комплектация</small></span><span class="fitment-flow-state" data-fitment-flow-state="vehicle">Требует проверки</span>
-                        </button>
-                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="rim" aria-selected="false">
-                            <span class="fitment-flow-index">02</span><span class="fitment-flow-copy"><strong>Колесный диск</strong><small>Параметры установки</small></span><span class="fitment-flow-state" data-fitment-flow-state="rim">Ожидает</span>
-                        </button>
-                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="result" data-fitment-result-tab aria-selected="false" disabled>
-                            <span class="fitment-flow-index">03</span><span class="fitment-flow-copy"><strong>Вывод</strong><small>Результат проверки</small></span><span class="fitment-flow-state" data-fitment-flow-state="result">Недоступно</span>
-                        </button>
-                    </nav>
-
                     <article class="fitment-context fitment-v2-context" data-fitment-context>
-                        <div class="fitment-context-copy">
-                            <p class="section-label">Контекст</p>
-                            <h2>Проверяем, как этот диск встанет на автомобиль</h2>
-                            <p>Сначала подтвердите данные автомобиля и параметры диска. Итоговая проверка запускается отдельно.</p>
-                        </div>
                         <div class="fitment-pair" data-fitment-context-pair>
                             <article class="fitment-pair-card" data-fitment-vehicle-preview>
                                 <div class="fitment-pair-media" data-fitment-vehicle-preview-media><span>Фото автомобиля</span></div>
-                                <div class="fitment-pair-copy"><span class="section-label">Автомобиль</span><strong data-fitment-vehicle-title>—</strong><small data-fitment-vehicle-specs hidden></small><span data-fitment-vehicle-provenance>Источник не подтверждён</span></div>
+                                <div class="fitment-pair-copy"><span class="section-label">Автомобиль</span><strong data-fitment-vehicle-title>—</strong><small data-fitment-vehicle-specs hidden></small></div>
                             </article>
                             <article class="fitment-pair-card" data-fitment-rim-preview>
                                 <div class="fitment-pair-media" data-fitment-rim-preview-media><span>Фото диска</span></div>
-                                <div class="fitment-pair-copy"><span class="section-label">Колесный диск</span><strong data-fitment-card-rim-title>—</strong><small data-fitment-card-rim-specs hidden></small><span data-fitment-rim-provenance>Источник не подтверждён</span></div>
+                                <div class="fitment-pair-copy"><span class="section-label">Колесный диск</span><strong data-fitment-card-rim-title>—</strong><small data-fitment-card-rim-specs hidden></small></div>
                             </article>
                         </div>
-                        <div class="fitment-readiness" data-fitment-readiness><strong data-fitment-readiness-title>Данных для проверки пока недостаточно</strong><span data-fitment-readiness-fields>—</span></div>
-                        <p class="panel-note warning" data-fitment-missing-data-warning hidden data-i18n="warnings.missingData">Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.</p>
                     </article>
+
+                    <nav class="fitment-flow-nav" data-fitment-navigator aria-label="Разделы проверки">
+                        <button type="button" class="fitment-flow-tab active" data-fitment-section-tab="vehicle" aria-selected="true">
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Автомобиль</strong></span><span class="fitment-flow-state" data-fitment-flow-state="vehicle">Требует проверки</span></span>
+                        </button>
+                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="rim" aria-selected="false">
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Колесный диск</strong></span><span class="fitment-flow-state" data-fitment-flow-state="rim">Ожидает</span></span>
+                        </button>
+                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="result" data-fitment-result-tab aria-selected="false" disabled>
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Вывод</strong></span><span class="fitment-flow-state" data-fitment-flow-state="result">Недоступно</span></span>
+                        </button>
+                    </nav>
 
                     <section class="fitment-verdict-card" data-fitment-verdict-card data-fitment-section="result" hidden>
                         <div class="fitment-verdict-head">
@@ -637,47 +619,10 @@
                         <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
                     </section>
 
-                    <div class="fitment-overview-grid" id="fitment-overview-grid" data-fitment-overview-grid>
-                        <article class="fitment-overview-card fitment-source-card" data-fitment-source-card>
-                            <div class="fitment-overview-copy">
-                                <div class="fitment-overview-title" data-i18n="fitment.vehicleCard">Автомобиль</div>
-                                <div class="fitment-overview-value" data-fitment-card-vehicle-title>—</div>
-                                <div class="fitment-overview-specs" data-fitment-card-vehicle-specs hidden></div>
-                                <div class="fitment-overview-meta" data-fitment-card-vehicle-meta data-i18n="fitment.vehicleCardMeta">Определено по фото</div>
-                            </div>
-                            <button type="button" class="ghost-button compact-button" data-fitment-jump="vehicle" data-i18n="fitment.jumpVehicle">Уточнить →</button>
-                        </article>
-
-                        <article class="fitment-overview-card">
-                            <div class="fitment-overview-copy">
-                                <div class="fitment-overview-title" data-i18n="fitment.rimCard">Колесный диск</div>
-                                <div class="fitment-overview-value" data-fitment-card-rim-title>—</div>
-                                <div class="fitment-overview-specs" data-fitment-card-rim-specs hidden></div>
-                                <div class="fitment-overview-meta" data-fitment-card-rim-meta data-i18n="fitment.rimCardMeta">Часть данных определена по фото</div>
-                            </div>
-                            <button type="button" class="ghost-button compact-button" data-fitment-jump="rim" data-i18n="fitment.jumpRim">Уточнить →</button>
-                        </article>
-
-                    </div>
-                    <button type="button" class="fitment-overview-toggle ghost-button compact-button" data-fitment-overview-toggle hidden aria-controls="fitment-overview-grid" aria-expanded="true">Свернуть сводку</button>
-
-                    <div class="fitment-notice-stack">
-                        <p class="panel-note neutral" data-i18n="fitment.notice">
-                            Поля необязательны и не меняют уже созданную виртуальную примерку
-                        </p>
-                        <p class="panel-note neutral" data-fitment-preview-note data-i18n="fitment.previewNote" hidden>
-                            Изменения сохраняются только локально в этой сессии
-                        </p>
-                        <p class="panel-note neutral" data-fitment-demo-live-note data-i18n="fitment.demoLiveActionsUnavailable" hidden>
-                            В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.
-                        </p>
-                    </div>
-
                     <form class="form-stack fitment-form" data-fitment-form>
                         <section class="fitment-form-section" data-fitment-section="vehicle">
                             <div class="fitment-form-head">
-                                <p class="section-label" data-i18n="fitment.vehicleSection">Автомобиль</p>
-                                <h2 data-fitment-workspace-title data-i18n="fitment.vehicleSectionTitle">Уточнить известные данные</h2>
+                                <h2 data-fitment-workspace-title data-i18n="fitment.vehicleSection">Автомобиль</h2>
                                 <p class="fitment-state-line" data-fitment-vehicle-state aria-live="polite"></p>
                             </div>
                             <div class="fitment-workspace-summary" data-fitment-vehicle-summary hidden>
@@ -731,25 +676,25 @@
 
                         <section class="fitment-form-section" data-fitment-section="rim">
                             <div class="fitment-form-head">
-                                <p class="section-label">Колесный диск</p>
-                                <h2 data-i18n="fitment.rimSectionTitle">Уточнить параметры</h2>
-                            <p class="fitment-state-line" data-fitment-rim-state aria-live="polite"></p>
+                                <h2>Колесный диск</h2>
+                                <p class="fitment-state-line" data-fitment-rim-state aria-live="polite"></p>
                             </div>
                             <div class="fitment-workspace-summary" data-fitment-rim-summary hidden>
                                 <div><strong data-fitment-rim-summary-title>—</strong><span data-fitment-rim-summary-specs>—</span><small data-fitment-rim-summary-meta>Параметры требуют подтверждения</small></div>
-                                <div class="fitment-summary-actions"><button type="button" class="ghost-button compact-button" data-fitment-edit="rim">Изменить</button><button type="button" class="primary-button compact-button" data-fitment-check-ready hidden>Проверить совместимость</button></div>
+                                <div class="fitment-summary-actions"><button type="button" class="primary-button compact-button" data-fitment-check-ready hidden>Проверить совместимость</button><button type="button" class="ghost-button compact-button" data-fitment-edit="rim">Изменить параметры</button></div>
                             </div>
                             <p class="fitment-axis-summary" data-fitment-rim-axes hidden></p>
                             <details class="fitment-source-disclosure" data-fitment-source-disclosure>
-                                <summary>Источник параметров</summary>
+                                <summary>Источник и технические данные</summary>
                                 <div class="fitment-source-entry" data-fitment-source-entry>
                                     <label class="fitment-field">
                                         <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
                                         <input type="url" inputmode="url" data-fitment-source-url autocomplete="off" placeholder="https://">
                                     </label>
-                                    <button type="button" class="primary-button compact-button" data-fitment-source-submit data-i18n="fitment.sourceResolve">Извлечь параметры</button>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-source-submit data-i18n="fitment.sourceResolve">Извлечь параметры</button>
                                     <p class="fitment-source-status" data-fitment-source-status hidden></p>
                                 </div>
+                                <p class="fitment-source-readonly" data-fitment-source-readonly hidden></p>
                             </details>
                             <div class="fitment-source-progress" data-fitment-source-progress hidden aria-live="polite">
                                 <div class="fitment-source-progress-head">
@@ -878,10 +823,13 @@
 
                         <div class="create-flow-actions fitment-actions" data-fitment-actions>
                             <button type="submit" class="primary-button" data-fitment-save>Продолжить</button>
-                            <button type="button" class="ghost-button" data-fitment-create-image>Создать изображение</button>
-                            <button type="button" class="link-button" data-fitment-skip>Вернуться без изменений</button>
                         </div>
                     </form>
+
+                    <section class="fitment-render-action" data-fitment-render-action>
+                        <div class="fitment-render-copy"><strong>Визуальная примерка не требует завершения проверки</strong></div>
+                        <button type="button" class="ghost-button neutral" data-fitment-create-image>Создать изображение</button>
+                    </section>
                 </div>
             </section>
         </section>

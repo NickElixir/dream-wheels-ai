@@ -24,7 +24,8 @@ def test_commercial_beta_warnings_are_present_in_their_product_states():
     assert 'data-i18n="warnings.beta"' in html
     assert "data-fitment-parser-warning" in html
     assert "data-fitment-verdict-warning" in html
-    assert "data-fitment-missing-data-warning" in html
+    assert "data-fitment-missing-data-warning" not in html
+    assert "data-fitment-rim-state" in html
     assert "data-error-support" in html
 
 

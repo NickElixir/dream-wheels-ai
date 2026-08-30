@@ -14,6 +14,21 @@ def test_v2_shell_uses_context_pair_and_free_navigator() -> None:
     assert 'data-fitment-result-tab aria-selected="false" disabled' in INDEX_HTML
     assert 'class="fitment-steps"' not in INDEX_HTML
     assert "Demo" not in INDEX_HTML
+    assert "Проверьте, подойдут ли диски" not in INDEX_HTML
+    assert "Проверяем, как этот диск встанет на автомобиль" not in INDEX_HTML
+    assert "Вернуться без изменений" not in INDEX_HTML
+    assert "fitment-flow-index" not in INDEX_HTML
+
+
+def test_frozen_composition_order_and_cta_hierarchy_are_preserved() -> None:
+    context = INDEX_HTML.index("data-fitment-context-pair")
+    navigator = INDEX_HTML.index("data-fitment-navigator")
+    workspace = INDEX_HTML.index('data-fitment-section="vehicle"')
+    render_action = INDEX_HTML.index("data-fitment-render-action")
+    assert context < navigator < workspace < render_action
+    assert INDEX_HTML.index("data-fitment-create-image") > INDEX_HTML.index("data-fitment-actions")
+    assert 'class="primary-button" data-fitment-create-image' not in INDEX_HTML
+    assert INDEX_HTML.count("data-fitment-source-disclosure") == 1
 
 
 def test_result_gate_is_based_on_check_or_history_not_local_step() -> None:
@@ -46,6 +61,7 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
     assert "state.fitmentRimEditing = true;" in APP_JS
     assert "Заполните параметры вручную одним редактором" in APP_JS
     assert "data-fitment-source-disclosure" in INDEX_HTML
+    assert "data-fitment-source-readonly" in INDEX_HTML
 
 
 def test_check_states_keep_processing_and_provider_failure_distinct() -> None:
@@ -64,6 +80,16 @@ def test_render_cta_remains_outside_fitment_result_workspace() -> None:
     assert 'setView("create")' in APP_JS
     assert "data-fitment-actions" in INDEX_HTML
     assert "independently from the fitment result" in APP_JS
+    assert "data-fitment-render-action" in INDEX_HTML
+
+
+def test_rim_preview_never_uses_the_vehicle_asset() -> None:
+    preview = APP_JS.split("function fitmentPreviewAsset(job, kind)", 1)[1].split(
+        "async function ensureFitmentPreviewAsset", 1
+    )[0]
+    assert 'kind === "vehicle" ? guestRenderAssetUrl(job, "original") : ""' in preview
+    assert 'kind === "vehicle" ? "car_original" : "rim_original"' in preview
+    assert 'kind === "vehicle" ? "original" : "original"' not in preview
 
 
 def test_mobile_v2_keeps_pair_side_by_side_and_editors_single_column() -> None:

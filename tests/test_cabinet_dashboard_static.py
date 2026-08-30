@@ -187,12 +187,9 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'data-view="fitment"' in INDEX_HTML
     assert "data-open-fitment-result" in INDEX_HTML
     assert "data-fitment-form" in INDEX_HTML
-    assert "data-fitment-readiness" in INDEX_HTML
-    assert "data-fitment-card-vehicle-meta" in INDEX_HTML
-    assert "data-fitment-card-rim-meta" in INDEX_HTML
     assert "data-fitment-context-pair" in INDEX_HTML
     assert 'data-fitment-section-tab="result"' in INDEX_HTML
-    assert "data-fitment-preview-note" in INDEX_HTML
+    assert "data-fitment-render-action" in INDEX_HTML
     assert "/fitment`" in APP_JS
     assert "data-open-fitment" in APP_JS
     assert "data-fitment-candidate" in APP_JS
@@ -213,7 +210,6 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'apiUrl("/fitment/checks"' in APP_JS
     assert "compatible_with_conditions" in APP_JS
     assert "demoLiveActionsUnavailable" in APP_JS
-    assert "data-fitment-demo-live-note" in INDEX_HTML
     assert "shouldUseDemoFitment(state.fitmentJobId)" in APP_JS
     assert "[data-fitment-verdict-blocking-list]" in APP_JS
     assert "`${target}-list`" not in APP_JS
@@ -404,7 +400,7 @@ def test_design_code_defines_ui_separator_rules() -> None:
 
 def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
     assert "data-fitment-vehicle-specs" in INDEX_HTML
-    assert "data-fitment-card-vehicle-specs" in INDEX_HTML
+    assert "data-fitment-summary-vehicle-specs" in INDEX_HTML
     assert "data-fitment-card-rim-specs" in INDEX_HTML
     assert "function fitmentVehicleSpecs(vehicle)" in APP_JS
     assert "function fitmentRimSpecs(rim)" in APP_JS
@@ -413,20 +409,18 @@ def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
 
 
 def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> None:
-    assert "data-fitment-overview-toggle" in INDEX_HTML
-    assert "data-fitment-overview-grid" in INDEX_HTML
-    assert "state.fitmentOverviewCollapsed" in APP_JS
-    assert 'input.addEventListener("focus", () => setFitmentOverviewCollapsed(true))' in APP_JS
+    assert "data-fitment-overview-toggle" not in INDEX_HTML
+    assert "data-fitment-overview-grid" not in INDEX_HTML
     assert "fitment-field.has-candidates" in STYLE_CSS
     assert "fitment-candidate-row" in STYLE_CSS
-    assert "position: sticky" in STYLE_CSS
+    assert ".fitment-actions {\n        position: sticky" not in STYLE_CSS
     assert "--desktop-content-max: 1080px" in STYLE_CSS
     assert "data-fitment-source-disclosure" in INDEX_HTML
     assert "data-fitment-source-submit" in INDEX_HTML
 
 
 def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
-    assert "Проверьте, подойдут ли диски" in INDEX_HTML
+    assert "Проверьте, подойдут ли диски" not in INDEX_HTML
     assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
     assert 'data-fitment-section-tab="rim"' in INDEX_HTML
     assert 'data-fitment-section-tab="result"' in INDEX_HTML
@@ -441,7 +435,7 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert "function refreshFitmentSaveLabel" in APP_JS
     assert "useDraft: true" not in APP_JS
     assert "void loadFitmentVehicleVariants();" in APP_JS
-    assert "Подтвердите автомобиль и выберите комплектацию" in APP_JS
+    assert "Автомобиль определён по фотографии" in APP_JS
 
 
 def test_detail_feedback_uses_plain_outcome_language() -> None:
@@ -452,12 +446,12 @@ def test_detail_feedback_uses_plain_outcome_language() -> None:
 
 
 def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
-    assert 'data-i18n="fitment.back"' in INDEX_HTML
-    assert "Вернуться к примерке" in INDEX_HTML
+    assert 'data-i18n="fitment.back"' not in INDEX_HTML
+    assert "Вернуться к примерке" not in INDEX_HTML
     assert "Demo preview" not in INDEX_HTML
     assert "data-fitment-context-pair" in INDEX_HTML
     assert "Demo" not in INDEX_HTML
-    assert "fitment-context-row" in STYLE_CSS
+    assert "fitment-context-row" not in INDEX_HTML
     assert 'data-i18n="fitment.preliminary"' not in INDEX_HTML
     assert "render-info-island" in APP_JS
     assert 'status === "completed"' in APP_JS
@@ -600,9 +594,9 @@ def test_focus_visible_style_covers_button_and_navigation_families() -> None:
     )
 
 
-def test_mobile_fallback_cta_is_placed_above_fixed_navigation() -> None:
-    assert "The primary mobile navigation is fixed at the viewport bottom." in STYLE_CSS
-    assert "bottom: calc(82px + var(--safe-bottom));" in STYLE_CSS
+def test_fitment_primary_action_is_not_a_sticky_mobile_footer() -> None:
+    assert ".fitment-actions {\n        position: sticky" not in STYLE_CSS
+    assert "data-fitment-render-action" in INDEX_HTML
 
 
 def test_dashboard_summary_cards_use_container_responsive_headers() -> None:
