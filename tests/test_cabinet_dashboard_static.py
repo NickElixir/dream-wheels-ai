@@ -200,7 +200,7 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'params.get("preview") === "fitment"' in APP_JS
     assert "FITMENT_PREVIEW_STORAGE_KEY" in APP_JS
     assert "buildDefaultDemoFitmentOverview" in APP_JS
-    assert "applyDemoFitmentSave(fitmentPayload())" in APP_JS
+    assert "demoServerTransition" in APP_JS
     assert "persistDemoFitmentOverview(overview);" in APP_JS
     assert "job_id: GUEST_FITMENT_DEMO_JOB_ID" in APP_JS
     assert "fitment_available: true" in APP_JS

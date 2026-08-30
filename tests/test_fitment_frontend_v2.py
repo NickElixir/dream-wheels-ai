@@ -41,7 +41,9 @@ def test_result_gate_is_based_on_check_or_history_not_local_step() -> None:
 
 
 def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
-    assert 'return overview?.next_action?.kind || "complete_vehicle_details";' in APP_JS
+    assert "function validateFitmentOverview(overview)" in APP_JS
+    assert 'return FITMENT_NEXT_ACTION_KINDS.has(kind) ? kind : "";' in APP_JS
+    assert '|| "complete_vehicle_details"' not in APP_JS
     assert "const nextAction = fitmentNextAction(overview);" in APP_JS
     save = APP_JS.split("async function saveFitment(", 1)[1].split(
         "async function fetchRenderHistory", 1
@@ -51,6 +53,38 @@ def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
     assert 'state.fitmentActiveSection = "rim";' in save
     assert "data-fitment-check-ready" in INDEX_HTML
     assert 'ui.nextAction === "run_standard_check"' in APP_JS
+
+
+def test_f2_state_mappings_and_demo_server_transitions_are_explicit() -> None:
+    assert 'empty: locale === "ru" ? "Не заполнен"' in APP_JS
+    assert 'unconfirmed: locale === "ru" ? "Нужно подтвердить"' in APP_JS
+    assert 'confirmed_incomplete: locale === "ru" ? "Нужно выбрать комплектацию"' in APP_JS
+    assert 'partial: locale === "ru" ? "Нужно уточнить"' in APP_JS
+    assert 'complete_unconfirmed: locale === "ru" ? "Нужно подтвердить"' in APP_JS
+    assert 'if (!check) return locale === "ru" ? "Не выполнен"' in APP_JS
+    assert 'compatible_with_conditions: locale === "ru" ? "Подходит с условиями"' in APP_JS
+    assert (
+        'if (check.is_current === false) return locale === "ru" ? "Нужно проверить заново"'
+        in APP_JS
+    )
+    assert "demo_overview_version: FITMENT_DEMO_OVERVIEW_VERSION" in APP_JS
+    assert 'vehicle_state: "unconfirmed"' in APP_JS
+    assert 'next_action: { kind: "complete_vehicle_details" }' in APP_JS
+    assert 'action === "confirm_vehicle"' in APP_JS
+    assert 'action === "select_vehicle_variant"' in APP_JS
+    assert 'action === "save_rim"' in APP_JS
+    assert "function runDemoFitmentCheck()" in APP_JS
+    assert 'execution_status: "queued"' in APP_JS
+    assert 'execution_status: "processing"' in APP_JS
+
+
+def test_f2_demo_ctas_are_transitions_and_result_precheck_copy_is_neutral() -> None:
+    assert 'dataset.fitmentConfirmVariant = "true"' in APP_JS
+    assert "data-fitment-vehicle-variant" in APP_JS
+    assert "state.fitmentSelectedVehicleVariantIndex" in APP_JS
+    assert "fitmentResultTitle(null)" in APP_JS
+    assert 'data-fitment-flow-state="result">Не выполнен' in INDEX_HTML
+    assert "Параметры сохранены. Проверку совместимости можно запустить отдельно" in APP_JS
 
 
 def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
