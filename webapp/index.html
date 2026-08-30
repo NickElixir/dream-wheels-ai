@@ -596,7 +596,7 @@
                                 <p class="section-label">Результат</p>
                                 <h2 data-fitment-verdict-title>Проверка совместимости</h2>
                             </div>
-                            <button type="button" class="primary-button compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
                         <p class="panel-note warning" data-fitment-currentness hidden></p>
@@ -616,6 +616,10 @@
                                 <div data-fitment-verdict-advisories-list></div>
                             </section>
                         </div>
+                        <details class="fitment-technical-details" data-fitment-technical-details hidden>
+                            <summary>Технические детали</summary>
+                            <div class="fitment-technical-details-body" data-fitment-technical-details-body></div>
+                        </details>
                         <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
                     </section>
 
@@ -692,25 +696,18 @@
                                         <input type="url" inputmode="url" data-fitment-source-url autocomplete="off" placeholder="https://">
                                     </label>
                                     <button type="button" class="ghost-button compact-button" data-fitment-source-submit data-i18n="fitment.sourceResolve">Извлечь параметры</button>
-                                    <p class="fitment-source-status" data-fitment-source-status hidden></p>
+                                    <div class="fitment-source-status" data-fitment-source-status hidden aria-live="polite">
+                                        <strong data-fitment-source-status-title></strong>
+                                        <span data-fitment-source-status-copy></span>
+                                    </div>
+                                    <div class="fitment-source-status-actions" data-fitment-source-status-actions hidden>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-source-manual>Заполнить параметры вручную</button>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-source-retry>Повторить</button>
+                                    </div>
                                 </div>
                                 <p class="fitment-source-readonly" data-fitment-source-readonly hidden></p>
+                                <p class="fitment-source-confirmed" data-fitment-source-confirmed hidden>Параметры подтверждены</p>
                             </details>
-                            <div class="fitment-source-progress" data-fitment-source-progress hidden aria-live="polite">
-                                <div class="fitment-source-progress-head">
-                                    <span class="fitment-source-spinner" data-fitment-source-spinner hidden aria-hidden="true"></span>
-                                    <strong data-fitment-source-progress-title>Источник диска</strong>
-                                </div>
-                                <p data-fitment-source-progress-copy></p>
-                                <p class="fitment-source-progress-fields" data-fitment-source-progress-fields hidden></p>
-                                <ol class="fitment-source-steps" data-fitment-source-steps>
-                                    <li data-fitment-source-step="saved">Ссылка сохранена</li>
-                                    <li data-fitment-source-step="extract">Извлекаем параметры</li>
-                                    <li data-fitment-source-step="review">Проверьте найденные значения</li>
-                                    <li data-fitment-source-step="verdict">Проверяем совместимость</li>
-                                </ol>
-                            </div>
-                            <p class="panel-note warning" data-fitment-parser-warning hidden data-i18n="warnings.parser">Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.</p>
                             <div class="fitment-rim-variant-picker" data-fitment-rim-variant-picker hidden aria-live="polite"></div>
                             <div class="fitment-parser-conflicts" data-fitment-parser-conflicts hidden aria-live="polite"></div>
                             <label class="fitment-field fitment-setup-mode">
@@ -827,7 +824,7 @@
                     </form>
 
                     <section class="fitment-render-action" data-fitment-render-action>
-                        <div class="fitment-render-copy"><strong>Визуальная примерка не требует завершения проверки</strong></div>
+                        <div class="fitment-render-copy"><strong data-fitment-render-copy>Визуальная примерка не требует завершения проверки</strong></div>
                         <button type="button" class="ghost-button neutral" data-fitment-create-image>Создать изображение</button>
                     </section>
                 </div>

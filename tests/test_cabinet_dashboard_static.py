@@ -228,9 +228,9 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "function fitmentSourceBrand(overview)" in APP_JS
     assert "new URL(productUrl).hostname" in APP_JS
     assert "state.fitmentSourceOpen = true;" in APP_JS
-    assert "state.fitmentMessage = state.fitmentSourceStatus;" in APP_JS
-    assert "No wheel parameters could be recognised from this link" in APP_JS
-    assert "state.fitmentSourceOpen = !resolvedEntries.length ? true" in APP_JS
+    assert "clearFitmentResolverFeedback({ close: true });" in APP_JS
+    assert "Wheel parameters could not be determined automatically" in APP_JS
+    assert "state.fitmentSourceOpen = true;" in APP_JS
     assert "const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;" in APP_JS
     assert "const controller = new AbortController();" in APP_JS
     assert "signal: controller.signal," in APP_JS
@@ -555,13 +555,14 @@ def test_generation_errors_use_actionable_copy_without_exposing_internal_message
     assert "data-error-copy" in INDEX_HTML
 
 
-def test_rim_source_progress_uses_explicit_user_facing_steps() -> None:
-    assert "data-fitment-source-steps" in INDEX_HTML
-    assert "Ссылка сохранена" in INDEX_HTML
-    assert "Извлекаем параметры" in INDEX_HTML
-    assert "Проверьте найденные значения" in INDEX_HTML
-    assert "renderFitmentSourceSteps" in APP_JS
-    assert "fitment-source-steps" in STYLE_CSS
+def test_rim_source_status_is_contextual_and_not_a_permanent_pipeline() -> None:
+    assert "data-fitment-source-progress" not in INDEX_HTML
+    assert "data-fitment-source-steps" not in INDEX_HTML
+    assert "renderFitmentSourceSteps" not in APP_JS
+    assert "fitment-source-steps" not in STYLE_CSS
+    assert "data-fitment-source-status" in INDEX_HTML
+    assert "Определяем параметры колесного диска" in APP_JS
+    assert "Параметры найдены" in APP_JS
 
 
 def test_website_auth_does_not_inline_private_asset_urls() -> None:

@@ -50,6 +50,8 @@ def test_fitment_reauth_prompt_preserves_the_unsaved_form_for_the_same_job() -> 
 
 
 def test_rim_source_errors_are_safe_and_visible_from_the_first_step() -> None:
-    assert 'reasonCode === "rim_source_fetch_failed"' in APP_JS
-    assert "state.fitmentMessage = state.fitmentSourceStatus;" in APP_JS
-    assert 'state.fitmentMessageTone = "warning";' in APP_JS
+    assert "function fitmentSourceErrorMessage(error)" in APP_JS
+    assert '"Не удалось определить параметры автоматически"' in APP_JS
+    assert "state.fitmentSourceStatus = fitmentSourceErrorMessage(error);" in APP_JS
+    assert 'state.fitmentSourceStatusTone = "error";' in APP_JS
+    assert "data-fitment-source-status-title" in INDEX_HTML

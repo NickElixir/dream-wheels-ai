@@ -2285,6 +2285,15 @@ function fitmentSourceIdentityFromOverview(overview) {
     };
 }
 
+function clearFitmentResolverFeedback({ close = false } = {}) {
+    state.fitmentSourceStatus = "";
+    state.fitmentSourceStatusTone = "neutral";
+    state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceDetected = false;
+    state.fitmentSourceConflicts = [];
+    if (close) state.fitmentSourceOpen = false;
+}
+
 function fitmentSaveLabel() {
     const action = fitmentNextAction(state.fitmentOverview);
     if (state.fitmentActiveSection === "rim" && state.fitmentRimEditing) {
@@ -2361,9 +2370,15 @@ function fitmentSectionToStep(section) {
     return section === "vehicle" ? 1 : section === "rim" ? 2 : 3;
 }
 
+function clearFitmentTransientMessage() {
+    state.fitmentMessage = "";
+    state.fitmentMessageTone = "neutral";
+}
+
 function setFitmentActiveSection(section, { scroll = false } = {}) {
     const nextSection = section === "result" && !fitmentResultAvailable() ? fitmentSectionForAction() : section;
     if (!["vehicle", "rim", "result"].includes(nextSection)) return;
+    if (state.fitmentActiveSection !== nextSection) clearFitmentTransientMessage();
     state.fitmentActiveSection = nextSection;
     state.fitmentActiveStep = fitmentSectionToStep(nextSection);
     renderFitment();
@@ -2449,20 +2464,6 @@ function fitmentUiState(overview = state.fitmentOverview, check = state.fitmentC
 
 function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
     return fitmentNextAction(overview) === "select_vehicle_variant";
-}
-
-function fitmentSourceProgressTitle() {
-    if (state.fitmentSourceResolving) {
-        return locale === "ru" ? "Извлекаем параметры из источника" : "Extracting parameters from the source";
-    }
-    return locale === "ru" ? "Параметры из источника" : "Parameters from the source";
-}
-
-function fitmentSourceProgressFields() {
-    return state.fitmentSourceAppliedFields
-        .map((fieldName) => fitmentFieldLabel(`rim.${fieldName}`))
-        .filter(Boolean)
-        .join(", ");
 }
 
 function scrollFitmentTo(selector) {
@@ -2596,7 +2597,7 @@ function fitmentVerdictMessage(item) {
 function fitmentFieldStateLabel(fieldState) {
     const labels = {
         missing: locale === "ru" ? "Не заполнено" : "Missing",
-        suggested: locale === "ru" ? "Определено автоматически" : "Suggested automatically",
+        suggested: locale === "ru" ? "Нужно проверить" : "Needs review",
         entered: locale === "ru" ? "Введено вручную" : "Entered manually",
         confirmed: locale === "ru" ? "Подтверждено пользователем" : "Confirmed by user",
     };
@@ -2646,6 +2647,10 @@ function renderFitmentFieldStates(ui) {
         const field = input?.closest(".fitment-field");
         if (!field || !details?.state) continue;
         field.dataset.state = details.state;
+        // Confirmation remains in the server-owned field state, but repeating
+        // it under every normal confirmed input turns the editor into an
+        // engineering console. Suggested/missing values keep one quiet cue.
+        if (!["suggested", "missing"].includes(details.state)) continue;
         const status = document.createElement("small");
         status.className = "fitment-field-state";
         status.dataset.fitmentFieldState = details.state;
@@ -2861,10 +2866,80 @@ function completeDemoFitmentCheck(check) {
     };
 }
 
+// Review-harness fixtures are URL-only and never become a production state
+// source. They make the renderer auditable for terminal API-shaped responses
+// that the guest demo does not otherwise reach through its happy path.
+function applyDemoResultFixture(overview, verdict) {
+    const allowed = new Set(["compatible", "compatible_with_conditions", "unknown", "incompatible", "failed"]);
+    if (!overview || !allowed.has(verdict)) return;
+    const completed = completeDemoFitmentCheck(createDemoFitmentCheck(overview));
+    const fixture = {
+        ...completed,
+        id: `demo-fitment-fixture-${verdict}`,
+        verdict: verdict === "failed" ? null : verdict,
+        execution_status: verdict === "failed" ? "failed" : "completed",
+        blocking_issues: verdict === "incompatible"
+            ? [{ code: "PCD_MISMATCH", label: "Разболтовка колесного диска не совпадает" }]
+            : verdict === "unknown"
+                ? [{ code: "RIM_DATA_UNCONFIRMED", label: "Нужно подтвердить параметры колесного диска" }]
+                : [],
+        conditions: verdict === "compatible_with_conditions" ? completed.conditions : [],
+        advisories: verdict === "failed" ? [] : completed.advisories,
+        field_results: verdict === "incompatible"
+            ? [
+                { field: "pcd_mm", label: "Разболтовка", status: "fail" },
+                { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
+            ]
+            : verdict === "unknown"
+                ? [{ field: "center_bore_mm", label: "Ступичное отверстие", status: "unknown" }]
+            : completed.field_results,
+        ...(verdict === "failed"
+            ? { error: { code: "provider_unavailable", retry_mode: "retryable", retryable: true }, retry_mode: "retryable" }
+            : {}),
+    };
+    const confirmedVehicleFields = Object.fromEntries(
+        Object.entries(overview.vehicle_field_states || {}).map(([field, item]) => [
+            field,
+            demoConfirmedField(item?.value, "demo_review_fixture"),
+        ])
+    );
+    const confirmedRimFields = Object.fromEntries(
+        Object.entries(overview.rim_field_states || {}).map(([field, item]) => [
+            field,
+            demoConfirmedField(item?.value, "demo_review_fixture"),
+        ])
+    );
+    const fixtureOverview = {
+        ...overview,
+        vehicle_state: "confirmed_ready",
+        vehicle_field_states: confirmedVehicleFields,
+        modification_state: "confirmed",
+        selection_source: "demo_review_fixture",
+        selected_modification: DEMO_VEHICLE_VARIANTS[0],
+        modification_vehicle_revision: overview.vehicle_revision,
+        rim_setup_state: "confirmed_ready",
+        rim_field_states: confirmedRimFields,
+        front_rim: {
+            ...overview.front_rim,
+            rim_setup_state: "confirmed_ready",
+            field_states: confirmedRimFields,
+        },
+        next_action: { kind: "run_standard_check" },
+        current_check: fixture,
+        check_history: [fixture],
+    };
+    state.fitmentOverview = fixtureOverview;
+    state.fitmentCheck = fixture;
+    state.fitmentCheckHistory = [fixture];
+    state.fitmentActiveSection = "result";
+    state.fitmentActiveStep = 3;
+}
+
 function runDemoFitmentCheck() {
     const overview = state.fitmentOverview;
     if (!overview || fitmentNextAction(overview) !== "run_standard_check" || state.fitmentChecking) return;
     clearFitmentCheckPolling();
+    clearFitmentTransientMessage();
     state.fitmentChecking = true;
     const queued = createDemoFitmentCheck(overview);
     overview.current_check = queued;
@@ -2969,12 +3044,6 @@ function renderFitmentLegacy() {
     const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
     const sourceStatus = document.querySelector("[data-fitment-source-status]");
     const sourceToggle = document.querySelector("[data-fitment-source-toggle]");
-    const sourceProgress = document.querySelector("[data-fitment-source-progress]");
-    const sourceProgressTitle = document.querySelector("[data-fitment-source-progress-title]");
-    const sourceProgressCopy = document.querySelector("[data-fitment-source-progress-copy]");
-    const sourceProgressFields = document.querySelector("[data-fitment-source-progress-fields]");
-    const sourceSpinner = document.querySelector("[data-fitment-source-spinner]");
-    const parserWarning = document.querySelector("[data-fitment-parser-warning]");
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantsList = document.querySelector("[data-fitment-variant-list]");
     const verdictCard = document.querySelector("[data-fitment-verdict-card]");
@@ -3064,24 +3133,6 @@ function renderFitmentLegacy() {
         sourceStatus.textContent = state.fitmentSourceStatus;
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
     }
-    if (parserWarning) parserWarning.hidden = !state.fitmentSourceDetected;
-    if (sourceProgress) {
-        const visible = Boolean(state.fitmentSourceStatus) || state.fitmentSourceResolving;
-        sourceProgress.hidden = !visible;
-        sourceProgress.dataset.tone = state.fitmentSourceStatusTone || "neutral";
-        sourceProgress.dataset.loading = String(state.fitmentSourceResolving);
-    }
-    if (sourceProgressTitle) sourceProgressTitle.textContent = fitmentSourceProgressTitle();
-    if (sourceProgressCopy) sourceProgressCopy.textContent = state.fitmentSourceStatus || "";
-    if (sourceProgressFields) {
-        const appliedFields = fitmentSourceProgressFields();
-        sourceProgressFields.hidden = !appliedFields;
-        sourceProgressFields.textContent = appliedFields
-            ? `${locale === "ru" ? "Заполнены поля" : "Fields filled"}: ${appliedFields}`
-            : "";
-    }
-    if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
-    renderFitmentSourceSteps();
     renderFitmentRimVariants();
     renderFitmentParserConflicts();
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
@@ -3491,6 +3542,8 @@ function renderFitmentV2Result(check, ui, active) {
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
     const groups = document.querySelector("[data-fitment-verdict-groups]");
     const fieldResults = document.querySelector("[data-fitment-verdict-fields]");
+    const technicalDetails = document.querySelector("[data-fitment-technical-details]");
+    const technicalDetailsBody = document.querySelector("[data-fitment-technical-details-body]");
     if (!verdictCard) return;
     verdictCard.hidden = !active || !check;
     if (!check) return;
@@ -3509,9 +3562,17 @@ function renderFitmentV2Result(check, ui, active) {
     if (verdictCheckButton) {
         verdictCheckButton.hidden = pending || !["run_standard_check"].includes(ui.nextAction);
         verdictCheckButton.disabled = pending || state.fitmentChecking;
+        const completedCurrent = check.execution_status === "completed" && check.is_current !== false;
+        verdictCheckButton.classList.toggle("primary-button", !completedCurrent);
+        verdictCheckButton.classList.toggle("ghost-button", completedCurrent);
+        verdictCheckButton.classList.toggle("neutral", completedCurrent);
         verdictCheckButton.textContent = pending
             ? (check.execution_status === "queued" ? "Проверка поставлена в очередь" : "Проверяем совместимость")
-            : failed && check.retry_mode !== "not_applicable" ? "Повторить" : t("fitment.check");
+            : failed && check.retry_mode !== "not_applicable"
+                ? "Повторить"
+                : completedCurrent
+                    ? "Проверить ещё раз"
+                    : t("fitment.check");
     }
     renderFitmentVerdictGroup(
         "[data-fitment-verdict-blocking]",
@@ -3562,9 +3623,35 @@ function renderFitmentV2Result(check, ui, active) {
             const line = document.createElement("div");
             line.className = "fitment-verdict-field";
             line.dataset.status = field.status || field.result || "unknown";
-            line.textContent = `${field.label || field.field || ""}: ${labels[field.status || field.result] || labels.unknown}`;
+            const label = document.createElement("span");
+            label.textContent = field.label || field.field || "";
+            const outcome = document.createElement("strong");
+            outcome.textContent = labels[field.status || field.result] || labels.unknown;
+            line.append(label, outcome);
             fieldResults.append(line);
         });
+    }
+    if (technicalDetails && technicalDetailsBody) {
+        const overview = state.fitmentOverview;
+        const rim = overview?.rim || overview?.front_rim?.rim || {};
+        const details = [
+            ["Автомобиль", demoVehicleTitle(overview?.vehicle)],
+            ["Колесный диск", fitmentRimSpecs(rim) || fitmentEmptyValue()],
+        ];
+        const missing = check.evidence_summary?.missing_fields || check.missing_fields || [];
+        if (missing.length) details.push(["Нужно уточнить", missing.map(fitmentFieldLabel).join(", ")]);
+        technicalDetailsBody.replaceChildren();
+        for (const [label, value] of details) {
+            const row = document.createElement("div");
+            row.className = "fitment-technical-row";
+            const name = document.createElement("span");
+            name.textContent = label;
+            const content = document.createElement("strong");
+            content.textContent = value;
+            row.append(name, content);
+            technicalDetailsBody.append(row);
+        }
+        technicalDetails.hidden = pending || failed;
     }
 }
 
@@ -3580,6 +3667,15 @@ function renderFitment() {
     const check = fitmentCheckForPresentation();
     const ui = fitmentUiState(overview, check);
     const resultAvailable = fitmentResultAvailable();
+    const renderCopy = document.querySelector("[data-fitment-render-copy]");
+    if (renderCopy) {
+        renderCopy.textContent = check?.verdict === "incompatible" && check.is_current !== false
+            ? "Вы все еще можете создать изображение, чтобы оценить внешний вид дисков"
+            : "Визуальная примерка не требует завершения проверки";
+    }
+    if (state.fitmentMessage && state.fitmentActiveSection === "result" && check?.execution_status === "completed") {
+        clearFitmentTransientMessage();
+    }
     if (overview && !state.fitmentActiveSection) {
         state.fitmentActiveSection = fitmentSectionForAction(overview);
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
@@ -3699,7 +3795,7 @@ function renderFitment() {
         readyCheckButton.disabled = state.fitmentChecking;
         readyCheckButton.textContent = state.fitmentChecking ? "Проверяем совместимость" : "Проверить совместимость";
     }
-    document.querySelectorAll('[data-fitment-section="rim"] > .fitment-form-grid, [data-fitment-section="rim"] > .fitment-setup-mode, [data-fitment-section="rim"] > .fitment-source-progress, [data-fitment-section="rim"] > .fitment-parser-warning, [data-fitment-section="rim"] > .fitment-rim-variant-picker, [data-fitment-section="rim"] > .fitment-parser-conflicts, [data-fitment-section="rim"] > .fitment-rear-rim').forEach((node) => node.toggleAttribute("hidden", !rimEditing));
+    document.querySelectorAll('[data-fitment-section="rim"] > .fitment-form-grid, [data-fitment-section="rim"] > .fitment-setup-mode, [data-fitment-section="rim"] > .fitment-rim-variant-picker, [data-fitment-section="rim"] > .fitment-parser-conflicts, [data-fitment-section="rim"] > .fitment-rear-rim').forEach((node) => node.toggleAttribute("hidden", !rimEditing));
     document.querySelector("[data-fitment-source-entry]")?.toggleAttribute("hidden", !rimEditing);
     const vehicleStateCopy = {
         empty: "Заполните данные автомобиля",
@@ -3761,27 +3857,52 @@ function renderFitment() {
         sourceUrl.disabled = state.fitmentSourceResolving;
     }
     const sourceReadonly = document.querySelector("[data-fitment-source-readonly]");
+    const sourceConfirmed = document.querySelector("[data-fitment-source-confirmed]");
     if (sourceReadonly) {
         const source = normalizeFitmentText(state.fitmentForm.rim.product_url);
         sourceReadonly.hidden = rimEditing || !source;
         sourceReadonly.textContent = source ? `Источник: ${source}` : "";
+        if (sourceConfirmed) {
+            sourceConfirmed.hidden = rimEditing || !source;
+        }
     }
     const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
     if (sourceSubmit) sourceSubmit.disabled = state.fitmentSourceResolving;
     const sourceStatus = document.querySelector("[data-fitment-source-status]");
+    const sourceStatusTitle = document.querySelector("[data-fitment-source-status-title]");
+    const sourceStatusCopy = document.querySelector("[data-fitment-source-status-copy]");
+    const sourceStatusActions = document.querySelector("[data-fitment-source-status-actions]");
     if (sourceStatus) {
-        sourceStatus.hidden = !rimEditing || !state.fitmentSourceStatus;
-        sourceStatus.textContent = state.fitmentSourceStatus;
+        const hasSourceUrl = Boolean(normalizeFitmentText(state.fitmentForm.rim.product_url));
+        const resolverFailure = state.fitmentSourceStatusTone === "error" && hasSourceUrl;
+        const sourceStatusVisible = state.fitmentSourceResolving || Boolean(state.fitmentSourceStatus);
+        sourceStatus.hidden = !rimEditing || !sourceStatusVisible;
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
+        if (sourceStatusTitle && sourceStatusCopy) {
+            if (state.fitmentSourceResolving) {
+                sourceStatusTitle.textContent = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
+                sourceStatusCopy.textContent = "";
+            } else if (resolverFailure) {
+                sourceStatusTitle.textContent = locale === "ru"
+                    ? "Не удалось определить параметры автоматически"
+                    : "Wheel parameters could not be determined automatically";
+                sourceStatusCopy.textContent = locale === "ru"
+                    ? "Это не блокирует проверку — укажите параметры колесного диска вручную"
+                    : "This does not block the check — enter the wheel parameters manually";
+            } else if (state.fitmentSourceDetected) {
+                sourceStatusTitle.textContent = locale === "ru" ? "Параметры найдены" : "Parameters found";
+                sourceStatusCopy.textContent = locale === "ru"
+                    ? "Проверьте значения перед сохранением"
+                    : "Review the values before saving";
+            } else {
+                sourceStatusTitle.textContent = "";
+                sourceStatusCopy.textContent = state.fitmentSourceStatus || "";
+            }
+        }
+        if (sourceStatusActions) {
+            sourceStatusActions.hidden = !rimEditing || !resolverFailure;
+        }
     }
-    const parserWarning = document.querySelector("[data-fitment-parser-warning]");
-    if (parserWarning) {
-        parserWarning.hidden = !state.fitmentSourceDetected && state.fitmentSourceStatusTone !== "error";
-        parserWarning.textContent = state.fitmentSourceStatusTone === "error"
-            ? "Не удалось извлечь параметры по ссылке. Заполните параметры вручную одним редактором"
-            : "Параметры определены автоматически. Проверьте их перед технической оценкой";
-    }
-    renderFitmentSourceSteps();
     renderFitmentRimVariants();
     renderFitmentParserConflicts();
     renderFitmentFieldStates(ui);
@@ -3803,21 +3924,6 @@ function renderFitment() {
     if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
     renderFitmentV2Result(check, ui, activeSection === "result" && resultAvailable);
     if (shell) shell.hidden = false;
-}
-
-function renderFitmentSourceSteps() {
-    const hasSourceUrl = Boolean(normalizeFitmentText(state.fitmentForm.rim.product_url));
-    const hasResolvedFields = state.fitmentSourceAppliedFields.length > 0;
-    const extractionFailed = Boolean(state.fitmentSourceStatus) && state.fitmentSourceStatusTone === "error";
-    const states = {
-        saved: hasSourceUrl ? "done" : "pending",
-        extract: state.fitmentSourceResolving ? "current" : extractionFailed ? "error" : hasResolvedFields ? "done" : "pending",
-        review: hasResolvedFields && !state.fitmentSourceResolving ? "current" : "pending",
-        verdict: "pending",
-    };
-    document.querySelectorAll("[data-fitment-source-step]").forEach((step) => {
-        step.dataset.state = states[step.dataset.fitmentSourceStep] || "pending";
-    });
 }
 
 function renderFitmentRimVariants() {
@@ -3962,7 +4068,9 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
                 ? storedOverview
                 : buildDefaultDemoFitmentOverview();
             updateDemoFitmentState(overview);
-            state.fitmentActiveSection = fitmentSectionForAction(overview);
+            const demoResult = new URLSearchParams(window.location.search).get("demoResult");
+            if (demoResult) applyDemoResultFixture(overview, demoResult);
+            state.fitmentActiveSection = fitmentSectionForAction(state.fitmentOverview);
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
             loadFitmentVehicleCatalogue();
@@ -4065,51 +4173,9 @@ function closeFitmentView() {
 }
 
 function fitmentSourceErrorMessage(error) {
-    const message = error?.message || "";
-    let reasonCode = "";
-    try {
-        reasonCode = JSON.parse(message)?.code || "";
-    } catch {
-        // Legacy backend errors are plain text.
-    }
-    if (reasonCode === "rim_source_url_rejected") {
-        return locale === "ru"
-            ? "Ссылка должна вести на публичную HTTPS-страницу товара. Проверьте адрес или заполните параметры вручную."
-            : "Use a public HTTPS product page, or enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_redirect_failed") {
-        return locale === "ru"
-            ? "Страница диска перенаправляет слишком много раз. Откройте карточку товара напрямую или заполните параметры вручную."
-            : "The product page redirects too many times. Open the product page directly, or enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_unsupported_document") {
-        return locale === "ru"
-            ? "Ссылка не ведёт на поддерживаемую страницу товара. Укажите страницу диска или заполните параметры вручную."
-            : "The link is not a supported product page. Use a wheel product page, or enter the details manually.";
-    }
-    if (reasonCode === "rim_source_document_too_large") {
-        return locale === "ru"
-            ? "Страница диска слишком велика для автоматического разбора. Заполните параметры вручную."
-            : "The product page is too large for automatic extraction. Enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_fetch_failed") {
-        return locale === "ru"
-            ? "Страница диска сейчас недоступна. Повторите позже или заполните параметры вручную."
-            : "The product page is unavailable right now. Try again later, or enter the wheel details manually.";
-    }
-    if (/too many requests/i.test(message)) {
-        return locale === "ru"
-            ? "Слишком много попыток. Повторите извлечение позже."
-            : "Too many attempts. Try extracting the parameters later.";
-    }
-    if (/disabled/i.test(message)) {
-        return locale === "ru"
-            ? "Автоматическое извлечение временно недоступно. Сохраните ссылку и заполните параметры вручную."
-            : "Automatic extraction is temporarily unavailable. Save the link and enter the parameters manually.";
-    }
     return locale === "ru"
-        ? "Не удалось извлечь параметры автоматически. Проверьте ссылку или заполните поля вручную."
-        : "Parameters could not be extracted automatically. Check the link or enter them manually.";
+        ? "Не удалось определить параметры автоматически"
+        : "Wheel parameters could not be determined automatically";
 }
 
 function applyRimSourceValues(values) {
@@ -4163,11 +4229,11 @@ function selectFitmentRimVariant(index) {
     };
     state.fitmentSourceStatus = appliedFields.length
         ? (locale === "ru"
-            ? "Вариант выбран. Проверьте заполненные параметры и сохраните их."
-            : "Variant selected. Review the filled parameters and save them.")
+            ? "Вариант выбран — проверьте параметры перед сохранением"
+            : "Variant selected — review the parameters before saving")
         : (locale === "ru"
-            ? "Вариант выбран. Ручные значения сохранены; при необходимости дополните параметры."
-            : "Variant selected. Manual values were preserved; complete any missing parameters.");
+            ? "Вариант выбран — ручные значения сохранены; при необходимости дополните параметры"
+            : "Variant selected — manual values were preserved; complete any missing parameters");
     state.fitmentSourceStatusTone = "success";
     renderFitment();
     scrollFitmentTo('[data-fitment-section="rim"]');
@@ -4192,11 +4258,13 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         renderFitment();
         return;
     }
+    clearFitmentTransientMessage();
     state.fitmentSourceResolving = true;
+    state.fitmentSourceOpen = true;
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
     state.fitmentSourceVariants = [];
-    state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
+    state.fitmentSourceStatus = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
     state.fitmentSourceController?.abort?.();
@@ -4236,30 +4304,25 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         const conflictFields = (result.conflicts || []).map((conflict) => conflict.field);
         state.fitmentSourceStatus = result.selection_required
             ? locale === "ru"
-                ? "Найдено несколько вариантов. Выберите подходящий SKU, затем проверьте параметры."
-                : "Several variants were found. Choose the matching SKU, then review the parameters."
+                ? "Выберите вариант диска, затем проверьте параметры перед сохранением"
+                : "Choose a wheel variant, then review the parameters before saving"
             : !resolvedEntries.length
-            ? locale === "ru"
-                ? "По этой ссылке не удалось распознать параметры. Проверьте ссылку или заполните поля вручную."
-                : "No wheel parameters could be recognised from this link. Check the URL or fill in the fields manually."
-            : conflictFields.length
-            ? `${locale === "ru" ? "Параметры заполнены; проверьте" : "Parameters filled; review"}: ${conflictFields.join(", ")}`
-            : locale === "ru"
-                ? "Параметры заполнены. Проверьте их и сохраните для запуска проверки совместимости."
-                : "Parameters filled. Review them and save to run the compatibility check.";
-        state.fitmentSourceStatusTone = result.selection_required || !resolvedEntries.length || conflictFields.length ? "warning" : "success";
-        state.fitmentSourceOpen = !resolvedEntries.length ? true : result.selection_required ? true : automatic ? false : state.fitmentSourceOpen;
+                ? fitmentSourceErrorMessage()
+                : conflictFields.length
+                    ? locale === "ru"
+                        ? "Параметры найдены — проверьте значения перед сохранением"
+                        : "Parameters found — review the values before saving"
+                    : locale === "ru"
+                        ? "Параметры найдены — проверьте значения перед сохранением"
+                        : "Parameters found — review the values before saving";
+        state.fitmentSourceStatusTone = !resolvedEntries.length ? "error" : result.selection_required || conflictFields.length ? "warning" : "success";
+        state.fitmentSourceOpen = true;
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
         state.fitmentRimEditing = true;
         state.fitmentActiveSection = "rim";
         state.fitmentActiveStep = 2;
-        if (automatic) {
-            state.fitmentSourceOpen = true;
-            state.fitmentMessage = state.fitmentSourceStatus;
-            state.fitmentMessageTone = "warning";
-        }
     } finally {
         window.clearTimeout(requestTimeout);
         if (state.fitmentSourceController === controller) state.fitmentSourceController = null;
@@ -4429,6 +4492,7 @@ async function runFitmentCheck() {
         return;
     }
     state.fitmentChecking = true;
+    clearFitmentTransientMessage();
     state.fitmentError = "";
     renderFitment();
     try {
@@ -4541,6 +4605,7 @@ async function saveFitment(event) {
                     : "";
             const overview = demoServerTransition(transition, fitmentPayload());
             updateDemoFitmentState(overview);
+            clearFitmentResolverFeedback({ close: true });
             state.fitmentFormState.status = "clean";
             state.fitmentMessage = transition === "confirm_vehicle"
                 ? (locale === "ru" ? "Данные автомобиля подтверждены. Выберите комплектацию" : "Vehicle details confirmed. Choose a vehicle version")
@@ -4572,6 +4637,7 @@ async function saveFitment(event) {
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+        clearFitmentResolverFeedback({ close: true });
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleEditing = overview.vehicle_state !== "confirmed_ready";
         state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
@@ -7309,6 +7375,17 @@ function bindEvents() {
     document.querySelector("[data-fitment-source-submit]")?.addEventListener("click", () => {
         void resolveFitmentRimSource();
     });
+    document.querySelector("[data-fitment-source-manual]")?.addEventListener("click", () => {
+        clearFitmentTransientMessage();
+        clearFitmentResolverFeedback({ close: true });
+        state.fitmentRimEditing = true;
+        state.fitmentActiveSection = "rim";
+        state.fitmentActiveStep = 2;
+        renderFitment();
+    });
+    document.querySelector("[data-fitment-source-retry]")?.addEventListener("click", () => {
+        void resolveFitmentRimSource();
+    });
     document.querySelector("[data-fitment-variants-load]")?.addEventListener("click", () => {
         void loadFitmentVehicleVariants();
     });
@@ -7491,6 +7568,7 @@ function bindEvents() {
 
         const fitmentEdit = event.target.closest("[data-fitment-edit]");
         if (fitmentEdit) {
+            clearFitmentTransientMessage();
             const section = fitmentEdit.dataset.fitmentEdit;
             if (section === "vehicle") state.fitmentVehicleEditing = true;
             if (section === "rim") state.fitmentRimEditing = true;

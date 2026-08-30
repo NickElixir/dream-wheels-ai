@@ -93,9 +93,41 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
     assert 'data-fitment-edit="vehicle"' in INDEX_HTML
     assert 'data-fitment-edit="rim"' in INDEX_HTML
     assert "state.fitmentRimEditing = true;" in APP_JS
-    assert "Заполните параметры вручную одним редактором" in APP_JS
+    assert "Не удалось определить параметры автоматически" in APP_JS
+    assert "Это не блокирует проверку — укажите параметры колесного диска вручную" in APP_JS
+    assert "data-fitment-source-manual" in INDEX_HTML
+    assert "data-fitment-source-retry" in INDEX_HTML
     assert "data-fitment-source-disclosure" in INDEX_HTML
     assert "data-fitment-source-readonly" in INDEX_HTML
+
+
+def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
+    assert "data-fitment-verdict-card" in INDEX_HTML
+    assert "data-fitment-technical-details" in INDEX_HTML
+    assert "Технические детали" in INDEX_HTML
+    assert 'completedCurrent = check.execution_status === "completed"' in APP_JS
+    assert 'completedCurrent\n                    ? "Проверить ещё раз"' in APP_JS
+    result_css = STYLE_CSS.split(".fitment-verdict-card {", 1)[1].split(".fitment-verdict-head", 1)[
+        0
+    ]
+    assert "border:" not in result_css
+    assert '.fitment-verdict-group[data-kind="conditions"]' in STYLE_CSS
+    assert ".fitment-verdict-field:last-child { border-bottom: 0; }" in STYLE_CSS
+
+
+def test_fitment_feedback_is_cleared_at_meaningful_transitions() -> None:
+    assert "function clearFitmentTransientMessage()" in APP_JS
+    assert (
+        "if (state.fitmentActiveSection !== nextSection) clearFitmentTransientMessage();" in APP_JS
+    )
+    check_flow = APP_JS.split("async function runFitmentCheck()", 1)[1].split(
+        "async function applyFitmentVehicleVariant", 1
+    )[0]
+    assert "clearFitmentTransientMessage();" in check_flow
+    save_flow = APP_JS.split("async function saveFitment(", 1)[1].split(
+        "async function fetchRenderHistory", 1
+    )[0]
+    assert "clearFitmentResolverFeedback({ close: true });" in save_flow
 
 
 def test_check_states_keep_processing_and_provider_failure_distinct() -> None:
@@ -111,6 +143,8 @@ def test_check_states_keep_processing_and_provider_failure_distinct() -> None:
 
 def test_render_cta_remains_outside_fitment_result_workspace() -> None:
     assert "data-fitment-create-image" in INDEX_HTML
+    assert "data-fitment-render-copy" in INDEX_HTML
+    assert "Вы все еще можете создать изображение, чтобы оценить внешний вид дисков" in APP_JS
     assert 'setView("create")' in APP_JS
     assert "data-fitment-actions" in INDEX_HTML
     assert "independently from the fitment result" in APP_JS
