@@ -284,6 +284,7 @@ def serialize_payment_row(
         "created_at": row["created_at"].isoformat(),
         "updated_at": updated_at.isoformat() if updated_at else None,
         "paid_at": row["paid_at"].isoformat() if row["paid_at"] else None,
+        "failed_at": row["failed_at"].isoformat() if row["failed_at"] else None,
         "tax_receipt_status": "handled_by_robokassa",
     }
 
@@ -330,6 +331,53 @@ def verify_result_signature(
         payment_id=payment_id,
         is_test=is_test,
     )
+
+
+async def mark_payment_failed(
+    conn: asyncpg.Connection,
+    *,
+    invoice_id: int,
+    provider_payment_id: str,
+    out_sum: str | None = None,
+) -> dict[str, Any]:
+    row = await conn.fetchrow(
+        """
+        SELECT id,
+               user_id,
+               invoice_id,
+               status,
+               amount_rub,
+               provider_payment_id
+        FROM payments
+        WHERE invoice_id = $1
+        FOR UPDATE
+        """,
+        invoice_id,
+    )
+    if row is None:
+        raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
+    if row["provider_payment_id"] != provider_payment_id:
+        raise PaymentValidationError(f"invoice_id={invoice_id} provider_payment_id mismatch")
+    if out_sum and normalize_amount_rub(out_sum) != row["amount_rub"]:
+        raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
+
+    if row["status"] in {PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED}:
+        return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+    if row["status"] != PAYMENT_STATUS_PENDING:
+        return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+
+    await conn.execute(
+        """
+        UPDATE payments
+        SET status = 'failed',
+            failed_at = COALESCE(failed_at, CURRENT_TIMESTAMP),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = $1
+          AND status = 'pending'
+        """,
+        invoice_id,
+    )
+    return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
 
 
 async def mark_payment_paid(
@@ -452,6 +500,7 @@ async def mark_payment_paid(
         UPDATE payments
         SET status = 'paid',
             paid_at = CURRENT_TIMESTAMP,
+            failed_at = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE invoice_id = $1
         """,

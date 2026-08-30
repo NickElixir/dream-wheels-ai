@@ -6,12 +6,12 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from pydantic import BaseModel, field_validator
 
 from src import analytics_api, db
 from src.auth import resolve_telegram_auth
-from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST
+from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST, WEBAPP_URL
 from src.credits_service import get_balance, list_credit_packages
 from src.payments_service import (
     PaymentConfigError,
@@ -22,6 +22,7 @@ from src.payments_service import (
     get_payment_status_by_invoice,
     get_starter_grant_for_user,
     list_payments_for_user,
+    mark_payment_failed,
     mark_payment_paid,
     normalize_amount_rub,
     verify_result_signature,
@@ -222,3 +223,52 @@ async def robokassa_result(request: Request):
 
     logger.info(f"✅ Robokassa callback invoice_id={invoice_id} payment_id={payment_id}")
     return PlainTextResponse(f"OK{invoice_id}")
+
+
+@router.api_route("/robokassa/fail", methods=["GET", "POST"])
+async def robokassa_fail(request: Request):
+    if request.method == "POST":
+        payload = dict(await request.form())
+    else:
+        payload = dict(request.query_params)
+
+    inv_id_raw = payload.get("InvId") or payload.get("inv_id")
+    payment_id = str(payload.get("Shp_payment_id") or "")
+    out_sum = str(payload.get("OutSum") or payload.get("out_summ") or "") or None
+    if not inv_id_raw or not payment_id:
+        raise HTTPException(status_code=400, detail="Missing Robokassa params")
+
+    try:
+        invoice_id = int(inv_id_raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="InvId must be integer") from exc
+
+    # FailURL is a browser return, not proof of settlement. It can only move
+    # pending -> failed; a valid ResultURL remains authoritative and may later
+    # move failed -> paid.
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            try:
+                payment = await mark_payment_failed(
+                    conn,
+                    invoice_id=invoice_id,
+                    provider_payment_id=payment_id,
+                    out_sum=out_sum,
+                )
+            except PaymentValidationError as exc:
+                raise HTTPException(status_code=400, detail="Payment payload mismatch") from exc
+            except PaymentNotFoundError as exc:
+                raise HTTPException(status_code=404, detail="Payment not found") from exc
+
+    payment_state = "success" if payment.get("status") == "paid" else "fail"
+    logger.info(
+        "✅ Robokassa failure return invoice_id=%s payment_id=%s status=%s",
+        invoice_id,
+        payment_id,
+        payment.get("status"),
+    )
+    return RedirectResponse(
+        f"{WEBAPP_URL}/t/?payment={payment_state}&invoice_id={invoice_id}",
+        status_code=303,
+    )
