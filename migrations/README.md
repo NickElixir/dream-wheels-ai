@@ -32,6 +32,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0025_product_analytics.sql` — first-party продуктовая аналитика visitor/event
 - `0026_fitment_rim_setup_schema_compat.sql` — source state в `rim_specs` и revision в `rim_setups` для Slice 7 lifecycle
 - `0028_fitment_change_event_allowlist.sql` — allow-list для modification lifecycle events Slice 7
+- `0029_wan_provider_task_metadata.sql` — nullable Wan provider task identifier для render evidence
 
 ## Стратегия применения
 
@@ -60,6 +61,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед выкладкой fitment history и confirm-without-change flow применить `0020_fitment_change_events.sql`: API пишет `initial_prefill`, `user_save` и `user_confirm` события в append-only audit table.
 - Перед выкладкой Slice 7 lifecycle применить `0026_fitment_rim_setup_schema_compat.sql`: API читает и обновляет `rim_specs.source_*` / `selected_variant_sku` и `rim_setups.revision`.
 - Перед выкладкой vehicle-variant lookup применить `0028_fitment_change_event_allowlist.sql`: API пишет `modification_suggested` и связанные revision-bound события в append-only history.
+- Перед выкладкой Wan runtime integration применить `0029_wan_provider_task_metadata.sql`: worker сохраняет безопасный Alibaba task identifier в `jobs.provider_task_id`.
 - `0023` не создаёт публичных RLS-политик: `user_credit_accounts` доступна только серверному database/service-role пути, а не Mini App через PostgREST.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 

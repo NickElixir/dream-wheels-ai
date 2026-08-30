@@ -26,6 +26,23 @@ def _env_str(name: str) -> str:
     return os.getenv(name, "").strip()
 
 
+# Active image generation provider. Runtime worker wiring is intentionally a
+# single Wan provider with no legacy fallback.
+WAN_API_KEY = _env_str("WAN_API_KEY")
+WAN_REGION = _env_str("WAN_REGION") or "ap-southeast-1"
+WAN_WORKSPACE_ID = _env_str("WAN_WORKSPACE_ID")
+WAN_MODEL = _env_str("WAN_MODEL") or "wan2.7-image"
+WAN_ESTIMATED_COST_USD = os.getenv("WAN_ESTIMATED_COST_USD", "0.03")
+WAN_TASK_TIMEOUT_SEC = os.getenv("WAN_TASK_TIMEOUT_SEC", "300")
+WAN_POLL_INITIAL_SEC = os.getenv("WAN_POLL_INITIAL_SEC", "2")
+WAN_HTTP_TIMEOUT_SEC = os.getenv("WAN_HTTP_TIMEOUT_SEC", "30")
+WAN_MAX_POLL_ERRORS = os.getenv("WAN_MAX_POLL_ERRORS", "3")
+WAN_MAX_INPUT_BYTES = os.getenv("WAN_MAX_INPUT_BYTES", str(10 * 1024 * 1024))
+WAN_MAX_OUTPUT_BYTES = os.getenv("WAN_MAX_OUTPUT_BYTES", str(20 * 1024 * 1024))
+WAN_RESULT_MAX_REDIRECTS = os.getenv("WAN_RESULT_MAX_REDIRECTS", "3")
+WAN_RESULT_ALLOWED_HOST_SUFFIXES = os.getenv("WAN_RESULT_ALLOWED_HOST_SUFFIXES", "aliyuncs.com")
+
+
 # Vehicle visual identity. Disabled by default until the benchmark, privacy
 # review and staged rollout are complete.
 VEHICLE_IDENTITY_ENABLED = os.getenv("VEHICLE_IDENTITY_ENABLED", "false").lower() == "true"
