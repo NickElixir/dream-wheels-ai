@@ -1,18 +1,34 @@
 """Durable render asset persistence helpers."""
 
 import hashlib
+import logging
 from dataclasses import dataclass
+from io import BytesIO
 from typing import Literal
 from uuid import uuid4
 
 import asyncpg
+from PIL import Image
 
 from src import storage
+
+logger = logging.getLogger(__name__)
 
 AssetKind = Literal["car_original", "rim_original", "result"]
 
 RAW_ASSET_KINDS: set[AssetKind] = {"car_original", "rim_original"}
 ALL_ASSET_KINDS: set[AssetKind] = {"car_original", "rim_original", "result"}
+
+
+def _image_dimensions(data: bytes, content_type: str) -> tuple[int | None, int | None]:
+    """Read dimensions for telemetry without changing the uploaded bytes."""
+    if not content_type.lower().startswith("image/"):
+        return None, None
+    try:
+        with Image.open(BytesIO(data)) as image:
+            return image.width, image.height
+    except (Image.DecompressionBombError, OSError, ValueError):
+        return None, None
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +95,15 @@ async def upload_render_asset(
         content_type=content_type,
         job_id=job_id,
         render_input_draft_id=render_input_draft_id,
+    )
+    width, height = _image_dimensions(data, content_type)
+    logger.info(
+        "Pre-upload asset: target_bucket=%s content_type=%s size_bytes=%d width=%s height=%s",
+        bucket,
+        content_type,
+        len(data),
+        width,
+        height,
     )
     await storage.upload_bytes(
         bucket=bucket,

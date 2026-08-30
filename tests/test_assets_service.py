@@ -1,6 +1,9 @@
 import asyncio
+import logging
+from io import BytesIO
 
 import pytest
+from PIL import Image
 
 from src import assets_service, main, storage
 
@@ -72,3 +75,33 @@ def test_result_storage_failure_does_not_write_success(monkeypatch):
                 b"result",
             )
         )
+
+
+def test_pre_upload_telemetry_logs_size_and_dimensions_without_transforming(monkeypatch, caplog):
+    image_buffer = BytesIO()
+    Image.new("RGB", (13, 7), color=(12, 34, 56)).save(image_buffer, format="PNG")
+    image_bytes = image_buffer.getvalue()
+    uploads: list[dict] = []
+
+    async def fake_upload_bytes(**kwargs):
+        uploads.append(kwargs)
+
+    monkeypatch.setattr(storage, "upload_bytes", fake_upload_bytes)
+
+    with caplog.at_level(logging.INFO, logger="src.assets_service"):
+        asyncio.run(
+            assets_service.upload_render_asset(
+                owner_user_id=77,
+                job_id="11111111-1111-1111-1111-111111111111",
+                kind="result",
+                data=image_bytes,
+                content_type="image/png",
+            )
+        )
+
+    assert "target_bucket=results" in caplog.text
+    assert "content_type=image/png" in caplog.text
+    assert "size_bytes=" + str(len(image_bytes)) in caplog.text
+    assert "width=13" in caplog.text
+    assert "height=7" in caplog.text
+    assert uploads[0]["data"] == image_bytes

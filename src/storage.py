@@ -5,7 +5,7 @@ bucket. Webapp/бот напрямую к Storage не ходят.
 
 Buckets:
 - `raw`     — private, исходники car/wheel (10 MB лимит)
-- `results` — public,  AI-рендеры (5 MB лимит)
+- `results` — public, AI-рендеры (20 MiB bucket limit; global limit must be >= 20 MiB)
 
 Документация: https://supabase.com/docs/reference/api/storage
 """
