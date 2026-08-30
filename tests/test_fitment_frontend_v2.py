@@ -151,11 +151,27 @@ def test_render_cta_remains_outside_fitment_result_workspace() -> None:
     assert "data-fitment-render-action" in INDEX_HTML
 
 
-def test_rim_preview_never_uses_the_vehicle_asset() -> None:
+def test_guest_demo_pair_uses_distinct_local_assets() -> None:
+    assert 'const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-mebius.jpg";' in APP_JS
+    assert 'const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-v5.jpg";' in APP_JS
+    assert 'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-mebius-v5.jpg";' in APP_JS
+    assert "rim_original: GUEST_DEMO_RIM_ASSET_URL" in APP_JS
+    assert "result: GUEST_DEMO_RESULT_ASSET_URL" in APP_JS
+    assert 'model: "Mebius"' in APP_JS
+    assert 'model: "V5 Black"' in APP_JS
+    for filename in [
+        "demo-vehicle-mebius.jpg",
+        "demo-rim-v5.jpg",
+        "demo-render-mebius-v5.jpg",
+    ]:
+        assert (ROOT / "webapp" / "assets" / filename).is_file()
+
+
+def test_rim_preview_uses_rim_asset_and_never_the_vehicle_asset() -> None:
     preview = APP_JS.split("function fitmentPreviewAsset(job, kind)", 1)[1].split(
         "async function ensureFitmentPreviewAsset", 1
     )[0]
-    assert 'kind === "vehicle" ? guestRenderAssetUrl(job, "original") : ""' in preview
+    assert 'guestRenderAssetUrl(job, kind === "vehicle" ? "original" : "rim_original")' in preview
     assert 'kind === "vehicle" ? "car_original" : "rim_original"' in preview
     assert 'kind === "vehicle" ? "original" : "original"' not in preview
 

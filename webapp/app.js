@@ -17,7 +17,7 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
-const FITMENT_DEMO_OVERVIEW_VERSION = 2;
+const FITMENT_DEMO_OVERVIEW_VERSION = 3;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
 const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
 const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
@@ -73,26 +73,26 @@ const FITMENT_RIM_SETUP_STATES = new Set(["empty", "partial", "complete_unconfir
 const DEMO_VEHICLE_VARIANTS = [
     {
         market: "JP",
-        generation: "IV ZVW50",
+        generation: "I ZVW41",
         modification: "1.8 Hybrid",
         engine: "2ZR-FXE, Hybrid",
-        years: "2015–2018",
+        years: "2013–2021",
         provider: "demo_fixture",
     },
     {
         market: "JP",
-        generation: "IV ZVW50",
-        modification: "1.8 Hybrid Touring",
+        generation: "I ZVW41",
+        modification: "1.8 Hybrid G",
         engine: "2ZR-FXE, Hybrid",
-        years: "2015–2018",
+        years: "2013–2021",
         provider: "demo_fixture",
     },
     {
         market: "JP",
-        generation: "IV ZVW50",
-        modification: "1.8 Hybrid E",
+        generation: "I ZVW41",
+        modification: "1.8 Hybrid S",
         engine: "2ZR-FXE, Hybrid",
-        years: "2015–2018",
+        years: "2013–2021",
         provider: "demo_fixture",
     },
 ];
@@ -103,7 +103,9 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
+const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-mebius.jpg";
+const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-v5.jpg";
+const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-mebius-v5.jpg";
 const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
 const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
@@ -1199,11 +1201,11 @@ function fitmentPcdOptionValue(boltCount, pcdMm) {
 function buildDefaultDemoFitmentOverview() {
     const completedAt = guestRenderHistory()[0]?.completed_at || "2026-07-05T03:11:00+03:00";
     const vehicle = {
-        make: "Toyota",
-        model: "Prius",
+        make: "Daihatsu",
+        model: "Mebius",
         year: 2016,
-        body: "ZVW50",
-        generation: "IV",
+        body: "ZVW41",
+        generation: "I",
         modification: "1.8 Hybrid",
         market: "JP",
         is_user_confirmed: false,
@@ -1211,16 +1213,16 @@ function buildDefaultDemoFitmentOverview() {
     vehicle.title = demoVehicleTitle(vehicle);
 
     const rim = {
-        brand: "OZ",
-        model: "Ultraleggera",
-        sku: "OZ-ULTRA-17",
-        product_url: "https://shop.example.test/oz-ultraleggera-17",
+        brand: "V-Sport",
+        model: "V5 Black",
+        sku: "VSPORT-V5-18",
+        product_url: "https://shop.example.test/vsport-v5-black-18",
         bolt_count: 5,
-        pcd_mm: 100,
-        pcd_display: "5×100",
+        pcd_mm: 114.3,
+        pcd_display: "5×114,3",
         center_bore_mm: null,
-        wheel_diameter_in: 17,
-        wheel_width_j: 7,
+        wheel_diameter_in: 18,
+        wheel_width_j: 7.5,
         offset_et_mm: null,
         has_product_url: true,
         title: "",
@@ -1260,7 +1262,7 @@ function buildDefaultDemoFitmentOverview() {
         demo_overview_version: FITMENT_DEMO_OVERVIEW_VERSION,
         job_id: GUEST_FITMENT_DEMO_JOB_ID,
         status: "completed",
-        result_url: GUEST_RENDER_DEMO_ASSET_URL,
+        result_url: GUEST_DEMO_RESULT_ASSET_URL,
         completed_at: completedAt,
         fitment_available: true,
         is_staggered: false,
@@ -1285,12 +1287,12 @@ function buildDefaultDemoFitmentOverview() {
         vehicle_variants: [],
         vehicle_candidates: {
             make: [
-                { value: "Toyota", source: "vlm_visual", confidence: 0.98 },
-                { value: "Lexus", source: "vlm_visual", confidence: 0.34 },
+                { value: "Daihatsu", source: "vlm_visual", confidence: 0.98 },
+                { value: "Toyota", source: "vlm_visual", confidence: 0.34 },
             ],
             model: [
-                { value: "Prius", source: "vlm_visual", confidence: 0.94 },
-                { value: "Prius Prime", source: "vlm_visual", confidence: 0.41 },
+                { value: "Mebius", source: "vlm_visual", confidence: 0.94 },
+                { value: "Prius Alpha", source: "vlm_visual", confidence: 0.41 },
             ],
             year: [
                 { value: 2016, source: "vlm_visual", confidence: 0.87 },
@@ -1298,14 +1300,14 @@ function buildDefaultDemoFitmentOverview() {
             ],
         },
         rim_candidates: {
-            pcd_mm: [{ value: 100, source: "ocr", confidence: 0.91 }],
-            center_bore_mm: [{ value: 54.1, source: "ocr", confidence: 0.52 }],
-            wheel_diameter_in: [{ value: 17, source: "ocr", confidence: 0.88 }],
-            wheel_width_j: [{ value: 7, source: "ocr", confidence: 0.74 }],
+            pcd_mm: [{ value: 114.3, source: "ocr", confidence: 0.91 }],
+            center_bore_mm: [{ value: 60.1, source: "ocr", confidence: 0.52 }],
+            wheel_diameter_in: [{ value: 18, source: "ocr", confidence: 0.88 }],
+            wheel_width_j: [{ value: 7.5, source: "ocr", confidence: 0.74 }],
             offset_et_mm: [{ value: 45, source: "ocr", confidence: 0.43 }],
             product_url: [
                 {
-                    value: "https://shop.example.test/oz-ultraleggera-17",
+                    value: "https://shop.example.test/vsport-v5-black-18",
                     source: "provider_catalog",
                     confidence: 0.66,
                 },
@@ -1513,7 +1515,6 @@ function guestRenderAssetUrl(job, kind) {
 }
 
 function guestRenderHistory() {
-    const assetUrl = GUEST_RENDER_DEMO_ASSET_URL;
     return [{
         job_id: GUEST_FITMENT_DEMO_JOB_ID,
         status: "completed",
@@ -1523,21 +1524,22 @@ function guestRenderHistory() {
         fitment_available: true,
         render_input_snapshot: {
             vehicle: {
-                make: "Toyota",
-                model: "Prius",
+                make: "Daihatsu",
+                model: "Mebius",
                 year: 2016,
             },
             rim: {
-                wheel_diameter_in: 17,
-                wheel_width_j: 7,
+                wheel_diameter_in: 18,
+                wheel_width_j: 7.5,
                 bolt_count: 5,
-                pcd_mm: 100,
-                pcd_display: "5×100",
+                pcd_mm: 114.3,
+                pcd_display: "5×114,3",
             },
         },
         demo_assets: {
-            original: assetUrl,
-            result: assetUrl,
+            original: GUEST_DEMO_VEHICLE_ASSET_URL,
+            rim_original: GUEST_DEMO_RIM_ASSET_URL,
+            result: GUEST_DEMO_RESULT_ASSET_URL,
         },
         is_guest_demo: true,
     }];
@@ -3438,7 +3440,7 @@ function fitmentContextJob() {
 
 function fitmentPreviewAsset(job, kind) {
     if (!job) return "";
-    if (isGuestRenderJob(job)) return kind === "vehicle" ? guestRenderAssetUrl(job, "original") : "";
+    if (isGuestRenderJob(job)) return guestRenderAssetUrl(job, kind === "vehicle" ? "original" : "rim_original");
     const asset = job.assets?.[kind === "vehicle" ? "car_original" : "rim_original"];
     return proxiedAssetUrl(asset)
         || state.renderAssetBlobUrlsByJob[job.job_id]?.[kind === "vehicle" ? "car_original" : "rim_original"]
@@ -4042,8 +4044,8 @@ async function loadFitmentCatalogue(kind, params = {}) {
 function loadFitmentVehicleCatalogue() {
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         const overview = state.fitmentOverview || {};
-        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "Toyota", label: overview.vehicle?.make || "Toyota" }] };
-        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "Prius", label: overview.vehicle?.model || "Prius" }] };
+        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "Daihatsu", label: overview.vehicle?.make || "Daihatsu" }] };
+        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "Mebius", label: overview.vehicle?.model || "Mebius" }] };
         state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2016), label: String(overview.vehicle?.year || 2016) }] };
         return;
     }
