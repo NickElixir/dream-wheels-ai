@@ -34,7 +34,7 @@ Upload
 | Vehicle/wheel geometry | Planned |
 | Rim visual features | Planned |
 | RenderPlan | Planned |
-| Generation provider | Implemented, direct integration |
+| Generation provider | Wan 2.7 runtime integration implemented in Phase 08E; staging validation pending |
 | Post-generation validation | Planned |
 | Evaluation baseline | Planned |
 
@@ -111,7 +111,9 @@ Do not construct provider prompts in route handlers. A `RenderPlan` should conta
 
 Use a provider-neutral interface. A provider receives a render plan and returns result location, request identifier, latency, estimated cost and raw response reference.
 
-The initial production path may use one provider. Add fallback only after benchmark evidence supports it.
+The active production path uses one provider: Alibaba Cloud Model Studio Wan 2.7
+(`wan2.7-image`). Reve is retired and is not a runtime fallback. Add fallback
+only after separate benchmark evidence and an explicit architecture decision.
 
 ## Stage G — post-generation validation
 

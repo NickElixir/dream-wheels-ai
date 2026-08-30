@@ -1,0 +1,53 @@
+{
+  "manifest_version": "phase-08c-v1",
+  "provider": "alibaba_model_studio",
+  "region": "ap-southeast-1",
+  "prompt_version": "P0_API_SPIKE",
+  "prompt": "Replace only the visible wheel rims on the vehicle in image 1 using the supplied rim reference in image 2. Preserve the vehicle identity, body shape, paint and color, camera viewpoint and perspective, background and scene, tyre and wheel-arch geometry as much as possible. Use the supplied rim design faithfully. Return one photorealistic edited photo.",
+  "models": [
+    "wan2.7-image",
+    "wan2.7-image-pro"
+  ],
+  "parameters": {
+    "n": 1,
+    "watermark": false,
+    "bbox": "off",
+    "output_size": "vehicle-derived-explicit"
+  },
+  "estimated_cost_usd": {
+    "wan2.7-image": 0.03,
+    "wan2.7-image-pro": 0.075
+  },
+  "cases": [
+    {
+      "case_id": "case-01-daihatsu-mebius",
+      "vehicle_image": "/Users/nikolai/Documents/Dream Wheel AI/images/internet_cars/daihatsu_mebius_684863.jpg",
+      "rim_reference_image": "/Users/nikolai/Documents/Dream Wheel AI/images/svrauto_wheels/100491129495_2.jpg",
+      "selection_note": "Previously used in the isolated 08B Wan spike; clean vehicle and clean five-spoke reference."
+    },
+    {
+      "case_id": "case-02-volvo-s40",
+      "vehicle_image": "/Users/nikolai/Documents/Dream Wheel AI/images/internet_cars/1600px-2003-2004_Volvo_S40.jpg",
+      "rim_reference_image": "/Users/nikolai/Documents/Dream Wheel AI/images/svrauto_wheels/101107026002_1.jpg",
+      "selection_note": "Side-view silver sedan with a clean silver thin-spoke reference."
+    },
+    {
+      "case_id": "case-03-pontiac-vibe-orange",
+      "vehicle_image": "/Users/nikolai/Documents/Dream Wheel AI/images/internet_cars/ef6b2d4927a1631b7198c271d2c8d144.jpg",
+      "rim_reference_image": "/Users/nikolai/Documents/Dream Wheel AI/images/svrauto_wheels/101107388764_2.png",
+      "selection_note": "Clear three-quarter orange vehicle view with a high-contrast black five-spoke reference."
+    },
+    {
+      "case_id": "case-04-bmw-5-series",
+      "vehicle_image": "/Users/nikolai/Documents/Dream Wheel AI/images/internet_cars/photo_2026-05-12 22.40.35.jpeg",
+      "rim_reference_image": "/Users/nikolai/Documents/Dream Wheel AI/images/svrauto_wheels/100807673508_2.jpg",
+      "selection_note": "Real outdoor side view with a black-and-silver split five-spoke reference."
+    },
+    {
+      "case_id": "case-05-skoda-suv",
+      "vehicle_image": "/Users/nikolai/Documents/Dream Wheel AI/images/skolkovo_cars/2026-05-14 14-32-17.JPG",
+      "rim_reference_image": "/Users/nikolai/Documents/Dream Wheel AI/images/svrauto_wheels/105069192601_1.jpg",
+      "selection_note": "Clear three-quarter SUV view with a light multi-spoke reference."
+    }
+  ]
+}

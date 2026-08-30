@@ -14,7 +14,7 @@ Core lifecycle and provider metadata.
 id, user_id, status, created_at, updated_at
 car_asset_id, rim_asset_id, result_asset_id
 generation_provider, provider_request_id
-generation_latency_ms, generation_cost
+generation_latency_ms, generation_cost, provider_task_id
 vehicle_identity_id, rim_spec_id, fitment_check_id
 idempotency_key, prompt_version, pipeline_version
 error_code, error_message

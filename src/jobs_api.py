@@ -58,7 +58,7 @@ TELEGRAM_FILE_PREFIX = "https://api.telegram.org/file/"
 JOBS_RATE_LIMIT = 5
 JOBS_RATE_WINDOW_SEC = 60
 
-# Лимит для webapp (POST /jobs/upload): Reve API стоит денег, ставим жёстче.
+# Лимит для webapp (POST /jobs/upload): внешний generation API стоит денег.
 UPLOAD_RATE_LIMIT = 10
 UPLOAD_RATE_WINDOW_SEC = 60 * 60  # 10/час
 RIM_SOURCE_RESOLVE_RATE_LIMIT = 10
@@ -113,7 +113,7 @@ class JobCreateRequest(BaseModel):
     @classmethod
     def validate_telegram_url(cls, v: str) -> str:
         # Защита от arbitrary URL: воркер скачивает контент по этому URL и шлёт
-        # в Reve API. Без проверки можно подставить любой http-эндпоинт.
+        # во внешний generation API. Без проверки можно подставить любой http-эндпоинт.
         if not v.startswith(TELEGRAM_FILE_PREFIX):
             raise ValueError(f"URL должен начинаться с {TELEGRAM_FILE_PREFIX}")
         return v
