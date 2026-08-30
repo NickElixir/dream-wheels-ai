@@ -17,6 +17,7 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
+const FITMENT_DEMO_OVERVIEW_VERSION = 4;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
 const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
 const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
@@ -58,6 +59,43 @@ const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
 const HISTORY_ASSET_VIEWS = ["result", "original"];
 const GUEST_FITMENT_DEMO_JOB_ID = "guest-demo-prius";
+if (new URLSearchParams(window.location.search).get("demoReset") === "1") {
+    sessionStorage.removeItem(FITMENT_PREVIEW_STORAGE_KEY);
+}
+const FITMENT_NEXT_ACTION_KINDS = new Set([
+    "complete_vehicle_details",
+    "select_vehicle_variant",
+    "complete_rim_specs",
+    "run_standard_check",
+]);
+const FITMENT_VEHICLE_STATES = new Set(["empty", "unconfirmed", "confirmed_incomplete", "confirmed_ready"]);
+const FITMENT_RIM_SETUP_STATES = new Set(["empty", "partial", "complete_unconfirmed", "confirmed_ready"]);
+const DEMO_VEHICLE_VARIANTS = [
+    {
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Electric",
+        engine: "Electric",
+        years: "2024–2026",
+        provider: "demo_fixture",
+    },
+    {
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Electric Performance",
+        engine: "Electric",
+        years: "2024–2026",
+        provider: "demo_fixture",
+    },
+    {
+        market: "CN",
+        generation: "EV SUV",
+        modification: "Dual Motor Electric",
+        engine: "Electric",
+        years: "2024–2026",
+        provider: "demo_fixture",
+    },
+];
 const FEEDBACK_REASONS = [
     { code: "wheel_differs", label: "Диск отличается" },
     { code: "car_changed", label: "Машина изменилась" },
@@ -65,7 +103,9 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_RENDER_DEMO_ASSET_URL = "/cover.jpg";
+const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";
+const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";
+const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";
 const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
 const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
@@ -1044,6 +1084,11 @@ const state = {
     fitmentOriginJobId: "",
     fitmentOverview: null,
     fitmentActiveStep: 0,
+    fitmentActiveSection: "",
+    fitmentVehicleEditing: false,
+    fitmentRimEditing: false,
+    fitmentCheckHistory: [],
+    fitmentCheckHistoryLoading: false,
     fitmentLoading: false,
     fitmentSaving: false,
     fitmentError: "",
@@ -1069,6 +1114,7 @@ const state = {
     fitmentVehicleVariants: [],
     fitmentVehicleVariantsLoading: false,
     fitmentVehicleVariantApplying: false,
+    fitmentSelectedVehicleVariantIndex: null,
     fitmentLookup: { status: "idle", outcome: "" },
     fitmentCheck: null,
     fitmentChecking: false,
@@ -1097,34 +1143,6 @@ const state = {
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
     feedbackNoticeByJob: {},
-};
-
-const FITMENT_PREVIEW_REQUIRED_FIELDS = [
-    "vehicle.make",
-    "vehicle.model",
-    "vehicle.year",
-    "rim.bolt_count",
-    "rim.pcd_mm",
-    "rim.center_bore_mm",
-    "rim.wheel_diameter_in",
-    "rim.wheel_width_j",
-    "rim.offset_et_mm",
-];
-
-const FITMENT_PREVIEW_FIELD_CONFIG = {
-    vehicle: ["make", "model", "year", "body", "generation", "modification", "market"],
-    rim: [
-        "brand",
-        "model",
-        "sku",
-        "product_url",
-        "bolt_count",
-        "pcd_mm",
-        "wheel_diameter_in",
-        "wheel_width_j",
-        "center_bore_mm",
-        "offset_et_mm",
-    ],
 };
 
 function isGuestRenderJob(job) {
@@ -1180,93 +1198,114 @@ function fitmentPcdOptionValue(boltCount, pcdMm) {
     return `${bolt}x${String(pcd)}`;
 }
 
-function demoFitmentOverviewReadiness(overview) {
-    const missing = [];
-    const unconfirmed = [];
-    for (const path of FITMENT_PREVIEW_REQUIRED_FIELDS) {
-        const value = getDeepValue(overview, path);
-        const empty = value === null || value === undefined || value === "";
-        if (empty) {
-            missing.push(path);
-            continue;
-        }
-        const [scope, fieldName] = path.split(".");
-        const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
-        const meta = overview?.[provenanceKey]?.[fieldName];
-        if (!meta?.is_user_confirmed) unconfirmed.push(path);
-    }
-    return {
-        ready: missing.length === 0,
-        missing_fields: missing,
-        blocking_fields: [...missing],
-        unconfirmed_fields: unconfirmed,
-    };
-}
-
 function buildDefaultDemoFitmentOverview() {
     const completedAt = guestRenderHistory()[0]?.completed_at || "2026-07-05T03:11:00+03:00";
     const vehicle = {
-        make: "Toyota",
-        model: "Prius",
-        year: 2016,
-        body: "ZVW50",
-        generation: "IV",
-        modification: "1.8 Hybrid",
-        market: "JP",
+        make: "ZEEKR",
+        model: "SUV",
+        year: 2025,
+        body: "EV SUV",
+        generation: "EV",
+        modification: "Electric",
+        market: "CN",
         is_user_confirmed: false,
     };
     vehicle.title = demoVehicleTitle(vehicle);
 
     const rim = {
-        brand: "OZ",
-        model: "Ultraleggera",
-        sku: "OZ-ULTRA-17",
-        product_url: "https://shop.example.test/oz-ultraleggera-17",
+        brand: "Xtrike",
+        model: "10-Spoke",
+        sku: "118753506318",
+        product_url: "https://shop.example.test/xtrike-118753506318",
         bolt_count: 5,
-        pcd_mm: 100,
-        pcd_display: "5×100",
+        pcd_mm: 112,
+        pcd_display: "5×112",
         center_bore_mm: null,
-        wheel_diameter_in: 17,
-        wheel_width_j: 7,
+        wheel_diameter_in: 20,
+        wheel_width_j: 9,
         offset_et_mm: null,
         has_product_url: true,
         title: "",
     };
     rim.title = demoRimTitle(rim);
 
+    const vehicleFieldStates = {
+        make: { value: vehicle.make, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+        model: { value: vehicle.model, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+        year: { value: vehicle.year, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+        body: { value: vehicle.body, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+        generation: { value: vehicle.generation, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+        modification: { value: vehicle.modification, state: "suggested", source: "vlm_visual", is_user_confirmed: false },
+        region: { value: vehicle.market, state: "proposed", source: "vlm_visual", is_user_confirmed: false },
+    };
+    const rimFieldStates = {
+        brand: { value: rim.brand, state: "suggested", source: "vlm_visual", is_user_confirmed: false },
+        model: { value: rim.model, state: "suggested", source: "vlm_visual", is_user_confirmed: false },
+        sku: { value: rim.sku, state: "suggested", source: "provider_catalog", is_user_confirmed: false },
+        bolt_count: { value: rim.bolt_count, state: "suggested", source: "ocr", is_user_confirmed: false },
+        pcd_mm: { value: rim.pcd_mm, state: "suggested", source: "ocr", is_user_confirmed: false },
+        wheel_diameter_in: { value: rim.wheel_diameter_in, state: "suggested", source: "ocr", is_user_confirmed: false },
+        wheel_width_j: { value: rim.wheel_width_j, state: "suggested", source: "ocr", is_user_confirmed: false },
+        center_bore_mm: { value: null, state: "missing", source: null, is_user_confirmed: false },
+        offset_et_mm: { value: null, state: "missing", source: null, is_user_confirmed: false },
+        product_url: { value: rim.product_url, state: "suggested", source: "provider_catalog", is_user_confirmed: false },
+    };
+    const frontRim = {
+        rim: { ...rim },
+        field_states: rimFieldStates,
+        rim_setup_state: "partial",
+        setup_mode: "uniform",
+        rim_revision: 1,
+    };
+
     return {
+        demo_overview_version: FITMENT_DEMO_OVERVIEW_VERSION,
         job_id: GUEST_FITMENT_DEMO_JOB_ID,
         status: "completed",
-        result_url: GUEST_RENDER_DEMO_ASSET_URL,
+        result_url: GUEST_DEMO_RESULT_ASSET_URL,
         completed_at: completedAt,
         fitment_available: true,
         is_staggered: false,
         snapshot_locked: true,
+        vehicle_identity_id: "demo-vehicle-identity",
+        rim_setup_id: "demo-rim-setup",
         vehicle_revision: 1,
         rim_revision: 1,
+        rim_setup_revision: 1,
+        vehicle_state: "unconfirmed",
+        vehicle_field_states: vehicleFieldStates,
+        modification_state: "suggested",
+        selection_source: null,
+        selected_modification: null,
+        modification_vehicle_revision: null,
+        rim_setup_state: "partial",
+        setup_mode: "uniform",
+        rim_field_states: rimFieldStates,
+        front_rim: frontRim,
+        current_check: null,
+        check_history: [],
+        vehicle_variants: [],
         vehicle_candidates: {
             make: [
-                { value: "Toyota", source: "vlm_visual", confidence: 0.98 },
-                { value: "Lexus", source: "vlm_visual", confidence: 0.34 },
+                { value: "ZEEKR", source: "vlm_visual", confidence: 0.98 },
             ],
             model: [
-                { value: "Prius", source: "vlm_visual", confidence: 0.94 },
-                { value: "Prius Prime", source: "vlm_visual", confidence: 0.41 },
+                { value: "SUV", source: "vlm_visual", confidence: 0.94 },
             ],
             year: [
-                { value: 2016, source: "vlm_visual", confidence: 0.87 },
-                { value: 2017, source: "vlm_visual", confidence: 0.45 },
+                { value: 2025, source: "vlm_visual", confidence: 0.87 },
+                { value: 2026, source: "vlm_visual", confidence: 0.45 },
             ],
         },
         rim_candidates: {
-            pcd_mm: [{ value: 100, source: "ocr", confidence: 0.91 }],
-            center_bore_mm: [{ value: 54.1, source: "ocr", confidence: 0.52 }],
-            wheel_diameter_in: [{ value: 17, source: "ocr", confidence: 0.88 }],
-            wheel_width_j: [{ value: 7, source: "ocr", confidence: 0.74 }],
+            pcd_mm: [{ value: 112, source: "ocr", confidence: 0.91 }],
+            center_bore_mm: [{ value: 66.6, source: "ocr", confidence: 0.52 }],
+            wheel_diameter_in: [{ value: 20, source: "ocr", confidence: 0.88 }],
+            wheel_width_j: [{ value: 9, source: "ocr", confidence: 0.74 }],
             offset_et_mm: [{ value: 45, source: "ocr", confidence: 0.43 }],
             product_url: [
                 {
-                    value: "https://shop.example.test/oz-ultraleggera-17",
+                    value: "https://shop.example.test/xtrike-118753506318",
                     source: "provider_catalog",
                     confidence: 0.66,
                 },
@@ -1283,20 +1322,7 @@ function buildDefaultDemoFitmentOverview() {
             wheel_diameter_in: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.88 }),
             wheel_width_j: fitmentPreviewProvenance({ source: "vlm_visual", confidence: 0.74 }),
         },
-        readiness: {
-            ready: false,
-            missing_fields: ["rim.center_bore_mm", "rim.offset_et_mm"],
-            blocking_fields: ["rim.center_bore_mm", "rim.offset_et_mm"],
-            unconfirmed_fields: [
-                "vehicle.make",
-                "vehicle.model",
-                "vehicle.year",
-                "rim.bolt_count",
-                "rim.pcd_mm",
-                "rim.wheel_diameter_in",
-                "rim.wheel_width_j",
-            ],
-        },
+        next_action: { kind: "complete_vehicle_details" },
         vehicle,
         rim,
     };
@@ -1305,7 +1331,7 @@ function buildDefaultDemoFitmentOverview() {
 function loadDemoFitmentOverview() {
     try {
         const parsed = JSON.parse(sessionStorage.getItem(FITMENT_PREVIEW_STORAGE_KEY) || "null");
-        if (parsed?.job_id !== GUEST_FITMENT_DEMO_JOB_ID) return null;
+        if (parsed?.job_id !== GUEST_FITMENT_DEMO_JOB_ID || parsed?.demo_overview_version !== FITMENT_DEMO_OVERVIEW_VERSION) return null;
         return parsed;
     } catch {
         sessionStorage.removeItem(FITMENT_PREVIEW_STORAGE_KEY);
@@ -1314,7 +1340,10 @@ function loadDemoFitmentOverview() {
 }
 
 function persistDemoFitmentOverview(overview) {
-    sessionStorage.setItem(FITMENT_PREVIEW_STORAGE_KEY, JSON.stringify(overview));
+    sessionStorage.setItem(FITMENT_PREVIEW_STORAGE_KEY, JSON.stringify({
+        ...overview,
+        demo_overview_version: FITMENT_DEMO_OVERVIEW_VERSION,
+    }));
 }
 
 function fitmentTransientDraftKey(jobId = state.fitmentJobId) {
@@ -1375,6 +1404,7 @@ function fitmentDraftPayload(reason) {
             validation: state.fitmentFormState.validation,
         },
         activeStep: state.fitmentActiveStep,
+        activeSection: state.fitmentActiveSection,
         vehicleDirty: state.fitmentVehicleDirty,
         origin: {
             view: state.fitmentOriginView,
@@ -1436,12 +1466,16 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         state.fitmentRestoreConflict = {
             form: fitmentSafeConflictDraft(draft.form, overview),
             activeStep: draft.activeStep,
+            activeSection: draft.activeSection,
             vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview),
         };
         return "conflict";
     }
     state.fitmentForm = cloneFitmentForm(draft.form);
     state.fitmentActiveStep = Number.isInteger(draft.activeStep) ? draft.activeStep : state.fitmentActiveStep;
+    state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(draft.activeSection)
+        ? draft.activeSection
+        : state.fitmentActiveSection;
     state.fitmentFormState = {
         status: draft.formState?.status === "dirty" ? "dirty" : "clean",
         validation: draft.formState?.validation === "invalid" ? "invalid" : "valid",
@@ -1465,6 +1499,9 @@ function applyFitmentRestoreConflict() {
     state.fitmentActiveStep = Number.isInteger(state.fitmentRestoreConflict.activeStep)
         ? state.fitmentRestoreConflict.activeStep
         : state.fitmentActiveStep;
+    if (["vehicle", "rim", "result"].includes(state.fitmentRestoreConflict.activeSection)) {
+        state.fitmentActiveSection = state.fitmentRestoreConflict.activeSection;
+    }
     state.fitmentFormState.status = "dirty";
     state.fitmentFormState.validation = "valid";
     state.fitmentRestoreConflict = null;
@@ -1476,7 +1513,6 @@ function guestRenderAssetUrl(job, kind) {
 }
 
 function guestRenderHistory() {
-    const assetUrl = GUEST_RENDER_DEMO_ASSET_URL;
     return [{
         job_id: GUEST_FITMENT_DEMO_JOB_ID,
         status: "completed",
@@ -1486,21 +1522,22 @@ function guestRenderHistory() {
         fitment_available: true,
         render_input_snapshot: {
             vehicle: {
-                make: "Toyota",
-                model: "Prius",
-                year: 2016,
+                make: "ZEEKR",
+                model: "SUV",
+                year: 2025,
             },
             rim: {
-                wheel_diameter_in: 17,
-                wheel_width_j: 7,
+                wheel_diameter_in: 20,
+                wheel_width_j: 9,
                 bolt_count: 5,
-                pcd_mm: 100,
-                pcd_display: "5×100",
+                pcd_mm: 112,
+                pcd_display: "5×112",
             },
         },
         demo_assets: {
-            original: assetUrl,
-            result: assetUrl,
+            original: GUEST_DEMO_VEHICLE_ASSET_URL,
+            rim_original: GUEST_DEMO_RIM_ASSET_URL,
+            result: GUEST_DEMO_RESULT_ASSET_URL,
         },
         is_guest_demo: true,
     }];
@@ -2203,6 +2240,8 @@ function renderFitmentCandidates() {
 }
 
 function fitmentFormFromOverview(overview) {
+    const rim = overview?.rim || overview?.front_rim?.rim || {};
+    const rearRim = overview?.rear_rim?.rim || overview?.rear_rim || {};
     return {
         setup_mode: overview?.setup_mode || "uniform",
         vehicle: {
@@ -2215,24 +2254,24 @@ function fitmentFormFromOverview(overview) {
             market: overview?.vehicle?.market || "",
         },
         rim: {
-            brand: overview?.rim?.brand || "",
-            model: overview?.rim?.model || "",
-            sku: overview?.rim?.sku || "",
-            product_url: overview?.rim?.product_url || "",
-            bolt_count: overview?.rim?.bolt_count ?? "",
-            pcd_mm: overview?.rim?.pcd_mm ?? "",
-            wheel_diameter_in: overview?.rim?.wheel_diameter_in ?? "",
-            wheel_width_j: overview?.rim?.wheel_width_j ?? "",
-            center_bore_mm: overview?.rim?.center_bore_mm ?? "",
-            offset_et_mm: overview?.rim?.offset_et_mm ?? "",
+            brand: rim.brand || "",
+            model: rim.model || "",
+            sku: rim.sku || "",
+            product_url: rim.product_url || "",
+            bolt_count: rim.bolt_count ?? "",
+            pcd_mm: rim.pcd_mm ?? "",
+            wheel_diameter_in: rim.wheel_diameter_in ?? "",
+            wheel_width_j: rim.wheel_width_j ?? "",
+            center_bore_mm: rim.center_bore_mm ?? "",
+            offset_et_mm: rim.offset_et_mm ?? "",
         },
         rear_rim: {
-            bolt_count: overview?.rear_rim?.rim?.bolt_count ?? "",
-            pcd_mm: overview?.rear_rim?.rim?.pcd_mm ?? "",
-            wheel_diameter_in: overview?.rear_rim?.rim?.wheel_diameter_in ?? "",
-            wheel_width_j: overview?.rear_rim?.rim?.wheel_width_j ?? "",
-            center_bore_mm: overview?.rear_rim?.rim?.center_bore_mm ?? "",
-            offset_et_mm: overview?.rear_rim?.rim?.offset_et_mm ?? "",
+            bolt_count: rearRim.bolt_count ?? "",
+            pcd_mm: rearRim.pcd_mm ?? "",
+            wheel_diameter_in: rearRim.wheel_diameter_in ?? "",
+            wheel_width_j: rearRim.wheel_width_j ?? "",
+            center_bore_mm: rearRim.center_bore_mm ?? "",
+            offset_et_mm: rearRim.offset_et_mm ?? "",
         },
     };
 }
@@ -2246,17 +2285,32 @@ function fitmentSourceIdentityFromOverview(overview) {
     };
 }
 
+function clearFitmentResolverFeedback({ close = false } = {}) {
+    state.fitmentSourceStatus = "";
+    state.fitmentSourceStatusTone = "neutral";
+    state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceDetected = false;
+    state.fitmentSourceConflicts = [];
+    if (close) state.fitmentSourceOpen = false;
+}
+
 function fitmentSaveLabel() {
-    if (state.fitmentActiveStep === 1) {
-        return locale === "ru" ? "Продолжить" : "Continue";
+    const action = fitmentNextAction(state.fitmentOverview);
+    if (state.fitmentActiveSection === "rim" && state.fitmentRimEditing) {
+        return locale === "ru" ? "Сохранить параметры" : "Save wheel details";
     }
-    if (fitmentNextAction(state.fitmentOverview) === "select_vehicle_variant") {
-        return locale === "ru" ? "Сохранить и выбрать комплектацию" : "Save and choose vehicle version";
+    if ((state.fitmentVehicleEditing || state.fitmentOverview?.vehicle_state === "unconfirmed") && action === "complete_vehicle_details") {
+        return locale === "ru"
+            ? (state.fitmentVehicleDirty ? "Сохранить автомобиль" : "Подтвердить данные")
+            : (state.fitmentVehicleDirty ? "Save vehicle" : "Confirm details");
     }
-    if (fitmentNextAction(state.fitmentOverview) === "complete_rim_specs") {
-        return locale === "ru" ? "Сохранить параметры" : "Save details";
+    if (state.fitmentVehicleEditing && action === "select_vehicle_variant") {
+        return locale === "ru" ? "Сохранить данные автомобиля" : "Save vehicle details";
     }
-    return locale === "ru" ? "Сохранить и получить вывод" : "Save and get result";
+    if (state.fitmentRimEditing && action === "complete_rim_specs") {
+        return locale === "ru" ? "Сохранить параметры" : "Save wheel details";
+    }
+    return locale === "ru" ? "Сохранить изменения" : "Save changes";
 }
 
 function refreshFitmentSaveLabel() {
@@ -2274,8 +2328,98 @@ function validateFitmentForm() {
     return missing;
 }
 
+function validateFitmentOverview(overview) {
+    if (!overview || typeof overview !== "object" || Array.isArray(overview)) return false;
+    if (!FITMENT_VEHICLE_STATES.has(overview.vehicle_state)) return false;
+    if (!FITMENT_RIM_SETUP_STATES.has(overview.rim_setup_state)) return false;
+    if (!FITMENT_NEXT_ACTION_KINDS.has(overview.next_action?.kind)) return false;
+    if (overview.setup_mode !== "uniform" && overview.setup_mode !== "staggered") return false;
+    if (overview.vehicle_field_states === null || typeof overview.vehicle_field_states !== "object") return false;
+    const rimFieldStates = overview.rim_field_states ?? overview.front_rim?.field_states;
+    if (!rimFieldStates || typeof rimFieldStates !== "object" || Array.isArray(rimFieldStates)) return false;
+    return true;
+}
+
+function fitmentContractRecoveryMessage() {
+    return locale === "ru"
+        ? "Не удалось загрузить состояние проверки. Обновите страницу и попробуйте ещё раз"
+        : "The fitment state could not be loaded. Refresh the page and try again";
+}
+
 function fitmentNextAction(overview = state.fitmentOverview) {
-    return overview?.next_action?.kind || "complete_vehicle_details";
+    const kind = overview?.next_action?.kind;
+    return FITMENT_NEXT_ACTION_KINDS.has(kind) ? kind : "";
+}
+
+function fitmentResultAvailable() {
+    return Boolean(state.fitmentCheck || state.fitmentCheckHistory.length);
+}
+
+function fitmentCheckForPresentation() {
+    return state.fitmentCheck || state.fitmentCheckHistory[0] || null;
+}
+
+function fitmentSectionForAction(overview = state.fitmentOverview) {
+    if (fitmentResultAvailable()) return "result";
+    return ["complete_vehicle_details", "select_vehicle_variant"].includes(fitmentNextAction(overview))
+        ? "vehicle"
+        : "rim";
+}
+
+function fitmentSectionToStep(section) {
+    return section === "vehicle" ? 1 : section === "rim" ? 2 : 3;
+}
+
+function clearFitmentTransientMessage() {
+    state.fitmentMessage = "";
+    state.fitmentMessageTone = "neutral";
+}
+
+function setFitmentActiveSection(section, { scroll = false } = {}) {
+    const nextSection = section === "result" && !fitmentResultAvailable() ? fitmentSectionForAction() : section;
+    if (!["vehicle", "rim", "result"].includes(nextSection)) return;
+    if (state.fitmentActiveSection !== nextSection) clearFitmentTransientMessage();
+    state.fitmentActiveSection = nextSection;
+    state.fitmentActiveStep = fitmentSectionToStep(nextSection);
+    renderFitment();
+    if (scroll) scrollFitmentTo(`[data-fitment-section="${nextSection}"]`);
+}
+
+async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
+    state.fitmentCheckHistory = [];
+    if (!overview?.vehicle_identity_id || !overview?.rim_setup_id || shouldUseDemoFitment(state.fitmentJobId)) return;
+    state.fitmentCheckHistoryLoading = true;
+    renderFitment();
+    try {
+        const params = new URLSearchParams({
+            vehicle_identity_id: overview.vehicle_identity_id,
+            rim_setup_id: overview.rim_setup_id,
+        });
+        const response = await fetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
+            headers: withAuthHeaders(),
+        });
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const payload = await response.json();
+        state.fitmentCheckHistory = Array.isArray(payload.checks) ? payload.checks : [];
+        if (!state.fitmentCheck && state.fitmentCheckHistory.length) {
+            const latest = state.fitmentCheckHistory.find((item) => item.is_current) || state.fitmentCheckHistory[0];
+            if (latest?.id && latest.execution_status === "completed") {
+                const detail = await fetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+                if (detail.ok) state.fitmentCheck = await detail.json();
+            }
+        }
+    } catch (error) {
+        state.fitmentCheckHistory = [];
+        state.fitmentMessage = error?.message || t("errors.requestFailed");
+        state.fitmentMessageTone = "warning";
+    } finally {
+        state.fitmentCheckHistoryLoading = false;
+        renderFitment();
+    }
 }
 
 // This is the only boundary between persisted Fitment domain state and the
@@ -2289,14 +2433,14 @@ function fitmentUiState(overview = state.fitmentOverview, check = state.fitmentC
         server: overview || null,
         nextAction: fitmentNextAction(overview),
         vehicle: {
-            state: overview?.vehicle_state || "empty",
-            fieldStates: overview?.vehicle_field_states || {},
-            modificationState: overview?.modification_state || "none",
-            selectionSource: overview?.selection_source || null,
+            state: overview?.vehicle_state ?? null,
+            fieldStates: overview?.vehicle_field_states ?? null,
+            modificationState: overview?.modification_state ?? null,
+            selectionSource: overview?.selection_source ?? null,
         },
         rim: {
-            setupMode: overview?.setup_mode || "uniform",
-            setupState: overview?.rim_setup_state || "empty",
+            setupMode: overview?.setup_mode ?? null,
+            setupState: overview?.rim_setup_state ?? null,
             front,
             rear,
             fieldStates: front?.field_states || overview?.rim_field_states || {},
@@ -2320,20 +2464,6 @@ function fitmentUiState(overview = state.fitmentOverview, check = state.fitmentC
 
 function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
     return fitmentNextAction(overview) === "select_vehicle_variant";
-}
-
-function fitmentSourceProgressTitle() {
-    if (state.fitmentSourceResolving) {
-        return locale === "ru" ? "Извлекаем параметры из источника" : "Extracting parameters from the source";
-    }
-    return locale === "ru" ? "Параметры из источника" : "Parameters from the source";
-}
-
-function fitmentSourceProgressFields() {
-    return state.fitmentSourceAppliedFields
-        .map((fieldName) => fitmentFieldLabel(`rim.${fieldName}`))
-        .filter(Boolean)
-        .join(", ");
 }
 
 function scrollFitmentTo(selector) {
@@ -2404,12 +2534,12 @@ function formatFitmentNumber(value, suffix = "") {
 }
 
 function fitmentSubtitle(overview) {
-    if (state.fitmentActiveStep === 1) {
+    if (state.fitmentActiveSection === "vehicle") {
         return locale === "ru"
             ? "Подтвердите автомобиль и выберите комплектацию"
             : "Confirm the vehicle and select its exact version";
     }
-    if (state.fitmentActiveStep === 2) {
+    if (state.fitmentActiveSection === "rim") {
         return locale === "ru"
             ? "Проверьте параметры диска перед предварительной оценкой"
             : "Review the wheel details before the preliminary result";
@@ -2423,6 +2553,7 @@ function fitmentVerdictMessage(item) {
     const details = item?.details || item?.detail || {};
     const code = item?.code || item?.reason_code || "";
     const ru = locale === "ru";
+    if (item?.label) return item.label;
     if (code === "vehicle_variant_required") {
         return ru ? "Выберите точную комплектацию автомобиля по каталогу Wheel‑Size." : "Select the exact vehicle version from Wheel‑Size.";
     }
@@ -2466,7 +2597,7 @@ function fitmentVerdictMessage(item) {
 function fitmentFieldStateLabel(fieldState) {
     const labels = {
         missing: locale === "ru" ? "Не заполнено" : "Missing",
-        suggested: locale === "ru" ? "Определено автоматически" : "Suggested automatically",
+        suggested: locale === "ru" ? "Нужно проверить" : "Needs review",
         entered: locale === "ru" ? "Введено вручную" : "Entered manually",
         confirmed: locale === "ru" ? "Подтверждено пользователем" : "Confirmed by user",
     };
@@ -2475,10 +2606,10 @@ function fitmentFieldStateLabel(fieldState) {
 
 function fitmentRimStateLabel(rimState) {
     const labels = {
-        empty: locale === "ru" ? "Параметры диска не указаны" : "Wheel details are not entered",
-        partial: locale === "ru" ? "Требует уточнения" : "Needs clarification",
-        complete_unconfirmed: locale === "ru" ? "Требует подтверждения" : "Needs confirmation",
-        confirmed_ready: locale === "ru" ? "Подтверждено пользователем" : "Confirmed by user",
+        empty: locale === "ru" ? "Не заполнен" : "Not filled",
+        partial: locale === "ru" ? "Нужно уточнить" : "Needs clarification",
+        complete_unconfirmed: locale === "ru" ? "Нужно подтвердить" : "Needs confirmation",
+        confirmed_ready: locale === "ru" ? "Подтверждён" : "Confirmed",
     };
     return labels[rimState] || "";
 }
@@ -2516,6 +2647,10 @@ function renderFitmentFieldStates(ui) {
         const field = input?.closest(".fitment-field");
         if (!field || !details?.state) continue;
         field.dataset.state = details.state;
+        // Confirmation remains in the server-owned field state, but repeating
+        // it under every normal confirmed input turns the editor into an
+        // engineering console. Suggested/missing values keep one quiet cue.
+        if (!["suggested", "missing"].includes(details.state)) continue;
         const status = document.createElement("small");
         status.className = "fitment-field-state";
         status.dataset.fitmentFieldState = details.state;
@@ -2594,81 +2729,242 @@ function fitmentPayload({ includeVehicle = true } = {}) {
     return payload;
 }
 
-function fitmentValuesEqual(current, incoming) {
-    if (current === null || current === undefined || current === "") {
-        return incoming === null || incoming === undefined || incoming === "";
-    }
-    if (incoming === null || incoming === undefined || incoming === "") {
-        return current === null || current === undefined || current === "";
-    }
-    if (typeof current === "number" || typeof incoming === "number") {
-        const left = Number(current);
-        const right = Number(incoming);
-        return Number.isFinite(left) && Number.isFinite(right) ? left === right : current === incoming;
-    }
-    return current === incoming;
+function cloneDemoFitmentOverview(overview = state.fitmentOverview) {
+    return JSON.parse(JSON.stringify(overview || buildDefaultDemoFitmentOverview()));
 }
 
-function fitmentPreviewMetaFor(path, source) {
-    const [scope, fieldName] = path.split(".");
-    const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
-    const currentMeta = state.fitmentOverview?.[provenanceKey]?.[fieldName] || {};
-    return {
-        source,
-        confidence: Number(currentMeta.confidence || 1),
-        is_user_confirmed: true,
+function syncDemoRimShape(overview) {
+    overview.rim.pcd_display = demoPcdDisplay(overview.rim);
+    overview.rim.has_product_url = Boolean(overview.rim.product_url);
+    overview.rim.title = demoRimTitle(overview.rim);
+    overview.front_rim = {
+        ...(overview.front_rim || {}),
+        rim: { ...overview.rim },
+        field_states: overview.rim_field_states,
+        rim_setup_state: overview.rim_setup_state,
+        setup_mode: overview.setup_mode,
+        rim_revision: overview.rim_revision,
     };
 }
 
-function applyDemoFitmentSave(payload) {
-    const nextOverview = JSON.parse(
-        JSON.stringify(state.fitmentOverview || buildDefaultDemoFitmentOverview())
-    );
-    let vehicleChanged = false;
-    let rimChanged = false;
-    let vehicleConfirmed = false;
-    let rimConfirmed = false;
+function markDemoCheckStale(overview) {
+    const currentCheck = overview.current_check || state.fitmentCheck;
+    if (!currentCheck || currentCheck.is_current === false) return;
+    const stale = { ...currentCheck, is_current: false };
+    overview.current_check = stale;
+    overview.check_history = [stale, ...(overview.check_history || []).filter((item) => item.id !== stale.id)];
+}
 
-    for (const scope of Object.keys(FITMENT_PREVIEW_FIELD_CONFIG)) {
-        const fields = FITMENT_PREVIEW_FIELD_CONFIG[scope];
-        const provenanceKey = scope === "vehicle" ? "vehicle_provenance" : "rim_provenance";
-        for (const fieldName of fields) {
-            const path = `${scope}.${fieldName}`;
-            const incomingValue = payload?.[scope]?.[fieldName] ?? null;
-            const currentValue = nextOverview?.[scope]?.[fieldName] ?? null;
-            if (!fitmentValuesEqual(currentValue, incomingValue)) {
-                nextOverview[scope][fieldName] = incomingValue;
-                nextOverview[provenanceKey][fieldName] = fitmentPreviewMetaFor(path, "user_edited");
-                if (scope === "vehicle") vehicleChanged = true;
-                else rimChanged = true;
-                continue;
-            }
-            if (
-                incomingValue !== null &&
-                incomingValue !== "" &&
-                !nextOverview?.[provenanceKey]?.[fieldName]?.is_user_confirmed
-            ) {
-                nextOverview[provenanceKey][fieldName] = fitmentPreviewMetaFor(path, "user_confirmed");
-                if (scope === "vehicle") vehicleConfirmed = true;
-                else rimConfirmed = true;
-            }
+function demoConfirmedField(value, source = "user_confirmed") {
+    return { value, state: "confirmed", source, is_user_confirmed: true };
+}
+
+function demoServerTransition(action, payload = {}) {
+    const nextOverview = cloneDemoFitmentOverview();
+    if (action === "confirm_vehicle") {
+        if (nextOverview.next_action?.kind !== "complete_vehicle_details") return nextOverview;
+        markDemoCheckStale(nextOverview);
+        for (const fieldName of ["make", "model", "year", "market"]) {
+            const stateFieldName = fieldName === "market" ? "region" : fieldName;
+            const value = nextOverview.vehicle[fieldName];
+            nextOverview.vehicle_field_states[stateFieldName] = demoConfirmedField(value);
         }
+        nextOverview.vehicle.is_user_confirmed = true;
+        nextOverview.vehicle_state = "confirmed_incomplete";
+        nextOverview.modification_state = "none";
+        nextOverview.selection_source = null;
+        nextOverview.selected_modification = null;
+        nextOverview.modification_vehicle_revision = null;
+        nextOverview.vehicle_revision += 1;
+        nextOverview.next_action = { kind: "select_vehicle_variant" };
+        return nextOverview;
     }
-
-    if (vehicleChanged || vehicleConfirmed) nextOverview.vehicle_revision += 1;
-    if (rimChanged || rimConfirmed) nextOverview.rim_revision += 1;
-
-    nextOverview.vehicle.is_user_confirmed = ["make", "model", "year"].every(
-        (fieldName) => nextOverview.vehicle_provenance?.[fieldName]?.is_user_confirmed
-    );
-    nextOverview.vehicle.title = demoVehicleTitle(nextOverview.vehicle);
-    nextOverview.rim.pcd_display = demoPcdDisplay(nextOverview.rim);
-    nextOverview.rim.has_product_url = Boolean(nextOverview.rim.product_url);
-    nextOverview.rim.title = demoRimTitle(nextOverview.rim);
-    nextOverview.snapshot_locked = true;
-    nextOverview.readiness = demoFitmentOverviewReadiness(nextOverview);
-
+    if (action === "select_vehicle_variant") {
+        if (nextOverview.next_action?.kind !== "select_vehicle_variant") return nextOverview;
+        const variant = payload.variant || DEMO_VEHICLE_VARIANTS[0];
+        markDemoCheckStale(nextOverview);
+        nextOverview.vehicle.modification = variant.modification;
+        nextOverview.vehicle.generation = variant.generation;
+        nextOverview.vehicle_field_states.modification = demoConfirmedField(variant.modification);
+        nextOverview.vehicle_field_states.generation = demoConfirmedField(variant.generation);
+        nextOverview.vehicle_state = "confirmed_ready";
+        nextOverview.modification_state = "confirmed";
+        nextOverview.selection_source = "user";
+        nextOverview.selected_modification = { ...variant, source: "demo_fixture" };
+        nextOverview.modification_vehicle_revision = nextOverview.vehicle_revision + 1;
+        nextOverview.vehicle_revision += 1;
+        nextOverview.next_action = { kind: "complete_rim_specs" };
+        return nextOverview;
+    }
+    if (action === "save_rim") {
+        if (!["complete_rim_specs", "run_standard_check"].includes(nextOverview.next_action?.kind)) return nextOverview;
+        markDemoCheckStale(nextOverview);
+        const incoming = payload.rim || {};
+        for (const fieldName of Object.keys(nextOverview.rim_field_states)) {
+            if (!Object.prototype.hasOwnProperty.call(incoming, fieldName)) continue;
+            const value = incoming[fieldName] ?? null;
+            nextOverview.rim[fieldName] = value;
+            const current = nextOverview.rim_field_states[fieldName];
+            nextOverview.rim_field_states[fieldName] = value === null || value === ""
+                ? { ...(current || {}), value: null, state: "missing", is_user_confirmed: false }
+                : demoConfirmedField(value, "user_edited");
+        }
+        nextOverview.rim_setup_state = "confirmed_ready";
+        nextOverview.rim_revision += 1;
+        nextOverview.rim_setup_revision += 1;
+        nextOverview.next_action = { kind: "run_standard_check" };
+        syncDemoRimShape(nextOverview);
+        return nextOverview;
+    }
     return nextOverview;
+}
+
+function updateDemoFitmentState(overview) {
+    persistDemoFitmentOverview(overview);
+    state.fitmentOverview = overview;
+    state.fitmentForm = fitmentFormFromOverview(overview);
+    state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+    state.fitmentCheck = overview.current_check || null;
+    state.fitmentCheckHistory = Array.isArray(overview.check_history) ? overview.check_history : [];
+    state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+    state.fitmentVehicleDirty = false;
+    state.fitmentVehicleEditing = overview.vehicle_state === "empty";
+    state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
+}
+
+function createDemoFitmentCheck(overview) {
+    return {
+        id: `demo-fitment-check-${overview.vehicle_revision}-${overview.rim_revision}`,
+        execution_status: "queued",
+        verdict: null,
+        is_current: true,
+        is_preliminary: true,
+        vehicle_identity_id: overview.vehicle_identity_id,
+        rim_setup_id: overview.rim_setup_id,
+        vehicle_revision: overview.vehicle_revision,
+        rim_revision: overview.rim_revision,
+        rim_setup_revision: overview.rim_setup_revision,
+        blocking_issues: [],
+        conditions: [],
+        advisories: [],
+        field_results: [],
+    };
+}
+
+function completeDemoFitmentCheck(check) {
+    return {
+        ...check,
+        execution_status: "completed",
+        verdict: "compatible_with_conditions",
+        conditions: [{ code: "CENTER_BORE_REQUIRES_RING", axle: "front_and_rear", label: "Потребуются центровочные кольца" }],
+        advisories: [{ code: "PRELIMINARY_TECHNICAL_ASSESSMENT", label: "Предварительная техническая оценка" }],
+        field_results: [
+            { field: "pcd_mm", label: "Разболтовка", status: "pass" },
+            { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
+            { field: "center_bore_mm", label: "Ступичное отверстие", status: "conditional" },
+        ],
+    };
+}
+
+// Review-harness fixtures are URL-only and never become a production state
+// source. They make the renderer auditable for terminal API-shaped responses
+// that the guest demo does not otherwise reach through its happy path.
+function applyDemoResultFixture(overview, verdict) {
+    const allowed = new Set(["compatible", "compatible_with_conditions", "unknown", "incompatible", "failed"]);
+    if (!overview || !allowed.has(verdict)) return;
+    const completed = completeDemoFitmentCheck(createDemoFitmentCheck(overview));
+    const fixture = {
+        ...completed,
+        id: `demo-fitment-fixture-${verdict}`,
+        verdict: verdict === "failed" ? null : verdict,
+        execution_status: verdict === "failed" ? "failed" : "completed",
+        blocking_issues: verdict === "incompatible"
+            ? [{ code: "PCD_MISMATCH", label: "Разболтовка колесного диска не совпадает" }]
+            : verdict === "unknown"
+                ? [{ code: "RIM_DATA_UNCONFIRMED", label: "Нужно подтвердить параметры колесного диска" }]
+                : [],
+        conditions: verdict === "compatible_with_conditions" ? completed.conditions : [],
+        advisories: verdict === "failed" ? [] : completed.advisories,
+        field_results: verdict === "incompatible"
+            ? [
+                { field: "pcd_mm", label: "Разболтовка", status: "fail" },
+                { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
+            ]
+            : verdict === "unknown"
+                ? [{ field: "center_bore_mm", label: "Ступичное отверстие", status: "unknown" }]
+            : completed.field_results,
+        ...(verdict === "failed"
+            ? { error: { code: "provider_unavailable", retry_mode: "retryable", retryable: true }, retry_mode: "retryable" }
+            : {}),
+    };
+    const confirmedVehicleFields = Object.fromEntries(
+        Object.entries(overview.vehicle_field_states || {}).map(([field, item]) => [
+            field,
+            demoConfirmedField(item?.value, "demo_review_fixture"),
+        ])
+    );
+    const confirmedRimFields = Object.fromEntries(
+        Object.entries(overview.rim_field_states || {}).map(([field, item]) => [
+            field,
+            demoConfirmedField(item?.value, "demo_review_fixture"),
+        ])
+    );
+    const fixtureOverview = {
+        ...overview,
+        vehicle_state: "confirmed_ready",
+        vehicle_field_states: confirmedVehicleFields,
+        modification_state: "confirmed",
+        selection_source: "demo_review_fixture",
+        selected_modification: DEMO_VEHICLE_VARIANTS[0],
+        modification_vehicle_revision: overview.vehicle_revision,
+        rim_setup_state: "confirmed_ready",
+        rim_field_states: confirmedRimFields,
+        front_rim: {
+            ...overview.front_rim,
+            rim_setup_state: "confirmed_ready",
+            field_states: confirmedRimFields,
+        },
+        next_action: { kind: "run_standard_check" },
+        current_check: fixture,
+        check_history: [fixture],
+    };
+    state.fitmentOverview = fixtureOverview;
+    state.fitmentCheck = fixture;
+    state.fitmentCheckHistory = [fixture];
+    state.fitmentActiveSection = "result";
+    state.fitmentActiveStep = 3;
+}
+
+function runDemoFitmentCheck() {
+    const overview = state.fitmentOverview;
+    if (!overview || fitmentNextAction(overview) !== "run_standard_check" || state.fitmentChecking) return;
+    clearFitmentCheckPolling();
+    clearFitmentTransientMessage();
+    state.fitmentChecking = true;
+    const queued = createDemoFitmentCheck(overview);
+    overview.current_check = queued;
+    overview.check_history = [queued];
+    updateDemoFitmentState(overview);
+    state.fitmentActiveSection = "result";
+    state.fitmentActiveStep = 3;
+    renderFitment();
+    window.setTimeout(() => {
+        if (state.fitmentCheck?.id !== queued.id) return;
+        const processing = { ...queued, execution_status: "processing" };
+        state.fitmentOverview.current_check = processing;
+        state.fitmentOverview.check_history = [processing];
+        updateDemoFitmentState(state.fitmentOverview);
+        renderFitment();
+        window.setTimeout(() => {
+            if (state.fitmentCheck?.id !== queued.id) return;
+            const completed = completeDemoFitmentCheck(processing);
+            state.fitmentOverview.current_check = completed;
+            state.fitmentOverview.check_history = [completed];
+            state.fitmentChecking = false;
+            updateDemoFitmentState(state.fitmentOverview);
+            renderFitment();
+        }, 650);
+    }, 350);
 }
 
 function renderFitmentControls() {
@@ -2727,7 +3023,7 @@ function renderFitmentControls() {
     if (datalist) datalist.innerHTML = FITMENT_DIA_PRESETS.map((value) => `<option value="${formatFitmentInputNumber(value)}"></option>`).join("");
 }
 
-function renderFitment() {
+function renderFitmentLegacy() {
     const loading = document.querySelector("[data-fitment-loading]");
     const error = document.querySelector("[data-fitment-error]");
     const errorText = document.querySelector("[data-fitment-error-text]");
@@ -2748,12 +3044,6 @@ function renderFitment() {
     const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
     const sourceStatus = document.querySelector("[data-fitment-source-status]");
     const sourceToggle = document.querySelector("[data-fitment-source-toggle]");
-    const sourceProgress = document.querySelector("[data-fitment-source-progress]");
-    const sourceProgressTitle = document.querySelector("[data-fitment-source-progress-title]");
-    const sourceProgressCopy = document.querySelector("[data-fitment-source-progress-copy]");
-    const sourceProgressFields = document.querySelector("[data-fitment-source-progress-fields]");
-    const sourceSpinner = document.querySelector("[data-fitment-source-spinner]");
-    const parserWarning = document.querySelector("[data-fitment-parser-warning]");
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantsList = document.querySelector("[data-fitment-variant-list]");
     const verdictCard = document.querySelector("[data-fitment-verdict-card]");
@@ -2843,24 +3133,6 @@ function renderFitment() {
         sourceStatus.textContent = state.fitmentSourceStatus;
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
     }
-    if (parserWarning) parserWarning.hidden = !state.fitmentSourceDetected;
-    if (sourceProgress) {
-        const visible = Boolean(state.fitmentSourceStatus) || state.fitmentSourceResolving;
-        sourceProgress.hidden = !visible;
-        sourceProgress.dataset.tone = state.fitmentSourceStatusTone || "neutral";
-        sourceProgress.dataset.loading = String(state.fitmentSourceResolving);
-    }
-    if (sourceProgressTitle) sourceProgressTitle.textContent = fitmentSourceProgressTitle();
-    if (sourceProgressCopy) sourceProgressCopy.textContent = state.fitmentSourceStatus || "";
-    if (sourceProgressFields) {
-        const appliedFields = fitmentSourceProgressFields();
-        sourceProgressFields.hidden = !appliedFields;
-        sourceProgressFields.textContent = appliedFields
-            ? `${locale === "ru" ? "Заполнены поля" : "Fields filled"}: ${appliedFields}`
-            : "";
-    }
-    if (sourceSpinner) sourceSpinner.hidden = !state.fitmentSourceResolving;
-    renderFitmentSourceSteps();
     renderFitmentRimVariants();
     renderFitmentParserConflicts();
     document.querySelectorAll('[data-fitment-input^="rim."]').forEach((input) => {
@@ -3160,19 +3432,498 @@ function renderFitment() {
     renderFitmentCandidates();
 }
 
-function renderFitmentSourceSteps() {
-    const hasSourceUrl = Boolean(normalizeFitmentText(state.fitmentForm.rim.product_url));
-    const hasResolvedFields = state.fitmentSourceAppliedFields.length > 0;
-    const extractionFailed = Boolean(state.fitmentSourceStatus) && state.fitmentSourceStatusTone === "error";
-    const states = {
-        saved: hasSourceUrl ? "done" : "pending",
-        extract: state.fitmentSourceResolving ? "current" : extractionFailed ? "error" : hasResolvedFields ? "done" : "pending",
-        review: hasResolvedFields && !state.fitmentSourceResolving ? "current" : "pending",
-        verdict: "pending",
+function fitmentContextJob() {
+    return state.renderHistory.find((job) => job.job_id === state.fitmentJobId) || null;
+}
+
+function fitmentPreviewAsset(job, kind) {
+    if (!job) return "";
+    if (isGuestRenderJob(job)) return guestRenderAssetUrl(job, kind === "vehicle" ? "original" : "rim_original");
+    const asset = job.assets?.[kind === "vehicle" ? "car_original" : "rim_original"];
+    return proxiedAssetUrl(asset)
+        || state.renderAssetBlobUrlsByJob[job.job_id]?.[kind === "vehicle" ? "car_original" : "rim_original"]
+        || "";
+}
+
+async function ensureFitmentPreviewAsset(job, kind) {
+    if (!job?.job_id || isGuestRenderJob(job) || !getWebsiteAuthToken()) return;
+    const assetKey = kind === "vehicle" ? "car_original" : "rim_original";
+    const asset = job.assets?.[assetKey];
+    if (!asset?.download_url || state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey]) return;
+    const sourceUrl = asset.download_url.startsWith("/")
+        ? apiUrl(asset.download_url)
+        : asset.download_url;
+    try {
+        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        if (!response.ok) return;
+        const objectUrl = URL.createObjectURL(await response.blob());
+        const previousUrl = state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey];
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        state.renderAssetBlobUrlsByJob[job.job_id] = {
+            ...(state.renderAssetBlobUrlsByJob[job.job_id] || {}),
+            [assetKey]: objectUrl,
+        };
+        renderFitment();
+    } catch {
+        // The context remains useful without a preview if the protected asset is unavailable.
+    }
+}
+
+function fitmentPreviewMarkup(url, label) {
+    return url
+        ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" class="fitment-pair-image">`
+        : `<span class="fitment-pair-media-placeholder">${escapeHtml(label)}</span>`;
+}
+
+function fitmentVehicleProvenance(ui) {
+    const labels = {
+        empty: locale === "ru" ? "Не заполнен" : "Not filled",
+        unconfirmed: locale === "ru" ? "Нужно подтвердить" : "Needs confirmation",
+        confirmed_incomplete: locale === "ru" ? "Нужно выбрать комплектацию" : "Choose a vehicle version",
+        confirmed_ready: locale === "ru" ? "Подтверждён" : "Confirmed",
     };
-    document.querySelectorAll("[data-fitment-source-step]").forEach((step) => {
-        step.dataset.state = states[step.dataset.fitmentSourceStep] || "pending";
+    return labels[ui.vehicle.state] || (locale === "ru" ? "Состояние автомобиля не определено" : "Vehicle state is unavailable");
+}
+
+function fitmentRimProvenance(ui) {
+    const labels = {
+        empty: locale === "ru" ? "Не заполнен" : "Not filled",
+        partial: locale === "ru" ? "Нужно уточнить" : "Needs clarification",
+        complete_unconfirmed: locale === "ru" ? "Нужно подтвердить" : "Needs confirmation",
+        confirmed_ready: locale === "ru" ? "Подтверждён" : "Confirmed",
+    };
+    return labels[ui.rim.setupState] || (locale === "ru" ? "Состояние диска не определено" : "Wheel state is unavailable");
+}
+
+function fitmentResultCopy(check) {
+    const ru = locale === "ru";
+    if (!check) return ru ? "Проверка ещё не выполнена" : "The check has not been run";
+    if (check.is_current === false) return ru ? "Результат сохранён в истории, но данные требуют новой проверки" : "This result is saved in history, but the data needs a new check";
+    if (check.execution_status === "queued") return ru ? "Проверка ожидает запуска" : "The check is queued";
+    if (check.execution_status === "processing") return ru ? "Проверяем параметры автомобиля и диска" : "Checking the vehicle and wheel details";
+    if (check.execution_status === "failed") return fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" });
+    if (check.verdict === "compatible") return ru ? "Критические параметры совпадают с подтверждённой комплектацией" : "Critical parameters match the confirmed vehicle version";
+    if (check.verdict === "compatible_with_conditions") return ru ? "Диск подходит при соблюдении указанных условий установки" : "The wheel fits when the installation conditions are followed";
+    if (check.verdict === "unknown") return ru ? "Недостаточно подтверждённых данных для технического вывода" : "There is not enough confirmed data for a technical verdict";
+    if (check.verdict === "incompatible") return ru ? "Обнаружены параметры, которые не совпадают с данными автомобиля" : "Some parameters conflict with the vehicle data";
+    return ru ? "Проверка завершена" : "The check is complete";
+}
+
+function fitmentResultTitle(check) {
+    if (!check) return locale === "ru" ? "Не выполнен" : "Not run";
+    if (check.is_current === false) return locale === "ru" ? "Нужно проверить заново" : "Needs a new check";
+    const labels = {
+        compatible: locale === "ru" ? "Подходит" : "Fits",
+        compatible_with_conditions: locale === "ru" ? "Подходит с условиями" : "Fits with conditions",
+        unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
+        incompatible: locale === "ru" ? "Не подходит" : "Does not fit",
+        failed: locale === "ru" ? "Проверка не выполнена" : "Check failed",
+        queued: locale === "ru" ? "В очереди" : "Queued",
+        processing: locale === "ru" ? "Проверяем" : "Checking",
+    };
+    return labels[check.verdict || check.execution_status] || (locale === "ru" ? "Не выполнен" : "Not run");
+}
+
+function fitmentResultGroupLabel(kind) {
+    const labels = {
+        blocking: locale === "ru" ? "Нужно уточнить" : "Needs clarification",
+        conditions: locale === "ru" ? "Условия установки" : "Installation conditions",
+        advisories: locale === "ru" ? "Обратите внимание" : "Keep in mind",
+    };
+    return labels[kind] || kind;
+}
+
+function renderFitmentV2Result(check, ui, active) {
+    const verdictCard = document.querySelector("[data-fitment-verdict-card]");
+    const verdictTitle = document.querySelector("[data-fitment-verdict-title]");
+    const verdictCopy = document.querySelector("[data-fitment-verdict-copy]");
+    const verdictWarning = document.querySelector("[data-fitment-verdict-warning]");
+    const verdictCurrentness = document.querySelector("[data-fitment-currentness]");
+    const verdictCheckButton = document.querySelector("[data-fitment-check]");
+    const groups = document.querySelector("[data-fitment-verdict-groups]");
+    const fieldResults = document.querySelector("[data-fitment-verdict-fields]");
+    const technicalDetails = document.querySelector("[data-fitment-technical-details]");
+    const technicalDetailsBody = document.querySelector("[data-fitment-technical-details-body]");
+    if (!verdictCard) return;
+    verdictCard.hidden = !active || !check;
+    if (!check) return;
+    verdictCard.dataset.status = check.verdict || check.execution_status || "unknown";
+    if (verdictTitle) verdictTitle.textContent = fitmentResultTitle(check);
+    if (verdictCopy) verdictCopy.textContent = fitmentResultCopy(check);
+    if (verdictWarning) verdictWarning.hidden = check.execution_status === "queued" || check.execution_status === "processing" || check.execution_status === "failed";
+    if (verdictCurrentness) {
+        verdictCurrentness.hidden = check.is_current !== false;
+        verdictCurrentness.textContent = locale === "ru"
+            ? "Параметры автомобиля или диска изменились. Этот результат сохранён в истории, но больше не актуален"
+            : "Vehicle or wheel details changed. This result remains in history but is no longer current";
+    }
+    const pending = check.execution_status === "queued" || check.execution_status === "processing";
+    const failed = check.execution_status === "failed";
+    if (verdictCheckButton) {
+        verdictCheckButton.hidden = pending || !["run_standard_check"].includes(ui.nextAction);
+        verdictCheckButton.disabled = pending || state.fitmentChecking;
+        const completedCurrent = check.execution_status === "completed" && check.is_current !== false;
+        verdictCheckButton.classList.toggle("primary-button", !completedCurrent);
+        verdictCheckButton.classList.toggle("ghost-button", completedCurrent);
+        verdictCheckButton.classList.toggle("neutral", completedCurrent);
+        verdictCheckButton.textContent = pending
+            ? (check.execution_status === "queued" ? "Проверка поставлена в очередь" : "Проверяем совместимость")
+            : failed && check.retry_mode !== "not_applicable"
+                ? "Повторить"
+                : completedCurrent
+                    ? "Проверить ещё раз"
+                    : t("fitment.check");
+    }
+    renderFitmentVerdictGroup(
+        "[data-fitment-verdict-blocking]",
+        "[data-fitment-verdict-blocking-list]",
+        check.blocking_issues || [],
+        "blocking"
+    );
+    renderFitmentVerdictGroup(
+        "[data-fitment-verdict-conditions]",
+        "[data-fitment-verdict-conditions-list]",
+        check.conditions || [],
+        "conditions"
+    );
+    renderFitmentVerdictGroup(
+        "[data-fitment-verdict-advisories]",
+        "[data-fitment-verdict-advisories-list]",
+        check.advisories || [],
+        "advisories"
+    );
+    if (groups) {
+        const allGroups = [
+            ["[data-fitment-verdict-blocking]", "blocking"],
+            ["[data-fitment-verdict-conditions]", "conditions"],
+            ["[data-fitment-verdict-advisories]", "advisories"],
+        ];
+        allGroups.forEach(([selector, kind]) => {
+            const section = document.querySelector(selector);
+            const heading = section?.querySelector("strong");
+            if (heading) heading.textContent = fitmentResultGroupLabel(kind);
+        });
+        groups.hidden = ![
+            ...(check.blocking_issues || []),
+            ...(check.conditions || []),
+            ...(check.advisories || []),
+        ].length;
+    }
+    if (fieldResults) {
+        const fields = check.field_results || check.fields || [];
+        fieldResults.replaceChildren();
+        fieldResults.hidden = !fields.length;
+        const labels = {
+            pass: locale === "ru" ? "Подходит" : "Fits",
+            conditional: locale === "ru" ? "Требуется условие" : "Condition required",
+            unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
+            fail: locale === "ru" ? "Конфликт" : "Conflict",
+        };
+        fields.forEach((field) => {
+            const line = document.createElement("div");
+            line.className = "fitment-verdict-field";
+            line.dataset.status = field.status || field.result || "unknown";
+            const label = document.createElement("span");
+            label.textContent = field.label || field.field || "";
+            const outcome = document.createElement("strong");
+            outcome.textContent = labels[field.status || field.result] || labels.unknown;
+            line.append(label, outcome);
+            fieldResults.append(line);
+        });
+    }
+    if (technicalDetails && technicalDetailsBody) {
+        const overview = state.fitmentOverview;
+        const rim = overview?.rim || overview?.front_rim?.rim || {};
+        const details = [
+            ["Автомобиль", demoVehicleTitle(overview?.vehicle)],
+            ["Колесный диск", fitmentRimSpecs(rim) || fitmentEmptyValue()],
+        ];
+        const missing = check.evidence_summary?.missing_fields || check.missing_fields || [];
+        if (missing.length) details.push(["Нужно уточнить", missing.map(fitmentFieldLabel).join(", ")]);
+        technicalDetailsBody.replaceChildren();
+        for (const [label, value] of details) {
+            const row = document.createElement("div");
+            row.className = "fitment-technical-row";
+            const name = document.createElement("span");
+            name.textContent = label;
+            const content = document.createElement("strong");
+            content.textContent = value;
+            row.append(name, content);
+            technicalDetailsBody.append(row);
+        }
+        technicalDetails.hidden = pending || failed;
+    }
+}
+
+function renderFitment() {
+    const loading = document.querySelector("[data-fitment-loading]");
+    const error = document.querySelector("[data-fitment-error]");
+    const errorText = document.querySelector("[data-fitment-error-text]");
+    const message = document.querySelector("[data-fitment-message]");
+    const messageText = document.querySelector("[data-fitment-message-text]");
+    const shell = document.querySelector("[data-fitment-shell]");
+    const subtitle = document.querySelector("[data-fitment-subtitle]");
+    const overview = state.fitmentOverview;
+    const check = fitmentCheckForPresentation();
+    const ui = fitmentUiState(overview, check);
+    const resultAvailable = fitmentResultAvailable();
+    const renderCopy = document.querySelector("[data-fitment-render-copy]");
+    if (renderCopy) {
+        renderCopy.textContent = check?.verdict === "incompatible" && check.is_current !== false
+            ? "Вы все еще можете создать изображение, чтобы оценить внешний вид дисков"
+            : "Визуальная примерка не требует завершения проверки";
+    }
+    if (state.fitmentMessage && state.fitmentActiveSection === "result" && check?.execution_status === "completed") {
+        clearFitmentTransientMessage();
+    }
+    if (overview && !state.fitmentActiveSection) {
+        state.fitmentActiveSection = fitmentSectionForAction(overview);
+        state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
+    }
+    if (loading) loading.dataset.visible = String(state.fitmentLoading);
+    if (error) error.dataset.visible = String(Boolean(state.fitmentError));
+    if (errorText) errorText.textContent = localizeErrorMessage(state.fitmentError);
+    if (message) {
+        message.dataset.visible = String(Boolean(state.fitmentMessage));
+        message.className = `wallet-status-island tone-${state.fitmentMessageTone || "neutral"}`;
+    }
+    if (messageText) messageText.textContent = state.fitmentMessage || "";
+    const authRequired = document.querySelector("[data-fitment-auth-required]");
+    if (authRequired) authRequired.hidden = !state.fitmentAuthRequired || HAS_TG;
+    const authRequiredText = document.querySelector("[data-fitment-auth-required-text]");
+    if (authRequiredText) authRequiredText.textContent = locale === "ru"
+        ? "Сессия истекла. Войдите через Telegram, чтобы продолжить"
+        : "Your session has expired. Sign in with Telegram to continue";
+    const restoreConflict = document.querySelector("[data-fitment-restore-conflict]");
+    if (restoreConflict) restoreConflict.hidden = !state.fitmentRestoreConflict;
+    if (!overview) {
+        if (shell) shell.hidden = true;
+        return;
+    }
+    renderFitmentControls();
+    const contextJob = fitmentContextJob();
+    if (!contextJob && hasFrontendAuth()) void loadRenderHistory({ silent: true });
+    const vehicleUrl = fitmentPreviewAsset(contextJob, "vehicle");
+    const rimUrl = fitmentPreviewAsset(contextJob, "rim");
+    const vehicleMedia = document.querySelector("[data-fitment-vehicle-preview-media]");
+    const rimMedia = document.querySelector("[data-fitment-rim-preview-media]");
+    if (vehicleMedia) vehicleMedia.innerHTML = fitmentPreviewMarkup(vehicleUrl, "Фото автомобиля");
+    if (rimMedia) rimMedia.innerHTML = fitmentPreviewMarkup(rimUrl, "Фото диска");
+    if (contextJob) {
+        void ensureFitmentPreviewAsset(contextJob, "vehicle");
+        void ensureFitmentPreviewAsset(contextJob, "rim");
+    }
+    const vehicleTitle = demoVehicleTitle(overview.vehicle);
+    const vehicleSpecs = fitmentVehicleSpecs(overview.vehicle);
+    const rimTitle = demoRimTitle(overview.rim);
+    const rimSpecs = fitmentRimSpecs(overview.rim);
+    document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(document.createTextNode(vehicleTitle));
+    document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(document.createTextNode(rimTitle));
+    const vehicleSpecsTarget = document.querySelector("[data-fitment-vehicle-specs]");
+    if (vehicleSpecsTarget) {
+        vehicleSpecsTarget.textContent = vehicleSpecs || fitmentEmptyValue();
+        vehicleSpecsTarget.hidden = !vehicleSpecs;
+    }
+    const rimSpecsTarget = document.querySelector("[data-fitment-card-rim-specs]");
+    if (rimSpecsTarget) {
+        rimSpecsTarget.textContent = rimSpecs || fitmentEmptyValue();
+        rimSpecsTarget.hidden = !rimSpecs;
+    }
+    const summaryVehicleTitle = document.querySelector("[data-fitment-summary-vehicle-title]");
+    const summaryVehicleSpecs = document.querySelector("[data-fitment-summary-vehicle-specs]");
+    if (summaryVehicleTitle) summaryVehicleTitle.textContent = vehicleTitle;
+    if (summaryVehicleSpecs) summaryVehicleSpecs.textContent = vehicleSpecs || fitmentEmptyValue();
+    const summaryVehicleMeta = document.querySelector("[data-fitment-summary-vehicle-meta]");
+    if (summaryVehicleMeta) summaryVehicleMeta.textContent = fitmentVehicleProvenance(ui);
+    const rimSummaryTitle = document.querySelector("[data-fitment-rim-summary-title]");
+    const rimSummarySpecs = document.querySelector("[data-fitment-rim-summary-specs]");
+    const rimSummaryMeta = document.querySelector("[data-fitment-rim-summary-meta]");
+    if (rimSummaryTitle) rimSummaryTitle.textContent = rimTitle;
+    if (rimSummarySpecs) rimSummarySpecs.textContent = rimSpecs || fitmentEmptyValue();
+    if (rimSummaryMeta) rimSummaryMeta.textContent = fitmentRimProvenance(ui);
+
+    let activeSection = ["vehicle", "rim", "result"].includes(state.fitmentActiveSection)
+        ? state.fitmentActiveSection
+        : fitmentSectionForAction(overview);
+    if (activeSection === "result" && !resultAvailable) {
+        activeSection = fitmentSectionForAction(overview);
+        state.fitmentActiveSection = activeSection;
+        state.fitmentActiveStep = fitmentSectionToStep(activeSection);
+    }
+    document.querySelectorAll("[data-fitment-section-tab]").forEach((tab) => {
+        const section = tab.dataset.fitmentSectionTab;
+        const isResult = section === "result";
+        tab.disabled = isResult && !resultAvailable;
+        tab.classList.toggle("active", section === activeSection);
+        tab.setAttribute("aria-selected", String(section === activeSection));
+        const status = tab.querySelector("[data-fitment-flow-state]");
+        if (!status) return;
+        if (isResult && !resultAvailable) {
+            status.textContent = fitmentResultTitle(null);
+            tab.dataset.state = "neutral";
+        } else if (section === "result" && ["queued", "processing"].includes(check?.execution_status)) {
+            status.textContent = check.execution_status === "queued" ? "В очереди" : "Проверяем";
+            tab.dataset.state = "info";
+        } else if (section === "result") {
+            status.textContent = fitmentResultTitle(check);
+            tab.dataset.state = check?.verdict === "incompatible" || check?.execution_status === "failed"
+                ? "danger"
+                : check?.is_current === false || check?.verdict === "compatible_with_conditions" || check?.verdict === "unknown"
+                    ? "warning"
+                    : "success";
+        } else if (section === "vehicle") {
+            status.textContent = fitmentVehicleProvenance(ui);
+            tab.dataset.state = ui.vehicle.state === "confirmed_ready" ? "success" : "warning";
+        } else {
+            status.textContent = fitmentRimProvenance(ui);
+            tab.dataset.state = ui.rim.setupState === "confirmed_ready" ? "success" : "warning";
+        }
     });
+    document.querySelectorAll('[data-fitment-section="vehicle"], [data-fitment-section="rim"]').forEach((section) => {
+        section.hidden = section.dataset.fitmentSection !== activeSection;
+    });
+    const resultSection = document.querySelector('[data-fitment-section="result"]');
+    if (resultSection) resultSection.hidden = activeSection !== "result" || !resultAvailable;
+    const vehicleEditing = state.fitmentVehicleEditing || ui.vehicle.state === "empty" || state.fitmentVehicleDirty;
+    const rimEditing = state.fitmentRimEditing || ui.rim.setupState !== "confirmed_ready" || fitmentFormIsDirty() || state.fitmentSourceStatusTone === "error";
+    document.querySelector("[data-fitment-vehicle-summary]")?.toggleAttribute("hidden", vehicleEditing);
+    document.querySelector("[data-fitment-vehicle-editor]")?.toggleAttribute("hidden", !vehicleEditing);
+    document.querySelector("[data-fitment-rim-summary]")?.toggleAttribute("hidden", rimEditing);
+    const readyCheckButton = document.querySelector("[data-fitment-check-ready]");
+    if (readyCheckButton) {
+        readyCheckButton.hidden = !(!resultAvailable && !rimEditing && ui.nextAction === "run_standard_check");
+        readyCheckButton.disabled = state.fitmentChecking;
+        readyCheckButton.textContent = state.fitmentChecking ? "Проверяем совместимость" : "Проверить совместимость";
+    }
+    document.querySelectorAll('[data-fitment-section="rim"] > .fitment-form-grid, [data-fitment-section="rim"] > .fitment-setup-mode, [data-fitment-section="rim"] > .fitment-rim-variant-picker, [data-fitment-section="rim"] > .fitment-parser-conflicts, [data-fitment-section="rim"] > .fitment-rear-rim').forEach((node) => node.toggleAttribute("hidden", !rimEditing));
+    document.querySelector("[data-fitment-source-entry]")?.toggleAttribute("hidden", !rimEditing);
+    const vehicleStateCopy = {
+        empty: "Заполните данные автомобиля",
+        unconfirmed: "Автомобиль определён по фотографии. Проверьте найденные данные и выберите комплектацию",
+        confirmed_incomplete: "Данные подтверждены. Выберите точную комплектацию",
+        confirmed_ready: "Данные автомобиля подтверждены",
+    };
+    document.querySelector("[data-fitment-vehicle-state]")?.replaceChildren(document.createTextNode(vehicleStateCopy[ui.vehicle.state] || fitmentContractRecoveryMessage()));
+    document.querySelector("[data-fitment-modification-state]")?.replaceChildren(document.createTextNode(fitmentModificationStateLabel(ui)));
+    const rimStateCopy = {
+        empty: "Заполните параметры колесного диска",
+        partial: "Часть параметров необходимо проверить",
+        complete_unconfirmed: "Параметры необходимо подтвердить",
+        confirmed_ready: "Параметры диска подтверждены",
+    };
+    document.querySelector("[data-fitment-rim-state]")?.replaceChildren(document.createTextNode(rimStateCopy[ui.rim.setupState] || fitmentContractRecoveryMessage()));
+    const rimAxes = document.querySelector("[data-fitment-rim-axes]");
+    if (rimAxes) {
+        rimAxes.hidden = ui.rim.setupMode !== "staggered";
+        rimAxes.textContent = ui.rim.setupMode === "staggered"
+            ? `Передняя ось: ${fitmentRimStateLabel(ui.rim.front?.rim_setup_state)} / Задняя ось: ${fitmentRimStateLabel(ui.rim.rear?.rim_setup_state)}`
+            : "";
+    }
+    const variantsLoad = document.querySelector("[data-fitment-variants-load]");
+    if (variantsLoad) {
+        variantsLoad.hidden = ui.nextAction !== "select_vehicle_variant";
+        variantsLoad.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
+        variantsLoad.textContent = state.fitmentVehicleVariantsLoading ? "Подбираем комплектации…" : "Выбрать точную комплектацию";
+    }
+    const variantsList = document.querySelector("[data-fitment-variant-list]");
+    if (variantsList) {
+        variantsList.replaceChildren();
+        variantsList.hidden = !state.fitmentVehicleVariants.length;
+        state.fitmentVehicleVariants.forEach((variant, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "fitment-variant-choice";
+            if (index === state.fitmentSelectedVehicleVariantIndex) button.classList.add("selected");
+            button.dataset.fitmentVehicleVariant = String(index);
+            button.disabled = state.fitmentVehicleVariantApplying;
+            button.innerHTML = `<strong>${escapeHtml(variant.modification || `Комплектация ${index + 1}`)}</strong><span>${escapeHtml([variant.market, variant.generation, variant.engine, variant.years].filter(Boolean).join(" / "))}</span>`;
+            variantsList.append(button);
+        });
+        if (state.fitmentSelectedVehicleVariantIndex !== null) {
+            const confirm = document.createElement("button");
+            confirm.type = "button";
+            confirm.className = "primary-button compact-button";
+            confirm.dataset.fitmentConfirmVariant = "true";
+            confirm.disabled = state.fitmentVehicleVariantApplying;
+            confirm.textContent = locale === "ru" ? "Подтвердить комплектацию" : "Confirm vehicle version";
+            variantsList.append(confirm);
+        }
+    }
+    const sourceDisclosure = document.querySelector("[data-fitment-source-disclosure]");
+    if (sourceDisclosure) sourceDisclosure.open = Boolean(state.fitmentSourceOpen);
+    const sourceUrl = document.querySelector("[data-fitment-source-url]");
+    if (sourceUrl) {
+        sourceUrl.value = state.fitmentForm.rim.product_url || "";
+        sourceUrl.disabled = state.fitmentSourceResolving;
+    }
+    const sourceReadonly = document.querySelector("[data-fitment-source-readonly]");
+    const sourceConfirmed = document.querySelector("[data-fitment-source-confirmed]");
+    if (sourceReadonly) {
+        const source = normalizeFitmentText(state.fitmentForm.rim.product_url);
+        sourceReadonly.hidden = rimEditing || !source;
+        sourceReadonly.textContent = source ? `Источник: ${source}` : "";
+        if (sourceConfirmed) {
+            sourceConfirmed.hidden = rimEditing || !source;
+        }
+    }
+    const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
+    if (sourceSubmit) sourceSubmit.disabled = state.fitmentSourceResolving;
+    const sourceStatus = document.querySelector("[data-fitment-source-status]");
+    const sourceStatusTitle = document.querySelector("[data-fitment-source-status-title]");
+    const sourceStatusCopy = document.querySelector("[data-fitment-source-status-copy]");
+    const sourceStatusActions = document.querySelector("[data-fitment-source-status-actions]");
+    if (sourceStatus) {
+        const hasSourceUrl = Boolean(normalizeFitmentText(state.fitmentForm.rim.product_url));
+        const resolverFailure = state.fitmentSourceStatusTone === "error" && hasSourceUrl;
+        const sourceStatusVisible = state.fitmentSourceResolving || Boolean(state.fitmentSourceStatus);
+        sourceStatus.hidden = !rimEditing || !sourceStatusVisible;
+        sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
+        if (sourceStatusTitle && sourceStatusCopy) {
+            if (state.fitmentSourceResolving) {
+                sourceStatusTitle.textContent = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
+                sourceStatusCopy.textContent = "";
+            } else if (resolverFailure) {
+                sourceStatusTitle.textContent = locale === "ru"
+                    ? "Не удалось определить параметры автоматически"
+                    : "Wheel parameters could not be determined automatically";
+                sourceStatusCopy.textContent = locale === "ru"
+                    ? "Это не блокирует проверку — укажите параметры колесного диска вручную"
+                    : "This does not block the check — enter the wheel parameters manually";
+            } else if (state.fitmentSourceDetected) {
+                sourceStatusTitle.textContent = locale === "ru" ? "Параметры найдены" : "Parameters found";
+                sourceStatusCopy.textContent = locale === "ru"
+                    ? "Проверьте значения перед сохранением"
+                    : "Review the values before saving";
+            } else {
+                sourceStatusTitle.textContent = "";
+                sourceStatusCopy.textContent = state.fitmentSourceStatus || "";
+            }
+        }
+        if (sourceStatusActions) {
+            sourceStatusActions.hidden = !rimEditing || !resolverFailure;
+        }
+    }
+    renderFitmentRimVariants();
+    renderFitmentParserConflicts();
+    renderFitmentFieldStates(ui);
+    syncFitmentFormInputs();
+    const setupModeSelect = document.querySelector("[data-fitment-setup-mode]");
+    if (setupModeSelect) setupModeSelect.value = state.fitmentForm.setup_mode || ui.rim.setupMode;
+    const rearRimSection = document.querySelector("[data-fitment-rear-rim]");
+    if (rearRimSection) rearRimSection.hidden = state.fitmentForm.setup_mode !== "staggered";
+    const vehicleNeedsConfirmation = ui.vehicle.state === "unconfirmed" && ui.nextAction === "complete_vehicle_details";
+    const showSave = activeSection !== "result" && ((activeSection === "vehicle" && (vehicleEditing || vehicleNeedsConfirmation)) || (activeSection === "rim" && rimEditing));
+    const saveButton = document.querySelector("[data-fitment-save]");
+    if (saveButton) {
+        saveButton.hidden = !showSave;
+        saveButton.disabled = state.fitmentLoading || state.fitmentSaving;
+        saveButton.textContent = state.fitmentSaving ? "Сохраняем…" : fitmentSaveLabel();
+    }
+    const actions = document.querySelector("[data-fitment-actions]");
+    if (actions) actions.hidden = !showSave;
+    if (subtitle) subtitle.textContent = fitmentSubtitle(overview);
+    renderFitmentV2Result(check, ui, activeSection === "result" && resultAvailable);
+    if (shell) shell.hidden = false;
 }
 
 function renderFitmentRimVariants() {
@@ -3291,9 +4042,9 @@ async function loadFitmentCatalogue(kind, params = {}) {
 function loadFitmentVehicleCatalogue() {
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         const overview = state.fitmentOverview || {};
-        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "Toyota", label: overview.vehicle?.make || "Toyota" }] };
-        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "Prius", label: overview.vehicle?.model || "Prius" }] };
-        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2016), label: String(overview.vehicle?.year || 2016) }] };
+        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "ZEEKR", label: overview.vehicle?.make || "ZEEKR" }] };
+        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "SUV", label: overview.vehicle?.model || "SUV" }] };
+        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2025), label: String(overview.vehicle?.year || 2025) }] };
         return;
     }
     void loadFitmentCatalogue("regions");
@@ -3312,14 +4063,15 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
     renderFitment();
     try {
         if (shouldUseDemoFitment(jobId)) {
-            const overview = loadDemoFitmentOverview() || buildDefaultDemoFitmentOverview();
-            persistDemoFitmentOverview(overview);
-            state.fitmentOverview = overview;
-            state.fitmentForm = fitmentFormFromOverview(overview);
-            state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
-            state.fitmentCheck = overview.current_check || null;
-            state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
-            state.fitmentVehicleDirty = false;
+            const storedOverview = loadDemoFitmentOverview();
+            const overview = storedOverview && validateFitmentOverview(storedOverview)
+                ? storedOverview
+                : buildDefaultDemoFitmentOverview();
+            updateDemoFitmentState(overview);
+            const demoResult = new URLSearchParams(window.location.search).get("demoResult");
+            if (demoResult) applyDemoResultFixture(overview, demoResult);
+            state.fitmentActiveSection = fitmentSectionForAction(state.fitmentOverview);
+            state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
             loadFitmentVehicleCatalogue();
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -3334,14 +4086,26 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
         }
         if (!response.ok) throw new Error(await parseApiError(response));
         const overview = await response.json();
+        if (!validateFitmentOverview(overview)) {
+            state.fitmentOverview = null;
+            state.fitmentError = fitmentContractRecoveryMessage();
+            return restoration;
+        }
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
+        state.fitmentCheckHistory = [];
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentVehicleDirty = false;
+        state.fitmentVehicleEditing = overview.vehicle_state === "empty";
+        state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
+        state.fitmentActiveSection = fitmentSectionForAction(overview);
+        state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
         loadFitmentVehicleCatalogue();
+        void loadFitmentCheckHistory(overview);
+        void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
         if (!suppressAutomaticResolver && restoration !== "restored" && overview?.rim?.product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
             state.fitmentSourceAutoResolvedForJob = jobId;
@@ -3366,7 +4130,11 @@ function openFitmentView(jobId, { originView = state.view } = {}) {
     state.fitmentOriginJobId = jobId;
     state.fitmentOverview = null;
     state.fitmentCheck = null;
+    state.fitmentCheckHistory = [];
+    state.fitmentActiveSection = "";
     state.fitmentActiveStep = 0;
+    state.fitmentVehicleEditing = false;
+    state.fitmentRimEditing = false;
     state.fitmentForm = createEmptyFitmentForm();
     state.fitmentVehicleDirty = false;
     state.fitmentFormState = { status: "clean", validation: "valid", baseline: null };
@@ -3405,51 +4173,9 @@ function closeFitmentView() {
 }
 
 function fitmentSourceErrorMessage(error) {
-    const message = error?.message || "";
-    let reasonCode = "";
-    try {
-        reasonCode = JSON.parse(message)?.code || "";
-    } catch {
-        // Legacy backend errors are plain text.
-    }
-    if (reasonCode === "rim_source_url_rejected") {
-        return locale === "ru"
-            ? "Ссылка должна вести на публичную HTTPS-страницу товара. Проверьте адрес или заполните параметры вручную."
-            : "Use a public HTTPS product page, or enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_redirect_failed") {
-        return locale === "ru"
-            ? "Страница диска перенаправляет слишком много раз. Откройте карточку товара напрямую или заполните параметры вручную."
-            : "The product page redirects too many times. Open the product page directly, or enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_unsupported_document") {
-        return locale === "ru"
-            ? "Ссылка не ведёт на поддерживаемую страницу товара. Укажите страницу диска или заполните параметры вручную."
-            : "The link is not a supported product page. Use a wheel product page, or enter the details manually.";
-    }
-    if (reasonCode === "rim_source_document_too_large") {
-        return locale === "ru"
-            ? "Страница диска слишком велика для автоматического разбора. Заполните параметры вручную."
-            : "The product page is too large for automatic extraction. Enter the wheel details manually.";
-    }
-    if (reasonCode === "rim_source_fetch_failed") {
-        return locale === "ru"
-            ? "Страница диска сейчас недоступна. Повторите позже или заполните параметры вручную."
-            : "The product page is unavailable right now. Try again later, or enter the wheel details manually.";
-    }
-    if (/too many requests/i.test(message)) {
-        return locale === "ru"
-            ? "Слишком много попыток. Повторите извлечение позже."
-            : "Too many attempts. Try extracting the parameters later.";
-    }
-    if (/disabled/i.test(message)) {
-        return locale === "ru"
-            ? "Автоматическое извлечение временно недоступно. Сохраните ссылку и заполните параметры вручную."
-            : "Automatic extraction is temporarily unavailable. Save the link and enter the parameters manually.";
-    }
     return locale === "ru"
-        ? "Не удалось извлечь параметры автоматически. Проверьте ссылку или заполните поля вручную."
-        : "Parameters could not be extracted automatically. Check the link or enter them manually.";
+        ? "Не удалось определить параметры автоматически"
+        : "Wheel parameters could not be determined automatically";
 }
 
 function applyRimSourceValues(values) {
@@ -3503,11 +4229,11 @@ function selectFitmentRimVariant(index) {
     };
     state.fitmentSourceStatus = appliedFields.length
         ? (locale === "ru"
-            ? "Вариант выбран. Проверьте заполненные параметры и сохраните их."
-            : "Variant selected. Review the filled parameters and save them.")
+            ? "Вариант выбран — проверьте параметры перед сохранением"
+            : "Variant selected — review the parameters before saving")
         : (locale === "ru"
-            ? "Вариант выбран. Ручные значения сохранены; при необходимости дополните параметры."
-            : "Variant selected. Manual values were preserved; complete any missing parameters.");
+            ? "Вариант выбран — ручные значения сохранены; при необходимости дополните параметры"
+            : "Variant selected — manual values were preserved; complete any missing parameters");
     state.fitmentSourceStatusTone = "success";
     renderFitment();
     scrollFitmentTo('[data-fitment-section="rim"]');
@@ -3532,11 +4258,13 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         renderFitment();
         return;
     }
+    clearFitmentTransientMessage();
     state.fitmentSourceResolving = true;
+    state.fitmentSourceOpen = true;
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
     state.fitmentSourceVariants = [];
-    state.fitmentSourceStatus = locale === "ru" ? "Получаем параметры диска…" : "Extracting wheel parameters…";
+    state.fitmentSourceStatus = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
     state.fitmentSourceController?.abort?.();
@@ -3576,27 +4304,25 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         const conflictFields = (result.conflicts || []).map((conflict) => conflict.field);
         state.fitmentSourceStatus = result.selection_required
             ? locale === "ru"
-                ? "Найдено несколько вариантов. Выберите подходящий SKU, затем проверьте параметры."
-                : "Several variants were found. Choose the matching SKU, then review the parameters."
+                ? "Выберите вариант диска, затем проверьте параметры перед сохранением"
+                : "Choose a wheel variant, then review the parameters before saving"
             : !resolvedEntries.length
-            ? locale === "ru"
-                ? "По этой ссылке не удалось распознать параметры. Проверьте ссылку или заполните поля вручную."
-                : "No wheel parameters could be recognised from this link. Check the URL or fill in the fields manually."
-            : conflictFields.length
-            ? `${locale === "ru" ? "Параметры заполнены; проверьте" : "Parameters filled; review"}: ${conflictFields.join(", ")}`
-            : locale === "ru"
-                ? "Параметры заполнены. Проверьте их и сохраните для запуска проверки совместимости."
-                : "Parameters filled. Review them and save to run the compatibility check.";
-        state.fitmentSourceStatusTone = result.selection_required || !resolvedEntries.length || conflictFields.length ? "warning" : "success";
-        state.fitmentSourceOpen = !resolvedEntries.length ? true : result.selection_required ? true : automatic ? false : state.fitmentSourceOpen;
+                ? fitmentSourceErrorMessage()
+                : conflictFields.length
+                    ? locale === "ru"
+                        ? "Параметры найдены — проверьте значения перед сохранением"
+                        : "Parameters found — review the values before saving"
+                    : locale === "ru"
+                        ? "Параметры найдены — проверьте значения перед сохранением"
+                        : "Parameters found — review the values before saving";
+        state.fitmentSourceStatusTone = !resolvedEntries.length ? "error" : result.selection_required || conflictFields.length ? "warning" : "success";
+        state.fitmentSourceOpen = true;
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
-        if (automatic) {
-            state.fitmentSourceOpen = true;
-            state.fitmentMessage = state.fitmentSourceStatus;
-            state.fitmentMessageTone = "warning";
-        }
+        state.fitmentRimEditing = true;
+        state.fitmentActiveSection = "rim";
+        state.fitmentActiveStep = 2;
     } finally {
         window.clearTimeout(requestTimeout);
         if (state.fitmentSourceController === controller) state.fitmentSourceController = null;
@@ -3626,13 +4352,14 @@ async function loadFitmentVehicleVariants() {
         return;
     }
     if (shouldUseDemoFitment(state.fitmentJobId)) {
+        state.fitmentLookup = { status: "loaded", outcome: "multiple" };
+        state.fitmentVehicleVariants = DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }));
+        state.fitmentSelectedVehicleVariantIndex = null;
         state.fitmentMessage = locale === "ru"
-            ? "Для примера выберите параметры диска на следующем шаге."
-            : "For this example, continue to the wheel details.";
+            ? "Выберите подходящую комплектацию из списка"
+            : "Choose the matching vehicle version from the list";
         state.fitmentMessageTone = "success";
-        state.fitmentActiveStep = 2;
         renderFitment();
-        scrollFitmentTo('[data-fitment-section="rim"]');
         return;
     }
     state.fitmentVehicleVariantsLoading = true;
@@ -3759,8 +4486,13 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
 
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (fitmentNextAction(overview) !== "run_standard_check" || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentChecking) return;
+    if (fitmentNextAction(overview) !== "run_standard_check" || state.fitmentChecking) return;
+    if (shouldUseDemoFitment(state.fitmentJobId)) {
+        runDemoFitmentCheck();
+        return;
+    }
     state.fitmentChecking = true;
+    clearFitmentTransientMessage();
     state.fitmentError = "";
     renderFitment();
     try {
@@ -3801,6 +4533,13 @@ async function applyFitmentVehicleVariant(variant) {
     state.fitmentVehicleVariantApplying = true;
     renderFitment();
     try {
+        if (shouldUseDemoFitment(state.fitmentJobId)) {
+            const nextOverview = demoServerTransition("select_vehicle_variant", { variant });
+            updateDemoFitmentState(nextOverview);
+            state.fitmentActiveSection = "rim";
+            state.fitmentActiveStep = 2;
+            return;
+        }
         const response = await fetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/apply`, { includeIdentity: true }),
             {
@@ -3828,6 +4567,7 @@ async function applyFitmentVehicleVariant(variant) {
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(state.fitmentOverview);
         state.fitmentVehicleDirty = false;
         await refreshFitmentCheckCurrentness();
+        state.fitmentActiveSection = "rim";
         state.fitmentActiveStep = 2;
     } catch (error) {
         state.fitmentError = error?.message || t("errors.requestFailed");
@@ -3857,16 +4597,24 @@ async function saveFitment(event) {
     renderFitment();
     try {
         if (shouldUseDemoFitment(state.fitmentJobId)) {
-            const overview = applyDemoFitmentSave(fitmentPayload());
-            persistDemoFitmentOverview(overview);
-            state.fitmentOverview = overview;
-            state.fitmentForm = fitmentFormFromOverview(overview);
-            state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
-            state.fitmentVehicleDirty = false;
+            const action = fitmentNextAction(state.fitmentOverview);
+            const transition = action === "complete_vehicle_details"
+                ? "confirm_vehicle"
+                : action === "complete_rim_specs" || (state.fitmentActiveSection === "rim" && (state.fitmentRimEditing || state.fitmentFormState.dirty))
+                    ? "save_rim"
+                    : "";
+            const overview = demoServerTransition(transition, fitmentPayload());
+            updateDemoFitmentState(overview);
+            clearFitmentResolverFeedback({ close: true });
             state.fitmentFormState.status = "clean";
-            state.fitmentMessage = t("fitment.saveSuccess");
+            state.fitmentMessage = transition === "confirm_vehicle"
+                ? (locale === "ru" ? "Данные автомобиля подтверждены. Выберите комплектацию" : "Vehicle details confirmed. Choose a vehicle version")
+                : transition === "save_rim"
+                    ? (locale === "ru" ? "Параметры сохранены. Проверку совместимости можно запустить отдельно" : "Wheel details saved. You can start the compatibility check separately")
+                    : t("fitment.saveSuccess");
             state.fitmentMessageTone = "success";
-            state.fitmentActiveStep = Math.min(3, Math.max(2, state.fitmentActiveStep + 1));
+            state.fitmentActiveSection = transition === "save_rim" ? "rim" : "vehicle";
+            state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             return;
         }
         const response = await fetch(
@@ -3889,44 +4637,44 @@ async function saveFitment(event) {
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+        clearFitmentResolverFeedback({ close: true });
         state.fitmentVehicleDirty = false;
+        state.fitmentVehicleEditing = overview.vehicle_state !== "confirmed_ready";
+        state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
         await refreshFitmentCheckCurrentness();
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
-        const savedFromStep = state.fitmentActiveStep;
-        const nextStep = fitmentNextStep(overview);
+        const savedFromSection = state.fitmentActiveSection;
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
-        if (savedFromStep === 1) {
-            state.fitmentActiveStep = 2;
-            state.fitmentMessage = fitmentNextAction(overview) === "run_standard_check"
+        if (savedFromSection === "vehicle") {
+            state.fitmentActiveSection = nextAction === "complete_vehicle_details" || nextAction === "select_vehicle_variant" ? "vehicle" : "rim";
+            state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
+            state.fitmentMessage = nextAction === "run_standard_check"
                 ? (locale === "ru" ? "Автомобиль сохранён. Проверьте параметры диска." : "Vehicle saved. Review the wheel details.")
-                : (locale === "ru" ? "Автомобиль сохранён. Заполните параметры диска; комплектацию можно выбрать перед итоговой проверкой." : "Vehicle saved. Add wheel details; choose the exact vehicle version before the final check.");
+                : (locale === "ru" ? "Автомобиль сохранён. Продолжите по следующему действию сервера." : "Vehicle saved. Continue with the next server action.");
             state.fitmentMessageTone = "success";
-            scrollFitmentTo('[data-fitment-section="rim"]');
         } else if (nextAction === "select_vehicle_variant") {
+            state.fitmentActiveSection = "vehicle";
             state.fitmentActiveStep = 1;
             state.fitmentMessage = locale === "ru"
                 ? "Параметры диска сохранены. Теперь выберите точную комплектацию автомобиля."
                 : "Wheel details saved. Now choose the exact vehicle version.";
             state.fitmentMessageTone = "success";
             void loadFitmentVehicleVariants();
-            scrollFitmentTo('[data-fitment-section="vehicle"]');
         } else if (nextAction === "complete_vehicle_details") {
+            state.fitmentActiveSection = "vehicle";
             state.fitmentActiveStep = 1;
-            state.fitmentMessage = nextStep.message;
+            state.fitmentMessage = locale === "ru" ? "Заполните недостающие данные автомобиля." : "Complete the missing vehicle details.";
             state.fitmentMessageTone = "warning";
-            scrollFitmentTo('[data-fitment-section="vehicle"]');
         } else if (nextAction === "run_standard_check") {
-            state.fitmentActiveStep = 3;
+            state.fitmentActiveSection = "rim";
+            state.fitmentActiveStep = 2;
             state.fitmentMessage = locale === "ru" ? "Данные сохранены. Проверку совместимости можно запустить отдельно." : "Details saved. You can start the compatibility check separately.";
             state.fitmentMessageTone = "success";
         } else {
-            state.fitmentMessage = fitmentNextAction(overview) === "run_standard_check"
-                ? nextStep.message
-                : (locale === "ru" ? "Чтобы получить вывод, выберите точную комплектацию автомобиля." : "Choose the exact vehicle version to get the result.");
+            state.fitmentMessage = locale === "ru" ? "Продолжите по следующему действию сервера." : "Continue with the next server action.";
             state.fitmentMessageTone = "warning";
-            scrollFitmentTo("[data-fitment-shell]");
         }
     } catch (error) {
         state.fitmentFormState.status = "save_failed";
@@ -6627,10 +7375,24 @@ function bindEvents() {
     document.querySelector("[data-fitment-source-submit]")?.addEventListener("click", () => {
         void resolveFitmentRimSource();
     });
+    document.querySelector("[data-fitment-source-manual]")?.addEventListener("click", () => {
+        clearFitmentTransientMessage();
+        clearFitmentResolverFeedback({ close: true });
+        state.fitmentRimEditing = true;
+        state.fitmentActiveSection = "rim";
+        state.fitmentActiveStep = 2;
+        renderFitment();
+    });
+    document.querySelector("[data-fitment-source-retry]")?.addEventListener("click", () => {
+        void resolveFitmentRimSource();
+    });
     document.querySelector("[data-fitment-variants-load]")?.addEventListener("click", () => {
         void loadFitmentVehicleVariants();
     });
     document.querySelector("[data-fitment-check]")?.addEventListener("click", () => {
+        void runFitmentCheck();
+    });
+    document.querySelector("[data-fitment-check-ready]")?.addEventListener("click", () => {
         void runFitmentCheck();
     });
     document.querySelector("[data-fitment-create-image]")?.addEventListener("click", () => {
@@ -6652,7 +7414,6 @@ function bindEvents() {
         void saveFitment(event);
     });
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
-        input.addEventListener("focus", () => setFitmentOverviewCollapsed(true));
         input.addEventListener("input", (event) => {
             if (input.tagName === "SELECT") return;
             const path = input.dataset.fitmentInput;
@@ -6730,17 +7491,12 @@ function bindEvents() {
         state.rimProductUrl = event.target.value;
         renderIdentityFlow();
     });
-    document.querySelector("[data-fitment-overview-toggle]")?.addEventListener("click", () => {
-        setFitmentOverviewCollapsed(!state.fitmentOverviewCollapsed);
+    document.querySelector("[data-fitment-source-disclosure]")?.addEventListener("toggle", (event) => {
+        state.fitmentSourceOpen = event.currentTarget.open;
     });
     document.querySelectorAll("[data-fitment-jump]").forEach((button) => {
         button.addEventListener("click", () => {
-            state.fitmentActiveStep = button.dataset.fitmentJump === "rim" ? 2 : 1;
-            renderFitment();
-            const section = document.querySelector(
-                `[data-fitment-section="${button.dataset.fitmentJump}"]`
-            );
-            section?.scrollIntoView({ behavior: "smooth", block: "start" });
+            setFitmentActiveSection(button.dataset.fitmentJump, { scroll: true });
         });
     });
 
@@ -6803,6 +7559,23 @@ function bindEvents() {
             return;
         }
 
+        const fitmentTab = event.target.closest("[data-fitment-section-tab]");
+        if (fitmentTab) {
+            if (fitmentTab.disabled) return;
+            setFitmentActiveSection(fitmentTab.dataset.fitmentSectionTab);
+            return;
+        }
+
+        const fitmentEdit = event.target.closest("[data-fitment-edit]");
+        if (fitmentEdit) {
+            clearFitmentTransientMessage();
+            const section = fitmentEdit.dataset.fitmentEdit;
+            if (section === "vehicle") state.fitmentVehicleEditing = true;
+            if (section === "rim") state.fitmentRimEditing = true;
+            setFitmentActiveSection(section);
+            return;
+        }
+
         const rimVariant = event.target.closest("[data-fitment-rim-variant]");
         if (rimVariant) {
             selectFitmentRimVariant(Number(rimVariant.dataset.fitmentRimVariant));
@@ -6838,11 +7611,19 @@ function bindEvents() {
 
         const vehicleVariant = event.target.closest("[data-fitment-vehicle-variant]");
         if (vehicleVariant) {
-            const variant = state.fitmentVehicleVariants[Number(vehicleVariant.dataset.fitmentVehicleVariant)];
+            state.fitmentSelectedVehicleVariantIndex = Number(vehicleVariant.dataset.fitmentVehicleVariant);
+            renderFitment();
+            return;
+        }
+
+        const confirmVariant = event.target.closest("[data-fitment-confirm-variant]");
+        if (confirmVariant) {
+            const variant = state.fitmentVehicleVariants[state.fitmentSelectedVehicleVariantIndex];
             if (!variant) return;
             void applyFitmentVehicleVariant(variant).then(() => {
                 state.fitmentVehicleVariants = [];
-                state.fitmentMessage = locale === "ru" ? "Точная версия сохранена." : "Exact version saved.";
+                state.fitmentSelectedVehicleVariantIndex = null;
+                state.fitmentMessage = locale === "ru" ? "Комплектация подтверждена" : "Vehicle version confirmed";
                 state.fitmentMessageTone = "success";
                 renderFitment();
             }).catch((error) => {

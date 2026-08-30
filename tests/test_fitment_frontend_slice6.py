@@ -103,14 +103,13 @@ def test_verdict_currentness_session_and_visual_tryon_have_presentation_boundari
     assert ".fitment-verdict-field" in STYLE_CSS
 
 
-def test_fitment_overview_stacks_on_narrow_mobile_viewports() -> None:
+def test_fitment_v2_shell_stays_within_narrow_mobile_viewports() -> None:
     mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[1]
-    assert ".fitment-overview-grid," in mobile
-    assert '.fitment-overview-grid[data-collapsed="true"]' in mobile
-    assert "grid-template-columns: minmax(0, 1fr);" in mobile
+    assert ".fitment-pair-media { height: 150px; min-height: 0; }" in mobile
+    assert ".fitment-flow-nav { gap: 4px; padding: 6px; }" in mobile
+    assert ".fitment-render-action { display: grid; padding: 16px; }" in mobile
     assert ".fitment-panel > *," in mobile
     assert ".fitment-shell > *" in mobile
-    assert ".fitment-context-row > button" in mobile
     assert ".fitment-verdict-card > *," in mobile
     assert ".fitment-verdict-head > *" in mobile
     assert ".fitment-verdict-head {" in mobile
