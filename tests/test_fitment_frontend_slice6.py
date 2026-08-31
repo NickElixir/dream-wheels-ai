@@ -41,7 +41,7 @@ def test_region_selection_starts_provider_make_cascade() -> None:
 def test_modification_outcomes_keep_multiple_choice_explicit() -> None:
     assert 'result.outcome === "multiple" ? (result.variants || []) : []' in APP_JS
     assert "Комплектация выбрана автоматически." in APP_JS
-    assert "Для выбранного автомобиля данные о комплектации не найдены." in APP_JS
+    assert "В техническом каталоге нет подходящих данных для выбранного автомобиля" in APP_JS
     assert "response.status === 409" in APP_JS
     assert "vehicle_revision_conflict" in (ROOT / "docs" / "fitment-api-contract-v1.md").read_text(
         encoding="utf-8"

@@ -55,6 +55,51 @@ in the browser.
 
 No additional redesign is requested by this review.
 
+## Phase 07B-G2 pre-change audit — 2026-08-31
+
+| Authoritative state / condition | Expected UI action | Pre-change finding | G2 correction |
+| --- | --- | --- | --- |
+| `complete_vehicle_details` | `Подтвердить данные автомобиля` | Detected values could be displayed with a modification prompt; an untouched detected vehicle was not included in the save payload | Show the three-line confirmation copy and include the vehicle payload on explicit confirmation |
+| `select_vehicle_variant` | `Выбрать комплектацию` | The variant workspace could leave an empty picker/message when the catalogue had no candidates | Keep the workspace action-specific and show a dedicated no-match recovery surface |
+| `confirmed_ready` | Continue to Rim / next server action | Vehicle confirmation and exact version selection were not visually separated enough | Preserve separate vehicle-confirmed and version-confirmed states; follow `overview.next_action.kind` |
+| stale + `complete_vehicle_details` | `Подтвердить данные автомобиля` | Stale result had no focused recovery action | Focus Vehicle editing/confirmation without mutating or checking automatically |
+| stale + `select_vehicle_variant` | `Выбрать комплектацию` | Stale result had no focused recovery action | Focus the Vehicle version workspace |
+| stale + `complete_rim_specs` | `Уточнить параметры колесного диска` | Stale result had no focused recovery action | Focus Rim editing; the next check remains explicit |
+| stale + `run_standard_check` | `Проверить совместимость` | Recheck remained explicit but stale context was not presented with the required recovery copy | Keep the explicit check boundary and present `Результат больше не актуален` |
+
+Real Zeekr trace before the change: `GET /jobs/{id}/fitment` returned the
+detected vehicle and field states; the explicit confirmation path in the UI
+then sent only the Rim payload when `fitmentVehicleDirty` was false. As a
+result, the authoritative vehicle revision/provenance and `next_action` did
+not advance as expected, and the legacy `CN` value was not normalized to the
+provider's canonical `chdm` catalogue region. G2 fixes both boundaries without
+changing verdict semantics.
+
+## Approved corrective amendment — 2026-08-31
+
+Phase 07B-G2 applies a runtime-state correction to the approved V2 reference.
+The amendment does not reopen the visual approval: Vehicle confirmation,
+vehicle-version selection, and Ready for Check remain distinct server-owned
+states; `Вывод` remains unavailable until a current or historical result
+exists; and an empty version picker is not shown when the catalogue returns no
+candidates.
+
+The runtime now uses the exact recognized Vehicle copy as three separate
+lines, sends an explicit vehicle confirmation payload for prefilled detected
+data, and keeps `Сохранить параметры` separate from
+`Проверить совместимость`. Stale recovery maps the server `next_action` to a
+focused confirmation/edit action before the user starts a new check.
+
+The independent Render island remains outside the Fitment island as a DOM
+sibling. Its normal heading/helper are `Визуальная примерка` and
+`Посмотрите, как выбранный диск выглядит на вашем автомобиле`; its
+`Создать изображение` CTA is secondary and outlined. The incompatible helper
+remains `Вы все еще можете создать изображение, чтобы оценить внешний вид
+дисков`.
+
+`CANONICAL_INFO_TOKEN = NOT_FOUND`; the implementation uses the cabinet's
+neutral info surface without adding a new token.
+
 ### Approval record
 
 `PRODUCT_APPROVAL = COMPLETE`

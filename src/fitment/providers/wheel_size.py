@@ -67,6 +67,8 @@ MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
     "usdm": ("usdm", "eudm"),
     "japan": ("jdm", "eudm"),
     "jdm": ("jdm", "eudm"),
+    "cn": ("chdm", "russia"),
+    "china": ("chdm", "russia"),
     "korea": ("kdm", "eudm"),
     "kdm": ("kdm", "eudm"),
 }
