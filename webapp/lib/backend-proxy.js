@@ -50,6 +50,14 @@ function requestSearch(requestUrl, keysToStrip) {
     return requestUrl.search;
 }
 
+async function sendResponseBody(response, res) {
+    // Vercel's Node response adapter owns completion signaling. Buffering and
+    // sending the complete byte sequence keeps the adapter's established
+    // semantics for binary asset responses and avoids returning before the
+    // platform has flushed the body.
+    res.send(Buffer.from(await response.arrayBuffer()));
+}
+
 async function proxyBackendRequest(req, res, { backendPath, stripQueryKeys = [] } = {}) {
     const backendUrl = backendBaseUrl();
     if (!backendUrl) {
@@ -79,11 +87,16 @@ async function proxyBackendRequest(req, res, { backendPath, stripQueryKeys = [] 
                 res.setHeader(name, value);
             }
         }
-        res.send(Buffer.from(await response.arrayBuffer()));
-    } catch {
+        await sendResponseBody(response, res);
+    } catch (error) {
+        if (res.headersSent && typeof res.destroy === "function") {
+            res.destroy(error);
+            return;
+        }
         res.status(502).json({ detail: "Backend is unavailable" });
     }
 }
 
 module.exports = proxyBackendRequest;
 module.exports.proxyBackendRequest = proxyBackendRequest;
+module.exports.sendResponseBody = sendResponseBody;

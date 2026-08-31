@@ -32,6 +32,10 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
@@ -46,3 +50,6 @@ jobs:
 
       - name: Smoke tests
         run: pytest -q
+
+      - name: Vercel gateway tests
+        run: node --test tests/vercel_gateway.test.js

@@ -1,16 +1,13 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
 ADMIN_VERCEL_JSON = json.loads((ROOT / "admin" / "vercel.json").read_text(encoding="utf-8"))
-PROXY_JS = (ROOT / "webapp" / "api" / "backend" / "[...path].js").read_text(encoding="utf-8")
+GATEWAY_JS = (ROOT / "webapp" / "api" / "backend-gateway.js").read_text(encoding="utf-8")
 PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encoding="utf-8")
-FITMENT_PROXY_JS = (ROOT / "webapp" / "api" / "fitment-proxy.js").read_text(encoding="utf-8")
-RIM_SOURCE_RESOLVE_PROXY_JS = (ROOT / "webapp" / "api" / "rim-source-resolve-proxy.js").read_text(
-    encoding="utf-8"
-)
 
 
 def test_ci_covers_release_branches() -> None:
@@ -81,43 +78,44 @@ def test_proxy_reads_backend_url_only_at_runtime() -> None:
     assert "authorization" not in PROXY_HELPER_JS.lower() or "forwardHeaders" in PROXY_HELPER_JS
 
 
-def test_fitment_and_rim_source_resolver_rewrite_to_non_conflicting_vercel_proxy_routes() -> None:
+def test_webapp_uses_one_generic_wildcard_gateway_function() -> None:
     rewrites = VERCEL_JSON["rewrites"]
     assert {
-        "source": "/api/backend/jobs/:jobId/fitment",
-        "destination": "/api/fitment-proxy?jobId=:jobId",
+        "source": "/api/backend/(.*)",
+        "destination": "/api/backend-gateway?__backend_path=$1",
     } in rewrites
-    assert {
-        "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
-        "destination": "/api/rim-source-resolve-proxy?jobId=:jobId",
-    } in rewrites
-    assert 'require("../lib/backend-proxy")' in FITMENT_PROXY_JS
-    assert 'require("../lib/backend-proxy")' in RIM_SOURCE_RESOLVE_PROXY_JS
-    assert "backendPath" in FITMENT_PROXY_JS
-    assert "backendPath" in RIM_SOURCE_RESOLVE_PROXY_JS
-    assert not list((ROOT / "webapp" / "api" / "backend" / "jobs" / "[jobId]").glob("**/*.js"))
+    backend_rewrites = [item for item in rewrites if item["source"].startswith("/api/backend")]
+    assert backend_rewrites == [
+        {
+            "source": "/api/backend/(.*)",
+            "destination": "/api/backend-gateway?__backend_path=$1",
+        }
+    ]
+    assert 'require("../lib/backend-proxy")' in GATEWAY_JS
+    assert 'const BACKEND_PATH_QUERY_KEY = "__backend_path";' in GATEWAY_JS
+    assert "stripQueryKeys" in GATEWAY_JS
+    assert sorted(
+        path.relative_to(ROOT / "webapp" / "api").as_posix()
+        for path in (ROOT / "webapp" / "api").rglob("*.js")
+    ) == ["backend-gateway.js"]
 
 
-def test_nested_fitment_catalogue_and_variant_routes_share_fitment_proxy() -> None:
-    rewrites = VERCEL_JSON["rewrites"]
-    assert {
-        "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
-        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind",
-    } in rewrites
-    assert {
-        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
-        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
-    } in rewrites
-    assert {
-        "source": "/api/backend/fitment/checks/:checkId",
-        "destination": "/api/backend/fitment/checks?checkId=:checkId",
-    } in rewrites
-    assert {
-        "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
-        "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply",
-    } in rewrites
-    assert "Unsupported Fitment route" in FITMENT_PROXY_JS
-    assert "catalogue/regions" in FITMENT_PROXY_JS
+def test_generic_gateway_covers_deep_fitment_and_protected_asset_paths() -> None:
+    source = next(
+        item["source"] for item in VERCEL_JSON["rewrites"] if item["source"] == "/api/backend/(.*)"
+    )
+    route = re.compile(r"^/api/backend(?:/(.*))$")
+    for path in (
+        "/api/backend/jobs/:jobId/fitment/catalogue/regions",
+        "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
+        "/api/backend/jobs/:jobId/assets/car_original/download",
+        "/api/backend/jobs/:jobId/assets/rim_original/download",
+        "/api/backend/foo/bar/baz",
+    ):
+        match = route.fullmatch(path)
+        assert match is not None
+        assert match.group(1) == path.removeprefix("/api/backend/")
+    assert source == "/api/backend/(.*)"
 
 
 def test_vercel_project_binding_is_not_tracked() -> None:
