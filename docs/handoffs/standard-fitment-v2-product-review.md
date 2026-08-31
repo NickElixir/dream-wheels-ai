@@ -143,6 +143,25 @@ DOMAIN_SEMANTICS_CHANGED = NO
 
 `PRODUCT_APPROVAL_DATE = 2026-08-29`
 
+## Authenticated staging follow-up — 2026-09-01
+
+The prior authenticated staging Result exposed `2026 / 63f2376b07` in the
+Vehicle preview. The value was the persisted `vehicle.generation` field,
+populated from a Wheel-Size generation slug when the catalogue response did
+not provide a display name. It is an opaque catalogue identifier, not a
+human-readable generation.
+
+The frontend now applies a presentation-only filter to hash-like catalogue
+identifiers in Vehicle specs, variant technical context, candidate labels and
+the visible Vehicle generation input. The original value remains in the
+server-owned form state and payload; no Vehicle identity, provider mapping,
+verdict, `next_action` or Render behaviour is changed. A regression test covers
+the mapping boundary.
+
+Authenticated staging browser re-verification remains a separate release gate;
+this follow-up must not be treated as evidence for a completed authenticated
+E2E until the real staging session is rerun.
+
 No unresolved choice between competing UX variants was introduced. The
 50/50 preview pair, compact navigator, one-workspace replacement model and
 independent Render action are the approved frozen decisions.

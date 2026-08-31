@@ -203,6 +203,19 @@ def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons()
     assert "const fieldItems = failed ? [] : fitmentResultFieldItems(check);" in APP_JS
 
 
+def test_vehicle_presentation_hides_opaque_catalogue_generation_ids() -> None:
+    assert "function fitmentPresentationText(value)" in APP_JS
+    assert "/^[a-f0-9]{8,}$/i.test(text)" in APP_JS
+    assert "fitmentPresentationText(vehicle?.generation)" in APP_JS
+    assert 'input.dataset.fitmentInput === "vehicle.generation"' in APP_JS
+    assert "variant?.body || variant?.body_type" in APP_JS
+    variant_mapper = APP_JS.split("function fitmentVariantTechnicalSeries", 1)[1].split(
+        "function demoPcdDisplay", 1
+    )[0]
+    assert "fitmentPresentationText(variant?.generation)" in variant_mapper
+    assert ".map(fitmentPresentationText)" in variant_mapper
+
+
 def test_result_demo_fixtures_cover_real_missing_evidence_and_conditional_mapping() -> None:
     fixture = _scope(APP_JS, "function applyDemoResultFixture", "function runDemoFitmentCheck")
     assert 'missing_fields: verdict === "unknown" ? ["offset_et", "center_bore"] : []' in fixture

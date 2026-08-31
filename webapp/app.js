@@ -1185,14 +1185,25 @@ function fitmentVariantDisplayName(variant, index = 0) {
         || (locale === "ru" ? `Комплектация ${index + 1}` : `Vehicle version ${index + 1}`);
 }
 
+function fitmentPresentationText(value) {
+    const text = normalizeFitmentText(value);
+    // Wheel-Size can return an opaque catalogue slug when a generation has
+    // no display name. Keep that value in the server-owned state, but never
+    // expose a hash-like identifier as user-facing vehicle copy.
+    if (/^[a-f0-9]{8,}$/i.test(text) && /[a-f]/i.test(text) && /\d/.test(text)) return "";
+    return text;
+}
+
 function fitmentVariantTechnicalSeries(variant, name = fitmentVariantDisplayName(variant)) {
+    const generationOrBody = fitmentPresentationText(variant?.body || variant?.body_type)
+        || fitmentPresentationText(variant?.generation);
     const parts = [
         variant?.region || variant?.market,
-        variant?.body || variant?.body_type || variant?.generation,
+        generationOrBody,
         variant?.engine,
         variant?.years || variant?.year_range,
     ]
-        .map(normalizeFitmentText)
+        .map(fitmentPresentationText)
         .filter(Boolean);
     return parts.filter((part) => part.toLocaleLowerCase() !== name.toLocaleLowerCase()).join(" / ");
 }
@@ -1203,7 +1214,7 @@ function demoPcdDisplay(rim) {
 }
 
 function fitmentVehicleSpecs(vehicle) {
-    return [vehicle?.year, vehicle?.generation].filter(Boolean).join(" / ");
+    return [vehicle?.year, fitmentPresentationText(vehicle?.generation)].filter(Boolean).join(" / ");
 }
 
 function demoRimTitle(rim) {
@@ -2281,8 +2292,10 @@ function setFitmentOverviewCollapsed(collapsed) {
     }
 }
 
-function fitmentCandidateLabel(candidate) {
-    const value = candidate?.value;
+function fitmentCandidateLabel(candidate, path = "") {
+    const value = path === "vehicle.generation"
+        ? fitmentPresentationText(candidate?.value)
+        : candidate?.value;
     const confidence = Number(candidate?.confidence);
     const confidenceLabel = Number.isFinite(confidence)
         ? (locale === "ru"
@@ -2305,12 +2318,14 @@ function renderFitmentCandidates() {
         row.className = "fitment-candidate-row";
         for (const candidate of candidates.slice(0, 3)) {
             if (candidate?.value === null || candidate?.value === undefined || candidate?.value === "") continue;
+            const candidateLabel = fitmentCandidateLabel(candidate, path);
+            if (!candidateLabel) continue;
             const button = document.createElement("button");
             button.type = "button";
             button.className = "fitment-candidate";
             button.dataset.fitmentCandidate = path;
             button.dataset.fitmentCandidateValue = String(candidate.value);
-            button.textContent = fitmentCandidateLabel(candidate);
+            button.textContent = candidateLabel;
             row.append(button);
         }
         if (row.children.length) {
@@ -2668,7 +2683,9 @@ function fitmentNextStep(overview) {
 function syncFitmentFormInputs() {
     document.querySelectorAll("[data-fitment-input]").forEach((input) => {
         const value = getDeepValue(state.fitmentForm, input.dataset.fitmentInput);
-        input.value = value ?? "";
+        input.value = input.dataset.fitmentInput === "vehicle.generation"
+            ? fitmentPresentationText(value)
+            : value ?? "";
     });
 }
 
