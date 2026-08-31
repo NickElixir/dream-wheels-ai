@@ -294,6 +294,16 @@ READY_FOR_PRODUCT_REVIEW = YES
 UI_V2_FROZEN = NOT_RECONFIRMED_FOR_G2_1
 ```
 
+## Clarifying invariant — 2026-08-31 (G2.2)
+
+`Источник и технические данные` is progressive disclosure for secondary Rim
+information. If the disclosure is rendered, opening it must reveal at least
+one meaningful source, provenance, editable-control, resolver-status, or
+technical-summary row. If no such content exists in the current state, the
+disclosure is omitted. Absence of `product_url` is not by itself evidence of
+manual provenance; when provenance is not established, the source label is
+`Не указан` alongside any known technical values.
+
 ## Freeze record
 
 The product owner explicitly approved this V2 UI/UX contract on 2026-08-29.

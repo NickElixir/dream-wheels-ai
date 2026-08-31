@@ -100,7 +100,7 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
     assert "data-fitment-source-manual" in INDEX_HTML
     assert "data-fitment-source-retry" in INDEX_HTML
     assert "data-fitment-source-disclosure" in INDEX_HTML
-    assert "data-fitment-source-readonly" in INDEX_HTML
+    assert "data-fitment-source-details" in INDEX_HTML
 
 
 def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:

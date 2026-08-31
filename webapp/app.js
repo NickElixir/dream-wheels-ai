@@ -3658,6 +3658,124 @@ function fitmentRimProvenance(ui) {
     return labels[ui.rim.setupState] || (locale === "ru" ? "Состояние диска не определено" : "Wheel state is unavailable");
 }
 
+function fitmentRimTechnicalSummary(rim = {}) {
+    const main = [
+        rim?.wheel_diameter_in !== null && rim?.wheel_diameter_in !== undefined && rim?.wheel_diameter_in !== ""
+            ? `${formatIdentityNumber(rim.wheel_diameter_in)}"`
+            : "",
+        rim?.wheel_width_j !== null && rim?.wheel_width_j !== undefined && rim?.wheel_width_j !== ""
+            ? `${formatIdentityNumber(rim.wheel_width_j)}J`
+            : "",
+        demoPcdDisplay(rim),
+    ].filter(Boolean).join(" / ");
+    const fit = [
+        rim?.offset_et_mm !== null && rim?.offset_et_mm !== undefined && rim?.offset_et_mm !== ""
+            ? `ET ${formatIdentityNumber(rim.offset_et_mm)}`
+            : "",
+        rim?.center_bore_mm !== null && rim?.center_bore_mm !== undefined && rim?.center_bore_mm !== ""
+            ? `DIA ${formatIdentityNumber(rim.center_bore_mm)}`
+            : "",
+    ].filter(Boolean).join(" / ");
+    return [main, fit].filter(Boolean);
+}
+
+function fitmentRimHasManualProvenance(overview) {
+    const states = overview?.front_rim?.field_states
+        || overview?.rim_field_states
+        || overview?.rim_provenance
+        || {};
+    const manualSources = new Set(["manual", "manual_input", "user_input", "user_edited"]);
+    return Object.values(states).some((field) => manualSources.has(String(field?.source || "").toLowerCase()));
+}
+
+function fitmentSafeSourceDisplay(source) {
+    const raw = normalizeFitmentText(source);
+    if (!raw) return "";
+    try {
+        const parsed = new URL(raw);
+        const hostname = parsed.hostname.replace(/^www\./i, "");
+        if (!hostname || !["http:", "https:"].includes(parsed.protocol)) return "";
+        if (/(?:^localhost$|^127(?:\.\d{1,3}){3}$|^0\.0\.0\.0$|^::1$|\.internal$|\.local$|\.vercel-storage\.com$|\.r2\.cloudflarestorage\.com$)/i.test(hostname)) {
+            return locale === "ru" ? "Источник указан" : "Source provided";
+        }
+        const pathname = parsed.pathname && parsed.pathname !== "/" ? parsed.pathname.replace(/\/+$/, "") : "";
+        return `${hostname}${pathname}` || hostname;
+    } catch {
+        return locale === "ru" ? "Источник указан" : "Source provided";
+    }
+}
+
+function buildRimSecondaryDetails(overview, { editing = false } = {}) {
+    const rim = overview?.rim || overview?.front_rim?.rim || {};
+    if (editing) return { editable: true, rows: [] };
+    const rows = [];
+    const source = normalizeFitmentText(rim.product_url);
+    const technical = fitmentRimTechnicalSummary(rim);
+    if (source) {
+        rows.push({
+            label: locale === "ru" ? "Источник" : "Source",
+            value: fitmentSafeSourceDisplay(source) || (locale === "ru" ? "Источник указан" : "Source provided"),
+        });
+    } else if (fitmentRimHasManualProvenance(overview)) {
+        rows.push({
+            label: locale === "ru" ? "Источник" : "Source",
+            value: locale === "ru" ? "Параметры введены вручную" : "Parameters entered manually",
+        });
+    } else if (technical.length) {
+        rows.push({
+            label: locale === "ru" ? "Источник" : "Source",
+            value: locale === "ru" ? "Не указан" : "Not specified",
+        });
+    }
+    if (technical.length) {
+        rows.push({
+            label: locale === "ru" ? "Параметры" : "Parameters",
+            value: technical[0],
+            secondary: technical[1] || "",
+        });
+    }
+    return { editable: false, rows };
+}
+
+function renderFitmentSourceDisclosure(overview, { rimEditing = false } = {}) {
+    const disclosure = document.querySelector("[data-fitment-source-disclosure]");
+    const sourceEntry = document.querySelector("[data-fitment-source-entry]");
+    const details = document.querySelector("[data-fitment-source-details]");
+    if (!disclosure || !sourceEntry || !details) return;
+
+    const secondary = buildRimSecondaryDetails(overview, { editing: rimEditing });
+    const visible = secondary.editable || secondary.rows.length > 0;
+    disclosure.hidden = !visible;
+    sourceEntry.hidden = !secondary.editable;
+    details.replaceChildren();
+    details.hidden = secondary.editable || !secondary.rows.length;
+    for (const item of secondary.rows) {
+        const row = document.createElement("div");
+        row.className = "fitment-source-detail";
+        const label = document.createElement("span");
+        label.className = "fitment-source-detail-label";
+        label.textContent = item.label;
+        const value = document.createElement("strong");
+        value.className = "fitment-source-detail-value";
+        value.textContent = item.value;
+        row.append(label, value);
+        if (item.secondary) {
+            const secondaryValue = document.createElement("span");
+            secondaryValue.className = "fitment-source-detail-secondary";
+            secondaryValue.textContent = item.secondary;
+            row.append(secondaryValue);
+        }
+        details.append(row);
+    }
+    if (!visible) {
+        state.fitmentSourceOpen = false;
+        disclosure.open = false;
+    } else {
+        disclosure.open = Boolean(state.fitmentSourceOpen);
+    }
+    disclosure.querySelector("summary")?.setAttribute("aria-expanded", String(disclosure.open));
+}
+
 function fitmentResultCopy(check) {
     const ru = locale === "ru";
     if (!check) return ru ? "Проверка ещё не выполнена" : "The check has not been run";
@@ -4054,7 +4172,7 @@ function renderFitment() {
         readyCheckButton.textContent = state.fitmentChecking ? "Проверяем совместимость" : "Проверить совместимость";
     }
     document.querySelectorAll('[data-fitment-section="rim"] > .fitment-form-grid, [data-fitment-section="rim"] > .fitment-setup-mode, [data-fitment-section="rim"] > .fitment-rim-variant-picker, [data-fitment-section="rim"] > .fitment-parser-conflicts, [data-fitment-section="rim"] > .fitment-rear-rim').forEach((node) => node.toggleAttribute("hidden", !rimEditing));
-    document.querySelector("[data-fitment-source-entry]")?.toggleAttribute("hidden", !rimEditing);
+    renderFitmentSourceDisclosure(overview, { rimEditing });
     renderFitmentVehicleHelper(ui);
     const rimStateCopy = {
         empty: "Заполните параметры колесного диска",
@@ -4117,25 +4235,10 @@ function renderFitment() {
         variantEmpty.hidden = ui.nextAction !== "select_vehicle_variant"
             || state.fitmentLookup.status !== "no_match";
     }
-    const sourceDisclosure = document.querySelector("[data-fitment-source-disclosure]");
-    if (sourceDisclosure) {
-        sourceDisclosure.open = Boolean(state.fitmentSourceOpen);
-        sourceDisclosure.querySelector("summary")?.setAttribute("aria-expanded", String(sourceDisclosure.open));
-    }
     const sourceUrl = document.querySelector("[data-fitment-source-url]");
     if (sourceUrl) {
         sourceUrl.value = state.fitmentForm.rim.product_url || "";
         sourceUrl.disabled = state.fitmentSourceResolving;
-    }
-    const sourceReadonly = document.querySelector("[data-fitment-source-readonly]");
-    const sourceConfirmed = document.querySelector("[data-fitment-source-confirmed]");
-    if (sourceReadonly) {
-        const source = normalizeFitmentText(state.fitmentForm.rim.product_url);
-        sourceReadonly.hidden = rimEditing || !source;
-        sourceReadonly.textContent = source ? `Источник: ${source}` : "";
-        if (sourceConfirmed) {
-            sourceConfirmed.hidden = rimEditing || !source;
-        }
     }
     const sourceSubmit = document.querySelector("[data-fitment-source-submit]");
     if (sourceSubmit) sourceSubmit.disabled = state.fitmentSourceResolving;
