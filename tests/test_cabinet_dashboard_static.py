@@ -426,7 +426,7 @@ def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
     assert 'data-fitment-section-tab="result"' in INDEX_HTML
     assert "fitmentActiveStep" in APP_JS
     assert "fitmentActiveSection" in APP_JS
-    assert "tab.disabled = isResult && !resultAvailable;" in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" not in APP_JS
     assert "state.fitmentActiveSection = fitmentSectionForAction(overview);" in APP_JS
     assert "Сохранить параметры" in APP_JS
     assert "function fitmentNextAction" in APP_JS

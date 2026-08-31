@@ -67,9 +67,12 @@ are not production UI or a runtime source of truth.
 Section clicks change UI focus only. They do not save values, confirm data,
 mutate domain state, start Standard Check or replace `next_action`.
 
-`Вывод` is disabled until a current or historical check/result exists. Once a
-check/result exists, direct navigation to Vehicle, Rim and Result is allowed.
-A stale result remains readable and is presented as `Нужно проверить заново`.
+`Вывод` is always navigable. Before a current or historical check/result exists,
+it renders readiness or recovery guidance derived from the server
+`next_action`; it must not invent a verdict or a check. Once a check/result
+exists, the same section renders the current, queued, processing, failed or
+stale technical result. A stale result remains readable and is presented as
+`Нужно проверить заново`.
 Changing authoritative Vehicle/Rim/modification/source data invalidates the
 current verdict while preserving the historical snapshot.
 
@@ -251,6 +254,45 @@ The existing neutral info surface is reused for the technical disclaimer;
 there is no dedicated canonical info token in the current cabinet stylesheet:
 
 `CANONICAL_INFO_TOKEN = NOT_FOUND`
+
+## Approved corrective amendment — 2026-08-31 (G2.1)
+
+This amendment supersedes the earlier pre-check Result gate. The current
+authority is `Result always navigable`; before the first Check, Result is a
+readiness/recovery surface derived from `overview.next_action`, not a verdict
+placeholder. The frozen prototype reference may still show the older gate;
+this runtime amendment supersedes that prototype behaviour for pre-check
+navigation.
+
+- Variant CTA copy is `Выбрать комплектацию`. Variant cards place secondary
+  technical context first and the selected variant name on its own final bold
+  line without duplicating that name in metadata.
+- Explicit variant confirmation rereads the authoritative overview, keeps the
+  Vehicle section active, and exposes the selected `Комплектация / <name>` in
+  the confirmed Vehicle summary. It does not auto-advance to Rim.
+- Explicit Save and variant confirmation preserve the current valid section;
+  section tabs remain focus navigation only. Result actions that lead to
+  Vehicle or Rim only change focus. Only `Проверить совместимость` starts a
+  Standard Check.
+- With no Check, Result maps `complete_vehicle_details` to
+  `Проверка ещё не выполнена` / `Сначала подтвердите данные автомобиля`,
+  `select_vehicle_variant` to `Проверка ещё не выполнена` /
+  `Сначала выберите комплектацию автомобиля`, `complete_rim_specs` to
+  `Проверка ещё не выполнена` / `Сначала уточните параметры колесного диска`,
+  and `run_standard_check` to `Данные готовы для проверки` /
+  `Автомобиль и параметры колесного диска подтверждены`.
+- Source and technical data remain a lightweight disclosure with an unchanged
+  label, no visual arrows, native keyboard access, `aria-expanded` and
+  `aria-controls`.
+- Preview text remains left-aligned while preview images remain contained and
+  centered. Render remains an independent neutral secondary sibling with the
+  outlined `Создать изображение` CTA and no second lime primary action.
+
+```text
+G2_1_PRODUCT_APPROVAL = PENDING
+READY_FOR_PRODUCT_REVIEW = YES
+UI_V2_FROZEN = NOT_RECONFIRMED_FOR_G2_1
+```
 
 ## Freeze record
 
