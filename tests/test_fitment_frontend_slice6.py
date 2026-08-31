@@ -113,4 +113,4 @@ def test_fitment_v2_shell_stays_within_narrow_mobile_viewports() -> None:
     assert ".fitment-verdict-card > *," in mobile
     assert ".fitment-verdict-head > *" in mobile
     assert ".fitment-verdict-head {" in mobile
-    assert ".fitment-verdict-head .primary-button" in mobile
+    assert ".fitment-verdict-head .primary-button" not in mobile

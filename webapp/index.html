@@ -592,22 +592,15 @@
 
                     <section class="fitment-verdict-card" data-fitment-verdict-card data-fitment-section="result" hidden>
                         <div class="fitment-verdict-head">
-                            <div>
-                                <p class="section-label">Результат</p>
-                                <h2 data-fitment-verdict-title>Проверка совместимости</h2>
-                            </div>
-                            <button type="button" class="ghost-button neutral compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
+                            <h2 class="fitment-verdict-title" data-fitment-verdict-title>Проверка совместимости</h2>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
+                        <p class="fitment-verdict-stale-previous" data-fitment-stale-previous hidden></p>
                         <p class="fitment-verdict-precheck-secondary" data-fitment-verdict-precheck-secondary hidden></p>
-                        <div class="fitment-verdict-precheck-actions" data-fitment-verdict-precheck-actions hidden>
-                            <button type="button" class="ghost-button neutral compact-button" data-fitment-result-action></button>
-                        </div>
                         <p class="panel-note warning" data-fitment-currentness hidden></p>
                         <div class="fitment-stale-recovery" data-fitment-stale-recovery hidden>
                             <button type="button" class="ghost-button compact-button" data-fitment-stale-recovery-action></button>
                         </div>
-                        <p class="panel-note info" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
                         <div class="fitment-verdict-fields" data-fitment-verdict-fields hidden></div>
                         <div class="fitment-verdict-groups" data-fitment-verdict-groups hidden>
                             <section class="fitment-verdict-group" data-fitment-verdict-blocking hidden>
@@ -618,16 +611,17 @@
                                 <strong>Условия установки</strong>
                                 <div data-fitment-verdict-conditions-list></div>
                             </section>
-                            <section class="fitment-verdict-group" data-fitment-verdict-advisories hidden>
-                                <strong>Обратите внимание</strong>
-                                <div data-fitment-verdict-advisories-list></div>
-                            </section>
                         </div>
-                        <details class="fitment-technical-details" data-fitment-technical-details hidden>
-                            <summary>Технические детали</summary>
-                            <div class="fitment-technical-details-body" data-fitment-technical-details-body></div>
-                        </details>
-                        <p class="fitment-verdict-disclaimer" data-fitment-verdict-disclaimer data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
+                        <div class="fitment-verdict-precheck-actions" data-fitment-verdict-precheck-actions hidden>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-result-action></button>
+                        </div>
+                        <div class="fitment-verdict-footer" data-fitment-verdict-footer hidden>
+                            <p class="panel-note info" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
+                            <p class="fitment-verdict-disclaimer" data-fitment-verdict-disclaimer data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
+                        </div>
+                        <div class="fitment-verdict-recheck" data-fitment-verdict-recheck hidden>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-check data-i18n="fitment.check">Проверить ещё раз</button>
+                        </div>
                     </section>
 
                     <form class="form-stack fitment-form" data-fitment-form>
