@@ -348,6 +348,23 @@ when the server action permits it, and is a secondary outlined action at the
 bottom of the current Result. The Render island remains an independent DOM
 sibling outside the Fitment Result island.
 
+## Approved Result disclaimer info-card amendment — 2026-08-31 (G2.3.1)
+
+The Result disclaimer is presented after the decision-relevant Result content
+as one calm blue informational surface and before the bottom secondary
+`Проверить ещё раз` action. It is not a warning, error, success state or CTA.
+The surface uses background, restrained padding and radius; thin separator
+lines before or after the disclaimer are not used, and no standalone advisory
+heading is added. The disclaimer remains a single presentation with no
+duplicate copy elsewhere in the completed Result.
+
+This amendment changes only visual treatment and placement. Exact canonical
+warning, legal and commercial wording remains governed by the higher-priority
+commercial warning authority in
+[`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
+and any authority it references. The warning wording and Fitment semantics are
+unchanged.
+
 ## Freeze record
 
 The product owner explicitly approved this V2 UI/UX contract on 2026-08-29.
