@@ -480,28 +480,8 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     ]
     assert backend_rewrites == [
         {
-            "source": "/api/backend/jobs/:jobId/fitment/rim-source/resolve",
-            "destination": "/api/rim-source-resolve-proxy?jobId=:jobId",
-        },
-        {
-            "source": "/api/backend/jobs/:jobId/fitment",
-            "destination": "/api/fitment-proxy?jobId=:jobId",
-        },
-        {
-            "source": "/api/backend/jobs/:jobId/fitment/catalogue/:kind",
-            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=catalogue/:kind",
-        },
-        {
-            "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants/apply",
-            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants/apply",
-        },
-        {
-            "source": "/api/backend/jobs/:jobId/fitment/vehicle-variants",
-            "destination": "/api/fitment-proxy?jobId=:jobId&fitmentPath=vehicle-variants",
-        },
-        {
-            "source": "/api/backend/fitment/checks/:checkId",
-            "destination": "/api/backend/fitment/checks?checkId=:checkId",
+            "source": "/api/backend/(.*)",
+            "destination": "/api/backend-gateway?__backend_path=$1",
         },
     ]
     assert {"source": "/t", "destination": "/index.html"} in rewrites
