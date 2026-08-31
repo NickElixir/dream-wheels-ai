@@ -162,6 +162,13 @@ Authenticated staging browser re-verification remains a separate release gate;
 this follow-up must not be treated as evidence for a completed authenticated
 E2E until the real staging session is rerun.
 
+The same audit found that the Result adapter discarded backend
+`blocking_issues` whenever secondary missing-field evidence was present. This
+could hide a real blocking PCD mismatch on an `incompatible` result with a
+missing ET. The adapter now keeps the backend blocking group first and renders
+only non-duplicate supplemental field evidence after it. Verdict precedence
+and all backend semantics remain unchanged.
+
 No unresolved choice between competing UX variants was introduced. The
 50/50 preview pair, compact navigator, one-workspace replacement model and
 independent Render action are the approved frozen decisions.

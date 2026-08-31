@@ -125,6 +125,9 @@ def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
     assert result_markup.index("data-fitment-verdict-title") < result_markup.index(
         "data-fitment-verdict-fields"
     )
+    assert result_markup.index("data-fitment-verdict-groups") < result_markup.index(
+        "data-fitment-verdict-fields"
+    )
     assert result_markup.index("data-fitment-verdict-fields") < result_markup.index(
         "data-fitment-verdict-footer"
     )
@@ -201,6 +204,15 @@ def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons()
     assert "Condition required" not in APP_JS
     assert 'const showResultRecovery = check.verdict === "unknown"' in APP_JS
     assert "const fieldItems = failed ? [] : fitmentResultFieldItems(check);" in APP_JS
+
+
+def test_incompatible_keeps_backend_blocking_evidence_when_secondary_fields_are_missing() -> None:
+    result = _scope(APP_JS, "const fieldItems = failed ? []", "if (groups)")
+    assert "const blockingItems = failed ? [] : check.blocking_issues || [];" in result
+    assert "const conditionItems = failed ? [] : check.conditions || [];" in result
+    assert "const representedCodes = new Set" in result
+    assert "supplementalFieldItems = fieldItems.filter" in result
+    assert '"incompatible", "unknown"' not in result
 
 
 def test_vehicle_presentation_hides_opaque_catalogue_generation_ids() -> None:

@@ -3902,6 +3902,10 @@ function fitmentResultFieldItems(check) {
     }));
 }
 
+function fitmentResultItemCode(item) {
+    return String(item?.code || item?.reason_code || "").trim().toLowerCase();
+}
+
 function fitmentResultFieldCopy(field, check) {
     const status = fitmentResultFieldStatus(field);
     const code = String(field?.code || field?.reason_code || "").trim().toLowerCase();
@@ -4058,12 +4062,16 @@ function renderFitmentV2Result(check, ui, active) {
         staleRecoveryAction.dataset.fitmentStaleRecoveryAction = ui.nextAction || "";
     }
     const fieldItems = failed ? [] : fitmentResultFieldItems(check);
-    const blockingItems = !failed && fieldItems.length && ["incompatible", "unknown"].includes(check.verdict)
-        ? []
-        : failed
-            ? []
-            : check.blocking_issues || [];
+    const blockingItems = failed ? [] : check.blocking_issues || [];
     const conditionItems = failed ? [] : check.conditions || [];
+    const representedCodes = new Set(
+        [...blockingItems, ...conditionItems]
+            .map(fitmentResultItemCode)
+            .filter(Boolean)
+    );
+    const supplementalFieldItems = fieldItems.filter(
+        (field) => !representedCodes.has(fitmentResultItemCode(field))
+    );
     renderFitmentVerdictGroup(
         "[data-fitment-verdict-blocking]",
         "[data-fitment-verdict-blocking-list]",
@@ -4110,8 +4118,8 @@ function renderFitmentV2Result(check, ui, active) {
     }
     if (fieldResults) {
         fieldResults.replaceChildren();
-        fieldResults.hidden = !fieldItems.length;
-        fieldItems.forEach((field) => {
+        fieldResults.hidden = !supplementalFieldItems.length;
+        supplementalFieldItems.forEach((field) => {
             const line = document.createElement("div");
             line.className = "fitment-verdict-field";
             line.dataset.status = fitmentResultFieldStatus(field);
