@@ -2550,17 +2550,24 @@ h2 {
     border-radius: 16px;
     background: rgba(255, 204, 86, 0.055);
 }
-.fitment-verdict-footer {
+.fitment-verdict-footer.fitment-result-info {
     display: grid;
-    gap: 5px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 8px;
+    margin-top: 2px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(77, 163, 255, 0.1);
 }
-.fitment-verdict-footer .panel-note {
+.fitment-result-info .panel-note {
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--text-subtle);
+    color: rgba(225, 237, 255, 0.88);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.fitment-result-info .fitment-verdict-disclaimer {
+    color: rgba(194, 213, 241, 0.78);
 }
 .fitment-verdict-recheck { display: flex; justify-content: flex-start; }
 

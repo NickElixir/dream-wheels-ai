@@ -157,6 +157,31 @@ def test_result_hierarchy_has_one_condition_island_and_no_advisory_layer() -> No
     assert '.fitment-verdict-group[data-kind="advisories"]' not in STYLE_CSS
 
 
+def test_result_disclaimer_uses_one_blue_info_card_without_separator_or_status_semantics() -> None:
+    result_markup = INDEX_HTML.split('<section class="fitment-verdict-card"', 1)[1].split(
+        '<form class="form-stack fitment-form"', 1
+    )[0]
+    info_start = result_markup.index('class="fitment-verdict-footer fitment-result-info"')
+    info_markup = result_markup[info_start:].split("</div>", 1)[0]
+    assert "fitment-result-info" in info_markup
+    assert info_markup.count("Предварительная") == 2
+    assert "<hr" not in info_markup
+    assert "panel-note warning" not in info_markup
+    assert "panel-note error" not in info_markup
+    assert "panel-note success" not in info_markup
+    assert result_markup.index("data-fitment-verdict-conditions") < info_start
+    assert "fitment-result-info" not in result_markup[:info_start]
+    info_css = STYLE_CSS.split(".fitment-verdict-footer.fitment-result-info", 1)[1].split(
+        ".fitment-result-info .fitment-verdict-disclaimer", 1
+    )[0]
+    assert "background: rgba(77, 163, 255, 0.1);" in info_css
+    assert "border-top" not in info_css
+    assert "border-bottom" not in info_css
+    assert ".fitment-result-info .panel-note" in STYLE_CSS
+    precheck = APP_JS.split("if (!check) {", 1)[1].split("return;", 1)[0]
+    assert "if (verdictFooter) verdictFooter.hidden = true;" in precheck
+
+
 def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons() -> None:
     verdict_mapper = _scope(
         APP_JS, "function fitmentVerdictMessage", "function fitmentFieldStateLabel"

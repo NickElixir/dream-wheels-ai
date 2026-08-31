@@ -238,6 +238,29 @@ authority it references. This handoff does not define replacement legal copy.
 `VERDICT_SEMANTICS_CHANGED = NO`
 `NEXT_ACTION_SEMANTICS_CHANGED = NO`
 
+## Approved Result disclaimer info-card amendment — 2026-08-31 (G2.3.1)
+
+The completed Result now presents its canonical warning/disclaimer copy in
+one separate calm blue informational card after the decision-relevant Result
+content and before the bottom secondary `Проверить ещё раз` action. The card
+has no thin separator lines and is not a warning, error, success state or CTA;
+the condition island remains a separate semantic and visual element. No
+standalone advisory heading or duplicate disclaimer is introduced.
+
+This is a presentation-only amendment. Result layout may move warning copy,
+but exact canonical warning, legal and commercial wording remains governed by
+the higher-priority commercial warning authority in
+[`05-commercial-ux-warnings.md`](05-commercial-ux-warnings.md) and any
+authority it references. The wording, Fitment semantics, verdict semantics,
+backend `next_action` contract and Render sibling architecture are unchanged.
+
+`G2_3_1_PRODUCT_APPROVAL = PENDING`
+`READY_FOR_PRODUCT_REVIEW = YES`
+`READY_FOR_STAGING_MERGE = NO`
+`BACKEND_CHANGED = NO`
+`DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
+
 ## Final handoff state
 
 ```text
