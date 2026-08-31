@@ -585,7 +585,7 @@
                         <button type="button" class="fitment-flow-tab" data-fitment-section-tab="rim" aria-selected="false">
                             <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Колесный диск</strong></span><span class="fitment-flow-state" data-fitment-flow-state="rim">Ожидает</span></span>
                         </button>
-                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="result" data-fitment-result-tab aria-selected="false" disabled>
+                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="result" data-fitment-result-tab aria-selected="false">
                             <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Вывод</strong></span><span class="fitment-flow-state" data-fitment-flow-state="result">Не выполнен</span></span>
                         </button>
                     </nav>
@@ -599,6 +599,10 @@
                             <button type="button" class="ghost-button neutral compact-button" data-fitment-check data-i18n="fitment.check">Проверить совместимость</button>
                         </div>
                         <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
+                        <p class="fitment-verdict-precheck-secondary" data-fitment-verdict-precheck-secondary hidden></p>
+                        <div class="fitment-verdict-precheck-actions" data-fitment-verdict-precheck-actions hidden>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-result-action></button>
+                        </div>
                         <p class="panel-note warning" data-fitment-currentness hidden></p>
                         <div class="fitment-stale-recovery" data-fitment-stale-recovery hidden>
                             <button type="button" class="ghost-button compact-button" data-fitment-stale-recovery-action></button>
@@ -623,7 +627,7 @@
                             <summary>Технические детали</summary>
                             <div class="fitment-technical-details-body" data-fitment-technical-details-body></div>
                         </details>
-                        <p class="fitment-verdict-disclaimer" data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
+                        <p class="fitment-verdict-disclaimer" data-fitment-verdict-disclaimer data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
                     </section>
 
                     <form class="form-stack fitment-form" data-fitment-form>
@@ -633,7 +637,7 @@
                                 <div class="fitment-vehicle-helper" data-fitment-vehicle-helper aria-live="polite" hidden></div>
                             </div>
                             <div class="fitment-workspace-summary" data-fitment-vehicle-summary hidden>
-                                <div><strong data-fitment-summary-vehicle-title>—</strong><span data-fitment-summary-vehicle-specs>—</span></div>
+                                <div><strong data-fitment-summary-vehicle-title>—</strong><span data-fitment-summary-vehicle-specs>—</span><span data-fitment-summary-vehicle-variant hidden></span></div>
                                 <button type="button" class="ghost-button compact-button" data-fitment-edit="vehicle">Изменить данные</button>
                             </div>
                             <div class="fitment-form-grid" data-fitment-vehicle-editor>
@@ -696,8 +700,8 @@
                             </div>
                             <p class="fitment-axis-summary" data-fitment-rim-axes hidden></p>
                             <details class="fitment-source-disclosure" data-fitment-source-disclosure>
-                                <summary>Источник и технические данные</summary>
-                                <div class="fitment-source-entry" data-fitment-source-entry>
+                                <summary aria-expanded="false" aria-controls="fitment-source-disclosure-body">Источник и технические данные</summary>
+                                <div class="fitment-source-entry" id="fitment-source-disclosure-body" data-fitment-source-entry>
                                     <label class="fitment-field">
                                         <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
                                         <input type="url" inputmode="url" data-fitment-source-url autocomplete="off" placeholder="https://">

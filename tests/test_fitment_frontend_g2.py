@@ -179,7 +179,75 @@ def test_reload_restores_fitment_context_without_replaying_automatic_mutations()
     assert "restoreSection: fitmentContext.activeSection" in reload_flow
 
 
-def test_result_tab_remains_unavailable_without_current_or_historical_result() -> None:
-    assert 'data-fitment-result-tab aria-selected="false" disabled' in INDEX_HTML
+def test_result_tab_remains_navigable_without_current_or_historical_result() -> None:
+    assert 'data-fitment-result-tab aria-selected="false" disabled' not in INDEX_HTML
     assert "return Boolean(state.fitmentCheck || state.fitmentCheckHistory.length);" in APP_JS
-    assert 'section === "result" && !fitmentResultAvailable()' in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" not in APP_JS
+    assert 'resultSection.hidden = activeSection !== "result";' in APP_JS
+    assert "function fitmentResultPrecheck(ui)" in APP_JS
+
+
+def test_g2_1_variant_copy_and_card_hierarchy_are_canonical() -> None:
+    assert "Выбрать точную комплектацию" not in APP_JS
+    assert "Выбрать комплектацию" in APP_JS
+    assert "function fitmentVariantTechnicalSeries(variant" in APP_JS
+    assert "technical.textContent = fitmentVariantTechnicalSeries(variant, name);" in APP_JS
+    assert (
+        "button.innerHTML"
+        not in APP_JS.split("function renderFitment()", 1)[1].split(
+            "function renderFitmentRimVariants", 1
+        )[0]
+    )
+    assert "button.append(technical, primary);" in APP_JS
+    assert "data-fitment-summary-vehicle-variant" in INDEX_HTML
+    assert "Комплектация / ${selectedVariantName}" in APP_JS
+
+
+def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> None:
+    variant_flow = _scope(
+        APP_JS, "async function applyFitmentVehicleVariant", "async function saveFitment"
+    )
+    assert "await loadFitmentOverview(state.fitmentJobId" in variant_flow
+    assert (
+        'state.fitmentActiveSection = confirmationSection === "vehicle" ? "vehicle" : confirmationSection;'
+        in variant_flow
+    )
+    save_flow = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
+    assert "const savedFromSection = state.fitmentActiveSection;" in save_flow
+    assert "state.fitmentActiveSection = savedFromSection;" in save_flow
+
+
+def test_g2_1_precheck_result_is_readiness_only_and_navigation_has_no_mutation() -> None:
+    for copy in (
+        "Проверка ещё не выполнена",
+        "Сначала подтвердите данные автомобиля",
+        "Перейти к автомобилю",
+        "Сначала выберите комплектацию автомобиля",
+        "Выбрать комплектацию",
+        "Сначала уточните параметры колесного диска",
+        "Уточнить параметры",
+        "Данные готовы для проверки",
+        "Автомобиль и параметры колесного диска подтверждены",
+        "Проверить совместимость",
+    ):
+        assert copy in APP_JS
+    assert "data-fitment-result-action" in INDEX_HTML
+    result_actions = _scope(
+        APP_JS,
+        'const resultAction = event.target.closest("[data-fitment-result-action]")',
+        "const staleRecovery",
+    )
+    assert "setFitmentActiveSection(action" in result_actions
+    assert "void runFitmentCheck();" in result_actions
+    assert "fetch(" not in result_actions
+
+
+def test_g2_1_disclosure_is_lightweight_and_accessible_without_arrows() -> None:
+    assert (
+        'summary aria-expanded="false" aria-controls="fitment-source-disclosure-body"' in INDEX_HTML
+    )
+    assert 'id="fitment-source-disclosure-body"' in INDEX_HTML
+    assert ".fitment-source-disclosure summary::after" not in STYLE_CSS
+    assert "summary::-webkit-details-marker" in STYLE_CSS
+    assert 'setAttribute("aria-expanded", String(sourceDisclosure.open))' in APP_JS
+    assert 'setAttribute("aria-expanded", String(event.currentTarget.open))' in APP_JS

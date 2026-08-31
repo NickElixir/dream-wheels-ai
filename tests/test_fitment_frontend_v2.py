@@ -11,7 +11,7 @@ def test_v2_shell_uses_context_pair_and_free_navigator() -> None:
     assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
     assert 'data-fitment-section-tab="rim"' in INDEX_HTML
     assert 'data-fitment-section-tab="result"' in INDEX_HTML
-    assert 'data-fitment-result-tab aria-selected="false" disabled' in INDEX_HTML
+    assert 'data-fitment-result-tab aria-selected="false" disabled' not in INDEX_HTML
     assert 'class="fitment-steps"' not in INDEX_HTML
     assert "Demo" not in INDEX_HTML
     assert "Проверьте, подойдут ли диски" not in INDEX_HTML
@@ -31,11 +31,13 @@ def test_frozen_composition_order_and_cta_hierarchy_are_preserved() -> None:
     assert INDEX_HTML.count("data-fitment-source-disclosure") == 1
 
 
-def test_result_gate_is_based_on_check_or_history_not_local_step() -> None:
+def test_result_is_always_navigable_and_precheck_is_based_on_server_next_action() -> None:
     assert "function fitmentResultAvailable()" in APP_JS
     assert "return Boolean(state.fitmentCheck || state.fitmentCheckHistory.length);" in APP_JS
-    assert "tab.disabled = isResult && !resultAvailable;" in APP_JS
-    assert 'section === "result" && !fitmentResultAvailable()' in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" not in APP_JS
+    assert 'resultSection.hidden = activeSection !== "result";' in APP_JS
+    assert "function fitmentResultPrecheck(ui)" in APP_JS
+    assert "data-fitment-result-action" in INDEX_HTML
     assert "state.fitmentActiveSection = fitmentSectionForAction(overview);" in APP_JS
     assert "loadFitmentCheckHistory(overview)" in APP_JS
 
@@ -50,7 +52,7 @@ def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
     )[0]
     assert "await runFitmentCheck();" not in save
     assert "Проверку совместимости можно запустить отдельно" in save
-    assert 'state.fitmentActiveSection = "rim";' in save
+    assert "state.fitmentActiveSection = savedFromSection;" in save
     assert "data-fitment-check-ready" in INDEX_HTML
     assert 'ui.nextAction === "run_standard_check"' in APP_JS
 
@@ -117,9 +119,7 @@ def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
 
 def test_fitment_feedback_is_cleared_at_meaningful_transitions() -> None:
     assert "function clearFitmentTransientMessage()" in APP_JS
-    assert (
-        "if (state.fitmentActiveSection !== nextSection) clearFitmentTransientMessage();" in APP_JS
-    )
+    assert "if (state.fitmentActiveSection !== section) clearFitmentTransientMessage();" in APP_JS
     check_flow = APP_JS.split("async function runFitmentCheck()", 1)[1].split(
         "async function applyFitmentVehicleVariant", 1
     )[0]

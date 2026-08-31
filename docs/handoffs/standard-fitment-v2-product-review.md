@@ -80,9 +80,9 @@ changing verdict semantics.
 Phase 07B-G2 applies a runtime-state correction to the approved V2 reference.
 The amendment does not reopen the visual approval: Vehicle confirmation,
 vehicle-version selection, and Ready for Check remain distinct server-owned
-states; `Вывод` remains unavailable until a current or historical result
-exists; and an empty version picker is not shown when the catalogue returns no
-candidates.
+states; `Вывод` is still rendered from server state and is now always
+navigable before a current or historical result exists; and an empty version
+picker is not shown when the catalogue returns no candidates.
 
 The runtime now uses the exact recognized Vehicle copy as three separate
 lines, sends an explicit vehicle confirmation payload for prefilled detected
@@ -99,6 +99,43 @@ remains `Вы все еще можете создать изображение, 
 
 `CANONICAL_INFO_TOKEN = NOT_FOUND`; the implementation uses the cabinet's
 neutral info surface without adding a new token.
+
+## Approved corrective amendment — 2026-08-31 (G2.1 implementation handoff)
+
+G2.1 continues this same workstream and PR. It supersedes the earlier G2
+pre-check Result-unavailable rule; it does not change backend domain
+semantics, verdict classes or the `next_action` contract. Product approval for
+this corrective pass remains pending until the requested visual and
+authenticated staging review is completed.
+
+The candidate implementation must preserve these boundaries:
+
+- use `Выбрать комплектацию` everywhere in the variant flow;
+- render variant technical context first and the selected variant name on its
+  own final bold line, then keep that name visible in confirmed Vehicle;
+- reread the overview after canonical variant confirmation and keep Vehicle
+  active; Save and variant confirmation must not silently advance a valid
+  current section;
+- make Result a normal clickable navigator tab even with no Check/history;
+  pre-check Result copy and recovery actions are derived from
+  `overview.next_action` and navigation actions do not mutate state;
+- show a readiness CTA only for `run_standard_check`, with
+  `Проверить совместимость` as the sole explicit Check action;
+- keep the source disclosure lightweight, unchanged in label, keyboard
+  accessible and free of arrow-state decoration;
+- keep preview copy left-aligned and Render as an independent neutral,
+  outlined secondary sibling.
+
+The old statement “`Вывод` is disabled before a current or historical
+check/result exists” is superseded and must not be used as implementation or
+QA authority.
+
+```text
+G2_1_PRODUCT_APPROVAL = PENDING
+READY_FOR_PRODUCT_REVIEW = YES
+READY_FOR_STAGING_MERGE = NO
+DOMAIN_SEMANTICS_CHANGED = NO
+```
 
 ### Approval record
 
@@ -126,7 +163,8 @@ copy and absence of horizontal overflow.
 
 ## Interaction and semantic checks
 
-- `Вывод` is disabled before a current or historical check/result exists
+- `Вывод` is clickable before a current or historical check/result exists and
+  renders backend-derived readiness/recovery guidance
 - Existing result states allow direct Vehicle → Rim → Result navigation
 - Stale result remains available and reads `Нужно проверить заново`
 - Vehicle make/model/year draft survives an unsaved Vehicle → Rim → Vehicle
