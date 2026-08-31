@@ -44,7 +44,9 @@ def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
     assert "fitmentVehicleDirty" in APP_JS
     assert "function markVehicleFieldEdited(path)" in APP_JS
     assert "if (includeVehicle)" in payload
-    assert "fitmentPayload({ includeVehicle: state.fitmentVehicleDirty })" in save
+    assert (
+        "includeVehicle: state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()" in save
+    )
     assert "demoServerTransition(transition, fitmentPayload())" in save
     assert "state.fitmentVehicleDirty = false;" in save
     assert "state.fitmentVehicleDirty = true" in APP_JS

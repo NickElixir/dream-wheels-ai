@@ -968,6 +968,7 @@ _LEGACY_REGION_ALIASES = {
     "us": "usdm",
     "japan": "jdm",
     "china": "chdm",
+    "cn": "chdm",
     "korea": "skdm",
 }
 

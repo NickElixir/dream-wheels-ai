@@ -89,7 +89,8 @@ the server response directly.
 ### Vehicle
 
 - Proposal state says `Автомобиль определён по фотографии`
-- The next instruction is `Проверьте найденные данные и выберите комплектацию`
+- The next instruction is rendered as separate lines: `Проверьте найденные
+  данные` and `Если всё верно, подтвердите их`
 - A proposal is not authoritative confirmation
 - Edit mode replaces the summary with one form and one primary save CTA
 - Draft make, model and year values survive section navigation without becoming
@@ -165,7 +166,9 @@ not block visual rendering and keeps this contextual explanation:
 
 The independent Render block uses:
 
-`Визуальная примерка не требует завершения проверки`
+`Визуальная примерка`
+
+with the helper `Посмотрите, как выбранный диск выглядит на вашем автомобиле`.
 
 with the secondary CTA `Создать изображение`.
 
@@ -176,14 +179,14 @@ Approved V2 copy remains:
 | Context | Copy |
 | --- | --- |
 | Vehicle proposal | `Автомобиль определён по фотографии` |
-| Vehicle instruction | `Проверьте найденные данные и выберите комплектацию` |
+| Vehicle instruction | `Проверьте найденные данные` / `Если всё верно, подтвердите их` |
 | Rim partial | `Часть параметров необходимо проверить` |
 | Resolver failure | `Не удалось определить параметры автоматически` |
 | Resolver recovery | `Это не блокирует проверку — укажите параметры колесного диска вручную` |
 | Resolver CTA | `Заполнить параметры вручную` / `Повторить` |
 | Provider failure | `Сервис технической проверки совместимости временно недоступен` |
 | Incompatible rendering | `Вы все еще можете создать изображение, чтобы оценить внешний вид дисков` |
-| Render disclaimer | `Визуальная примерка не требует завершения проверки` |
+| Render helper | `Посмотрите, как выбранный диск выглядит на вашем автомобиле` |
 
 Copy follows the canonical no-terminal-full-stop rule. Technical series use
 Russian decimal commas and slash-separated metadata.
@@ -213,6 +216,41 @@ The following are implementation validations, not new V2 design decisions:
    and session expiry without automatic replay.
 
 No production runtime file is changed by this handoff.
+
+## Approved corrective amendment — 2026-08-31
+
+The Phase 07B-G2 runtime correction preserves the frozen V2 composition while
+making the server-owned state boundaries explicit:
+
+- `complete_vehicle_details` is the Vehicle confirmation state;
+  `select_vehicle_variant` is the separate catalogue-selection state; and
+  `confirmed_ready` is reached only after the authoritative vehicle details
+  and exact variant are confirmed.
+- The UI does not show `Выберите комплектацию` during
+  `complete_vehicle_details`, and it does not render an empty modification
+  picker when the catalogue has no candidates. A no-match outcome provides a
+  recovery action to edit the vehicle data.
+- Recognized vehicle copy is rendered as three separate lines:
+  `Автомобиль определён по фотографии`, `Проверьте найденные данные`, and
+  `Если всё верно, подтвердите их`. Internal suggested/proposed provenance is
+  not exposed as a user-facing state.
+- Explicit vehicle confirmation sends the vehicle payload even when the user
+  has not edited a prefilled proposal. The response remains authoritative;
+  `Сохранить параметры` never starts a Standard Check, and
+  `Проверить совместимость` remains the only explicit check action.
+- A stale result is recoverable through the next server action: vehicle
+  confirmation, vehicle-version selection, or rim-parameter clarification.
+  Recovery leads to a new explicit check and does not silently mutate data.
+- The Render island is a DOM sibling of the Fitment island. Its normal copy is
+  `Визуальная примерка` with
+  `Посмотрите, как выбранный диск выглядит на вашем автомобиле`; its CTA is a
+  secondary outlined `Создать изображение`. Incompatible fitment keeps the
+  approved render explanation and does not block rendering.
+
+The existing neutral info surface is reused for the technical disclaimer;
+there is no dedicated canonical info token in the current cabinet stylesheet:
+
+`CANONICAL_INFO_TOKEN = NOT_FOUND`
 
 ## Freeze record
 
