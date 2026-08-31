@@ -2420,8 +2420,13 @@ h2 {
     border-radius: 6px;
 }
 .fitment-source-disclosure .fitment-source-entry { padding-top: 12px; }
-.fitment-source-readonly { margin: 12px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-.fitment-source-confirmed { margin: 6px 0 0; color: var(--success); font-size: 13px; }
+.fitment-source-details { display: grid; gap: 12px; padding-top: 12px; }
+.fitment-source-detail { display: grid; gap: 4px; min-width: 0; }
+.fitment-source-detail-label { color: var(--text-muted); font-size: 12px; font-weight: 800; }
+.fitment-source-detail-value,
+.fitment-source-detail-secondary { overflow-wrap: anywhere; word-break: break-word; }
+.fitment-source-detail-value { color: var(--text); font-size: 14px; }
+.fitment-source-detail-secondary { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
 .fitment-render-action {
     display: flex;
     align-items: center;

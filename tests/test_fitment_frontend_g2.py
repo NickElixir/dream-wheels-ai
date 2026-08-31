@@ -249,5 +249,55 @@ def test_g2_1_disclosure_is_lightweight_and_accessible_without_arrows() -> None:
     assert 'id="fitment-source-disclosure-body"' in INDEX_HTML
     assert ".fitment-source-disclosure summary::after" not in STYLE_CSS
     assert "summary::-webkit-details-marker" in STYLE_CSS
-    assert 'setAttribute("aria-expanded", String(sourceDisclosure.open))' in APP_JS
     assert 'setAttribute("aria-expanded", String(event.currentTarget.open))' in APP_JS
+
+
+def test_g2_2_disclosure_renderer_never_exposes_empty_content() -> None:
+    renderer = _scope(
+        APP_JS, "function buildRimSecondaryDetails", "function renderFitmentSourceDisclosure"
+    )
+    assert "const technical = fitmentRimTechnicalSummary(rim);" in renderer
+    assert "fitmentRimHasManualProvenance(overview)" in renderer
+    assert 'value: locale === "ru" ? "Не указан" : "Not specified"' in renderer
+    assert "return { editable: true, rows: [] }" in renderer
+    assert "const visible = secondary.editable || secondary.rows.length > 0;" in APP_JS
+    assert "disclosure.hidden = !visible;" in APP_JS
+    assert "details.hidden = secondary.editable || !secondary.rows.length;" in APP_JS
+
+
+def test_g2_2_readonly_source_and_technical_rows_are_safe_and_partial() -> None:
+    assert "function fitmentRimTechnicalSummary(rim = {})" in APP_JS
+    assert "ET ${formatIdentityNumber(rim.offset_et_mm)}" in APP_JS
+    assert "DIA ${formatIdentityNumber(rim.center_bore_mm)}" in APP_JS
+    assert "function fitmentSafeSourceDisplay(source)" in APP_JS
+    assert "parsed.search" not in APP_JS
+    assert "word-break: break-word" in STYLE_CSS
+    assert ".fitment-source-detail-value" in STYLE_CSS
+
+
+def test_g2_2_url_absence_does_not_imply_manual_provenance() -> None:
+    provenance = _scope(
+        APP_JS, "function fitmentRimHasManualProvenance", "function fitmentSafeSourceDisplay"
+    )
+    assert (
+        'manualSources = new Set(["manual", "manual_input", "user_input", "user_edited"])'
+        in provenance
+    )
+    assert 'source === "user_confirmed"' not in provenance
+    details = _scope(
+        APP_JS, "function buildRimSecondaryDetails", "function renderFitmentSourceDisclosure"
+    )
+    assert "else if (fitmentRimHasManualProvenance(overview))" in details
+    assert "else if (technical.length)" in details
+
+
+def test_g2_2_disclosure_toggle_is_presentation_only() -> None:
+    toggle = _scope(
+        APP_JS,
+        'document.querySelector("[data-fitment-source-disclosure]")?.addEventListener("toggle"',
+        'document.querySelectorAll("[data-fitment-jump]")',
+    )
+    assert "state.fitmentSourceOpen = event.currentTarget.open;" in toggle
+    assert "fetch(" not in toggle
+    assert "runFitmentCheck" not in toggle
+    assert "markFitmentDirty" not in toggle
