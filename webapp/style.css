@@ -2358,14 +2358,12 @@ h2 {
     padding: 13px 14px;
     border: 1px solid transparent;
     border-radius: 18px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
     background: transparent;
     color: var(--text-muted);
     text-align: left;
     cursor: pointer;
 }
 
-.fitment-flow-tab:last-child { border-right: 1px solid transparent; }
 .fitment-flow-tab:hover { background: rgba(255, 255, 255, 0.03); color: var(--text); }
 .fitment-flow-tab.active { border-color: rgba(221, 255, 0, 0.22); background: var(--accent-soft); color: var(--accent-strong); }
 .fitment-flow-copy { display: grid; gap: 5px; min-width: 0; }
