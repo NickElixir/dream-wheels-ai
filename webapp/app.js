@@ -2211,6 +2211,12 @@ function fitmentFieldLabel(path) {
         "vehicle.make": locale === "ru" ? "марка" : "make",
         "vehicle.model": locale === "ru" ? "модель" : "model",
         "vehicle.year": locale === "ru" ? "год" : "year",
+        vehicle_identity: locale === "ru" ? "данные автомобиля" : "vehicle details",
+        pcd: locale === "ru" ? "разболтовка колесного диска" : "wheel bolt pattern",
+        center_bore: locale === "ru" ? "ступичное отверстие" : "center bore",
+        offset_et: locale === "ru" ? "вылет колесного диска" : "wheel offset",
+        diameter_width: locale === "ru" ? "размер колесного диска" : "wheel size",
+        provider_allowed_wheels: locale === "ru" ? "допустимый размер диска" : "allowed wheel size",
         "rim.bolt_count": locale === "ru" ? "крепёжных отверстий" : "bolt count",
         "rim.pcd_mm": locale === "ru" ? "разболтовка (PCD)" : "PCD",
         "rim.center_bore_mm": locale === "ru" ? "диаметр ступичного отверстия" : "center bore",
@@ -2704,47 +2710,46 @@ function fitmentSubtitle(overview) {
 
 function fitmentVerdictMessage(item) {
     const details = item?.details || item?.detail || {};
-    const code = item?.code || item?.reason_code || "";
+    const code = String(item?.code || item?.reason_code || "").trim().toLowerCase();
     const ru = locale === "ru";
-    if (item?.label) return item.label;
     if (code === "vehicle_variant_required") {
-        return ru ? "Выберите комплектацию автомобиля по каталогу Wheel‑Size." : "Select the vehicle version from Wheel‑Size.";
+        return ru ? "Выберите комплектацию автомобиля по каталогу Wheel‑Size" : "Select the vehicle version from Wheel‑Size";
     }
     if (code === "vehicle_reference_offset_missing") {
-        return ru ? "Не удалось подтвердить ET автомобиля по данным Wheel‑Size." : "The vehicle ET could not be confirmed by Wheel‑Size.";
+        return ru ? "Не удалось подтвердить ET автомобиля по данным Wheel‑Size" : "The vehicle ET could not be confirmed by Wheel‑Size";
     }
     if (code === "rim_offset_missing") {
-        return ru ? "Укажите ET колесного диска для технической проверки." : "Enter the wheel ET for the technical check.";
+        return ru ? "Укажите ET колесного диска для технической проверки" : "Enter the wheel ET for the technical check";
     }
-    if (code === "hub_rings_required") {
-        const hub = formatFitmentNumber(details.hub_bore_mm, "мм");
-        const rim = formatFitmentNumber(details.rim_bore_mm, "мм");
-        return ru ? `Для установки потребуется центровочное кольцо ${hub} → ${rim}.` : `A hub-centric ring ${hub} → ${rim} is required.`;
+    if (["hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"].includes(code)) {
+        return ru ? "Потребуются центровочные кольца" : "Centering rings are required";
     }
     if (code === "load_rating_unknown") {
-        return ru ? "Рейтинг нагрузки диска не подтверждён — это не влияет на предварительный verdict." : "The wheel load rating is not confirmed; it does not affect this preliminary verdict.";
+        return ru ? "Рейтинг нагрузки диска не подтверждён — это не влияет на предварительный результат" : "The wheel load rating is not confirmed — it does not affect this preliminary result";
     }
     if (code === "fastener_unknown") {
-        return ru ? "Тип крепежа не подтверждён — проверьте его перед установкой." : "Fastener type is not confirmed; check it before installation.";
+        return ru ? "Тип крепежа не подтверждён — проверьте его перед установкой" : "Fastener type is not confirmed — check it before installation";
     }
-    if (code === "pcd_unknown") return ru ? "Не удалось подтвердить PCD." : "PCD could not be confirmed.";
-    if (code === "center_bore_unknown") return ru ? "Не удалось подтвердить центральное отверстие." : "Center bore could not be confirmed.";
-    if (code === "size_unknown" || code === "size_not_in_reference" || code === "allowed_set_empty") return ru ? "Не удалось подтвердить допустимый размер диска." : "The approved wheel size could not be confirmed.";
-    if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости. Повторите позже." : "The technical compatibility service could not be reached. Try again later.";
-    if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы. Попробуйте позже." : "The technical compatibility service is rate-limited. Try again later.";
-    if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен." : "The technical compatibility service is temporarily unavailable.";
-    if (code === "malformed_response" || code === "internal_execution_error") return ru ? "Не удалось завершить техническую проверку. Повторите позже." : "The technical check could not be completed. Try again later.";
-    if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size." : "The vehicle could not be matched to Wheel‑Size.";
-    if (code === "pcd_mismatch" || code === "bolt_count_mismatch") return ru ? "PCD или количество крепёжных отверстий не совпадает." : "PCD or bolt count does not match.";
-    if (code === "center_bore_too_small") return ru ? "Центральное отверстие диска меньше ступицы автомобиля." : "The wheel center bore is smaller than the vehicle hub.";
-    if (code === "offset_deviation_check_required" || code === "offset_out_of_range" || code === "et_outside_reference_range") {
+    if (code === "pcd_unknown") return ru ? "Уточните разболтовку колесного диска" : "Clarify the wheel bolt pattern";
+    if (code === "center_bore_unknown") return ru ? "Уточните ступичное отверстие" : "Clarify the center bore";
+    if (["size_unknown", "size_not_in_reference", "allowed_set_empty"].includes(code)) return ru ? "Уточните размер колесного диска" : "Clarify the wheel size";
+    if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости — повторите позже" : "The technical compatibility service could not be reached — try again later";
+    if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы — попробуйте позже" : "The technical compatibility service is rate-limited — try again later";
+    if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен" : "The technical compatibility service is temporarily unavailable";
+    if (["malformed_response", "internal_execution_error"].includes(code)) return ru ? "Не удалось завершить техническую проверку — повторите позже" : "The technical check could not be completed — try again later";
+    if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size" : "The vehicle could not be matched to Wheel‑Size";
+    if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return ru ? "Разболтовка колесного диска не совпадает" : "The wheel bolt pattern does not match";
+    if (code === "center_bore_too_small") return ru ? "Ступичное отверстие диска меньше штатного" : "The wheel center bore is smaller than the vehicle hub";
+    if (["offset_deviation_check_required", "offset_out_of_range", "et_outside_reference_range"].includes(code)) {
         const range = `ET${formatFitmentNumber(details.reference_et_min_mm).replace(/\s/g, "")}–${formatFitmentNumber(details.reference_et_max_mm).replace(/\s/g, "")}`;
         const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
         return ru
-            ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}. Перед установкой проверьте внутренний и наружный зазор.`
-            : `Wheel ${rim}; vehicle reference range ${range}. Check inner and outer clearances before installation.`;
+            ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}. Перед установкой проверьте внутренний и наружный зазор`
+            : `Wheel ${rim}; vehicle reference range ${range}. Check inner and outer clearances before installation`;
     }
-    return ru ? "Требуется дополнительная техническая проверка." : "Additional technical review is required.";
+    const label = normalizeFitmentText(item?.label);
+    if (label && !/требуется условие|condition required/i.test(label)) return label.replace(/[.!]$/, "");
+    return ru ? "Нужно уточнить технические параметры" : "Technical details need clarification";
 }
 
 function fitmentFieldStateLabel(fieldState) {
@@ -3009,12 +3014,16 @@ function completeDemoFitmentCheck(check) {
         ...check,
         execution_status: "completed",
         verdict: "compatible_with_conditions",
-        conditions: [{ code: "CENTER_BORE_REQUIRES_RING", axle: "front_and_rear", label: "Потребуются центровочные кольца" }],
+        conditions: [{
+            code: "CENTER_BORE_REQUIRES_RING",
+            axle: "front_and_rear",
+            details: { hub_bore_mm: 60.1, rim_bore_mm: 73.1 },
+        }],
         advisories: [{ code: "PRELIMINARY_TECHNICAL_ASSESSMENT", label: "Предварительная техническая оценка" }],
         field_results: [
             { field: "pcd_mm", label: "Разболтовка", status: "pass" },
             { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
-            { field: "center_bore_mm", label: "Ступичное отверстие", status: "conditional" },
+            { field: "center_bore_mm", label: "Ступичное отверстие", code: "CENTER_BORE_REQUIRES_RING", status: "conditional" },
         ],
     };
 }
@@ -3033,19 +3042,25 @@ function applyDemoResultFixture(overview, verdict) {
         execution_status: verdict === "failed" ? "failed" : "completed",
         blocking_issues: verdict === "incompatible"
             ? [{ code: "PCD_MISMATCH", label: "Разболтовка колесного диска не совпадает" }]
-            : verdict === "unknown"
-                ? [{ code: "RIM_DATA_UNCONFIRMED", label: "Нужно подтвердить параметры колесного диска" }]
-                : [],
+            : [],
         conditions: verdict === "compatible_with_conditions" ? completed.conditions : [],
         advisories: verdict === "failed" ? [] : completed.advisories,
-        field_results: verdict === "incompatible"
+        field_results: verdict === "failed"
+            ? []
+            : verdict === "incompatible"
             ? [
-                { field: "pcd_mm", label: "Разболтовка", status: "fail" },
+                { field: "pcd_mm", label: "Разболтовка", code: "PCD_MISMATCH", status: "fail" },
                 { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
             ]
             : verdict === "unknown"
-                ? [{ field: "center_bore_mm", label: "Ступичное отверстие", status: "unknown" }]
-            : completed.field_results,
+                ? [
+                    { field: "offset_et", code: "rim_offset_missing", status: "unknown" },
+                    { field: "center_bore", code: "center_bore_unknown", status: "unknown" },
+                ]
+            : verdict === "compatible_with_conditions"
+                ? completed.field_results
+                : completed.field_results.filter((field) => field.status === "pass"),
+        missing_fields: verdict === "unknown" ? ["offset_et", "center_bore"] : [],
         ...(verdict === "failed"
             ? { error: { code: "provider_unavailable", retry_mode: "retryable", retryable: true }, retry_mode: "retryable" }
             : {}),
@@ -3077,7 +3092,7 @@ function applyDemoResultFixture(overview, verdict) {
             rim_setup_state: "confirmed_ready",
             field_states: confirmedRimFields,
         },
-        next_action: { kind: "run_standard_check" },
+        next_action: { kind: verdict === "unknown" ? "complete_rim_specs" : "run_standard_check" },
         current_check: fixture,
         check_history: [fixture],
     };
@@ -3445,17 +3460,11 @@ function renderFitmentLegacy() {
             const fieldResults = check.field_results || check.fields || [];
             verdictFields.replaceChildren();
             verdictFields.hidden = !fieldResults.length;
-            const labelsByStatus = {
-                pass: locale === "ru" ? "Подходит" : "Fits",
-                conditional: locale === "ru" ? "Требуется условие" : "Condition required",
-                unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
-                fail: locale === "ru" ? "Конфликт" : "Conflict",
-            };
             for (const field of fieldResults) {
                 const line = document.createElement("div");
                 line.className = "fitment-verdict-field";
-                line.dataset.status = field.status || field.result || "unknown";
-                line.textContent = `${field.label || field.field || ""}: ${labelsByStatus[field.status || field.result] || labelsByStatus.unknown}`;
+                line.dataset.status = fitmentResultFieldStatus(field);
+                line.textContent = fitmentResultFieldCopy(field, check);
                 verdictFields.append(line);
             }
         }
@@ -3785,10 +3794,10 @@ function fitmentResultCopy(check) {
     if (check.execution_status === "queued") return ru ? "Проверка ожидает запуска" : "The check is queued";
     if (check.execution_status === "processing") return ru ? "Проверяем параметры автомобиля и диска" : "Checking the vehicle and wheel details";
     if (check.execution_status === "failed") return fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" });
-    if (check.verdict === "compatible") return ru ? "Критические параметры совпадают с подтверждённой комплектацией" : "Critical parameters match the confirmed vehicle version";
-    if (check.verdict === "compatible_with_conditions") return ru ? "Диск подходит при соблюдении указанных условий установки" : "The wheel fits when the installation conditions are followed";
-    if (check.verdict === "unknown") return ru ? "Недостаточно подтверждённых данных для технического вывода" : "There is not enough confirmed data for a technical verdict";
-    if (check.verdict === "incompatible") return ru ? "Обнаружены параметры, которые не совпадают с данными автомобиля" : "Some parameters conflict with the vehicle data";
+    if (check.verdict === "compatible") return ru ? "Основные проверяемые параметры совместимы" : "The main checked parameters are compatible";
+    if (check.verdict === "compatible_with_conditions") return ru ? "Диск предварительно подходит" : "The wheel preliminarily fits";
+    if (check.verdict === "unknown") return ru ? "Пока нельзя надёжно определить совместимость" : "Compatibility cannot be determined reliably yet";
+    if (check.verdict === "incompatible") return ru ? "Обнаружено несовпадение технических параметров" : "A mismatch in technical parameters was found";
     return ru ? "Проверка завершена" : "The check is complete";
 }
 
@@ -3838,13 +3847,73 @@ function fitmentResultPrecheck(ui) {
     return copy[ui.nextAction] || null;
 }
 
-function fitmentResultGroupLabel(kind) {
+function fitmentResultGroupLabel(kind, verdict) {
     const labels = {
-        blocking: locale === "ru" ? "Нужно уточнить" : "Needs clarification",
+        blocking: verdict === "incompatible"
+            ? (locale === "ru" ? "Что не совпадает" : "What does not match")
+            : (locale === "ru" ? "Нужно уточнить" : "Needs clarification"),
         conditions: locale === "ru" ? "Условия установки" : "Installation conditions",
-        advisories: locale === "ru" ? "Обратите внимание" : "Keep in mind",
     };
     return labels[kind] || kind;
+}
+
+function fitmentResultFieldStatus(item) {
+    const status = String(item?.status || item?.result || "unknown").trim().toLowerCase();
+    return {
+        compatible: "pass",
+        compatible_with_conditions: "conditional",
+        incompatible: "fail",
+    }[status] || status;
+}
+
+function fitmentResultFieldItems(check) {
+    const fields = check?.field_results || check?.fields || [];
+    if (fields.length) return fields;
+    const missing = [
+        ...(check?.evidence_summary?.missing_fields || []),
+        ...(check?.missing_fields || []),
+    ];
+    return [...new Set(missing)].map((field) => ({
+        field,
+        code: {
+            pcd: "pcd_unknown",
+            center_bore: "center_bore_unknown",
+            offset_et: "rim_offset_missing",
+            diameter_width: "size_unknown",
+        }[field],
+        status: "unknown",
+    }));
+}
+
+function fitmentResultFieldCopy(field, check) {
+    const status = fitmentResultFieldStatus(field);
+    const code = String(field?.code || field?.reason_code || "").trim().toLowerCase();
+    const fieldName = String(field?.field || "").trim().toLowerCase();
+    const conditionCodes = (check?.conditions || []).map((item) => String(item?.code || "").trim().toLowerCase());
+    const hasCenterBoreCondition = [
+        "hub_rings_required",
+        "center_bore_requires_ring",
+        "use_specified_centering_ring",
+    ].some((item) => conditionCodes.includes(item));
+    const label = normalizeFitmentText(field?.label) || fitmentFieldLabel(fieldName);
+
+    if (status === "pass") return /подходит|fits/i.test(label) ? label : `${label} ${locale === "ru" ? "подходит" : "fits"}`;
+    if (status === "fail") {
+        if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return fitmentVerdictMessage({ code });
+        if (code === "center_bore_too_small") return fitmentVerdictMessage({ code });
+        return /не совпадает|does not match|conflict/i.test(label)
+            ? label
+            : `${label} ${locale === "ru" ? "не совпадает" : "does not match"}`;
+    }
+    if (status === "unknown") return fitmentVerdictMessage({ code: code || fieldName });
+    if (status === "conditional") {
+        if (["hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"].includes(code) || (fieldName === "center_bore_mm" && hasCenterBoreCondition)) {
+            return locale === "ru" ? "Ступичное отверстие больше штатного" : "The center bore is larger than the vehicle hub";
+        }
+        if (label && !/требуется условие|condition required/i.test(label)) return label;
+        return locale === "ru" ? "Условие установки указано ниже" : "The installation condition is listed below";
+    }
+    return label || (locale === "ru" ? "Параметр диска" : "Wheel parameter");
 }
 
 function renderFitmentV2Result(check, ui, active) {
@@ -3857,12 +3926,13 @@ function renderFitmentV2Result(check, ui, active) {
     const verdictWarning = document.querySelector("[data-fitment-verdict-warning]");
     const verdictCurrentness = document.querySelector("[data-fitment-currentness]");
     const verdictCheckButton = document.querySelector("[data-fitment-check]");
+    const verdictFooter = document.querySelector("[data-fitment-verdict-footer]");
+    const verdictRecheck = document.querySelector("[data-fitment-verdict-recheck]");
+    const stalePrevious = document.querySelector("[data-fitment-stale-previous]");
     const staleRecovery = document.querySelector("[data-fitment-stale-recovery]");
     const staleRecoveryAction = document.querySelector("[data-fitment-stale-recovery-action]");
     const groups = document.querySelector("[data-fitment-verdict-groups]");
     const fieldResults = document.querySelector("[data-fitment-verdict-fields]");
-    const technicalDetails = document.querySelector("[data-fitment-technical-details]");
-    const technicalDetailsBody = document.querySelector("[data-fitment-technical-details-body]");
     const disclaimer = document.querySelector("[data-fitment-verdict-disclaimer]");
     if (!verdictCard) return;
     verdictCard.hidden = !active;
@@ -3888,14 +3958,16 @@ function renderFitmentV2Result(check, ui, active) {
         if (verdictCheckButton) verdictCheckButton.hidden = true;
         if (verdictWarning) verdictWarning.hidden = true;
         if (verdictCurrentness) verdictCurrentness.hidden = true;
+        if (stalePrevious) stalePrevious.hidden = true;
         if (staleRecovery) staleRecovery.hidden = true;
         if (groups) groups.hidden = true;
         if (fieldResults) {
             fieldResults.replaceChildren();
             fieldResults.hidden = true;
         }
-        if (technicalDetails) technicalDetails.hidden = true;
-        if (technicalDetailsBody) technicalDetailsBody.replaceChildren();
+        if (verdictFooter) verdictFooter.hidden = true;
+        if (verdictRecheck) verdictRecheck.hidden = true;
+        if (verdictCheckButton) verdictCheckButton.hidden = true;
         if (disclaimer) disclaimer.hidden = true;
         return;
     }
@@ -3908,23 +3980,44 @@ function renderFitmentV2Result(check, ui, active) {
         precheckAction.hidden = true;
         precheckAction.dataset.fitmentResultAction = "";
     }
+    if (verdictFooter) verdictFooter.hidden = false;
     if (disclaimer) disclaimer.hidden = false;
-    verdictCard.dataset.status = check.verdict || check.execution_status || "unknown";
-    if (verdictTitle) verdictTitle.textContent = check.is_current === false
-        ? (locale === "ru" ? "Результат больше не актуален" : "This result is no longer current")
-        : fitmentResultTitle(check);
+    verdictCard.dataset.status = check.is_current === false ? "stale" : check.verdict || check.execution_status || "unknown";
+    if (verdictTitle) {
+        verdictTitle.textContent = check.is_current === false
+            ? (locale === "ru" ? "Результат больше не актуален" : "This result is no longer current")
+            : fitmentResultTitle(check);
+        verdictTitle.dataset.tone = check.is_current === false
+            ? "muted"
+            : check.verdict === "compatible"
+                ? "success"
+                : check.verdict === "compatible_with_conditions"
+                    ? "warning"
+                    : check.verdict === "incompatible" || check.execution_status === "failed"
+                        ? "danger"
+                        : "info";
+    }
     if (verdictCopy) verdictCopy.textContent = fitmentResultCopy(check);
-    if (verdictWarning) verdictWarning.hidden = check.execution_status === "queued" || check.execution_status === "processing" || check.execution_status === "failed";
+    const pending = check.execution_status === "queued" || check.execution_status === "processing";
+    const failed = check.execution_status === "failed";
+    if (verdictWarning) verdictWarning.hidden = pending || failed;
+    if (verdictFooter) verdictFooter.hidden = pending || failed;
+    if (stalePrevious) {
+        stalePrevious.hidden = check.is_current !== false;
+        stalePrevious.textContent = check.is_current === false
+            ? `${locale === "ru" ? "Предыдущий результат" : "Previous result"}: ${fitmentResultTitle({ ...check, is_current: true })}`
+            : "";
+    }
     if (verdictCurrentness) {
         verdictCurrentness.hidden = true;
     }
-    const pending = check.execution_status === "queued" || check.execution_status === "processing";
-    const failed = check.execution_status === "failed";
     if (verdictCheckButton) {
-        verdictCheckButton.hidden = pending || !["run_standard_check"].includes(ui.nextAction);
-        verdictCheckButton.disabled = pending || state.fitmentChecking;
         const completedCurrent = check.execution_status === "completed" && check.is_current !== false;
-        verdictCheckButton.classList.toggle("primary-button", !completedCurrent);
+        const showRecheck = !pending && !failed && completedCurrent && ui.nextAction === "run_standard_check";
+        const showRetry = failed && check.retry_mode !== "not_applicable" && ui.nextAction === "run_standard_check";
+        verdictCheckButton.hidden = !showRecheck && !showRetry;
+        verdictCheckButton.disabled = pending || state.fitmentChecking;
+        verdictCheckButton.classList.toggle("primary-button", showRetry);
         verdictCheckButton.classList.toggle("ghost-button", completedCurrent);
         verdictCheckButton.classList.toggle("neutral", completedCurrent);
         verdictCheckButton.textContent = pending
@@ -3935,6 +4028,7 @@ function renderFitmentV2Result(check, ui, active) {
                     ? "Проверить ещё раз"
                     : t("fitment.check");
     }
+    if (verdictRecheck) verdictRecheck.hidden = verdictCheckButton?.hidden !== false;
     const staleRecoveryCopy = {
         complete_vehicle_details: locale === "ru" ? "Подтвердить данные автомобиля" : "Confirm vehicle details",
         select_vehicle_variant: locale === "ru" ? "Выбрать комплектацию" : "Choose a vehicle version",
@@ -3946,84 +4040,69 @@ function renderFitmentV2Result(check, ui, active) {
         staleRecoveryAction.textContent = staleRecoveryCopy[ui.nextAction] || "";
         staleRecoveryAction.dataset.fitmentStaleRecoveryAction = ui.nextAction || "";
     }
+    const fieldItems = failed ? [] : fitmentResultFieldItems(check);
+    const blockingItems = !failed && fieldItems.length && ["incompatible", "unknown"].includes(check.verdict)
+        ? []
+        : failed
+            ? []
+            : check.blocking_issues || [];
+    const conditionItems = failed ? [] : check.conditions || [];
     renderFitmentVerdictGroup(
         "[data-fitment-verdict-blocking]",
         "[data-fitment-verdict-blocking-list]",
-        check.blocking_issues || [],
+        blockingItems,
         "blocking"
     );
     renderFitmentVerdictGroup(
         "[data-fitment-verdict-conditions]",
         "[data-fitment-verdict-conditions-list]",
-        check.conditions || [],
+        conditionItems,
         "conditions"
-    );
-    renderFitmentVerdictGroup(
-        "[data-fitment-verdict-advisories]",
-        "[data-fitment-verdict-advisories-list]",
-        check.advisories || [],
-        "advisories"
     );
     if (groups) {
         const allGroups = [
             ["[data-fitment-verdict-blocking]", "blocking"],
             ["[data-fitment-verdict-conditions]", "conditions"],
-            ["[data-fitment-verdict-advisories]", "advisories"],
         ];
         allGroups.forEach(([selector, kind]) => {
             const section = document.querySelector(selector);
             const heading = section?.querySelector("strong");
-            if (heading) heading.textContent = fitmentResultGroupLabel(kind);
+            if (heading) heading.textContent = fitmentResultGroupLabel(kind, check.verdict);
         });
         groups.hidden = ![
-            ...(check.blocking_issues || []),
-            ...(check.conditions || []),
-            ...(check.advisories || []),
+            ...blockingItems,
+            ...conditionItems,
         ].length;
     }
+    const resultRecoveryCopy = {
+        complete_vehicle_details: locale === "ru" ? "Уточнить данные автомобиля" : "Clarify vehicle details",
+        select_vehicle_variant: locale === "ru" ? "Выбрать комплектацию" : "Choose vehicle version",
+        complete_rim_specs: locale === "ru" ? "Уточнить параметры" : "Clarify parameters",
+    };
+    const showResultRecovery = check.verdict === "unknown" && Boolean(resultRecoveryCopy[ui.nextAction]);
+    if (precheckActions) precheckActions.hidden = !showResultRecovery;
+    if (precheckAction) {
+        precheckAction.hidden = !showResultRecovery;
+        precheckAction.textContent = resultRecoveryCopy[ui.nextAction] || "";
+        precheckAction.dataset.fitmentResultAction = showResultRecovery
+            ? ui.nextAction === "complete_vehicle_details" || ui.nextAction === "select_vehicle_variant"
+                ? "vehicle"
+                : "rim"
+            : "";
+        precheckAction.className = "ghost-button neutral compact-button";
+    }
     if (fieldResults) {
-        const fields = check.field_results || check.fields || [];
         fieldResults.replaceChildren();
-        fieldResults.hidden = !fields.length;
-        const labels = {
-            pass: locale === "ru" ? "Подходит" : "Fits",
-            conditional: locale === "ru" ? "Требуется условие" : "Condition required",
-            unknown: locale === "ru" ? "Недостаточно данных" : "Insufficient data",
-            fail: locale === "ru" ? "Конфликт" : "Conflict",
-        };
-        fields.forEach((field) => {
+        fieldResults.hidden = !fieldItems.length;
+        fieldItems.forEach((field) => {
             const line = document.createElement("div");
             line.className = "fitment-verdict-field";
-            line.dataset.status = field.status || field.result || "unknown";
+            line.dataset.status = fitmentResultFieldStatus(field);
             const label = document.createElement("span");
-            label.textContent = field.label || field.field || "";
-            const outcome = document.createElement("strong");
-            outcome.textContent = labels[field.status || field.result] || labels.unknown;
-            line.append(label, outcome);
+            label.textContent = fitmentResultFieldCopy(field, check);
+            line.append(label);
             fieldResults.append(line);
         });
-    }
-    if (technicalDetails && technicalDetailsBody) {
-        const overview = state.fitmentOverview;
-        const rim = overview?.rim || overview?.front_rim?.rim || {};
-        const details = [
-            ["Автомобиль", demoVehicleTitle(overview?.vehicle)],
-            ["Колесный диск", fitmentRimSpecs(rim) || fitmentEmptyValue()],
-        ];
-        const missing = check.evidence_summary?.missing_fields || check.missing_fields || [];
-        if (missing.length) details.push(["Нужно уточнить", missing.map(fitmentFieldLabel).join(", ")]);
-        technicalDetailsBody.replaceChildren();
-        for (const [label, value] of details) {
-            const row = document.createElement("div");
-            row.className = "fitment-technical-row";
-            const name = document.createElement("span");
-            name.textContent = label;
-            const content = document.createElement("strong");
-            content.textContent = value;
-            row.append(name, content);
-            technicalDetailsBody.append(row);
-        }
-        technicalDetails.hidden = pending || failed;
     }
 }
 
@@ -7951,6 +8030,7 @@ function bindEvents() {
                 return;
             }
             if (["vehicle", "rim"].includes(action)) {
+                if (action === "rim") state.fitmentRimEditing = true;
                 setFitmentActiveSection(action, { scroll: true });
             }
             return;

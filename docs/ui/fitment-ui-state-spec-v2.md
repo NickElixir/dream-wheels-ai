@@ -304,6 +304,50 @@ disclosure is omitted. Absence of `product_url` is not by itself evidence of
 manual provenance; when provenance is not established, the source label is
 `Не указан` alongside any known technical values.
 
+## Approved Result simplification amendment — 2026-08-31
+
+Phase 07B-G2.3 is a corrective content pass within the frozen V2 composition.
+It does not change Fitment domain semantics, verdict semantics, the backend
+`next_action` contract, resolver behaviour, Vehicle/Rim flows or Render
+architecture.
+
+The completed current Result hierarchy is:
+
+```text
+verdict
+  → short human-readable explanation
+  → one compact decision-relevant evidence group
+  → one condition/problem group only when backend evidence requires it
+  → subdued warning/disclaimer footer
+  → secondary bottom re-check action
+```
+
+The Result eyebrow `РЕЗУЛЬТАТ`, the old main Result `Технические детали`
+disclosure and the standalone generic advisory `Обратите внимание` layer are
+removed. The verdict is the first Result heading and uses the existing cabinet
+typography scale. Conditional evidence uses a single accented condition
+island at most; multiple backend conditions remain inside that one group.
+
+The presentation adapter may map a known backend evidence code to a
+human-readable explanation, such as a centering-ring condition. It must not
+infer a technical cause from the verdict class alone, calculate Fitment
+semantics, change the verdict class or create a condition. Unknown recovery
+shows only backend-provided missing evidence and the authoritative recovery
+action. Stale and operationally failed checks remain distinct from current
+completed Result states.
+
+The mandatory warning/disclaimer copy may move from above the evidence into a
+single subdued Result footer-zone. Its exact canonical warning, legal and
+commercial wording remains governed by the higher-priority commercial warning
+authority in [`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
+and any authority it references; this V2 specification does not freeze a
+conflicting duplicate wording.
+
+`Проверить ещё раз` remains the existing explicit Check path, is shown only
+when the server action permits it, and is a secondary outlined action at the
+bottom of the current Result. The Render island remains an independent DOM
+sibling outside the Fitment Result island.
+
 ## Freeze record
 
 The product owner explicitly approved this V2 UI/UX contract on 2026-08-29.

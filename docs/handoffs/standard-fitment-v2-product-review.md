@@ -202,6 +202,42 @@ Changed files in this feature branch:
 Production frontend, backend, API and domain files were not changed. The
 branch is ready for the documentation/reference-only PR into `staging`.
 
+## Approved Result simplification amendment — 2026-08-31 (G2.3)
+
+Phase 07B-G2.3 is a corrective pass within PR #137. It simplifies only the
+content hierarchy of the completed Result page and does not reopen the frozen
+Fitment V2 architecture or change backend/domain behaviour.
+
+The runtime Result now records these approved presentation decisions:
+
+- removed the Result eyebrow `РЕЗУЛЬТАТ`;
+- made the verdict the first and strongest Result message;
+- placed one short human-readable explanation directly below it;
+- kept one compact decision-relevant evidence group;
+- removed the old main Result technical-details disclosure;
+- removed the standalone generic `Обратите внимание` advisory layer;
+- kept at most one visually accented condition island, with multiple
+  conditions grouped inside it;
+- moved the mandatory warning/disclaimer copy into one subdued footer-zone;
+- moved `Проверить ещё раз` to the bottom as a secondary outlined action;
+- kept stale, pre-check and operational-failure presentation distinct;
+- used a presentation-only evidence mapper, with no frontend semantic
+  invention;
+- kept Render as a separate DOM sibling and preserved its approved copy/CTA.
+
+The Result layout may move warning copy for hierarchy, but exact canonical
+warning, legal and commercial wording remains governed by the higher-priority
+commercial warning authority in
+[`05-commercial-ux-warnings.md`](05-commercial-ux-warnings.md) and any
+authority it references. This handoff does not define replacement legal copy.
+
+`G2_3_PRODUCT_APPROVAL = PENDING`
+`READY_FOR_PRODUCT_REVIEW = YES`
+`READY_FOR_STAGING_MERGE = NO`
+`DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
+`NEXT_ACTION_SEMANTICS_CHANGED = NO`
+
 ## Final handoff state
 
 ```text

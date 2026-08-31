@@ -6,6 +6,10 @@ INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 
 
+def _scope(source: str, start: str, end: str) -> str:
+    return source.split(start, 1)[1].split(end, 1)[0]
+
+
 def test_v2_shell_uses_context_pair_and_free_navigator() -> None:
     assert "data-fitment-context-pair" in INDEX_HTML
     assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
@@ -105,9 +109,33 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
 
 def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
     assert "data-fitment-verdict-card" in INDEX_HTML
-    assert "data-fitment-technical-details" in INDEX_HTML
-    assert "Технические детали" in INDEX_HTML
+    result_markup = INDEX_HTML.split('<section class="fitment-verdict-card"', 1)[1].split(
+        '<form class="form-stack fitment-form"', 1
+    )[0]
+    assert '<p class="section-label">Результат</p>' not in result_markup
+    assert "data-fitment-technical-details" not in result_markup
+    assert "Технические детали" not in result_markup
+    assert "data-fitment-verdict-footer" in result_markup
+    assert "data-fitment-verdict-recheck" in result_markup
+    assert "data-fitment-verdict-warning" in result_markup
+    assert "data-fitment-verdict-disclaimer" in result_markup
+    assert "data-fitment-verdict-advisories" not in result_markup
+    head = result_markup.split('class="fitment-verdict-head"', 1)[1].split("</div>", 1)[0]
+    assert "data-fitment-check" not in head
+    assert result_markup.index("data-fitment-verdict-title") < result_markup.index(
+        "data-fitment-verdict-fields"
+    )
+    assert result_markup.index("data-fitment-verdict-fields") < result_markup.index(
+        "data-fitment-verdict-footer"
+    )
+    assert result_markup.index("data-fitment-verdict-footer") < result_markup.index(
+        "data-fitment-verdict-recheck"
+    )
     assert 'completedCurrent = check.execution_status === "completed"' in APP_JS
+    assert (
+        'showRecheck = !pending && !failed && completedCurrent && ui.nextAction === "run_standard_check"'
+        in APP_JS
+    )
     assert 'completedCurrent\n                    ? "Проверить ещё раз"' in APP_JS
     result_css = STYLE_CSS.split(".fitment-verdict-card {", 1)[1].split(".fitment-verdict-head", 1)[
         0
@@ -115,6 +143,54 @@ def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
     assert "border:" not in result_css
     assert '.fitment-verdict-group[data-kind="conditions"]' in STYLE_CSS
     assert ".fitment-verdict-field:last-child { border-bottom: 0; }" in STYLE_CSS
+    assert ".fitment-technical-details" not in STYLE_CSS
+
+
+def test_result_hierarchy_has_one_condition_island_and_no_advisory_layer() -> None:
+    result_markup = INDEX_HTML.split('<section class="fitment-verdict-card"', 1)[1].split(
+        '<form class="form-stack fitment-form"', 1
+    )[0]
+    assert result_markup.count("data-fitment-verdict-conditions") == 2
+    assert "data-fitment-verdict-advisories" not in result_markup
+    assert ".fitment-verdict-footer" in STYLE_CSS
+    assert ".fitment-verdict-recheck" in STYLE_CSS
+    assert '.fitment-verdict-group[data-kind="advisories"]' not in STYLE_CSS
+
+
+def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons() -> None:
+    verdict_mapper = _scope(
+        APP_JS, "function fitmentVerdictMessage", "function fitmentFieldStateLabel"
+    )
+    field_mapper = _scope(
+        APP_JS, "function fitmentResultFieldCopy", "function renderFitmentV2Result"
+    )
+    assert (
+        '"hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"'
+        in verdict_mapper
+    )
+    assert "Потребуются центровочные кольца" in verdict_mapper
+    assert "Разболтовка колесного диска не совпадает" in verdict_mapper
+    assert "Ступичное отверстие больше штатного" in field_mapper
+    assert 'fieldName === "center_bore_mm" && hasCenterBoreCondition' in field_mapper
+    assert "Требуется условие" not in APP_JS
+    assert "Condition required" not in APP_JS
+    assert 'const showResultRecovery = check.verdict === "unknown"' in APP_JS
+    assert "const fieldItems = failed ? [] : fitmentResultFieldItems(check);" in APP_JS
+
+
+def test_result_demo_fixtures_cover_real_missing_evidence_and_conditional_mapping() -> None:
+    fixture = _scope(APP_JS, "function applyDemoResultFixture", "function runDemoFitmentCheck")
+    assert 'missing_fields: verdict === "unknown" ? ["offset_et", "center_bore"] : []' in fixture
+    assert 'code: "rim_offset_missing"' in fixture
+    assert 'code: "center_bore_unknown"' in fixture
+    assert 'code: "CENTER_BORE_REQUIRES_RING"' in APP_JS
+    assert 'field_results: verdict === "failed"' in fixture
+    assert (
+        'conditions: verdict === "compatible_with_conditions" ? completed.conditions : []'
+        in fixture
+    )
+    assert 'kind: verdict === "unknown" ? "complete_rim_specs" : "run_standard_check"' in fixture
+    assert 'completed.field_results.filter((field) => field.status === "pass")' in fixture
 
 
 def test_fitment_feedback_is_cleared_at_meaningful_transitions() -> None:
