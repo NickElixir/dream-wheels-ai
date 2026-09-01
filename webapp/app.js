@@ -30,6 +30,13 @@ const FITMENT_REGIONS = [
     ["medm", "Ближний Восток"], ["nadm", "Северная Африка"],
     ["sadm", "Южная Африка"], ["audm", "Океания"],
 ];
+const FITMENT_MARKET_ALIASES = {
+    cn: "Китай",
+    eu: "Европа",
+    ru: "Россия+",
+    russia: "Россия+",
+    us: "США+",
+};
 const FITMENT_DIAMETER_PRESETS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
 const FITMENT_WIDTH_PRESETS = [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12];
 const FITMENT_DIA_PRESETS = [54, 54.1, 56.6, 57.1, 58.5, 58.6, 60.1, 62.5, 62.6, 63.3, 63.35, 63.4, 64.1, 65.1, 66.1, 66.45, 66.5, 66.6, 67.1, 71.6, 72.6, 74.1, 75.1, 77.8, 84.1, 95.1, 98, 98.1, 98.5, 100.1, 106.1, 108.4, 108.5, 110, 110.1, 130];
@@ -1242,8 +1249,7 @@ function fitmentPresentationText(value) {
 }
 
 function fitmentVariantTechnicalSeries(variant, name = fitmentVariantDisplayName(variant)) {
-    const marketValue = fitmentPresentationText(variant?.market || variant?.region);
-    const market = FITMENT_REGIONS.find(([code]) => code === marketValue)?.[1] || marketValue;
+    const market = fitmentMarketLabel(variant?.region || variant?.market);
     const generationOrBody = fitmentPresentationText(variant?.body || variant?.body_type)
         || fitmentPresentationText(variant?.generation);
     const engine = fitmentPresentationText(variant?.engine);
@@ -1256,6 +1262,27 @@ function fitmentVariantTechnicalSeries(variant, name = fitmentVariantDisplayName
     return parts.filter((part) => part.toLocaleLowerCase() !== name.toLocaleLowerCase()).join(" / ");
 }
 
+function fitmentVariantPresentationKey(variant, index = 0) {
+    const canonicalIdentity = FITMENT_VARIANT_SELECTION_KEYS.map((key) =>
+        normalizeFitmentText(variant?.[key])?.toLocaleLowerCase() || ""
+    );
+    if (canonicalIdentity.every(Boolean)) return `canonical:${canonicalIdentity.join("|")}`;
+    const name = fitmentVariantDisplayName(variant, index).toLocaleLowerCase();
+    const technical = fitmentVariantTechnicalSeries(variant, fitmentVariantDisplayName(variant, index)).toLocaleLowerCase();
+    if (name || technical) return `presentation:${name}|${technical}`;
+    return `index:${index}`;
+}
+
+function dedupeFitmentVehicleVariants(variants) {
+    const seen = new Set();
+    return (Array.isArray(variants) ? variants : []).filter((variant, index) => {
+        const key = fitmentVariantPresentationKey(variant, index);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
 function demoPcdDisplay(rim) {
     if (rim?.bolt_count && rim?.pcd_mm) return `${rim.bolt_count}×${formatIdentityNumber(rim.pcd_mm)}`;
     return null;
@@ -1263,6 +1290,22 @@ function demoPcdDisplay(rim) {
 
 function fitmentVehicleSpecs(vehicle) {
     return [vehicle?.year, fitmentPresentationText(vehicle?.generation)].filter(Boolean).join(" / ");
+}
+
+function fitmentMarketLabel(value) {
+    const marketValue = fitmentPresentationText(value);
+    const normalized = marketValue.toLocaleLowerCase();
+    return FITMENT_REGIONS.find(([code]) => code.toLocaleLowerCase() === normalized)?.[1]
+        || FITMENT_MARKET_ALIASES[normalized]
+        || marketValue;
+}
+
+function fitmentVehicleBaseSpecs(vehicle) {
+    const market = fitmentMarketLabel(vehicle?.market);
+    const marketLabel = market
+        ? `${locale === "ru" ? "Рынок" : "Market"}: ${market}`
+        : "";
+    return [vehicle?.year, marketLabel].filter(Boolean).join(" / ");
 }
 
 function demoRimTitle(rim) {
@@ -1289,7 +1332,7 @@ function buildDefaultDemoFitmentOverview() {
     const completedAt = guestRenderHistory()[0]?.completed_at || "2026-07-05T03:11:00+03:00";
     const vehicle = {
         make: "ZEEKR",
-        model: "SUV",
+        model: "007",
         year: 2025,
         body: "EV SUV",
         generation: "EV",
@@ -1377,7 +1420,7 @@ function buildDefaultDemoFitmentOverview() {
                 { value: "ZEEKR", source: "vlm_visual", confidence: 0.98 },
             ],
             model: [
-                { value: "SUV", source: "vlm_visual", confidence: 0.94 },
+                { value: "007", source: "vlm_visual", confidence: 0.94 },
             ],
             year: [
                 { value: 2025, source: "vlm_visual", confidence: 0.87 },
@@ -1652,7 +1695,7 @@ function guestRenderHistory() {
         render_input_snapshot: {
             vehicle: {
                 make: "ZEEKR",
-                model: "SUV",
+                model: "007",
                 year: 2025,
             },
             rim: {
@@ -2440,6 +2483,16 @@ function clearFitmentResolverFeedback({ close = false } = {}) {
 
 function fitmentSaveLabel() {
     const action = fitmentNextAction(state.fitmentOverview);
+    if (state.fitmentActiveSection === "vehicle" && state.fitmentVehicleEditing) {
+        if (action === "complete_vehicle_details") {
+            const missing = ["make", "model", "year", "market"]
+                .some((field) => state.fitmentForm.vehicle[field] === "" || state.fitmentForm.vehicle[field] === null || state.fitmentForm.vehicle[field] === undefined);
+            return locale === "ru"
+                ? (missing ? "Сохранить автомобиль" : "Подтвердить данные автомобиля")
+                : (missing ? "Save vehicle" : "Confirm vehicle details");
+        }
+        return locale === "ru" ? "Сохранить автомобиль" : "Save vehicle";
+    }
     if (state.fitmentActiveSection === "rim" && state.fitmentRimEditing) {
         return locale === "ru" ? "Сохранить параметры" : "Save wheel details";
     }
@@ -2943,9 +2996,6 @@ function fitmentPayload({ includeVehicle = true } = {}) {
             make: normalizeFitmentText(state.fitmentForm.vehicle.make),
             model: normalizeFitmentText(state.fitmentForm.vehicle.model),
             year: normalizeFitmentNumber(state.fitmentForm.vehicle.year),
-            body: normalizeFitmentText(state.fitmentForm.vehicle.body),
-            generation: normalizeFitmentText(state.fitmentForm.vehicle.generation),
-            modification: normalizeFitmentText(state.fitmentForm.vehicle.modification),
             market: normalizeFitmentText(state.fitmentForm.vehicle.market),
         };
     }
@@ -4280,7 +4330,8 @@ function renderFitment() {
     const summaryVehicleTitle = document.querySelector("[data-fitment-summary-vehicle-title]");
     const summaryVehicleSpecs = document.querySelector("[data-fitment-summary-vehicle-specs]");
     if (summaryVehicleTitle) summaryVehicleTitle.textContent = vehicleTitle;
-    if (summaryVehicleSpecs) summaryVehicleSpecs.textContent = vehicleSpecs || fitmentEmptyValue();
+    if (summaryVehicleSpecs) summaryVehicleSpecs.textContent = fitmentVehicleBaseSpecs(overview.vehicle) || fitmentEmptyValue();
+    const modificationSummary = document.querySelector("[data-fitment-modification-summary]");
     const modificationRow = document.querySelector("[data-fitment-modification-row]");
     const modificationName = document.querySelector("[data-fitment-modification-name]");
     const modificationToggle = document.querySelector("[data-fitment-modification-toggle]");
@@ -4289,17 +4340,22 @@ function renderFitment() {
     const modificationFeedback = document.querySelector("[data-fitment-modification-feedback]");
     const modificationFeedbackText = document.querySelector("[data-fitment-modification-feedback-text]");
     const modificationRetry = document.querySelector("[data-fitment-modification-retry]");
-    const canShowModificationRow = !vehicleEditing
-        && ["confirmed_incomplete", "confirmed_ready"].includes(ui.vehicle.state);
+    const canShowModificationRow = ["confirmed_incomplete", "confirmed_ready"].includes(ui.vehicle.state);
     const selectedVariant = fitmentSelectedVehicleVariant(overview);
     const confirmedModification = overview.modification_state === "confirmed" && Boolean(selectedVariant);
-    const modificationLookupOpen = canShowModificationRow && state.fitmentModificationPickerOpen;
+    const modificationLookupOpen = canShowModificationRow
+        && !vehicleEditing
+        && state.fitmentModificationPickerOpen;
+    if (modificationSummary) modificationSummary.hidden = !canShowModificationRow;
     if (modificationRow) modificationRow.hidden = !canShowModificationRow;
     if (modificationName) modificationName.textContent = confirmedModification
         ? fitmentSelectedVehicleVariantName(overview)
         : "Не выбрана";
     if (modificationToggle) {
-        modificationToggle.textContent = confirmedModification ? "Изменить" : "Выбрать";
+        modificationToggle.textContent = modificationLookupOpen
+            ? "Скрыть"
+            : confirmedModification ? "Изменить комплектацию" : "Выбрать";
+        modificationToggle.hidden = vehicleEditing;
         modificationToggle.setAttribute("aria-expanded", String(Boolean(modificationLookupOpen)));
         modificationToggle.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
     }
@@ -4666,7 +4722,7 @@ function loadFitmentVehicleCatalogue() {
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         const overview = state.fitmentOverview || {};
         state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "ZEEKR", label: overview.vehicle?.make || "ZEEKR" }] };
-        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "SUV", label: overview.vehicle?.model || "SUV" }] };
+        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "007", label: overview.vehicle?.model || "007" }] };
         state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2025), label: String(overview.vehicle?.year || 2025) }] };
         return;
     }
@@ -4994,7 +5050,9 @@ async function loadFitmentVehicleVariants() {
     }
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         state.fitmentLookup = { status: "loaded", outcome: "multiple" };
-        state.fitmentVehicleVariants = DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }));
+        state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(
+            DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }))
+        );
         state.fitmentSelectedVehicleVariantIndex = null;
         state.fitmentMessage = locale === "ru"
             ? "Выберите подходящую комплектацию из списка"
@@ -5020,7 +5078,9 @@ async function loadFitmentVehicleVariants() {
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         state.fitmentLookup = { status: result.outcome === "no_match" ? "no_match" : "loaded", outcome: result.outcome || "" };
-        state.fitmentVehicleVariants = result.outcome === "multiple" ? (result.variants || []) : [];
+        state.fitmentVehicleVariants = result.outcome === "multiple"
+            ? dedupeFitmentVehicleVariants(result.variants || [])
+            : [];
         if (result.outcome === "single") {
             await loadFitmentOverview(state.fitmentJobId);
             state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
@@ -5054,7 +5114,9 @@ async function loadFitmentVehicleVariantsForReselection() {
     try {
         if (shouldUseDemoFitment(state.fitmentJobId)) {
             state.fitmentLookup = { status: "loaded", outcome: "multiple", mode: "reselect" };
-            state.fitmentVehicleVariants = DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }));
+            state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(
+                DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }))
+            );
             return;
         }
         const response = await fetch(
@@ -5072,7 +5134,7 @@ async function loadFitmentVehicleVariantsForReselection() {
             outcome: result.outcome || "",
             mode: "reselect",
         };
-        state.fitmentVehicleVariants = result.variants || [];
+        state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(result.variants || []);
     } catch (error) {
         state.fitmentVehicleVariants = [];
         state.fitmentLookup = { status: "failed", outcome: "", mode: "reselect" };
@@ -8355,7 +8417,13 @@ function bindEvents() {
         if (fitmentEdit) {
             clearFitmentTransientMessage();
             const section = fitmentEdit.dataset.fitmentEdit;
-            if (section === "vehicle") state.fitmentVehicleEditing = true;
+            if (section === "vehicle") {
+                state.fitmentVehicleEditing = true;
+                state.fitmentModificationPickerOpen = false;
+                state.fitmentVehicleVariants = [];
+                state.fitmentLookup = { status: "idle", outcome: "" };
+                state.fitmentModificationLookupMode = "initial";
+            }
             if (section === "rim") state.fitmentRimEditing = true;
             setFitmentActiveSection(section);
             return;

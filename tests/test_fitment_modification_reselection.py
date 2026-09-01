@@ -46,6 +46,43 @@ def test_current_option_is_preselected_and_initial_flow_keeps_its_confirmation()
     assert 'state.fitmentModificationLookupMode === "reselect"' in APP_JS
 
 
+def test_vehicle_variant_candidates_are_deduplicated_as_presentation_only() -> None:
+    assert "function fitmentVariantPresentationKey(variant" in APP_JS
+    assert "function dedupeFitmentVehicleVariants(variants)" in APP_JS
+    assert 'canonical:${canonicalIdentity.join("|")}' in APP_JS
+    assert "presentation:${name}|${technical}" in APP_JS
+    assert "dedupeFitmentVehicleVariants(result.variants || [])" in APP_JS
+    assert (
+        "state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(\n                DEMO_VEHICLE_VARIANTS"
+        in APP_JS
+    )
+
+
+def test_vehicle_summary_exposes_two_independent_edit_targets() -> None:
+    vehicle_summary = INDEX_HTML.split("data-fitment-vehicle-summary", 1)[1].split(
+        "data-fitment-vehicle-editor", 1
+    )[0]
+    modification_summary = INDEX_HTML.split("data-fitment-modification-summary", 1)[1].split(
+        "data-fitment-vehicle-variant-workspace", 1
+    )[0]
+    assert "Основные данные" in vehicle_summary
+    assert "Изменить автомобиль" in vehicle_summary
+    assert "Комплектация" in modification_summary
+    assert "data-fitment-modification-toggle" in modification_summary
+    assert "modificationToggle.textContent = modificationLookupOpen" in APP_JS
+    assert '"Изменить комплектацию"' in APP_JS
+    assert '"Скрыть"' in APP_JS
+    assert (
+        "!vehicleEditing"
+        in APP_JS.split("const modificationLookupOpen", 1)[1].split("const selectedVariant", 1)[0]
+    )
+    assert "modificationToggle.hidden = vehicleEditing;" in APP_JS
+    edit_flow = APP_JS.split('const fitmentEdit = event.target.closest("[data-fitment-edit]")', 1)[
+        1
+    ].split("const modificationToggle = event.target.closest", 1)[0]
+    assert "state.fitmentModificationPickerOpen = false;" in edit_flow
+
+
 def test_synthetic_demo_ids_never_use_the_real_fitment_jobs_api() -> None:
     assert 'const GUEST_FITMENT_DEMO_JOB_ID = "guest-demo-zeekr";' in APP_JS
     assert '"guest-demo-prius"' in APP_JS

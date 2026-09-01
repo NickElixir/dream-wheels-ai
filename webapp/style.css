@@ -2393,6 +2393,21 @@ h2 {
 .fitment-workspace-summary span,
 .fitment-workspace-summary small { color: var(--text-muted); font-size: 13px; }
 .fitment-workspace-summary .fitment-summary-copy { width: 100%; }
+.fitment-summary-label {
+    color: var(--text-subtle) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+.fitment-modification-summary {
+    border-color: rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.025);
+}
+.fitment-modification-summary .fitment-modification-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-top: 0;
+}
 .fitment-modification-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;

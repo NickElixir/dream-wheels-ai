@@ -215,17 +215,42 @@ def test_incompatible_keeps_backend_blocking_evidence_when_secondary_fields_are_
     assert '"incompatible", "unknown"' not in result
 
 
-def test_vehicle_presentation_hides_opaque_catalogue_generation_ids() -> None:
+def test_vehicle_editor_keeps_base_data_separate_from_catalogue_modification() -> None:
     assert "function fitmentPresentationText(value)" in APP_JS
     assert "/^[a-f0-9]{8,}$/i.test(text)" in APP_JS
     assert "fitmentPresentationText(vehicle?.generation)" in APP_JS
-    assert 'input.dataset.fitmentInput === "vehicle.generation"' in APP_JS
     assert "variant?.body || variant?.body_type" in APP_JS
     variant_mapper = APP_JS.split("function fitmentVariantTechnicalSeries", 1)[1].split(
         "function demoPcdDisplay", 1
     )[0]
     assert "fitmentPresentationText(variant?.generation)" in variant_mapper
     assert ".map(fitmentPresentationText)" in variant_mapper
+    assert "function fitmentMarketLabel(value)" in APP_JS
+    assert 'cn: "Китай"' in APP_JS
+    editor = INDEX_HTML.split("data-fitment-vehicle-editor", 1)[1].split(
+        "data-fitment-modification-summary", 1
+    )[0]
+    for field in ("make", "model", "year", "market"):
+        assert f'data-fitment-input="vehicle.{field}"' in editor
+    for field in ("body", "generation", "modification"):
+        assert f'data-fitment-input="vehicle.{field}"' not in editor
+    assert 'class="section-label fitment-summary-label">Основные данные' in INDEX_HTML
+    assert 'data-fitment-edit="vehicle">Изменить автомобиль' in INDEX_HTML
+    assert "data-fitment-modification-summary" in INDEX_HTML
+    assert "Изменить данные</button>" not in INDEX_HTML
+
+
+def test_basic_vehicle_payload_does_not_reserialize_catalogue_variant_fields() -> None:
+    payload = APP_JS.split("function fitmentPayload(", 1)[1].split(
+        "function cloneDemoFitmentOverview", 1
+    )[0]
+    vehicle_payload = payload.split("payload.vehicle =", 1)[1]
+    assert "make:" in vehicle_payload
+    assert "model:" in vehicle_payload
+    assert "year:" in vehicle_payload
+    assert "market:" in vehicle_payload
+    for field in ("body", "generation", "modification"):
+        assert f"{field}:" not in vehicle_payload
 
 
 def test_result_demo_fixtures_cover_real_missing_evidence_and_conditional_mapping() -> None:
@@ -283,7 +308,7 @@ def test_guest_demo_pair_uses_distinct_local_assets() -> None:
     assert 'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";' in APP_JS
     assert "rim_original: GUEST_DEMO_RIM_ASSET_URL" in APP_JS
     assert "result: GUEST_DEMO_RESULT_ASSET_URL" in APP_JS
-    assert 'model: "SUV"' in APP_JS
+    assert 'model: "007"' in APP_JS
     assert 'model: "10-Spoke"' in APP_JS
     for filename in [
         "demo-vehicle-zeekr.jpg",

@@ -348,6 +348,27 @@ when the server action permits it, and is a secondary outlined action at the
 bottom of the current Result. The Render island remains an independent DOM
 sibling outside the Fitment Result island.
 
+## Approved Vehicle UI clarification amendment — 2026-09-01
+
+The Vehicle workspace keeps base vehicle identity and catalogue modification
+as two independent presentation groups. `Основные данные` contains only the
+make, model, year and market summary and uses the explicit `Изменить
+автомобиль` action. `Комплектация` contains the server-selected catalogue
+variant and uses the explicit `Изменить комплектацию` action. Generic
+`Изменить` and `Изменить данные` labels are not used for these controls.
+
+The basic Vehicle editor exposes only make, model, year and market. Body,
+generation and modification remain server-owned catalogue context; they are
+not editable base fields and are not reserialized by the basic Vehicle
+payload. Changing base vehicle identity continues to follow the existing
+server-owned invalidation and `next_action` semantics.
+
+The variant list may remove duplicate presentation entries using canonical
+provider identity, with a display-only fallback for legacy entries. This does
+not merge distinct canonical variants, alter variant payloads or decide
+Fitment semantics. The confirmed modification reselection flow, Rim state,
+Render sibling and all backend contracts remain unchanged.
+
 ## Approved Result disclaimer info-card amendment — 2026-08-31 (G2.3.1)
 
 The Result disclaimer is presented after the decision-relevant Result content

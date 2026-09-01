@@ -317,6 +317,37 @@ backend `next_action` contract and Render sibling architecture are unchanged.
 `DOMAIN_SEMANTICS_CHANGED = NO`
 `VERDICT_SEMANTICS_CHANGED = NO`
 
+## Approved Vehicle UI clarification amendment — 2026-09-01
+
+The Vehicle UI clarification is implemented as a fresh frontend slice from
+the current `staging` baseline. It separates the confirmed workspace into
+two independent groups: `Основные данные` with make/model/year/market and
+`Изменить автомобиль`, and `Комплектация` with the selected catalogue variant
+and `Изменить комплектацию`. The basic Vehicle editor no longer exposes body,
+generation or modification controls, and the ordinary Vehicle payload sends
+only the four base fields. Server-owned catalogue context and all Fitment
+semantics remain unchanged.
+
+Vehicle variant candidates are deduplicated in the presentation adapter using
+canonical provider identity, with a safe display-only fallback for legacy
+entries. Distinct canonical variants are preserved and the selected variant
+payload is unchanged. The Render island remains an independent sibling.
+
+This amendment does not change the backend, verdict semantics, `next_action`,
+resolver behaviour or the confirmed modification replacement contract. The
+exact warning, legal and commercial wording remains governed by the
+higher-priority commercial warning authority in
+[`05-commercial-ux-warnings.md`](05-commercial-ux-warnings.md) and any
+authority it references.
+
+`VEHICLE_UI_CLARIFICATION = IMPLEMENTED`
+`PRODUCT_REVIEW_REQUIRED = YES`
+`READY_FOR_STAGING_MERGE = NO`
+`BACKEND_CHANGED = NO`
+`DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
+`NEXT_ACTION_SEMANTICS_CHANGED = NO`
+
 ## Final handoff state
 
 ```text

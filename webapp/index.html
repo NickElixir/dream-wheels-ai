@@ -630,24 +630,13 @@
                                 <h2 data-fitment-workspace-title data-i18n="fitment.vehicleSection">Автомобиль</h2>
                                 <div class="fitment-vehicle-helper" data-fitment-vehicle-helper aria-live="polite" hidden></div>
                             </div>
-                            <div class="fitment-workspace-summary" data-fitment-vehicle-summary hidden>
+                            <div class="fitment-workspace-summary fitment-vehicle-summary" data-fitment-vehicle-summary hidden>
                                 <div class="fitment-summary-copy">
+                                    <span class="section-label fitment-summary-label">Основные данные</span>
                                     <strong data-fitment-summary-vehicle-title>—</strong>
                                     <span data-fitment-summary-vehicle-specs>—</span>
-                                    <div class="fitment-modification-row" data-fitment-modification-row hidden>
-                                        <span class="fitment-modification-label">Комплектация</span>
-                                        <strong data-fitment-modification-name>Не выбрана</strong>
-                                        <button type="button" class="ghost-button compact-button" data-fitment-modification-toggle aria-expanded="false" aria-controls="fitment-modification-options">Выбрать</button>
-                                    </div>
-                                    <div class="fitment-modification-picker" id="fitment-modification-options" data-fitment-modification-picker hidden aria-live="polite">
-                                        <div class="fitment-modification-list" data-fitment-modification-list hidden></div>
-                                        <div class="fitment-modification-feedback" data-fitment-modification-feedback hidden>
-                                            <span data-fitment-modification-feedback-text></span>
-                                            <button type="button" class="ghost-button compact-button" data-fitment-modification-retry hidden>Повторить</button>
-                                        </div>
-                                    </div>
                                 </div>
-                                <button type="button" class="ghost-button compact-button" data-fitment-edit="vehicle">Изменить данные</button>
+                                <button type="button" class="ghost-button compact-button" data-fitment-edit="vehicle">Изменить автомобиль</button>
                             </div>
                             <div class="fitment-form-grid" data-fitment-vehicle-editor>
                                 <label class="fitment-field">
@@ -669,23 +658,27 @@
                                     </select>
                                 </label>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.body">Кузов</span>
-                                    <input type="text" data-fitment-input="vehicle.body" autocomplete="off">
-                                </label>
-                                <label class="fitment-field">
-                                    <span data-i18n="fitment.generation">Поколение</span>
-                                    <input type="text" data-fitment-input="vehicle.generation" autocomplete="off">
-                                </label>
-                                <label class="fitment-field">
-                                    <span data-i18n="fitment.modification">Модификация</span>
-                                    <input type="text" data-fitment-input="vehicle.modification" autocomplete="off">
-                                </label>
-                                <label class="fitment-field">
                                     <span data-i18n="fitment.market">Рынок</span>
                                     <select data-fitment-input="vehicle.market" data-fitment-catalogue="regions">
                                         <option value="russia">Россия+</option>
                                     </select>
                                 </label>
+                            </div>
+                            <div class="fitment-workspace-summary fitment-modification-summary" data-fitment-modification-summary hidden>
+                                <div class="fitment-summary-copy">
+                                    <span class="section-label fitment-summary-label">Комплектация</span>
+                                    <div class="fitment-modification-row" data-fitment-modification-row hidden>
+                                        <strong data-fitment-modification-name>Не выбрана</strong>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-modification-toggle aria-expanded="false" aria-controls="fitment-modification-options">Выбрать</button>
+                                    </div>
+                                    <div class="fitment-modification-picker" id="fitment-modification-options" data-fitment-modification-picker hidden aria-live="polite">
+                                        <div class="fitment-modification-list" data-fitment-modification-list hidden></div>
+                                        <div class="fitment-modification-feedback" data-fitment-modification-feedback hidden>
+                                            <span data-fitment-modification-feedback-text></span>
+                                            <button type="button" class="ghost-button compact-button" data-fitment-modification-retry hidden>Повторить</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="fitment-variant-picker" data-fitment-vehicle-variant-workspace hidden>
                                 <button type="button" class="ghost-button compact-button" data-fitment-variants-load data-i18n="fitment.findVariants">Подобрать версию автомобиля</button>
@@ -693,7 +686,7 @@
                                 <div class="fitment-variant-empty" data-fitment-variant-empty hidden>
                                     <strong>Комплектация не найдена</strong>
                                     <span>В техническом каталоге нет подходящих данных для выбранного автомобиля</span>
-                                    <button type="button" class="ghost-button compact-button" data-fitment-variants-edit>Изменить данные автомобиля</button>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-variants-edit>Изменить автомобиль</button>
                                 </div>
                             </div>
                         </section>
