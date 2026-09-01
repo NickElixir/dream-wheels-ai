@@ -59,7 +59,27 @@ python -m compileall ...    PASS
 pytest -q                   PASS (400 passed, 3 skipped)
 node --test ...             PASS (7 passed)
 git diff --check            PASS
+GitHub Actions PR #140     PASS (оба lint-and-test запуска)
 ```
+
+Итог contract gate:
+
+```text
+GENERIC_GATEWAY_DEEP_ROUTING = PASS
+OAUTH_REDIRECT_FORWARDING = PASS
+REQUEST_COOKIE_FORWARDING = PASS
+SET_COOKIE_FORWARDING = PASS
+MULTIPLE_SET_COOKIE = PASS
+AUTH_QUERY_PRESERVATION = PASS
+AUTH_CACHE_POLICY = PASS
+PROTECTED_ASSET_REGRESSION = PASS
+CI = PASS
+AUTH_GATEWAY_READY = YES
+```
+
+`AUTH_GATEWAY_READY = YES` означает готовность transport contract по локальным
+и CI-проверкам. Это не означает, что OAuth providers или cookie sessions уже
+реализованы.
 
 ## Staging evidence
 
