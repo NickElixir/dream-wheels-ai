@@ -34,6 +34,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0028_fitment_change_event_allowlist.sql` — allow-list для modification lifecycle events Slice 7
 - `0029_wan_provider_task_metadata.sql` — nullable Wan provider task identifier для render evidence
 - `0030_results_bucket_20m.sql` — увеличивает per-bucket limit `results` до 20 MiB для Wan output
+- `0031_auth_identities.sql` — canonical external identities, Telegram backfill и nullable legacy Telegram ID
 
 ## Стратегия применения
 
@@ -64,6 +65,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед выкладкой vehicle-variant lookup применить `0028_fitment_change_event_allowlist.sql`: API пишет `modification_suggested` и связанные revision-bound события в append-only history.
 - Перед выкладкой Wan runtime integration применить `0029_wan_provider_task_metadata.sql`: worker сохраняет безопасный Alibaba task identifier в `jobs.provider_task_id`.
 - Перед применением `0030_results_bucket_20m.sql` проверить в Supabase Storage Settings, что global file-size limit не ниже 20 MiB. На текущем rollout результат не перекодируется; будущая WebP/JPEG-нормализация остаётся отдельной задачей оптимизации.
+- Перед generic auth rollout применить `0031_auth_identities.sql`: она сохраняет `users.id`, backfill-ит Telegram identities, разрешает `users.telegram_user_id IS NULL` для будущих provider-native users и оставляет `user_identities` server-only через RLS без public policies.
 - `0023` не создаёт публичных RLS-политик: `user_credit_accounts` доступна только серверному database/service-role пути, а не Mini App через PostgREST.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
