@@ -39,7 +39,8 @@ def test_region_selection_starts_provider_make_cascade() -> None:
 
 
 def test_modification_outcomes_keep_multiple_choice_explicit() -> None:
-    assert 'result.outcome === "multiple" ? (result.variants || []) : []' in APP_JS
+    assert 'result.outcome === "multiple"' in APP_JS
+    assert "dedupeFitmentVehicleVariants(result.variants || [])" in APP_JS
     assert "Комплектация выбрана автоматически." in APP_JS
     assert "В техническом каталоге нет подходящих данных для выбранного автомобиля" in APP_JS
     assert "response.status === 409" in APP_JS
