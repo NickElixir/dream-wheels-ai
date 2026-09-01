@@ -377,3 +377,36 @@ STANDARD_FITMENT_V2_REFERENCE_STATUS = APPROVED
 STANDARD_FITMENT_UI_V2 = FROZEN
 UI_V2_FROZEN = YES
 ```
+
+## Approved corrective slice — 2026-09-01
+
+The confirmed Vehicle modification can be changed through one inline
+reselection control. The current authoritative modification is shown in the
+Vehicle summary; `Изменить` opens a read-only candidate list and marks the
+current candidate as selected. Opening and closing the list never changes
+persisted state, revisions, currentness or `next_action`.
+
+Selecting a different candidate is the explicit replacement action. The
+backend performs a confirmed-to-confirmed atomic replacement using canonical
+provider identity and revision/current-selection preconditions. A same-value
+selection closes the list without a meaningful mutation. The Vehicle section
+remains active after a successful replacement; the base Vehicle fields, Rim
+data and Render state are preserved, while Check currentness is determined by
+the existing backend snapshot identity. There is no additional confirmed
+reselection confirmation or cancel action. The initial suggested-variant flow
+and its existing confirmation semantics remain unchanged.
+
+Synthetic guest/demo identifiers are local presentation context and must not
+be sent to real `/jobs/{job_id}/fitment` routes. Fitment route lookup validates
+the path identifier before a database UUID cast and returns the documented
+controlled `422 invalid_job_id` response for malformed IDs.
+
+This slice changes presentation and safe modification transport only. It does
+not change verdict semantics, Fitment domain semantics, Rim semantics,
+Rendering semantics or the backend `next_action` contract.
+
+Warning, legal and commercial copy may be repositioned by the Result layout,
+but its exact wording remains governed by the higher-priority commercial
+warning authority in [`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
+and any authority it references. This specification must not freeze a
+conflicting duplicate disclaimer.

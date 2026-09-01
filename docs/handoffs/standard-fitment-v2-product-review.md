@@ -262,6 +262,36 @@ authority it references. This handoff does not define replacement legal copy.
 `READY_FOR_STAGING_MERGE = NO`
 `DOMAIN_SEMANTICS_CHANGED = NO`
 `VERDICT_SEMANTICS_CHANGED = NO`
+
+## Approved corrective slice — 2026-09-01
+
+This slice addresses the final confirmed-modification interaction and the
+guest/demo UUID-cast defect. Confirmed Vehicle now exposes one inline
+`Изменить` list: opening is read-only, the current candidate is preselected,
+the current candidate closes without mutation, and a different candidate is
+replaced through an atomic canonical-identity endpoint. The existing initial
+suggested-variant flow remains separate. Vehicle base fields, Rim and Render
+context remain unchanged; currentness and `next_action` remain backend-owned.
+
+The demo fixture now accepts the current Zeekr sentinel and the legacy
+`guest-demo-prius` alias locally, so synthetic IDs cannot reach real Fitment
+Jobs routes. The shared Fitment row lookup rejects malformed IDs with a
+controlled `422 invalid_job_id` before any PostgreSQL UUID cast.
+
+Backend/API coverage includes read-only reselect, no-match/provider-failure
+preservation, atomic A→B replacement, A→A idempotency, stale revision/current
+selection conflicts, stale target rejection and malformed-ID protection.
+
+Warning, legal and commercial copy remains governed by the higher-priority
+commercial warning authority; this handoff records only the layout/placement
+and does not redefine frozen wording.
+
+`G2_FINAL_CORRECTIVE_SLICE = IMPLEMENTED`
+`READY_FOR_PRODUCT_REVIEW = YES`
+`READY_FOR_STAGING_MERGE = NO`
+`BACKEND_CHANGED = YES (fitment API defense and replacement endpoints)`
+`DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
 `NEXT_ACTION_SEMANTICS_CHANGED = NO`
 
 ## Approved Result disclaimer info-card amendment — 2026-08-31 (G2.3.1)

@@ -411,10 +411,17 @@ class RimSourceResolveResponse(BaseModel):
 
 
 class VehicleVariantResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    make_slug: str
+    model_slug: str
+    region: str
     generation: str
     modification: str
     body: str = ""
     market: str
+    generation_slug: str
+    modification_slug: str
 
 
 class VehicleVariantsResponse(BaseModel):
@@ -423,6 +430,7 @@ class VehicleVariantsResponse(BaseModel):
     variants: list[VehicleVariantResponse] = Field(default_factory=list)
     total_count: int
     has_more: bool = False
+    current_selection: FitmentSelectedModificationResponse | None = None
 
 
 class VehicleCatalogueOptionResponse(BaseModel):
@@ -442,6 +450,24 @@ class VehicleVariantApplyRequest(BaseModel):
     modification: str
     body: str = ""
     market: str
+
+
+class VehicleVariantSelectionRequest(BaseModel):
+    """Canonical provider identity used by confirmed modification replacement."""
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    make_slug: str = Field(min_length=1)
+    model_slug: str = Field(min_length=1)
+    region: str = Field(min_length=1)
+    generation_slug: str = Field(min_length=1)
+    modification_slug: str = Field(min_length=1)
+
+
+class VehicleVariantReplaceRequest(BaseModel):
+    expected_vehicle_revision: int = Field(ge=1)
+    expected_current_selection: VehicleVariantSelectionRequest
+    new_selection: VehicleVariantSelectionRequest
 
 
 class FeedbackAuthRequest(BaseModel):
@@ -1561,6 +1587,32 @@ def _canonical_selected_modification(variant: dict[str, str]) -> dict[str, str] 
     return {key: str(variant[key]) for key in _SELECTED_MODIFICATION_KEYS}
 
 
+_VARIANT_SELECTION_KEYS = (
+    "make_slug",
+    "model_slug",
+    "region",
+    "generation_slug",
+    "modification_slug",
+)
+
+
+def _variant_selection_matches(left, right) -> bool:
+    """Compare only canonical provider identity, never display labels."""
+    return all(
+        str((left.get(key) if isinstance(left, dict) else getattr(left, key, "")) or "")
+        == str((right.get(key) if isinstance(right, dict) else getattr(right, key, "")) or "")
+        for key in _VARIANT_SELECTION_KEYS
+    )
+
+
+def _validate_fitment_job_id(job_id: str) -> str:
+    """Reject synthetic/malformed IDs before PostgreSQL's uuid cast runs."""
+    try:
+        return str(uuid.UUID(str(job_id)))
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(status_code=422, detail={"code": "invalid_job_id"}) from exc
+
+
 def _provider_readiness_from_row(row) -> FitmentProviderReadinessResponse:
     modification_state, selection_source, _, _ = _modification_from_row(row)
     if modification_state != "confirmed" or selection_source not in {
@@ -1674,7 +1726,10 @@ async def _fetch_fitment_job_row(
     *,
     job_id: str,
     user_id: int,
+    for_update: bool = False,
 ):
+    job_id = _validate_fitment_job_id(job_id)
+    lock_clause = " FOR UPDATE OF vehicle" if for_update else ""
     row = await conn.fetchrow(
         f"""
         SELECT
@@ -1748,6 +1803,7 @@ async def _fetch_fitment_job_row(
           ON rear_rim.id = rim_setup.rear_rim_spec_id
         WHERE jobs.id = $1::uuid
           AND jobs.user_id = $2
+        {lock_clause}
         """,
         job_id,
         user_id,
@@ -1779,6 +1835,7 @@ async def _fetch_fitment_history_rows(
     job_id: str,
     user_id: int,
 ):
+    job_id = _validate_fitment_job_id(job_id)
     return await conn.fetch(
         """
         SELECT
@@ -3231,6 +3288,173 @@ async def find_fitment_vehicle_variants(
         variants=[VehicleVariantResponse(**variant) for variant in variants],
         total_count=count,
     )
+
+
+@router.post("/{job_id}/fitment/vehicle-variants/reselect", response_model=VehicleVariantsResponse)
+async def reselect_fitment_vehicle_variants(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Read candidates for a confirmed modification without changing state."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+    if _vehicle_state_from_row(row) != "confirmed_ready":
+        raise HTTPException(status_code=409, detail={"code": "vehicle_not_ready"})
+    modification_state, _, selected_modification, _ = _modification_from_row(row)
+    if modification_state != "confirmed" or selected_modification is None:
+        raise HTTPException(status_code=409, detail={"code": "modification_selection_required"})
+
+    try:
+        variants = await _find_current_vehicle_variants(row)
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+
+    return VehicleVariantsResponse(
+        outcome="no_match" if not variants else "single" if len(variants) == 1 else "multiple",
+        vehicle_revision=int(row["vehicle_revision"]),
+        variants=[VehicleVariantResponse(**variant) for variant in variants],
+        total_count=len(variants),
+        current_selection=selected_modification,
+    )
+
+
+@router.post("/{job_id}/fitment/vehicle-variants/replace", response_model=FitmentOverviewResponse)
+async def replace_fitment_vehicle_variant(
+    job_id: str,
+    request: VehicleVariantReplaceRequest,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Atomically replace one confirmed modification with another current candidate."""
+    auth = _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment overview not found")
+    if not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+    if int(row["vehicle_revision"]) != request.expected_vehicle_revision:
+        raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    modification_state, _, selected_modification, _ = _modification_from_row(row)
+    if modification_state != "confirmed" or selected_modification is None:
+        raise HTTPException(status_code=409, detail={"code": "modification_selection_required"})
+    if not _variant_selection_matches(selected_modification, request.expected_current_selection):
+        raise HTTPException(status_code=409, detail={"code": "modification_selection_conflict"})
+    if _variant_selection_matches(selected_modification, request.new_selection):
+        return _fitment_overview_from_row(row)
+
+    try:
+        variants = await _find_current_vehicle_variants(row)
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    target = next(
+        (
+            variant
+            for variant in variants
+            if _variant_selection_matches(variant, request.new_selection)
+        ),
+        None,
+    )
+    canonical_target = _canonical_selected_modification(target) if target else None
+    if canonical_target is None:
+        raise HTTPException(status_code=422, detail={"code": "candidate_not_current"})
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            current = await _fetch_fitment_job_row(
+                conn,
+                job_id=job_id,
+                user_id=user_id,
+                for_update=True,
+            )
+            if not current:
+                raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+            if int(current["vehicle_revision"]) != request.expected_vehicle_revision:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+            current_state, _, current_selection, _ = _modification_from_row(current)
+            if current_state != "confirmed" or current_selection is None:
+                raise HTTPException(
+                    status_code=409, detail={"code": "modification_selection_conflict"}
+                )
+            if not _variant_selection_matches(
+                current_selection, request.expected_current_selection
+            ):
+                raise HTTPException(
+                    status_code=409, detail={"code": "modification_selection_conflict"}
+                )
+            if _variant_selection_matches(current_selection, request.new_selection):
+                return _fitment_overview_from_row(current)
+
+            mapping = dict(current["vehicle_provider_mappings"] or {})
+            before_mapping = mapping.get("wheel_size")
+            target_mapping: dict[str, object] = {
+                **_base_wheel_size_mapping(current, variants),
+                **canonical_target,
+                "modification_state": "confirmed",
+                "selection_source": "user",
+                "modification_vehicle_revision": request.expected_vehicle_revision,
+                "selected_modification": canonical_target,
+            }
+            mapping["wheel_size"] = target_mapping
+            result = await conn.execute(
+                "UPDATE vehicle_identities SET generation=$1, modification=$2, body=$3, provider_mappings=$4::jsonb, provider_mapping_revision=provider_mapping_revision+1, updated_at=CURRENT_TIMESTAMP WHERE id=$5::uuid AND owner_user_id=$6 AND revision=$7",
+                canonical_target["generation"],
+                canonical_target["modification"],
+                canonical_target["body"] or None,
+                json.dumps(mapping),
+                current["vehicle_identity_id"],
+                user_id,
+                request.expected_vehicle_revision,
+            )
+            if _parse_update_count(result) != 1:
+                raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+            await _insert_fitment_change_event(
+                conn,
+                job_id=job_id,
+                vehicle_identity_id=current["vehicle_identity_id"],
+                rim_spec_id=current["front_rim_spec_id"],
+                event_type="modification_user_confirmed",
+                actor_type="user",
+                actor_user_id=user_id,
+                vehicle_revision_before=request.expected_vehicle_revision,
+                vehicle_revision_after=request.expected_vehicle_revision,
+                rim_revision_before=current["rim_revision"],
+                rim_revision_after=current["rim_revision"],
+                changes={
+                    "vehicle.modification": {
+                        "before": before_mapping,
+                        "after": target_mapping,
+                        "selection_source": "user",
+                    }
+                },
+            )
+            updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+    assert updated is not None
+    return _fitment_overview_from_row(updated)
 
 
 @router.post("/{job_id}/fitment/vehicle-variants/apply", response_model=FitmentOverviewResponse)
