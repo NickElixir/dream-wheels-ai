@@ -180,9 +180,9 @@ GENERIC_USER_CREATION          = PASS
 IDENTITY_UNIQUENESS            = PASS (DB constraint; live staging check pending)
 NO_BUSINESS_DATA_MIGRATION     = PASS
 FULL_REGRESSION_SUITE          = PASS
-CI                             = PENDING (PR pipeline)
+CI                             = PASS (PR #142 lint-and-test)
 AUTH_02_STAGING_MIGRATION      = PENDING (manual Supabase SQL Editor rollout)
-AUTH_IDENTITY_MODEL_READY      = YES (repository foundation; CI/staging rollout pending)
+AUTH_IDENTITY_MODEL_READY      = YES (repository foundation; staging rollout pending)
 ```
 
 ## Deferred
