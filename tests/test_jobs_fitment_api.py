@@ -522,7 +522,17 @@ def test_fitment_vehicle_variants_are_catalogue_server_side(monkeypatch):
     assert response.json()["vehicle_revision"] == 1
     assert response.json()["total_count"] == 1
     assert response.json()["variants"] == [
-        {"generation": "G20", "modification": "330i", "body": "Sedan", "market": "eudm"}
+        {
+            "make_slug": "bmw",
+            "model_slug": "3-series",
+            "region": "eu",
+            "generation": "G20",
+            "modification": "330i",
+            "body": "Sedan",
+            "market": "eudm",
+            "generation_slug": "g20",
+            "modification_slug": "330i",
+        }
     ]
 
 
@@ -537,6 +547,33 @@ def test_fitment_overview_returns_404_for_non_owner(monkeypatch):
     response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
 
     assert response.status_code == 404
+
+
+def test_fitment_routes_reject_malformed_job_id_before_database_uuid_cast(monkeypatch):
+    class FetchGuardConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            raise AssertionError("malformed job id reached the database")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FetchGuardConn()))
+
+    overview = client.get("/jobs/not-a-uuid/fitment")
+    assert overview.status_code == 422
+    assert overview.json() == {"detail": {"code": "invalid_job_id"}}
+
+    saved = client.patch(
+        "/jobs/not-a-uuid/fitment",
+        json={
+            "vehicle": {"make": "BMW", "model": "3 Series", "year": 2020, "market": "EU"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert saved.status_code == 422
+    assert saved.json() == {"detail": {"code": "invalid_job_id"}}
 
 
 def test_fitment_save_updates_canonical_entities_only(monkeypatch):
@@ -1771,6 +1808,218 @@ def test_explicit_modification_apply_rejects_stale_candidate_revision(monkeypatc
     assert response.json() == {"detail": {"code": "vehicle_revision_conflict"}}
     assert conn.vehicle_updates == 0
     assert jobs_api._modification_from_row(changed_row)[0] == "none"
+
+
+def _confirmed_catalogued_row(selected: dict[str, str], **overrides) -> dict:
+    mapping = {
+        "make_slug": selected["make_slug"],
+        "model_slug": selected["model_slug"],
+        "region": selected["region"],
+        "generation_slug": selected["generation_slug"],
+        "modification_slug": selected["modification_slug"],
+        "modification_state": "confirmed",
+        "selection_source": "user",
+        "modification_vehicle_revision": 10,
+        "selected_modification": selected,
+    }
+    row = _catalogued_vehicle_row(
+        vehicle_generation=selected["generation"],
+        vehicle_modification=selected["modification"],
+        vehicle_body=selected["body"],
+        vehicle_provider_mappings={"wheel_size": mapping},
+    )
+    row.update(overrides)
+    return row
+
+
+def test_confirmed_reselection_lookup_is_read_only_and_preserves_current(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    replacement = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current, replacement]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/reselect"
+
+    response = client.post(path)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["outcome"] == "multiple"
+    assert body["current_selection"]["modification_slug"] == "v6"
+    assert [item["modification_slug"] for item in body["variants"]] == ["v6", "v8"]
+    assert conn.vehicle_updates == 0
+    assert conn.events == []
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
+
+
+def test_confirmed_reselection_lookup_no_match_and_provider_failure_preserve_current(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+    results = [[], ProviderError("wheel-size HTTP 503 on /years")]
+
+    async def lookup(_self, **_kwargs):
+        result = results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/reselect"
+
+    no_match = client.post(path)
+    failed = client.post(path)
+
+    assert no_match.status_code == 200
+    assert no_match.json()["outcome"] == "no_match"
+    assert failed.status_code == 503
+    assert failed.json() == {"detail": {"code": "provider_unavailable"}}
+    assert conn.vehicle_updates == 0
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
+
+
+def test_confirmed_replacement_is_atomic_and_preserves_vehicle_revision_and_rim(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    replacement = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current, replacement]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+    response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v6",
+            },
+            "new_selection": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v8",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["modification_state"] == "confirmed"
+    assert body["selection_source"] == "user"
+    assert body["selected_modification"]["modification_slug"] == "v8"
+    assert body["vehicle_revision"] == 10
+    assert body["rim_setup_id"] == "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    assert body["rim_revision"] == 1
+    assert conn.vehicle_updates == 1
+    assert len(conn.events) == 1
+    assert conn.row["vehicle_modification"] == "4.0 V8"
+
+
+def test_confirmed_replacement_same_selection_is_idempotent_and_conflicts_are_safe(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def should_not_lookup(_self, **_kwargs):
+        raise AssertionError("same selection must not revalidate or write")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(
+        jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", should_not_lookup
+    )
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+    same = {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+        "generation_slug": "e3",
+        "modification_slug": "v6",
+    }
+    same_response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": same,
+            "new_selection": same,
+        },
+    )
+    stale_revision = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 9,
+            "expected_current_selection": same,
+            "new_selection": same,
+        },
+    )
+    stale_selection = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": {**same, "modification_slug": "v8"},
+            "new_selection": {**same, "modification_slug": "v8"},
+        },
+    )
+
+    assert same_response.status_code == 200
+    assert same_response.json()["selected_modification"]["modification_slug"] == "v6"
+    assert stale_revision.status_code == 409
+    assert stale_revision.json() == {"detail": {"code": "vehicle_revision_conflict"}}
+    assert stale_selection.status_code == 409
+    assert stale_selection.json() == {"detail": {"code": "modification_selection_conflict"}}
+    assert conn.vehicle_updates == 0
+
+
+def test_confirmed_replacement_rejects_stale_target_without_mutating(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    stale_target = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+
+    def selection(variant):
+        return {
+            "make_slug": variant["make_slug"],
+            "model_slug": variant["model_slug"],
+            "region": variant["region"],
+            "generation_slug": variant["generation_slug"],
+            "modification_slug": variant["modification_slug"],
+        }
+
+    response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": selection(current),
+            "new_selection": selection(stale_target),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": {"code": "candidate_not_current"}}
+    assert conn.vehicle_updates == 0
+    assert conn.events == []
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
 
 
 def test_each_core_vehicle_change_invalidates_current_modification(monkeypatch):

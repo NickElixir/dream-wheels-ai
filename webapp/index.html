@@ -631,7 +631,22 @@
                                 <div class="fitment-vehicle-helper" data-fitment-vehicle-helper aria-live="polite" hidden></div>
                             </div>
                             <div class="fitment-workspace-summary" data-fitment-vehicle-summary hidden>
-                                <div><strong data-fitment-summary-vehicle-title>—</strong><span data-fitment-summary-vehicle-specs>—</span><span data-fitment-summary-vehicle-variant hidden></span></div>
+                                <div class="fitment-summary-copy">
+                                    <strong data-fitment-summary-vehicle-title>—</strong>
+                                    <span data-fitment-summary-vehicle-specs>—</span>
+                                    <div class="fitment-modification-row" data-fitment-modification-row hidden>
+                                        <span class="fitment-modification-label">Комплектация</span>
+                                        <strong data-fitment-modification-name>Не выбрана</strong>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-modification-toggle aria-expanded="false" aria-controls="fitment-modification-options">Выбрать</button>
+                                    </div>
+                                    <div class="fitment-modification-picker" id="fitment-modification-options" data-fitment-modification-picker hidden aria-live="polite">
+                                        <div class="fitment-modification-list" data-fitment-modification-list hidden></div>
+                                        <div class="fitment-modification-feedback" data-fitment-modification-feedback hidden>
+                                            <span data-fitment-modification-feedback-text></span>
+                                            <button type="button" class="ghost-button compact-button" data-fitment-modification-retry hidden>Повторить</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <button type="button" class="ghost-button compact-button" data-fitment-edit="vehicle">Изменить данные</button>
                             </div>
                             <div class="fitment-form-grid" data-fitment-vehicle-editor>

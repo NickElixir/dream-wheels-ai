@@ -379,6 +379,35 @@ without those fields remain readable as legacy/unknown source evidence.
 - Persist provider/rules versions, input snapshot hash and idempotency key.
 - Log operational errors separately from user-visible verdict reasons.
 
+## Confirmed modification reselection
+
+`POST /jobs/{job_id}/fitment/vehicle-variants/reselect` is an authenticated,
+owner-scoped, read-only lookup for a Vehicle that is ready and already has a
+current confirmed Wheel-Size modification. It returns the normal `outcome`,
+`vehicle_revision`, `variants`, `total_count` and `has_more` fields plus
+`current_selection`. It never persists a suggested outcome, clears the
+current selection, changes a revision or invalidates a Check. Each variant
+contains canonical `make_slug`, `model_slug`, `region`, `generation_slug` and
+`modification_slug` identity alongside user-facing display fields.
+
+`POST /jobs/{job_id}/fitment/vehicle-variants/replace` performs an atomic
+confirmed-to-confirmed replacement. The request contains
+`expected_vehicle_revision`, `expected_current_selection` and `new_selection`,
+where both selections use canonical provider identity only. The server
+revalidates the target against the current provider result and derives display
+values from that result; stale targets return `422 candidate_not_current`.
+Revision or current-selection races return structured `409` conflicts. A
+same-value replacement is idempotent and does not write, invalidate currentness
+or change revisions. A successful replacement keeps the Vehicle revision,
+RimSetup/RimSpec and Render context, records the existing
+`modification_user_confirmed` event type, and lets existing Check snapshot
+currentness make a previous result non-current.
+
+Malformed fitment job identifiers are rejected before the SQL `uuid` cast with
+`422 {"detail":{"code":"invalid_job_id"}}`. Synthetic guest/demo IDs are
+never valid real Job identifiers and must be handled by the local demo fixture
+instead of authenticated Fitment routes.
+
 ## Open items deliberately deferred
 
 - pricing and debit semantics;

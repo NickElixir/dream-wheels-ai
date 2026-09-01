@@ -199,8 +199,8 @@ def test_g2_1_variant_copy_and_card_hierarchy_are_canonical() -> None:
         )[0]
     )
     assert "button.append(technical, primary);" in APP_JS
-    assert "data-fitment-summary-vehicle-variant" in INDEX_HTML
-    assert "Комплектация / ${selectedVariantName}" in APP_JS
+    assert "data-fitment-modification-row" in INDEX_HTML
+    assert "data-fitment-modification-toggle" in INDEX_HTML
 
 
 def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> None:

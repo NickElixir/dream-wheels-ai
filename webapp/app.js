@@ -17,7 +17,7 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
-const FITMENT_DEMO_OVERVIEW_VERSION = 4;
+const FITMENT_DEMO_OVERVIEW_VERSION = 5;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
 const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
 const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
@@ -59,7 +59,8 @@ const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;
 const DRAFT_DB_NAME = "dream-wheels-upload-draft";
 const DRAFT_STORE_NAME = "files";
 const HISTORY_ASSET_VIEWS = ["result", "original"];
-const GUEST_FITMENT_DEMO_JOB_ID = "guest-demo-prius";
+const GUEST_FITMENT_DEMO_JOB_ID = "guest-demo-zeekr";
+const GUEST_FITMENT_DEMO_JOB_IDS = new Set([GUEST_FITMENT_DEMO_JOB_ID, "guest-demo-prius"]);
 if (new URLSearchParams(window.location.search).get("demoReset") === "1") {
     sessionStorage.removeItem(FITMENT_PREVIEW_STORAGE_KEY);
 }
@@ -73,6 +74,11 @@ const FITMENT_VEHICLE_STATES = new Set(["empty", "unconfirmed", "confirmed_incom
 const FITMENT_RIM_SETUP_STATES = new Set(["empty", "partial", "complete_unconfirmed", "confirmed_ready"]);
 const DEMO_VEHICLE_VARIANTS = [
     {
+        make_slug: "zeekr",
+        model_slug: "007",
+        region: "chdm",
+        generation_slug: "ev",
+        modification_slug: "electric",
         market: "CN",
         generation: "EV SUV",
         modification: "Electric",
@@ -81,6 +87,11 @@ const DEMO_VEHICLE_VARIANTS = [
         provider: "demo_fixture",
     },
     {
+        make_slug: "zeekr",
+        model_slug: "007",
+        region: "chdm",
+        generation_slug: "ev",
+        modification_slug: "electric-performance",
         market: "CN",
         generation: "EV SUV",
         modification: "Electric Performance",
@@ -89,6 +100,11 @@ const DEMO_VEHICLE_VARIANTS = [
         provider: "demo_fixture",
     },
     {
+        make_slug: "zeekr",
+        model_slug: "007",
+        region: "chdm",
+        generation_slug: "ev",
+        modification_slug: "dual-motor-electric",
         market: "CN",
         generation: "EV SUV",
         modification: "Dual Motor Electric",
@@ -1117,6 +1133,9 @@ const state = {
     fitmentVehicleVariantApplying: false,
     fitmentSelectedVehicleVariantIndex: null,
     fitmentLookup: { status: "idle", outcome: "" },
+    fitmentModificationPickerOpen: false,
+    fitmentModificationLookupMode: "initial",
+    fitmentModificationRetryVariant: null,
     fitmentCheck: null,
     fitmentChecking: false,
     fitmentAuthRequired: false,
@@ -1152,11 +1171,11 @@ function isGuestRenderJob(job) {
 }
 
 function isDemoFitmentJobId(jobId) {
-    return jobId === GUEST_FITMENT_DEMO_JOB_ID;
+    return GUEST_FITMENT_DEMO_JOB_IDS.has(jobId);
 }
 
 function shouldUseDemoFitment(jobId = state.fitmentJobId) {
-    return isDemoFitmentJobId(jobId) && (state.fitmentPreviewForced || !hasFrontendAuth());
+    return isDemoFitmentJobId(jobId);
 }
 
 function fitmentPreviewProvenance({ source, confidence, isUserConfirmed = false }) {
@@ -1180,6 +1199,34 @@ function fitmentSelectedVehicleVariantName(overview = state.fitmentOverview) {
     return normalizeFitmentText(selected?.modification || selected?.name || overview?.vehicle?.modification);
 }
 
+const FITMENT_VARIANT_SELECTION_KEYS = [
+    "make_slug",
+    "model_slug",
+    "region",
+    "generation_slug",
+    "modification_slug",
+];
+
+function fitmentVariantSelection(variant) {
+    if (!variant) return null;
+    const selection = Object.fromEntries(
+        FITMENT_VARIANT_SELECTION_KEYS.map((key) => [key, normalizeFitmentText(variant[key])])
+    );
+    return Object.values(selection).every(Boolean) ? selection : null;
+}
+
+function fitmentVariantsMatch(left, right) {
+    const leftSelection = fitmentVariantSelection(left);
+    const rightSelection = fitmentVariantSelection(right);
+    return Boolean(leftSelection && rightSelection && FITMENT_VARIANT_SELECTION_KEYS.every(
+        (key) => leftSelection[key] === rightSelection[key]
+    ));
+}
+
+function fitmentVariantPayload(variant) {
+    return fitmentVariantSelection(variant);
+}
+
 function fitmentVariantDisplayName(variant, index = 0) {
     return normalizeFitmentText(variant?.modification || variant?.name || variant?.trim)
         || (locale === "ru" ? `Комплектация ${index + 1}` : `Vehicle version ${index + 1}`);
@@ -1195,16 +1242,17 @@ function fitmentPresentationText(value) {
 }
 
 function fitmentVariantTechnicalSeries(variant, name = fitmentVariantDisplayName(variant)) {
+    const marketValue = fitmentPresentationText(variant?.market || variant?.region);
+    const market = FITMENT_REGIONS.find(([code]) => code === marketValue)?.[1] || marketValue;
     const generationOrBody = fitmentPresentationText(variant?.body || variant?.body_type)
         || fitmentPresentationText(variant?.generation);
-    const parts = [
-        variant?.region || variant?.market,
-        generationOrBody,
-        variant?.engine,
-        variant?.years || variant?.year_range,
-    ]
+    const engine = fitmentPresentationText(variant?.engine);
+    const parts = [market, generationOrBody, variant?.years || variant?.year_range]
         .map(fitmentPresentationText)
         .filter(Boolean);
+    if (engine && !name.toLocaleLowerCase().includes(engine.toLocaleLowerCase())) {
+        parts.splice(2, 0, engine);
+    }
     return parts.filter((part) => part.toLocaleLowerCase() !== name.toLocaleLowerCase()).join(" / ");
 }
 
@@ -1370,8 +1418,8 @@ function buildDefaultDemoFitmentOverview() {
 function loadDemoFitmentOverview() {
     try {
         const parsed = JSON.parse(sessionStorage.getItem(FITMENT_PREVIEW_STORAGE_KEY) || "null");
-        if (parsed?.job_id !== GUEST_FITMENT_DEMO_JOB_ID || parsed?.demo_overview_version !== FITMENT_DEMO_OVERVIEW_VERSION) return null;
-        return parsed;
+        if (!isDemoFitmentJobId(parsed?.job_id) || parsed?.demo_overview_version !== FITMENT_DEMO_OVERVIEW_VERSION) return null;
+        return { ...parsed, job_id: GUEST_FITMENT_DEMO_JOB_ID };
     } catch {
         sessionStorage.removeItem(FITMENT_PREVIEW_STORAGE_KEY);
         return null;
@@ -2966,9 +3014,27 @@ function demoServerTransition(action, payload = {}) {
         nextOverview.modification_state = "confirmed";
         nextOverview.selection_source = "user";
         nextOverview.selected_modification = { ...variant, source: "demo_fixture" };
-        nextOverview.modification_vehicle_revision = nextOverview.vehicle_revision + 1;
         nextOverview.vehicle_revision += 1;
+        nextOverview.modification_vehicle_revision = nextOverview.vehicle_revision;
         nextOverview.next_action = { kind: "complete_rim_specs" };
+        return nextOverview;
+    }
+    if (action === "replace_vehicle_variant") {
+        const current = fitmentSelectedVehicleVariant(nextOverview);
+        const variant = payload.variant || current;
+        if (!variant || (current && fitmentVariantsMatch(current, variant))) return nextOverview;
+        markDemoCheckStale(nextOverview);
+        nextOverview.vehicle.modification = variant.modification;
+        nextOverview.vehicle.generation = variant.generation;
+        nextOverview.vehicle_field_states.modification = demoConfirmedField(variant.modification);
+        nextOverview.vehicle_field_states.generation = demoConfirmedField(variant.generation);
+        nextOverview.modification_state = "confirmed";
+        nextOverview.selection_source = "user";
+        nextOverview.selected_modification = { ...variant, source: "demo_fixture" };
+        nextOverview.modification_vehicle_revision = nextOverview.vehicle_revision;
+        nextOverview.next_action = {
+            kind: nextOverview.rim_setup_state === "confirmed_ready" ? "run_standard_check" : "complete_rim_specs",
+        };
         return nextOverview;
     }
     if (action === "save_rim") {
@@ -4142,6 +4208,10 @@ function renderFitment() {
     const overview = state.fitmentOverview;
     const check = fitmentCheckForPresentation();
     const ui = fitmentUiState(overview, check);
+    const vehicleEditing = state.fitmentVehicleEditing
+        || ui.vehicle.state === "empty"
+        || state.fitmentVehicleDirty
+        || ui.nextAction === "complete_vehicle_details";
     const renderCopy = document.querySelector("[data-fitment-render-copy]");
     const renderHelper = document.querySelector("[data-fitment-render-helper]");
     const incompatibleRender = check?.verdict === "incompatible" && check.is_current !== false;
@@ -4209,15 +4279,92 @@ function renderFitment() {
     }
     const summaryVehicleTitle = document.querySelector("[data-fitment-summary-vehicle-title]");
     const summaryVehicleSpecs = document.querySelector("[data-fitment-summary-vehicle-specs]");
-    const summaryVehicleVariant = document.querySelector("[data-fitment-summary-vehicle-variant]");
     if (summaryVehicleTitle) summaryVehicleTitle.textContent = vehicleTitle;
     if (summaryVehicleSpecs) summaryVehicleSpecs.textContent = vehicleSpecs || fitmentEmptyValue();
-    if (summaryVehicleVariant) {
-        const selectedVariantName = ui.vehicle.state === "confirmed_ready"
-            ? fitmentSelectedVehicleVariantName(overview)
-            : "";
-        summaryVehicleVariant.textContent = selectedVariantName ? `Комплектация / ${selectedVariantName}` : "";
-        summaryVehicleVariant.hidden = !selectedVariantName;
+    const modificationRow = document.querySelector("[data-fitment-modification-row]");
+    const modificationName = document.querySelector("[data-fitment-modification-name]");
+    const modificationToggle = document.querySelector("[data-fitment-modification-toggle]");
+    const modificationPicker = document.querySelector("[data-fitment-modification-picker]");
+    const modificationList = document.querySelector("[data-fitment-modification-list]");
+    const modificationFeedback = document.querySelector("[data-fitment-modification-feedback]");
+    const modificationFeedbackText = document.querySelector("[data-fitment-modification-feedback-text]");
+    const modificationRetry = document.querySelector("[data-fitment-modification-retry]");
+    const canShowModificationRow = !vehicleEditing
+        && ["confirmed_incomplete", "confirmed_ready"].includes(ui.vehicle.state);
+    const selectedVariant = fitmentSelectedVehicleVariant(overview);
+    const confirmedModification = overview.modification_state === "confirmed" && Boolean(selectedVariant);
+    const modificationLookupOpen = canShowModificationRow && state.fitmentModificationPickerOpen;
+    if (modificationRow) modificationRow.hidden = !canShowModificationRow;
+    if (modificationName) modificationName.textContent = confirmedModification
+        ? fitmentSelectedVehicleVariantName(overview)
+        : "Не выбрана";
+    if (modificationToggle) {
+        modificationToggle.textContent = confirmedModification ? "Изменить" : "Выбрать";
+        modificationToggle.setAttribute("aria-expanded", String(Boolean(modificationLookupOpen)));
+        modificationToggle.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
+    }
+    if (modificationPicker) modificationPicker.hidden = !modificationLookupOpen;
+    if (modificationList) {
+        modificationList.replaceChildren();
+        const showOptions = modificationLookupOpen && state.fitmentLookup.status === "loaded";
+        modificationList.hidden = !showOptions || !state.fitmentVehicleVariants.length;
+        state.fitmentVehicleVariants.forEach((variant, index) => {
+            const isSelected = confirmedModification
+                ? fitmentVariantsMatch(selectedVariant, variant)
+                : index === state.fitmentSelectedVehicleVariantIndex;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "fitment-modification-option";
+            button.classList.toggle("selected", isSelected);
+            button.dataset.fitmentModificationOption = String(index);
+            button.disabled = state.fitmentVehicleVariantApplying;
+            button.setAttribute("aria-pressed", String(isSelected));
+            const marker = document.createElement("span");
+            marker.className = "fitment-modification-option-marker";
+            marker.textContent = isSelected ? "✓" : "";
+            marker.setAttribute("aria-hidden", "true");
+            const copy = document.createElement("span");
+            copy.className = "fitment-modification-option-copy";
+            const name = document.createElement("strong");
+            name.textContent = fitmentVariantDisplayName(variant, index);
+            const technical = document.createElement("span");
+            technical.textContent = fitmentVariantTechnicalSeries(variant, name.textContent);
+            technical.hidden = !technical.textContent;
+            copy.append(name, technical);
+            button.append(marker, copy);
+            modificationList.append(button);
+        });
+        if (state.fitmentModificationLookupMode === "initial"
+            && state.fitmentSelectedVehicleVariantIndex !== null
+            && state.fitmentVehicleVariants[state.fitmentSelectedVehicleVariantIndex]) {
+            const confirm = document.createElement("button");
+            confirm.type = "button";
+            confirm.className = "primary-button compact-button";
+            confirm.dataset.fitmentConfirmVariant = "true";
+            confirm.disabled = state.fitmentVehicleVariantApplying;
+            confirm.textContent = locale === "ru" ? "Подтвердить комплектацию" : "Confirm vehicle version";
+            modificationList.append(confirm);
+        }
+    }
+    if (modificationFeedback) {
+        const feedbackVisible = modificationLookupOpen
+            && ["loading", "no_match", "failed", "replace_failed"].includes(state.fitmentLookup.status);
+        modificationFeedback.hidden = !feedbackVisible;
+    }
+    if (modificationFeedbackText) {
+        const feedbackCopy = {
+            loading: "Ищем доступные комплектации…",
+            no_match: "Другие комплектации не найдены",
+            failed: "Не удалось загрузить комплектации",
+            replace_failed: "Не удалось изменить комплектацию",
+        };
+        modificationFeedbackText.textContent = feedbackCopy[state.fitmentLookup.status] || "";
+    }
+    if (modificationRetry) {
+        modificationRetry.hidden = !modificationLookupOpen
+            || !["failed", "replace_failed"].includes(state.fitmentLookup.status);
+        modificationRetry.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
+        modificationRetry.textContent = "Повторить";
     }
     const rimSummaryTitle = document.querySelector("[data-fitment-rim-summary-title]");
     const rimSummarySpecs = document.querySelector("[data-fitment-rim-summary-specs]");
@@ -4261,10 +4408,6 @@ function renderFitment() {
     });
     const resultSection = document.querySelector('[data-fitment-section="result"]');
     if (resultSection) resultSection.hidden = activeSection !== "result";
-    const vehicleEditing = state.fitmentVehicleEditing
-        || ui.vehicle.state === "empty"
-        || state.fitmentVehicleDirty
-        || ui.nextAction === "complete_vehicle_details";
     const rimEditing = state.fitmentRimEditing || ui.rim.setupState !== "confirmed_ready" || fitmentFormIsDirty() || state.fitmentSourceStatusTone === "error";
     document.querySelector("[data-fitment-vehicle-summary]")?.toggleAttribute("hidden", vehicleEditing);
     document.querySelector("[data-fitment-vehicle-editor]")?.toggleAttribute("hidden", !vehicleEditing);
@@ -4294,7 +4437,8 @@ function renderFitment() {
     }
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantWorkspace = document.querySelector("[data-fitment-vehicle-variant-workspace]");
-    if (variantWorkspace) variantWorkspace.hidden = ui.nextAction !== "select_vehicle_variant";
+    if (variantWorkspace) variantWorkspace.hidden = ui.nextAction !== "select_vehicle_variant"
+        || canShowModificationRow;
     if (variantsLoad) {
         variantsLoad.hidden = ui.nextAction !== "select_vehicle_variant";
         variantsLoad.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
@@ -4648,6 +4792,9 @@ function openFitmentView(
     state.fitmentVehicleVariantApplying = false;
     state.fitmentSelectedVehicleVariantIndex = null;
     state.fitmentLookup = { status: "idle", outcome: "" };
+    state.fitmentModificationPickerOpen = false;
+    state.fitmentModificationLookupMode = "initial";
+    state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
     void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver });
@@ -4829,6 +4976,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
 
 async function loadFitmentVehicleVariants() {
     if (!state.fitmentJobId || state.fitmentVehicleVariantsLoading) return;
+    state.fitmentModificationLookupMode = "initial";
     if (fitmentFormIsDirty()) {
         state.fitmentError = locale === "ru"
             ? "Сначала сохраните изменения автомобиля, затем подберите комплектацию."
@@ -4889,6 +5037,133 @@ async function loadFitmentVehicleVariants() {
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         state.fitmentVehicleVariantsLoading = false;
+        renderFitment();
+    }
+}
+
+async function loadFitmentVehicleVariantsForReselection() {
+    const overview = state.fitmentOverview;
+    if (!state.fitmentJobId || !overview || state.fitmentVehicleVariantsLoading) return;
+    const selected = fitmentSelectedVehicleVariant(overview);
+    if (overview.modification_state !== "confirmed" || !selected) return;
+    state.fitmentModificationLookupMode = "reselect";
+    state.fitmentVehicleVariantsLoading = true;
+    state.fitmentLookup = { status: "loading", outcome: "", mode: "reselect" };
+    state.fitmentModificationRetryVariant = null;
+    renderFitment();
+    try {
+        if (shouldUseDemoFitment(state.fitmentJobId)) {
+            state.fitmentLookup = { status: "loaded", outcome: "multiple", mode: "reselect" };
+            state.fitmentVehicleVariants = DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }));
+            return;
+        }
+        const response = await fetch(
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/reselect`, { includeIdentity: true }),
+            { method: "POST", headers: withAuthHeaders() }
+        );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const result = await response.json();
+        state.fitmentLookup = {
+            status: result.outcome === "no_match" ? "no_match" : "loaded",
+            outcome: result.outcome || "",
+            mode: "reselect",
+        };
+        state.fitmentVehicleVariants = result.variants || [];
+    } catch (error) {
+        state.fitmentVehicleVariants = [];
+        state.fitmentLookup = { status: "failed", outcome: "", mode: "reselect" };
+        state.fitmentModificationRetryVariant = null;
+    } finally {
+        state.fitmentVehicleVariantsLoading = false;
+        renderFitment();
+    }
+}
+
+function toggleFitmentModificationPicker() {
+    const overview = state.fitmentOverview;
+    if (!overview || state.fitmentVehicleVariantApplying) return;
+    if (state.fitmentModificationPickerOpen) {
+        state.fitmentModificationPickerOpen = false;
+        renderFitment();
+        return;
+    }
+    state.fitmentModificationPickerOpen = true;
+    const confirmed = overview.modification_state === "confirmed" && fitmentSelectedVehicleVariant(overview);
+    state.fitmentModificationLookupMode = confirmed ? "reselect" : "initial";
+    if (state.fitmentVehicleVariants.length && state.fitmentLookup.status === "loaded") {
+        renderFitment();
+        return;
+    }
+    if (confirmed) void loadFitmentVehicleVariantsForReselection();
+    else void loadFitmentVehicleVariants();
+}
+
+async function replaceFitmentVehicleVariant(variant) {
+    const overview = state.fitmentOverview;
+    const current = fitmentSelectedVehicleVariant(overview);
+    if (!overview || !variant || !current || state.fitmentVehicleVariantApplying) return;
+    if (fitmentVariantsMatch(current, variant)) {
+        state.fitmentModificationPickerOpen = false;
+        renderFitment();
+        return;
+    }
+    state.fitmentModificationRetryVariant = variant;
+    state.fitmentVehicleVariantApplying = true;
+    state.fitmentLookup = { ...state.fitmentLookup, status: "replacing", mode: "reselect" };
+    renderFitment();
+    try {
+        if (shouldUseDemoFitment(state.fitmentJobId)) {
+            const nextOverview = demoServerTransition("replace_vehicle_variant", { variant });
+            updateDemoFitmentState(nextOverview);
+            state.fitmentModificationPickerOpen = false;
+            state.fitmentVehicleVariants = [];
+            state.fitmentLookup = { status: "idle", outcome: "" };
+            state.fitmentActiveSection = "vehicle";
+            state.fitmentActiveStep = fitmentSectionToStep("vehicle");
+            return;
+        }
+        const response = await fetch(
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/replace`, { includeIdentity: true }),
+            {
+                method: "POST",
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({
+                    expected_vehicle_revision: overview.vehicle_revision,
+                    expected_current_selection: fitmentVariantPayload(current),
+                    new_selection: fitmentVariantPayload(variant),
+                }),
+            }
+        );
+        if (response.status === 401) {
+            showFitmentAuthRequired();
+            return;
+        }
+        if (response.status === 409) {
+            state.fitmentModificationPickerOpen = false;
+            state.fitmentVehicleVariants = [];
+            await loadFitmentOverview(state.fitmentJobId, { suppressAutomaticResolver: true });
+            state.fitmentMessage = locale === "ru"
+                ? "Данные автомобиля изменились. Выберите комплектацию ещё раз."
+                : "Vehicle details changed. Choose a vehicle version again.";
+            state.fitmentMessageTone = "warning";
+            return;
+        }
+        if (!response.ok) throw new Error(await parseApiError(response));
+        state.fitmentModificationPickerOpen = false;
+        state.fitmentVehicleVariants = [];
+        state.fitmentLookup = { status: "idle", outcome: "" };
+        await loadFitmentOverview(state.fitmentJobId, { suppressAutomaticResolver: true });
+        state.fitmentActiveSection = "vehicle";
+        state.fitmentActiveStep = fitmentSectionToStep("vehicle");
+    } catch (error) {
+        state.fitmentLookup = { status: "replace_failed", outcome: "", mode: "reselect" };
+        state.fitmentModificationPickerOpen = true;
+    } finally {
+        state.fitmentVehicleVariantApplying = false;
         renderFitment();
     }
 }
@@ -8086,6 +8361,36 @@ function bindEvents() {
             return;
         }
 
+        const modificationToggle = event.target.closest("[data-fitment-modification-toggle]");
+        if (modificationToggle) {
+            toggleFitmentModificationPicker();
+            return;
+        }
+
+        const modificationRetry = event.target.closest("[data-fitment-modification-retry]");
+        if (modificationRetry) {
+            if (state.fitmentLookup.status === "replace_failed" && state.fitmentModificationRetryVariant) {
+                void replaceFitmentVehicleVariant(state.fitmentModificationRetryVariant);
+            } else {
+                void loadFitmentVehicleVariantsForReselection();
+            }
+            return;
+        }
+
+        const modificationOption = event.target.closest("[data-fitment-modification-option]");
+        if (modificationOption) {
+            const index = Number(modificationOption.dataset.fitmentModificationOption);
+            const variant = state.fitmentVehicleVariants[index];
+            if (!variant) return;
+            if (state.fitmentModificationLookupMode === "reselect") {
+                void replaceFitmentVehicleVariant(variant);
+            } else {
+                state.fitmentSelectedVehicleVariantIndex = index;
+                renderFitment();
+            }
+            return;
+        }
+
         const rimVariant = event.target.closest("[data-fitment-rim-variant]");
         if (rimVariant) {
             selectFitmentRimVariant(Number(rimVariant.dataset.fitmentRimVariant));
@@ -8133,6 +8438,8 @@ function bindEvents() {
             void applyFitmentVehicleVariant(variant).then(() => {
                 state.fitmentVehicleVariants = [];
                 state.fitmentSelectedVehicleVariantIndex = null;
+                state.fitmentModificationPickerOpen = false;
+                state.fitmentModificationLookupMode = "initial";
                 state.fitmentMessage = locale === "ru" ? "Комплектация выбрана" : "Vehicle version selected";
                 state.fitmentMessageTone = "success";
                 renderFitment();
