@@ -53,3 +53,6 @@ jobs:
 
       - name: Vercel gateway tests
         run: node --test tests/vercel_gateway.test.js
+
+      - name: Vehicle catalogue behavioral tests
+        run: node --test tests/test_fitment_vehicle_catalogue_behavior.mjs

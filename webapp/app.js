@@ -1584,16 +1584,20 @@ function fitmentCatalogueMemoryContext(market, { create = false } = {}) {
     return context || null;
 }
 
-function fitmentRememberedVehicleChain(market) {
+function fitmentRememberedVehicleChain(market, { make = "", model = "" } = {}) {
     const context = fitmentCatalogueMemoryContext(market);
     if (!context) return { make: "", model: "", year: "" };
-    const make = context.lastMake || "";
-    const makeContext = make ? context.makes?.[fitmentCatalogueMemoryKey("makes", make)] : null;
-    const model = makeContext?.lastModel || "";
-    const modelContext = model ? makeContext.models?.[fitmentCatalogueMemoryKey("models", model)] : null;
+    const rememberedMake = make || context.lastMake || "";
+    const makeContext = rememberedMake
+        ? context.makes?.[fitmentCatalogueMemoryKey("makes", rememberedMake)]
+        : null;
+    const rememberedModel = model || makeContext?.lastModel || "";
+    const modelContext = rememberedModel
+        ? makeContext?.models?.[fitmentCatalogueMemoryKey("models", rememberedModel)]
+        : null;
     return {
-        make,
-        model,
+        make: rememberedMake,
+        model: rememberedModel,
         year: modelContext?.lastYear || "",
     };
 }
@@ -5084,6 +5088,13 @@ function resetFitmentCatalogue(kind, { status = "idle", items = [] } = {}) {
     state.fitmentCatalogue[kind] = { status, items };
 }
 
+function fitmentCatalogueResultFromState(kind) {
+    const raw = state.fitmentCatalogue[kind];
+    if (raw?.status === "loaded") return { outcome: "success", items: raw.items || [] };
+    if (raw?.status === "no_data") return { outcome: "no_data", items: [] };
+    return null;
+}
+
 async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.fitmentCatalogueContextVersion } = {}) {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return null;
     state.fitmentCatalogueControllers[kind]?.abort?.();
@@ -5127,7 +5138,10 @@ async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.
     }
 }
 
-async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCatalogueContextVersion) {
+async function revalidateFitmentCatalogueChain(
+    contextVersion = state.fitmentCatalogueContextVersion,
+    { preloaded = {} } = {}
+) {
     const vehicle = state.fitmentForm.vehicle;
     if (!vehicle.market) {
         resetFitmentCatalogue("makes");
@@ -5148,7 +5162,7 @@ async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCat
         return;
     }
     vehicle.market = fitmentOptionValue(regionEntry);
-    const makesResult = await loadFitmentCatalogue("makes", { region: vehicle.market }, { contextVersion });
+    const makesResult = preloaded.makes || await loadFitmentCatalogue("makes", { region: vehicle.market }, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!makesResult || makesResult.outcome === "failed") {
         resetFitmentCatalogue("models");
@@ -5183,7 +5197,7 @@ async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCat
     }
     vehicle.make = fitmentOptionValue(makeEntry);
     const makeWasPreserved = Boolean(currentMakeEntry);
-    const modelsResult = await loadFitmentCatalogue("models", { region: vehicle.market, make: vehicle.make }, { contextVersion });
+    const modelsResult = preloaded.models || await loadFitmentCatalogue("models", { region: vehicle.market, make: vehicle.make }, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!modelsResult || modelsResult.outcome === "failed") {
         resetFitmentCatalogue("years");
@@ -5199,9 +5213,7 @@ async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCat
         renderFitment();
         return;
     }
-    const rememberedMake = fitmentRememberedVehicleChain(vehicle.market).make === vehicle.make
-        ? fitmentRememberedVehicleChain(vehicle.market)
-        : remembered;
+    const rememberedMake = fitmentRememberedVehicleChain(vehicle.market, { make: vehicle.make });
     const currentModelEntry = makeWasPreserved
         ? fitmentCatalogueSelectionItem("models", vehicle.model, modelsResult.items)
         : null;
@@ -5217,7 +5229,7 @@ async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCat
     }
     vehicle.model = fitmentOptionValue(modelEntry);
     const modelWasPreserved = Boolean(currentModelEntry);
-    const yearsResult = await loadFitmentCatalogue("years", {
+    const yearsResult = preloaded.years || await loadFitmentCatalogue("years", {
         region: vehicle.market,
         make: vehicle.make,
         model: vehicle.model,
@@ -5237,7 +5249,11 @@ async function revalidateFitmentCatalogueChain(contextVersion = state.fitmentCat
     const currentYearEntry = modelWasPreserved
         ? fitmentCatalogueSelectionItem("years", vehicle.year, yearsResult.items)
         : null;
-    const rememberedYearEntry = fitmentCatalogueSelectionItem("years", rememberedMake.year, yearsResult.items);
+    const rememberedYear = fitmentRememberedVehicleChain(vehicle.market, {
+        make: vehicle.make,
+        model: vehicle.model,
+    });
+    const rememberedYearEntry = fitmentCatalogueSelectionItem("years", rememberedYear.year, yearsResult.items);
     const yearEntry = currentYearEntry || rememberedYearEntry;
     vehicle.year = yearEntry ? fitmentOptionValue(yearEntry) : "";
     if (yearEntry) rememberFitmentVehicleCatalogueChain(vehicle);
@@ -5297,7 +5313,10 @@ function retryFitmentCatalogue(kind) {
     void (async () => {
         const result = await loadFitmentCatalogue(kind, params, { contextVersion });
         if (contextVersion !== state.fitmentCatalogueContextVersion || !result || result.outcome === "failed") return;
-        await revalidateFitmentCatalogueChain(contextVersion);
+        const preloaded = { [kind]: result };
+        if (kind === "models" || kind === "years") preloaded.makes = fitmentCatalogueResultFromState("makes");
+        if (kind === "years") preloaded.models = fitmentCatalogueResultFromState("models");
+        await revalidateFitmentCatalogueChain(contextVersion, { preloaded });
     })();
 }
 
