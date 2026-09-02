@@ -348,6 +348,39 @@ authority it references.
 `VERDICT_SEMANTICS_CHANGED = NO`
 `NEXT_ACTION_SEMANTICS_CHANGED = NO`
 
+## Vehicle UI final corrective amendment — 2026-09-02
+
+The Vehicle clarification pass keeps market labels human-readable while
+preserving canonical provider values at the API boundary. The confirmed
+summary and editor present `Китай` for the Zeekr context; the catalogue
+option/request value remains the canonical provider region (`chdm` for the
+legacy `CN` representation). The presentation adapter prefers labels from
+the authoritative regions response and uses legacy-value aliases only to
+resolve the display option.
+
+The full catalogue chain is treated as a dependent cascade. Region, make and
+model changes invalidate stale child selections and abort stale requests;
+years are rendered only from the current response, with duplicate normalized
+years removed. `no_data` stays a neutral catalogue outcome, while provider
+failures remain technical failures. Dropdown interaction is draft-only and
+the existing explicit Vehicle save remains the sole Vehicle PATCH boundary.
+
+The shared mobile safe-bottom spacing was increased so `Сохранить автомобиль`,
+the Result action and the separate Render island are not covered by the fixed
+bottom navigation at 390 px.
+
+This is not a domain or verdict change. Warning, legal and commercial copy
+remains governed by the higher-priority commercial warning authority in
+[`05-commercial-ux-warnings.md`](05-commercial-ux-warnings.md) and any
+authority it references; this handoff records only layout/state placement
+and must not freeze a conflicting duplicate wording.
+
+`VEHICLE_UI_FINAL_CORRECTIVE = IMPLEMENTED_PENDING_STAGING_AUDIT`
+`READY_FOR_AUTHENTICATED_A_TO_A_A_TO_B = NO`
+`BACKEND_DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
+`NEXT_ACTION_SEMANTICS_CHANGED = NO`
+
 ## Final handoff state
 
 ```text

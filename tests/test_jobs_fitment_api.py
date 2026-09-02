@@ -1297,6 +1297,72 @@ def test_fitment_catalogue_distinguishes_no_data_and_provider_failure(monkeypatc
     assert failed.json() == {"detail": {"code": "provider_unavailable"}}
 
 
+def test_fitment_catalogue_deduplicates_provider_year_records():
+    options = jobs_api._catalogue_options(
+        [
+            {"year": 2025},
+            {"year": "2025"},
+            {"name": "2024"},
+            {"slug": "2024"},
+            {"year": 2023},
+        ],
+        year=True,
+    )
+
+    assert [item.value for item in options] == ["2025", "2024", "2023"]
+
+
+def test_fitment_catalogue_year_query_resolves_legacy_region_to_provider_value(monkeypatch):
+    calls: list[tuple[str, ...]] = []
+
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def regions(_self):
+        calls.append(("regions",))
+        return [{"slug": "chdm", "name": "China"}]
+
+    async def makes(_self, *, region):
+        calls.append(("makes", region))
+        return [{"slug": "zeekr", "name": "ZEEKR"}] if region == "chdm" else []
+
+    async def models(_self, *, make, region):
+        calls.append(("models", make, region))
+        return [{"slug": "007", "name": "007"}] if (make, region) == ("zeekr", "chdm") else []
+
+    async def years(_self, *, make, model, region):
+        calls.append(("years", make, model, region))
+        return [{"year": 2025}, {"year": 2025}, {"year": 2026}]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_regions", regions)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_makes", makes)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_models", models)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_years", years)
+
+    response = client.get(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/catalogue/years"
+        "?region=CN&make=ZEEKR&model=007"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "outcome": "success",
+        "items": [
+            {"value": "2025", "label": "2025", "provider_id": None},
+            {"value": "2026", "label": "2026", "provider_id": None},
+        ],
+    }
+    assert calls == [
+        ("regions",),
+        ("makes", "chdm"),
+        ("models", "zeekr", "chdm"),
+        ("years", "zeekr", "007", "chdm"),
+    ]
+
+
 def test_vehicle_authoritative_states_cover_empty_to_confirmed_ready():
     assert (
         jobs_api._vehicle_state_from_row(

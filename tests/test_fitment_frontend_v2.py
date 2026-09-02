@@ -218,14 +218,14 @@ def test_incompatible_keeps_backend_blocking_evidence_when_secondary_fields_are_
 def test_vehicle_editor_keeps_base_data_separate_from_catalogue_modification() -> None:
     assert "function fitmentPresentationText(value)" in APP_JS
     assert "/^[a-f0-9]{8,}$/i.test(text)" in APP_JS
-    assert "fitmentPresentationText(vehicle?.generation)" in APP_JS
+    assert "function fitmentVehicleBaseSpecs(vehicle)" in APP_JS
     assert "variant?.body || variant?.body_type" in APP_JS
     variant_mapper = APP_JS.split("function fitmentVariantTechnicalSeries", 1)[1].split(
         "function demoPcdDisplay", 1
     )[0]
     assert "fitmentPresentationText(variant?.generation)" in variant_mapper
     assert ".map(fitmentPresentationText)" in variant_mapper
-    assert "function fitmentMarketLabel(value)" in APP_JS
+    assert "function fitmentMarketLabel(value" in APP_JS
     assert 'cn: "Китай"' in APP_JS
     editor = INDEX_HTML.split("data-fitment-vehicle-editor", 1)[1].split(
         "data-fitment-modification-summary", 1
@@ -238,6 +238,60 @@ def test_vehicle_editor_keeps_base_data_separate_from_catalogue_modification() -
     assert 'data-fitment-edit="vehicle">Изменить автомобиль' in INDEX_HTML
     assert "data-fitment-modification-summary" in INDEX_HTML
     assert "Изменить данные</button>" not in INDEX_HTML
+
+
+def test_market_presentation_keeps_human_label_separate_from_catalogue_value() -> None:
+    assert "FITMENT_MARKET_VALUE_ALIASES" in APP_JS
+    assert "fitmentCatalogueOptionLabel(item, kind)" in APP_JS
+    assert 'return [vehicle?.year, market].filter(Boolean).join(" / ")' in APP_JS
+    assert "return fitmentVehicleBaseSpecs(vehicle);" in APP_JS
+    assert 'input.dataset.fitmentCatalogue === "regions"' in APP_JS
+    assert "inputValue = fitmentOptionValue(matchingRegion)" in APP_JS
+    assert "function fitmentCatalogueQueryValue(kind, value)" in APP_JS
+    assert (
+        'queryParams.region = fitmentCatalogueQueryValue("regions", queryParams.region)' in APP_JS
+    )
+    assert "Рынок: ${market}" not in APP_JS
+    assert "?region=Китай" not in APP_JS
+
+
+def test_vehicle_catalogue_cascade_invalidates_stale_downstream_values() -> None:
+    change_handler = APP_JS.split('input.dataset.fitmentCatalogue === "makes"', 1)[1].split(
+        'input.dataset.fitmentCatalogue === "regions"', 1
+    )[0]
+    assert 'resetFitmentCatalogue("models")' in change_handler
+    assert 'resetFitmentCatalogue("years")' in change_handler
+    region_handler = (
+        APP_JS.split('input.dataset.fitmentCatalogue === "regions"', 1)[1]
+        .split("state.fitmentForm.vehicle.market = value;", 1)[1]
+        .split("} else {", 1)[0]
+    )
+    assert 'state.fitmentForm.vehicle.make = ""' in region_handler
+    assert 'state.fitmentForm.vehicle.model = ""' in region_handler
+    assert 'state.fitmentForm.vehicle.year = ""' in region_handler
+    assert 'loadFitmentCatalogue("models"' not in region_handler
+    assert 'loadFitmentCatalogue("years"' not in region_handler
+    assert "reconcileFitmentCatalogueSelection" in APP_JS
+
+
+def test_vehicle_catalogue_no_data_is_neutral_and_stale_year_is_not_kept() -> None:
+    assert 'result.outcome === "no_data" ? "no_data" : "loaded"' in APP_JS
+    assert 'state.fitmentCatalogue.years.status === "no_data"' in APP_JS
+    assert "Для выбранного рынка и модели год не найден в каталоге" in APP_JS
+    reconcile = APP_JS.split("function reconcileFitmentCatalogueSelection", 1)[1].split(
+        "function resetFitmentCatalogue", 1
+    )[0]
+    assert 'kind === "years"' in reconcile
+    assert 'vehicle.year = ""' in reconcile
+
+
+def test_vehicle_catalogue_changes_stay_draft_until_explicit_save() -> None:
+    change_bindings = APP_JS.rsplit(
+        'document.querySelectorAll("[data-fitment-input]").forEach((input) => {', 1
+    )[1].split('document.querySelectorAll("[data-fitment-custom]")', 1)[0]
+    assert "loadFitmentCatalogue" in change_bindings
+    assert 'method: "PATCH"' not in change_bindings
+    assert 'method: "PATCH"' in APP_JS
 
 
 def test_basic_vehicle_payload_does_not_reserialize_catalogue_variant_fields() -> None:

@@ -28,14 +28,12 @@ def test_vehicle_uses_provider_backed_cascade_and_save_before_lookup() -> None:
 
 
 def test_region_selection_starts_provider_make_cascade() -> None:
-    region_branch = APP_JS.split('input.dataset.fitmentCatalogue === "regions"')[1].split(
+    region_branch = APP_JS.rsplit('input.dataset.fitmentCatalogue === "regions"', 1)[1].split(
         "} else {", 1
     )[0]
     assert 'loadFitmentCatalogue("makes", { region: value })' in region_branch
-    assert (
-        'loadFitmentCatalogue("models", { region: value, make: state.fitmentForm.vehicle.make })'
-        in region_branch
-    )
+    assert 'loadFitmentCatalogue("models"' not in region_branch
+    assert 'loadFitmentCatalogue("years"' not in region_branch
 
 
 def test_modification_outcomes_keep_multiple_choice_explicit() -> None:
