@@ -431,3 +431,35 @@ but its exact wording remains governed by the higher-priority commercial
 warning authority in [`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
 and any authority it references. This specification must not freeze a
 conflicting duplicate disclaimer.
+
+## Vehicle UI final corrective amendment — 2026-09-02
+
+Vehicle market presentation keeps the user-facing label separate from the
+provider value. Catalogue labels are authoritative when available; known
+legacy values such as `CN` are resolved to the canonical catalogue option for
+display and request construction, so the editor shows `Китай` while the API
+continues to receive the provider value (for example, `chdm`). No market
+label is used as a catalogue query value.
+
+The Vehicle catalogue cascade remains server/provider-owned:
+`Рынок → Марка → Модель → Год`. Changing a parent selection clears and
+aborts stale downstream lookups before loading the next child catalogue.
+Persisted values not present in a loaded response are not retained as valid
+options. An empty provider response is represented as neutral `no_data` with
+an empty disabled year control; a provider failure remains a technical
+failure state and is not relabelled as `no_data`. Duplicate year records are
+deduplicated at the catalogue presentation boundary without inventing years
+or changing provider semantics.
+
+Dropdown changes remain an unsaved local draft and do not issue a Vehicle
+PATCH; the existing explicit save action remains the mutation boundary. The
+mobile page uses the shared safe-bottom spacing so the Vehicle save action and
+Result/Render content remain above the fixed bottom navigation.
+
+This amendment is presentation/state hygiene only. It does not change Vehicle
+or Fitment domain semantics, verdict semantics, provider meaning or the
+`next_action` contract. Warning, legal and commercial copy may be repositioned
+by the UI, but its exact canonical wording remains governed by the
+higher-priority commercial warning authority in
+[`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
+and any authority it references.

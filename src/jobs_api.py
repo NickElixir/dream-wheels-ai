@@ -1029,6 +1029,7 @@ def _catalogue_options(
     year: bool = False,
 ) -> list[VehicleCatalogueOptionResponse]:
     options: list[VehicleCatalogueOptionResponse] = []
+    seen_years: set[str] = set()
     for entry in entries:
         if year:
             raw_year = entry.get("year", entry.get("name", entry.get("slug")))
@@ -1036,6 +1037,9 @@ def _catalogue_options(
                 value = str(int(raw_year))
             except (TypeError, ValueError):
                 continue
+            if value in seen_years:
+                continue
+            seen_years.add(value)
             options.append(VehicleCatalogueOptionResponse(value=value, label=value))
             continue
         value = _catalogue_entry_value(entry)

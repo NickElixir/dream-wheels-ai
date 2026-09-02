@@ -4528,7 +4528,8 @@ body.has-fallback-main-button #app {
     }
 
     #app {
-        padding-bottom: calc(102px + var(--safe-bottom));
+        padding-bottom: calc(124px + var(--safe-bottom));
+        scroll-padding-bottom: calc(124px + var(--safe-bottom));
     }
 }
 
