@@ -3092,6 +3092,32 @@ h2 {
     font-weight: 750;
 }
 
+.fitment-catalogue-state {
+    min-height: 15px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.fitment-catalogue-state[data-state="selected"] {
+    color: var(--success);
+}
+
+.fitment-catalogue-state[data-state="failed"] {
+    color: var(--danger);
+}
+
+.fitment-catalogue-state[data-state="no_data"] {
+    color: var(--text-muted);
+}
+
+.fitment-catalogue-retry {
+    justify-self: start;
+    min-height: 34px;
+    padding: 7px 12px;
+}
+
 .fitment-field[data-state="confirmed"] .fitment-field-state { color: var(--success); }
 .fitment-field[data-state="suggested"] .fitment-field-state,
 .fitment-field[data-state="entered"] .fitment-field-state { color: var(--warning); }

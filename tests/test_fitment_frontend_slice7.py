@@ -49,7 +49,7 @@ def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
     )
     assert "demoServerTransition(transition, fitmentPayload())" in save
     assert "state.fitmentVehicleDirty = false;" in save
-    assert "state.fitmentVehicleDirty = true" in APP_JS
+    assert "state.fitmentVehicleDirty = !baselineVehicle" in APP_JS
 
 
 def test_ordinary_return_is_silent_but_401_restoration_is_explicit() -> None:

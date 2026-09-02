@@ -130,6 +130,41 @@ The server-owned endpoints are `GET /jobs/{job_id}/fitment/catalogue/regions`,
 its cache; no provider credential or raw provider payload is exposed to the
 client.
 
+### Vehicle Catalogue Editor state-machine amendment — 2026-09-02
+
+The frontend now treats the catalogue as one sequential dependency chain:
+
+```text
+market
+  → validated makes response
+  → validated models response
+  → validated years response
+```
+
+On a parent change, the client increments a job-local context version,
+aborts obsolete requests and keeps the previous child values internally until
+the relevant response is available. Each response is accepted only when its
+version, request identity and dependency tuple still match the current draft.
+After the response is known, valid children are retained and invalid children
+plus their descendants are cleared. Models are never requested before the
+make response validates the make; years are never requested before the model
+response validates the model.
+
+The browser keeps a bounded, expiring session memory under a key containing
+the Fitment `job_id`. It remembers the latest coherent market → make → model
+→ year chain and may propose it when returning to a previous context. This is
+only a convenience draft: every remembered value is matched against the live
+catalogue response before restoration, and no memory is shared between jobs
+or written to the backend.
+
+The field renderer distinguishes `idle_parent_missing`, `loading`,
+`loaded_unselected`, `selected`, `no_data` and `failed`. `no_data` renders a
+neutral empty disabled control; provider/auth/transport failure renders an
+inline retryable error. Save remains disabled until the selected values are
+validated by all four current option sets. Base Vehicle edit and modification
+edit are mutually exclusive; the modification group is absent while an
+unsaved base draft is open.
+
 ## Modification mapping
 
 | Frozen UI state / family | Runtime source | Backend / API source | Existing implementation | Gap | Required implementation |

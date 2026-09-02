@@ -442,14 +442,28 @@ continues to receive the provider value (for example, `chdm`). No market
 label is used as a catalogue query value.
 
 The Vehicle catalogue cascade remains server/provider-owned:
-`Рынок → Марка → Модель → Год`. Changing a parent selection clears and
-aborts stale downstream lookups before loading the next child catalogue.
-Persisted values not present in a loaded response are not retained as valid
-options. An empty provider response is represented as neutral `no_data` with
-an empty disabled year control; a provider failure remains a technical
-failure state and is not relabelled as `no_data`. Duplicate year records are
-deduplicated at the catalogue presentation boundary without inventing years
-or changing provider semantics.
+`Рынок → Марка → Модель → Год`. Changing a parent selection increments the
+transient catalogue context version, aborts obsolete requests and revalidates
+the previous child chain against the newly loaded response. A still-valid
+make/model/year is preserved; an invalid value and everything below it is
+cleared only after the relevant response is known. A bounded, job-scoped
+session memory may restore the last chain for a previously visited
+market/make/model context, but every restored value is revalidated against
+the live response before it is selected. Persisted values not present in a
+loaded response are not retained as valid options. An empty provider response
+is represented as neutral `no_data` with an empty disabled child control; a
+provider failure remains a technical failure state and is not relabelled as
+`no_data`. Duplicate catalogue records are deduplicated at the presentation
+boundary without inventing values or changing provider semantics.
+
+Each catalogue field exposes explicit presentation states:
+`idle_parent_missing`, `loading`, `loaded_unselected`, `selected`, `no_data`
+and `failed`. Loading responses are guarded by both `AbortController` and the
+exact current dependency tuple (`market`, `make`, `model`), so an old response
+cannot overwrite a newer market/make/model context. Retry reads the current
+dependency tuple at click time. `Сохранить автомобиль` remains disabled until
+all four fields are selected from successfully loaded option sets, and
+catalogue interaction does not PATCH Vehicle.
 
 Dropdown changes remain an unsaved local draft and do not issue a Vehicle
 PATCH; the existing explicit save action remains the mutation boundary. The

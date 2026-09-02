@@ -255,41 +255,41 @@ def test_market_presentation_keeps_human_label_separate_from_catalogue_value() -
     assert "?region=Китай" not in APP_JS
 
 
-def test_vehicle_catalogue_cascade_invalidates_stale_downstream_values() -> None:
+def test_vehicle_catalogue_cascade_revalidates_before_clearing_stale_values() -> None:
     change_handler = APP_JS.split('input.dataset.fitmentCatalogue === "makes"', 1)[1].split(
         'input.dataset.fitmentCatalogue === "regions"', 1
     )[0]
-    assert 'resetFitmentCatalogue("models")' in change_handler
-    assert 'resetFitmentCatalogue("years")' in change_handler
+    assert "rememberFitmentVehicleCatalogueChain();" in change_handler
+    assert "beginFitmentCatalogueContextChange();" in change_handler
+    assert "revalidateFitmentCatalogueChain(contextVersion)" in change_handler
     region_handler = (
         APP_JS.split('input.dataset.fitmentCatalogue === "regions"', 1)[1]
         .split("state.fitmentForm.vehicle.market = value;", 1)[1]
         .split("} else {", 1)[0]
     )
-    assert 'state.fitmentForm.vehicle.make = ""' in region_handler
-    assert 'state.fitmentForm.vehicle.model = ""' in region_handler
-    assert 'state.fitmentForm.vehicle.year = ""' in region_handler
-    assert 'loadFitmentCatalogue("models"' not in region_handler
-    assert 'loadFitmentCatalogue("years"' not in region_handler
-    assert "reconcileFitmentCatalogueSelection" in APP_JS
+    assert 'state.fitmentForm.vehicle.make = ""' not in region_handler
+    assert 'state.fitmentForm.vehicle.model = ""' not in region_handler
+    assert 'state.fitmentForm.vehicle.year = ""' not in region_handler
+    assert "revalidateFitmentCatalogueChain" in APP_JS
+    assert "currentMakeEntry || rememberedMakeEntry" in APP_JS
+    assert "currentModelEntry || rememberedModelEntry" in APP_JS
+    assert "currentYearEntry || rememberedYearEntry" in APP_JS
 
 
 def test_vehicle_catalogue_no_data_is_neutral_and_stale_year_is_not_kept() -> None:
-    assert 'result.outcome === "no_data" ? "no_data" : "loaded"' in APP_JS
-    assert 'state.fitmentCatalogue.years.status === "no_data"' in APP_JS
-    assert "Для выбранного рынка и модели год не найден в каталоге" in APP_JS
-    reconcile = APP_JS.split("function reconcileFitmentCatalogueSelection", 1)[1].split(
-        "function resetFitmentCatalogue", 1
-    )[0]
-    assert 'kind === "years"' in reconcile
-    assert 'vehicle.year = ""' in reconcile
+    assert 'result.outcome === "no_data" || !items.length' in APP_JS
+    assert 'fitmentCatalogueFieldState("years", form.vehicle.year).state === "no_data"' in APP_JS
+    assert "Нет доступных годов" in APP_JS
+    assert 'if (yearsResult.outcome === "no_data")' in APP_JS
+    assert 'vehicle.year = ""' in APP_JS
 
 
 def test_vehicle_catalogue_changes_stay_draft_until_explicit_save() -> None:
     change_bindings = APP_JS.rsplit(
         'document.querySelectorAll("[data-fitment-input]").forEach((input) => {', 1
     )[1].split('document.querySelectorAll("[data-fitment-custom]")', 1)[0]
-    assert "loadFitmentCatalogue" in change_bindings
+    assert "revalidateFitmentCatalogueChain" in change_bindings
+    assert "beginFitmentCatalogueContextChange" in change_bindings
     assert 'method: "PATCH"' not in change_bindings
     assert 'method: "PATCH"' in APP_JS
 
