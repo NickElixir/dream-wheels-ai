@@ -71,7 +71,7 @@ def test_vehicle_summary_exposes_two_independent_edit_targets() -> None:
     assert '"Изменить комплектацию"' in APP_JS
     assert '"Скрыть"' in APP_JS
     assert (
-        'vehicleWorkspaceMode === "modification_edit"'
+        'vehicleWorkspaceMode === "variant_reselect"'
         in APP_JS.split("const modificationLookupOpen", 1)[1].split("const selectedVariant", 1)[0]
     )
     assert 'modificationToggle.hidden = vehicleWorkspaceMode === "base_edit";' in APP_JS
