@@ -101,9 +101,11 @@ def test_complete_vehicle_details_does_not_expose_variant_picker_or_internal_pro
     assert "renderFitmentVehicleHelper(ui);" in vehicle_renderer
     assert "fitmentModificationStateLabel(ui)" not in vehicle_renderer
     assert (
-        'variantWorkspace.hidden = ui.nextAction !== "select_vehicle_variant"' in vehicle_renderer
+        'const requiredVariantSelection = vehicleWorkspaceMode === "variant_select_required";'
+        in vehicle_renderer
     )
-    assert 'variantEmpty.hidden = ui.nextAction !== "select_vehicle_variant"' in vehicle_renderer
+    assert "variantWorkspace.hidden = !requiredVariantSelection;" in vehicle_renderer
+    assert "variantEmpty.hidden = !requiredVariantSelection" in vehicle_renderer
     assert 'ui.nextAction === "complete_vehicle_details"' in vehicle_renderer
     assert "data-fitment-modification-state" not in INDEX_HTML
     assert "data-fitment-vehicle-state" not in INDEX_HTML
@@ -137,12 +139,8 @@ def test_stale_result_recovery_maps_each_server_action_to_a_focused_next_step() 
     result = _scope(APP_JS, "function renderFitmentV2Result(", "function renderFitment()")
     assert "Результат больше не актуален" in result
     assert "Данные автомобиля или колесного диска изменились после последней проверки" in APP_JS
-    for action, label in {
-        "complete_vehicle_details": "Подтвердить данные автомобиля",
-        "select_vehicle_variant": "Выбрать комплектацию",
-        "complete_rim_specs": "Уточнить параметры колесного диска",
-    }.items():
-        assert f'{action}: locale === "ru" ? "{label}"' in result
+    assert "const resultRecovery = deriveResultRecovery(ui.server, check);" in result
+    assert "function deriveFitmentNextIntent(overview)" in APP_JS
     recovery = _scope(APP_JS, "const staleRecovery =", "const fitmentEdit =")
     assert 'action === "complete_vehicle_details"' in recovery
     assert 'action === "select_vehicle_variant"' in recovery

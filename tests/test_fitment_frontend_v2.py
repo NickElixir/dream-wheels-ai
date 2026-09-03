@@ -135,9 +135,12 @@ def test_result_uses_progressive_evidence_and_recheck_presentation() -> None:
         "data-fitment-verdict-recheck"
     )
     assert 'completedCurrent = check.execution_status === "completed"' in APP_JS
-    assert 'const resultRecovery = deriveResultRecovery(ui.server, check);' in APP_JS
-    assert 'completedCurrent || resultRecovery.canRunCheck' in APP_JS
-    assert 'completedCurrent || resultRecovery.canRunCheck\n                    ? "Проверить ещё раз"' in APP_JS
+    assert "const resultRecovery = deriveResultRecovery(ui.server, check);" in APP_JS
+    assert "completedCurrent || resultRecovery.canRunCheck" in APP_JS
+    assert (
+        'completedCurrent || resultRecovery.canRunCheck\n                    ? "Проверить ещё раз"'
+        in APP_JS
+    )
     result_css = STYLE_CSS.split(".fitment-verdict-card {", 1)[1].split(".fitment-verdict-head", 1)[
         0
     ]

@@ -10,14 +10,15 @@ def _scope(source: str, start: str, end: str) -> str:
     return source.split(start, 1)[1].split(end, 1)[0]
 
 
-def test_vehicle_editor_uses_three_exclusive_workspace_modes() -> None:
+def test_vehicle_editor_uses_required_and_optional_variant_workspace_modes() -> None:
     assert "function fitmentVehicleWorkspaceMode(" in APP_JS
-    mode = _scope(APP_JS, "function fitmentVehicleWorkspaceMode", "function fitmentResultAvailable")
-    assert 'return "modification_edit"' in mode
-    assert 'return vehicleEditing ? "base_edit" : "summary"' in mode
+    mode = _scope(APP_JS, "function deriveVehicleWorkspaceMode", "function deriveResultRecovery")
+    assert 'mode: "variant_select_required", collapsible: false' in mode
+    assert 'mode: "variant_reselect", collapsible: true' in mode
+    assert 'mode: "base_edit", collapsible: false' in mode
     render = _scope(APP_JS, "function renderFitment()", "function renderFitmentRimVariants")
     assert 'vehicleWorkspaceMode === "base_edit"' in render
-    assert 'vehicleWorkspaceMode === "modification_edit"' in render
+    assert 'vehicleWorkspaceMode === "variant_reselect"' in render
     assert (
         'modificationSummary.hidden = !canShowModificationRow || vehicleWorkspaceMode === "base_edit";'
         in render
