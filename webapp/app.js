@@ -1420,6 +1420,28 @@ function fitmentRimSpecs(rim) {
     ].filter(Boolean).join(" / ");
 }
 
+function fitmentEffectiveRim(overview, axle = "front") {
+    // Prefer the complete nested axle spec, then fall back to legacy overview
+    // shapes. The boundary selects one representation; it never combines fields.
+    const candidates = axle === "rear"
+        ? [overview?.rear_rim?.rim, overview?.rear_rim]
+        : [overview?.front_rim?.rim, overview?.front_rim, overview?.rim];
+    const score = (rim) => {
+        if (!rim || typeof rim !== "object") return -1;
+        const fields = [
+            "bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j",
+            "center_bore_mm", "offset_et_mm", "brand", "model", "sku",
+        ];
+        return fields.reduce((total, field) => {
+            const value = rim[field];
+            return total + (value !== null && value !== undefined && value !== "" ? 1 : 0);
+        }, 0) + (rim.bolt_count && rim.pcd_mm ? 2 : 0);
+    };
+    return candidates
+        .filter((rim) => rim && typeof rim === "object")
+        .sort((left, right) => score(right) - score(left))[0] || {};
+}
+
 function fitmentPcdOptionValue(boltCount, pcdMm) {
     const bolt = Number(boltCount);
     const pcd = normalizeFitmentNumber(pcdMm);
@@ -2596,14 +2618,16 @@ function fitmentRimMeta(overview) {
 }
 
 function fitmentSourceValue(overview) {
-    const parts = [overview?.rim?.brand, overview?.rim?.sku];
-    if (overview?.rim?.has_product_url) parts.push(t("fitment.sourceAdded"));
+    const rim = fitmentEffectiveRim(overview);
+    const parts = [rim.brand, rim.sku];
+    if (rim.has_product_url) parts.push(t("fitment.sourceAdded"));
     return parts.filter(Boolean).join(" — ") || fitmentEmptyValue();
 }
 
 function fitmentSourceBrand(overview) {
-    if (overview?.rim?.brand) return overview.rim.brand;
-    const productUrl = overview?.rim?.product_url;
+    const rim = fitmentEffectiveRim(overview);
+    if (rim.brand) return rim.brand;
+    const productUrl = rim.product_url;
     if (!productUrl) return fitmentEmptyValue();
     try {
         return new URL(productUrl).hostname.replace(/^www\./i, "");
@@ -2613,7 +2637,7 @@ function fitmentSourceBrand(overview) {
 }
 
 function fitmentSourceSku(overview) {
-    return overview?.rim?.sku || "";
+    return fitmentEffectiveRim(overview).sku || "";
 }
 
 function setFitmentOverviewCollapsed(collapsed) {
@@ -2675,8 +2699,8 @@ function renderFitmentCandidates() {
 }
 
 function fitmentFormFromOverview(overview) {
-    const rim = overview?.rim || overview?.front_rim?.rim || {};
-    const rearRim = overview?.rear_rim?.rim || overview?.rear_rim || {};
+    const rim = fitmentEffectiveRim(overview);
+    const rearRim = fitmentEffectiveRim(overview, "rear");
     return {
         setup_mode: overview?.setup_mode || "uniform",
         vehicle: {
@@ -4153,10 +4177,11 @@ function renderFitmentLegacy() {
     document.querySelector("[data-fitment-card-vehicle-meta]")?.replaceChildren(
         document.createTextNode(fitmentVehicleMeta(overview))
     );
+    const effectiveRim = fitmentEffectiveRim(overview);
     document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(
-        document.createTextNode(demoRimTitle(overview.rim))
+        document.createTextNode(demoRimTitle(effectiveRim))
     );
-    const rimSpecs = fitmentRimSpecs(overview.rim);
+    const rimSpecs = fitmentRimSpecs(effectiveRim);
     const rimCardSpecs = document.querySelector("[data-fitment-card-rim-specs]");
     if (rimCardSpecs) {
         rimCardSpecs.textContent = rimSpecs;
@@ -4174,30 +4199,30 @@ function renderFitmentLegacy() {
         sourceSku.hidden = !fitmentSourceSku(overview);
     }
     document.querySelector("[data-fitment-card-source-meta]")?.replaceChildren(
-        document.createTextNode(overview?.rim?.has_product_url ? t("fitment.sourceAdded") : t("fitment.sourceCardMeta"))
+        document.createTextNode(effectiveRim.has_product_url ? t("fitment.sourceAdded") : t("fitment.sourceCardMeta"))
     );
     document.querySelector("[data-fitment-basic-pcd]")?.replaceChildren(
-        document.createTextNode(overview.rim?.pcd_display || fitmentEmptyValue())
+        document.createTextNode(effectiveRim.pcd_display || demoPcdDisplay(effectiveRim) || fitmentEmptyValue())
     );
     document.querySelector("[data-fitment-basic-center-bore]")?.replaceChildren(
-        document.createTextNode(formatFitmentNumber(overview.rim?.center_bore_mm, "мм"))
+        document.createTextNode(formatFitmentNumber(effectiveRim.center_bore_mm, "мм"))
     );
     document.querySelector("[data-fitment-basic-diameter]")?.replaceChildren(
         document.createTextNode(
-            overview.rim?.wheel_diameter_in !== null && overview.rim?.wheel_diameter_in !== undefined
-                ? `R${formatFitmentNumber(overview.rim?.wheel_diameter_in)}`
+            effectiveRim.wheel_diameter_in !== null && effectiveRim.wheel_diameter_in !== undefined
+                ? `R${formatFitmentNumber(effectiveRim.wheel_diameter_in)}`
                 : fitmentEmptyValue()
         )
     );
     document.querySelector("[data-fitment-basic-width]")?.replaceChildren(
         document.createTextNode(
-            overview.rim?.wheel_width_j !== null && overview.rim?.wheel_width_j !== undefined
-                ? `${formatFitmentNumber(overview.rim?.wheel_width_j)}J`
+            effectiveRim.wheel_width_j !== null && effectiveRim.wheel_width_j !== undefined
+                ? `${formatFitmentNumber(effectiveRim.wheel_width_j)}J`
                 : fitmentEmptyValue()
         )
     );
     document.querySelector("[data-fitment-basic-offset]")?.replaceChildren(
-        document.createTextNode(formatFitmentNumber(overview.rim?.offset_et_mm, "мм"))
+        document.createTextNode(formatFitmentNumber(effectiveRim.offset_et_mm, "мм"))
     );
     syncFitmentFormInputs();
     renderFitmentFieldStates(ui);
@@ -4327,7 +4352,7 @@ function fitmentSafeSourceDisplay(source) {
 }
 
 function buildRimSecondaryDetails(overview, { editing = false } = {}) {
-    const rim = overview?.rim || overview?.front_rim?.rim || {};
+    const rim = fitmentEffectiveRim(overview);
     if (editing) return { editable: true, rows: [] };
     const rows = [];
     const source = normalizeFitmentText(rim.product_url);
@@ -4790,8 +4815,9 @@ function renderFitment() {
     }
     const vehicleTitle = demoVehicleTitle(overview.vehicle);
     const vehicleSpecs = fitmentVehicleSpecs(overview.vehicle);
-    const rimTitle = demoRimTitle(overview.rim);
-    const rimSpecs = fitmentRimSpecs(overview.rim);
+    const effectiveRim = fitmentEffectiveRim(overview);
+    const rimTitle = demoRimTitle(effectiveRim);
+    const rimSpecs = fitmentRimSpecs(effectiveRim);
     document.querySelector("[data-fitment-vehicle-title]")?.replaceChildren(document.createTextNode(vehicleTitle));
     document.querySelector("[data-fitment-card-rim-title]")?.replaceChildren(document.createTextNode(rimTitle));
     const vehicleSpecsTarget = document.querySelector("[data-fitment-vehicle-specs]");
@@ -5421,6 +5447,7 @@ async function revalidateFitmentCatalogueChain(
     { preloaded = {} } = {}
 ) {
     const vehicle = state.fitmentForm.vehicle;
+    const vehicleWasDirty = state.fitmentVehicleDirty;
     const previousMarketStatus = state.fitmentMarketResolution?.status;
     const previousMarket = vehicle.market;
     const parentChange = state.fitmentCatalogueParentChange || {};
@@ -5567,10 +5594,16 @@ async function revalidateFitmentCatalogueChain(
         };
     }
     if (yearEntry) rememberFitmentVehicleCatalogueChain(vehicle);
-    if (state.fitmentFormState.baseline?.vehicle) {
-        state.fitmentVehicleDirty = JSON.stringify(vehicle) !== JSON.stringify(state.fitmentFormState.baseline.vehicle);
+    // Catalogue normalization is passive hydration. It may update the clean
+    // baseline, but it must never manufacture a user edit. Once a user has
+    // edited Vehicle, revalidation must preserve that dirty ownership.
+    if (!vehicleWasDirty && state.fitmentFormState.baseline) {
+        state.fitmentVehicleDirty = false;
+        state.fitmentFormState.baseline.vehicle = { ...vehicle };
+        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+    } else {
+        state.fitmentVehicleDirty = true;
     }
-    if (!state.fitmentVehicleDirty) state.fitmentFormState.baseline.vehicle = { ...vehicle };
     state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
     validateFitmentForm();
     renderFitment();
@@ -5682,7 +5715,7 @@ async function loadFitmentOverview(
         void loadFitmentCheckHistory(overview);
         void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
-        if (!suppressAutomaticResolver && restoration !== "restored" && overview?.rim?.product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
+        if (!suppressAutomaticResolver && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && state.fitmentSourceAutoResolvedForJob !== jobId) {
             state.fitmentSourceAutoResolvedForJob = jobId;
             void resolveFitmentRimSource({ automatic: true });
         }
