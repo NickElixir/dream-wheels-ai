@@ -91,3 +91,12 @@ test("confirmed optional reselection remains collapsible", () => {
     assert.equal(workspace.collapsible, true);
     assert.equal(workspace.showHideAction, true);
 });
+
+test("automatic variant confirmation preserves the Vehicle section", () => {
+    assert.match(
+        APP_SOURCE,
+        /await loadFitmentOverview\(state\.fitmentJobId, \{ preserveActiveSection: "vehicle" \}\);/
+    );
+    assert.match(APP_SOURCE, /preserveActiveSection = ""/);
+    assert.match(APP_SOURCE, /\["vehicle", "rim", "result"\]\.includes\(preserveActiveSection\)/);
+});
