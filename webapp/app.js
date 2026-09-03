@@ -3238,6 +3238,16 @@ function syncFitmentFormInputs() {
     });
 }
 
+function syncFitmentPcdControl() {
+    const pcdSelect = document.querySelector("[data-fitment-pcd-select]");
+    if (!pcdSelect) return;
+    const pcdKey = fitmentPcdOptionValue(state.fitmentForm.rim.bolt_count, state.fitmentForm.rim.pcd_mm);
+    const hasOption = [...pcdSelect.options].some((option) => option.value === pcdKey);
+    pcdSelect.value = hasOption ? pcdKey : pcdKey ? "custom" : "";
+    const pcdCustom = document.querySelector("[data-fitment-pcd-custom]");
+    if (pcdCustom) pcdCustom.hidden = pcdSelect.value !== "custom";
+}
+
 function normalizeFitmentText(value) {
     const normalized = String(value || "").trim();
     return normalized || null;
@@ -3895,8 +3905,6 @@ function renderFitmentLegacy() {
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
     const rimSection = document.querySelector('[data-fitment-section="rim"]');
     const overviewGrid = document.querySelector("[data-fitment-overview-grid]");
-    const pcdSelect = document.querySelector("[data-fitment-pcd-select]");
-    const pcdCustom = document.querySelector("[data-fitment-pcd-custom]");
     const setupModeSelect = document.querySelector("[data-fitment-setup-mode]");
     const rearRimSection = document.querySelector("[data-fitment-rear-rim]");
     const actions = document.querySelector("[data-fitment-actions]");
@@ -4256,13 +4264,8 @@ function renderFitmentLegacy() {
         document.createTextNode(formatFitmentNumber(effectiveRim.offset_et_mm, "мм"))
     );
     syncFitmentFormInputs();
+    syncFitmentPcdControl();
     renderFitmentFieldStates(ui);
-    if (pcdSelect) {
-        const pcdKey = fitmentPcdOptionValue(state.fitmentForm.rim.bolt_count, state.fitmentForm.rim.pcd_mm);
-        const hasOption = [...pcdSelect.options].some((option) => option.value === pcdKey);
-        pcdSelect.value = hasOption ? pcdKey : pcdKey ? "custom" : "";
-        if (pcdCustom) pcdCustom.hidden = pcdSelect.value !== "custom";
-    }
     renderFitmentCandidates();
 }
 
@@ -5137,6 +5140,7 @@ function renderFitment() {
     renderFitmentFieldStates(ui);
     renderFitmentValidation();
     syncFitmentFormInputs();
+    syncFitmentPcdControl();
     const setupModeSelect = document.querySelector("[data-fitment-setup-mode]");
     if (setupModeSelect) setupModeSelect.value = state.fitmentForm.setup_mode || ui.rim.setupMode;
     const rearRimSection = document.querySelector("[data-fitment-rear-rim]");

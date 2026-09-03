@@ -156,6 +156,74 @@ function navigationApi({ routes = {} } = {}) {
     return { api: context.__navigationApi, calls, sessionStorage };
 }
 
+function pcdProjectionApi() {
+    const pcdSelect = {
+        ...element(),
+        value: "",
+        options: [
+            { value: "" },
+            { value: "4x100" },
+            { value: "4x108" },
+            { value: "5x112" },
+            { value: "custom" },
+        ],
+    };
+    const pcdCustom = {
+        ...element(),
+        dataset: { fitmentInput: "rim.pcd_mm" },
+        hidden: true,
+        value: "",
+    };
+    const document = {
+        documentElement: { dataset: { appBuild: "pcd-projection-test" } },
+        head: { append() {} }, body: element(), hidden: false,
+        addEventListener() {},
+        querySelector(selector) {
+            if (selector === "[data-fitment-pcd-select]") return pcdSelect;
+            if (selector === "[data-fitment-pcd-custom]") return pcdCustom;
+            return null;
+        },
+        querySelectorAll(selector) {
+            return selector === "[data-fitment-input]" ? [pcdCustom] : [];
+        },
+        createElement: element,
+        createTextNode(value) { return { textContent: value }; },
+    };
+    const window = {
+        Telegram: { Login: {} }, location: { search: "" }, innerWidth: 1280,
+        setTimeout, clearTimeout, requestAnimationFrame(callback) { callback(); },
+        addEventListener() {}, scrollTo() {}, open() {},
+    };
+    const calls = [];
+    const context = {
+        AbortController, URL, URLSearchParams, console, document, window,
+        fetch: async (...args) => {
+            calls.push(args);
+            return response(200, {});
+        },
+        localStorage: storage(), sessionStorage: storage(), navigator: { language: "ru-RU", userAgent: "test" },
+        setTimeout, clearTimeout, globalThis: null,
+    };
+    context.globalThis = context;
+    vm.runInNewContext(`${APP_SOURCE}
+        globalThis.__pcdProjectionApi = {
+            state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview,
+            syncFitmentPcdControl, renderFitment,
+        };`, context);
+    return { api: context.__pcdProjectionApi, pcdSelect, pcdCustom, calls };
+}
+
+function renderV2RimEditor(api, rim) {
+    const overview = api.buildDefaultDemoFitmentOverview();
+    overview.front_rim = { rim };
+    api.state.fitmentOverview = overview;
+    api.state.fitmentForm = api.fitmentFormFromOverview(overview);
+    api.state.fitmentActiveSection = "rim";
+    api.state.fitmentActiveStep = 2;
+    api.state.fitmentRimEditing = true;
+    api.renderFitment();
+}
+
 function overviewFor(api, nextAction, { confirmedVariant = false } = {}) {
     const overview = JSON.parse(JSON.stringify(api.buildDefaultDemoFitmentOverview()));
     overview.job_id = "behavior-job";
@@ -586,6 +654,49 @@ test("RIM_CARD_EDITOR_PCD_CONSISTENCY uses one effective RimSpec", () => {
     assert.equal(effective.pcd_mm, 108);
     assert.equal(form.rim.bolt_count, 4);
     assert.equal(form.rim.pcd_mm, 108);
+});
+
+test("V2_PCD_PRESET_HYDRATES_VISIBLE_SELECT", () => {
+    const { api, pcdSelect, pcdCustom } = pcdProjectionApi();
+    renderV2RimEditor(api, { bolt_count: 4, pcd_mm: 108 });
+
+    assert.equal(api.state.fitmentForm.rim.bolt_count, 4);
+    assert.equal(api.state.fitmentForm.rim.pcd_mm, 108);
+    assert.equal(pcdSelect.value, "4x108");
+    assert.equal(pcdCustom.hidden, true);
+});
+
+test("V2_PCD_EMPTY_STAYS_EMPTY", () => {
+    const { api, pcdSelect } = pcdProjectionApi();
+    renderV2RimEditor(api, { bolt_count: null, pcd_mm: null });
+
+    assert.equal(pcdSelect.value, "");
+});
+
+test("V2_PCD_CUSTOM_PRESERVES_VALUE", () => {
+    const { api, pcdSelect, pcdCustom } = pcdProjectionApi();
+    renderV2RimEditor(api, { bolt_count: 5, pcd_mm: 111 });
+
+    assert.equal(pcdSelect.value, "custom");
+    assert.equal(pcdCustom.hidden, false);
+    assert.equal(api.state.fitmentForm.rim.pcd_mm, 111);
+    assert.equal(pcdCustom.value, 111);
+});
+
+test("PCD_CONTROL_SYNC_IS_NON_MUTATING", () => {
+    const { api, calls } = pcdProjectionApi();
+    renderV2RimEditor(api, { bolt_count: 4, pcd_mm: 108 });
+    const formBefore = JSON.parse(JSON.stringify(api.state.fitmentForm));
+    const vehicleDirtyBefore = api.state.fitmentVehicleDirty;
+    const formStatusBefore = api.state.fitmentFormState.status;
+    const callsBefore = calls.length;
+
+    api.syncFitmentPcdControl();
+
+    assert.deepEqual(JSON.parse(JSON.stringify(api.state.fitmentForm)), formBefore);
+    assert.equal(api.state.fitmentVehicleDirty, vehicleDirtyBefore);
+    assert.equal(api.state.fitmentFormState.status, formStatusBefore);
+    assert.equal(calls.length, callsBefore);
 });
 
 test("CANONICAL_RIM_WINS_OVER_RICHER_LEGACY_RIM", () => {
