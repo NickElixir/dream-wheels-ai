@@ -56,3 +56,6 @@ jobs:
 
       - name: Vehicle catalogue behavioral tests
         run: node --test tests/test_fitment_vehicle_catalogue_behavior.mjs
+
+      - name: Fitment navigation behavioral tests
+        run: node --test tests/test_fitment_transition_behavior.mjs

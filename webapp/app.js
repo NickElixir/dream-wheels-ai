@@ -2988,6 +2988,20 @@ function setFitmentActiveSection(section, { scroll = false } = {}) {
     if (scroll) scrollFitmentTo(`[data-fitment-section="${section}"]`);
 }
 
+function navigateFitmentRecovery(action) {
+    if (action === "run_standard_check") {
+        void runFitmentCheck();
+        return;
+    }
+    if (action === "complete_vehicle_details") state.fitmentVehicleEditing = true;
+    if (action === "complete_rim_specs") state.fitmentRimEditing = true;
+    if (["complete_vehicle_details", "select_vehicle_variant"].includes(action)) {
+        setFitmentActiveSection("vehicle", { scroll: true });
+    } else if (action === "complete_rim_specs") {
+        setFitmentActiveSection("rim", { scroll: true });
+    }
+}
+
 async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
     state.fitmentCheckHistory = [];
     if (!overview?.vehicle_identity_id || !overview?.rim_setup_id || shouldUseDemoFitment(state.fitmentJobId)) return;
@@ -5602,6 +5616,14 @@ async function loadFitmentOverview(
     { restoreReason = null, suppressAutomaticResolver = false, preserveActiveSection = "" } = {}
 ) {
     if (!jobId) return;
+    // After the first Fitment entry, an overview refresh is domain data, not a
+    // navigation command. The explicit option is retained for clarity at mutation
+    // call sites; the current section is the safe default for all other refreshes.
+    const sectionToPreserve = ["vehicle", "rim", "result"].includes(preserveActiveSection)
+        ? preserveActiveSection
+        : ["vehicle", "rim", "result"].includes(state.fitmentActiveSection)
+            ? state.fitmentActiveSection
+            : "";
     let restoration = "none";
     state.fitmentLoading = true;
     state.fitmentError = "";
@@ -5616,8 +5638,8 @@ async function loadFitmentOverview(
             updateDemoFitmentState(overview);
             const demoResult = new URLSearchParams(window.location.search).get("demoResult");
             if (demoResult) applyDemoResultFixture(overview, demoResult);
-            state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(preserveActiveSection)
-                ? preserveActiveSection
+            state.fitmentActiveSection = sectionToPreserve
+                ? sectionToPreserve
                 : fitmentSectionForAction(state.fitmentOverview);
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
@@ -5650,8 +5672,8 @@ async function loadFitmentOverview(
         state.fitmentVehicleMarketEdited = false;
         state.fitmentVehicleEditing = overview.vehicle_state === "empty";
         state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
-        state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(preserveActiveSection)
-            ? preserveActiveSection
+        state.fitmentActiveSection = sectionToPreserve
+            ? sectionToPreserve
             : fitmentSectionForAction(overview);
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
@@ -9364,16 +9386,11 @@ function bindEvents() {
         const staleRecovery = event.target.closest("[data-fitment-stale-recovery-action]");
         if (staleRecovery) {
             const action = staleRecovery.dataset.fitmentStaleRecoveryAction;
-            if (action === "run_standard_check") {
-                void runFitmentCheck();
-            } else if (action === "complete_vehicle_details") {
-                state.fitmentVehicleEditing = true;
-                setFitmentActiveSection("vehicle", { scroll: true });
-            } else if (action === "select_vehicle_variant") {
-                setFitmentActiveSection("vehicle", { scroll: true });
-            } else if (action === "complete_rim_specs") {
-                state.fitmentRimEditing = true;
-                setFitmentActiveSection("rim", { scroll: true });
+            if (action === "complete_vehicle_details"
+                || action === "select_vehicle_variant"
+                || action === "complete_rim_specs"
+                || action === "run_standard_check") {
+                navigateFitmentRecovery(action);
             }
             return;
         }
