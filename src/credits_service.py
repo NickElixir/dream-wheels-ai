@@ -57,6 +57,13 @@ async def create_credit_package(
 
 
 async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> int:
+    # The package ledger was introduced after the original credit account
+    # schema.  Staging can briefly run the newer application against a
+    # database that has not received that additive migration yet.  Probe the
+    # relation through to_regclass so the optional package path does not abort
+    # the surrounding transaction with UndefinedTableError.
+    if await _credit_packages_table_missing(conn):
+        return 0
     rows = await conn.fetch(
         """
         SELECT id, remaining_credits, expires_at
@@ -108,6 +115,8 @@ async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> i
 async def list_credit_packages(
     conn: asyncpg.Connection, *, user_id: int
 ) -> list[dict[str, object]]:
+    if await _credit_packages_table_missing(conn):
+        return []
     await expire_credit_packages(conn, user_id=user_id)
     rows = await conn.fetch(
         """
@@ -702,19 +711,19 @@ async def reconcile_credit_account_balance(
     fallback_balance: int,
 ) -> int:
     """Сверить кэш аккаунта с доступными пакетами после миграции FIFO."""
-    try:
-        package_balance = await conn.fetchval(
-            """
-            SELECT COALESCE(SUM(remaining_credits), 0)
-            FROM credit_packages
-            WHERE user_id = $1
-              AND remaining_credits > 0
-              AND expires_at > CURRENT_TIMESTAMP
-            """,
-            user_id,
-        )
-    except asyncpg.UndefinedTableError:
+    if await _credit_packages_table_missing(conn):
         return fallback_balance
+
+    package_balance = await conn.fetchval(
+        """
+        SELECT COALESCE(SUM(remaining_credits), 0)
+        FROM credit_packages
+        WHERE user_id = $1
+          AND remaining_credits > 0
+          AND expires_at > CURRENT_TIMESTAMP
+        """,
+        user_id,
+    )
 
     balance = int(package_balance or 0)
     await conn.execute(
@@ -729,6 +738,12 @@ async def reconcile_credit_account_balance(
         balance,
     )
     return balance
+
+
+async def _credit_packages_table_missing(conn: asyncpg.Connection) -> bool:
+    """Return whether the optional FIFO package table is not deployed yet."""
+    relation = await conn.fetchval("SELECT to_regclass('public.credit_packages')")
+    return relation is None
 
 
 async def reserve_job_credit(
