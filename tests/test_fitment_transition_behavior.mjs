@@ -104,6 +104,8 @@ function response(status, body = {}) {
 
 function navigationApi({ routes = {} } = {}) {
     const calls = [];
+    const localStorage = storage();
+    const sessionStorage = storage();
     const document = {
         documentElement: { dataset: { appBuild: "navigation-test" } },
         head: { append() {} }, body: element(), hidden: false,
@@ -123,7 +125,7 @@ function navigationApi({ routes = {} } = {}) {
             const handler = routes[key];
             return typeof handler === "function" ? handler(options, url) : handler || response(404, { detail: key });
         },
-        localStorage: storage(), sessionStorage: storage(), navigator: { language: "ru-RU", userAgent: "test" },
+        localStorage, sessionStorage, navigator: { language: "ru-RU", userAgent: "test" },
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
@@ -141,13 +143,17 @@ function navigationApi({ routes = {} } = {}) {
         globalThis.__navigationApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
             fitmentEffectiveRim, fitmentRimSpecs, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
-            deriveVehicleWorkspaceMode,
+            deriveVehicleWorkspaceMode, fitmentVehicleWorkspaceMode,
+            persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
+            rebaseFitmentTransientVehicleDraft,
+            fitmentDraftMatchesOverview, fitmentDraftVehicleMatchesOverview,
+            openFitmentView,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
-    return { api: context.__navigationApi, calls };
+    return { api: context.__navigationApi, calls, sessionStorage };
 }
 
 function overviewFor(api, nextAction, { confirmedVariant = false } = {}) {
@@ -187,6 +193,24 @@ function seed(api, overview, section = "vehicle") {
 function assertSection(api, section) {
     assert.equal(api.state.fitmentActiveSection, section);
     assert.equal(api.renderedWorkspace(), section);
+}
+
+function workspaceMode(api, overview = api.state.fitmentOverview) {
+    return api.deriveVehicleWorkspaceMode(overview, {
+        vehicleEditing: api.state.fitmentVehicleEditing || api.state.fitmentVehicleDirty,
+        pickerOpen: api.state.fitmentModificationPickerOpen,
+    }).mode;
+}
+
+function resetToAuthoritativeVehicle(api, overview) {
+    api.state.fitmentOverview = overview;
+    api.state.fitmentForm = api.fitmentFormFromOverview(overview);
+    api.state.fitmentFormState = {
+        status: "clean", validation: "valid", baseline: api.cloneFitmentForm(api.state.fitmentForm), missingFields: [], invalidFields: [],
+    };
+    api.state.fitmentVehicleDirty = false;
+    api.state.fitmentVehicleEditing = false;
+    api.state.fitmentRestoreConflict = null;
 }
 
 test("SAVE_VEHICLE_PRESERVES_SECTION", async () => {
@@ -281,6 +305,168 @@ test("initial Fitment entry may choose its section from next_action", async () =
     api.state.fitmentActiveSection = "";
     await api.loadFitmentOverview("behavior-job");
     assertSection(api, "rim");
+});
+
+test("CLEAN_CONFIRMED_LOAD_IS_SUMMARY", async () => {
+    let api;
+    ({ api } = navigationApi({ routes: {
+        "GET /api/backend/jobs/behavior-job/fitment": () => response(200, overviewFor(api, "run_standard_check", { confirmedVariant: true })),
+    } }));
+    api.state.fitmentJobId = "behavior-job";
+    api.state.fitmentActiveSection = "vehicle";
+    api.state.fitmentVehicleEditing = true;
+    api.state.fitmentVehicleDirty = false;
+
+    await api.loadFitmentOverview("behavior-job");
+
+    assert.equal(api.state.fitmentVehicleEditing, false);
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(workspaceMode(api), "summary");
+    assert.equal(api.state.fitmentOverview.modification_state, "confirmed");
+    assert.ok(api.state.fitmentOverview.selected_modification);
+});
+
+test("REAL_VEHICLE_DRAFT_RESTORES_EDITOR", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    seed(api, overview);
+    api.state.fitmentForm.vehicle.model = "EC60";
+    api.state.fitmentForm.vehicle.year = 2020;
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentVehicleEditing = true;
+    api.persistFitmentTransientDraft("navigation");
+
+    resetToAuthoritativeVehicle(api, overview);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview }), "restored");
+    assert.equal(api.state.fitmentForm.vehicle.model, "EC60");
+    assert.equal(api.state.fitmentForm.vehicle.year, 2020);
+    assert.equal(api.state.fitmentVehicleDirty, true);
+    assert.equal(workspaceMode(api), "base_edit");
+});
+
+test("CANONICAL_ALIAS_ONLY_IS_NOT_DIRTY", async () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle = { make: "Yema", model: "EC70", year: 2019, market: "chdm" };
+    overview.vehicle.market = "chdm";
+    seed(api, overview);
+    api.state.fitmentForm.vehicle.market = "CN";
+    api.state.fitmentVehicleDirty = false;
+    api.persistFitmentTransientDraft("navigation");
+
+    resetToAuthoritativeVehicle(api, overview);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview }), "restored");
+    await api.revalidateFitmentCatalogueChain(0, { preloaded: cataloguePreload() });
+
+    assert.equal(api.state.fitmentForm.vehicle.market, "chdm");
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(api.fitmentFormIsDirty(), false);
+    assert.equal(workspaceMode(api), "summary");
+});
+
+test("STALE_REVISION_DRAFT_NOT_APPLIED", () => {
+    const { api } = navigationApi();
+    const oldOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    oldOverview.vehicle_revision = 1;
+    seed(api, oldOverview);
+    api.state.fitmentForm.vehicle.model = "EC60";
+    api.state.fitmentVehicleDirty = true;
+    api.persistFitmentTransientDraft("navigation");
+
+    const currentOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    currentOverview.vehicle_revision = 2;
+    resetToAuthoritativeVehicle(api, currentOverview);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "conflict");
+
+    assert.equal(api.state.fitmentForm.vehicle.model, currentOverview.vehicle.model);
+    assert.equal(api.state.fitmentRestoreConflict.vehicleConflict, true);
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(workspaceMode(api), "summary");
+});
+
+test("SAVE_SINGLE_CONFIRM_RELOAD_IS_SUMMARY", async () => {
+    let api;
+    let overviewGetCount = 0;
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {
+            const saved = overviewFor(api, "select_vehicle_variant");
+            saved.vehicle_revision = 2;
+            saved.vehicle = { ...saved.vehicle, model: "EC60", year: 2020, market: "CN" };
+            return response(200, saved);
+        },
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants": response(200, { outcome: "single" }),
+        "GET /api/backend/jobs/behavior-job/fitment": () => {
+            overviewGetCount += 1;
+            const confirmedOverview = overviewFor(api, "complete_rim_specs", { confirmedVariant: true });
+            confirmedOverview.vehicle_revision = 2;
+            confirmedOverview.vehicle = { ...confirmedOverview.vehicle, model: "EC60", year: 2020, market: "CN" };
+            return response(200, confirmedOverview);
+        },
+    } }));
+    seed(api, overviewFor(api, "complete_vehicle_details"));
+    api.state.fitmentForm.vehicle.model = "EC60";
+    api.state.fitmentForm.vehicle.year = 2020;
+    api.state.fitmentForm.vehicle.market = "CN";
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentVehicleEditing = true;
+    api.persistFitmentTransientDraft("navigation");
+
+    await api.saveFitment();
+    await api.loadFitmentVehicleVariants();
+    assert.equal(overviewGetCount, 1);
+    assert.equal(api.state.fitmentOverview.modification_state, "confirmed");
+    api.persistFitmentTransientDraft("navigation");
+    await api.loadFitmentOverview("behavior-job", { restoreReason: "navigation", preserveActiveSection: "vehicle" });
+
+    assert.equal(api.state.fitmentVehicleEditing, false);
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(workspaceMode(api), "summary");
+    assert.equal(api.state.fitmentForm.vehicle.model, "EC60");
+    assert.equal(api.state.fitmentOverview.modification_state, "confirmed");
+});
+
+test("RIM_DRAFT_PRESERVED_AFTER_VEHICLE_REBASE", async () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle = { make: "Yema", model: "EC70", year: 2019, market: "CN" };
+    overview.vehicle.market = "CN";
+    overview.front_rim.rim.offset_et_mm = 45;
+    seed(api, overview);
+    api.state.fitmentForm.rim.offset_et_mm = 46;
+
+    await api.revalidateFitmentCatalogueChain(0, { preloaded: cataloguePreload() });
+
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 46);
+    assert.equal(api.state.fitmentFormState.baseline.rim.offset_et_mm, 45);
+    assert.equal(api.fitmentFormIsDirty(), true);
+});
+
+test("RIM_DRAFT_SURVIVES_VEHICLE_REBASE", () => {
+    const { api } = navigationApi();
+    const initial = overviewFor(api, "complete_vehicle_details");
+    initial.vehicle = { make: "Yema", model: "EC70", year: 2019, market: "CN" };
+    initial.front_rim.rim.offset_et_mm = 45;
+    seed(api, initial);
+    api.state.fitmentForm.vehicle.model = "EC60";
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentForm.rim.offset_et_mm = 46;
+    api.persistFitmentTransientDraft("navigation");
+
+    const saved = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    saved.vehicle_revision = initial.vehicle_revision + 1;
+    saved.vehicle = { ...initial.vehicle, model: "EC60" };
+    saved.front_rim.rim.offset_et_mm = 45;
+    assert.equal(api.rebaseFitmentTransientVehicleDraft(saved), true);
+
+    resetToAuthoritativeVehicle(api, saved);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: saved }), "restored");
+    assert.equal(api.state.fitmentForm.vehicle.model, "EC60");
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 46);
+    assert.equal(api.state.fitmentFormState.baseline.rim.offset_et_mm, 45);
+    assert.equal(api.fitmentFormIsDirty(), true);
+    assert.equal(workspaceMode(api), "summary");
 });
 
 function cataloguePreload() {

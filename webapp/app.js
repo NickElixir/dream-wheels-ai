@@ -1838,6 +1838,27 @@ function discardFitmentTransientDraft() {
     if (key) sessionStorage.removeItem(key);
 }
 
+function rebaseFitmentTransientVehicleDraft(overview = state.fitmentOverview) {
+    const draft = readFitmentTransientDraft();
+    if (!draft || !overview) return false;
+    const authoritative = fitmentFormFromOverview(overview);
+    draft.baseline = fitmentRevisionBaseline(overview);
+    draft.form = cloneFitmentForm(draft.form);
+    draft.form.vehicle = authoritative.vehicle;
+    draft.vehicleDirty = false;
+    const rimDirty = JSON.stringify(draft.form.rim) !== JSON.stringify(authoritative.rim)
+        || JSON.stringify(draft.form.rear_rim) !== JSON.stringify(authoritative.rear_rim);
+    draft.formState = { ...draft.formState, status: rimDirty ? "dirty" : "clean" };
+    draft.createdAt = Date.now();
+    draft.expiresAt = draft.createdAt + FITMENT_TRANSIENT_DRAFT_TTL_MS;
+    try {
+        sessionStorage.setItem(fitmentTransientDraftKey(), JSON.stringify(draft));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 function persistFitmentNavigationContext() {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
     try {
@@ -6015,6 +6036,7 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
             : [];
         if (result.outcome === "single") {
             await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: "vehicle" });
+            rebaseFitmentTransientVehicleDraft(state.fitmentOverview);
             state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
             state.fitmentMessageTone = "success";
         } else if (result.outcome === "no_match") {
@@ -6416,6 +6438,7 @@ async function saveFitment(event) {
         await refreshFitmentCheckCurrentness();
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
+        if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
         if (savedFromSection === "vehicle" || savedFromSection === "rim") {
