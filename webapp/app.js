@@ -2988,6 +2988,20 @@ function setFitmentActiveSection(section, { scroll = false } = {}) {
     if (scroll) scrollFitmentTo(`[data-fitment-section="${section}"]`);
 }
 
+function navigateFitmentRecovery(action) {
+    if (action === "run_standard_check") {
+        void runFitmentCheck();
+        return;
+    }
+    if (action === "complete_vehicle_details") state.fitmentVehicleEditing = true;
+    if (action === "complete_rim_specs") state.fitmentRimEditing = true;
+    if (["complete_vehicle_details", "select_vehicle_variant"].includes(action)) {
+        setFitmentActiveSection("vehicle", { scroll: true });
+    } else if (action === "complete_rim_specs") {
+        setFitmentActiveSection("rim", { scroll: true });
+    }
+}
+
 async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
     state.fitmentCheckHistory = [];
     if (!overview?.vehicle_identity_id || !overview?.rim_setup_id || shouldUseDemoFitment(state.fitmentJobId)) return;
@@ -5597,8 +5611,19 @@ function retryFitmentCatalogue(kind) {
     })();
 }
 
-async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutomaticResolver = false } = {}) {
+async function loadFitmentOverview(
+    jobId,
+    { restoreReason = null, suppressAutomaticResolver = false, preserveActiveSection = "" } = {}
+) {
     if (!jobId) return;
+    // After the first Fitment entry, an overview refresh is domain data, not a
+    // navigation command. The explicit option is retained for clarity at mutation
+    // call sites; the current section is the safe default for all other refreshes.
+    const sectionToPreserve = ["vehicle", "rim", "result"].includes(preserveActiveSection)
+        ? preserveActiveSection
+        : ["vehicle", "rim", "result"].includes(state.fitmentActiveSection)
+            ? state.fitmentActiveSection
+            : "";
     let restoration = "none";
     state.fitmentLoading = true;
     state.fitmentError = "";
@@ -5613,7 +5638,9 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
             updateDemoFitmentState(overview);
             const demoResult = new URLSearchParams(window.location.search).get("demoResult");
             if (demoResult) applyDemoResultFixture(overview, demoResult);
-            state.fitmentActiveSection = fitmentSectionForAction(state.fitmentOverview);
+            state.fitmentActiveSection = sectionToPreserve
+                ? sectionToPreserve
+                : fitmentSectionForAction(state.fitmentOverview);
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
             loadFitmentVehicleCatalogue();
@@ -5645,7 +5672,9 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
         state.fitmentVehicleMarketEdited = false;
         state.fitmentVehicleEditing = overview.vehicle_state === "empty";
         state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
-        state.fitmentActiveSection = fitmentSectionForAction(overview);
+        state.fitmentActiveSection = sectionToPreserve
+            ? sectionToPreserve
+            : fitmentSectionForAction(overview);
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
         loadFitmentVehicleCatalogue();
@@ -5963,7 +5992,7 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
             ? dedupeFitmentVehicleVariants(result.variants || [])
             : [];
         if (result.outcome === "single") {
-            await loadFitmentOverview(state.fitmentJobId);
+            await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: "vehicle" });
             state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
             state.fitmentMessageTone = "success";
         } else if (result.outcome === "no_match") {
@@ -6090,7 +6119,10 @@ async function replaceFitmentVehicleVariant(variant) {
         if (response.status === 409) {
             state.fitmentModificationPickerOpen = false;
             state.fitmentVehicleVariants = [];
-            await loadFitmentOverview(state.fitmentJobId, { suppressAutomaticResolver: true });
+            await loadFitmentOverview(state.fitmentJobId, {
+                suppressAutomaticResolver: true,
+                preserveActiveSection: "vehicle",
+            });
             state.fitmentMessage = locale === "ru"
                 ? "Данные автомобиля изменились. Выберите комплектацию ещё раз."
                 : "Vehicle details changed. Choose a vehicle version again.";
@@ -6101,7 +6133,10 @@ async function replaceFitmentVehicleVariant(variant) {
         state.fitmentModificationPickerOpen = false;
         state.fitmentVehicleVariants = [];
         state.fitmentLookup = { status: "idle", outcome: "" };
-        await loadFitmentOverview(state.fitmentJobId, { suppressAutomaticResolver: true });
+        await loadFitmentOverview(state.fitmentJobId, {
+            suppressAutomaticResolver: true,
+            preserveActiveSection: "vehicle",
+        });
         state.fitmentActiveSection = "vehicle";
         state.fitmentActiveStep = fitmentSectionToStep("vehicle");
     } catch (error) {
@@ -6268,7 +6303,7 @@ async function applyFitmentVehicleVariant(variant) {
         }
         if (response.status === 409) {
             state.fitmentVehicleVariants = [];
-            await loadFitmentOverview(state.fitmentJobId);
+            await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: confirmationSection });
             state.fitmentMessage = locale === "ru"
                 ? "Данные автомобиля изменились. Список комплектаций обновлён; выберите вариант ещё раз."
                 : "Vehicle details changed. The version list was refreshed; choose again.";
@@ -6276,7 +6311,10 @@ async function applyFitmentVehicleVariant(variant) {
             return;
         }
         if (!response.ok) throw new Error(await parseApiError(response));
-        await loadFitmentOverview(state.fitmentJobId, { suppressAutomaticResolver: true });
+        await loadFitmentOverview(state.fitmentJobId, {
+            suppressAutomaticResolver: true,
+            preserveActiveSection: confirmationSection,
+        });
         state.fitmentActiveSection = confirmationSection === "vehicle" ? "vehicle" : confirmationSection;
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
     } catch (error) {
@@ -9348,16 +9386,11 @@ function bindEvents() {
         const staleRecovery = event.target.closest("[data-fitment-stale-recovery-action]");
         if (staleRecovery) {
             const action = staleRecovery.dataset.fitmentStaleRecoveryAction;
-            if (action === "run_standard_check") {
-                void runFitmentCheck();
-            } else if (action === "complete_vehicle_details") {
-                state.fitmentVehicleEditing = true;
-                setFitmentActiveSection("vehicle", { scroll: true });
-            } else if (action === "select_vehicle_variant") {
-                setFitmentActiveSection("vehicle", { scroll: true });
-            } else if (action === "complete_rim_specs") {
-                state.fitmentRimEditing = true;
-                setFitmentActiveSection("rim", { scroll: true });
+            if (action === "complete_vehicle_details"
+                || action === "select_vehicle_variant"
+                || action === "complete_rim_specs"
+                || action === "run_standard_check") {
+                navigateFitmentRecovery(action);
             }
             return;
         }
