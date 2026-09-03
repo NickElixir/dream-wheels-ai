@@ -1258,6 +1258,12 @@ const state = {
     feedbackNoticeByJob: {},
 };
 
+// Several initialization paths can request the same dashboard data in the
+// same tick. Reuse the in-flight request so a slow backend cannot turn one
+// page load into duplicate cabinet/history calls.
+let cabinetRequestPromise = null;
+let renderHistoryRequestPromise = null;
+
 function isGuestRenderJob(job) {
     return Boolean(job?.is_guest_demo);
 }
@@ -6328,7 +6334,7 @@ function setMoreOpen(open) {
     if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
-function setView(view) {
+function setView(view, { refreshData = true } = {}) {
     const viewChanged = state.view !== view;
     const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
     if (leavingFitment) {
@@ -6359,6 +6365,7 @@ function setView(view) {
         }
     }
     refreshButtonsForCurrentView();
+    if (!refreshData) return;
     if (view === "dashboard") {
         void loadDashboardData({ silent: true });
     } else if (view === "wallet") {
@@ -7639,7 +7646,17 @@ async function loadFitmentReturnContext(jobId) {
     }
 }
 
-async function loadRenderHistory({ silent = false } = {}) {
+async function loadRenderHistory(options = {}) {
+    if (renderHistoryRequestPromise) return renderHistoryRequestPromise;
+    const request = requestRenderHistory(options);
+    const sharedRequest = request.finally(() => {
+        if (renderHistoryRequestPromise === sharedRequest) renderHistoryRequestPromise = null;
+    });
+    renderHistoryRequestPromise = sharedRequest;
+    return sharedRequest;
+}
+
+async function requestRenderHistory({ silent = false } = {}) {
     if (!hasFrontendAuth()) {
         state.renderHistoryLoading = false;
         state.renderHistory = guestRenderHistory();
@@ -7682,7 +7699,17 @@ async function loadDashboardData({ silent = false } = {}) {
     renderDashboard();
 }
 
-async function loadCabinet({ silent = false } = {}) {
+async function loadCabinet(options = {}) {
+    if (cabinetRequestPromise) return cabinetRequestPromise;
+    const request = requestCabinet(options);
+    const sharedRequest = request.finally(() => {
+        if (cabinetRequestPromise === sharedRequest) cabinetRequestPromise = null;
+    });
+    cabinetRequestPromise = sharedRequest;
+    return sharedRequest;
+}
+
+async function requestCabinet({ silent = false } = {}) {
     const identity = getIdentitySearchParams();
     if (!identity.toString() && !getWebsiteAuthToken()) {
         setWalletMessage("");
@@ -9438,9 +9465,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 suppressAutomaticResolver: true,
             });
         } else {
-            setView("dashboard");
+            // Dashboard data was hydrated immediately above; avoid starting a
+            // second cabinet/history request while selecting the initial view.
+            setView("dashboard", { refreshData: false });
         }
     } else if (!new URLSearchParams(window.location.search).get("payment")) {
-        setView("dashboard");
+        setView("dashboard", { refreshData: false });
     }
 });

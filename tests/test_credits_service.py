@@ -213,6 +213,8 @@ def test_get_balance_reconciles_cached_account_with_active_packages(monkeypatch)
             self.updated: tuple[str, tuple[object, ...]] | None = None
 
         async def fetchval(self, query: str, *args):
+            if "to_regclass('public.credit_packages')" in query:
+                return "credit_packages"
             assert "SUM(remaining_credits)" in query
             assert args == (123,)
             return 29
@@ -232,12 +234,41 @@ def test_get_balance_reconciles_cached_account_with_active_packages(monkeypatch)
     assert conn.updated[1] == (123, 29)
 
 
+def test_get_balance_keeps_legacy_account_when_package_migration_is_missing(monkeypatch):
+    async def fake_ensure(_conn, _user_id: int):
+        return 6
+
+    class FakeConn:
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return None
+
+    monkeypatch.setattr("src.credits_service.ensure_credit_account", fake_ensure)
+
+    assert asyncio.run(get_balance(FakeConn(), 123)) == 6
+
+
+def test_list_credit_packages_returns_empty_when_package_migration_is_missing():
+    class FakeConn:
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return None
+
+    from src.credits_service import list_credit_packages
+
+    assert asyncio.run(list_credit_packages(FakeConn(), user_id=123)) == []
+
+
 def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
     expires_at = datetime(2026, 7, 1, tzinfo=UTC)
 
     class FakeConn:
         def __init__(self) -> None:
             self.expiration_insert: tuple[str, tuple[object, ...]] | None = None
+
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return "credit_packages"
 
         async def fetch(self, query: str, *args):
             assert "FROM credit_packages" in query
