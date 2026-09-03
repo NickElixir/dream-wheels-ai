@@ -60,7 +60,7 @@ function createHarness({ catalogue = {}, deferred = false } = {}) {
         if (parsed.pathname.endsWith("/auth/telegram/nonce")) {
             return Promise.resolve(response({ client_id: "1", nonce: "test-nonce", nonce_token: "test-token" }));
         }
-        const match = parsed.pathname.match(/\/catalogue\/([^/]+)$/);
+        const match = parsed.pathname.match(/\/vehicle-catalogue\/([^/]+)$/);
         if (!match) return Promise.resolve(response({}));
         const kind = match[1];
         const params = Object.fromEntries(parsed.searchParams.entries());
@@ -71,6 +71,14 @@ function createHarness({ catalogue = {}, deferred = false } = {}) {
         }
         const key = catalogueKey(kind, params);
         const items = catalogue[key] || [];
+        if (kind === "markets") {
+            return Promise.resolve(response({
+                outcome: items.length ? "success" : "no_data",
+                resolution: items.length === 1 ? "single" : items.length ? "selection_required" : "no_data",
+                resolved_market: items.length === 1 ? items[0] : null,
+                items: items.length === 1 ? [] : items,
+            }));
+        }
         return Promise.resolve(response({ outcome: items.length ? "success" : "no_data", items }));
     };
 
@@ -120,6 +128,8 @@ globalThis.__fitmentCatalogueTestApi = {
     createFitmentCatalogueDraftMemory,
     fitmentCatalogueResultFromState,
     fitmentCatalogueFieldState,
+    validateFitmentForm,
+    demoVehicleCatalogueResult,
     fitmentRememberedVehicleChain,
     rememberFitmentVehicleCatalogueChain,
     beginFitmentCatalogueContextChange,
@@ -140,42 +150,48 @@ globalThis.__fitmentCatalogueTestApi = {
 }
 
 function catalogueKey(kind, params) {
-    if (kind === "regions") return "regions";
-    if (kind === "makes") return `makes:${params.region || ""}`;
-    if (kind === "models") return `models:${params.region || ""}:${params.make || ""}`;
-    return `years:${params.region || ""}:${params.make || ""}:${params.model || ""}`;
+    if (kind === "makes") return "makes";
+    if (kind === "models") return `models:${params.make || ""}`;
+    if (kind === "years") return `years:${params.make || ""}:${params.model || ""}`;
+    return `markets:${params.make || ""}:${params.model || ""}:${params.year || ""}`;
 }
 
-const REGIONS = [
-    { value: "chdm", label: "Китай" },
-    { value: "russia", label: "Россия+" },
-];
 const CATALOGUE = {
-    "makes:chdm": [
+    makes: [
         { value: "ZEEKR", label: "ZEEKR" },
         { value: "Porsche", label: "Porsche" },
+        { value: "Lada", label: "Lada" },
     ],
-    "makes:russia": [{ value: "Lada", label: "Lada" }],
-    "models:chdm:ZEEKR": [
+    "models:ZEEKR": [
         { value: "007", label: "007" },
         { value: "X", label: "X" },
     ],
-    "models:chdm:Porsche": [{ value: "Cayenne", label: "Cayenne" }],
-    "models:russia:Lada": [{ value: "Vesta", label: "Vesta" }],
-    "years:chdm:ZEEKR:007": [{ value: "2025", label: "2025" }, { value: "2023", label: "2023" }],
-    "years:chdm:ZEEKR:X": [{ value: "2023", label: "2023" }],
-    "years:chdm:Porsche:Cayenne": [{ value: "2022", label: "2022" }],
-    "years:russia:Lada:Vesta": [{ value: "2021", label: "2021" }],
+    "models:Porsche": [{ value: "Cayenne", label: "Cayenne" }],
+    "models:Lada": [{ value: "Vesta", label: "Vesta" }],
+    "years:ZEEKR:007": [{ value: "2025", label: "2025" }, { value: "2023", label: "2023" }],
+    "years:ZEEKR:X": [{ value: "2023", label: "2023" }],
+    "years:Porsche:Cayenne": [{ value: "2022", label: "2022" }],
+    "years:Lada:Vesta": [{ value: "2021", label: "2021" }],
+    "markets:ZEEKR:007:2025": [{ value: "chdm", label: "Китай" }],
+    "markets:ZEEKR:X:2023": [{ value: "chdm", label: "Китай" }, { value: "russia", label: "Россия+" }],
+    "markets:Porsche:Cayenne:2022": [{ value: "russia", label: "Россия+" }],
 };
 
 function seedState(harness, vehicle, catalogue = CATALOGUE) {
     const { api } = harness;
     api.state.fitmentForm.vehicle = { ...vehicle };
     api.state.fitmentCatalogue = {
-        regions: { status: "loaded", items: REGIONS },
-        makes: { status: "loaded", items: catalogue[`makes:${vehicle.market}`] || [] },
-        models: { status: "loaded", items: catalogue[`models:${vehicle.market}:${vehicle.make}`] || [] },
-        years: { status: "loaded", items: catalogue[`years:${vehicle.market}:${vehicle.make}:${vehicle.model}`] || [] },
+        regions: { status: "idle", items: [] },
+        makes: { status: "loaded", items: catalogue.makes || [] },
+        models: { status: "loaded", items: catalogue[`models:${vehicle.make}`] || [] },
+        years: { status: "loaded", items: catalogue[`years:${vehicle.make}:${vehicle.model}`] || [] },
+    };
+    const markets = catalogue[`markets:${vehicle.make}:${vehicle.model}:${vehicle.year}`] || [];
+    api.state.fitmentMarketResolution = {
+        status: markets.length === 1 ? "resolved_single" : markets.length ? "selection_required" : "no_data",
+        resolution: markets.length === 1 ? "single" : markets.length ? "selection_required" : "no_data",
+        resolved_market: markets.length === 1 ? markets[0] : null,
+        items: markets.length === 1 ? [] : markets,
     };
     api.state.fitmentFormState = {
         baseline: { vehicle: { ...vehicle } },
@@ -186,36 +202,32 @@ function seedState(harness, vehicle, catalogue = CATALOGUE) {
     };
 }
 
-async function selectMarket(harness, market) {
-    const { api } = harness;
-    api.rememberFitmentVehicleCatalogueChain();
-    api.state.fitmentForm.vehicle.market = market;
-    const version = api.beginFitmentCatalogueContextChange();
-    api.resetFitmentCatalogue("makes", { status: "loading" });
-    api.resetFitmentCatalogue("models", { status: "loading" });
-    api.resetFitmentCatalogue("years", { status: "loading" });
-    await api.revalidateFitmentCatalogueChain(version);
-}
-
 async function selectMake(harness, make) {
     const { api } = harness;
     api.rememberFitmentVehicleCatalogueChain();
+    api.state.fitmentCatalogueParentChange = {
+        makeChanged: make !== api.state.fitmentForm.vehicle.make,
+        modelChanged: false,
+    };
     api.state.fitmentForm.vehicle.make = make;
-    api.state.fitmentForm.vehicle.model = "";
-    api.state.fitmentForm.vehicle.year = "";
     const version = api.beginFitmentCatalogueContextChange();
     api.resetFitmentCatalogue("models", { status: "loading" });
     api.resetFitmentCatalogue("years", { status: "loading" });
+    api.state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
     await api.revalidateFitmentCatalogueChain(version);
 }
 
 async function selectModel(harness, model) {
     const { api } = harness;
     api.rememberFitmentVehicleCatalogueChain();
+    api.state.fitmentCatalogueParentChange = {
+        makeChanged: false,
+        modelChanged: model !== api.state.fitmentForm.vehicle.model,
+    };
     api.state.fitmentForm.vehicle.model = model;
-    api.state.fitmentForm.vehicle.year = "";
     const version = api.beginFitmentCatalogueContextChange();
     api.resetFitmentCatalogue("years", { status: "loading" });
+    api.state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
     await api.revalidateFitmentCatalogueChain(version);
 }
 
@@ -223,14 +235,14 @@ function vehicleOf(harness) {
     return { ...harness.api.state.fitmentForm.vehicle };
 }
 
-test("restores China/ZEEKR/007/2025 after a market round trip", async () => {
+test("restores ZEEKR/007/2025 after a make round trip", async () => {
     const harness = createHarness({ catalogue: CATALOGUE });
     seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
     harness.api.rememberFitmentVehicleCatalogueChain();
 
-    await selectMarket(harness, "russia");
-    assert.deepEqual(vehicleOf(harness), { market: "russia", make: "", model: "", year: "" });
-    await selectMarket(harness, "chdm");
+    await selectMake(harness, "Porsche");
+    assert.deepEqual(vehicleOf(harness), { market: "chdm", make: "Porsche", model: "", year: "" });
+    await selectMake(harness, "ZEEKR");
 
     assert.deepEqual(vehicleOf(harness), { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
 });
@@ -243,7 +255,7 @@ test("restores Porsche/Cayenne/2022 from the selected make context", async () =>
     await selectMake(harness, "ZEEKR");
     await selectMake(harness, "Porsche");
 
-    assert.deepEqual(vehicleOf(harness), { market: "chdm", make: "Porsche", model: "Cayenne", year: "2022" });
+    assert.deepEqual(vehicleOf(harness), { market: "russia", make: "Porsche", model: "Cayenne", year: "2022" });
 });
 
 test("restores 007/2025 from the selected model context", async () => {
@@ -259,20 +271,16 @@ test("restores 007/2025 from the selected model context", async () => {
     assert.deepEqual(vehicleOf(harness), { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
 });
 
-test("ignores A→B→A catalogue responses that arrive in reverse order", async () => {
+test("ignores stale make catalogue responses that arrive in reverse order", async () => {
     const harness = createHarness({ deferred: true });
     const { api, pending } = harness;
-    api.state.fitmentCatalogue.regions = { status: "loaded", items: REGIONS };
-    api.state.fitmentForm.vehicle.market = "chdm";
 
     const versionA = api.beginFitmentCatalogueContextChange();
-    const responseA = api.loadFitmentCatalogue("makes", { region: "chdm" }, { contextVersion: versionA });
-    api.state.fitmentForm.vehicle.market = "russia";
+    const responseA = api.loadFitmentCatalogue("makes", {}, { contextVersion: versionA });
     const versionB = api.beginFitmentCatalogueContextChange();
-    const responseB = api.loadFitmentCatalogue("makes", { region: "russia" }, { contextVersion: versionB });
-    api.state.fitmentForm.vehicle.market = "chdm";
+    const responseB = api.loadFitmentCatalogue("makes", {}, { contextVersion: versionB });
     const versionA2 = api.beginFitmentCatalogueContextChange();
-    const responseA2 = api.loadFitmentCatalogue("makes", { region: "chdm" }, { contextVersion: versionA2 });
+    const responseA2 = api.loadFitmentCatalogue("makes", {}, { contextVersion: versionA2 });
 
     assert.equal(pending.length, 3);
     pending[2].resolve(response({ outcome: "success", items: [{ value: "ZEEKR", label: "ZEEKR" }] }));
@@ -286,7 +294,7 @@ test("ignores A→B→A catalogue responses that arrive in reverse order", async
     assert.deepEqual(api.state.fitmentCatalogue.makes.items, [{ value: "ZEEKR", label: "ZEEKR" }]);
 });
 
-test("retrying years makes exactly one years request and does not reload ancestors", async () => {
+test("retrying years revalidates the dependent market resolution", async () => {
     const harness = createHarness({ catalogue: CATALOGUE });
     seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
     harness.api.state.fitmentCatalogue.years = { status: "failed", items: [] };
@@ -295,7 +303,7 @@ test("retrying years makes exactly one years request and does not reload ancesto
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
 
-    assert.deepEqual(harness.calls.map(({ kind }) => kind), ["years"]);
+    assert.deepEqual(harness.calls.map(({ kind }) => kind), ["years", "markets"]);
     assert.equal(harness.api.state.fitmentCatalogue.years.status, "loaded");
     assert.equal(harness.api.state.fitmentForm.vehicle.year, "2025");
 });
@@ -304,9 +312,55 @@ test("normal catalogue selections keep selected state without visible helper cop
     const harness = createHarness({ catalogue: CATALOGUE });
     seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
 
-    for (const [kind, value] of [["regions", "chdm"], ["makes", "ZEEKR"], ["models", "007"], ["years", "2025"]]) {
+    for (const [kind, value] of [["makes", "ZEEKR"], ["models", "007"], ["years", "2025"]]) {
         const fieldState = harness.api.fitmentCatalogueFieldState(kind, value);
         assert.equal(fieldState.state, "selected");
         assert.equal(fieldState.message, "");
     }
+});
+
+test("ambiguous markets keep save invalid until the user selects a candidate", () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    seedState(harness, { market: "", make: "ZEEKR", model: "X", year: "2023" });
+    harness.api.state.fitmentMarketResolution = {
+        status: "selection_required",
+        resolution: "selection_required",
+        resolved_market: null,
+        items: CATALOGUE["markets:ZEEKR:X:2023"],
+    };
+
+    harness.api.validateFitmentForm();
+    assert.ok(harness.api.state.fitmentFormState.invalidFields.includes("vehicle.market"));
+
+    harness.api.state.fitmentForm.vehicle.market = "russia";
+    harness.api.state.fitmentMarketResolution.status = "selected";
+    harness.api.validateFitmentForm();
+    assert.equal(harness.api.state.fitmentFormState.validation, "valid");
+});
+
+test("demo fixture exposes 001 years and a multi-market resolution", async () => {
+    const harness = createHarness();
+    const { api } = harness;
+    api.state.fitmentJobId = "guest-demo-zeekr";
+    api.state.fitmentForm.vehicle = { make: "ZEEKR", model: "001", year: "2025", market: "" };
+    api.state.fitmentFormState = {
+        baseline: { vehicle: {} },
+        status: "dirty",
+        validation: "invalid",
+        missingFields: [],
+        invalidFields: [],
+    };
+    api.state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+    api.state.fitmentCatalogue = {
+        regions: { status: "idle", items: [] },
+        makes: { status: "loaded", items: [] },
+        models: { status: "loaded", items: [] },
+        years: { status: "loading", items: [] },
+    };
+    const version = api.beginFitmentCatalogueContextChange();
+    await api.revalidateFitmentCatalogueChain(version);
+    assert.equal(api.state.fitmentCatalogue.years.status, "loaded");
+    assert.equal(api.state.fitmentCatalogue.years.items.map((item) => item.value).join(","), "2025,2024");
+    assert.equal(api.state.fitmentMarketResolution.status, "selection_required");
+    assert.equal(api.state.fitmentMarketResolution.items.map((item) => item.value).join(","), "chdm,russia");
 });

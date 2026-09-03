@@ -1297,6 +1297,41 @@ def test_fitment_catalogue_distinguishes_no_data_and_provider_failure(monkeypatc
     assert failed.json() == {"detail": {"code": "provider_unavailable"}}
 
 
+def test_make_first_vehicle_catalogue_aggregates_markets_after_year(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    _patch_auth(monkeypatch)
+    _patch_vehicle_catalogue(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    base = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-catalogue"
+
+    makes = client.get(f"{base}/makes")
+    assert makes.status_code == 200
+    assert makes.json()["items"] == [
+        {
+            "value": "porsche",
+            "label": "Porsche",
+            "provider_id": "porsche",
+            "identities": [
+                {"region": "russia", "provider_id": "porsche"},
+            ],
+        }
+    ]
+
+    models = client.get(f"{base}/models?make=porsche")
+    assert models.status_code == 200
+    assert models.json()["items"][0]["value"] == "cayenne"
+    years = client.get(f"{base}/years?make=porsche&model=cayenne")
+    assert years.status_code == 200
+    markets = client.get(f"{base}/markets?make=porsche&model=cayenne&year=2023")
+    assert markets.status_code == 200
+    assert markets.json()["resolution"] == "single"
+    assert markets.json()["resolved_market"]["value"] == "russia"
+    assert markets.json()["items"] == []
+
+
 def test_fitment_catalogue_deduplicates_provider_year_records():
     options = jobs_api._catalogue_options(
         [

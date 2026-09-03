@@ -477,3 +477,53 @@ by the UI, but its exact canonical wording remains governed by the
 higher-priority commercial warning authority in
 [`05-commercial-ux-warnings.md`](../handoffs/05-commercial-ux-warnings.md)
 and any authority it references.
+
+## Vehicle Catalogue make-first corrective amendment — 2026-09-03
+
+This dated amendment supersedes the Vehicle catalogue portions of the
+2026-09-02 amendment. The accepted editor order is now:
+
+```text
+Марка → Модель → Год → (если требуется) Версия для рынка
+```
+
+Market is no longer a parent selector and is not shown as a permanent first
+field. The browser talks only to the backend aggregate Vehicle Catalogue;
+the browser must not fan out across provider regions. The backend aggregates
+the complete provider region universe, keeps the exact provider identity for
+each region, and exposes provider-neutral endpoints:
+
+```text
+GET /jobs/{job_id}/fitment/vehicle-catalogue/makes
+GET /jobs/{job_id}/fitment/vehicle-catalogue/models?make=<make>
+GET /jobs/{job_id}/fitment/vehicle-catalogue/years?make=<make>&model=<model>
+GET /jobs/{job_id}/fitment/vehicle-catalogue/markets?make=<make>&model=<model>&year=<year>
+```
+
+The market response is one of `single`, `selection_required` or `no_data`.
+`single` auto-resolves the provider region and keeps the control hidden;
+`selection_required` reveals `Версия для рынка` only after year selection;
+`no_data` and provider failure remain distinct. Provider region codes are
+transport identities, not ordinary user-facing labels. A VLM market is only
+a proposal and never restricts the aggregate options.
+
+Each make/model/year control retains the states `idle_parent_missing`,
+`loading`, `loaded_unselected`, `selected`, `no_data` and `failed`. Market
+resolution additionally exposes `idle`, `loading`, `resolved_single`,
+`selection_required`, `selected`, `no_data` and `failed`. Parent changes abort
+obsolete requests and guard responses by the current make/model/year tuple;
+child values remain visible while the new parent response is loading and are
+cleared only after that response proves them invalid.
+
+UI-only draft memory is job-scoped, bounded and expiring, with the graph
+`lastMake → make:lastModel → make+model:lastYear →
+make+model+year:lastExplicitMarket`. It is always revalidated against the
+current aggregate response. Dropdowns and market resolution do not PATCH;
+the explicit Save action remains the mutation boundary and the backend
+revalidates the exact selected provider identity before persisting. The
+Vehicle summary defaults to `make / model / year` and excludes an
+auto-resolved market.
+
+The amendment changes only catalogue topology, presentation state and draft
+memory. Variant/rim/result semantics, verdict semantics, rendering semantics
+and the backend `next_action` contract remain unchanged.

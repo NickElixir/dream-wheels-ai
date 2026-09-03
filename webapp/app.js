@@ -17,16 +17,17 @@ const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
-const FITMENT_DEMO_OVERVIEW_VERSION = 5;
+const FITMENT_DEMO_OVERVIEW_VERSION = 6;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
 const FITMENT_TRANSIENT_DRAFT_VERSION = 1;
 const FITMENT_TRANSIENT_DRAFT_TTL_MS = 30 * 60 * 1000;
 const FITMENT_CATALOGUE_MEMORY_STORAGE_PREFIX = "dreamWheelsFitmentCatalogueMemory:";
-const FITMENT_CATALOGUE_MEMORY_VERSION = 1;
+const FITMENT_CATALOGUE_MEMORY_VERSION = 2;
 const FITMENT_CATALOGUE_MEMORY_TTL_MS = 30 * 60 * 1000;
-const FITMENT_CATALOGUE_MEMORY_MAX_MARKETS = 8;
-const FITMENT_CATALOGUE_MEMORY_MAX_MAKES_PER_MARKET = 8;
+const FITMENT_CATALOGUE_MEMORY_MAX_MAKES = 8;
 const FITMENT_CATALOGUE_MEMORY_MAX_MODELS_PER_MAKE = 8;
+const FITMENT_CATALOGUE_MEMORY_MAX_MARKETS = FITMENT_CATALOGUE_MEMORY_MAX_MAKES;
+const FITMENT_CATALOGUE_MEMORY_MAX_MAKES_PER_MARKET = FITMENT_CATALOGUE_MEMORY_MAX_MODELS_PER_MAKE;
 const FITMENT_NAVIGATION_CONTEXT_KEY = "dreamWheelsFitmentNavigationContext";
 const FITMENT_REGIONS = [
     ["russia", "Россия+"], ["eudm", "Европа"], ["usdm", "США+"],
@@ -99,6 +100,32 @@ const FITMENT_RIM_SETUP_STATES = new Set(["empty", "partial", "complete_unconfir
 const DEMO_VEHICLE_VARIANTS = [
     {
         make_slug: "zeekr",
+        model_slug: "001",
+        region: "chdm",
+        generation_slug: "ev",
+        modification_slug: "electric",
+        market: "CN",
+        generation: "EV liftback",
+        modification: "Electric",
+        engine: "Electric",
+        years: "2024–2026",
+        provider: "demo_fixture",
+    },
+    {
+        make_slug: "zeekr",
+        model_slug: "001",
+        region: "russia",
+        generation_slug: "ev",
+        modification_slug: "electric-long-range",
+        market: "RU",
+        generation: "EV liftback",
+        modification: "Long Range Electric",
+        engine: "Electric",
+        years: "2024–2026",
+        provider: "demo_fixture",
+    },
+    {
+        make_slug: "zeekr",
         model_slug: "007",
         region: "chdm",
         generation_slug: "ev",
@@ -137,6 +164,39 @@ const DEMO_VEHICLE_VARIANTS = [
         provider: "demo_fixture",
     },
 ];
+const DEMO_VEHICLE_CATALOGUE = {
+    makes: [{ value: "zeekr", label: "ZEEKR" }],
+    models: {
+        "zeekr": [
+            { value: "001", label: "001" },
+            { value: "007", label: "007" },
+        ],
+    },
+    years: {
+        "zeekr:001": [{ value: "2025", label: "2025" }, { value: "2024", label: "2024" }],
+        "zeekr:007": [{ value: "2025", label: "2025" }, { value: "2024", label: "2024" }],
+    },
+    markets: {
+        "zeekr:001:2025": [
+            { value: "chdm", label: "Китай" },
+            { value: "russia", label: "Россия+" },
+        ],
+        "zeekr:001:2024": [{ value: "chdm", label: "Китай" }],
+        "zeekr:007:2025": [{ value: "chdm", label: "Китай" }],
+        "zeekr:007:2024": [{ value: "chdm", label: "Китай" }],
+    },
+};
+
+function demoVehicleVariantsForSelection(vehicle = state.fitmentForm.vehicle) {
+    const make = String(vehicle?.make || "").trim().toLocaleLowerCase();
+    const model = String(vehicle?.model || "").trim().toLocaleLowerCase();
+    const market = fitmentCatalogueMemoryKey("regions", vehicle?.market || "");
+    return DEMO_VEHICLE_VARIANTS.filter((variant) => (
+        String(variant.make_slug || "").toLocaleLowerCase() === make
+        && String(variant.model_slug || "").toLocaleLowerCase() === model
+        && (!market || String(variant.region || "").toLocaleLowerCase() === market)
+    ));
+}
 const FEEDBACK_REASONS = [
     { code: "wheel_differs", label: "Диск отличается" },
     { code: "car_changed", label: "Машина изменилась" },
@@ -386,6 +446,7 @@ const I18N = {
             generation: "Поколение",
             modification: "Модификация",
             market: "Рынок",
+            marketVersion: "Версия для рынка",
             rimBrand: "Бренд",
             rimModel: "Модель",
             sku: "Артикул",
@@ -777,6 +838,7 @@ const I18N = {
             generation: "Generation",
             modification: "Trim",
             market: "Market",
+            marketVersion: "Market version",
             rimBrand: "Brand",
             rimModel: "Model",
             sku: "SKU",
@@ -1171,10 +1233,12 @@ const state = {
         models: { status: "idle", items: [] },
         years: { status: "idle", items: [] },
     },
+    fitmentMarketResolution: { status: "idle", resolution: "", resolved_market: null, items: [] },
     fitmentCatalogueRequestToken: 0,
     fitmentCatalogueControllers: {},
     fitmentCatalogueRequests: {},
     fitmentCatalogueContextVersion: 0,
+    fitmentCatalogueParentChange: { makeChanged: false, modelChanged: false },
     fitmentCatalogueDraftMemory: null,
     fitmentCheckPollTimer: null,
     fitmentCheckPollToken: 0,
@@ -1332,8 +1396,7 @@ function fitmentMarketLabel(value, regionItems = null) {
 }
 
 function fitmentVehicleBaseSpecs(vehicle) {
-    const market = fitmentMarketLabel(vehicle?.market);
-    return [vehicle?.year, market].filter(Boolean).join(" / ");
+    return [vehicle?.year].filter(Boolean).join(" / ");
 }
 
 function demoRimTitle(rim) {
@@ -1528,6 +1591,7 @@ function createFitmentCatalogueDraftMemory(jobId = state.fitmentJobId) {
         jobId,
         updatedAt: now,
         expiresAt: now + FITMENT_CATALOGUE_MEMORY_TTL_MS,
+        lastMake: "",
         contexts: {},
     };
 }
@@ -1571,26 +1635,24 @@ function persistFitmentCatalogueDraftMemory() {
     }
 }
 
-function fitmentCatalogueMemoryContext(market, { create = false } = {}) {
+function fitmentCatalogueMemoryContext(make, { create = false } = {}) {
     const memory = state.fitmentCatalogueDraftMemory;
-    const marketKey = fitmentCatalogueMemoryKey("regions", market);
-    if (!memory || !marketKey) return null;
-    let context = memory.contexts[marketKey];
+    const makeKey = fitmentCatalogueMemoryKey("makes", make);
+    if (!memory || !makeKey) return null;
+    let context = memory.contexts[makeKey];
     if (!context && create) {
-        context = { market: marketKey, lastMake: "", makes: {}, updatedAt: Date.now() };
-        memory.contexts[marketKey] = context;
+        context = { make: makeKey, lastModel: "", models: {}, updatedAt: Date.now() };
+        memory.contexts[makeKey] = context;
     }
     if (context) context.updatedAt = Date.now();
     return context || null;
 }
 
-function fitmentRememberedVehicleChain(market, { make = "", model = "" } = {}) {
-    const context = fitmentCatalogueMemoryContext(market);
-    if (!context) return { make: "", model: "", year: "" };
-    const rememberedMake = make || context.lastMake || "";
-    const makeContext = rememberedMake
-        ? context.makes?.[fitmentCatalogueMemoryKey("makes", rememberedMake)]
-        : null;
+function fitmentRememberedVehicleChain({ make = "", model = "" } = state.fitmentForm.vehicle) {
+    const memory = state.fitmentCatalogueDraftMemory;
+    if (!memory) return { make: "", model: "", year: "", lastExplicitMarket: "" };
+    const rememberedMake = make || memory.lastMake || "";
+    const makeContext = rememberedMake ? fitmentCatalogueMemoryContext(rememberedMake) : null;
     const rememberedModel = model || makeContext?.lastModel || "";
     const modelContext = rememberedModel
         ? makeContext?.models?.[fitmentCatalogueMemoryKey("models", rememberedModel)]
@@ -1599,37 +1661,39 @@ function fitmentRememberedVehicleChain(market, { make = "", model = "" } = {}) {
         make: rememberedMake,
         model: rememberedModel,
         year: modelContext?.lastYear || "",
+        lastExplicitMarket: modelContext?.lastExplicitMarket || "",
     };
 }
 
-function rememberFitmentVehicleCatalogueChain({ market, make, model, year } = state.fitmentForm.vehicle) {
-    const marketItem = fitmentCatalogueSelectionItem("regions", market, fitmentCatalogueItems("regions"));
-    const marketValue = fitmentOptionValue(marketItem) || fitmentCatalogueMemoryKey("regions", market);
-    if (!marketValue) return;
-    const context = fitmentCatalogueMemoryContext(marketValue, { create: true });
-    if (!context) return;
+function rememberFitmentVehicleCatalogueChain({ make, model, year, market } = state.fitmentForm.vehicle) {
+    const memory = state.fitmentCatalogueDraftMemory;
     const makeItem = fitmentCatalogueSelectionItem("makes", make, fitmentCatalogueItems("makes"));
-    if (makeItem) {
-        const makeValue = fitmentOptionValue(makeItem);
-        const makeKey = fitmentCatalogueMemoryKey("makes", makeValue);
-        context.lastMake = makeValue;
-        context.makes ||= {};
-        context.makes[makeKey] ||= { lastModel: "", models: {}, updatedAt: Date.now() };
-        const makeContext = context.makes[makeKey];
-        const modelItem = fitmentCatalogueSelectionItem("models", model, fitmentCatalogueItems("models"));
-        if (modelItem) {
-            const modelValue = fitmentOptionValue(modelItem);
-            const modelKey = fitmentCatalogueMemoryKey("models", modelValue);
-            makeContext.lastModel = modelValue;
-            makeContext.models ||= {};
-            makeContext.models[modelKey] ||= { lastYear: "", updatedAt: Date.now() };
-            const yearItem = fitmentCatalogueSelectionItem("years", year, fitmentCatalogueItems("years"));
-            if (yearItem) makeContext.models[modelKey].lastYear = fitmentOptionValue(yearItem);
-            makeContext.models[modelKey].updatedAt = Date.now();
+    if (!memory || !makeItem) return;
+    const makeValue = fitmentOptionValue(makeItem);
+    const makeKey = fitmentCatalogueMemoryKey("makes", makeValue);
+    memory.lastMake = makeValue;
+    memory.contexts ||= {};
+    const makeContext = fitmentCatalogueMemoryContext(makeValue, { create: true });
+    if (!makeContext) return;
+    const modelItem = fitmentCatalogueSelectionItem("models", model, fitmentCatalogueItems("models"));
+    if (modelItem) {
+        const modelValue = fitmentOptionValue(modelItem);
+        const modelKey = fitmentCatalogueMemoryKey("models", modelValue);
+        makeContext.lastModel = modelValue;
+        makeContext.models ||= {};
+        makeContext.models[modelKey] ||= { lastYear: "", lastExplicitMarket: "", updatedAt: Date.now() };
+        const modelContext = makeContext.models[modelKey];
+        const yearItem = fitmentCatalogueSelectionItem("years", year, fitmentCatalogueItems("years"));
+        if (yearItem) modelContext.lastYear = fitmentOptionValue(yearItem);
+        const marketItem = fitmentCatalogueSelectionItem("markets", market, state.fitmentMarketResolution?.items || []);
+        if (marketItem && state.fitmentMarketResolution?.status === "selected") {
+            modelContext.lastExplicitMarket = fitmentOptionValue(marketItem);
         }
-        makeContext.updatedAt = Date.now();
+        modelContext.updatedAt = Date.now();
     }
-    context.updatedAt = Date.now();
+    makeContext.updatedAt = Date.now();
+    memory.updatedAt = Date.now();
+    memory.expiresAt = Date.now() + FITMENT_CATALOGUE_MEMORY_TTL_MS;
     memoryTrimFitmentCatalogueDraftMemory();
     persistFitmentCatalogueDraftMemory();
 }
@@ -1637,18 +1701,13 @@ function rememberFitmentVehicleCatalogueChain({ market, make, model, year } = st
 function memoryTrimFitmentCatalogueDraftMemory() {
     const memory = state.fitmentCatalogueDraftMemory;
     if (!memory?.contexts) return;
-    const marketEntries = Object.entries(memory.contexts)
+    const makeEntries = Object.entries(memory.contexts)
         .sort(([, left], [, right]) => Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0));
-    memory.contexts = Object.fromEntries(marketEntries.slice(0, FITMENT_CATALOGUE_MEMORY_MAX_MARKETS));
-    for (const context of Object.values(memory.contexts)) {
-        const makeEntries = Object.entries(context.makes || {})
+    memory.contexts = Object.fromEntries(makeEntries.slice(0, FITMENT_CATALOGUE_MEMORY_MAX_MAKES));
+    for (const makeContext of Object.values(memory.contexts)) {
+        const modelEntries = Object.entries(makeContext.models || {})
             .sort(([, left], [, right]) => Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0));
-        context.makes = Object.fromEntries(makeEntries.slice(0, FITMENT_CATALOGUE_MEMORY_MAX_MAKES_PER_MARKET));
-        for (const makeContext of Object.values(context.makes)) {
-            const modelEntries = Object.entries(makeContext.models || {})
-                .sort(([, left], [, right]) => Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0));
-            makeContext.models = Object.fromEntries(modelEntries.slice(0, FITMENT_CATALOGUE_MEMORY_MAX_MODELS_PER_MAKE));
-        }
+        makeContext.models = Object.fromEntries(modelEntries.slice(0, FITMENT_CATALOGUE_MEMORY_MAX_MODELS_PER_MAKE));
     }
 }
 
@@ -2666,7 +2725,7 @@ function fitmentSaveLabel() {
     const action = fitmentNextAction(state.fitmentOverview);
     if (state.fitmentActiveSection === "vehicle" && state.fitmentVehicleEditing) {
         if (action === "complete_vehicle_details") {
-            const missing = ["make", "model", "year", "market"]
+            const missing = ["make", "model", "year"]
                 .some((field) => state.fitmentForm.vehicle[field] === "" || state.fitmentForm.vehicle[field] === null || state.fitmentForm.vehicle[field] === undefined);
             return locale === "ru"
                 ? (missing ? "Сохранить автомобиль" : "Подтвердить данные автомобиля")
@@ -2678,7 +2737,7 @@ function fitmentSaveLabel() {
         return locale === "ru" ? "Сохранить параметры" : "Save wheel details";
     }
     if (action === "complete_vehicle_details" && state.fitmentActiveSection === "vehicle") {
-        const missing = ["make", "model", "year", "market"]
+        const missing = ["make", "model", "year"]
             .some((field) => state.fitmentForm.vehicle[field] === "" || state.fitmentForm.vehicle[field] === null || state.fitmentForm.vehicle[field] === undefined);
         return locale === "ru"
             ? (missing ? "Сохранить автомобиль" : "Подтвердить данные автомобиля")
@@ -2700,17 +2759,25 @@ function refreshFitmentSaveLabel() {
 }
 
 function validateFitmentForm() {
-    const requiredVehicle = ["make", "model", "year", "market"];
+    const requiredVehicle = ["make", "model", "year"];
     const missing = requiredVehicle
         .filter((field) => state.fitmentForm.vehicle[field] === "" || state.fitmentForm.vehicle[field] === null || state.fitmentForm.vehicle[field] === undefined)
         .map((field) => `vehicle.${field}`);
-    const invalid = ["regions", "makes", "models", "years"]
+    const invalid = ["makes", "models", "years"]
         .map((kind) => {
-            const field = { regions: "market", makes: "make", models: "model", years: "year" }[kind];
+            const field = { makes: "make", models: "model", years: "year" }[kind];
             const value = state.fitmentForm.vehicle[field];
             return fitmentCatalogueFieldState(kind, value).state === "selected" ? null : `vehicle.${field}`;
         })
         .filter(Boolean);
+    const marketState = state.fitmentMarketResolution || {};
+    const marketCandidates = marketState.items || [];
+    const market = state.fitmentForm.vehicle.market;
+    const marketCandidate = fitmentCatalogueSelectionItem("markets", market, marketCandidates);
+    const marketIsValid = marketState.status === "resolved_single"
+        ? Boolean(market && marketState.resolved_market?.value === market)
+        : marketState.status === "selected" && Boolean(marketCandidate);
+    if (!marketIsValid) invalid.push("vehicle.market");
     state.fitmentFormState.validation = missing.length || invalid.length ? "invalid" : "valid";
     state.fitmentFormState.missingFields = missing;
     state.fitmentFormState.invalidFields = invalid;
@@ -3249,6 +3316,10 @@ function demoServerTransition(action, payload = {}) {
     if (action === "confirm_vehicle") {
         if (nextOverview.next_action?.kind !== "complete_vehicle_details") return nextOverview;
         markDemoCheckStale(nextOverview);
+        const incomingVehicle = payload.vehicle || {};
+        for (const fieldName of ["make", "model", "year", "market"]) {
+            if (incomingVehicle[fieldName] !== undefined) nextOverview.vehicle[fieldName] = incomingVehicle[fieldName];
+        }
         for (const fieldName of ["make", "model", "year", "market"]) {
             const stateFieldName = fieldName === "market" ? "region" : fieldName;
             const value = nextOverview.vehicle[fieldName];
@@ -3485,9 +3556,6 @@ function runDemoFitmentCheck() {
 function renderFitmentControls() {
     const overview = state.fitmentOverview || {};
     const form = state.fitmentForm;
-    if (!form.vehicle.market && overview.vehicle?.market && !state.fitmentVehicleMarketEdited) {
-        form.vehicle.market = overview.vehicle.market;
-    }
     const setOptions = (select, items, currentValue, kind) => {
         if (!select) return;
         const current = currentValue === null || currentValue === undefined ? "" : String(currentValue);
@@ -3507,7 +3575,6 @@ function renderFitmentControls() {
             retry.textContent = locale === "ru" ? "Повторить" : "Retry";
         }
         const options = [`<option value="">${fieldState.message || fieldState.placeholder || {
-            regions: "Выберите рынок",
             makes: "Выберите марку",
             models: "Выберите модель",
             years: "Выберите год",
@@ -3541,20 +3608,58 @@ function renderFitmentControls() {
         if (statusNode?.id && fieldState.message) select.setAttribute("aria-describedby", statusNode.id);
         else select.removeAttribute("aria-describedby");
     };
-    const regions = shouldUseDemoFitment(state.fitmentJobId)
-        ? FITMENT_REGIONS.map(([value, label]) => ({ value, label }))
-        : fitmentCatalogueItems("regions");
-    const marketValue = form.vehicle.market || overview.vehicle?.market || "";
-    setOptions(document.querySelector('[data-fitment-catalogue="regions"]'), regions, marketValue, "regions");
     setOptions(document.querySelector('[data-fitment-catalogue="makes"]'), fitmentCatalogueItems("makes"), form.vehicle.make, "makes");
     setOptions(document.querySelector('[data-fitment-catalogue="models"]'), fitmentCatalogueItems("models"), form.vehicle.model, "models");
     setOptions(document.querySelector('[data-fitment-catalogue="years"]'), fitmentCatalogueItems("years"), form.vehicle.year, "years");
+    const marketField = document.querySelector("[data-fitment-market-field]");
+    const marketSelect = document.querySelector("[data-fitment-market-resolution]");
+    const marketState = state.fitmentMarketResolution || { status: "idle", items: [] };
+    const marketItems = marketState.items || [];
+    const marketVisible = ["selection_required", "selected"].includes(marketState.status);
+    const marketStatusCopy = {
+        idle: "Сначала выберите марку, модель и год",
+        loading: "Проверяем доступные версии для рынка…",
+        no_data: "Для выбранного автомобиля версия для рынка не найдена",
+        failed: "Не удалось проверить версии для рынка",
+        selection_required: "Выберите версию для точной проверки",
+        selected: "Версия выбрана",
+    }[marketState.status] || "";
+    if (marketField) {
+        marketField.hidden = !marketVisible;
+        marketField.dataset.catalogueState = marketState.status;
+        marketField.dataset.resolution = marketState.resolution || "";
+    }
+    if (marketSelect) {
+        const current = form.vehicle.market || "";
+        const marketCandidate = fitmentCatalogueSelectionItem("markets", current, marketItems);
+        const options = [`<option value="">${marketStatusCopy || "Выберите версию для рынка"}</option>`];
+        for (const item of marketItems) {
+            const value = fitmentOptionValue(item);
+            if (!value) continue;
+            options.push(`<option value="${value.replaceAll('"', "&quot;")}">${fitmentOptionLabel(item).replaceAll("<", "&lt;")}</option>`);
+        }
+        marketSelect.innerHTML = options.join("");
+        marketSelect.value = marketCandidate ? fitmentOptionValue(marketCandidate) : "";
+        marketSelect.disabled = state.fitmentLoading || state.fitmentSaving || !marketVisible;
+        marketSelect.setAttribute("aria-busy", String(marketState.status === "loading"));
+        const statusNode = marketField?.querySelector("[data-fitment-market-state]");
+        const retry = marketField?.querySelector('[data-fitment-catalogue-retry="markets"]');
+        if (statusNode) {
+            statusNode.textContent = marketStatusCopy;
+            statusNode.hidden = !marketStatusCopy;
+            statusNode.dataset.state = marketState.status;
+        }
+        if (retry) {
+            retry.hidden = !["failed", "no_data"].includes(marketState.status);
+            retry.disabled = state.fitmentLoading || state.fitmentSaving;
+        }
+    }
     const vehicleHelper = document.querySelector("[data-fitment-vehicle-helper]");
     const yearsHaveNoData = fitmentCatalogueFieldState("years", form.vehicle.year).state === "no_data";
     if (vehicleHelper) {
         vehicleHelper.hidden = !yearsHaveNoData;
         vehicleHelper.textContent = yearsHaveNoData
-            ? "Для выбранного рынка и модели год не найден в каталоге"
+            ? "Для выбранной марки и модели год не найден в каталоге"
             : "";
         vehicleHelper.dataset.state = yearsHaveNoData ? "no_data" : "";
     }
@@ -4949,7 +5054,7 @@ function fitmentCatalogueErrorMessage() {
 function fitmentCatalogueSelectionItem(kind, value, items = []) {
     if (value === null || value === undefined || value === "") return null;
     const normalized = String(value).trim().toLocaleLowerCase();
-    const canonical = kind === "regions"
+    const canonical = ["regions", "markets"].includes(kind)
         ? fitmentCatalogueMemoryKey("regions", value)
         : normalized;
     return items.find((item) => {
@@ -4957,7 +5062,7 @@ function fitmentCatalogueSelectionItem(kind, value, items = []) {
         const itemLabel = fitmentOptionLabel(item).trim().toLocaleLowerCase();
         return itemValue === normalized
             || itemLabel === normalized
-            || (kind === "regions" && itemValue === canonical);
+            || (["regions", "markets"].includes(kind) && itemValue === canonical);
     }) || null;
 }
 
@@ -4988,11 +5093,6 @@ function fitmentCatalogueQueryValue(kind, value) {
 
 function fitmentCatalogueParentReadiness(kind) {
     const vehicle = state.fitmentForm.vehicle;
-    if (kind === "regions") return "ready";
-    if (!vehicle.market) return "missing";
-    const regions = state.fitmentCatalogue.regions;
-    if (regions.status === "loading") return "loading";
-    if (regions.status !== "loaded" || !fitmentCatalogueSelectionMatches("regions", vehicle.market, regions.items)) return "missing";
     if (kind === "makes") return "ready";
     if (!vehicle.make) return "missing";
     const makes = state.fitmentCatalogue.makes;
@@ -5008,14 +5108,12 @@ function fitmentCatalogueParentReadiness(kind) {
 
 function fitmentCatalogueFieldState(kind, value) {
     const placeholder = {
-        regions: "Выберите рынок",
         makes: "Выберите марку",
         models: "Выберите модель",
         years: "Выберите год",
     }[kind] || "Выберите значение";
     const parent = fitmentCatalogueParentReadiness(kind);
     if (parent === "missing") return { state: "idle_parent_missing", message: {
-        makes: "Сначала выберите рынок",
         models: "Сначала выберите марку",
         years: "Сначала выберите модель",
     }[kind] || placeholder, placeholder };
@@ -5023,22 +5121,19 @@ function fitmentCatalogueFieldState(kind, value) {
         makes: "Загружаем марки…",
         models: "Загружаем модели…",
         years: "Загружаем годы…",
-    }[kind] || "Загружаем рынки…", placeholder };
+    }[kind], placeholder };
     const raw = state.fitmentCatalogue[kind] || { status: "idle", items: [] };
     if (raw.status === "loading" || raw.status === "idle") return { state: "loading", message: {
-        regions: "Загружаем рынки…",
         makes: "Загружаем марки…",
         models: "Загружаем модели…",
         years: "Загружаем годы…",
     }[kind], placeholder };
     if (raw.status === "no_data") return { state: "no_data", message: {
-        regions: "Нет доступных рынков",
         makes: "Нет доступных марок",
         models: "Нет доступных моделей",
         years: "Нет доступных годов",
     }[kind], placeholder };
     if (raw.status === "failed") return { state: "failed", message: {
-        regions: "Не удалось загрузить рынки",
         makes: "Не удалось загрузить марки",
         models: "Не удалось загрузить модели",
         years: "Не удалось загрузить годы",
@@ -5050,21 +5145,20 @@ function fitmentCatalogueFieldState(kind, value) {
 }
 
 function fitmentCatalogueDependencyKey(kind, params = {}) {
-    if (kind === "regions") return "regions";
-    const region = fitmentCatalogueQueryValue("regions", params.region || "");
-    if (kind === "makes") return `makes:${region.toLocaleLowerCase()}`;
+    if (kind === "makes") return "makes";
     const make = String(params.make || "").trim().toLocaleLowerCase();
-    if (kind === "models") return `models:${region.toLocaleLowerCase()}:${make}`;
+    if (kind === "models") return `models:${make}`;
     const model = String(params.model || "").trim().toLocaleLowerCase();
-    return `years:${region.toLocaleLowerCase()}:${make}:${model}`;
+    if (kind === "years") return `years:${make}:${model}`;
+    return `markets:${make}:${model}:${String(params.year || "").trim()}`;
 }
 
 function fitmentCatalogueCurrentParams(kind) {
     const vehicle = state.fitmentForm.vehicle;
-    if (kind === "regions") return {};
-    if (kind === "makes") return { region: vehicle.market };
-    if (kind === "models") return { region: vehicle.market, make: vehicle.make };
-    return { region: vehicle.market, make: vehicle.make, model: vehicle.model };
+    if (kind === "makes") return {};
+    if (kind === "models") return { make: vehicle.make };
+    if (kind === "years") return { make: vehicle.make, model: vehicle.model };
+    return { make: vehicle.make, model: vehicle.model, year: vehicle.year };
 }
 
 function isCurrentFitmentCatalogueRequest(kind, params, request) {
@@ -5088,6 +5182,15 @@ function resetFitmentCatalogue(kind, { status = "idle", items = [] } = {}) {
     state.fitmentCatalogueControllers[kind]?.abort?.();
     delete state.fitmentCatalogueControllers[kind];
     delete state.fitmentCatalogueRequests[kind];
+    if (kind === "markets") {
+        state.fitmentMarketResolution = {
+            status,
+            resolution: "",
+            resolved_market: null,
+            items,
+        };
+        return;
+    }
     state.fitmentCatalogue[kind] = { status, items };
 }
 
@@ -5098,8 +5201,26 @@ function fitmentCatalogueResultFromState(kind) {
     return null;
 }
 
+function demoVehicleCatalogueResult(kind, params = {}) {
+    const make = String(params.make || "").trim().toLocaleLowerCase();
+    const model = String(params.model || "").trim().toLocaleLowerCase();
+    let items = [];
+    if (kind === "makes") items = DEMO_VEHICLE_CATALOGUE.makes;
+    if (kind === "models") items = DEMO_VEHICLE_CATALOGUE.models[make] || [];
+    if (kind === "years") items = DEMO_VEHICLE_CATALOGUE.years[`${make}:${model}`] || [];
+    if (kind === "markets") {
+        items = DEMO_VEHICLE_CATALOGUE.markets[`${make}:${model}:${params.year}`] || [];
+        if (items.length === 1) {
+            return { outcome: "success", resolution: "single", resolved_market: items[0], items: [] };
+        }
+        if (items.length > 1) return { outcome: "success", resolution: "selection_required", resolved_market: null, items };
+        return { outcome: "no_data", resolution: "no_data", resolved_market: null, items: [] };
+    }
+    return { outcome: items.length ? "success" : "no_data", items };
+}
+
 async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.fitmentCatalogueContextVersion } = {}) {
-    if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return null;
+    if (!state.fitmentJobId) return null;
     state.fitmentCatalogueControllers[kind]?.abort?.();
     const controller = new AbortController();
     const request = {
@@ -5110,31 +5231,57 @@ async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.
     };
     state.fitmentCatalogueControllers[kind] = controller;
     state.fitmentCatalogueRequests[kind] = request;
-    state.fitmentCatalogue[kind] = { status: "loading", items: [] };
+    if (kind === "markets") {
+        state.fitmentMarketResolution = {
+            status: "loading", resolution: "", resolved_market: null, items: [],
+        };
+    } else {
+        state.fitmentCatalogue[kind] = { status: "loading", items: state.fitmentCatalogue[kind]?.items || [] };
+    }
     renderFitment();
     try {
-        const queryParams = { ...params };
-        if (queryParams.region) queryParams.region = fitmentCatalogueQueryValue("regions", queryParams.region);
-        const query = new URLSearchParams(queryParams);
-        const suffix = query.toString() ? `?${query}` : "";
-        const response = await fetch(
-            apiUrl(`/jobs/${state.fitmentJobId}/fitment/catalogue/${kind}${suffix}`, { includeIdentity: true }),
-            { headers: withAuthHeaders(), signal: controller.signal }
-        );
-        if (response.status === 401) {
-            showFitmentAuthRequired();
-            return null;
+        let result;
+        if (shouldUseDemoFitment(state.fitmentJobId)) {
+            result = demoVehicleCatalogueResult(kind, params);
+        } else {
+            const query = new URLSearchParams(params);
+            const suffix = query.toString() ? `?${query}` : "";
+            const response = await fetch(
+                apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-catalogue/${kind}${suffix}`, { includeIdentity: true }),
+                { headers: withAuthHeaders(), signal: controller.signal }
+            );
+            if (response.status === 401) {
+                showFitmentAuthRequired();
+                return null;
+            }
+            if (!response.ok) throw new Error(await parseApiError(response));
+            result = await response.json();
         }
-        if (!response.ok) throw new Error(await parseApiError(response));
-        const result = await response.json();
         if (!isCurrentFitmentCatalogueRequest(kind, params, request)) return null;
         const items = Array.isArray(result.items) ? result.items : [];
-        const outcome = result.outcome === "no_data" || !items.length ? "no_data" : "success";
-        state.fitmentCatalogue[kind] = { status: outcome === "no_data" ? "no_data" : "loaded", items };
+        const outcome = result.outcome === "no_data"
+            || (kind !== "markets" && !items.length)
+            || (kind === "markets" && result.resolution !== "single" && !items.length)
+            ? "no_data" : "success";
+        if (kind === "markets") {
+            state.fitmentMarketResolution = {
+                ...result,
+                status: outcome === "no_data"
+                    ? "no_data"
+                    : result.resolution === "single" ? "resolved_single" : "selection_required",
+                items,
+            };
+        } else {
+            state.fitmentCatalogue[kind] = { status: outcome === "no_data" ? "no_data" : "loaded", items };
+        }
         return { ...result, outcome, items };
     } catch (error) {
         if (error?.name === "AbortError" || !isCurrentFitmentCatalogueRequest(kind, params, request)) return null;
-        state.fitmentCatalogue[kind] = { status: "failed", items: [] };
+        if (kind === "markets") {
+            state.fitmentMarketResolution = { status: "failed", resolution: "", resolved_market: null, items: [] };
+        } else {
+            state.fitmentCatalogue[kind] = { status: "failed", items: [] };
+        }
         return { outcome: "failed", items: [] };
     } finally {
         if (state.fitmentCatalogueRequests[kind] === request) renderFitment();
@@ -5146,26 +5293,18 @@ async function revalidateFitmentCatalogueChain(
     { preloaded = {} } = {}
 ) {
     const vehicle = state.fitmentForm.vehicle;
-    if (!vehicle.market) {
-        resetFitmentCatalogue("makes");
+    const previousMarketStatus = state.fitmentMarketResolution?.status;
+    const previousMarket = vehicle.market;
+    const parentChange = state.fitmentCatalogueParentChange || {};
+    if (!vehicle.make && !preloaded.makes) {
         resetFitmentCatalogue("models");
         resetFitmentCatalogue("years");
+        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
         validateFitmentForm();
         renderFitment();
         return;
     }
-    const regionItems = fitmentCatalogueItems("regions");
-    const regionEntry = fitmentCatalogueSelectionItem("regions", vehicle.market, regionItems);
-    if (state.fitmentCatalogue.regions.status !== "loaded" || !regionEntry) {
-        resetFitmentCatalogue("makes");
-        resetFitmentCatalogue("models");
-        resetFitmentCatalogue("years");
-        validateFitmentForm();
-        renderFitment();
-        return;
-    }
-    vehicle.market = fitmentOptionValue(regionEntry);
-    const makesResult = preloaded.makes || await loadFitmentCatalogue("makes", { region: vehicle.market }, { contextVersion });
+    const makesResult = preloaded.makes || await loadFitmentCatalogue("makes", {}, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!makesResult || makesResult.outcome === "failed") {
         resetFitmentCatalogue("models");
@@ -5184,7 +5323,7 @@ async function revalidateFitmentCatalogueChain(
         renderFitment();
         return;
     }
-    const remembered = fitmentRememberedVehicleChain(vehicle.market);
+    const remembered = fitmentRememberedVehicleChain({ make: vehicle.make });
     const currentMakeEntry = fitmentCatalogueSelectionItem("makes", vehicle.make, makesResult.items);
     const rememberedMakeEntry = fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items);
     const makeEntry = currentMakeEntry || rememberedMakeEntry;
@@ -5199,8 +5338,8 @@ async function revalidateFitmentCatalogueChain(
         return;
     }
     vehicle.make = fitmentOptionValue(makeEntry);
-    const makeWasPreserved = Boolean(currentMakeEntry);
-    const modelsResult = preloaded.models || await loadFitmentCatalogue("models", { region: vehicle.market, make: vehicle.make }, { contextVersion });
+    const makeWasPreserved = !parentChange.makeChanged;
+    const modelsResult = preloaded.models || await loadFitmentCatalogue("models", { make: vehicle.make }, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!modelsResult || modelsResult.outcome === "failed") {
         resetFitmentCatalogue("years");
@@ -5216,8 +5355,10 @@ async function revalidateFitmentCatalogueChain(
         renderFitment();
         return;
     }
-    const rememberedMake = fitmentRememberedVehicleChain(vehicle.market, { make: vehicle.make });
-    const currentModelEntry = makeWasPreserved
+    const rememberedMake = fitmentRememberedVehicleChain({ make: vehicle.make });
+    // A user-selected model is the current draft value even while its catalogue
+    // response is revalidated. Only discard it automatically when its make changed.
+    const currentModelEntry = !parentChange.makeChanged
         ? fitmentCatalogueSelectionItem("models", vehicle.model, modelsResult.items)
         : null;
     const rememberedModelEntry = fitmentCatalogueSelectionItem("models", rememberedMake.model, modelsResult.items);
@@ -5231,9 +5372,8 @@ async function revalidateFitmentCatalogueChain(
         return;
     }
     vehicle.model = fitmentOptionValue(modelEntry);
-    const modelWasPreserved = Boolean(currentModelEntry);
+    const modelWasPreserved = !parentChange.modelChanged;
     const yearsResult = preloaded.years || await loadFitmentCatalogue("years", {
-        region: vehicle.market,
         make: vehicle.make,
         model: vehicle.model,
     }, { contextVersion });
@@ -5252,62 +5392,77 @@ async function revalidateFitmentCatalogueChain(
     const currentYearEntry = modelWasPreserved
         ? fitmentCatalogueSelectionItem("years", vehicle.year, yearsResult.items)
         : null;
-    const rememberedYear = fitmentRememberedVehicleChain(vehicle.market, {
+    const rememberedYear = fitmentRememberedVehicleChain({
         make: vehicle.make,
         model: vehicle.model,
     });
     const rememberedYearEntry = fitmentCatalogueSelectionItem("years", rememberedYear.year, yearsResult.items);
     const yearEntry = currentYearEntry || rememberedYearEntry;
     vehicle.year = yearEntry ? fitmentOptionValue(yearEntry) : "";
+    if (!yearEntry) {
+        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+        validateFitmentForm();
+        renderFitment();
+        return;
+    }
+    const marketResult = preloaded.markets || await loadFitmentCatalogue("markets", {
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+    }, { contextVersion });
+    if (contextVersion !== state.fitmentCatalogueContextVersion) return;
+    if (!marketResult || marketResult.outcome === "failed") {
+        validateFitmentForm();
+        renderFitment();
+        return;
+    }
+    if (marketResult.outcome === "no_data") {
+        vehicle.market = "";
+        state.fitmentMarketResolution = {
+            ...marketResult, status: "no_data", resolution: "no_data", resolved_market: null, items: [],
+        };
+    } else if (marketResult.resolution === "single") {
+        vehicle.market = fitmentOptionValue(marketResult.resolved_market);
+        state.fitmentMarketResolution = {
+            ...marketResult, status: "resolved_single", items: [],
+        };
+    } else {
+        const explicitMarket = previousMarketStatus === "selected"
+            ? previousMarket
+            : rememberedYear.lastExplicitMarket;
+        const rememberedMarket = fitmentCatalogueSelectionItem("markets", explicitMarket, marketResult.items);
+        vehicle.market = rememberedMarket ? fitmentOptionValue(rememberedMarket) : "";
+        state.fitmentMarketResolution = {
+            ...marketResult,
+            status: rememberedMarket ? "selected" : "selection_required",
+            items: marketResult.items,
+        };
+    }
     if (yearEntry) rememberFitmentVehicleCatalogueChain(vehicle);
     if (state.fitmentFormState.baseline?.vehicle) {
         state.fitmentVehicleDirty = JSON.stringify(vehicle) !== JSON.stringify(state.fitmentFormState.baseline.vehicle);
     }
     if (!state.fitmentVehicleDirty) state.fitmentFormState.baseline.vehicle = { ...vehicle };
+    state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
     validateFitmentForm();
     renderFitment();
 }
 
 function loadFitmentVehicleCatalogue() {
-    if (shouldUseDemoFitment(state.fitmentJobId)) {
-        const overview = state.fitmentOverview || {};
-        state.fitmentCatalogue.regions = {
-            status: "loaded",
-            items: FITMENT_REGIONS.map(([value, label]) => ({ value, label })),
-        };
-        state.fitmentCatalogue.makes = { status: "loaded", items: [{ value: overview.vehicle?.make || "ZEEKR", label: overview.vehicle?.make || "ZEEKR" }] };
-        state.fitmentCatalogue.models = { status: "loaded", items: [{ value: overview.vehicle?.model || "007", label: overview.vehicle?.model || "007" }] };
-        state.fitmentCatalogue.years = { status: "loaded", items: [{ value: String(overview.vehicle?.year || 2025), label: String(overview.vehicle?.year || 2025) }] };
-        return;
-    }
     const contextVersion = beginFitmentCatalogueContextChange();
-    resetFitmentCatalogue("regions");
     resetFitmentCatalogue("makes", { status: "loading" });
-    resetFitmentCatalogue("models", { status: "loading" });
-    resetFitmentCatalogue("years", { status: "loading" });
-    void (async () => {
-        const regionsResult = await loadFitmentCatalogue("regions", {}, { contextVersion });
-        if (contextVersion !== state.fitmentCatalogueContextVersion || !regionsResult || regionsResult.outcome !== "success") {
-            resetFitmentCatalogue("makes");
-            resetFitmentCatalogue("models");
-            resetFitmentCatalogue("years");
-            renderFitment();
-            return;
-        }
-        await revalidateFitmentCatalogueChain(contextVersion);
-    })();
+    resetFitmentCatalogue("models");
+    resetFitmentCatalogue("years");
+    state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+    void revalidateFitmentCatalogueChain(contextVersion);
 }
 
 function retryFitmentCatalogue(kind) {
-    if (!state.fitmentJobId || !["regions", "makes", "models", "years"].includes(kind)) return;
+    if (!state.fitmentJobId || !["makes", "models", "years", "markets"].includes(kind)) return;
     const contextVersion = beginFitmentCatalogueContextChange();
     const params = fitmentCatalogueCurrentParams(kind);
     resetFitmentCatalogue(kind, { status: "loading" });
-    if (kind === "regions") {
-        resetFitmentCatalogue("makes", { status: "loading" });
-        resetFitmentCatalogue("models", { status: "loading" });
-        resetFitmentCatalogue("years", { status: "loading" });
-    } else if (kind === "makes") {
+    if (kind === "makes") {
         resetFitmentCatalogue("models", { status: "loading" });
         resetFitmentCatalogue("years", { status: "loading" });
     } else if (kind === "models") {
@@ -5319,6 +5474,11 @@ function retryFitmentCatalogue(kind) {
         const preloaded = { [kind]: result };
         if (kind === "models" || kind === "years") preloaded.makes = fitmentCatalogueResultFromState("makes");
         if (kind === "years") preloaded.models = fitmentCatalogueResultFromState("models");
+        if (kind === "markets") {
+            preloaded.makes = fitmentCatalogueResultFromState("makes");
+            preloaded.models = fitmentCatalogueResultFromState("models");
+            preloaded.years = fitmentCatalogueResultFromState("years");
+        }
         await revalidateFitmentCatalogueChain(contextVersion, { preloaded });
     })();
 }
@@ -5424,9 +5584,11 @@ function openFitmentView(
         models: { status: "idle", items: [] },
         years: { status: "idle", items: [] },
     };
+    state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
     state.fitmentCatalogueRequests = {};
     state.fitmentCatalogueContextVersion = 0;
     state.fitmentCatalogueRequestToken = 0;
+    state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
     state.fitmentError = "";
     state.fitmentMessage = "";
     state.fitmentSourceStatus = "";
@@ -5650,7 +5812,7 @@ async function loadFitmentVehicleVariants() {
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         state.fitmentLookup = { status: "loaded", outcome: "multiple" };
         state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(
-            DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }))
+            demoVehicleVariantsForSelection().map((variant) => ({ ...variant }))
         );
         state.fitmentSelectedVehicleVariantIndex = null;
         state.fitmentMessage = locale === "ru"
@@ -5714,7 +5876,7 @@ async function loadFitmentVehicleVariantsForReselection() {
         if (shouldUseDemoFitment(state.fitmentJobId)) {
             state.fitmentLookup = { status: "loaded", outcome: "multiple", mode: "reselect" };
             state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(
-                DEMO_VEHICLE_VARIANTS.map((variant) => ({ ...variant }))
+                demoVehicleVariantsForSelection().map((variant) => ({ ...variant }))
             );
             return;
         }
@@ -8875,37 +9037,52 @@ function bindEvents() {
                 }
             } else if (input.dataset.fitmentCatalogue === "makes") {
                 rememberFitmentVehicleCatalogueChain();
+                state.fitmentCatalogueParentChange = {
+                    makeChanged: value !== state.fitmentForm.vehicle.make,
+                    modelChanged: false,
+                };
                 state.fitmentForm.vehicle.make = value;
-                state.fitmentForm.vehicle.model = "";
-                state.fitmentForm.vehicle.year = "";
                 const contextVersion = beginFitmentCatalogueContextChange();
                 resetFitmentCatalogue("models", { status: value ? "loading" : "idle" });
                 resetFitmentCatalogue("years", { status: value ? "loading" : "idle" });
-                if (value && state.fitmentForm.vehicle.market) void revalidateFitmentCatalogueChain(contextVersion);
-            } else if (input.dataset.fitmentCatalogue === "models") {
-                rememberFitmentVehicleCatalogueChain();
-                state.fitmentForm.vehicle.model = value;
-                state.fitmentForm.vehicle.year = "";
-                const contextVersion = beginFitmentCatalogueContextChange();
-                resetFitmentCatalogue("years", { status: value ? "loading" : "idle" });
-                if (value && state.fitmentForm.vehicle.market && state.fitmentForm.vehicle.make) void revalidateFitmentCatalogueChain(contextVersion);
-            } else if (input.dataset.fitmentCatalogue === "regions") {
-                rememberFitmentVehicleCatalogueChain();
-                state.fitmentVehicleMarketEdited = true;
-                state.fitmentForm.vehicle.market = value;
-                const contextVersion = beginFitmentCatalogueContextChange();
-                resetFitmentCatalogue("makes", { status: value ? "loading" : "idle" });
-                resetFitmentCatalogue("models", { status: value ? "loading" : "idle" });
-                resetFitmentCatalogue("years", { status: value ? "loading" : "idle" });
-                if (value) {
-                    void revalidateFitmentCatalogueChain(contextVersion);
-                } else {
-                    state.fitmentForm.vehicle.make = "";
+                state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+                if (value) void revalidateFitmentCatalogueChain(contextVersion);
+                else {
                     state.fitmentForm.vehicle.model = "";
                     state.fitmentForm.vehicle.year = "";
                 }
+            } else if (input.dataset.fitmentCatalogue === "models") {
+                rememberFitmentVehicleCatalogueChain();
+                state.fitmentCatalogueParentChange = {
+                    makeChanged: false,
+                    modelChanged: value !== state.fitmentForm.vehicle.model,
+                };
+                state.fitmentForm.vehicle.model = value;
+                const contextVersion = beginFitmentCatalogueContextChange();
+                resetFitmentCatalogue("years", { status: value ? "loading" : "idle" });
+                state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+                if (value && state.fitmentForm.vehicle.make) void revalidateFitmentCatalogueChain(contextVersion);
+                else if (!value) state.fitmentForm.vehicle.year = "";
             } else if (input.dataset.fitmentCatalogue === "years") {
                 state.fitmentForm.vehicle.year = value;
+                state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+                const contextVersion = beginFitmentCatalogueContextChange();
+                state.fitmentMarketResolution = { status: value ? "loading" : "idle", resolution: "", resolved_market: null, items: [] };
+                if (value && state.fitmentForm.vehicle.make && state.fitmentForm.vehicle.model) {
+                    void revalidateFitmentCatalogueChain(contextVersion, {
+                        preloaded: {
+                            makes: fitmentCatalogueResultFromState("makes"),
+                            models: fitmentCatalogueResultFromState("models"),
+                            years: fitmentCatalogueResultFromState("years"),
+                        },
+                    });
+                }
+            } else if (input.dataset.fitmentMarketResolution !== undefined) {
+                state.fitmentForm.vehicle.market = value;
+                state.fitmentMarketResolution = {
+                    ...state.fitmentMarketResolution,
+                    status: value ? "selected" : "selection_required",
+                };
                 rememberFitmentVehicleCatalogueChain();
             } else {
                 setDeepValue(state.fitmentForm, path, value);

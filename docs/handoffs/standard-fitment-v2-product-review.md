@@ -381,6 +381,34 @@ and must not freeze a conflicting duplicate wording.
 `VERDICT_SEMANTICS_CHANGED = NO`
 `NEXT_ACTION_SEMANTICS_CHANGED = NO`
 
+## Vehicle Catalogue make-first corrective amendment — 2026-09-03
+
+The 2026-09-02 market-first catalogue cascade is superseded for Phase 07B.
+The authoritative editor order is now `Марка → Модель → Год`, followed by a
+conditional `Версия для рынка` selector only when the backend aggregate finds
+multiple exact provider-region candidates. A single candidate auto-resolves
+and remains hidden; `no_data` and provider failure remain distinct.
+
+The browser uses only the authenticated provider-neutral aggregate endpoints.
+The backend owns the complete-region fan-out, preserves provider identity per
+region, and revalidates the exact make/model/year/market identity at explicit
+Save. Dropdown interaction does not PATCH, and VLM market evidence remains a
+proposal only. The draft memory is job-scoped, bounded, expiring and rooted
+at make; the summary omits an auto-resolved market.
+
+This correction changes catalogue aggregation and UI state topology only. It
+does not change Fitment domain semantics, verdict semantics, `next_action`,
+variant/rim behaviour, rendering or production state.
+
+`VEHICLE_CATALOGUE_MAKE_FIRST = IMPLEMENTED`
+`VEHICLE_CATALOGUE_BACKEND_AGGREGATION = IMPLEMENTED`
+`VEHICLE_CATALOGUE_MARKET_FIRST = SUPERSEDED`
+`BACKEND_CHANGED = YES`
+`DOMAIN_SEMANTICS_CHANGED = NO`
+`VERDICT_SEMANTICS_CHANGED = NO`
+`NEXT_ACTION_SEMANTICS_CHANGED = NO`
+`READY_FOR_STAGING_MERGE = NO`
+
 ## Final handoff state
 
 ```text

@@ -25,20 +25,21 @@ def test_vehicle_editor_uses_three_exclusive_workspace_modes() -> None:
     assert "vehicleSection.dataset.vehicleWorkspaceMode = vehicleWorkspaceMode;" in render
 
 
-def test_vehicle_editor_order_is_market_make_model_year_on_all_viewports() -> None:
+def test_vehicle_editor_order_is_make_model_year_then_conditional_market_on_all_viewports() -> None:
     editor = _scope(
         INDEX_HTML,
         'class="fitment-form-grid" data-fitment-vehicle-editor',
         "data-fitment-modification-summary",
     )
     fields = [
-        editor.index('data-fitment-input="vehicle.market"'),
         editor.index('data-fitment-input="vehicle.make"'),
         editor.index('data-fitment-input="vehicle.model"'),
         editor.index('data-fitment-input="vehicle.year"'),
+        editor.index('data-fitment-input="vehicle.market"'),
     ]
     assert fields == sorted(fields)
-    assert 'data-fitment-catalogue-state="regions"' in editor
+    assert "data-fitment-market-field" in editor
+    assert "data-fitment-market-resolution" in editor
     assert 'data-fitment-catalogue-state="makes"' in editor
     assert 'data-fitment-catalogue-state="models"' in editor
     assert 'data-fitment-catalogue-state="years"' in editor
@@ -58,7 +59,6 @@ def test_catalogue_field_states_are_explicit_and_accessible() -> None:
         "failed",
     ):
         assert f'state: "{state}"' in field_state
-    assert "Сначала выберите рынок" in APP_JS
     assert "Сначала выберите марку" in APP_JS
     assert "Сначала выберите модель" in APP_JS
     assert "Загружаем марки…" in APP_JS
@@ -72,6 +72,7 @@ def test_catalogue_field_states_are_explicit_and_accessible() -> None:
     assert "Не удалось загрузить годы" in APP_JS
     assert 'select.setAttribute("aria-busy", String(fieldState.state === "loading"));' in APP_JS
     assert 'data-fitment-catalogue-retry="makes"' in INDEX_HTML
+    assert 'data-fitment-catalogue-retry="markets"' in INDEX_HTML
 
 
 def test_catalogue_memory_is_job_scoped_bounded_expiring_and_nested() -> None:
@@ -134,7 +135,7 @@ def test_no_data_and_failure_have_different_rendering_paths_and_retry_uses_curre
         "async function revalidateFitmentCatalogueChain",
     )
     assert 'state.fitmentCatalogue[kind] = { status: "failed", items: [] };' in loader
-    assert 'result.outcome === "no_data" || !items.length' in loader
+    assert 'result.outcome === "no_data"' in loader
     assert 'return { outcome: "failed", items: [] };' in loader
     retry = _scope(APP_JS, "function retryFitmentCatalogue", "async function loadFitmentOverview")
     assert "beginFitmentCatalogueContextChange();" in retry
@@ -147,8 +148,10 @@ def test_save_is_disabled_until_all_four_current_catalogue_selections_are_valid(
     validation = _scope(
         APP_JS, "function validateFitmentForm", "function fitmentVehicleConfirmationRequired"
     )
-    assert '"regions", "makes", "models", "years"' in validation
+    assert '"make", "model", "year"' in validation
     assert 'fitmentCatalogueFieldState(kind, value).state === "selected"' in validation
+    assert 'marketState.status === "resolved_single"' in validation
+    assert 'marketState.status === "selected"' in validation
     render = _scope(APP_JS, "function renderFitment()", "function renderFitmentRimVariants")
     assert 'state.fitmentFormState.validation !== "valid"' in render
     save = _scope(APP_JS, "async function saveFitment", "async function fetchRenderHistory")

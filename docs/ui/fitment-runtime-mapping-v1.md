@@ -500,3 +500,45 @@ altering the behavioural contract.
 Slice 6 is complete. Next is **Slice 7 — cross-flow and session-restoration
 E2E**. It owns the remaining preservation/return behaviour and authenticated
 staging proof; it must not revise the frozen Standard engine or UI contract.
+
+## Vehicle Catalogue make-first corrective amendment — 2026-09-03
+
+The Vehicle catalogue section above records the superseded market-first
+implementation for historical traceability. The current implementation is
+make-first and the following contract is authoritative for Phase 07B:
+
+```text
+VEHICLE_CATALOGUE_TOPOLOGY = MAKE_MODEL_YEAR_THEN_CONDITIONAL_MARKET
+VEHICLE_CATALOGUE_AGGREGATION = BACKEND_OWNED
+VEHICLE_CATALOGUE_BROWSER_PROVIDER_FANOUT = FORBIDDEN
+VEHICLE_CATALOGUE_PROVIDER_REGION_UNIVERSE = COMPLETE_PROVIDER_LIST
+VEHICLE_CATALOGUE_PROVIDER_IDENTITY = PRESERVED_PER_REGION
+VEHICLE_CATALOGUE_INTERACTIVE_FUZZY_MATCHING = FORBIDDEN
+VEHICLE_CATALOGUE_SAVE_REVALIDATION = BACKEND_EXACT
+VEHICLE_CATALOGUE_DROPDOWN_PATCH = FORBIDDEN
+```
+
+The backend aggregate layer is implemented in
+`src/fitment/vehicle_catalogue.py` and is exposed through authenticated
+`/fitment/vehicle-catalogue/makes`, `models`, `years` and `markets` routes.
+Wheel-Size cataloging remains behind `WheelSizeProvider`; its cacheable
+catalogue methods accept the documented repeated region parameter. Makes and
+models use provider region evidence when available, while years are bounded
+fan-out calls over the exact make/model identities. The short-lived aggregate
+is never presented as a client-side provider topology.
+
+Frontend controls are `make → model → year`; the conditional market selector
+appears only for an ambiguous market resolution. A single result auto-resolves
+and hides the selector. Provider empty responses render `no_data`; operational
+errors render `failed` with retry. Request aborts, a context version, a
+monotonic token and exact dependency keys protect against stale responses.
+The child draft remains visible while a parent request is loading and is
+revalidated before it is cleared. The job-scoped expiring draft graph stores
+`lastMake`, nested `lastModel`, `lastYear` and `lastExplicitMarket` only as
+UI memory. The summary omits an auto-resolved market, and the existing
+variant/rim/check/render/`next_action` paths are unchanged.
+
+The deterministic guest fixture includes `ZEEKR 007 → 001`, a single-region
+resolution and a multi-region `selection_required` resolution. This amendment
+supersedes only the Vehicle catalogue topology and state mapping from
+2026-09-02; it does not alter Fitment domain or verdict semantics.

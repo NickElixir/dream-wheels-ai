@@ -52,10 +52,8 @@ def test_vehicle_variant_candidates_are_deduplicated_as_presentation_only() -> N
     assert 'canonical:${canonicalIdentity.join("|")}' in APP_JS
     assert "presentation:${name}|${technical}" in APP_JS
     assert "dedupeFitmentVehicleVariants(result.variants || [])" in APP_JS
-    assert (
-        "state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(\n                DEMO_VEHICLE_VARIANTS"
-        in APP_JS
-    )
+    assert "state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(" in APP_JS
+    assert "demoVehicleVariantsForSelection().map((variant) => ({ ...variant }))" in APP_JS
 
 
 def test_vehicle_summary_exposes_two_independent_edit_targets() -> None:

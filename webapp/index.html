@@ -640,17 +640,9 @@
                             </div>
                             <div class="fitment-form-grid" data-fitment-vehicle-editor>
                                 <label class="fitment-field">
-                                    <span data-i18n="fitment.market">Рынок</span>
-                                    <select id="fitment-market" data-fitment-input="vehicle.market" data-fitment-catalogue="regions">
-                                        <option value="">Выберите рынок</option>
-                                    </select>
-                                    <small id="fitment-market-state" class="fitment-catalogue-state" data-fitment-catalogue-state="regions" aria-live="polite"></small>
-                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="regions" hidden>Повторить</button>
-                                </label>
-                                <label class="fitment-field">
                                     <span data-i18n="fitment.make">Марка</span>
-                                    <select id="fitment-make" data-fitment-input="vehicle.make" data-fitment-catalogue="makes" disabled>
-                                        <option value="">Сначала выберите рынок</option>
+                                    <select id="fitment-make" data-fitment-input="vehicle.make" data-fitment-catalogue="makes">
+                                        <option value="">Загружаем марки…</option>
                                     </select>
                                     <small id="fitment-make-state" class="fitment-catalogue-state" data-fitment-catalogue-state="makes" aria-live="polite"></small>
                                     <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="makes" hidden>Повторить</button>
@@ -670,6 +662,14 @@
                                     </select>
                                     <small id="fitment-year-state" class="fitment-catalogue-state" data-fitment-catalogue-state="years" aria-live="polite"></small>
                                     <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="years" hidden>Повторить</button>
+                                </label>
+                                <label class="fitment-field fitment-market-field" data-fitment-market-field hidden>
+                                    <span data-i18n="fitment.marketVersion">Версия для рынка</span>
+                                    <select id="fitment-market" data-fitment-input="vehicle.market" data-fitment-market-resolution>
+                                        <option value="">Сначала выберите год</option>
+                                    </select>
+                                    <small id="fitment-market-state" class="fitment-catalogue-state" data-fitment-market-state aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="markets" hidden>Повторить</button>
                                 </label>
                             </div>
                             <div class="fitment-workspace-summary fitment-modification-summary" data-fitment-modification-summary hidden>
