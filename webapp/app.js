@@ -3499,13 +3499,14 @@ function renderFitmentControls() {
         if (statusNode) {
             statusNode.textContent = fieldState.message || "";
             statusNode.dataset.state = fieldState.state;
+            statusNode.hidden = !fieldState.message;
         }
         if (retry) {
             retry.hidden = fieldState.state !== "failed";
             retry.disabled = fieldState.state === "loading" || state.fitmentLoading || state.fitmentSaving;
             retry.textContent = locale === "ru" ? "Повторить" : "Retry";
         }
-        const options = [`<option value="">${fieldState.message || {
+        const options = [`<option value="">${fieldState.message || fieldState.placeholder || {
             regions: "Выберите рынок",
             makes: "Выберите марку",
             models: "Выберите модель",
@@ -3537,7 +3538,8 @@ function renderFitmentControls() {
             || state.fitmentSaving
             || !["loaded_unselected", "selected"].includes(fieldState.state);
         select.setAttribute("aria-busy", String(fieldState.state === "loading"));
-        if (statusNode?.id) select.setAttribute("aria-describedby", statusNode.id);
+        if (statusNode?.id && fieldState.message) select.setAttribute("aria-describedby", statusNode.id);
+        else select.removeAttribute("aria-describedby");
     };
     const regions = shouldUseDemoFitment(state.fitmentJobId)
         ? FITMENT_REGIONS.map(([value, label]) => ({ value, label }))
@@ -5005,45 +5007,46 @@ function fitmentCatalogueParentReadiness(kind) {
 }
 
 function fitmentCatalogueFieldState(kind, value) {
+    const placeholder = {
+        regions: "Выберите рынок",
+        makes: "Выберите марку",
+        models: "Выберите модель",
+        years: "Выберите год",
+    }[kind] || "Выберите значение";
     const parent = fitmentCatalogueParentReadiness(kind);
     if (parent === "missing") return { state: "idle_parent_missing", message: {
         makes: "Сначала выберите рынок",
         models: "Сначала выберите марку",
         years: "Сначала выберите модель",
-    }[kind] || "Выберите значение" };
+    }[kind] || placeholder, placeholder };
     if (parent === "loading") return { state: "loading", message: {
         makes: "Загружаем марки…",
         models: "Загружаем модели…",
         years: "Загружаем годы…",
-    }[kind] || "Загружаем рынки…" };
+    }[kind] || "Загружаем рынки…", placeholder };
     const raw = state.fitmentCatalogue[kind] || { status: "idle", items: [] };
     if (raw.status === "loading" || raw.status === "idle") return { state: "loading", message: {
         regions: "Загружаем рынки…",
         makes: "Загружаем марки…",
         models: "Загружаем модели…",
         years: "Загружаем годы…",
-    }[kind] };
+    }[kind], placeholder };
     if (raw.status === "no_data") return { state: "no_data", message: {
         regions: "Нет доступных рынков",
         makes: "Нет доступных марок",
         models: "Нет доступных моделей",
         years: "Нет доступных годов",
-    }[kind] };
+    }[kind], placeholder };
     if (raw.status === "failed") return { state: "failed", message: {
         regions: "Не удалось загрузить рынки",
         makes: "Не удалось загрузить марки",
         models: "Не удалось загрузить модели",
         years: "Не удалось загрузить годы",
-    }[kind] };
+    }[kind], placeholder };
     return value !== null && value !== undefined && value !== ""
         && fitmentCatalogueSelectionMatches(kind, value, raw.items)
-        ? { state: "selected", message: "Выбрано" }
-        : { state: "loaded_unselected", message: {
-            regions: "Выберите рынок",
-            makes: "Выберите марку",
-            models: "Выберите модель",
-            years: "Выберите год",
-        }[kind] };
+        ? { state: "selected", message: "", placeholder }
+        : { state: "loaded_unselected", message: "", placeholder };
 }
 
 function fitmentCatalogueDependencyKey(kind, params = {}) {
@@ -6185,7 +6188,14 @@ function setView(view) {
     updateTopbarCaption();
     setMenuOpen(false);
     setMoreOpen(false);
-    if (viewChanged) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    if (viewChanged) {
+        const appScroller = document.querySelector("#app");
+        if (typeof appScroller?.scrollTo === "function") {
+            appScroller.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        } else {
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        }
+    }
     refreshButtonsForCurrentView();
     if (view === "dashboard") {
         void loadDashboardData({ silent: true });

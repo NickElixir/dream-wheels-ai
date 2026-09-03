@@ -119,6 +119,7 @@ globalThis.__fitmentCatalogueTestApi = {
     state,
     createFitmentCatalogueDraftMemory,
     fitmentCatalogueResultFromState,
+    fitmentCatalogueFieldState,
     fitmentRememberedVehicleChain,
     rememberFitmentVehicleCatalogueChain,
     beginFitmentCatalogueContextChange,
@@ -297,4 +298,15 @@ test("retrying years makes exactly one years request and does not reload ancesto
     assert.deepEqual(harness.calls.map(({ kind }) => kind), ["years"]);
     assert.equal(harness.api.state.fitmentCatalogue.years.status, "loaded");
     assert.equal(harness.api.state.fitmentForm.vehicle.year, "2025");
+});
+
+test("normal catalogue selections keep selected state without visible helper copy", () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
+
+    for (const [kind, value] of [["regions", "chdm"], ["makes", "ZEEKR"], ["models", "007"], ["years", "2025"]]) {
+        const fieldState = harness.api.fitmentCatalogueFieldState(kind, value);
+        assert.equal(fieldState.state, "selected");
+        assert.equal(fieldState.message, "");
+    }
 });
