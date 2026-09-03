@@ -344,6 +344,45 @@ test("REAL_VEHICLE_DRAFT_RESTORES_EDITOR", () => {
     assert.equal(workspaceMode(api), "base_edit");
 });
 
+test("LEGACY_FALSE_DIRTY_DRAFT_SELF_HEALS", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle.market = "chdm";
+    overview.front_rim.rim.offset_et_mm = 45;
+    seed(api, overview);
+    api.state.fitmentForm.vehicle.market = "CN";
+    api.state.fitmentForm.rim.offset_et_mm = 46;
+    api.state.fitmentVehicleDirty = true;
+    api.persistFitmentTransientDraft("navigation");
+
+    resetToAuthoritativeVehicle(api, overview);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview }), "restored");
+
+    assert.deepEqual(api.state.fitmentForm.vehicle, api.fitmentFormFromOverview(overview).vehicle);
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(workspaceMode(api), "summary");
+    assert.equal(api.state.fitmentOverview.modification_state, "confirmed");
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 46);
+    assert.equal(api.fitmentFormIsDirty(), true);
+});
+
+test("LEGACY_FALSE_VEHICLE_DIRTY_PRESERVES_RIM_DRAFT", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.front_rim.rim.offset_et_mm = 45;
+    seed(api, overview);
+    api.state.fitmentForm.rim.offset_et_mm = 46;
+    api.state.fitmentVehicleDirty = true;
+    api.persistFitmentTransientDraft("navigation");
+
+    resetToAuthoritativeVehicle(api, overview);
+    api.restoreFitmentTransientDraft({ reason: "navigation", overview });
+
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 46);
+    assert.equal(api.state.fitmentFormState.baseline.rim.offset_et_mm, 45);
+    assert.equal(api.fitmentFormIsDirty(), true);
+});
+
 test("CANONICAL_ALIAS_ONLY_IS_NOT_DIRTY", async () => {
     const { api } = navigationApi();
     const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });

@@ -1758,6 +1758,23 @@ function fitmentDraftVehicleMatchesOverview(draft, overview = state.fitmentOverv
         .every((key) => draft.baseline[key] === current[key]);
 }
 
+function fitmentComparableVehicle(vehicle = {}) {
+    const market = normalizeFitmentText(vehicle.market)?.toLocaleLowerCase() || "";
+    const knownRegion = FITMENT_REGIONS.find(([code, label]) => (
+        code.toLocaleLowerCase() === market || label.toLocaleLowerCase() === market
+    ));
+    return {
+        make: normalizeFitmentText(vehicle.make)?.toLocaleLowerCase() || "",
+        model: normalizeFitmentText(vehicle.model)?.toLocaleLowerCase() || "",
+        year: normalizeFitmentNumber(vehicle.year),
+        market: FITMENT_MARKET_VALUE_ALIASES[market] || knownRegion?.[0] || market,
+    };
+}
+
+function fitmentVehicleValuesEquivalent(left, right) {
+    return JSON.stringify(fitmentComparableVehicle(left)) === JSON.stringify(fitmentComparableVehicle(right));
+}
+
 function fitmentSafeConflictDraft(form, overview = state.fitmentOverview) {
     const safe = cloneFitmentForm(form);
     // The server-owned vehicle selection remains authoritative even when a
@@ -1913,7 +1930,10 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         };
         return "conflict";
     }
+    const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
+    const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
     state.fitmentForm = cloneFitmentForm(draft.form);
+    if (vehicleEquivalent) state.fitmentForm.vehicle = authoritativeVehicle;
     state.fitmentActiveStep = Number.isInteger(draft.activeStep) ? draft.activeStep : state.fitmentActiveStep;
     state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(draft.activeSection)
         ? draft.activeSection
@@ -1925,8 +1945,9 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         missingFields: [],
         invalidFields: [],
     };
-    state.fitmentVehicleDirty = draft.vehicleDirty === true;
-    state.fitmentVehicleMarketEdited = state.fitmentForm.vehicle.market !== overview?.vehicle?.market;
+    state.fitmentVehicleDirty = !vehicleEquivalent;
+    state.fitmentVehicleMarketEdited = fitmentComparableVehicle(draft.form.vehicle).market
+        !== fitmentComparableVehicle(authoritativeVehicle).market;
     state.fitmentOriginView = draft.origin?.view || state.fitmentOriginView;
     state.fitmentOriginJobId = draft.origin?.jobId || state.fitmentOriginJobId;
     state.fitmentSourceOpen = Boolean(draft.source?.open);
