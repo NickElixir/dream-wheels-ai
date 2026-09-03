@@ -690,6 +690,10 @@
                             </div>
                             <div class="fitment-variant-picker" data-fitment-vehicle-variant-workspace hidden>
                                 <button type="button" class="ghost-button compact-button" data-fitment-variants-load data-i18n="fitment.findVariants">Подобрать версию автомобиля</button>
+                                <div class="fitment-modification-feedback" data-fitment-variant-feedback hidden aria-live="polite">
+                                    <strong data-fitment-variant-feedback-text></strong>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-variants-retry hidden>Повторить</button>
+                                </div>
                                 <div class="fitment-variant-list" data-fitment-variant-list hidden></div>
                                 <div class="fitment-variant-empty" data-fitment-variant-empty hidden>
                                     <strong>Комплектация не найдена</strong>

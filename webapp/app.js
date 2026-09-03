@@ -1223,6 +1223,8 @@ const state = {
     fitmentModificationPickerOpen: false,
     fitmentModificationLookupMode: "initial",
     fitmentModificationRetryVariant: null,
+    fitmentVariantLookupContextKey: "",
+    fitmentVariantLookupToken: 0,
     fitmentCheck: null,
     fitmentChecking: false,
     fitmentAuthRequired: false,
@@ -2887,14 +2889,68 @@ function fitmentNextAction(overview = state.fitmentOverview) {
     return FITMENT_NEXT_ACTION_KINDS.has(kind) ? kind : "";
 }
 
+// One server-owned action drives section routing, workspace semantics and
+// recovery copy.  Keeping this mapping together prevents a stale Result,
+// Vehicle workspace and navigator from contradicting one another.
+function deriveFitmentNextIntent(overview) {
+    const kind = fitmentNextAction(overview);
+    const intents = {
+        complete_vehicle_details: { section: "vehicle", intent: "base_edit", label: "Подтвердить данные автомобиля" },
+        select_vehicle_variant: { section: "vehicle", intent: "variant_select_required", label: "Выбрать комплектацию" },
+        complete_rim_specs: { section: "rim", intent: "rim_edit", label: "Уточнить параметры колесного диска" },
+        run_standard_check: { section: "result", intent: "run_check", label: "Проверить ещё раз" },
+    };
+    return intents[kind] || { section: "vehicle", intent: "summary", label: "" };
+}
+
+function deriveVehicleWorkspaceMode(overview, { vehicleEditing = false, pickerOpen = false } = {}) {
+    const nextAction = fitmentNextAction(overview);
+    const confirmed = overview?.modification_state === "confirmed"
+        && Boolean(fitmentSelectedVehicleVariant(overview));
+    if (vehicleEditing || overview?.vehicle_state === "empty" || nextAction === "complete_vehicle_details") {
+        return { mode: "base_edit", collapsible: false, showHideAction: false };
+    }
+    if (nextAction === "select_vehicle_variant") {
+        return { mode: "variant_select_required", collapsible: false, showHideAction: false };
+    }
+    if (confirmed && pickerOpen) {
+        return { mode: "variant_reselect", collapsible: true, showHideAction: true };
+    }
+    return { mode: "summary", collapsible: false, showHideAction: false };
+}
+
+function deriveResultRecovery(overview, check) {
+    const next = deriveFitmentNextIntent(overview);
+    return {
+        ...next,
+        canRunCheck: next.intent === "run_check"
+            && Boolean(check)
+            && check.execution_status === "completed"
+            && check.is_current === false,
+    };
+}
+
+function deriveNavigatorPresentation(overview, check) {
+    const action = fitmentNextAction(overview);
+    const vehicle = action === "select_vehicle_variant"
+        ? { label: "Нужно выбрать комплектацию", state: "warning" }
+        : overview?.vehicle_state === "confirmed_ready"
+            ? { label: "Подтверждён", state: "success" }
+            : { label: fitmentVehicleProvenance(fitmentUiState(overview, check)), state: "warning" };
+    const result = check?.is_current === false
+        ? { label: "Нужно проверить заново", state: "warning" }
+        : !check && action === "run_standard_check"
+            ? { label: "Готово к проверке", state: "success" }
+            : { label: check ? fitmentResultTitle(check) : "Не выполнен", state: "neutral" };
+    return { vehicle, result };
+}
+
 function fitmentVehicleWorkspaceMode(overview = state.fitmentOverview) {
     const ui = fitmentUiState(overview, fitmentCheckForPresentation());
-    const vehicleEditing = state.fitmentVehicleEditing
-        || ui.vehicle.state === "empty"
-        || state.fitmentVehicleDirty
-        || ui.nextAction === "complete_vehicle_details";
-    if (state.fitmentModificationPickerOpen && !vehicleEditing) return "modification_edit";
-    return vehicleEditing ? "base_edit" : "summary";
+    return deriveVehicleWorkspaceMode(overview, {
+        vehicleEditing: state.fitmentVehicleEditing || state.fitmentVehicleDirty || ui.vehicle.state === "empty",
+        pickerOpen: state.fitmentModificationPickerOpen,
+    }).mode;
 }
 
 function fitmentResultAvailable() {
@@ -2928,6 +2984,7 @@ function setFitmentActiveSection(section, { scroll = false } = {}) {
     state.fitmentActiveStep = fitmentSectionToStep(section);
     persistFitmentNavigationContext();
     renderFitment();
+    if (section === "vehicle") ensureRequiredFitmentVariantLookup();
     if (scroll) scrollFitmentTo(`[data-fitment-section="${section}"]`);
 }
 
@@ -3011,6 +3068,43 @@ function fitmentUiState(overview = state.fitmentOverview, check = state.fitmentC
 
 function fitmentNeedsVehicleVariant(overview = state.fitmentOverview) {
     return fitmentNextAction(overview) === "select_vehicle_variant";
+}
+
+function fitmentVariantLookupContextKey(overview = state.fitmentOverview) {
+    const vehicle = overview?.vehicle || state.fitmentForm.vehicle || {};
+    return [state.fitmentJobId, overview?.vehicle_revision, vehicle.make, vehicle.model, vehicle.year, vehicle.market]
+        .map((value) => String(value || "").trim())
+        .join("|");
+}
+
+function clearFitmentVehicleVariantContext() {
+    state.fitmentVariantLookupToken += 1;
+    state.fitmentVariantLookupContextKey = "";
+    state.fitmentVehicleVariantsLoading = false;
+    state.fitmentVehicleVariants = [];
+    state.fitmentSelectedVehicleVariantIndex = null;
+    state.fitmentModificationPickerOpen = false;
+    state.fitmentModificationLookupMode = "initial";
+    state.fitmentModificationRetryVariant = null;
+    state.fitmentLookup = { status: "idle", outcome: "" };
+}
+
+function rebindFitmentVehicleVariantContext(overview = state.fitmentOverview) {
+    const key = fitmentVariantLookupContextKey(overview);
+    if (state.fitmentVariantLookupContextKey && state.fitmentVariantLookupContextKey !== key) {
+        clearFitmentVehicleVariantContext();
+    }
+    return key;
+}
+
+function ensureRequiredFitmentVariantLookup() {
+    const overview = state.fitmentOverview;
+    if (state.fitmentActiveSection !== "vehicle" || !fitmentNeedsVehicleVariant(overview)) return;
+    const key = rebindFitmentVehicleVariantContext(overview);
+    if (!key || (state.fitmentVariantLookupContextKey === key
+        && ["loading", "loaded", "no_match"].includes(state.fitmentLookup.status))) return;
+    state.fitmentVariantLookupContextKey = key;
+    void loadFitmentVehicleVariants({ contextKey: key });
 }
 
 function scrollFitmentTo(selector) {
@@ -4505,7 +4599,11 @@ function renderFitmentV2Result(check, ui, active) {
                         ? "danger"
                         : "info";
     }
-    if (verdictCopy) verdictCopy.textContent = fitmentResultCopy(check);
+    const resultRecovery = deriveResultRecovery(ui.server, check);
+    if (verdictCopy) verdictCopy.textContent = check.is_current === false
+        && ui.nextAction === "select_vehicle_variant"
+        ? "После изменения автомобиля нужно выбрать его комплектацию, а затем выполнить новую проверку"
+        : fitmentResultCopy(check);
     const pending = check.execution_status === "queued" || check.execution_status === "processing";
     const failed = check.execution_status === "failed";
     if (verdictWarning) verdictWarning.hidden = pending || failed;
@@ -4521,7 +4619,7 @@ function renderFitmentV2Result(check, ui, active) {
     }
     if (verdictCheckButton) {
         const completedCurrent = check.execution_status === "completed" && check.is_current !== false;
-        const showRecheck = !pending && !failed && completedCurrent && ui.nextAction === "run_standard_check";
+        const showRecheck = !pending && !failed && (completedCurrent || resultRecovery.canRunCheck) && ui.nextAction === "run_standard_check";
         const showRetry = failed && check.retry_mode !== "not_applicable" && ui.nextAction === "run_standard_check";
         verdictCheckButton.hidden = !showRecheck && !showRetry;
         verdictCheckButton.disabled = pending || state.fitmentChecking;
@@ -4532,20 +4630,15 @@ function renderFitmentV2Result(check, ui, active) {
             ? (check.execution_status === "queued" ? "Проверка поставлена в очередь" : "Проверяем совместимость")
             : failed && check.retry_mode !== "not_applicable"
                 ? "Повторить"
-                : completedCurrent
+                : completedCurrent || resultRecovery.canRunCheck
                     ? "Проверить ещё раз"
                     : t("fitment.check");
     }
     if (verdictRecheck) verdictRecheck.hidden = verdictCheckButton?.hidden !== false;
-    const staleRecoveryCopy = {
-        complete_vehicle_details: locale === "ru" ? "Подтвердить данные автомобиля" : "Confirm vehicle details",
-        select_vehicle_variant: locale === "ru" ? "Выбрать комплектацию" : "Choose a vehicle version",
-        complete_rim_specs: locale === "ru" ? "Уточнить параметры колесного диска" : "Clarify wheel details",
-    };
-    const showStaleRecovery = check.is_current === false && Boolean(staleRecoveryCopy[ui.nextAction]);
+    const showStaleRecovery = check.is_current === false && !resultRecovery.canRunCheck && Boolean(resultRecovery.label);
     if (staleRecovery) staleRecovery.hidden = !showStaleRecovery;
     if (staleRecoveryAction) {
-        staleRecoveryAction.textContent = staleRecoveryCopy[ui.nextAction] || "";
+        staleRecoveryAction.textContent = resultRecovery.label || "";
         staleRecoveryAction.dataset.fitmentStaleRecoveryAction = ui.nextAction || "";
     }
     const fieldItems = failed ? [] : fitmentResultFieldItems(check);
@@ -4710,21 +4803,19 @@ function renderFitment() {
     const modificationFeedback = document.querySelector("[data-fitment-modification-feedback]");
     const modificationFeedbackText = document.querySelector("[data-fitment-modification-feedback-text]");
     const modificationRetry = document.querySelector("[data-fitment-modification-retry]");
-    const canShowModificationRow = ["confirmed_incomplete", "confirmed_ready"].includes(ui.vehicle.state);
     const selectedVariant = fitmentSelectedVehicleVariant(overview);
     const confirmedModification = overview.modification_state === "confirmed" && Boolean(selectedVariant);
-    const modificationLookupOpen = canShowModificationRow
-        && vehicleWorkspaceMode === "modification_edit"
+    const canShowModificationRow = confirmedModification;
+    const modificationLookupOpen = confirmedModification
+        && vehicleWorkspaceMode === "variant_reselect"
         && state.fitmentModificationPickerOpen;
     if (modificationSummary) modificationSummary.hidden = !canShowModificationRow || vehicleWorkspaceMode === "base_edit";
     if (modificationRow) modificationRow.hidden = !canShowModificationRow;
-    if (modificationName) modificationName.textContent = confirmedModification
-        ? fitmentSelectedVehicleVariantName(overview)
-        : "Не выбрана";
+    if (modificationName) modificationName.textContent = fitmentSelectedVehicleVariantName(overview);
     if (modificationToggle) {
         modificationToggle.textContent = modificationLookupOpen
             ? "Скрыть"
-            : confirmedModification ? "Изменить комплектацию" : "Выбрать комплектацию";
+            : "Изменить комплектацию";
         modificationToggle.hidden = vehicleWorkspaceMode === "base_edit";
         modificationToggle.setAttribute("aria-expanded", String(Boolean(modificationLookupOpen)));
         modificationToggle.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
@@ -4802,6 +4893,7 @@ function renderFitment() {
     let activeSection = ["vehicle", "rim", "result"].includes(state.fitmentActiveSection)
         ? state.fitmentActiveSection
         : fitmentSectionForAction(overview);
+    const navigatorPresentation = deriveNavigatorPresentation(overview, check);
     document.querySelectorAll("[data-fitment-section-tab]").forEach((tab) => {
         const section = tab.dataset.fitmentSectionTab;
         tab.classList.toggle("active", section === activeSection);
@@ -4822,8 +4914,8 @@ function renderFitment() {
                     ? "warning"
                     : "success";
         } else if (section === "vehicle") {
-            status.textContent = fitmentVehicleProvenance(ui);
-            tab.dataset.state = ui.vehicle.state === "confirmed_ready" ? "success" : "warning";
+            status.textContent = navigatorPresentation.vehicle.label;
+            tab.dataset.state = navigatorPresentation.vehicle.state;
         } else {
             status.textContent = fitmentRimProvenance(ui);
             tab.dataset.state = ui.rim.setupState === "confirmed_ready" ? "success" : "warning";
@@ -4865,10 +4957,10 @@ function renderFitment() {
     }
     const variantsLoad = document.querySelector("[data-fitment-variants-load]");
     const variantWorkspace = document.querySelector("[data-fitment-vehicle-variant-workspace]");
-    if (variantWorkspace) variantWorkspace.hidden = ui.nextAction !== "select_vehicle_variant"
-        || canShowModificationRow;
+    const requiredVariantSelection = vehicleWorkspaceMode === "variant_select_required";
+    if (variantWorkspace) variantWorkspace.hidden = !requiredVariantSelection;
     if (variantsLoad) {
-        variantsLoad.hidden = ui.nextAction !== "select_vehicle_variant";
+        variantsLoad.hidden = true;
         variantsLoad.disabled = state.fitmentVehicleVariantsLoading || state.fitmentVehicleVariantApplying;
         variantsLoad.textContent = state.fitmentVehicleVariantsLoading
             ? "Ищем подходящие комплектации…"
@@ -4879,7 +4971,7 @@ function renderFitment() {
     const variantsList = document.querySelector("[data-fitment-variant-list]");
     if (variantsList) {
         variantsList.replaceChildren();
-        variantsList.hidden = !state.fitmentVehicleVariants.length;
+        variantsList.hidden = !requiredVariantSelection || !state.fitmentVehicleVariants.length;
         state.fitmentVehicleVariants.forEach((variant, index) => {
             const button = document.createElement("button");
             button.type = "button";
@@ -4908,8 +5000,24 @@ function renderFitment() {
     }
     const variantEmpty = document.querySelector("[data-fitment-variant-empty]");
     if (variantEmpty) {
-        variantEmpty.hidden = ui.nextAction !== "select_vehicle_variant"
+        variantEmpty.hidden = !requiredVariantSelection
             || state.fitmentLookup.status !== "no_match";
+    }
+    const variantFeedback = document.querySelector("[data-fitment-variant-feedback]");
+    const variantFeedbackText = document.querySelector("[data-fitment-variant-feedback-text]");
+    const variantRetry = document.querySelector("[data-fitment-variants-retry]");
+    if (variantFeedback) {
+        variantFeedback.hidden = !requiredVariantSelection
+            || !["loading", "failed"].includes(state.fitmentLookup.status);
+    }
+    if (variantFeedbackText) {
+        variantFeedbackText.textContent = state.fitmentLookup.status === "loading"
+            ? "Загружаем комплектации…"
+            : state.fitmentLookup.status === "failed" ? "Не удалось загрузить комплектации" : "";
+    }
+    if (variantRetry) {
+        variantRetry.hidden = state.fitmentLookup.status !== "failed";
+        variantRetry.disabled = state.fitmentVehicleVariantsLoading;
     }
     const sourceUrl = document.querySelector("[data-fitment-source-url]");
     if (sourceUrl) {
@@ -5509,6 +5617,7 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
             loadFitmentVehicleCatalogue();
+            ensureRequiredFitmentVariantLookup();
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
             return restoration;
         }
@@ -5540,6 +5649,7 @@ async function loadFitmentOverview(jobId, { restoreReason = null, suppressAutoma
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
         loadFitmentVehicleCatalogue();
+        ensureRequiredFitmentVariantLookup();
         void loadFitmentCheckHistory(overview);
         void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -5797,8 +5907,9 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     }
 }
 
-async function loadFitmentVehicleVariants() {
+async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupContextKey() } = {}) {
     if (!state.fitmentJobId || state.fitmentVehicleVariantsLoading) return;
+    const requestToken = ++state.fitmentVariantLookupToken;
     state.fitmentModificationLookupMode = "initial";
     if (fitmentFormIsDirty()) {
         state.fitmentError = locale === "ru"
@@ -5829,6 +5940,7 @@ async function loadFitmentVehicleVariants() {
         return;
     }
     state.fitmentVehicleVariantsLoading = true;
+    state.fitmentVariantLookupContextKey = contextKey;
     state.fitmentLookup = { status: "loading", outcome: "" };
     state.fitmentError = "";
     state.fitmentMessage = "";
@@ -5844,6 +5956,8 @@ async function loadFitmentVehicleVariants() {
         }
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
+        if (requestToken !== state.fitmentVariantLookupToken
+            || contextKey !== fitmentVariantLookupContextKey()) return;
         state.fitmentLookup = { status: result.outcome === "no_match" ? "no_match" : "loaded", outcome: result.outcome || "" };
         state.fitmentVehicleVariants = result.outcome === "multiple"
             ? dedupeFitmentVehicleVariants(result.variants || [])
@@ -5860,10 +5974,12 @@ async function loadFitmentVehicleVariants() {
             state.fitmentMessageTone = "neutral";
         }
     } catch (error) {
+        if (requestToken !== state.fitmentVariantLookupToken
+            || contextKey !== fitmentVariantLookupContextKey()) return;
         state.fitmentLookup = { status: "failed", outcome: "" };
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
-        state.fitmentVehicleVariantsLoading = false;
+        if (requestToken === state.fitmentVariantLookupToken) state.fitmentVehicleVariantsLoading = false;
         renderFitment();
     }
 }
@@ -6245,19 +6361,22 @@ async function saveFitment(event) {
         if (savedFromSection === "vehicle" || savedFromSection === "rim") {
             state.fitmentActiveSection = savedFromSection;
             state.fitmentActiveStep = fitmentSectionToStep(savedFromSection);
+            if (savedFromSection === "vehicle") ensureRequiredFitmentVariantLookup();
             if (savedFromSection === "vehicle") {
             state.fitmentMessage = nextAction === "run_standard_check"
                 ? (locale === "ru" ? "Автомобиль сохранён. Проверьте параметры диска." : "Vehicle saved. Review the wheel details.")
-                : (locale === "ru" ? "Автомобиль сохранён. Продолжите по следующему действию сервера." : "Vehicle saved. Continue with the next server action.");
+                : nextAction === "select_vehicle_variant"
+                    ? (locale === "ru" ? "Автомобиль сохранён. Теперь выберите комплектацию." : "Vehicle saved. Now choose the vehicle version.")
+                    : (locale === "ru" ? "Автомобиль сохранён." : "Vehicle saved.");
             state.fitmentMessageTone = "success";
             } else {
                 state.fitmentMessage = nextAction === "run_standard_check"
                     ? (locale === "ru" ? "Параметры сохранены. Проверку совместимости можно запустить отдельно." : "Details saved. You can start the compatibility check separately.")
-                    : (locale === "ru" ? "Параметры сохранены. Продолжите по следующему действию сервера." : "Details saved. Continue with the next server action.");
+                : (locale === "ru" ? "Параметры сохранены." : "Details saved.");
                 state.fitmentMessageTone = "success";
             }
         } else {
-            state.fitmentMessage = locale === "ru" ? "Продолжите по следующему действию сервера." : "Continue with the next server action.";
+            state.fitmentMessage = locale === "ru" ? "Данные сохранены." : "Details saved.";
             state.fitmentMessageTone = "warning";
         }
     } catch (error) {
@@ -9229,7 +9348,9 @@ function bindEvents() {
         const staleRecovery = event.target.closest("[data-fitment-stale-recovery-action]");
         if (staleRecovery) {
             const action = staleRecovery.dataset.fitmentStaleRecoveryAction;
-            if (action === "complete_vehicle_details") {
+            if (action === "run_standard_check") {
+                void runFitmentCheck();
+            } else if (action === "complete_vehicle_details") {
                 state.fitmentVehicleEditing = true;
                 setFitmentActiveSection("vehicle", { scroll: true });
             } else if (action === "select_vehicle_variant") {
@@ -9270,6 +9391,11 @@ function bindEvents() {
             } else {
                 void loadFitmentVehicleVariantsForReselection();
             }
+            return;
+        }
+
+        if (event.target.closest("[data-fitment-variants-retry]")) {
+            void loadFitmentVehicleVariants({ contextKey: fitmentVariantLookupContextKey() });
             return;
         }
 
