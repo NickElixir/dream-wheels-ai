@@ -1758,6 +1758,23 @@ function fitmentDraftVehicleMatchesOverview(draft, overview = state.fitmentOverv
         .every((key) => draft.baseline[key] === current[key]);
 }
 
+function fitmentComparableVehicle(vehicle = {}) {
+    const market = normalizeFitmentText(vehicle.market)?.toLocaleLowerCase() || "";
+    const knownRegion = FITMENT_REGIONS.find(([code, label]) => (
+        code.toLocaleLowerCase() === market || label.toLocaleLowerCase() === market
+    ));
+    return {
+        make: normalizeFitmentText(vehicle.make)?.toLocaleLowerCase() || "",
+        model: normalizeFitmentText(vehicle.model)?.toLocaleLowerCase() || "",
+        year: normalizeFitmentNumber(vehicle.year),
+        market: FITMENT_MARKET_VALUE_ALIASES[market] || knownRegion?.[0] || market,
+    };
+}
+
+function fitmentVehicleValuesEquivalent(left, right) {
+    return JSON.stringify(fitmentComparableVehicle(left)) === JSON.stringify(fitmentComparableVehicle(right));
+}
+
 function fitmentSafeConflictDraft(form, overview = state.fitmentOverview) {
     const safe = cloneFitmentForm(form);
     // The server-owned vehicle selection remains authoritative even when a
@@ -1838,6 +1855,27 @@ function discardFitmentTransientDraft() {
     if (key) sessionStorage.removeItem(key);
 }
 
+function rebaseFitmentTransientVehicleDraft(overview = state.fitmentOverview) {
+    const draft = readFitmentTransientDraft();
+    if (!draft || !overview) return false;
+    const authoritative = fitmentFormFromOverview(overview);
+    draft.baseline = fitmentRevisionBaseline(overview);
+    draft.form = cloneFitmentForm(draft.form);
+    draft.form.vehicle = authoritative.vehicle;
+    draft.vehicleDirty = false;
+    const rimDirty = JSON.stringify(draft.form.rim) !== JSON.stringify(authoritative.rim)
+        || JSON.stringify(draft.form.rear_rim) !== JSON.stringify(authoritative.rear_rim);
+    draft.formState = { ...draft.formState, status: rimDirty ? "dirty" : "clean" };
+    draft.createdAt = Date.now();
+    draft.expiresAt = draft.createdAt + FITMENT_TRANSIENT_DRAFT_TTL_MS;
+    try {
+        sessionStorage.setItem(fitmentTransientDraftKey(), JSON.stringify(draft));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 function persistFitmentNavigationContext() {
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
     try {
@@ -1892,7 +1930,10 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         };
         return "conflict";
     }
+    const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
+    const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
     state.fitmentForm = cloneFitmentForm(draft.form);
+    if (vehicleEquivalent) state.fitmentForm.vehicle = authoritativeVehicle;
     state.fitmentActiveStep = Number.isInteger(draft.activeStep) ? draft.activeStep : state.fitmentActiveStep;
     state.fitmentActiveSection = ["vehicle", "rim", "result"].includes(draft.activeSection)
         ? draft.activeSection
@@ -1904,8 +1945,9 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         missingFields: [],
         invalidFields: [],
     };
-    state.fitmentVehicleDirty = draft.vehicleDirty === true;
-    state.fitmentVehicleMarketEdited = state.fitmentForm.vehicle.market !== overview?.vehicle?.market;
+    state.fitmentVehicleDirty = !vehicleEquivalent;
+    state.fitmentVehicleMarketEdited = fitmentComparableVehicle(draft.form.vehicle).market
+        !== fitmentComparableVehicle(authoritativeVehicle).market;
     state.fitmentOriginView = draft.origin?.view || state.fitmentOriginView;
     state.fitmentOriginJobId = draft.origin?.jobId || state.fitmentOriginJobId;
     state.fitmentSourceOpen = Boolean(draft.source?.open);
@@ -6015,6 +6057,7 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
             : [];
         if (result.outcome === "single") {
             await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: "vehicle" });
+            rebaseFitmentTransientVehicleDraft(state.fitmentOverview);
             state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
             state.fitmentMessageTone = "success";
         } else if (result.outcome === "no_match") {
@@ -6416,6 +6459,7 @@ async function saveFitment(event) {
         await refreshFitmentCheckCurrentness();
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
+        if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
         if (savedFromSection === "vehicle" || savedFromSection === "rim") {
