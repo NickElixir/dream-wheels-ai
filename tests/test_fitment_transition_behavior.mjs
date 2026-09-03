@@ -140,7 +140,7 @@ function navigationApi({ routes = {} } = {}) {
         fitmentFormIsDirty = () => false;
         globalThis.__navigationApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
-            fitmentEffectiveRim, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
+            fitmentEffectiveRim, fitmentRimSpecs, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
             deriveVehicleWorkspaceMode,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection,
@@ -321,6 +321,22 @@ test("USER_VEHICLE_EDIT_REMAINS_DIRTY_AFTER_REVALIDATION", async () => {
     assert.equal(api.state.fitmentForm.vehicle.model, "EC60");
 });
 
+test("RIM_DIRTY_SURVIVES_PASSIVE_VEHICLE_REVALIDATION", async () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle = { make: "Yema", model: "EC70", year: 2019, market: "CN" };
+    overview.front_rim.rim.offset_et_mm = 45;
+    seed(api, overview);
+    api.state.fitmentForm.rim.offset_et_mm = 46;
+
+    await api.revalidateFitmentCatalogueChain(0, { preloaded: cataloguePreload() });
+
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 46);
+    assert.equal(api.state.fitmentFormState.baseline.rim.offset_et_mm, 45);
+    assert.equal(api.fitmentFormIsDirty(), true);
+});
+
 test("SINGLE_AUTO_CONFIRM_FINAL_WORKSPACE remains SUMMARY after catalogue hydration", async () => {
     const { api } = navigationApi();
     const overview = overviewFor(api, "complete_rim_specs", { confirmedVariant: true });
@@ -345,6 +361,36 @@ test("RIM_CARD_EDITOR_PCD_CONSISTENCY uses one effective RimSpec", () => {
     assert.equal(effective.pcd_mm, 108);
     assert.equal(form.rim.bolt_count, 4);
     assert.equal(form.rim.pcd_mm, 108);
+});
+
+test("CANONICAL_RIM_WINS_OVER_RICHER_LEGACY_RIM", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.front_rim = {
+        rim: {
+            brand: "Canonical", model: "C4", sku: "canonical-4x108", product_url: "https://canonical.test",
+            bolt_count: 4, pcd_mm: 108, wheel_diameter_in: 20, wheel_width_j: 9,
+            center_bore_mm: 66.6, offset_et_mm: 45,
+        },
+    };
+    overview.rim = {
+        brand: "Legacy", model: "Richer", sku: "legacy-5x112", product_url: "https://legacy.test",
+        bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 21, wheel_width_j: 10,
+        center_bore_mm: 70.1, offset_et_mm: 35, extra_metadata: "richer legacy object",
+    };
+    seed(api, overview);
+
+    const effective = api.fitmentEffectiveRim(overview);
+    const form = api.fitmentFormFromOverview(overview);
+    const payload = api.fitmentPayload({ includeVehicle: false });
+
+    assert.equal(effective.bolt_count, 4);
+    assert.equal(effective.pcd_mm, 108);
+    assert.equal(api.fitmentRimSpecs(effective), '20" / 9J / 4×108');
+    assert.equal(form.rim.bolt_count, 4);
+    assert.equal(form.rim.pcd_mm, 108);
+    assert.equal(payload.rim.bolt_count, 4);
+    assert.equal(payload.rim.pcd_mm, 108);
 });
 
 test("RIM_ONLY_PATCH_CONTAINS_VEHICLE is NO and preserves existing PCD", () => {

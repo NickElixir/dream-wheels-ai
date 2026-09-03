@@ -1421,25 +1421,14 @@ function fitmentRimSpecs(rim) {
 }
 
 function fitmentEffectiveRim(overview, axle = "front") {
-    // Prefer the complete nested axle spec, then fall back to legacy overview
-    // shapes. The boundary selects one representation; it never combines fields.
-    const candidates = axle === "rear"
-        ? [overview?.rear_rim?.rim, overview?.rear_rim]
-        : [overview?.front_rim?.rim, overview?.front_rim, overview?.rim];
-    const score = (rim) => {
-        if (!rim || typeof rim !== "object") return -1;
-        const fields = [
-            "bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j",
-            "center_bore_mm", "offset_et_mm", "brand", "model", "sku",
-        ];
-        return fields.reduce((total, field) => {
-            const value = rim[field];
-            return total + (value !== null && value !== undefined && value !== "" ? 1 : 0);
-        }, 0) + (rim.bolt_count && rim.pcd_mm ? 2 : 0);
-    };
-    return candidates
-        .filter((rim) => rim && typeof rim === "object")
-        .sort((left, right) => score(right) - score(left))[0] || {};
+    // The nested axle RimSpec is canonical. The legacy top-level Rim is only
+    // a fallback when that canonical representation is absent; never merge or
+    // rank competing representations by completeness.
+    const canonical = axle === "rear" ? overview?.rear_rim?.rim : overview?.front_rim?.rim;
+    if (canonical && typeof canonical === "object") return canonical;
+    return axle === "front" && overview?.rim && typeof overview.rim === "object"
+        ? overview.rim
+        : {};
 }
 
 function fitmentPcdOptionValue(boltCount, pcdMm) {
@@ -5600,10 +5589,10 @@ async function revalidateFitmentCatalogueChain(
     if (!vehicleWasDirty && state.fitmentFormState.baseline) {
         state.fitmentVehicleDirty = false;
         state.fitmentFormState.baseline.vehicle = { ...vehicle };
-        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
     } else {
         state.fitmentVehicleDirty = true;
     }
+    markFitmentDirty();
     state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
     validateFitmentForm();
     renderFitment();
