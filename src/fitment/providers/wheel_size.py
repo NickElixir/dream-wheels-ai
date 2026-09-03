@@ -23,6 +23,7 @@ import difflib
 import hashlib
 import json
 import logging
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -217,7 +218,21 @@ class WheelSizeProvider:
         if not self._api_key:
             raise ProviderError("WHEEL_SIZE_API_KEY is not configured")
 
-        request_params = {**params, "user_key": self._api_key}
+        # Wheel-Size documents ``region`` as a repeatable array parameter,
+        # e.g. ``region=eudm&region=usdm``. Keep scalar calls backwards
+        # compatible while encoding aggregate calls without inventing a new
+        # provider parameter or comma-separated semantics.
+        has_sequence = any(isinstance(value, list | tuple | set) for value in params.values())
+        if has_sequence:
+            request_params: Any = []
+            for key, value in params.items():
+                if isinstance(value, list | tuple | set):
+                    request_params.extend((key, item) for item in value)
+                else:
+                    request_params.append((key, value))
+            request_params.append(("user_key", self._api_key))
+        else:
+            request_params = {**params, "user_key": self._api_key}
         url = f"{self._base_url}/{path.strip('/')}/"
         timeout = httpx.Timeout(WHEEL_SIZE_TIMEOUT_READ_SEC, connect=WHEEL_SIZE_TIMEOUT_CONNECT_SEC)
 
@@ -273,22 +288,37 @@ class WheelSizeProvider:
         """Provider-backed vehicle markets for the interactive Fitment flow."""
         return await self._cataloging("regions", {})
 
-    async def catalogue_makes(self, *, region: str) -> list[dict[str, Any]]:
-        return await self._cataloging("makes", {"region": region})
+    async def catalogue_makes(self, *, region: str | Sequence[str]) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "makes",
+            {"region": tuple(region) if not isinstance(region, str) else region},
+        )
 
-    async def catalogue_models(self, *, make: str, region: str) -> list[dict[str, Any]]:
-        return await self._cataloging("models", {"make": make, "region": region})
+    async def catalogue_models(
+        self,
+        *,
+        make: str,
+        region: str | Sequence[str],
+    ) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "models",
+            {"make": make, "region": tuple(region) if not isinstance(region, str) else region},
+        )
 
     async def catalogue_years(
         self,
         *,
         make: str,
         model: str,
-        region: str,
+        region: str | Sequence[str],
     ) -> list[dict[str, Any]]:
         return await self._cataloging(
             "years",
-            {"make": make, "model": model, "region": region},
+            {
+                "make": make,
+                "model": model,
+                "region": tuple(region) if not isinstance(region, str) else region,
+            },
         )
 
     # -- Resolution ladder ----------------------------------------------------

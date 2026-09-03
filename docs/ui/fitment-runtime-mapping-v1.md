@@ -130,6 +130,41 @@ The server-owned endpoints are `GET /jobs/{job_id}/fitment/catalogue/regions`,
 its cache; no provider credential or raw provider payload is exposed to the
 client.
 
+### Vehicle Catalogue Editor state-machine amendment — 2026-09-02
+
+The frontend now treats the catalogue as one sequential dependency chain:
+
+```text
+market
+  → validated makes response
+  → validated models response
+  → validated years response
+```
+
+On a parent change, the client increments a job-local context version,
+aborts obsolete requests and keeps the previous child values internally until
+the relevant response is available. Each response is accepted only when its
+version, request identity and dependency tuple still match the current draft.
+After the response is known, valid children are retained and invalid children
+plus their descendants are cleared. Models are never requested before the
+make response validates the make; years are never requested before the model
+response validates the model.
+
+The browser keeps a bounded, expiring session memory under a key containing
+the Fitment `job_id`. It remembers the latest coherent market → make → model
+→ year chain and may propose it when returning to a previous context. This is
+only a convenience draft: every remembered value is matched against the live
+catalogue response before restoration, and no memory is shared between jobs
+or written to the backend.
+
+The field renderer distinguishes `idle_parent_missing`, `loading`,
+`loaded_unselected`, `selected`, `no_data` and `failed`. `no_data` renders a
+neutral empty disabled control; provider/auth/transport failure renders an
+inline retryable error. Save remains disabled until the selected values are
+validated by all four current option sets. Base Vehicle edit and modification
+edit are mutually exclusive; the modification group is absent while an
+unsaved base draft is open.
+
 ## Modification mapping
 
 | Frozen UI state / family | Runtime source | Backend / API source | Existing implementation | Gap | Required implementation |
@@ -465,3 +500,45 @@ altering the behavioural contract.
 Slice 6 is complete. Next is **Slice 7 — cross-flow and session-restoration
 E2E**. It owns the remaining preservation/return behaviour and authenticated
 staging proof; it must not revise the frozen Standard engine or UI contract.
+
+## Vehicle Catalogue make-first corrective amendment — 2026-09-03
+
+The Vehicle catalogue section above records the superseded market-first
+implementation for historical traceability. The current implementation is
+make-first and the following contract is authoritative for Phase 07B:
+
+```text
+VEHICLE_CATALOGUE_TOPOLOGY = MAKE_MODEL_YEAR_THEN_CONDITIONAL_MARKET
+VEHICLE_CATALOGUE_AGGREGATION = BACKEND_OWNED
+VEHICLE_CATALOGUE_BROWSER_PROVIDER_FANOUT = FORBIDDEN
+VEHICLE_CATALOGUE_PROVIDER_REGION_UNIVERSE = COMPLETE_PROVIDER_LIST
+VEHICLE_CATALOGUE_PROVIDER_IDENTITY = PRESERVED_PER_REGION
+VEHICLE_CATALOGUE_INTERACTIVE_FUZZY_MATCHING = FORBIDDEN
+VEHICLE_CATALOGUE_SAVE_REVALIDATION = BACKEND_EXACT
+VEHICLE_CATALOGUE_DROPDOWN_PATCH = FORBIDDEN
+```
+
+The backend aggregate layer is implemented in
+`src/fitment/vehicle_catalogue.py` and is exposed through authenticated
+`/fitment/vehicle-catalogue/makes`, `models`, `years` and `markets` routes.
+Wheel-Size cataloging remains behind `WheelSizeProvider`; its cacheable
+catalogue methods accept the documented repeated region parameter. Makes and
+models use provider region evidence when available, while years are bounded
+fan-out calls over the exact make/model identities. The short-lived aggregate
+is never presented as a client-side provider topology.
+
+Frontend controls are `make → model → year`; the conditional market selector
+appears only for an ambiguous market resolution. A single result auto-resolves
+and hides the selector. Provider empty responses render `no_data`; operational
+errors render `failed` with retry. Request aborts, a context version, a
+monotonic token and exact dependency keys protect against stale responses.
+The child draft remains visible while a parent request is loading and is
+revalidated before it is cleared. The job-scoped expiring draft graph stores
+`lastMake`, nested `lastModel`, `lastYear` and `lastExplicitMarket` only as
+UI memory. The summary omits an auto-resolved market, and the existing
+variant/rim/check/render/`next_action` paths are unchanged.
+
+The deterministic guest fixture includes `ZEEKR 007 → 001`, a single-region
+resolution and a multi-region `selection_required` resolution. This amendment
+supersedes only the Vehicle catalogue topology and state mapping from
+2026-09-02; it does not alter Fitment domain or verdict semantics.

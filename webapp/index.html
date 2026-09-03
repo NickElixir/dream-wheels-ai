@@ -641,27 +641,35 @@
                             <div class="fitment-form-grid" data-fitment-vehicle-editor>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.make">Марка</span>
-                                    <select data-fitment-input="vehicle.make" data-fitment-catalogue="makes" disabled>
-                                        <option value="">Выберите марку</option>
+                                    <select id="fitment-make" data-fitment-input="vehicle.make" data-fitment-catalogue="makes">
+                                        <option value="">Загружаем марки…</option>
                                     </select>
+                                    <small id="fitment-make-state" class="fitment-catalogue-state" data-fitment-catalogue-state="makes" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="makes" hidden>Повторить</button>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.model">Модель</span>
-                                    <select data-fitment-input="vehicle.model" data-fitment-catalogue="models" disabled>
-                                        <option value="">Выберите модель</option>
+                                    <select id="fitment-model" data-fitment-input="vehicle.model" data-fitment-catalogue="models" disabled>
+                                        <option value="">Сначала выберите марку</option>
                                     </select>
+                                    <small id="fitment-model-state" class="fitment-catalogue-state" data-fitment-catalogue-state="models" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="models" hidden>Повторить</button>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.year">Год</span>
-                                    <select data-fitment-input="vehicle.year" data-fitment-catalogue="years" disabled>
-                                        <option value="">Выберите год</option>
+                                    <select id="fitment-year" data-fitment-input="vehicle.year" data-fitment-catalogue="years" disabled>
+                                        <option value="">Сначала выберите модель</option>
                                     </select>
+                                    <small id="fitment-year-state" class="fitment-catalogue-state" data-fitment-catalogue-state="years" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="years" hidden>Повторить</button>
                                 </label>
-                                <label class="fitment-field">
-                                    <span data-i18n="fitment.market">Рынок</span>
-                                    <select data-fitment-input="vehicle.market" data-fitment-catalogue="regions">
-                                        <option value="russia">Россия+</option>
+                                <label class="fitment-field fitment-market-field" data-fitment-market-field hidden>
+                                    <span data-i18n="fitment.marketVersion">Версия для рынка</span>
+                                    <select id="fitment-market" data-fitment-input="vehicle.market" data-fitment-market-resolution>
+                                        <option value="">Сначала выберите год</option>
                                     </select>
+                                    <small id="fitment-market-state" class="fitment-catalogue-state" data-fitment-market-state aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="markets" hidden>Повторить</button>
                                 </label>
                             </div>
                             <div class="fitment-workspace-summary fitment-modification-summary" data-fitment-modification-summary hidden>

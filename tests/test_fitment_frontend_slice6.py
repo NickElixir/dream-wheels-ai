@@ -17,8 +17,8 @@ def test_slice6_has_one_authoritative_fitment_ui_adapter() -> None:
 
 
 def test_vehicle_uses_provider_backed_cascade_and_save_before_lookup() -> None:
-    assert "catalogue/${kind}" in APP_JS
-    for kind in ("regions", "makes", "models", "years"):
+    assert "/fitment/vehicle-catalogue/${kind}" in APP_JS
+    for kind in ("makes", "models", "years", "markets"):
         assert f'loadFitmentCatalogue("{kind}"' in APP_JS
     assert "Save vehicle changes before finding a vehicle version." in APP_JS
     assert 'state.fitmentForm.vehicle.model = "";' in APP_JS
@@ -27,13 +27,23 @@ def test_vehicle_uses_provider_backed_cascade_and_save_before_lookup() -> None:
     assert "expected_vehicle_revision: overview.vehicle_revision" in APP_JS
 
 
-def test_region_selection_starts_provider_make_cascade() -> None:
-    region_branch = APP_JS.rsplit('input.dataset.fitmentCatalogue === "regions"', 1)[1].split(
-        "} else {", 1
+def test_make_first_editor_loads_market_resolution_after_year() -> None:
+    assert 'input.dataset.fitmentCatalogue === "makes"' in APP_JS
+    assert 'input.dataset.fitmentCatalogue === "models"' in APP_JS
+    assert 'input.dataset.fitmentCatalogue === "years"' in APP_JS
+    assert "input.dataset.fitmentMarketResolution !== undefined" in APP_JS
+    chain = APP_JS.split("async function revalidateFitmentCatalogueChain", 1)[1].split(
+        "function loadFitmentVehicleCatalogue", 1
     )[0]
-    assert 'loadFitmentCatalogue("makes", { region: value })' in region_branch
-    assert 'loadFitmentCatalogue("models"' not in region_branch
-    assert 'loadFitmentCatalogue("years"' not in region_branch
+    assert chain.index('loadFitmentCatalogue("makes"') < chain.index(
+        'loadFitmentCatalogue("models"'
+    )
+    assert chain.index('loadFitmentCatalogue("models"') < chain.index(
+        'loadFitmentCatalogue("years"'
+    )
+    assert chain.index('loadFitmentCatalogue("years"') < chain.index(
+        'loadFitmentCatalogue("markets"'
+    )
 
 
 def test_modification_outcomes_keep_multiple_choice_explicit() -> None:

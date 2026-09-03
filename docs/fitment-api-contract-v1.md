@@ -22,12 +22,21 @@ or present Standard-provider data as extended evidence.
 The interactive VehicleIdentity controls are backend-owned and authenticated.
 The client must never call Wheel Size directly or receive its credentials.
 
+The current Vehicle Catalogue editor uses a backend-owned aggregate and does
+not expose provider regions as a first-step user choice:
+
 ```http
-GET /jobs/{job_id}/fitment/catalogue/regions
-GET /jobs/{job_id}/fitment/catalogue/makes?region=<provider-region>
-GET /jobs/{job_id}/fitment/catalogue/models?make=<provider-make>&region=<provider-region>
-GET /jobs/{job_id}/fitment/catalogue/years?make=<provider-make>&model=<provider-model>&region=<provider-region>
+GET /jobs/{job_id}/fitment/vehicle-catalogue/makes
+GET /jobs/{job_id}/fitment/vehicle-catalogue/models?make=<make>
+GET /jobs/{job_id}/fitment/vehicle-catalogue/years?make=<make>&model=<model>
+GET /jobs/{job_id}/fitment/vehicle-catalogue/markets?make=<make>&model=<model>&year=<year>
 ```
+
+The previous `/fitment/catalogue/*` routes remain compatibility routes for
+older clients; they are not the Phase 07B interactive flow. The aggregate
+layer queries the complete provider region universe, preserves each exact
+provider identity, and performs no fuzzy interactive matching. Provider
+catalogue credentials and region fan-out remain backend-only.
 
 Every successful option response has this shape:
 
@@ -45,6 +54,13 @@ no matching catalogue values. It is not an operational error. Provider
 failures return a structured 503 `detail.code` such as
 `provider_unavailable`, `authentication_failed`, `throttled` or
 `malformed_response`.
+
+Aggregate make/model/year options additionally include `identities`, each
+with the provider `region` and `provider_id`. The market response uses
+`resolution: "single"` with `resolved_market` and an empty `items` array for
+one candidate, or `resolution: "selection_required"` with all candidate
+market options. `resolution: "no_data"` is neutral and does not imply a
+provider outage.
 
 `PATCH /jobs/{job_id}/fitment` validates a complete make/model/year/region
 selection against those exact provider catalogues before it saves. A successful

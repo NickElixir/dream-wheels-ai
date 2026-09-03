@@ -37,6 +37,7 @@ from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
+from src.fitment.vehicle_catalogue import VehicleCatalogueAggregator
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
     FetchLimits,
@@ -442,6 +443,32 @@ class VehicleCatalogueOptionResponse(BaseModel):
 class VehicleCatalogueResponse(BaseModel):
     outcome: Literal["success", "no_data"]
     items: list[VehicleCatalogueOptionResponse] = Field(default_factory=list)
+
+
+class VehicleCatalogueProviderIdentityResponse(BaseModel):
+    """Opaque provider identity retained for exact server revalidation."""
+
+    region: str
+    provider_id: str
+
+
+class VehicleCatalogueAggregateOptionResponse(BaseModel):
+    value: str
+    label: str
+    provider_id: str
+    identities: list[VehicleCatalogueProviderIdentityResponse] = Field(default_factory=list)
+
+
+class VehicleCatalogueAggregateResponse(BaseModel):
+    outcome: Literal["success", "no_data"]
+    items: list[VehicleCatalogueAggregateOptionResponse] = Field(default_factory=list)
+
+
+class VehicleCatalogueMarketResponse(BaseModel):
+    outcome: Literal["success", "no_data"]
+    resolution: Literal["single", "selection_required", "no_data"]
+    resolved_market: VehicleCatalogueAggregateOptionResponse | None = None
+    items: list[VehicleCatalogueAggregateOptionResponse] = Field(default_factory=list)
 
 
 class VehicleVariantApplyRequest(BaseModel):
@@ -2996,6 +3023,124 @@ async def get_fitment_catalogue_years(
         outcome="success" if options else "no_data",
         items=options,
     )
+
+
+@router.get(
+    "/{job_id}/fitment/vehicle-catalogue/makes",
+    response_model=VehicleCatalogueAggregateResponse,
+)
+async def get_fitment_vehicle_catalogue_makes(
+    job_id: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Return makes aggregated across the provider's complete region universe."""
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    try:
+        items = await VehicleCatalogueAggregator().makes()
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    return VehicleCatalogueAggregateResponse(
+        outcome="success" if items else "no_data",
+        items=items,
+    )
+
+
+@router.get(
+    "/{job_id}/fitment/vehicle-catalogue/models",
+    response_model=VehicleCatalogueAggregateResponse,
+)
+async def get_fitment_vehicle_catalogue_models(
+    job_id: str,
+    make: str = Query(),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Return models for an exact make across all supported regions."""
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    try:
+        items = await VehicleCatalogueAggregator().models(_catalogue_parameter(make, field="make"))
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    return VehicleCatalogueAggregateResponse(
+        outcome="success" if items else "no_data",
+        items=items,
+    )
+
+
+@router.get(
+    "/{job_id}/fitment/vehicle-catalogue/years",
+    response_model=VehicleCatalogueAggregateResponse,
+)
+async def get_fitment_vehicle_catalogue_years(
+    job_id: str,
+    make: str = Query(),
+    model: str = Query(),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Return years for an exact make/model across their valid regions."""
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    try:
+        items = await VehicleCatalogueAggregator().years(
+            _catalogue_parameter(make, field="make"),
+            _catalogue_parameter(model, field="model"),
+        )
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    return VehicleCatalogueAggregateResponse(
+        outcome="success" if items else "no_data",
+        items=items,
+    )
+
+
+@router.get(
+    "/{job_id}/fitment/vehicle-catalogue/markets",
+    response_model=VehicleCatalogueMarketResponse,
+)
+async def get_fitment_vehicle_catalogue_markets(
+    job_id: str,
+    make: str = Query(),
+    model: str = Query(),
+    year: int = Query(ge=1886, le=2100),
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Resolve candidate sales regions only after make/model/year are chosen."""
+    await _require_fitment_catalogue_access(
+        job_id=job_id,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+    )
+    try:
+        result = await VehicleCatalogueAggregator().markets(
+            _catalogue_parameter(make, field="make"),
+            _catalogue_parameter(model, field="model"),
+            year,
+        )
+    except ProviderError as exc:
+        raise _catalogue_provider_error(exc) from exc
+    return VehicleCatalogueMarketResponse(**result)
 
 
 @router.post("/{job_id}/fitment/rim-source/resolve", response_model=RimSourceResolveResponse)

@@ -3092,6 +3092,32 @@ h2 {
     font-weight: 750;
 }
 
+.fitment-catalogue-state {
+    min-height: 15px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.fitment-catalogue-state[data-state="selected"] {
+    color: var(--success);
+}
+
+.fitment-catalogue-state[data-state="failed"] {
+    color: var(--danger);
+}
+
+.fitment-catalogue-state[data-state="no_data"] {
+    color: var(--text-muted);
+}
+
+.fitment-catalogue-retry {
+    justify-self: start;
+    min-height: 34px;
+    padding: 7px 12px;
+}
+
 .fitment-field[data-state="confirmed"] .fitment-field-state { color: var(--success); }
 .fitment-field[data-state="suggested"] .fitment-field-state,
 .fitment-field[data-state="entered"] .fitment-field-state { color: var(--warning); }
@@ -4371,11 +4397,10 @@ body.has-fallback-main-button #app {
 }
 
 .mobile-bottom-nav {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(10px + var(--safe-bottom));
-    z-index: 30;
+    position: static;
+    width: min(calc(100% - 24px), 980px);
+    margin: 0 auto 10px;
+    z-index: 1;
     display: none;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
@@ -4461,8 +4486,7 @@ body.has-fallback-main-button #app {
 
 @media (max-width: 360px) {
     .mobile-bottom-nav {
-        left: 6px;
-        right: 6px;
+        width: calc(100% - 12px);
         gap: 2px;
         padding: 5px;
         border-radius: 20px;
@@ -4519,6 +4543,13 @@ body.has-fallback-main-button #app {
 }
 
 @media (max-width: 1039px) {
+    body {
+        height: 100dvh;
+        min-height: 100dvh;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+    }
+
     .desktop-sidebar {
         display: none;
     }
@@ -4528,8 +4559,10 @@ body.has-fallback-main-button #app {
     }
 
     #app {
-        padding-bottom: calc(124px + var(--safe-bottom));
-        scroll-padding-bottom: calc(124px + var(--safe-bottom));
+        min-height: 0;
+        overflow-y: auto;
+        padding-bottom: 28px;
+        scroll-padding-bottom: 28px;
     }
 }
 

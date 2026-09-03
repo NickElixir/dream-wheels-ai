@@ -70,6 +70,26 @@ def test_catalogue_cache_keys_keep_parent_contexts_separate():
     assert any("('model', 'macan')" in key for key in cache.sets)
 
 
+def test_catalogue_multi_region_query_uses_repeated_provider_parameters():
+    class SequenceClient:
+        def __init__(self) -> None:
+            self.params = None
+
+        async def get(self, _url: str, *, params):
+            self.params = params
+            return httpx.Response(200, json={"data": []})
+
+    http_client = SequenceClient()
+    provider = WheelSizeProvider(api_key="test-key", client=http_client)
+    asyncio.run(provider.catalogue_makes(region=["eudm", "usdm"]))
+
+    assert http_client.params == [
+        ("region", "eudm"),
+        ("region", "usdm"),
+        ("user_key", "test-key"),
+    ]
+
+
 def test_catalogue_provider_failure_is_not_cached_as_no_data(monkeypatch):
     class FailedClient:
         async def get(self, _url: str, *, params: dict[str, object]):

@@ -52,10 +52,8 @@ def test_vehicle_variant_candidates_are_deduplicated_as_presentation_only() -> N
     assert 'canonical:${canonicalIdentity.join("|")}' in APP_JS
     assert "presentation:${name}|${technical}" in APP_JS
     assert "dedupeFitmentVehicleVariants(result.variants || [])" in APP_JS
-    assert (
-        "state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(\n                DEMO_VEHICLE_VARIANTS"
-        in APP_JS
-    )
+    assert "state.fitmentVehicleVariants = dedupeFitmentVehicleVariants(" in APP_JS
+    assert "demoVehicleVariantsForSelection().map((variant) => ({ ...variant }))" in APP_JS
 
 
 def test_vehicle_summary_exposes_two_independent_edit_targets() -> None:
@@ -73,10 +71,14 @@ def test_vehicle_summary_exposes_two_independent_edit_targets() -> None:
     assert '"Изменить комплектацию"' in APP_JS
     assert '"Скрыть"' in APP_JS
     assert (
-        "!vehicleEditing"
+        'vehicleWorkspaceMode === "modification_edit"'
         in APP_JS.split("const modificationLookupOpen", 1)[1].split("const selectedVariant", 1)[0]
     )
-    assert "modificationToggle.hidden = vehicleEditing;" in APP_JS
+    assert 'modificationToggle.hidden = vehicleWorkspaceMode === "base_edit";' in APP_JS
+    assert (
+        'modificationSummary.hidden = !canShowModificationRow || vehicleWorkspaceMode === "base_edit";'
+        in APP_JS
+    )
     edit_flow = APP_JS.split('const fitmentEdit = event.target.closest("[data-fitment-edit]")', 1)[
         1
     ].split("const modificationToggle = event.target.closest", 1)[0]

@@ -243,55 +243,59 @@ def test_vehicle_editor_keeps_base_data_separate_from_catalogue_modification() -
 def test_market_presentation_keeps_human_label_separate_from_catalogue_value() -> None:
     assert "FITMENT_MARKET_VALUE_ALIASES" in APP_JS
     assert "fitmentCatalogueOptionLabel(item, kind)" in APP_JS
-    assert 'return [vehicle?.year, market].filter(Boolean).join(" / ")' in APP_JS
+    assert 'return [vehicle?.year].filter(Boolean).join(" / ")' in APP_JS
     assert "return fitmentVehicleBaseSpecs(vehicle);" in APP_JS
-    assert 'input.dataset.fitmentCatalogue === "regions"' in APP_JS
-    assert "inputValue = fitmentOptionValue(matchingRegion)" in APP_JS
-    assert "function fitmentCatalogueQueryValue(kind, value)" in APP_JS
-    assert (
-        'queryParams.region = fitmentCatalogueQueryValue("regions", queryParams.region)' in APP_JS
-    )
+    assert "data-fitment-market-resolution" in INDEX_HTML
+    assert 'marketState.status === "resolved_single"' in APP_JS
+    assert 'resolution: "selection_required"' in APP_JS
     assert "Рынок: ${market}" not in APP_JS
     assert "?region=Китай" not in APP_JS
 
 
-def test_vehicle_catalogue_cascade_invalidates_stale_downstream_values() -> None:
+def test_vehicle_catalogue_cascade_revalidates_before_clearing_stale_values() -> None:
     change_handler = APP_JS.split('input.dataset.fitmentCatalogue === "makes"', 1)[1].split(
-        'input.dataset.fitmentCatalogue === "regions"', 1
+        'input.dataset.fitmentCatalogue === "models"', 1
     )[0]
-    assert 'resetFitmentCatalogue("models")' in change_handler
-    assert 'resetFitmentCatalogue("years")' in change_handler
-    region_handler = (
-        APP_JS.split('input.dataset.fitmentCatalogue === "regions"', 1)[1]
-        .split("state.fitmentForm.vehicle.market = value;", 1)[1]
-        .split("} else {", 1)[0]
-    )
-    assert 'state.fitmentForm.vehicle.make = ""' in region_handler
-    assert 'state.fitmentForm.vehicle.model = ""' in region_handler
-    assert 'state.fitmentForm.vehicle.year = ""' in region_handler
-    assert 'loadFitmentCatalogue("models"' not in region_handler
-    assert 'loadFitmentCatalogue("years"' not in region_handler
-    assert "reconcileFitmentCatalogueSelection" in APP_JS
+    assert "rememberFitmentVehicleCatalogueChain();" in change_handler
+    assert "beginFitmentCatalogueContextChange();" in change_handler
+    assert "revalidateFitmentCatalogueChain(contextVersion)" in change_handler
+    assert "fitmentCatalogueParentChange" in change_handler
+    assert "input.dataset.fitmentMarketResolution !== undefined" in APP_JS
+    assert "revalidateFitmentCatalogueChain" in APP_JS
+    assert "currentMakeEntry || rememberedMakeEntry" in APP_JS
+    assert "currentModelEntry || rememberedModelEntry" in APP_JS
+    assert "currentYearEntry || rememberedYearEntry" in APP_JS
 
 
 def test_vehicle_catalogue_no_data_is_neutral_and_stale_year_is_not_kept() -> None:
-    assert 'result.outcome === "no_data" ? "no_data" : "loaded"' in APP_JS
-    assert 'state.fitmentCatalogue.years.status === "no_data"' in APP_JS
-    assert "Для выбранного рынка и модели год не найден в каталоге" in APP_JS
-    reconcile = APP_JS.split("function reconcileFitmentCatalogueSelection", 1)[1].split(
-        "function resetFitmentCatalogue", 1
-    )[0]
-    assert 'kind === "years"' in reconcile
-    assert 'vehicle.year = ""' in reconcile
+    assert 'result.outcome === "no_data"' in APP_JS
+    assert 'fitmentCatalogueFieldState("years", form.vehicle.year).state === "no_data"' in APP_JS
+    assert "Нет доступных годов" in APP_JS
+    assert 'if (yearsResult.outcome === "no_data")' in APP_JS
+    assert 'vehicle.year = ""' in APP_JS
 
 
 def test_vehicle_catalogue_changes_stay_draft_until_explicit_save() -> None:
     change_bindings = APP_JS.rsplit(
         'document.querySelectorAll("[data-fitment-input]").forEach((input) => {', 1
     )[1].split('document.querySelectorAll("[data-fitment-custom]")', 1)[0]
-    assert "loadFitmentCatalogue" in change_bindings
+    assert "revalidateFitmentCatalogueChain" in change_bindings
+    assert "beginFitmentCatalogueContextChange" in change_bindings
     assert 'method: "PATCH"' not in change_bindings
     assert 'method: "PATCH"' in APP_JS
+
+
+def test_make_first_catalogue_uses_provider_aggregate_and_conditional_market() -> None:
+    assert "/fitment/vehicle-catalogue/${kind}" in APP_JS
+    assert 'loadFitmentCatalogue("makes"' in APP_JS
+    assert 'loadFitmentCatalogue("models"' in APP_JS
+    assert 'loadFitmentCatalogue("years"' in APP_JS
+    assert 'loadFitmentCatalogue("markets"' in APP_JS
+    assert "DEMO_VEHICLE_CATALOGUE" in APP_JS
+    assert 'model_slug: "001"' in APP_JS
+    assert "data-fitment-market-field" in INDEX_HTML
+    assert 'data-fitment-input="vehicle.market" data-fitment-market-resolution' in INDEX_HTML
+    assert "state.fitmentMarketResolution" in APP_JS
 
 
 def test_basic_vehicle_payload_does_not_reserialize_catalogue_variant_fields() -> None:
