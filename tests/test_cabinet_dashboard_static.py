@@ -575,6 +575,34 @@ def test_focus_visible_style_covers_button_and_navigation_families() -> None:
     )
 
 
+def test_sidebar_accent_is_reserved_for_inactive_item_hover() -> None:
+    assert ".sidebar-item::before" not in STYLE_CSS
+    assert ".sidebar-item:hover:not(.active)" in STYLE_CSS
+    assert "color: var(--text);\n    background: var(--accent-soft);" in STYLE_CSS
+    assert (
+        ".sidebar-item.active {\n    color: var(--accent-strong);\n    background: var(--accent-soft);"
+        in STYLE_CSS
+    )
+    assert ".sidebar-item.active:hover {\n    transform: translateX(3px);" in STYLE_CSS
+
+
+def test_dashboard_balance_subisland_has_no_accent_frame() -> None:
+    balance_display = STYLE_CSS.split(".balance-tile.dashboard-balance-display {", 1)[1].split(
+        "}", 1
+    )[0]
+    assert "border: 0;" in balance_display
+    assert "background: transparent;" in balance_display
+
+
+def test_dashboard_login_island_follows_top_up_action() -> None:
+    dashboard_balance = INDEX_HTML.split('<article class="panel dashboard-balance-card">', 1)[
+        1
+    ].split("</article>", 1)[0]
+    assert dashboard_balance.index("dashboard-balance-action") < dashboard_balance.index(
+        "dashboard-auth-island"
+    )
+
+
 def test_fitment_primary_action_is_not_a_sticky_mobile_footer() -> None:
     assert ".fitment-actions {\n        position: sticky" not in STYLE_CSS
     assert "data-fitment-render-action" in INDEX_HTML
