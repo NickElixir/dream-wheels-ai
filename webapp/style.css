@@ -2323,6 +2323,7 @@ h2 {
     width: min(46%, 240px);
     height: 100%;
     object-fit: contain;
+    border-radius: var(--radius-md);
 }
 
 .fitment-pair-copy {
