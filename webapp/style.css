@@ -194,7 +194,6 @@ a {
 
 .sidebar-item {
     appearance: none;
-    position: relative;
     width: 100%;
     border: 0;
     border-radius: 16px;
@@ -207,20 +206,10 @@ a {
     transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-.sidebar-item::before {
-    content: "";
-    position: absolute;
-    left: 6px;
-    top: 11px;
-    bottom: 11px;
-    width: 2px;
-    border-radius: 99px;
-    background: transparent;
-}
-
-.sidebar-item:hover {
+.sidebar-item:hover:not(.active) {
     transform: translateX(3px);
     color: var(--text);
+    background: var(--accent-soft);
 }
 
 .sidebar-item.active {
@@ -228,8 +217,8 @@ a {
     background: var(--accent-soft);
 }
 
-.sidebar-item.active::before {
-    background: var(--accent);
+.sidebar-item.active:hover {
+    transform: translateX(3px);
 }
 
 .sidebar-account {
@@ -589,7 +578,7 @@ a {
     margin: 0;
 }
 
-.dashboard-balance-display {
+.balance-tile.dashboard-balance-display {
     display: grid;
     place-items: center;
     align-content: center;
@@ -599,11 +588,8 @@ a {
     padding: 20px;
     margin-top: 8px;
     text-align: center;
-    border: 1px solid rgba(221, 255, 0, 0.34);
-    border-radius: var(--radius-lg);
-    background:
-        radial-gradient(circle at 50% 42%, rgba(221, 255, 0, 0.09), transparent 58%),
-        linear-gradient(180deg, rgba(48, 57, 26, 0.6), rgba(25, 30, 19, 0.72));
+    border: 0;
+    background: transparent;
 }
 
 .dashboard-balance-display .dashboard-balance-value {
