@@ -4306,9 +4306,12 @@ async function ensureFitmentPreviewAsset(job, kind) {
     }
 }
 
-function fitmentPreviewMarkup(url, label) {
+function fitmentPreviewMarkup(url, label, { rim = false } = {}) {
+    const image = `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" class="fitment-pair-image">`;
     return url
-        ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" class="fitment-pair-image">`
+        ? rim
+            ? `<span class="fitment-rim-image-frame">${image}</span>`
+            : image
         : `<span class="fitment-pair-media-placeholder">${escapeHtml(label)}</span>`;
 }
 
@@ -4842,7 +4845,7 @@ function renderFitment() {
     const vehicleMedia = document.querySelector("[data-fitment-vehicle-preview-media]");
     const rimMedia = document.querySelector("[data-fitment-rim-preview-media]");
     if (vehicleMedia) vehicleMedia.innerHTML = fitmentPreviewMarkup(vehicleUrl, "Фото автомобиля");
-    if (rimMedia) rimMedia.innerHTML = fitmentPreviewMarkup(rimUrl, "Фото диска");
+    if (rimMedia) rimMedia.innerHTML = fitmentPreviewMarkup(rimUrl, "Фото диска", { rim: true });
     if (contextJob) {
         void ensureFitmentPreviewAsset(contextJob, "vehicle");
         void ensureFitmentPreviewAsset(contextJob, "rim");

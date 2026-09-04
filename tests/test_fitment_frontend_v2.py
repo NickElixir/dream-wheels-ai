@@ -388,8 +388,11 @@ def test_rim_preview_uses_rim_asset_and_never_the_vehicle_asset() -> None:
 
 def test_rim_preview_keeps_full_island_and_centers_narrow_image() -> None:
     assert "height: 250px;" in STYLE_CSS
-    assert ".fitment-pair-card[data-fitment-rim-preview] .fitment-pair-image" in STYLE_CSS
+    assert ".fitment-pair-card[data-fitment-rim-preview] .fitment-rim-image-frame" in STYLE_CSS
     assert "width: min(46%, 240px);" in STYLE_CSS
+    assert "aspect-ratio: 1 / 1;" in STYLE_CSS
+    assert "border-radius: var(--radius-md);" in STYLE_CSS
+    assert "overflow: hidden;" in STYLE_CSS
     assert "object-fit: contain;" in STYLE_CSS
     mobile = STYLE_CSS.split("@media (max-width: 760px)", 1)[-1]
     assert ".fitment-pair-media { height: 150px; min-height: 0; }" in mobile

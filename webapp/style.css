@@ -2319,10 +2319,20 @@ h2 {
     place-items: center;
 }
 
-.fitment-pair-card[data-fitment-rim-preview] .fitment-pair-image {
+.fitment-pair-card[data-fitment-rim-preview] .fitment-rim-image-frame {
     width: min(46%, 240px);
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+}
+
+.fitment-pair-card[data-fitment-rim-preview] .fitment-rim-image-frame .fitment-pair-image {
+    width: 100%;
     height: 100%;
     object-fit: contain;
+    display: block;
 }
 
 .fitment-pair-copy {
