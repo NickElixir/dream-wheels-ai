@@ -146,6 +146,38 @@ For preservation evidence, compare a known existing `users.id` before/after
 with its job count, credit balance, payments and Fitment ownership. The final
 rolled-back insert proves nullable support without creating a staging user.
 
+## Live staging verification
+
+Verification ran read-only against canonical staging on `2026-09-05`.
+The migration was applied manually through SQL Editor before this verification;
+the exact editor execution timestamp is not available from database metadata.
+
+```text
+STAGING_DB_MIGRATION_APPLIED_AT  = manual SQL Editor, timestamp unavailable
+STAGING_DB_VERIFICATION_DATE     = 2026-09-05
+TELEGRAM_USERS                   = 22
+TELEGRAM_IDENTITIES              = 22
+MISSING_IDENTITIES               = 0
+MISMATCHED_IDENTITIES            = 0
+DUPLICATE_IDENTITIES             = 0
+ORPHAN_IDENTITIES                = 0
+TELEGRAM_USER_ID_NULLABLE        = YES
+RLS_STATUS                       = enabled; no policies
+CLIENT_GRANTS_STATUS             = anon/authenticated SELECT/INSERT/UPDATE/DELETE all false
+TELEGRAM_SMOKE_STATUS            = PENDING (no safe authorized Telegram context)
+```
+
+Live catalog inspection confirmed the expected six columns, `ON DELETE
+CASCADE` foreign key, unique `(provider, provider_subject)` constraint and
+`idx_user_identities_user_id`. Existing business foreign keys still point to
+`users.id` for jobs, credits/ledger, payments, analytics, Fitment and
+render/history tables; no ownership migration was run.
+
+Supabase security advisor reports `rls_enabled_no_policy` for
+`user_identities` as an informational result, which is intentional for this
+backend-only table because client table privileges are revoked. Its remaining
+warnings predate this slice and concern existing credit/payment functions.
+
 ## Tests
 
 `tests/test_auth_v11_identities.py` covers migration contract, Telegram
@@ -168,16 +200,16 @@ the two live database tests are skipped and no staging/production SQL was run.
 ## Gate status
 
 ```text
-AUTH_IDENTITY_SCHEMA              = PASS (migration contract; staging SQL pending)
-AUTH_TELEGRAM_BACKFILL            = PASS (migration contract; staging SQL pending)
-AUTH_EXISTING_USER_IDS_PRESERVED  = PASS
-AUTH_TELEGRAM_ID_NULLABLE         = PASS (migration contract; staging SQL pending)
+AUTH_IDENTITY_SCHEMA              = PASS (live staging verified)
+AUTH_TELEGRAM_BACKFILL            = PASS (live staging verified)
+AUTH_EXISTING_USER_IDS_PRESERVED  = PASS (live identity mapping; no ownership migration)
+AUTH_TELEGRAM_ID_NULLABLE         = PASS (live schema verified)
 AUTH_LEGACY_TELEGRAM_CREATE       = PASS
 AUTH_NEW_TELEGRAM_IDENTITY        = PASS
 AUTH_GENERIC_IDENTITY_LOOKUP      = PASS
 AUTH_GENERIC_USER_CREATE          = PASS
 AUTH_SUPABASE_SUBJECT_SUPPORTED   = PASS
-AUTH_IDENTITY_UNIQUENESS          = PASS (DB constraint; staging SQL pending)
+AUTH_IDENTITY_UNIQUENESS          = PASS (live unique constraint and zero duplicates)
 AUTH_IDENTITY_RACE_SAFETY         = PASS (unit; DB concurrency pending without DATABASE_URL)
 AUTH_IDENTITY_TRANSACTION_SAFETY  = PASS
 AUTH_BUSINESS_DATA_MIGRATION      = NONE
@@ -186,7 +218,16 @@ AUTH_CREDITS_REGRESSION           = NONE
 AUTH_PAYMENTS_REGRESSION          = NONE
 AUTH_FITMENT_REGRESSION           = NONE
 FULL_TEST_SUITE                   = PASS (461 passed, 5 skipped)
-CI                                = PASS (PR #158 checks)
-AUTH_FOUNDATION_STAGING_MIGRATION = APPLIED (verification SQL pending)
+CI                                = PASS (PR #159 checks before Slice 0.1 docs)
+AUTH_FOUNDATION_STAGING_MIGRATION = APPLIED
+AUTH_FOUNDATION_STAGING_VERIFICATION = PASS
+AUTH_TELEGRAM_BACKFILL_LIVE       = PASS
+AUTH_IDENTITY_ORPHANS             = 0
+AUTH_IDENTITY_DUPLICATES          = 0
+AUTH_IDENTITY_RLS                 = PASS
+AUTH_TELEGRAM_STAGING_SMOKE       = PENDING
 AUTH_IDENTITY_FOUNDATION_READY    = YES (code checkpoint; 03B integration barrier remains)
+PR_159                            = DRAFT
+AUTH_RUNTIME_DEPLOYED             = NO
+PRODUCTION                        = NOT_TOUCHED
 ```
