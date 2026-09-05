@@ -224,27 +224,35 @@ are intentionally not recorded here.
 
 ```text
 AUTH_LIVE_BACKEND_JWT_VERIFY        = NOT_PROVEN
-AUTH_LIVE_CANONICAL_USER_RESOLUTION = BLOCKED
-AUTH_RETURNING_USER_ID_STABLE       = NOT_PROVEN
-AUTH_AUTO_ACCOUNT_LINKING           = NONE (contract and tests; live identity not resolved)
+AUTH_LIVE_CANONICAL_USER_RESOLUTION = PASS (service layer against canonical staging DB)
+AUTH_RETURNING_USER_ID_STABLE       = PASS (same subject returned same users.id)
+AUTH_AUTO_ACCOUNT_LINKING           = NONE (live row has telegram_user_id NULL)
 AUTH_LIVE_TELEMETRY                 = NOT_PROVEN
 AUTH_LIVE_TELEMETRY_PII_LEAK        = PASS (allowlist contract; live sequence incomplete)
 ```
 
 The repository contains the provider-neutral verifier and resolver as
-callable service primitives, but the current staging harness has no backend
-route that invokes `verify_supabase_access_token()` followed by
-`resolve_auth_principal()` / `ensure_user_identity()`. This is consistent with
-the explicit no-main-WebApp-integration boundary, but it means the requested
-live backend proof cannot be claimed in this PR.
+callable service primitives. The live canonical staging DB check invoked
+`ensure_user_identity()` directly with the real Supabase Auth subject from the
+staging session's Auth user, then invoked it again. Both calls returned the same
+canonical `users.id`; the resulting row has `telegram_user_id IS NULL`, exactly
+one matching `user_identities` row, and no duplicate canonical row. The
+internal staging result was `users.id = 156`; it is omitted from the PR body.
+
+The current staging harness still has no backend route that invokes
+`verify_supabase_access_token()` followed by `resolve_auth_principal()` /
+`ensure_user_identity()`. This is consistent with the explicit no-main-WebApp-
+integration boundary, but it means the requested live JWT proof remains
+unclaimed in this PR even though the canonical resolver itself is now proven.
 
 Read-only SQL against the connected staging Supabase project found one Auth
-user, zero `user_identities` rows for provider `supabase`, and only one recent
-`auth_completed` analytics event rather than the required complete event
-sequence. The event's observed property key was the allowlisted `auth_channel`;
-no token, email, OTP, session, or raw error was inspected or persisted in this
-audit. The application canonical database/runtime therefore still needs an
-approved staging execution path for the live resolver and telemetry checks.
+user and only one recent `auth_completed` analytics event rather than the
+required complete event sequence. The canonical staging application DB was
+also queried read-only after the resolver calls; its only observed auth event
+property key was the allowlisted `auth_channel`. No token, email, OTP, session,
+or raw error was inspected or persisted in this audit. The application runtime
+still needs an approved staging execution path for the live JWT verification
+and complete telemetry sequence.
 
 ### Regression and repository verification
 
