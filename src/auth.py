@@ -76,6 +76,10 @@ class WebsiteAuthInvalid(Exception):
 class SupabaseAccessTokenInvalid(Exception):
     """Supabase user access token не прошёл локальную криптографическую проверку."""
 
+    def __init__(self, message: str, *, code: str = "INVALID_SUPABASE_TOKEN"):
+        super().__init__(message)
+        self.code = code
+
 
 @dataclass(frozen=True, slots=True)
 class SupabaseTokenClaims:
@@ -416,7 +420,9 @@ def _validated_supabase_claims(claims: dict) -> SupabaseTokenClaims:
 
     exp = claims.get("exp")
     if type(exp) is not int or exp <= int(time.time()):
-        raise SupabaseAccessTokenInvalid("Expired Supabase access token")
+        raise SupabaseAccessTokenInvalid(
+            "Expired Supabase access token", code="EXPIRED_CREDENTIALS"
+        )
 
     subject = _supabase_uuid_claim(claims.get("sub"), claim="subject", required=True)
     if subject is None:
