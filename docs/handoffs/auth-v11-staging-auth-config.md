@@ -37,10 +37,10 @@ AUTH_DEFAULT_SUPABASE_SMTP      = NOT IN USE
 SMTP_PROVIDER                   = Resend (smtp.resend.com:465; staging readback)
 SMTP_SENDER                     = Dream Wheels <no-reply@auth.dreamwheels.pro>
 SMTP_DOMAIN                     = auth.dreamwheels.pro
-SMTP_VERIFIED                   = CONFIGURED; live delivery pending
-SPF_STATUS                      = PENDING
-DKIM_STATUS                     = PENDING
-DMARC_STATUS                    = PENDING
+SMTP_VERIFIED                   = PASS; live delivery observed in Resend
+SPF_STATUS                      = PASS (user-confirmed domain verification)
+DKIM_STATUS                     = PASS (user-confirmed domain verification)
+DMARC_STATUS                    = PASS (user-confirmed domain verification)
 ```
 
 The staging SMTP readback showed custom SMTP enabled, Resend host
@@ -60,12 +60,50 @@ was aliased to `https://dream-wheels-ai-webapp-staging.vercel.app` after the
 staging backend guard passed. The live static checks returned `200` for
 `/auth/harness.html`, `/auth/harness-config.js`, and `/auth/harness.bundle.js`.
 
-The browser showed the isolated harness in an unauthenticated state and the
-real Managed Turnstile challenge completed with a visible success result.
-No OTP request has been sent yet because the external test inbox has not been
-identified in this run. The remaining evidence is therefore intentionally
-pending: Supabase OTP request, Resend delivery and `Delivered` status, exact
-message inspection, `verifyOtp`, session creation, and reload persistence.
+The browser completed the real Managed Turnstile challenge on the canonical
+staging alias and accepted real OTP requests through the staging Supabase
+project. Supabase Auth Logs showed successful `/otp` request events with HTTP
+200. The external test inbox was `venus.mike@yandex.ru`.
+
+Resend dashboard evidence for the final relogin message:
+
+```text
+RESEND_EMAIL_ID                 = a782d8d0-5b0f-4c8a-b79c-7e6bf2dec5f1
+RESEND_LOG_ID                   = eb17b14a-1ad9-49eb-968c-597eed758a16
+RESEND_STATUS                   = Delivered
+RESEND_FROM                     = "Dream Wheels" <no-reply@auth.dreamwheels.pro>
+RESEND_SUBJECT                  = Your Dream Wheels AI login code
+RESEND_HTML                     = six-digit numeric OTP; no links; no ConfirmationURL
+```
+
+The Resend HTML view was inspected without recording the OTP value in this
+handoff. The earlier first-time signup email was intentionally not used: it
+was `Confirm your email address` with a Magic Link. That occurred because
+staging `Confirm email` was initially enabled. It was switched OFF in the
+staging Supabase provider configuration only, read back as OFF, and the clean
+OTP flow was then repeated. No confirmation link was clicked by the test.
+
+The live harness then showed the following successful states:
+
+```text
+TURNSTILE_MANAGED               = PASS (visible success result)
+OTP_REQUEST                     = PASS (real Supabase /otp request)
+OTP_EMAIL_DELIVERY              = PASS (Resend Delivered)
+OTP_SENDER                      = PASS (exact approved sender)
+OTP_CONTENT                     = PASS (six-digit token; no Magic Link/ConfirmationURL)
+VERIFY_OTP                      = PASS (harness: Email verified. Supabase session established.)
+SESSION_CREATED                 = PASS (State AUTHENTICATED; Authority Supabase; Session present yes)
+SESSION_AFTER_RELOAD            = PASS (AUTHENTICATED; session present yes)
+SESSION_AFTER_REOPEN            = PASS (new browser tab restored AUTHENTICATED session)
+LOGOUT                          = PASS (SDK removed persistent session; all open harness tabs unauthenticated)
+RELOGIN                         = PASS (fresh Turnstile, fresh OTP, verifyOtp, AUTHENTICATED session)
+```
+
+The harness telemetry contract was exercised by these auth transitions and is
+implemented with event names `auth_started`, `otp_requested`, `otp_verified`,
+`auth_completed`, `session_restored`, and `auth_signed_out`. The payload keeps
+email, OTP, CAPTCHA token, session, access token, refresh token, and raw
+provider errors out of telemetry.
 
 ## CAPTCHA and isolated harness
 
@@ -122,10 +160,11 @@ AUTH_CAPTCHA_STAGING              = PASS
 AUTH_HARNESS_CAPTCHA_INTEGRATION  = PASS
 AUTH_HARNESS_LIVE_DEPLOY          = PASS (canonical staging)
 AUTH_TURNSTILE_LIVE               = PASS (Managed challenge)
-AUTH_EMAIL_OTP_LIVE_E2E           = PENDING (external test inbox required)
+AUTH_EMAIL_OTP_LIVE_E2E           = PASS (real staging inbox and Resend delivery)
 AUTH_SECRETS_IN_GIT               = NONE
 AUTH_OTP_MODULE_XSS_REVIEW        = PASS
 AUTH_SLICE_5A_READY               = PASS
+AUTH_SLICE_5B_E2E                  = PASS (request, delivery, verify, persistence, logout, relogin)
 CANONICAL_STAGING_AUTH_DEPLOY     = PASS (staging only)
 PRODUCTION                        = NOT_TOUCHED
 ```
@@ -134,8 +173,8 @@ PRODUCTION                        = NOT_TOUCHED
 
 1. Resend account, SMTP credential, approved sender, and `auth.dreamwheels.pro`
    domain: DONE (staging dashboard readback).
-2. DNS verification for the sender domain: reported complete by the user;
-   live delivery evidence is still pending.
+2. DNS verification for the sender domain: reported complete by the user and
+   corroborated by live Resend delivery.
 3. Public Turnstile site key and Supabase secret configuration: DONE for the
    explicit staging alias. The secret is stored only in Supabase and is never
    supplied to the browser.
