@@ -275,7 +275,11 @@ def test_robokassa_fail_redirect_marks_payment_and_returns_to_webapp(monkeypatch
 
     monkeypatch.setattr(payments_api.db, "get_pool", lambda: FakePool())
     monkeypatch.setattr(payments_api, "mark_payment_failed", fake_mark_failed)
-    monkeypatch.setattr(payments_api, "WEBAPP_URL", "https://stage.example")
+    monkeypatch.setattr(
+        payments_api,
+        "WEBAPP_URL",
+        "https://dream-wheels-ai-webapp-staging.vercel.app",
+    )
 
     response = client.get(
         "/payments/robokassa/fail",
@@ -284,7 +288,11 @@ def test_robokassa_fail_redirect_marks_payment_and_returns_to_webapp(monkeypatch
     )
 
     assert response.status_code == 303
-    assert response.headers["location"] == "https://stage.example/t/?payment=fail&invoice_id=42"
+    location = response.headers["location"]
+    assert location == (
+        "https://dream-wheels-ai-webapp-staging.vercel.app/t/?payment=fail&invoice_id=42"
+    )
+    assert "/t/t/" not in location
 
 
 def test_failed_payment_has_terminal_wallet_mapping():
