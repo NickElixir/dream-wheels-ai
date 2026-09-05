@@ -78,6 +78,11 @@ def _infer_supabase_project_ref() -> str:
 SUPABASE_URL = _env_str("SUPABASE_URL").rstrip("/")
 SUPABASE_PROJECT_REF = _infer_supabase_project_ref()
 SUPABASE_SERVICE_ROLE_KEY = _env_str("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_AUTH_ISSUER = f"{SUPABASE_URL}/auth/v1" if SUPABASE_URL else ""
+SUPABASE_AUTH_JWKS_URL = (
+    f"{SUPABASE_AUTH_ISSUER}/.well-known/jwks.json" if SUPABASE_AUTH_ISSUER else ""
+)
+SUPABASE_AUTH_AUDIENCE = _env_str("SUPABASE_AUTH_AUDIENCE") or "authenticated"
 SUPABASE_STORAGE_URL = (
     f"{SUPABASE_URL}/storage/v1"
     if SUPABASE_URL
@@ -162,6 +167,7 @@ def runtime_env_summary() -> dict[str, str | bool | None]:
     return {
         "supabase_project_ref": SUPABASE_PROJECT_REF or None,
         "supabase_host": supabase_host,
+        "supabase_auth_configured": bool(SUPABASE_AUTH_ISSUER and SUPABASE_AUTH_JWKS_URL),
         "storage_configured": bool(SUPABASE_STORAGE_URL and SUPABASE_SERVICE_ROLE_KEY),
         "payments_test_mode": ROBOKASSA_IS_TEST,
         "vehicle_identity_enabled": VEHICLE_IDENTITY_ENABLED,
