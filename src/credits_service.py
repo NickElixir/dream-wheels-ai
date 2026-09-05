@@ -101,7 +101,7 @@ async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> i
             user_id,
             -int(row["remaining_credits"]),
             f"package_expire:{row['id']}",
-            row["id"],
+            str(row["id"]),
             row["expires_at"],
         )
     await conn.execute(

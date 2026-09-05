@@ -1,5 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
+from uuid import UUID
 
 import asyncpg
 
@@ -261,6 +262,7 @@ def test_list_credit_packages_returns_empty_when_package_migration_is_missing():
 
 def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
     expires_at = datetime(2026, 7, 1, tzinfo=UTC)
+    package_id = UUID("263b2b96-2704-4b98-82d4-0e6fbe81682e")
 
     class FakeConn:
         def __init__(self) -> None:
@@ -272,7 +274,7 @@ def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
 
         async def fetch(self, query: str, *args):
             assert "FROM credit_packages" in query
-            return [{"id": "package-1", "remaining_credits": 2, "expires_at": expires_at}]
+            return [{"id": package_id, "remaining_credits": 2, "expires_at": expires_at}]
 
         async def execute(self, query: str, *args):
             if "INSERT INTO credit_ledger" in query:
@@ -287,7 +289,8 @@ def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
     query, args = conn.expiration_insert
     assert "$4::text" in query
     assert "$5::timestamptz" in query
-    assert args == (123, -2, "package_expire:package-1", "package-1", expires_at)
+    assert args == (123, -2, f"package_expire:{package_id}", str(package_id), expires_at)
+    assert args[3] == str(package_id)
 
 
 def test_expired_starter_grant_metadata_has_explicit_postgres_types():
