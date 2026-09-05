@@ -63,7 +63,9 @@ def _base_observation(card: dict[str, Any], ground_truth: dict[str, Any]) -> dic
     }
 
 
-async def resolve_card(card: dict[str, Any], ground_truth: dict[str, Any], adapter: Any) -> dict[str, Any]:
+async def resolve_card(
+    card: dict[str, Any], ground_truth: dict[str, Any], adapter: Any
+) -> dict[str, Any]:
     started = time.perf_counter()
     base = _base_observation(card, ground_truth)
     try:
@@ -132,7 +134,9 @@ async def run(manifest_path: Path, ground_truth_path: Path, resolver_root: Path)
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     ground_truth_document = yaml.safe_load(ground_truth_path.read_text(encoding="utf-8"))
     cards = manifest["cards"]
-    ground_truth = {key: value for key, value in ground_truth_document.items() if key.startswith("ym-")}
+    ground_truth = {
+        key: value for key, value in ground_truth_document.items() if key.startswith("ym-")
+    }
     if manifest.get("dataset_version") != ground_truth_document.get("dataset_version"):
         raise ValueError("Frozen dataset version mismatch")
     if manifest.get("base_commit") != "e5b93c1b49268e02f64a1ec8271055d9c8fc916b":
@@ -153,7 +157,10 @@ async def run(manifest_path: Path, ground_truth_path: Path, resolver_root: Path)
         "dataset_version": manifest["dataset_version"],
         "dataset_base_commit": manifest["base_commit"],
         "implementation_commit": actual_commit,
-        "benchmark_timestamp": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "benchmark_timestamp": datetime.now(UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "execution_method": {
             "adapter": "src.yandex_market_adapter.resolve_yandex_product_url_with_diagnostics",
             "resolver_root": str(resolver_root.resolve()),
@@ -171,12 +178,18 @@ async def run(manifest_path: Path, ground_truth_path: Path, resolver_root: Path)
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=Path(__file__).with_name("manifest.yaml"))
-    parser.add_argument("--ground-truth", type=Path, default=Path(__file__).with_name("ground_truth.yaml"))
+    parser.add_argument(
+        "--ground-truth", type=Path, default=Path(__file__).with_name("ground_truth.yaml")
+    )
     parser.add_argument("--resolver-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path, default=Path(__file__).with_name("results_after.json"))
+    parser.add_argument(
+        "--output", type=Path, default=Path(__file__).with_name("results_after.json")
+    )
     args = parser.parse_args()
     result = asyncio.run(run(args.manifest, args.ground_truth, args.resolver_root))
-    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(result["metrics"], ensure_ascii=False, indent=2))
     return 0
 
