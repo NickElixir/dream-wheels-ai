@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dream Wheels — Auth session harness</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+        body { background: #0a0b0e; color: #eef2f6; margin: 0; padding: 32px 20px; }
+        main { max-width: 640px; margin: auto; }
+        article { background: #161a22; border: 1px solid #2b3340; border-radius: 18px; padding: 24px; }
+        h1 { font-size: 24px; margin-top: 0; }
+        p { color: #a3adba; }
+        [data-auth-message] { min-height: 1.5em; color: #ffcc56; }
+        button { background: transparent; border: 1px solid #ddff00; border-radius: 10px; color: #ddff00; cursor: pointer; margin: 6px 6px 0 0; padding: 10px 14px; }
+    </style>
+</head>
+<body>
+    <main>
+        <article>
+            <h1>Supabase session harness</h1>
+            <p data-auth-state>State: BOOTSTRAPPING</p>
+            <p data-auth-authority>Authority: —</p>
+            <p data-auth-session>Session present: no</p>
+            <p data-auth-expiry>Access token expiry: —</p>
+            <p data-auth-message role="status" aria-live="polite"></p>
+            <button type="button" data-auth-read>Read current session</button>
+            <button type="button" data-auth-refresh>Refresh session</button>
+            <button type="button" data-auth-signout>Sign out</button>
+        </article>
+    </main>
+    <script type="module" src="/auth/harness.bundle.js"></script>
+</body>
+</html>

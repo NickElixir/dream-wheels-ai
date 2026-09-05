@@ -59,3 +59,9 @@ jobs:
 
       - name: Fitment navigation behavioral tests
         run: node --test tests/test_fitment_transition_behavior.mjs
+
+      - name: Webapp auth harness tests
+        run: npm ci --prefix webapp && npm --prefix webapp test
+
+      - name: Webapp auth harness bundle
+        run: npm --prefix webapp run build && git diff --exit-code -- webapp/auth/harness.bundle.js
