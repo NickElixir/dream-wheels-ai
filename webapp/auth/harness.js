@@ -24,10 +24,15 @@ const otpInput = document.querySelector("[data-auth-otp]");
 const verifyButton = document.querySelector("[data-auth-verify]");
 const resendButton = document.querySelector("[data-auth-resend]");
 const cooldownLabel = document.querySelector("[data-auth-cooldown]");
+const captchaStep = document.querySelector("[data-auth-captcha]");
+const captchaWidget = document.querySelector("[data-auth-captcha-widget]");
+const authConfig = getAuthRuntimeConfig();
 
 let resendAvailableAt = 0;
 let cooldownTimer = null;
 let actionBusy = false;
+let captchaToken = null;
+let turnstileWidgetId = null;
 
 function formatExpiry(value) {
     if (!value) return "—";
@@ -59,6 +64,48 @@ function setResultMessage(message) {
     messageLabel.textContent = message;
 }
 
+function resetCaptcha() {
+    captchaToken = null;
+    if (turnstileWidgetId === null || !globalThis.turnstile?.reset) return;
+    globalThis.turnstile.reset(turnstileWidgetId);
+}
+
+function renderTurnstile() {
+    if (!authConfig.turnstileSiteKey || !captchaWidget || !globalThis.turnstile?.render) return;
+    if (turnstileWidgetId !== null) return;
+    turnstileWidgetId = globalThis.turnstile.render(captchaWidget, {
+        sitekey: authConfig.turnstileSiteKey,
+        callback(token) {
+            captchaToken = typeof token === "string" && token.trim() ? token.trim() : null;
+        },
+        "expired-callback"() {
+            captchaToken = null;
+        },
+        "error-callback"() {
+            captchaToken = null;
+            setResultMessage("The security check could not be completed. Try again later.");
+        },
+    });
+}
+
+function initializeCaptcha() {
+    if (!authConfig.turnstileSiteKey) return;
+    captchaStep.hidden = false;
+    if (globalThis.turnstile?.render) {
+        renderTurnstile();
+        return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", renderTurnstile, { once: true });
+    script.addEventListener("error", () => {
+        setResultMessage("The security check could not be loaded. Try again later.");
+    }, { once: true });
+    document.head.append(script);
+}
+
 function updateCooldown() {
     const remaining = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
     const canResend = remaining === 0;
@@ -85,10 +132,14 @@ function setBusy(busy) {
 
 async function sendCode() {
     const email = emailInput.value.trim();
+    if (authConfig.turnstileSiteKey && !captchaToken) {
+        setResultMessage("Complete the security check before requesting a code.");
+        return;
+    }
     setBusy(true);
     setResultMessage("Sending code…");
     try {
-        await requestEmailOtp(email);
+        await requestEmailOtp(email, captchaToken);
         otpStep.hidden = false;
         otpInput.focus();
         startCooldown();
@@ -97,6 +148,7 @@ async function sendCode() {
         if (error?.code === "rate_limited") startCooldown();
         setResultMessage(safeMessage(error?.code));
     } finally {
+        if (authConfig.turnstileSiteKey) resetCaptcha();
         setBusy(false);
         updateCooldown();
         render(getAuthSessionState());
@@ -164,6 +216,8 @@ document.querySelector("[data-auth-signout]").addEventListener("click", async ()
 });
 
 subscribeToAuthChanges((state) => render(state));
+otpInput.maxLength = authConfig.otpLength;
+initializeCaptcha();
 render(getAuthSessionState());
 void authSessionReady.then(render);
 

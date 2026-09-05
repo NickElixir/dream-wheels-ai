@@ -6,6 +6,8 @@ import {
     AuthOtpError,
     createEmailOtpController,
     createAuthSessionController,
+    getAuthRuntimeConfig,
+    RELEASE_1_EMAIL_OTP_LENGTH,
 } from "./supabase-client.js";
 import { trackAuthEvent } from "./telemetry.js";
 
@@ -225,6 +227,39 @@ test("valid OTP request accepts new-user creation and emits the approved sequenc
     ]);
 });
 
+test("Release 1 defaults to a six-digit OTP and only exposes a public Turnstile site key", () => {
+    const originalConfig = globalThis.__DREAM_WHEELS_AUTH_CONFIG__;
+    try {
+        globalThis.__DREAM_WHEELS_AUTH_CONFIG__ = { turnstileSiteKey: "  1x00000000000000000000AA  " };
+        assert.deepEqual(getAuthRuntimeConfig(), {
+            otpLength: RELEASE_1_EMAIL_OTP_LENGTH,
+            resendWindowSeconds: 60,
+            resendWindowConfigured: false,
+            turnstileSiteKey: "1x00000000000000000000AA",
+        });
+    } finally {
+        if (originalConfig === undefined) delete globalThis.__DREAM_WHEELS_AUTH_CONFIG__;
+        else globalThis.__DREAM_WHEELS_AUTH_CONFIG__ = originalConfig;
+    }
+});
+
+test("OTP request passes a one-time Turnstile token to Supabase without telemetry leakage", async () => {
+    const fake = fakeClient();
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController: createAuthSessionController({ client: fake.client }),
+    });
+
+    await otp.requestEmailOtp("person@example.com", "turnstile-token-for-test-only");
+    assert.deepEqual(fake.otpRequest, {
+        email: "person@example.com",
+        options: {
+            shouldCreateUser: true,
+            captchaToken: "turnstile-token-for-test-only",
+        },
+    });
+});
+
 test("OTP request normalizes invalid email, rate limit, and network failures", async () => {
     const fake = fakeClient({ otpRequestResult: { error: { status: 429, message: "too many requests" } } });
     const otp = createEmailOtpController({
@@ -274,6 +309,48 @@ test("OTP verification normalizes invalid and expired codes without exposing pro
         });
         await assert.rejects(otp.verifyEmailOtp("person@example.com", "123456"), (error) => error.code === expectedCode && !error.message.includes("provider detail"));
     }
+});
+
+test("OTP verification rejects a non-six-digit code before contacting Supabase", async () => {
+    const fake = fakeClient();
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController: createAuthSessionController({ client: fake.client }),
+    });
+
+    await assert.rejects(
+        otp.verifyEmailOtp("person@example.com", "12345"),
+        (error) => error instanceof AuthOtpError && error.code === "invalid_otp",
+    );
+});
+
+test("CAPTCHA failures normalize safely without provider detail", async () => {
+    const fake = fakeClient({
+        otpRequestResult: { error: { code: "captcha_failed", message: "CAPTCHA provider rejected a private token" } },
+    });
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController: createAuthSessionController({ client: fake.client }),
+    });
+
+    await assert.rejects(
+        otp.requestEmailOtp("person@example.com", "turnstile-token-for-test-only"),
+        (error) => error instanceof AuthOtpError
+            && error.code === "provider_error"
+            && !error.message.includes("private token"),
+    );
+
+    const expiredCaptcha = fakeClient({
+        otpRequestResult: { error: { message: "CAPTCHA token expired" } },
+    });
+    const expiredCaptchaOtp = createEmailOtpController({
+        client: expiredCaptcha.client,
+        sessionController: createAuthSessionController({ client: expiredCaptcha.client }),
+    });
+    await assert.rejects(
+        expiredCaptchaOtp.requestEmailOtp("person@example.com", "turnstile-token-for-test-only"),
+        (error) => error instanceof AuthOtpError && error.code === "provider_error",
+    );
 });
 
 test("analytics failure cannot block OTP verification", async () => {

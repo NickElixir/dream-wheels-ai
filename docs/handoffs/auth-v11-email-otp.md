@@ -7,6 +7,9 @@ harness only. The main Dream Wheels WebApp, `webapp/app.js`, protected routes,
 and canonical authenticated request path remain unchanged behind the 03B
 barrier.
 
+Current staging configuration and the Slice 5A external prerequisites are
+tracked in [the Slice 5A handoff](auth-v11-staging-auth-config.md).
+
 ## Staging source-of-truth audit
 
 Project: `Dream Wheels AI Staging` (`hnawojlnfoaccinlgjyn`), active and healthy.

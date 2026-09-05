@@ -19,6 +19,8 @@
         button { background: transparent; border: 1px solid #ddff00; border-radius: 10px; color: #ddff00; cursor: pointer; margin: 10px 6px 0 0; padding: 10px 14px; }
         button:disabled { cursor: not-allowed; opacity: .45; }
         [data-auth-otp-step][hidden] { display: none; }
+        [data-auth-captcha][hidden] { display: none; }
+        [data-auth-captcha-widget] { min-height: 65px; margin-top: 12px; }
     </style>
 </head>
 <body>
@@ -36,6 +38,10 @@
                 <h2>Email OTP</h2>
                 <label for="auth-email">Email</label>
                 <input id="auth-email" data-auth-email type="email" autocomplete="email" required>
+                <section data-auth-captcha hidden aria-live="polite">
+                    <p>Complete the security check before requesting a code.</p>
+                    <div data-auth-captcha-widget></div>
+                </section>
                 <button type="submit" data-auth-send>Send code</button>
             </form>
 

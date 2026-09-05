@@ -39,6 +39,7 @@ const OTP_ERROR_CODES = new Set([
     "unknown",
 ]);
 
+export const RELEASE_1_EMAIL_OTP_LENGTH = 6;
 const DEFAULT_OTP_RESEND_WINDOW_SECONDS = 60;
 
 export class AuthSessionError extends Error {
@@ -61,12 +62,16 @@ export function getAuthRuntimeConfig() {
     const config = globalThis.__DREAM_WHEELS_AUTH_CONFIG__ || {};
     const otpLength = Number(config.otpLength);
     const resendWindowSeconds = Number(config.resendWindowSeconds);
+    const turnstileSiteKey = typeof config.turnstileSiteKey === "string"
+        ? config.turnstileSiteKey.trim()
+        : "";
     return Object.freeze({
-        otpLength: Number.isInteger(otpLength) && otpLength > 0 ? otpLength : null,
+        otpLength: Number.isInteger(otpLength) && otpLength > 0 ? otpLength : RELEASE_1_EMAIL_OTP_LENGTH,
         resendWindowSeconds: Number.isInteger(resendWindowSeconds) && resendWindowSeconds > 0
             ? resendWindowSeconds
             : DEFAULT_OTP_RESEND_WINDOW_SECONDS,
         resendWindowConfigured: Number.isInteger(resendWindowSeconds) && resendWindowSeconds > 0,
+        turnstileSiteKey: turnstileSiteKey || null,
     });
 }
 
@@ -109,15 +114,15 @@ export function normalizeAuthError(error, operation = "provider") {
         || message.includes("rate limit") || message.includes("too many")) {
         return new AuthOtpError("rate_limited");
     }
+    if (code === "captcha_failed" || code === "captcha_verification_failed" || message.includes("captcha")) {
+        return new AuthOtpError("provider_error");
+    }
     if (code === "otp_expired" || code === "expired_otp" || message.includes("expired")) {
         return new AuthOtpError("expired_otp");
     }
     if (code === "invalid_otp" || code === "otp_invalid" || message.includes("invalid otp")
         || (operation === "verify" && message.includes("token"))) {
         return new AuthOtpError("invalid_otp");
-    }
-    if (code === "captcha_failed" || code === "captcha_verification_failed") {
-        return new AuthOtpError("provider_error");
     }
     if (error?.name === "AuthRetryableFetchError" || error instanceof TypeError
         || message.includes("network") || message.includes("fetch") || message.includes("timeout")
@@ -380,7 +385,7 @@ export function createEmailOtpController({ client, sessionController, telemetry 
         const restoredSession = await sessionController.getSession();
         if (!restoredSession) {
             const normalizedError = new AuthOtpError("session_missing");
-            void telemetry?.("auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
             throw normalizedError;
         }
         emitTelemetry(telemetry, "otp_verified", { outcome: "success" });
