@@ -89,7 +89,30 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://dream-wheels-ai-tg.onren
     "/"
 )
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:10000").rstrip("/")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://dream-wheels-ai-webapp.vercel.app").rstrip("/")
+
+
+def normalize_origin_url(value: str, *, name: str) -> str:
+    """Validate and normalize an absolute HTTP(S) origin URL."""
+    normalized = value.rstrip("/")
+    parsed = urlparse(normalized)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.path
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+        or "?" in normalized
+        or "#" in normalized
+    ):
+        raise ValueError(f"{name} must be an origin without a path, e.g. https://example.com")
+    return normalized
+
+
+WEBAPP_URL = normalize_origin_url(
+    os.getenv("WEBAPP_URL", "https://dream-wheels-ai-webapp.vercel.app"),
+    name="WEBAPP_URL",
+)
 LEGAL_BASE_URL = os.getenv("LEGAL_BASE_URL", "https://dream-wheels-ai-legal.vercel.app").rstrip("/")
 
 # Billing / credits
