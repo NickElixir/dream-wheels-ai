@@ -121,7 +121,7 @@ The closeout branch itself contains no rejected runtime code. Its verification i
 
 ```text
 03B_CLOSEOUT_BASE_SHA = e5b93c1b49268e02f64a1ec8271055d9c8fc916b
-03B_CLOSEOUT_COMMIT = <this closeout commit>
+03B_CLOSEOUT_COMMIT = 9c8d0933b1cdb4a47571d5d8735265b6552f00a4
 03B_STAGING_DEPLOYMENT = NOT_CREATED (no runtime diff to deploy)
 PRE_AUTH_BASELINE = e5b93c1b49268e02f64a1ec8271055d9c8fc916b
 ```
