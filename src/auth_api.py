@@ -72,6 +72,7 @@ async def auth_me(
             raise HTTPException(
                 status_code=500, detail="Authentication service unavailable"
             ) from exc
+        logger.info("auth/me rejected credentials reason=%s", exc.code)
         raise HTTPException(status_code=401, detail="Authentication required") from exc
     except Exception as exc:
         logger.exception("❌ auth/me unavailable")
