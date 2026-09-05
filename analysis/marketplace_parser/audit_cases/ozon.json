@@ -1,0 +1,49 @@
+{
+  "audit": {
+    "dataset_namespace": "diagnostic_only",
+    "request_profile": "existing resolver policy; anonymous, no cookies, no proxy, no account",
+    "browser_tool": "agent-browser via npx --yes agent-browser",
+    "raw_html_saved": false
+  },
+  "cases": [
+    {
+      "case_id": "ozon-audit-001",
+      "requested_url": "https://www.ozon.ru/product/jetour-t2-kolesnyy-disk-20x9-pcd5h108-et39-d60-1-2301996318/features/",
+      "identification": "public indexed product page; title and feature listing identify an automotive wheel",
+      "browser": {"result":"CONNECTION_ERROR_PAGE","title":"Похоже, нет соединения","product_card_opened":false},
+      "backend": {
+        "status_code": 403,
+        "content_type": "text/html",
+        "response_bytes": 11565,
+        "final_url": "https://www.ozon.ru/product/jetour-t2-kolesnyy-disk-20x9-pcd5h108-et39-d60-1-2301996318/features/?__rr=1",
+        "redirect_count": 1,
+        "elapsed_ms": 332.9,
+        "challenge_detected": true,
+        "product_id_in_response": false,
+        "structured_data_detected": false,
+        "extracted_candidates": 0
+      },
+      "classification": "ANTI_BOT / FETCH_BLOCKED"
+    },
+    {
+      "case_id": "ozon-audit-002",
+      "requested_url": "https://www.ozon.ru/product/chery-chery-tiggo-7-l-tiggo-7-pro-max-kolesnyy-disk-litoy-19x7-pcd5h108-et23-d60-1-2979907544/",
+      "identification": "public indexed product page; title identifies an automotive wheel and critical dimensions",
+      "browser": {"result":"CONNECTION_ERROR_PAGE","title":"Похоже, нет соединения","product_card_opened":false},
+      "backend": {
+        "status_code": 403,
+        "content_type": "text/html",
+        "response_bytes": 11741,
+        "final_url": "https://www.ozon.ru/product/chery-chery-tiggo-7-l-tiggo-7-pro-max-kolesnyy-disk-litoy-19x7-pcd5h108-et23-d60-1-2979907544/",
+        "redirect_count": 0,
+        "elapsed_ms": 18.19,
+        "challenge_detected": true,
+        "product_id_in_response": false,
+        "structured_data_detected": false,
+        "extracted_candidates": 0
+      },
+      "classification": "ANTI_BOT / FETCH_BLOCKED"
+    }
+  ],
+  "conclusion": "Two valid direct product URLs were recovered for diagnostic use. Anonymous browser presentation and backend response differ, but neither channel exposed a usable product document in this environment."
+}

@@ -1,0 +1,68 @@
+audit:
+  slice: 03B-A
+  status: COMPLETE
+  dataset_version: 1
+  base_commit: e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+  resolver_commit: e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+  production: NOT_TOUCHED
+  canonical_staging_runtime: NOT_MODIFIED
+  parser_runtime_changes: NONE
+  frozen_results_before_changed: NO
+
+marketplaces:
+  wildberries:
+    discovery_capability: "NO"
+    fetch_capability: "UNKNOWN"
+    data_availability: "UNKNOWN"
+    extraction_capability: "UNKNOWN"
+    current_product_anchoring: "UNKNOWN"
+    variant_capability: "UNKNOWN"
+    critical_false_data_risk: "UNKNOWN"
+    session_dependency: "UNKNOWN"
+    region_dependency: "UNKNOWN"
+    anti_bot_dependency: "YES"
+    secondary_request_required: "UNKNOWN"
+    implementation_complexity: "HEAVY"
+    stability: "UNKNOWN"
+    manual_fallback: "YES"
+    primary_root_cause: "ANTI_BOT for browser discovery; backend remains UNKNOWN"
+    release_1_read: "DEFERRED_PENDING_BACKEND_EVIDENCE"
+    evidence: "audit_cases/wildberries.json; A0 evidence/wildberries-challenge.png"
+
+  ozon:
+    discovery_capability: "NO"
+    fetch_capability: "NO"
+    data_availability: "NO"
+    extraction_capability: "NO"
+    current_product_anchoring: "NO"
+    variant_capability: "UNKNOWN"
+    critical_false_data_risk: "LOW on the tested blocked path; future path UNKNOWN"
+    session_dependency: "PARTIAL"
+    region_dependency: "UNKNOWN"
+    anti_bot_dependency: "YES"
+    secondary_request_required: "UNKNOWN"
+    implementation_complexity: "HEAVY"
+    stability: "NO"
+    manual_fallback: "YES"
+    primary_root_cause: "ANTI_BOT / FETCH_BLOCKED"
+    release_1_read: "DEFERRED"
+    evidence: "audit_cases/ozon.json; A0 evidence/ozon-no-connection.png"
+
+  yandex_market:
+    discovery_capability: "YES"
+    fetch_capability: "PARTIAL"
+    data_availability: "PARTIAL"
+    extraction_capability: "NO for the current resolver request profile"
+    current_product_anchoring: "PARTIAL"
+    variant_capability: "UNKNOWN"
+    critical_false_data_risk: "HIGH on the full-HTML generic control path"
+    session_dependency: "PARTIAL"
+    region_dependency: "UNKNOWN"
+    anti_bot_dependency: "NO observed"
+    secondary_request_required: "UNKNOWN"
+    implementation_complexity: "MEDIUM"
+    stability: "PARTIAL"
+    manual_fallback: "YES"
+    primary_root_cause: "SESSION_OR_REGION_DEPENDENT request-profile/redirect-sensitive fetch; A0 JS_ONLY was too coarse"
+    release_1_read: "PARTIAL_PENDING_03B-B"
+    evidence: "audit_cases/yandex.json; results_before.json; discovery_report.md"
