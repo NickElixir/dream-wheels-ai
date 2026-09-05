@@ -220,15 +220,15 @@ six-digit OTP content, `verifyOtp`, session creation, reload persistence, a
 second-tab restore, logout, and re-login. The test inbox and one-time codes
 are intentionally not recorded here.
 
-### Blocking live backend evidence gap
+### Blocking live backend evidence gaps
 
 ```text
 AUTH_LIVE_BACKEND_JWT_VERIFY        = NOT_PROVEN
 AUTH_LIVE_CANONICAL_USER_RESOLUTION = PASS (service layer against canonical staging DB)
 AUTH_RETURNING_USER_ID_STABLE       = PASS (same subject returned same users.id)
 AUTH_AUTO_ACCOUNT_LINKING           = NONE (live row has telegram_user_id NULL)
-AUTH_LIVE_TELEMETRY                 = NOT_PROVEN
-AUTH_LIVE_TELEMETRY_PII_LEAK        = PASS (allowlist contract; live sequence incomplete)
+AUTH_LIVE_TELEMETRY                 = BLOCKED (canonical staging backend event enum is pre-Auth baseline)
+AUTH_LIVE_TELEMETRY_PII_LEAK        = NONE (observed live property-key allowlist; no sensitive fields)
 ```
 
 The repository contains the provider-neutral verifier and resolver as
@@ -239,20 +239,24 @@ canonical `users.id`; the resulting row has `telegram_user_id IS NULL`, exactly
 one matching `user_identities` row, and no duplicate canonical row. The
 internal staging result was `users.id = 156`; it is omitted from the PR body.
 
-The current staging harness still has no backend route that invokes
+The canonical staging Render backend is still deployed at
+`78f4efd578a5bd0c6a648b92f2d6c7f2c4b807ad`. That baseline's analytics event
+enum accepts `auth_completed` but not `auth_started`, `otp_requested`,
+`otp_verified`, `session_restored`, or `auth_signed_out`. A fresh real OTP
+verification after the harness fix recorded `auth_completed`, but the full
+required live sequence cannot be ingested by this backend deployment. The
+observed auth-event property keys were restricted to `auth_channel`,
+`authority`, `flow`, `outcome`, `provider`, and `site`; no email, OTP, CAPTCHA
+token, access token, refresh token, raw session, JWT, or raw provider error
+was present. No sensitive value was inspected or persisted in this audit.
+
+The current staging harness also has no backend route that invokes
 `verify_supabase_access_token()` followed by `resolve_auth_principal()` /
 `ensure_user_identity()`. This is consistent with the explicit no-main-WebApp-
 integration boundary, but it means the requested live JWT proof remains
-unclaimed in this PR even though the canonical resolver itself is now proven.
-
-Read-only SQL against the connected staging Supabase project found one Auth
-user and only one recent `auth_completed` analytics event rather than the
-required complete event sequence. The canonical staging application DB was
-also queried read-only after the resolver calls; its only observed auth event
-property key was the allowlisted `auth_channel`. No token, email, OTP, session,
-or raw error was inspected or persisted in this audit. The application runtime
-still needs an approved staging execution path for the live JWT verification
-and complete telemetry sequence.
+unclaimed even though the canonical resolver itself is proven. An approved
+staging execution/deployment path for the existing backend auth slice is still
+required to close the JWT and full-telemetry gates.
 
 ### Regression and repository verification
 
@@ -267,13 +271,13 @@ COMPILEALL                        = PASS
 GIT_DIFF_CHECK                    = PASS
 FRONTEND_AUTH_TESTS               = PASS (22 passed)
 FRONTEND_BUNDLE_REPRODUCIBILITY   = PASS
-CI                                = PASS (GitHub Actions run 274)
+CI                                = PASS (GitHub Actions run 280)
 ```
 
 ### Final recommendation
 
 ```text
-AUTH_FOUNDATION_ACCEPTANCE = NO (live backend JWT/canonical/telemetry gates incomplete)
+AUTH_FOUNDATION_ACCEPTANCE = NO (live backend JWT and complete telemetry gates incomplete)
 PR_159_READY_FOR_REVIEW     = NO
 MERGE_PR_159                = NO
 ```
