@@ -298,3 +298,74 @@ acceptance used real Turnstile, real email delivery, real OTP verification,
 the live browser session, read-only telemetry inspection, and the staging
 backend path; it did not use admin identity creation, direct SQL inserts,
 token substitution, or a CAPTCHA bypass.
+
+## Auth V1.1 Foundation merge and post-merge closeout
+
+Recorded: 2026-09-06. This section supersedes the pre-merge deployment
+references above for the final staging state.
+
+```text
+PRE_AUTH_BASELINE                 = 78f4efd578a5bd0c6a648b92f2d6c7f2c4b807ad
+PR_159_HEAD_SHA                   = e8ce87025560c8c2548c19753915820cf88b99ee
+AUTH_FOUNDATION_MERGE_SHA         = 786170342ab64cc205775feb4090888b4126d5d7
+POST_MERGE_STAGING_SHA            = 786170342ab64cc205775feb4090888b4126d5d7
+POST_MERGE_RENDER_DEPLOY          = PASS (exact merge SHA; deployment live)
+CANONICAL_STAGING_SERVICE         = PASS (Render service branch = staging)
+PRODUCTION                        = NOT_TOUCHED
+```
+
+PR #159 was merged with a normal merge commit. The canonical staging Render
+service was manually promoted to that exact merge SHA and reached `live`;
+auto-deploy remains disabled. Canonical `/health` returned 200 and unauthenticated
+`/auth/me` returned the expected 401. Filtered post-deploy logs contained no
+500 response, traceback, JWT/JWKS error, or telemetry ingestion error.
+
+The real browser Email OTP acceptance immediately preceding the merge remains
+the authoritative live-flow evidence for the exact PR tree: Managed Turnstile,
+Resend delivery from the approved sender, six-digit OTP, `verifyOtp`, session
+creation, reload/tab restore, logout, re-login, backend JWT verification, and
+canonical identity resolution. The post-merge deploy contains that same
+accepted application tree at the merge SHA. A second automated browser replay
+could not be started because the browser harness control timed out; no
+Turnstile bypass, admin identity operation, synthetic delivery, or token
+substitution was used.
+
+Post-merge read-only staging DB sanity returned:
+
+```text
+user_identities table exists    = YES
+RLS enabled                     = YES
+orphan identity count           = 0
+duplicate identity groups       = 0
+Supabase identity count         = 1
+sensitive telemetry rows        = 0
+```
+
+The 24-hour aggregate telemetry check contains `auth_started`, `otp_requested`,
+`otp_verified`, `auth_completed`, `session_restored`, and `auth_signed_out`.
+Observed property keys remain limited to the approved non-PII allowlist;
+email, OTP, access/refresh tokens, JWTs, raw sessions, and raw provider errors
+were not read or persisted.
+
+```text
+AUTH_POST_MERGE_BACKEND_PROBES       = PASS
+AUTH_POST_MERGE_DB_SANITY            = PASS
+AUTH_POST_MERGE_TELEMETRY            = PASS
+AUTH_POST_MERGE_TELEMETRY_PII_LEAK   = NONE
+AUTH_POST_MERGE_LOG_ERRORS           = NONE
+AUTH_TELEGRAM_LIVE_SMOKE             = PENDING (non-blocking)
+FULL_TEST_SUITE                      = PASS (498 passed, 5 skipped)
+CI                                  = PASS (PR validation run 290; merge tree identical)
+```
+
+Foundation closeout:
+
+```text
+03B_MARKETPLACE_PARSER              = CLOSED
+AUTH_STAGING_BARRIER                = RELEASED
+AUTH_FOUNDATION_ACCEPTANCE          = PASS
+AUTH_FOUNDATION                     = CLOSED
+MERGE_PR_159                        = YES
+NEXT_BRANCH                         = feature/auth-v11-integration
+SLICE_6A_IMPLEMENTATION              = NOT_STARTED
+```
