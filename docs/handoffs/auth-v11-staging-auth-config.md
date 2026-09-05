@@ -30,28 +30,42 @@ separate resend interval is not a visible Dashboard setting. The harness uses
 ## Email delivery
 
 ```text
-AUTH_EMAIL_TEMPLATE_MODE        = MAGIC LINK (not yet OTP)
-AUTH_MAGIC_LINK_PRIMARY_FLOW    = YES (current state)
-AUTH_CUSTOM_SMTP                = OFF
-AUTH_DEFAULT_SUPABASE_SMTP      = IN_USE
-SMTP_PROVIDER                   = PENDING (Resend is the approved default if no existing provider is supplied)
-SMTP_SENDER                     = PENDING
-SMTP_DOMAIN                     = PENDING
-SMTP_VERIFIED                   = PENDING
+AUTH_EMAIL_TEMPLATE_MODE        = OTP TOKEN (saved and read back)
+AUTH_MAGIC_LINK_PRIMARY_FLOW    = NO
+AUTH_CUSTOM_SMTP                = ON (saved and read back)
+AUTH_DEFAULT_SUPABASE_SMTP      = NOT IN USE
+SMTP_PROVIDER                   = Resend (smtp.resend.com:465; staging readback)
+SMTP_SENDER                     = Dream Wheels <no-reply@auth.dreamwheels.pro>
+SMTP_DOMAIN                     = auth.dreamwheels.pro
+SMTP_VERIFIED                   = CONFIGURED; live delivery pending
 SPF_STATUS                      = PENDING
 DKIM_STATUS                     = PENDING
 DMARC_STATUS                    = PENDING
 ```
 
-The current default template has the subject `Your sign-in link` and its
-primary action uses `{{ .ConfirmationURL }}`. The Dashboard prevents editing
-the subject/body until custom SMTP is enabled. No sender domain was invented,
-no DNS record was changed, and no email was sent.
+The staging SMTP readback showed custom SMTP enabled, Resend host
+`smtp.resend.com`, port `465`, minimum per-user interval `60` seconds, and the
+approved sender above. Credentials remain masked by Supabase and are not
+recorded here.
 
-When SMTP details and an approved sender are available, the template must use
-`{{ .Token }}` as the primary content and must not make sign-in depend on
-`{{ .ConfirmationURL }}`. The real message must not contain a literal example
-OTP.
+The staging `Magic link or OTP` template readback showed `{{ .Token }}` as the
+only sign-in value in the body and no `{{ .ConfirmationURL }}`. The real
+message must not contain a literal example OTP.
+
+## Live staging E2E checkpoint
+
+The canonical staging alias was deployed only in the staging Vercel project on
+2026-09-05. Deployment `dpl_6bB1rRyfSsHiDv5Hb1H4Tf5EB3FS` reached `READY` and
+was aliased to `https://dream-wheels-ai-webapp-staging.vercel.app` after the
+staging backend guard passed. The live static checks returned `200` for
+`/auth/harness.html`, `/auth/harness-config.js`, and `/auth/harness.bundle.js`.
+
+The browser showed the isolated harness in an unauthenticated state and the
+real Managed Turnstile challenge completed with a visible success result.
+No OTP request has been sent yet because the external test inbox has not been
+identified in this run. The remaining evidence is therefore intentionally
+pending: Supabase OTP request, Resend delivery and `Delivered` status, exact
+message inspection, `verifyOtp`, session creation, and reload persistence.
 
 ## CAPTCHA and isolated harness
 
@@ -96,34 +110,36 @@ the committed changes.
 ## Slice 5A readiness
 
 ```text
-AUTH_EMAIL_TEMPLATE_MODE          = NO (external SMTP prerequisite)
+AUTH_EMAIL_TEMPLATE_MODE          = PASS (OTP token; no ConfirmationURL)
 AUTH_MAGIC_LINK_PRIMARY_FLOW      = NO (blocked by template edit prerequisite)
 AUTH_OTP_LENGTH                   = PASS (6)
 AUTH_OTP_EXPIRY                   = PASS (600)
 AUTH_OTP_RESEND_WINDOW            = DOCUMENTED_DEFAULT (60; no Dashboard override)
-AUTH_CUSTOM_SMTP                  = PENDING
-AUTH_DEFAULT_SUPABASE_SMTP        = IN_USE
+AUTH_CUSTOM_SMTP                  = PASS (Resend)
+AUTH_DEFAULT_SUPABASE_SMTP        = NOT IN USE
 AUTH_CAPTCHA_PROVIDER             = PASS (Turnstile)
 AUTH_CAPTCHA_STAGING              = PASS
 AUTH_HARNESS_CAPTCHA_INTEGRATION  = PASS
+AUTH_HARNESS_LIVE_DEPLOY          = PASS (canonical staging)
+AUTH_TURNSTILE_LIVE               = PASS (Managed challenge)
+AUTH_EMAIL_OTP_LIVE_E2E           = PENDING (external test inbox required)
 AUTH_SECRETS_IN_GIT               = NONE
 AUTH_OTP_MODULE_XSS_REVIEW        = PASS
-AUTH_SLICE_5A_READY               = NO
-CANONICAL_STAGING_AUTH_DEPLOY     = NO
+AUTH_SLICE_5A_READY               = PASS
+CANONICAL_STAGING_AUTH_DEPLOY     = PASS (staging only)
 PRODUCTION                        = NOT_TOUCHED
 ```
 
 ## External prerequisites for completion
 
-1. An approved Resend (or already-approved alternative) account and SMTP/API
-   credential, plus sender name and sender email on an already-owned Dream
-   Wheels domain.
-2. DNS access to add/verify the provider's SPF and DKIM records, and a DMARC
-   policy decision without overwriting existing SPF records.
-3. A deployment path for the already-created public Turnstile site key before
-   the Slice 5B live OTP/session proof. The Turnstile secret is stored only in
-   Supabase and is never supplied to the browser.
-4. A deployment path for the public Supabase browser configuration before the
-   Slice 5B live OTP/session proof.
+1. Resend account, SMTP credential, approved sender, and `auth.dreamwheels.pro`
+   domain: DONE (staging dashboard readback).
+2. DNS verification for the sender domain: reported complete by the user;
+   live delivery evidence is still pending.
+3. Public Turnstile site key and Supabase secret configuration: DONE for the
+   explicit staging alias. The secret is stored only in Supabase and is never
+   supplied to the browser.
+4. Public Supabase browser configuration and live harness deployment: DONE for
+   canonical staging.
 
 References: [Supabase Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [CAPTCHA protection](https://supabase.com/docs/guides/auth/auth-captcha).
