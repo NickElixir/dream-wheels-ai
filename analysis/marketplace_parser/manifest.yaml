@@ -1,0 +1,127 @@
+dataset_version: 1
+base_commit: e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+resolver_commit: e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+discovered_at: '2026-09-05T16:24:04Z'
+freeze_status: '03B_A0_DATASET_FROZEN = YES'
+
+browser_discovery:
+  tool: 'agent-browser via npx --yes agent-browser'
+  session: anonymous
+  viewport: desktop_default
+  region: 'marketplace default; Yandex page displayed Novoyivanovskoye'
+  account_used: false
+  cookies_or_state_saved: false
+
+marketplaces:
+  wildberries:
+    target_count: 15
+    active_count: 0
+    discovery_status: BLOCKED
+    obtained_count: 0
+    blocker: 'Anonymous browser displayed a suspicious-activity challenge before a product page could be opened.'
+    evidence: evidence/wildberries-challenge.png
+  ozon:
+    target_count: 15
+    active_count: 0
+    discovery_status: BLOCKED
+    obtained_count: 0
+    blocker: 'Anonymous browser displayed the marketplace no-connection page for search and direct product navigation.'
+    evidence: evidence/ozon-no-connection.png
+  yandex_market:
+    target_count: 15
+    active_count: 15
+    discovery_status: ACTIVE
+    seller_count: 10
+    seller_diversity_limitation: false
+
+cards:
+  - id: ym-001
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/ganz-disk-shtampovannyy-r15-6j-4x108651-et27-silver-grn15046/5882809305'
+    seller: Grandfix
+    marketplace_product_id: '5882809305'
+    category: stamp_single_variant
+  - id: ym-002
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-avtomobilnyy-khomen-wheels-1723-toyota-fortuner--toyota-hilux-8x17-6x1397-et30-1061-black/6183243215'
+    seller: Римэкс
+    marketplace_product_id: '6183243215'
+    category: cast_offroad_single_variant
+  - id: ym-003
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-kolesnyy-cross-street-cr-26-60x15-4x100-dia601-et37-tsvet-mb-matovyy-chernyy/5728803701'
+    seller: 'R17 - Шины и Диски'
+    marketplace_product_id: '5728803701'
+    category: cast_single_variant
+  - id: ym-004
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-kolesa-gazel-gazel-biznes-gazel-next-usilennyy-1500kg-r16-v-firm-kartonnoy-korobke/4628685295'
+    seller: 'Автомастер PRAVT'
+    marketplace_product_id: '4628685295'
+    category: commercial_partial_title
+  - id: ym-005
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-usilennyy-vaz-niva-stalnoy-chernyy-5x1397-65xr15-d985-et35-treug/102555834550'
+    seller: Автовентури
+    marketplace_product_id: '102555834550'
+    category: stamp_offroad_single_variant
+  - id: ym-006
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-avtomobilnyy-ifree-token-65x17-5x108-et33-601-blek-dzhek/5196789737'
+    seller: Римэкс
+    marketplace_product_id: '5196789737'
+    category: cast_single_variant
+  - id: ym-007
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/diski-legkovyye-lityye-7517-61397-et25-h1061-rst-r107-bhtsvet/4823166178'
+    seller: 'Автошины у Ирины'
+    marketplace_product_id: '4823166178'
+    category: cast_offroad_single_variant
+  - id: ym-008
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/kolesnyy-disk-magnetto-14003-55xr14-4x98-et35-dia586/102227200711'
+    seller: 'Колеса Даром'
+    marketplace_product_id: '102227200711'
+    category: stamp_title_fields
+  - id: ym-009
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/avtodisk-fm-032-55j13-4100-et38-dia731-hb/6063078285'
+    seller: 'Созвездие колеса'
+    marketplace_product_id: '6063078285'
+    category: cast_unusual_notation
+  - id: ym-010
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-usilennyy-suzuki-jimny-stalnoy-chernyy-5x1397-55xr16-d1081-et5-treug-melkiy/4558433610'
+    seller: Автовентури
+    marketplace_product_id: '4558433610'
+    category: stamp_offroad_single_variant
+  - id: ym-011
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/diski-rst-r015-rio-solaris-60x15-4x100-d541-et48-tsvet-bl-chernyy-glyantsevyy/103737426247'
+    seller: 'R17 - Шины и Диски'
+    marketplace_product_id: '103737426247'
+    category: cast_vehicle_named
+  - id: ym-012
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/diski-trebl-r-1752-santa-fe-75x18-5x1143-d671-et50-tsvet-black/4416110722'
+    seller: 'R17 - Шины и Диски'
+    marketplace_product_id: '4416110722'
+    category: stamp_vehicle_named
+  - id: ym-013
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/rst-r137-7-x-17-5108-36-651-bl/103222862205'
+    seller: Автошинснаб
+    marketplace_product_id: '103222862205'
+    category: cast_unusual_notation
+  - id: ym-014
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/diski-avtomobilnyye-rr-css356-1565-41143-et40-671-blkm/6173463307'
+    seller: 'Город Колес'
+    marketplace_product_id: '6173463307'
+    category: cast_unusual_notation
+  - id: ym-015
+    marketplace: yandex_market
+    canonical_url: 'https://business.market.yandex.ru/card/disk-avtomobilnyy-rplc-vektor-hav242-haval-m6-65x17-5x1143-et50-641-b/6025127562'
+    seller: Римэкс
+    marketplace_product_id: '6025127562'
+    category: cast_vehicle_named

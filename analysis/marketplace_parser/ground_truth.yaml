@@ -1,0 +1,318 @@
+dataset_version: 1
+source: 'Manual transcription from the current product card; never generated from the resolver.'
+region_note: 'Yandex product pages displayed the marketplace default Novoyivanovskoye location; no login was used.'
+
+ym-001:
+  title: 'GANZ Диск штампованный R15 6J 4x108/65.1 ET27 Silver GRN15046'
+  brand: GANZ
+  model: GRN15046
+  sku_or_article: GRN15046
+  diameter: 15
+  width: 6.0
+  pcd: '4x108'
+  et: 27
+  dia: 65.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'ET and DIA confirmed in the expanded characteristics section.'
+
+ym-002:
+  title: 'Диск автомобильный Khomen Wheels 1723 Toyota Fortuner / Toyota Hilux 8x17 6x139,7 ET30 106,1 Black'
+  brand: Khomen Wheels
+  model: '1723'
+  sku_or_article: null
+  diameter: 17
+  width: 8.0
+  pcd: '6x139.7'
+  et: 30
+  dia: 106.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Vehicle names and finish are part of the current title; recommendations include other Khomen SKUs and are excluded.'
+
+ym-003:
+  title: 'Диск колесный Cross Street CR-26 6,0x15 4x100 Dia60.1 ET37 цвет MB (матовый черный)'
+  brand: Cross Street
+  model: CR-26
+  sku_or_article: CR-26
+  diameter: 15
+  width: 6.0
+  pcd: '4x100'
+  et: 37
+  dia: 60.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Current card identifies a single wheel; nearby products are not variants.'
+
+ym-004:
+  title: 'Pravt Диск колеса для а/м Г-3302, Бизнес, Некст усиленный 1500кг (R16) (в фирм. картонной коробке) PR.3302-3101015-1500'
+  brand: PRAVT
+  model: null
+  sku_or_article: PR.3302-3101015-1500
+  diameter: 16
+  width: 5.5
+  pcd: '6x170'
+  et: 50
+  dia: 110.0
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'ET50 and DIA110 were only visible after opening the full characteristics section; they are not guessed from recommendations.'
+
+ym-005:
+  title: 'Диск усиленный ВАЗ нива стальной черный 5x139,7 6,5xR15 d98,5 ET+35 (треуг.)'
+  brand: OFF-ROAD Wheels
+  model: null
+  sku_or_article: null
+  diameter: 15
+  width: 6.5
+  pcd: '5x139.7'
+  et: 35
+  dia: 98.5
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'OFF-ROAD Wheels is the expanded-card brand; title uses the vehicle/application description.'
+
+ym-006:
+  title: 'Диск автомобильный iFree Uno Токен 6,5x17 5x108 ET33 60,1 Блэк джек'
+  brand: i Free
+  model: Uno Токен
+  sku_or_article: null
+  diameter: 17
+  width: 6.5
+  pcd: '5x108'
+  et: 33
+  dia: 60.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Unusual brand spacing is preserved exactly as displayed in the characteristics table.'
+
+ym-007:
+  title: 'Диски легковые литые 7.5*17 6*139.7 et25 h106.1 RST R107 BH(цвет)'
+  brand: RST
+  model: R107
+  sku_or_article: R107
+  diameter: 17
+  width: 7.5
+  pcd: '6x139.7'
+  et: 25
+  dia: 106.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Color suffix BH is retained in title; card is a current product, not a recommendation.'
+
+ym-008:
+  title: '14003 R14x5.5 4x98 ET35 CB58.6 Black'
+  brand: Magnetto Wheels
+  model: '14003'
+  sku_or_article: '14003'
+  diameter: 14
+  width: 5.5
+  pcd: '4x98'
+  et: 35
+  dia: 58.6
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'ET/DIA are unambiguous in the current title, while the expanded table exposes brand and stamped type.'
+
+ym-009:
+  title: 'Автодиск FM 032 5,5J*13 4*100 ET38 DIA73,1 HB'
+  brand: FM
+  model: '032'
+  sku_or_article: '032'
+  diameter: 13
+  width: 5.5
+  pcd: '4x100'
+  et: 38
+  dia: 73.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Asterisk notation is preserved as observed; expanded characteristics confirm ET/DIA.'
+
+ym-010:
+  title: 'Диск усиленный Suzuki Jimny стальной черный 5x139,7 5,5xR16 d108,1 ET+5 (треуг. мелкий)'
+  brand: OFF-ROAD Wheels
+  model: null
+  sku_or_article: null
+  diameter: 16
+  width: 5.5
+  pcd: '5x139.7'
+  et: 5
+  dia: 108.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Plus sign in ET+5 is normalized to numeric 5 only in the benchmark reference.'
+
+ym-011:
+  title: 'Диск колесный RST R015 (Rio, Solaris) 6,0x15 4x100 Dia54.1 ET48 цвет BL (черный глянцевый)'
+  brand: RST
+  model: R015
+  sku_or_article: R015
+  diameter: 15
+  width: 6.0
+  pcd: '4x100'
+  et: 48
+  dia: 54.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Vehicle application is part of the current title, not a fitment assertion.'
+
+ym-012:
+  title: 'Диск колесный Trebl R-1752 (Santa Fe) 7,5x18 5x114,3 Dia67.1 ET50 цвет Black'
+  brand: Trebl
+  model: R-1752
+  sku_or_article: R-1752
+  diameter: 18
+  width: 7.5
+  pcd: '5x114.3'
+  et: 50
+  dia: 67.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Steel type confirmed in expanded characteristics; no recommendation was used.'
+
+ym-013:
+  title: 'RST R137 7 x 17 5*108 36 65.1 BL'
+  brand: RST
+  model: R137
+  sku_or_article: R137
+  diameter: 17
+  width: 7.0
+  pcd: '5x108'
+  et: 36
+  dia: 65.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Compact numeric title notation is intentionally retained as an edge case.'
+
+ym-014:
+  title: 'Диски автомобильные RR CSS356 15*6,5 4*114,3 ET40 67,1 BLK/M'
+  brand: Race Ready
+  model: CSS356
+  sku_or_article: CSS356
+  diameter: 15
+  width: 6.5
+  pcd: '4x114.3'
+  et: 40
+  dia: 67.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Expanded characteristics identify the brand as Race Ready; RR is the title abbreviation.'
+
+ym-015:
+  title: 'Диск автомобильный RPLC (Вектор) HAV242 Haval M6 6,5x17 5x114,3 ET50 64,1 B'
+  brand: RPLC-Wheels
+  model: HAV242
+  sku_or_article: HAV242
+  diameter: 17
+  width: 6.5
+  pcd: '5x114.3'
+  et: 50
+  dia: 64.1
+  selected_variant: null
+  variant_count_visible: 1
+  variants: []
+  image_available: true
+  product_image_url_observable: true
+  variant_specific_image: null
+  region: 'Novoyivanovskoye default'
+  login_required: false
+  ground_truth_conflict: false
+  notes: 'Brand value follows the expanded characteristics table; vehicle name remains descriptive.'
