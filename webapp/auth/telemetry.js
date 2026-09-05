@@ -2,6 +2,7 @@ const AUTH_EVENT_NAMES = new Set([
     "auth_started",
     "otp_requested",
     "otp_verified",
+    "auth_completed",
     "session_restored",
     "session_refresh_failed",
     "auth_failed",
