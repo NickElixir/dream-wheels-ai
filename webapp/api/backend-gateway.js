@@ -15,7 +15,7 @@ function backendPathFromRequest(req) {
     // rewrite. Keep it path-only so it cannot turn the fixed BACKEND_URL into
     // an attacker-controlled absolute URL.
     const path = `/${rawPath.replace(/^\/+/, "")}`;
-    if (path.includes("?") || path.includes("#")) return null;
+    if (path.includes("?") || path.includes("#") || path.includes("\\")) return null;
     return path;
 }
 
