@@ -182,3 +182,97 @@ PRODUCTION                        = NOT_TOUCHED
    canonical staging.
 
 References: [Supabase Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [CAPTCHA protection](https://supabase.com/docs/guides/auth/auth-captcha).
+
+## Auth V1.1 Foundation final acceptance audit
+
+Audit date: 2026-09-06. This section is the current acceptance status and
+supersedes older draft/"barrier active" wording in earlier Slice handoffs.
+
+### Baseline and release boundary
+
+```text
+PRE_AUTH_BASELINE                = PASS (78f4efd578a5bd0c6a648b92f2d6c7f2c4b807ad)
+PR_BASED_ON_CURRENT_STAGING      = PASS (merge-base equals PRE_AUTH_BASELINE; behind_by = 0)
+03B_MARKETPLACE_PARSER           = CLOSED
+AUTH_STAGING_BARRIER             = RELEASED
+PRODUCTION                       = NOT_TOUCHED
+MAIN_WEBAPP_INTEGRATION          = NOT_ADDED
+```
+
+### Acceptance gates with live evidence
+
+```text
+AUTH_EMAIL_OTP_CORE              = PASS
+AUTH_LIVE_EMAIL_OTP              = PASS
+AUTH_LIVE_SESSION_CREATED        = PASS
+AUTH_LIVE_RELOAD_RESTORE         = PASS
+AUTH_LIVE_TAB_REOPEN_RESTORE     = PASS
+AUTH_LIVE_LOGOUT                 = PASS
+AUTH_LIVE_RELOGIN                = PASS
+AUTH_TURNSTILE_LIVE              = PASS
+AUTH_RESEND_DELIVERY             = PASS (Delivered in Resend)
+AUTH_RESEND_SENDER               = PASS (approved Dream Wheels sender)
+AUTH_EMAIL_TEMPLATE              = PASS ({{ .Token }}; no ConfirmationURL)
+```
+
+The real browser flow proved Turnstile, staging `/otp`, Resend delivery,
+six-digit OTP content, `verifyOtp`, session creation, reload persistence, a
+second-tab restore, logout, and re-login. The test inbox and one-time codes
+are intentionally not recorded here.
+
+### Blocking live backend evidence gap
+
+```text
+AUTH_LIVE_BACKEND_JWT_VERIFY        = NOT_PROVEN
+AUTH_LIVE_CANONICAL_USER_RESOLUTION = BLOCKED
+AUTH_RETURNING_USER_ID_STABLE       = NOT_PROVEN
+AUTH_AUTO_ACCOUNT_LINKING           = NONE (contract and tests; live identity not resolved)
+AUTH_LIVE_TELEMETRY                 = NOT_PROVEN
+AUTH_LIVE_TELEMETRY_PII_LEAK        = PASS (allowlist contract; live sequence incomplete)
+```
+
+The repository contains the provider-neutral verifier and resolver as
+callable service primitives, but the current staging harness has no backend
+route that invokes `verify_supabase_access_token()` followed by
+`resolve_auth_principal()` / `ensure_user_identity()`. This is consistent with
+the explicit no-main-WebApp-integration boundary, but it means the requested
+live backend proof cannot be claimed in this PR.
+
+Read-only SQL against the connected staging Supabase project found one Auth
+user, zero `user_identities` rows for provider `supabase`, and only one recent
+`auth_completed` analytics event rather than the required complete event
+sequence. The event's observed property key was the allowlisted `auth_channel`;
+no token, email, OTP, session, or raw error was inspected or persisted in this
+audit. The application canonical database/runtime therefore still needs an
+approved staging execution path for the live resolver and telemetry checks.
+
+### Regression and repository verification
+
+```text
+AUTH_SUPABASE_JWT_VERIFY_CONTRACT = PASS (ES256/JWKS verifier tests)
+AUTH_GENERIC_PRINCIPAL            = PASS (resolver/service tests)
+TELEGRAM_AUTH_REGRESSION          = NONE (13 targeted tests passed)
+FULL_TEST_SUITE                   = PASS (491 passed, 5 skipped)
+RUFF_CHECK                        = PASS
+RUFF_FORMAT                       = PASS
+COMPILEALL                        = PASS
+GIT_DIFF_CHECK                    = PASS
+FRONTEND_AUTH_TESTS               = PASS (22 passed)
+FRONTEND_BUNDLE_REPRODUCIBILITY   = PASS
+CI                                = PASS (GitHub Actions run 274)
+```
+
+### Final recommendation
+
+```text
+AUTH_FOUNDATION_ACCEPTANCE = NO (live backend JWT/canonical/telemetry gates incomplete)
+PR_159_READY_FOR_REVIEW     = NO
+MERGE_PR_159                = NO
+```
+
+No application integration or production configuration change is authorized
+by this audit. To reach `MERGE_PR_159 = YES`, add only the separately approved
+staging execution/evidence path for the existing verifier, canonical resolver,
+returning-identity invariant, and server-side telemetry sequence; do not use
+admin identity creation, direct SQL inserts, token substitution, or a bypass
+of Turnstile/real email delivery.
