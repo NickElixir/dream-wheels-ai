@@ -11,35 +11,38 @@ barrier.
 
 Project: `Dream Wheels AI Staging` (`hnawojlnfoaccinlgjyn`), active and healthy.
 
-The public Auth settings response confirms:
+The staging Dashboard audit (read-only, 2026-09-05) confirms:
 
 ```text
-SUPABASE_EMAIL_AUTH_ENABLED = PASS (email auth available; disable_signup=false)
-SUPABASE_EMAIL_TEMPLATE_MODE = PENDING (Dashboard requires manual sign-in)
-SUPABASE_OTP_LENGTH          = PENDING (Dashboard requires manual sign-in)
-SUPABASE_OTP_EXPIRY          = PENDING (Dashboard requires manual sign-in)
-SUPABASE_OTP_RESEND_WINDOW   = PENDING (Dashboard requires manual sign-in)
-SUPABASE_OTP_RATE_LIMIT      = PENDING (Dashboard/private config)
-SUPABASE_SMTP_MODE           = PENDING (Dashboard/private config)
-SUPABASE_CAPTCHA_STATUS      = PENDING (Dashboard/private config)
+SUPABASE_EMAIL_AUTH_ENABLED = PASS (Email provider enabled; new-user signup enabled)
+SUPABASE_EMAIL_TEMPLATE_MODE = FAIL for OTP (default "Your sign-in link" template uses {{ .ConfirmationURL }})
+SUPABASE_OTP_LENGTH          = 8 digits
+SUPABASE_OTP_EXPIRY          = 3600 seconds
+SUPABASE_OTP_RESEND_WINDOW   = UNVERIFIED (not exposed in Dashboard; 60 seconds is client UX fallback only)
+SUPABASE_OTP_RATE_LIMIT      = 30 sign-ins/5 min/IP; 30 token verifications/5 min/IP
+SUPABASE_SMTP_MODE           = Supabase default SMTP (custom SMTP disabled)
+SUPABASE_CAPTCHA_STATUS      = DISABLED
 ```
 
-Confirmed public values: `disable_signup=false`, `mailer_autoconfirm=false`,
-and `passkeys_enabled=false`. The first two mean that a new email may create a
-Supabase user and that verification is required. The public endpoint does not
-expose the email template, SMTP, CAPTCHA, or project-specific rate limits.
-The Dashboard redirected to Supabase sign-in, so no credentials or OTPs were
-entered and no configuration was guessed from defaults.
+`Confirm email` is enabled. The default Magic Link/OTP email preview says
+"Your sign-in link" and links to `{{ .ConfirmationURL }}`; it does not render
+`{{ .Token }}`. As a result, the current staging email delivery is a magic-link
+flow and cannot complete this slice's code-verification flow. The Dashboard
+also states that custom SMTP must be configured before the email subject or
+body can be edited.
 
-Supabase's current documentation describes Email OTP as a six-digit code and
-documents a default one-request-per-60-seconds window and one-hour expiry, but
-these remain fallback/documentation values until the staging Dashboard is
-confirmed. The harness accepts optional trusted deployment config:
+The Dashboard shows the two per-IP Auth limits above. Its email-send limiter
+is disabled and has no numeric value while custom SMTP is disabled, so no
+unstated email-send rate is recorded. No OTP was requested, no email was sent,
+and no Auth setting was changed during this audit.
+
+The harness accepts optional trusted deployment config. A staging deployment
+must set the observed eight-digit value before any live code verification:
 
 ```js
 globalThis.__DREAM_WHEELS_AUTH_CONFIG__ = {
   site: "ru",
-  otpLength: 6,
+  otpLength: 8,
   resendWindowSeconds: 60,
   analyticsEndpoint: "/api/backend/analytics/events",
 };
@@ -76,7 +79,8 @@ No tokens are copied, logged, placed in URLs, or rendered.
 The Email OTP flow intentionally does not use `emailRedirectTo`, magic-link
 handling, password auth, or OAuth providers. The staging Magic Link/OTP email
 template must contain `{{ .Token }}` rather than a confirmation URL before a
-live OTP run can be marked PASS.
+live OTP run can be marked PASS. That requires enabling and configuring custom
+SMTP; it is intentionally not changed here.
 
 ## Error normalization
 
@@ -186,10 +190,10 @@ AUTH_SIGNOUT_EVENT                = PASS
 AUTH_OTP_MODULE_XSS_REVIEW        = PASS
 ```
 
-Live email delivery and browser session proof remain pending. No safe staging
-test email was available, and Dashboard access requires user authentication.
-The available browser tooling cannot complete that external credential/OTP
-step without user participation.
+Live email delivery and browser session proof remain pending. The verified
+staging template sends a magic link, not the required OTP code. A custom SMTP
+configuration and `{{ .Token }}` template are required before a safe test email
+can establish the live proof.
 
 ## Security review
 
@@ -210,9 +214,9 @@ AUTH_MAGIC_LINK                = NONE
 AUTH_PASSWORD                  = NONE
 AUTH_TELEMETRY                 = PASS
 AUTH_ANALYTICS_NON_BLOCKING    = PASS
-AUTH_STAGING_OTP_DELIVERY      = PENDING
-AUTH_SMTP_PRODUCTION_READY     = NO / PENDING audit
-AUTH_ABUSE_PROTECTION          = PENDING
+AUTH_STAGING_OTP_DELIVERY      = NO (current template is Magic Link)
+AUTH_SMTP_PRODUCTION_READY     = NO (custom SMTP disabled)
+AUTH_ABUSE_PROTECTION          = NO (CAPTCHA disabled; Auth rate limits active)
 AUTH_LIVE_EMAIL_OTP            = PENDING
 AUTH_LIVE_SESSION_CREATED      = PENDING
 AUTH_LIVE_RELOAD_RESTORE       = PENDING
