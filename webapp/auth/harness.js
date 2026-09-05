@@ -1,6 +1,7 @@
 import {
     AUTH_SESSION_STATES,
     authSessionReady,
+    getAccessToken,
     getAuthRuntimeConfig,
     getAuthSessionState,
     getSession,
@@ -26,6 +27,7 @@ const resendButton = document.querySelector("[data-auth-resend]");
 const cooldownLabel = document.querySelector("[data-auth-cooldown]");
 const captchaStep = document.querySelector("[data-auth-captcha]");
 const captchaWidget = document.querySelector("[data-auth-captcha-widget]");
+const backendProbeButton = document.querySelector("[data-auth-backend-probe]");
 const authConfig = getAuthRuntimeConfig();
 
 let resendAvailableAt = 0;
@@ -169,6 +171,41 @@ async function verifyCode() {
     }
 }
 
+async function probeBackendAuthentication() {
+    setResultMessage("Verifying backend authentication…");
+    backendProbeButton.disabled = true;
+    try {
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+            setResultMessage("No active Supabase session.");
+            return;
+        }
+
+        const response = await fetch("/api/backend/auth/me", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!response.ok) {
+            setResultMessage(response.status === 401
+                ? "Backend authentication was rejected."
+                : "Backend authentication check is unavailable.");
+            return;
+        }
+
+        const result = await response.json().catch(() => null);
+        if (result?.authenticated === true
+            && result.authority === "supabase"
+            && typeof result.auth_channel === "string") {
+            setResultMessage("Backend authentication verified.");
+            return;
+        }
+        setResultMessage("Backend authentication check is unavailable.");
+    } catch {
+        setResultMessage("Backend authentication check is unavailable.");
+    } finally {
+        backendProbeButton.disabled = false;
+    }
+}
+
 emailForm.addEventListener("submit", (event) => {
     event.preventDefault();
     void sendCode();
@@ -202,6 +239,7 @@ document.querySelector("[data-auth-refresh]").addEventListener("click", async ()
     }
     render(getAuthSessionState());
 });
+backendProbeButton.addEventListener("click", () => void probeBackendAuthentication());
 document.querySelector("[data-auth-signout]").addEventListener("click", async () => {
     setResultMessage("Signing out…");
     try {
