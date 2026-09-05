@@ -182,7 +182,7 @@ AUTH_CREDITS_REGRESSION           = NONE
 AUTH_PAYMENTS_REGRESSION          = NONE
 AUTH_FITMENT_REGRESSION           = NONE
 FULL_TEST_SUITE                   = PASS (461 passed, 5 skipped)
-CI                                = PENDING
+CI                                = PASS (PR #158 checks)
 AUTH_FOUNDATION_STAGING_MIGRATION = PENDING
-AUTH_IDENTITY_FOUNDATION_READY    = YES (repository foundation; CI/staging rollout pending)
+AUTH_IDENTITY_FOUNDATION_READY    = YES (repository foundation; staging rollout pending)
 ```
