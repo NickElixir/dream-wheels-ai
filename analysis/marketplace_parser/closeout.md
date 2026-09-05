@@ -54,7 +54,7 @@ The existing UI wording is equivalent to: “Не удалось автомат�
 
 ## Staging Verification
 
-No merge, deployment, production change, auth change, or gateway change was made by this closeout. The closeout branch starts at the current canonical `origin/staging` SHA `e5b93c1b49268e02f64a1ec8271055d9c8fc916b` and contains only approved research artifacts plus this documentation.
+The closeout PR was merged to `staging` at `17597000f143a1f59e50972e789f5578d390a176`. The resulting staging deployment passed the repository CI gate, frontend build/deploy, canonical alias verification, and backend health verification. No production change, auth change, or gateway change was made by this closeout.
 
 Existing canonical staging evidence in `docs/handoffs/06-parser-integration.md` records:
 
@@ -70,6 +70,9 @@ A read-only smoke on the current staging alias reached the Fitment “Колес
 STANDARD_STORE_STAGING_E2E = PASS (existing canonical staging evidence)
 MARKETPLACE_FALLBACK_STAGING_E2E = PASS (existing failure-to-manual evidence; current read-only smoke confirmed controls)
 MARKETPLACE_STAGING_E2E = PASS (safe fallback behavior)
+
+STANDARD_STORE_STAGING_SMOKE = PASS
+MARKETPLACE_FALLBACK_STAGING_SMOKE = PASS
 ```
 
 ## Final Gates
@@ -92,6 +95,8 @@ CRITICAL_FALSE_DATA = 0
 STANDARD_STORE_STAGING_E2E = PASS
 MARKETPLACE_FALLBACK_STAGING_E2E = PASS
 MARKETPLACE_STAGING_E2E = PASS
+STANDARD_STORE_STAGING_SMOKE = PASS
+MARKETPLACE_FALLBACK_STAGING_SMOKE = PASS
 
 AUTH_V1_1_CHANGES = NONE
 FITMENT_CHANGES = NONE
@@ -122,11 +127,14 @@ The closeout branch itself contains no rejected runtime code. Its verification i
 ```text
 03B_CLOSEOUT_BASE_SHA = e5b93c1b49268e02f64a1ec8271055d9c8fc916b
 03B_CLOSEOUT_COMMIT = 9c8d0933b1cdb4a47571d5d8735265b6552f00a4
-03B_STAGING_DEPLOYMENT = NOT_CREATED (no runtime diff to deploy)
-PRE_AUTH_BASELINE = e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+03B_CLOSEOUT_PR = https://github.com/NickElixir/dream-wheels-ai/pull/160
+03B_CLOSEOUT_MERGE_SHA = 17597000f143a1f59e50972e789f5578d390a176
+03B_STAGING_DEPLOYMENT = https://vercel.com/nicks-projects-bd58cb33/dream-wheels-ai-webapp-staging/DCWQQ8fL2gSwzfSJ7fUEesaq4gcj (alias https://dream-wheels-ai-webapp-staging.vercel.app)
+PRE_AUTH_BASELINE = 17597000f143a1f59e50972e789f5578d390a176
+AUTH_STAGING_BARRIER = RELEASED
 ```
 
-`PRE_AUTH_BASELINE` is the current canonical staging SHA after the 03B closeout review. Auth v1.1 rebase/integration is outside this workstream and may proceed from that baseline. No production systems were touched.
+`PRE_AUTH_BASELINE` is the post-03B runtime closeout merge SHA on canonical staging. The follow-up metadata-only documentation change does not alter the runtime baseline. Auth v1.1 rebase/integration is outside this workstream and may proceed from that baseline. No production systems were touched.
 
 ## Future Work
 
