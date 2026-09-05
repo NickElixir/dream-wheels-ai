@@ -2,8 +2,8 @@
   "name": "dream-wheels-auth-harness",
   "private": true,
   "scripts": {
-    "build": "esbuild auth/harness.js --bundle --format=esm --target=es2020 --minify --outfile=auth/harness.bundle.js",
-    "test": "node --test auth/supabase-client.test.js"
+    "build": "esbuild auth/harness.js --bundle --format=esm --target=es2020 --minify --outfile=auth/harness.bundle.js && node auth/normalize-bundle.mjs",
+    "test": "node --test auth/*.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.115.0"

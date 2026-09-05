@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { trackAuthEvent } from "./telemetry.js";
 
 export const AUTH_SESSION_STATES = Object.freeze({
     BOOTSTRAPPING: "BOOTSTRAPPING",
@@ -24,12 +25,49 @@ const PERMANENT_REFRESH_ERROR_CODES = new Set([
     "refresh_token_already_used",
 ]);
 
+const OTP_ERROR_CODES = new Set([
+    "invalid_otp",
+    "expired_otp",
+    "rate_limited",
+    "network_error",
+    "session_missing",
+    "refresh_failed",
+    "provider_cancelled",
+    "provider_error",
+    "identity_conflict",
+    "backend_rejected",
+    "unknown",
+]);
+
+const DEFAULT_OTP_RESEND_WINDOW_SECONDS = 60;
+
 export class AuthSessionError extends Error {
     constructor(code) {
         super(code);
         this.name = "AuthSessionError";
         this.code = code;
     }
+}
+
+export class AuthOtpError extends Error {
+    constructor(code) {
+        super(code);
+        this.name = "AuthOtpError";
+        this.code = code;
+    }
+}
+
+export function getAuthRuntimeConfig() {
+    const config = globalThis.__DREAM_WHEELS_AUTH_CONFIG__ || {};
+    const otpLength = Number(config.otpLength);
+    const resendWindowSeconds = Number(config.resendWindowSeconds);
+    return Object.freeze({
+        otpLength: Number.isInteger(otpLength) && otpLength > 0 ? otpLength : null,
+        resendWindowSeconds: Number.isInteger(resendWindowSeconds) && resendWindowSeconds > 0
+            ? resendWindowSeconds
+            : DEFAULT_OTP_RESEND_WINDOW_SECONDS,
+        resendWindowConfigured: Number.isInteger(resendWindowSeconds) && resendWindowSeconds > 0,
+    });
 }
 
 function publicConfig() {
@@ -59,12 +97,54 @@ function errorCode(error) {
     return "NETWORK_ERROR";
 }
 
+function statusCode(error) {
+    return Number(error?.status || error?.statusCode || 0);
+}
+
+export function normalizeAuthError(error, operation = "provider") {
+    if (error instanceof AuthOtpError) return error;
+    const message = typeof error?.message === "string" ? error.message.toLowerCase() : "";
+    const code = typeof error?.code === "string" ? error.code.toLowerCase() : "";
+    if (statusCode(error) === 429 || code === "over_email_send_rate_limit" || code === "rate_limit_exceeded"
+        || message.includes("rate limit") || message.includes("too many")) {
+        return new AuthOtpError("rate_limited");
+    }
+    if (code === "otp_expired" || code === "expired_otp" || message.includes("expired")) {
+        return new AuthOtpError("expired_otp");
+    }
+    if (code === "invalid_otp" || code === "otp_invalid" || message.includes("invalid otp")
+        || (operation === "verify" && message.includes("token"))) {
+        return new AuthOtpError("invalid_otp");
+    }
+    if (code === "captcha_failed" || code === "captcha_verification_failed") {
+        return new AuthOtpError("provider_error");
+    }
+    if (error?.name === "AuthRetryableFetchError" || error instanceof TypeError
+        || message.includes("network") || message.includes("fetch") || message.includes("timeout")
+        || message.includes("offline")) {
+        return new AuthOtpError("network_error");
+    }
+    if (operation === "verify" && code === "auth_session_missing") {
+        return new AuthOtpError("session_missing");
+    }
+    return new AuthOtpError(OTP_ERROR_CODES.has(code) ? code : "provider_error");
+}
+
 function failureForOperation(error, operation) {
     const state = operation === "refresh" ? errorCode(error) : "NETWORK_ERROR";
     return new AuthSessionError(state);
 }
 
-export function createAuthSessionController({ client }) {
+function emitTelemetry(telemetry, eventName, details) {
+    if (typeof telemetry !== "function") return;
+    try {
+        void Promise.resolve(telemetry(eventName, details)).catch(() => undefined);
+    } catch {
+        // Analytics is best-effort and must never block authentication.
+    }
+}
+
+export function createAuthSessionController({ client, telemetry = null }) {
     if (!client?.auth) throw new AuthSessionError("CONFIGURATION_ERROR");
 
     let state = {
@@ -76,6 +156,7 @@ export function createAuthSessionController({ client }) {
     };
     let readyPromise = null;
     let authSubscription = null;
+    let sessionRestoredReported = false;
     const listeners = new Set();
 
     function getState() {
@@ -113,6 +194,10 @@ export function createAuthSessionController({ client }) {
                 session,
                 event,
             );
+            if (event === "INITIAL_SESSION" && session && !sessionRestoredReported) {
+                sessionRestoredReported = true;
+                emitTelemetry(telemetry, "session_restored", { source: "persistent_storage", outcome: "success" });
+            }
         }
     }
 
@@ -136,6 +221,10 @@ export function createAuthSessionController({ client }) {
                 data.session,
                 "INITIAL_SESSION",
             );
+            if (data.session && !sessionRestoredReported) {
+                sessionRestoredReported = true;
+                emitTelemetry(telemetry, "session_restored", { source: "persistent_storage", outcome: "success" });
+            }
             return getState();
         }).catch((error) => {
             setState({ status: AUTH_SESSION_STATES.NETWORK_ERROR, errorCode: "NETWORK_ERROR" }, "INITIAL_SESSION");
@@ -175,6 +264,10 @@ export function createAuthSessionController({ client }) {
                     : AUTH_SESSION_STATES.NETWORK_ERROR,
                 errorCode: code,
             });
+            emitTelemetry(telemetry, "session_refresh_failed", {
+                outcome: "failed",
+                error_code: code === AUTH_SESSION_STATES.SESSION_EXPIRED ? "refresh_failed" : "network_error",
+            });
             throw failureForOperation(error, "refresh");
         }
         setFromSession(
@@ -190,6 +283,7 @@ export function createAuthSessionController({ client }) {
         const { error } = await client.auth.signOut();
         if (error) throw failureForOperation(error, "signOut");
         setFromSession(AUTH_SESSION_STATES.UNAUTHENTICATED, null, "SIGNED_OUT");
+        emitTelemetry(telemetry, "auth_signed_out", { outcome: "success" });
     }
 
     function subscribeToAuthChanges(listener) {
@@ -209,7 +303,97 @@ export function createAuthSessionController({ client }) {
     });
 }
 
+function normalizeEmail(email) {
+    return typeof email === "string" ? email.trim() : "";
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email);
+}
+
+function normalizeOtpToken(token) {
+    return typeof token === "string" ? token.trim() : "";
+}
+
+export function createEmailOtpController({ client, sessionController, telemetry = null }) {
+    if (!client?.auth || !sessionController?.getSession) throw new AuthOtpError("provider_error");
+    let interactionStarted = false;
+
+    function markAuthStarted() {
+        if (interactionStarted) return;
+        interactionStarted = true;
+        emitTelemetry(telemetry, "auth_started", { outcome: "success" });
+    }
+
+    async function requestEmailOtp(email, captchaToken = null) {
+        markAuthStarted();
+        const normalizedEmail = normalizeEmail(email);
+        if (!isValidEmail(normalizedEmail)) {
+            const normalizedError = new AuthOtpError("unknown");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        const options = { shouldCreateUser: true };
+        if (typeof captchaToken === "string" && captchaToken.trim()) options.captchaToken = captchaToken.trim();
+        const { error } = await client.auth.signInWithOtp({ email: normalizedEmail, options }).catch((error) => ({ error }));
+        if (error) {
+            const normalizedError = normalizeAuthError(error, "request");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        emitTelemetry(telemetry, "otp_requested", { outcome: "success" });
+        return { accepted: true };
+    }
+
+    async function verifyEmailOtp(email, otp) {
+        const normalizedEmail = normalizeEmail(email);
+        const normalizedOtp = normalizeOtpToken(otp);
+        const configuredLength = getAuthRuntimeConfig().otpLength;
+        if (!isValidEmail(normalizedEmail)) {
+            const normalizedError = new AuthOtpError("unknown");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        if (!normalizedOtp || !/^\d+$/u.test(normalizedOtp)
+            || (configuredLength !== null && normalizedOtp.length !== configuredLength)) {
+            const normalizedError = new AuthOtpError("invalid_otp");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        let response;
+        try {
+            response = await client.auth.verifyOtp({ email: normalizedEmail, token: normalizedOtp, type: "email" });
+        } catch (error) {
+            response = { error };
+        }
+        if (response?.error) {
+            const normalizedError = normalizeAuthError(response.error, "verify");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        const session = response?.data?.session;
+        if (!session) {
+            const normalizedError = new AuthOtpError("session_missing");
+            emitTelemetry(telemetry, "auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        const restoredSession = await sessionController.getSession();
+        if (!restoredSession) {
+            const normalizedError = new AuthOtpError("session_missing");
+            void telemetry?.("auth_failed", { outcome: "failed", error_code: normalizedError.code });
+            throw normalizedError;
+        }
+        emitTelemetry(telemetry, "otp_verified", { outcome: "success" });
+        emitTelemetry(telemetry, "auth_completed", { outcome: "success" });
+        return { authenticated: true };
+    }
+
+    return Object.freeze({ requestEmailOtp, verifyEmailOtp });
+}
+
 let defaultController;
+let defaultClient;
+let defaultOtpController;
 
 function defaultAuthSession() {
     if (defaultController) return defaultController;
@@ -222,7 +406,8 @@ function defaultAuthSession() {
                 detectSessionInUrl: false,
             },
         });
-        defaultController = createAuthSessionController({ client });
+        defaultClient = client;
+        defaultController = createAuthSessionController({ client, telemetry: trackAuthEvent });
     } catch (error) {
         const code = error instanceof AuthSessionError ? error.code : "CONFIGURATION_ERROR";
         let errorState = {
@@ -254,3 +439,18 @@ export const signOut = () => defaultAuthSession().signOut();
 export const subscribeToAuthChanges = (listener) => defaultAuthSession().subscribeToAuthChanges(listener);
 export const getAuthSessionState = () => defaultAuthSession().getAuthSessionState();
 export const authSessionReady = initializeAuthSession();
+
+function defaultAuthOtp() {
+    if (defaultOtpController) return defaultOtpController;
+    const sessionController = defaultAuthSession();
+    if (!defaultClient) throw new AuthOtpError("provider_error");
+    defaultOtpController = createEmailOtpController({
+        client: defaultClient,
+        sessionController,
+        telemetry: trackAuthEvent,
+    });
+    return defaultOtpController;
+}
+
+export const requestEmailOtp = (email, captchaToken = null) => defaultAuthOtp().requestEmailOtp(email, captchaToken);
+export const verifyEmailOtp = (email, otp) => defaultAuthOtp().verifyEmailOtp(email, otp);

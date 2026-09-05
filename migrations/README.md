@@ -35,6 +35,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0029_wan_provider_task_metadata.sql` — nullable Wan provider task identifier для render evidence
 - `0030_results_bucket_20m.sql` — увеличивает per-bucket limit `results` до 20 MiB для Wan output
 - `0031_auth_v11_identities.sql` — canonical external identities, Telegram backfill и nullable legacy Telegram ID
+- `0032_auth_v11_telemetry_allowlist.sql` — расширяет allow-list product analytics событиями Email OTP/Auth session
 
 ## Стратегия применения
 

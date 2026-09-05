@@ -19,6 +19,13 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 EventName = Literal[
     "app_opened",
     "auth_completed",
+    "auth_started",
+    "otp_requested",
+    "otp_verified",
+    "session_restored",
+    "session_refresh_failed",
+    "auth_failed",
+    "auth_signed_out",
     "upload_started",
     "upload_completed",
     "render_started",

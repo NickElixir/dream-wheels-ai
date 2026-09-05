@@ -31,10 +31,33 @@ def test_product_analytics_migration_has_attribution_and_required_funnel_events(
         assert f"'{event_name}'" in migration
 
 
+def test_auth_telemetry_allowlist_migration_has_required_auth_events() -> None:
+    migration = (ROOT / "migrations" / "0032_auth_v11_telemetry_allowlist.sql").read_text(
+        encoding="utf-8"
+    )
+    for event_name in (
+        "auth_started",
+        "otp_requested",
+        "otp_verified",
+        "session_restored",
+        "session_refresh_failed",
+        "auth_failed",
+        "auth_signed_out",
+    ):
+        assert f"'{event_name}'" in migration
+
+
 def test_event_contract_is_allowlisted() -> None:
     assert set(analytics_api.EventName.__args__) == {
         "app_opened",
         "auth_completed",
+        "auth_started",
+        "otp_requested",
+        "otp_verified",
+        "session_restored",
+        "session_refresh_failed",
+        "auth_failed",
+        "auth_signed_out",
         "upload_started",
         "upload_completed",
         "render_started",

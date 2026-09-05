@@ -3,8 +3,11 @@ import { test } from "node:test";
 
 import {
     AUTH_SESSION_STATES,
+    AuthOtpError,
+    createEmailOtpController,
     createAuthSessionController,
 } from "./supabase-client.js";
+import { trackAuthEvent } from "./telemetry.js";
 
 const session = {
     access_token: "access-token-for-test-only",
@@ -12,10 +15,11 @@ const session = {
     expires_at: 1_800_000_000,
 };
 
-function fakeClient({ initialSession = null, refreshResult = {} } = {}) {
+function fakeClient({ initialSession = null, refreshResult = {}, otpRequestResult = {}, verifyResult = {} } = {}) {
     let currentSession = initialSession;
     let callback;
     let signOutCalls = 0;
+    let otpRequest;
     const auth = {
         onAuthStateChange(listener) {
             callback = listener;
@@ -30,6 +34,18 @@ function fakeClient({ initialSession = null, refreshResult = {} } = {}) {
             callback?.("TOKEN_REFRESHED", currentSession);
             return { data: { session: currentSession }, error: null };
         },
+        async signInWithOtp(request) {
+            otpRequest = request;
+            if (otpRequestResult.throwError) throw otpRequestResult.throwError;
+            return { data: { user: null, session: null }, error: otpRequestResult.error || null };
+        },
+        async verifyOtp(request) {
+            if (verifyResult.throwError) throw verifyResult.throwError;
+            if (verifyResult.error) return { data: { session: null }, error: verifyResult.error };
+            currentSession = verifyResult.session || { ...session, access_token: "verified-access-token" };
+            callback?.("SIGNED_IN", currentSession);
+            return { data: { session: currentSession }, error: null };
+        },
         async signOut() {
             signOutCalls += 1;
             currentSession = null;
@@ -41,7 +57,12 @@ function fakeClient({ initialSession = null, refreshResult = {} } = {}) {
             callback?.(event, nextSession);
         },
     };
-    return { client: { auth }, refreshResult, get signOutCalls() { return signOutCalls; } };
+    return {
+        client: { auth },
+        refreshResult,
+        get signOutCalls() { return signOutCalls; },
+        get otpRequest() { return otpRequest; },
+    };
 }
 
 test("initialization distinguishes no stored session from bootstrapping", async () => {
@@ -167,4 +188,174 @@ test("a second controller restores the same shared browser session", async () =>
     assert.equal(secondController.getAuthSessionState().sessionPresent, true);
     assert.equal(firstController.getAuthSessionState().accessTokenExpiresAt, 1_800_000_000);
     assert.equal(secondController.getAuthSessionState().accessTokenExpiresAt, 1_800_000_000);
+});
+
+test("persistent session restoration emits one safe telemetry event", async () => {
+    const events = [];
+    const { client } = fakeClient({ initialSession: session });
+    const controller = createAuthSessionController({
+        client,
+        telemetry: (eventName, properties) => events.push([eventName, properties]),
+    });
+
+    await controller.initializeAuthSession();
+    client.auth.emit("INITIAL_SESSION", session);
+
+    assert.deepEqual(events, [["session_restored", { source: "persistent_storage", outcome: "success" }]]);
+});
+
+test("valid OTP request accepts new-user creation and emits the approved sequence prefix", async () => {
+    const events = [];
+    const fake = fakeClient();
+    const sessionController = createAuthSessionController({ client: fake.client });
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController,
+        telemetry: (eventName, properties) => events.push([eventName, properties]),
+    });
+
+    assert.deepEqual(await otp.requestEmailOtp("person@example.com"), { accepted: true });
+    assert.deepEqual(fake.otpRequest, {
+        email: "person@example.com",
+        options: { shouldCreateUser: true },
+    });
+    assert.deepEqual(events, [
+        ["auth_started", { outcome: "success" }],
+        ["otp_requested", { outcome: "success" }],
+    ]);
+});
+
+test("OTP request normalizes invalid email, rate limit, and network failures", async () => {
+    const fake = fakeClient({ otpRequestResult: { error: { status: 429, message: "too many requests" } } });
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController: createAuthSessionController({ client: fake.client }),
+    });
+
+    await assert.rejects(otp.requestEmailOtp("not-an-email"), (error) => error instanceof AuthOtpError && error.code === "unknown");
+    await assert.rejects(otp.requestEmailOtp("person@example.com"), (error) => error.code === "rate_limited");
+
+    const networkFake = fakeClient({ otpRequestResult: { throwError: new TypeError("network down") } });
+    const networkOtp = createEmailOtpController({
+        client: networkFake.client,
+        sessionController: createAuthSessionController({ client: networkFake.client }),
+    });
+    await assert.rejects(networkOtp.requestEmailOtp("person@example.com"), (error) => error.code === "network_error");
+});
+
+test("correct OTP creates a session and emits otp_verified then auth_completed", async () => {
+    const events = [];
+    const verifiedSession = { ...session, access_token: "verified-access-token" };
+    const fake = fakeClient({ verifyResult: { session: verifiedSession } });
+    const sessionController = createAuthSessionController({ client: fake.client });
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController,
+        telemetry: (eventName, properties) => events.push([eventName, properties]),
+    });
+
+    assert.deepEqual(await otp.verifyEmailOtp("person@example.com", "123456"), { authenticated: true });
+    assert.equal(sessionController.getAuthSessionState().status, AUTH_SESSION_STATES.AUTHENTICATED);
+    assert.deepEqual(events, [
+        ["otp_verified", { outcome: "success" }],
+        ["auth_completed", { outcome: "success" }],
+    ]);
+});
+
+test("OTP verification normalizes invalid and expired codes without exposing provider text", async () => {
+    for (const [providerError, expectedCode] of [
+        [{ code: "invalid_otp", message: "provider detail" }, "invalid_otp"],
+        [{ code: "otp_expired", message: "provider detail" }, "expired_otp"],
+    ]) {
+        const fake = fakeClient({ verifyResult: { error: providerError } });
+        const otp = createEmailOtpController({
+            client: fake.client,
+            sessionController: createAuthSessionController({ client: fake.client }),
+        });
+        await assert.rejects(otp.verifyEmailOtp("person@example.com", "123456"), (error) => error.code === expectedCode && !error.message.includes("provider detail"));
+    }
+});
+
+test("analytics failure cannot block OTP verification", async () => {
+    const fake = fakeClient({ verifyResult: { session } });
+    const otp = createEmailOtpController({
+        client: fake.client,
+        sessionController: createAuthSessionController({ client: fake.client }),
+        telemetry: () => { throw new Error("analytics unavailable"); },
+    });
+
+    assert.deepEqual(await otp.verifyEmailOtp("person@example.com", "123456"), { authenticated: true });
+});
+
+test("analytics payload allowlists safe fields and excludes email, OTP, tokens, session, and raw errors", async () => {
+    const calls = [];
+    const originalFetch = globalThis.fetch;
+    const originalStorage = globalThis.localStorage;
+    globalThis.fetch = async (_url, options) => {
+        calls.push(JSON.parse(options.body));
+        return { ok: true };
+    };
+    globalThis.localStorage = {
+        getItem() { return null; },
+        setItem() {},
+    };
+    try {
+        await trackAuthEvent("auth_failed", {
+            outcome: "failed",
+            error_code: "invalid_otp",
+            email: "person@example.com",
+            otp: "123456",
+            access_token: "access-token",
+            refresh_token: "refresh-token",
+            session: { access_token: "access-token" },
+            raw_error: "provider detail",
+        });
+    } finally {
+        globalThis.fetch = originalFetch;
+        globalThis.localStorage = originalStorage;
+    }
+    assert.deepEqual(calls[0].properties, {
+        provider: "email",
+        authority: "supabase",
+        flow: "otp",
+        site: "ru",
+        outcome: "failed",
+        error_code: "invalid_otp",
+    });
+    assert.equal(JSON.stringify(calls[0]).includes("person@example.com"), false);
+    assert.equal(JSON.stringify(calls[0]).includes("123456"), false);
+    assert.equal(JSON.stringify(calls[0]).includes("access-token"), false);
+    assert.equal(JSON.stringify(calls[0]).includes("provider detail"), false);
+});
+
+test("successful TOKEN_REFRESHED does not emit refresh telemetry", async () => {
+    const events = [];
+    const fake = fakeClient({ initialSession: session, refreshResult: { session } });
+    const controller = createAuthSessionController({
+        client: fake.client,
+        telemetry: (eventName) => events.push(eventName),
+    });
+    await controller.initializeAuthSession();
+    await controller.refreshSession();
+    assert.deepEqual(events, ["session_restored"]);
+});
+
+test("failed refresh and completed logout emit normalized telemetry", async () => {
+    const events = [];
+    const fake = fakeClient({
+        initialSession: session,
+        refreshResult: { error: { code: "invalid_grant", message: "invalid refresh token" } },
+    });
+    const controller = createAuthSessionController({
+        client: fake.client,
+        telemetry: (eventName, properties) => events.push([eventName, properties]),
+    });
+    await controller.initializeAuthSession();
+    await assert.rejects(controller.refreshSession());
+    await controller.signOut();
+    assert.deepEqual(events, [
+        ["session_restored", { source: "persistent_storage", outcome: "success" }],
+        ["session_refresh_failed", { outcome: "failed", error_code: "refresh_failed" }],
+        ["auth_signed_out", { outcome: "success" }],
+    ]);
 });
