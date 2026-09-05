@@ -85,18 +85,22 @@ the identity insert returns no row, `IdentityConflictError` is raised, and the
 transaction rolls back the newly-created user. Identities are never silently
 reassigned and no orphan canonical user remains.
 
-## Staging rollout order
+## Staging integration barrier
 
-Do not deploy code that uses this service until the schema exists.
+`0031_auth_v11_identities.sql` has already been applied manually to the
+canonical staging database. It is a backward-compatible schema-only change:
+current staging runtime does not query `user_identities`, and no Auth V1.1 code
+has been deployed from this branch.
 
-1. Review the migration in the PR.
-2. Apply `0031_auth_v11_identities.sql` manually in the staging Supabase SQL
-   Editor.
-3. Run the verification SQL below and record the results.
-4. Merge/deploy the PR only after those checks pass.
-5. Run a Telegram smoke test; future Supabase runtime work is a separate slice.
+Do not roll back the migration. Instead, preserve the 03B integration barrier:
 
-Production is out of scope.
+1. Complete 03B merge and its canonical staging E2E gate.
+2. Record the resulting `PRE_AUTH_BASELINE` SHA.
+3. Rebase this branch once on that SHA and repeat Auth CI/tests.
+4. Run the verification SQL below against staging and record the results.
+5. Only then consider merging/deploying the Auth integration work.
+
+Production is not touched.
 
 ## Staging verification SQL
 
@@ -183,6 +187,6 @@ AUTH_PAYMENTS_REGRESSION          = NONE
 AUTH_FITMENT_REGRESSION           = NONE
 FULL_TEST_SUITE                   = PASS (461 passed, 5 skipped)
 CI                                = PASS (PR #158 checks)
-AUTH_FOUNDATION_STAGING_MIGRATION = PENDING
-AUTH_IDENTITY_FOUNDATION_READY    = YES (repository foundation; staging rollout pending)
+AUTH_FOUNDATION_STAGING_MIGRATION = APPLIED (verification SQL pending)
+AUTH_IDENTITY_FOUNDATION_READY    = YES (code checkpoint; 03B integration barrier remains)
 ```
