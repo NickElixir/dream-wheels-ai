@@ -56,8 +56,9 @@ OTP.
 ## CAPTCHA and isolated harness
 
 ```text
-AUTH_CAPTCHA_PROVIDER           = PENDING (Cloudflare Turnstile target)
-AUTH_CAPTCHA_STAGING            = OFF (no Turnstile secret configured in Supabase)
+AUTH_CAPTCHA_PROVIDER           = TURNSTILE (Cloudflare)
+AUTH_CAPTCHA_STAGING            = PASS (saved and re-verified in Supabase)
+AUTH_CAPTCHA_HOSTNAMES          = dream-wheels-ai-webapp-staging.vercel.app only
 AUTH_HARNESS_CAPTCHA_INTEGRATION = PASS (configuration-ready, no key committed)
 ```
 
@@ -102,8 +103,8 @@ AUTH_OTP_EXPIRY                   = PASS (600)
 AUTH_OTP_RESEND_WINDOW            = DOCUMENTED_DEFAULT (60; no Dashboard override)
 AUTH_CUSTOM_SMTP                  = PENDING
 AUTH_DEFAULT_SUPABASE_SMTP        = IN_USE
-AUTH_CAPTCHA_PROVIDER             = PENDING
-AUTH_CAPTCHA_STAGING              = PENDING
+AUTH_CAPTCHA_PROVIDER             = PASS (Turnstile)
+AUTH_CAPTCHA_STAGING              = PASS
 AUTH_HARNESS_CAPTCHA_INTEGRATION  = PASS
 AUTH_SECRETS_IN_GIT               = NONE
 AUTH_OTP_MODULE_XSS_REVIEW        = PASS
@@ -119,10 +120,10 @@ PRODUCTION                        = NOT_TOUCHED
    Wheels domain.
 2. DNS access to add/verify the provider's SPF and DKIM records, and a DMARC
    policy decision without overwriting existing SPF records.
-3. A Cloudflare Turnstile site and secret key scoped to the explicit staging
-   alias above. Enter only the secret in Supabase; supply only the public site
-   key to the harness runtime configuration.
-4. A deployment path for that public runtime configuration before the Slice 5B
-   live OTP/session proof.
+3. A deployment path for the already-created public Turnstile site key before
+   the Slice 5B live OTP/session proof. The Turnstile secret is stored only in
+   Supabase and is never supplied to the browser.
+4. A deployment path for the public Supabase browser configuration before the
+   Slice 5B live OTP/session proof.
 
 References: [Supabase Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [CAPTCHA protection](https://supabase.com/docs/guides/auth/auth-captcha).
