@@ -63,13 +63,12 @@ staging backend guard passed. The live static checks returned `200` for
 The browser completed the real Managed Turnstile challenge on the canonical
 staging alias and accepted real OTP requests through the staging Supabase
 project. Supabase Auth Logs showed successful `/otp` request events with HTTP
-200. The external test inbox was `venus.mike@yandex.ru`.
+200. A user-controlled external staging inbox was used; its address is not
+recorded in this handoff.
 
 Resend dashboard evidence for the final relogin message:
 
 ```text
-RESEND_EMAIL_ID                 = a782d8d0-5b0f-4c8a-b79c-7e6bf2dec5f1
-RESEND_LOG_ID                   = eb17b14a-1ad9-49eb-968c-597eed758a16
 RESEND_STATUS                   = Delivered
 RESEND_FROM                     = "Dream Wheels" <no-reply@auth.dreamwheels.pro>
 RESEND_SUBJECT                  = Your Dream Wheels AI login code
@@ -220,71 +219,82 @@ six-digit OTP content, `verifyOtp`, session creation, reload persistence, a
 second-tab restore, logout, and re-login. The test inbox and one-time codes
 are intentionally not recorded here.
 
-### Blocking live backend evidence gaps
+### Final live backend and telemetry evidence
+
+The canonical staging Render service was manually deployed at
+`20f3dccb4866fe0ebcf83e08aee537cfe86a444a` after setting the required
+staging-only `SUPABASE_URL`. The startup summary confirmed that Supabase Auth
+is configured; this update did not target production. Auto-deploy remains
+disabled so no unrelated staging commit is promoted.
+
+The isolated harness called its non-production `GET /auth/me` probe with a
+real session created by the second OTP flow. It returned 200 after executing
+`verify_supabase_access_token()` followed by the Slice 2 resolver. The verifier
+uses the ES256/JWKS path and validates signature, issuer, audience, expiry,
+UUID subject, and `authenticated` role before canonical resolution. A second
+probe and probes after reload and a separately opened tab also returned 200.
+The endpoint exposes only `authenticated`, authority, and channel; it never
+returns the subject, canonical ID, email, or token.
+
+The prior direct live DB check remains valid: one canonical `users` row, one
+matching Supabase identity row, `telegram_user_id IS NULL`, and no duplicate.
+The internal subject and canonical identifier are intentionally not recorded.
+
+Read-only SQL aggregation in canonical staging recorded all required telemetry
+names in the 30-minute acceptance window:
 
 ```text
-AUTH_LIVE_BACKEND_JWT_VERIFY        = NOT_PROVEN
-AUTH_LIVE_CANONICAL_USER_RESOLUTION = PASS (service layer against canonical staging DB)
-AUTH_RETURNING_USER_ID_STABLE       = PASS (same subject returned same users.id)
-AUTH_AUTO_ACCOUNT_LINKING           = NONE (live row has telegram_user_id NULL)
-AUTH_LIVE_TELEMETRY                 = BLOCKED (canonical staging backend event enum is pre-Auth baseline)
-AUTH_LIVE_TELEMETRY_PII_LEAK        = NONE (observed live property-key allowlist; no sensitive fields)
+auth_started
+otp_requested
+otp_verified
+auth_completed
+session_restored
+auth_signed_out
 ```
 
-The repository contains the provider-neutral verifier and resolver as
-callable service primitives. The live canonical staging DB check invoked
-`ensure_user_identity()` directly with the real Supabase Auth subject from the
-staging session's Auth user, then invoked it again. Both calls returned the same
-canonical `users.id`; the resulting row has `telegram_user_id IS NULL`, exactly
-one matching `user_identities` row, and no duplicate canonical row. The
-internal staging result was `users.id = 156`; it is omitted from the PR body.
+The only observed `properties` keys were `authority`, `flow`, `outcome`,
+`provider`, `site`, and `source`. No email, OTP, CAPTCHA token, access token,
+refresh token, raw session, JWT, or raw provider error was read or persisted.
 
-The canonical staging Render backend is still deployed at
-`78f4efd578a5bd0c6a648b92f2d6c7f2c4b807ad`. That baseline's analytics event
-enum accepts `auth_completed` but not `auth_started`, `otp_requested`,
-`otp_verified`, `session_restored`, or `auth_signed_out`. A fresh real OTP
-verification after the harness fix recorded `auth_completed`, but the full
-required live sequence cannot be ingested by this backend deployment. The
-observed auth-event property keys were restricted to `auth_channel`,
-`authority`, `flow`, `outcome`, `provider`, and `site`; no email, OTP, CAPTCHA
-token, access token, refresh token, raw session, JWT, or raw provider error
-was present. No sensitive value was inspected or persisted in this audit.
-
-The current staging harness also has no backend route that invokes
-`verify_supabase_access_token()` followed by `resolve_auth_principal()` /
-`ensure_user_identity()`. This is consistent with the explicit no-main-WebApp-
-integration boundary, but it means the requested live JWT proof remains
-unclaimed even though the canonical resolver itself is proven. An approved
-staging execution/deployment path for the existing backend auth slice is still
-required to close the JWT and full-telemetry gates.
+```text
+AUTH_LIVE_BACKEND_JWT_VERIFY        = PASS
+AUTH_LIVE_CANONICAL_USER_RESOLUTION = PASS
+AUTH_RETURNING_USER_ID_STABLE       = PASS
+AUTH_AUTO_ACCOUNT_LINKING           = NONE
+AUTH_LIVE_TELEMETRY                 = PASS
+AUTH_LIVE_TELEMETRY_PII_LEAK        = NONE
+```
 
 ### Regression and repository verification
 
 ```text
-AUTH_SUPABASE_JWT_VERIFY_CONTRACT = PASS (ES256/JWKS verifier tests)
+AUTH_SUPABASE_JWT_VERIFY_CONTRACT = PASS (ES256/JWKS verifier tests and live staging probe)
 AUTH_GENERIC_PRINCIPAL            = PASS (resolver/service tests)
-TELEGRAM_AUTH_REGRESSION          = NONE (13 targeted tests passed)
-FULL_TEST_SUITE                   = PASS (491 passed, 5 skipped)
+AUTH_IDENTITY_FOUNDATION          = PASS
+AUTH_SUPABASE_JWT_VERIFY          = PASS
+AUTH_GENERIC_PRINCIPAL            = PASS
+TELEGRAM_AUTH_REGRESSION          = NONE (18 targeted auth tests passed)
+AUTH_TELEGRAM_LIVE_SMOKE          = PENDING (no safe live Telegram context; non-blocking)
+FULL_TEST_SUITE                   = PASS (498 passed, 5 skipped)
 RUFF_CHECK                        = PASS
 RUFF_FORMAT                       = PASS
 COMPILEALL                        = PASS
 GIT_DIFF_CHECK                    = PASS
 FRONTEND_AUTH_TESTS               = PASS (22 passed)
 FRONTEND_BUNDLE_REPRODUCIBILITY   = PASS
-CI                                = PASS (GitHub Actions run 280)
+CI                                = PASS (GitHub Actions run 288)
 ```
 
 ### Final recommendation
 
 ```text
-AUTH_FOUNDATION_ACCEPTANCE = NO (live backend JWT and complete telemetry gates incomplete)
-PR_159_READY_FOR_REVIEW     = NO
-MERGE_PR_159                = NO
+AUTH_FOUNDATION_ACCEPTANCE = PASS
+PR_159_READY_FOR_REVIEW     = YES
+MERGE_PR_159                = YES
 ```
 
-No application integration or production configuration change is authorized
-by this audit. To reach `MERGE_PR_159 = YES`, add only the separately approved
-staging execution/evidence path for the existing verifier, canonical resolver,
-returning-identity invariant, and server-side telemetry sequence; do not use
-admin identity creation, direct SQL inserts, token substitution, or a bypass
-of Turnstile/real email delivery.
+No main-WebApp integration or production configuration change was made. The
+acceptance used real Turnstile, real email delivery, real OTP verification,
+the live browser session, read-only telemetry inspection, and the staging
+backend path; it did not use admin identity creation, direct SQL inserts,
+token substitution, or a CAPTCHA bypass.
