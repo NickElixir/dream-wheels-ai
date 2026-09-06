@@ -10,13 +10,13 @@ still required before the integration PR can be reviewed.
 BASELINE_SHA                       = 786170342ab64cc205775feb4090888b4126d5d7
 BRANCH                             = feature/auth-v11-integration
 BASE                                = staging
-HEAD                                = de00d7407f96d5714dd94ce203df956c71c08e5f
+HEAD                                = df5f1896638756f298cd0b99d3cb053e513d0ecc
 PR                                  = 162 (Draft)
 PRODUCTION                         = NOT_TOUCHED
 INTEGRATION_PR                     = DRAFT
 MERGE_INTEGRATION_PR               = NO
-PREVIEW_DEPLOYMENT                 = PASS (READY; dpl_9uspk99ejj2PMf4adknTi3m5ECz5)
-PREVIEW_URL                        = https://dream-wheels-ai-webapp-staging-9142snjqg.vercel.app/
+PREVIEW_DEPLOYMENT                 = PASS (READY; dpl_GYhXyRYr2QJNmJK1dz1BZeC57G5L)
+PREVIEW_URL                        = https://dream-wheels-ai-webapp-staging-cnzz1qm0g.vercel.app/
 ```
 
 The accepted Supabase foundation remains the single source of truth for the

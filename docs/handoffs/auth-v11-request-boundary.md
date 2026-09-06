@@ -19,9 +19,9 @@ BASE                                = staging
 PRODUCTION                          = NOT_TOUCHED
 AUTHENTICATED_FETCH                 = IMPLEMENTED
 PROTECTED_APPLICATION_CUTOVER       = IMPLEMENTED
-AUTH_6B_ACCEPTANCE_SHA              = de00d7407f96d5714dd94ce203df956c71c08e5f
-AUTH_6B_PREVIEW_DEPLOYMENT          = PASS (READY; dpl_9uspk99ejj2PMf4adknTi3m5ECz5)
-AUTH_6B_PREVIEW_URL                 = https://dream-wheels-ai-webapp-staging-9142snjqg.vercel.app/
+AUTH_6B_ACCEPTANCE_SHA              = df5f1896638756f298cd0b99d3cb053e513d0ecc
+AUTH_6B_PREVIEW_DEPLOYMENT          = PASS (READY; dpl_GYhXyRYr2QJNmJK1dz1BZeC57G5L)
+AUTH_6B_PREVIEW_URL                 = https://dream-wheels-ai-webapp-staging-cnzz1qm0g.vercel.app/
 LIVE_BROWSER_PROTECTED_API_SMOKE    = PENDING_BROWSER_ENVIRONMENT
 ```
 
