@@ -129,8 +129,19 @@ AUTH_SUPABASE_TO_TELEGRAM_FALLBACK    = NONE
 AUTH_REQUEST_CREDENTIAL_MIXING        = NONE
 AUTH_CANONICAL_OWNERSHIP_LOOKUPS      = PASS (automated)
 AUTH_TELEGRAM_ROUTE_COMPATIBILITY     = PASS (automated)
-AUTH_6B1_LIVE_STAGING                 = PENDING_DEPLOYMENT_AND_SMOKE
+AUTH_6B1_STAGING_BACKEND_DEPLOYMENT   = PASS (dep-daenmmlg1s2s73d4380g;
+                                             exact commit 9c50fc161f0f0651bb529a827d88353b83549277)
+AUTH_6B1_STAGING_BACKEND_HEALTH       = PASS (direct Render and canonical
+                                             Vercel gateway: HTTP 200; db=alive; redis=alive)
+AUTH_6B1_LIVE_STAGING                 = PENDING_USER_CONTROLLED_EMAIL_OTP_SMOKE
 ```
+
+On 2026-09-06 the staging-only Render service
+`dream-wheels-ai-staging` was manually deployed at the exact PR commit above.
+Its linked branch remains `staging`; the release did not update `main`, the
+production Render service, or any production configuration. The prior staging
+runtime at `786170342ab64cc205775feb4090888b4126d5d7` was replaced only after
+the new runtime became live.
 
 The existing credit-account service remains the single starter-grant owner. It
 is now reachable for an Email user through `payments/cabinet`, rather than
