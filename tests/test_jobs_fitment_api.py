@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from src import jobs_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 from src.fitment.providers.base import ProviderError
 from src.main import app
 from src.rim_url_resolver import RimUrlCandidate, RimUrlError, RimUrlResolution, RimUrlVariant
@@ -219,22 +219,20 @@ class FakeTransaction:
 
 
 def _patch_auth(monkeypatch, *, user_id: int = 10) -> None:
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return AuthPrincipal(
+            user_id=user_id,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
     monkeypatch.setattr(
         jobs_api,
         "_resolve_jobs_auth",
-        lambda **_kwargs: AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
-            auth_channel="website",
-        ),
+        fake_resolve_jobs_auth,
     )
-
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456789
-        assert username == "dw-user"
-        return user_id
-
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
 
 
 async def _exact_catalogue_selection(_provider, *, make, model, region, year):

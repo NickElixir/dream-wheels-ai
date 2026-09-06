@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from src import assets_service, identity_api, identity_service, jobs_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 from src.main import app
 
 client = TestClient(app)
@@ -46,11 +46,13 @@ class FakePool:
         return FakeAcquire(self.conn)
 
 
-def _auth_context() -> AuthContext:
-    return AuthContext(
-        telegram_user_id=123456,
-        username="dw-user",
+def _auth_principal() -> AuthPrincipal:
+    return AuthPrincipal(
+        user_id=77,
+        authority="telegram",
+        subject="123456",
         auth_channel="mini_app",
+        telegram_username="dw-user",
     )
 
 
@@ -83,10 +85,8 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
     async def fake_enforce_rate_limit(**_kwargs):
         calls.append(("rate_limit", None))
 
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456
-        assert username == "dw-user"
-        return 77
+    async def fake_require_auth_principal(_conn, **_kwargs):
+        return _auth_principal()
 
     async def fake_upload_render_asset(**kwargs):
         kind = kwargs["kind"]
@@ -108,10 +108,9 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
     async def fake_insert_asset(_conn, asset: assets_service.AssetUpload):
         calls.append((f"insert_asset:{asset.kind}", asset.render_input_draft_id))
 
-    monkeypatch.setattr(identity_api, "resolve_telegram_auth", lambda **_kwargs: _auth_context())
+    monkeypatch.setattr(identity_api, "require_auth_principal", fake_require_auth_principal)
     monkeypatch.setattr(identity_api, "enforce_rate_limit", fake_enforce_rate_limit)
     monkeypatch.setattr(identity_api.db, "get_pool", lambda: FakePool(FakeConn()))
-    monkeypatch.setattr(identity_api, "ensure_user", fake_ensure_user)
     monkeypatch.setattr(
         identity_api.assets_service, "upload_render_asset", fake_upload_render_asset
     )
@@ -291,21 +290,18 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     async def fake_enforce_rate_limit(**_kwargs):
         calls.append(("rate_limit", None))
 
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456
-        assert username == "dw-user"
-        return 77
+    async def fake_require_auth_principal(_conn, **_kwargs):
+        return _auth_principal()
 
     async def fake_reserve_job_credit(_conn, *, user_id: int, job_id: str):
         calls.append(("reserve_job_credit", user_id, job_id))
         return 2
 
     fake_redis = FakeRedis()
-    monkeypatch.setattr(jobs_api, "resolve_telegram_auth", lambda **_kwargs: _auth_context())
+    monkeypatch.setattr(jobs_api, "require_auth_principal", fake_require_auth_principal)
     monkeypatch.setattr(jobs_api, "_get_render_queue_client", lambda *_args, **_kwargs: fake_redis)
     monkeypatch.setattr(jobs_api, "enforce_rate_limit", fake_enforce_rate_limit)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
     monkeypatch.setattr(jobs_api, "reserve_job_credit", fake_reserve_job_credit)
     monkeypatch.setattr(jobs_api.redis_client, "key", lambda key: key)
 

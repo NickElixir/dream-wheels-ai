@@ -4,7 +4,7 @@ from io import BytesIO
 from starlette.datastructures import Headers, UploadFile
 
 from src import assets_service, jobs_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 
 
 def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
@@ -71,9 +71,15 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
     async def fake_enforce_rate_limit(**_kwargs):
         return None
 
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        calls.append(("ensure_user", telegram_user_id, username))
-        return 77
+    async def fake_require_auth_principal(_conn, **_kwargs):
+        calls.append(("resolve_principal", None))
+        return AuthPrincipal(
+            user_id=77,
+            authority="telegram",
+            subject="123456",
+            auth_channel="mini_app",
+            telegram_username="staging_user",
+        )
 
     async def fake_upload_render_asset(**kwargs):
         kind = kwargs["kind"]
@@ -100,19 +106,10 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
         return 2
 
     fake_redis = FakeRedis()
-    monkeypatch.setattr(
-        jobs_api,
-        "resolve_telegram_auth",
-        lambda **_kwargs: AuthContext(
-            telegram_user_id=123456,
-            username="staging_user",
-            auth_channel="mini_app",
-        ),
-    )
+    monkeypatch.setattr(jobs_api, "require_auth_principal", fake_require_auth_principal)
     monkeypatch.setattr(jobs_api, "_get_render_queue_client", lambda *_args, **_kwargs: fake_redis)
     monkeypatch.setattr(jobs_api, "enforce_rate_limit", fake_enforce_rate_limit)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool())
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
     monkeypatch.setattr(jobs_api.assets_service, "upload_render_asset", fake_upload_render_asset)
     monkeypatch.setattr(jobs_api.assets_service, "insert_asset", fake_insert_asset)
     monkeypatch.setattr(jobs_api, "reserve_job_credit", fake_reserve_job_credit)
@@ -139,7 +136,7 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
 
     assert response.status == "queued"
     assert [item[0] for item in calls] == [
-        "ensure_user",
+        "resolve_principal",
         "tx_enter",
         "insert_job",
         "insert_asset:car_original",

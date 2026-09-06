@@ -98,6 +98,44 @@ semantics and never acquire a Supabase or website bearer.
 
 ## Verification performed
 
+### Slice 6B.1 backend principal cutover
+
+The Email OTP browser acceptance exposed a backend-only mismatch: `/auth/me`
+accepted a verified Supabase principal, but business routes still invoked the
+Telegram-only resolver and returned `401`. Slice 6B.1 removes that split.
+
+```text
+SLICE_6B1_BASE_SHA                   = 126961ad9259aba79116432db7c059d4d035ef75
+STAGING_SHA_AT_START                 = 786170342ab64cc205775feb4090888b4126d5d7
+AUTH_BACKEND_PRINCIPAL_CUTOVER       = IMPLEMENTED
+PRODUCTION                           = NOT_TOUCHED
+```
+
+Protected user-facing handlers now call the provider-neutral
+`require_auth_principal()` adapter and use its canonical `principal.user_id`
+for ownership, rate limits, idempotency keys and business-service access.
+Affected families are payments, authenticated analytics attribution, identity,
+jobs/history/assets/feedback and Fitment.
+
+The resolver verifies a JWT-shaped bearer only through Supabase validation, so
+it cannot downgrade to a legacy Telegram bearer. Telegram Website and Mini App
+credentials resolve through the same `AuthPrincipal` boundary to their
+existing canonical user. Bot-only job creation and feedback guarded by the
+internal token remain intentional Telegram/internal paths; no Supabase subject
+is fabricated as a Telegram ID.
+
+```text
+AUTH_SUPABASE_TO_TELEGRAM_FALLBACK    = NONE
+AUTH_REQUEST_CREDENTIAL_MIXING        = NONE
+AUTH_CANONICAL_OWNERSHIP_LOOKUPS      = PASS (automated)
+AUTH_TELEGRAM_ROUTE_COMPATIBILITY     = PASS (automated)
+AUTH_6B1_LIVE_STAGING                 = PENDING_DEPLOYMENT_AND_SMOKE
+```
+
+The existing credit-account service remains the single starter-grant owner. It
+is now reachable for an Email user through `payments/cabinet`, rather than
+being skipped after the former Telegram-only `401`.
+
 ```text
 FRONTEND_AUTH_TESTS                  = PASS (37 passed)
 NODE_SYNTAX_CHECK                    = PASS (app.js, app-auth.js)

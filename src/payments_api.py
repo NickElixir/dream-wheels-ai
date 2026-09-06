@@ -10,7 +10,7 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from pydantic import BaseModel, field_validator
 
 from src import analytics_api, db
-from src.auth import resolve_telegram_auth
+from src.auth_principal import preflight_auth_credentials, require_auth_principal
 from src.config import PAYMENTS_ENABLED, ROBOKASSA_IS_TEST, WEBAPP_URL
 from src.credits_service import get_balance, list_credit_packages
 from src.payments_service import (
@@ -30,7 +30,6 @@ from src.payments_service import (
 from src.payments_service import (
     calculate_topup_credits as _calculate_topup_credits,
 )
-from src.users_service import ensure_user
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +73,7 @@ async def get_payment_cabinet(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -83,7 +82,14 @@ async def get_payment_cabinet(
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            principal = await require_auth_principal(
+                conn,
+                init_data=init_data,
+                telegram_user_id=telegram_user_id,
+                authorization=authorization,
+                auth_name="payments",
+            )
+            user_id = principal.user_id
             balance = await get_balance(conn, user_id)
             payments = await list_payments_for_user(conn, user_id=user_id)
             starter_grant = await get_starter_grant_for_user(conn, user_id=user_id)
@@ -103,7 +109,7 @@ async def get_payment_status(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -113,7 +119,14 @@ async def get_payment_status(
     async with pool.acquire() as conn:
         try:
             async with conn.transaction():
-                user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+                principal = await require_auth_principal(
+                    conn,
+                    init_data=init_data,
+                    telegram_user_id=telegram_user_id,
+                    authorization=authorization,
+                    auth_name="payments",
+                )
+                user_id = principal.user_id
                 return await get_payment_status_by_invoice(
                     conn,
                     invoice_id=invoice_id,
@@ -131,12 +144,13 @@ async def create_topup(
     if not PAYMENTS_ENABLED:
         raise HTTPException(status_code=503, detail="Payments are temporarily disabled")
 
-    auth = resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=request.init_data,
         telegram_user_id=request.telegram_user_id,
         authorization=authorization,
         auth_name="payments",
     )
+
     intent = TopUpIntent(
         amount_rub=request.amount_decimal,
         pricing_version=request.pricing_version,
@@ -146,14 +160,19 @@ async def create_topup(
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            principal = await require_auth_principal(
+                conn,
+                init_data=request.init_data,
+                telegram_user_id=request.telegram_user_id,
+                authorization=authorization,
+                auth_name="payments",
+            )
+            user_id = principal.user_id
             await get_balance(conn, user_id)
             try:
                 payload = await create_topup_payment(conn, user_id=user_id, intent=intent)
             except PaymentConfigError as exc:
-                logger.exception(
-                    f"❌ Robokassa create topup failed tg_user={auth.telegram_user_id}: {exc}"
-                )
+                logger.exception("❌ Robokassa create topup failed user_id=%s: %s", user_id, exc)
                 raise HTTPException(
                     status_code=503, detail="Payment provider is not configured"
                 ) from exc
