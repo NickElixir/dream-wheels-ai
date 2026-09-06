@@ -1,7 +1,8 @@
 # Dream Wheels AI — Auth V1.1 Slice 6A/6B Handoff
 
-Status: Slice 6A/6B implementation complete, Draft PR only. Live protected API
-browser evidence is still required before the integration PR can be reviewed.
+Status: Slice 6A/6B implementation complete, Draft PR only. The exact PR head
+is deployed to a READY preview, while live protected API browser evidence is
+still required before the integration PR can be reviewed.
 
 ## Baseline and boundary
 
@@ -9,11 +10,13 @@ browser evidence is still required before the integration PR can be reviewed.
 BASELINE_SHA                       = 786170342ab64cc205775feb4090888b4126d5d7
 BRANCH                             = feature/auth-v11-integration
 BASE                                = staging
-HEAD                                = see PR #162 (current branch head)
+HEAD                                = de00d7407f96d5714dd94ce203df956c71c08e5f
 PR                                  = 162 (Draft)
 PRODUCTION                         = NOT_TOUCHED
 INTEGRATION_PR                     = DRAFT
 MERGE_INTEGRATION_PR               = NO
+PREVIEW_DEPLOYMENT                 = PASS (READY; dpl_9uspk99ejj2PMf4adknTi3m5ECz5)
+PREVIEW_URL                        = https://dream-wheels-ai-webapp-staging-9142snjqg.vercel.app/
 ```
 
 The accepted Supabase foundation remains the single source of truth for the
@@ -203,13 +206,14 @@ GITHUB_CI                               = PASS (latest run for current head)
 ```
 
 Automated Auth tests pass, the new app-auth bundle builds, and the main page
-and static asset references are present. Rendered browser preview could not be
-run in this environment: the Browser/CUA runtime timed out and no local
-Browser CLI or Playwright installation is available. Therefore the following
-remain pending direct browser evidence:
+and static asset references are present. The exact PR head preview is READY
+and renders the main dashboard. Direct Auth browser acceptance remains pending:
+managed Chrome blocks the preview `/auth/*` assets, while the in-app browser
+requires Vercel login protection. Therefore the following remain pending direct
+browser evidence:
 
 ```text
-VERCEL_PREVIEW                         = PASS (deployment status)
+VERCEL_PREVIEW                         = PASS (exact head; READY)
 AUTH_EMAIL_LOGIN_SURFACE_BROWSER       = PENDING
 AUTH_TURNSTILE_MAIN_UI_BROWSER         = PENDING
 AUTH_TELEGRAM_WEBSITE_BROWSER          = PENDING
@@ -219,10 +223,10 @@ AUTH_6A_RESPONSIVE_BROWSER             = PENDING
 
 ## Deferred work
 
-Live browser evidence on a preview built from the current PR is still needed
-for the protected cabinet/history/render flows, and a safe live Telegram
-context remains optional regression evidence. The canonical staging URL
-currently points to an older deployment; production was not touched.
+Live browser evidence on the deployed preview is still needed for the protected
+cabinet/history/render flows, and a safe live Telegram context remains optional
+regression evidence. The canonical staging URL currently points to an older
+deployment; production was not touched. No OTP was resent during this attempt.
 
 ```text
 AUTH_6A_READY                           = YES
