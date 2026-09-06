@@ -5034,3 +5034,49 @@ body.has-fallback-main-button #app {
         transition-duration: 0.01ms !important;
     }
 }
+/* Auth-gated browser App shell. The gate is visible only while /app/**
+   is reconciling the session or waiting for sign-in. */
+.application-auth-gate {
+    align-items: center;
+    background: var(--bg, #070809);
+    color: var(--text, #eef2f6);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 24px;
+    position: fixed;
+    z-index: 20;
+}
+
+.application-auth-gate-card {
+    background: rgba(23, 25, 30, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+    max-width: 460px;
+    padding: 36px;
+    text-align: center;
+    width: 100%;
+}
+
+.application-auth-gate-card h1 {
+    margin: 12px 0;
+}
+
+.application-auth-gate-copy {
+    color: var(--text-muted, #a3adba);
+    line-height: 1.5;
+    margin: 0 0 24px;
+}
+
+.application-auth-gate-card [data-application-auth-gate-login] {
+    min-width: 160px;
+}
+
+@media (max-width: 640px) {
+    .application-auth-gate-card {
+        border-radius: 22px;
+        padding: 28px 22px;
+    }
+}

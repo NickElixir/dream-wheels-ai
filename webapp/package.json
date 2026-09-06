@@ -1,6 +1,7 @@
 {
   "name": "dream-wheels-auth-harness",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "npm run build:harness && npm run build:app-auth",
     "build:harness": "esbuild auth/harness.js --bundle --format=esm --target=es2020 --minify --outfile=auth/harness.bundle.js && node auth/normalize-bundle.mjs",

@@ -12,6 +12,14 @@
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
 <body>
+    <section class="application-auth-gate" data-application-auth-gate hidden aria-live="polite">
+        <div class="application-auth-gate-card">
+            <p class="section-label">Dream Wheels</p>
+            <h1 data-application-auth-gate-title>Восстанавливаем вход</h1>
+            <p class="application-auth-gate-copy" data-application-auth-gate-copy>Проверяем защищённую сессию перед открытием приложения.</p>
+            <button type="button" class="primary-button" data-application-auth-gate-login hidden>Войти</button>
+        </div>
+    </section>
     <aside class="desktop-sidebar" aria-label="Навигация кабинета">
         <button type="button" class="brand-wordmark brand-button" data-nav="dashboard" aria-label="Dream Wheels AI — главная">
             <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>

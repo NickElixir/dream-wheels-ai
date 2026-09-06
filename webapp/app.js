@@ -1,3 +1,9 @@
+import {
+    applicationRouteContext,
+    isApplicationRoute,
+    safeApplicationReturnPath,
+} from "./app-route.js";
+
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
@@ -296,6 +302,9 @@ const I18N = {
             alreadyAuthenticated: "Вы уже вошли. Чтобы использовать другой аккаунт, сначала выйдите.",
             authenticationInProgress: "Проверяем текущий вход. Попробуйте ещё раз через секунду.",
             resendIn: "Повторно отправить код можно через {seconds} сек.",
+            appGateTitle: "Войдите, чтобы открыть приложение",
+            appGateDescription: "Приложение доступно после подтверждения входа.",
+            appGateRestoring: "Проверяем защищённую сессию перед открытием приложения.",
         },
         menu: {
             dashboard: "Главная",
@@ -720,6 +729,9 @@ const I18N = {
             alreadyAuthenticated: "You're already signed in. Sign out first to use another account.",
             authenticationInProgress: "Checking your current sign-in. Try again in a moment.",
             resendIn: "You can send another code in {seconds}s.",
+            appGateTitle: "Sign in to open the app",
+            appGateDescription: "The app is available after you confirm your sign-in.",
+            appGateRestoring: "Checking your protected session before opening the app.",
         },
         menu: {
             dashboard: "Home",
@@ -1225,6 +1237,11 @@ const state = {
     authDialogTurnstileWidgetId: null,
     authDialogTurnstileToken: null,
     authDialogTurnstileLoading: false,
+    applicationRoute: null,
+    applicationAuthRequired: false,
+    applicationAuthGateReady: false,
+    applicationDataReady: false,
+    applicationAuthReturnPath: null,
     view: "dashboard",
     menuOpen: false,
     moreOpen: false,
@@ -1354,6 +1371,8 @@ const state = {
 // page load into duplicate cabinet/history calls.
 let cabinetRequestPromise = null;
 let renderHistoryRequestPromise = null;
+let applicationDataPromise = null;
+let applicationDataGeneration = 0;
 
 function isGuestRenderJob(job) {
     return Boolean(job?.is_guest_demo);
@@ -2232,6 +2251,135 @@ function isAuthIntegrationEnabled() {
     return Boolean(frontendAuthController()?.isIntegrationEnabled?.());
 }
 
+function isApplicationAuthGranted() {
+    if (!state.applicationAuthRequired) return true;
+    return Boolean(
+        state.frontendAuthState?.status === "AUTHENTICATED"
+        && state.frontendAuthState?.principalVerified === true
+        && state.frontendAuthState?.protectedApiReady === true
+        && state.applicationDataReady === true
+    );
+}
+
+function renderApplicationAuthGate() {
+    if (!state.applicationAuthRequired) return;
+    const gate = document.querySelector("[data-application-auth-gate]");
+    const title = document.querySelector("[data-application-auth-gate-title]");
+    const copy = document.querySelector("[data-application-auth-gate-copy]");
+    const login = document.querySelector("[data-application-auth-gate-login]");
+    if (!gate) return;
+    const authSessionReady = state.frontendAuthState?.status === "AUTHENTICATED"
+        && state.frontendAuthState?.principalVerified === true
+        && state.frontendAuthState?.protectedApiReady === true;
+    const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
+        || state.frontendAuthState?.interactionState === "restoring"
+        || (authSessionReady && !state.applicationDataReady);
+    const authenticated = isApplicationAuthGranted();
+    gate.hidden = authenticated;
+    if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
+    if (copy) copy.textContent = restoring ? t("auth.appGateRestoring") : t("auth.appGateDescription");
+    if (login) {
+        login.hidden = restoring;
+        login.disabled = state.authDialogBusy;
+        login.textContent = t("auth.loginShort");
+    }
+}
+
+function setApplicationShellVisible(visible) {
+    if (!state.applicationAuthRequired) return;
+    document.querySelector(".desktop-sidebar")?.toggleAttribute("hidden", !visible);
+    document.querySelector("#app")?.toggleAttribute("hidden", !visible);
+    document.querySelector(".mobile-bottom-nav")?.toggleAttribute("hidden", !visible);
+}
+
+function syncApplicationAuthWall() {
+    if (!state.applicationAuthRequired) return;
+    const unlocked = isApplicationAuthGranted();
+    state.applicationAuthGateReady = unlocked;
+    setApplicationShellVisible(unlocked);
+    renderApplicationAuthGate();
+    if (unlocked && state.applicationRoute?.view && state.view !== state.applicationRoute.view) {
+        setView(state.applicationRoute.view, { refreshData: false });
+    }
+}
+
+function initializeApplicationRoute() {
+    if (HAS_TG || !isApplicationRoute(window.location)) return;
+    state.applicationAuthRequired = true;
+    state.applicationRoute = applicationRouteContext(window.location);
+    if (!state.applicationRoute && window.history?.replaceState) {
+        window.history.replaceState({}, "", "/app");
+        state.applicationRoute = applicationRouteContext(window.location);
+    }
+    state.applicationRoute = state.applicationRoute || {
+        path: "/app",
+        view: "dashboard",
+        returnPath: "/app",
+        market: null,
+        query: new URLSearchParams(),
+    };
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/app";
+    if (state.applicationAuthReturnPath) {
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        if (currentPath !== state.applicationAuthReturnPath && window.history?.replaceState) {
+            window.history.replaceState({}, "", state.applicationAuthReturnPath);
+            state.applicationRoute = applicationRouteContext(window.location) || state.applicationRoute;
+        }
+    }
+}
+
+async function bootstrapAuthenticatedApplication() {
+    if (!state.applicationAuthRequired || !isApplicationAuthSessionReady()) return false;
+    if (applicationDataPromise) return applicationDataPromise;
+    state.applicationDataReady = false;
+    syncApplicationAuthWall();
+    const generation = applicationDataGeneration;
+    const promise = (async () => {
+        await hydrateFilesFromDraft();
+        renderIdentityFlow();
+        refreshButtonsForCurrentView();
+        await loadDashboardData();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        state.applicationDataReady = true;
+        syncApplicationAuthWall();
+        return true;
+    })();
+    applicationDataPromise = promise;
+    promise.then(
+        () => {
+            if (applicationDataPromise === promise) applicationDataPromise = null;
+        },
+        () => {
+            if (applicationDataPromise === promise) applicationDataPromise = null;
+        },
+    );
+    return promise;
+}
+
+function isApplicationAuthSessionReady() {
+    return Boolean(
+        state.frontendAuthState?.status === "AUTHENTICATED"
+        && state.frontendAuthState?.principalVerified === true
+        && state.frontendAuthState?.protectedApiReady === true
+    );
+}
+
+function clearApplicationSessionState() {
+    applicationDataGeneration += 1;
+    applicationDataPromise = null;
+    state.applicationDataReady = false;
+    state.balance = null;
+    state.payments = [];
+    state.starterGrant = null;
+    state.renderHistory = [];
+    state.renderHistoryError = "";
+    state.renderHistoryLoading = false;
+    state.expandedJobId = "";
+    state.files = { car: null, wheel: null };
+    resetIdentityState();
+    syncApplicationAuthWall();
+}
+
 function getWebsiteAuthToken() {
     if (HAS_TG || !state.websiteAuth) return "";
     if (Number(state.websiteAuth.expiresAt || 0) <= Date.now()) {
@@ -2504,6 +2652,7 @@ function handleFrontendAuthState(nextState) {
     updateWebsiteAuthUi();
     renderWalletStatus();
     renderDashboard();
+    syncApplicationAuthWall();
 }
 
 function apiUrl(path, { includeIdentity = false, params = null } = {}) {
@@ -2651,7 +2800,11 @@ async function loginWithTelegram() {
         updateWebsiteAuthUi();
         renderDashboard();
         renderRenders();
-        await Promise.all([loadCabinet(), loadRenderHistory()]);
+        if (state.applicationAuthRequired) {
+            await bootstrapAuthenticatedApplication();
+        } else {
+            await Promise.all([loadCabinet(), loadRenderHistory()]);
+        }
         if (state.identityError && state.files.car?.blob && state.files.wheel?.blob) {
             await resolveIdentity();
         }
@@ -2737,7 +2890,8 @@ async function verifyFrontendEmailOtp() {
         }
         state.frontendAuthSavedName = result?.account?.saved_name || state.frontendAuthSavedName || null;
         closeAuthDialog();
-        await loadDashboardData({ silent: true });
+        if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
+        else await loadDashboardData({ silent: true });
     } catch (error) {
         setAuthDialogMessage(authErrorMessage(error?.code), true);
     } finally {
@@ -2757,6 +2911,7 @@ function logoutCurrentFrontendAuthority() {
                 state.authDialogBusy = false;
                 state.frontendAuthUser = null;
                 state.frontendAuthSavedName = null;
+                clearApplicationSessionState();
                 updateWebsiteAuthUi();
                 renderDashboard();
             });
@@ -2832,9 +2987,7 @@ async function resumeFitmentAfterLogin() {
 function logoutWebsiteAuth() {
     clearWebsiteAuthSession({ refreshUi: false });
     frontendAuthController()?.markLegacyWebsiteSignedOut?.();
-    state.balance = null;
-    state.payments = [];
-    state.starterGrant = null;
+    clearApplicationSessionState();
     updateWebsiteAuthUi();
     setWalletMessage(t("wallet.authRequired"), "warning");
     renderWallet();
@@ -9555,6 +9708,10 @@ function bindEvents() {
         if (isAuthIntegrationEnabled()) openAuthDialog();
         else void loginWithTelegram();
     });
+    document.querySelector("[data-application-auth-gate-login]")?.addEventListener("click", () => {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    });
     document.querySelector("[data-auth-close]")?.addEventListener("click", closeAuthDialog);
     document.querySelector("[data-auth-continue]")?.addEventListener("click", continueWithRestoredSession);
     document.querySelector("[data-auth-switch]")?.addEventListener("click", switchFromRestoredSession);
@@ -10200,6 +10357,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     void checkCurrentBuild();
     applyTranslations();
     initTelegram();
+    initializeApplicationRoute();
+    syncApplicationAuthWall();
     updateWebsiteAuthUi();
     bindEvents();
     observeUiCopyRule();
@@ -10235,10 +10394,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (state.view === "fitment") persistFitmentTransientDraft("navigation");
     });
 
-    await hydrateFilesFromDraft();
     renderIdentityFlow();
     refreshButtonsForCurrentView();
     await authReady;
+    if (state.applicationAuthRequired) {
+        syncApplicationAuthWall();
+        if (!isApplicationAuthSessionReady()) {
+            clearApplicationSessionState();
+            renderApplicationAuthGate();
+            return;
+        }
+        await bootstrapAuthenticatedApplication();
+        return;
+    }
+
+    await hydrateFilesFromDraft();
+    renderIdentityFlow();
+    refreshButtonsForCurrentView();
     await loadDashboardData();
 
     if (state.fitmentPreviewForced && !new URLSearchParams(window.location.search).get("payment")) {
