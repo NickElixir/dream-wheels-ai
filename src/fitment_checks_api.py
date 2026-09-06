@@ -13,7 +13,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from src import db, redis_client
-from src.auth import resolve_telegram_auth
+from src.auth_principal import preflight_auth_credentials, require_auth_principal
 from src.config import WORKER_ENABLED
 from src.fitment import config as fitment_config
 from src.fitment.context import PROVIDER_REFERENCE_VERSION, context_hash, is_current_snapshot
@@ -23,7 +23,6 @@ from src.fitment.rules.engine import run_checks
 from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.rules.verdict import assemble_verdict, verdict_vehicle_not_resolved
 from src.fitment.schemas import FieldValue, RimSetup, RimSpec, Source, VehicleIdentity
-from src.users_service import ensure_user
 
 router = APIRouter(prefix="/fitment", tags=["fitment"])
 logger = logging.getLogger(__name__)
@@ -64,8 +63,15 @@ class CheckResponse(BaseModel):
     retry_at: datetime | None = None
 
 
-def _auth(init_data, telegram_user_id, authorization):
-    return resolve_telegram_auth(
+async def _auth(conn, init_data, telegram_user_id, authorization):
+    preflight_auth_credentials(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="fitment checks",
+    )
+    return await require_auth_principal(
+        conn,
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -343,10 +349,10 @@ async def create_check(
         raise HTTPException(
             status_code=422, detail="Only user_requested standard checks are supported"
         )
-    auth = _auth(init_data, telegram_user_id, authorization)
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
         row = await _load(conn, user_id, request)
         if not row:
             raise HTTPException(status_code=404, detail="Fitment inputs not found")
@@ -724,9 +730,9 @@ async def get_check(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _auth(init_data, telegram_user_id, authorization)
     async with db.get_pool().acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
         row = await conn.fetchrow(
             "SELECT * FROM fitment_checks WHERE id=$1::uuid AND owner_user_id=$2",
             str(check_id),
@@ -761,9 +767,9 @@ async def list_checks(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _auth(init_data, telegram_user_id, authorization)
     async with db.get_pool().acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
         rows = await conn.fetch(
             """
             SELECT * FROM fitment_checks

@@ -493,6 +493,25 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert "data-wallet-expiry-list" in INDEX_HTML
 
 
+def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:
+    rewrites = VERCEL_JSON.get("rewrites", [])
+    assert {"source": "/app", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/(.*)", "destination": "/index.html"} in rewrites
+    assert "import {" in APP_JS
+    assert 'from "./app-route.mjs"' in APP_JS
+    assert "data-application-auth-gate" in INDEX_HTML
+    assert "bootstrapAuthenticatedApplication" in APP_JS
+
+
+def test_browser_app_auth_wall_suppresses_protected_bootstrap_until_auth() -> None:
+    assert "state.applicationAuthRequired" in APP_JS
+    assert "state.applicationAuthGateReady = unlocked" in APP_JS
+    assert "if (!isApplicationAuthSessionReady())" in APP_JS
+    assert "clearApplicationSessionState();" in APP_JS
+    assert "applicationAuthReturnPath" in APP_JS
+
+
 def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "function shouldUseBrowserApiProxy()" in APP_JS
@@ -547,10 +566,10 @@ def test_rim_source_status_is_contextual_and_not_a_permanent_pipeline() -> None:
 
 def test_website_auth_does_not_inline_private_asset_urls() -> None:
     assert "function proxiedAssetUrl(asset)" in APP_JS
-    assert 'if (getWebsiteAuthToken()) return "";' in APP_JS
+    assert 'if (hasBearerFrontendAuth()) return "";' in APP_JS
     assert "Website auth lives in Authorization header" in APP_JS
     assert "function assetDownloadUrlForJob(job, kind)" in APP_JS
-    assert "return getWebsiteAuthToken()" in APP_JS
+    assert "return hasBearerFrontendAuth()" in APP_JS
     assert "if (getWebsiteAuthToken()) return resultUrlForJob(job);" in APP_JS
 
 

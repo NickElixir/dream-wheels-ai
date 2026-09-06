@@ -9,7 +9,7 @@ import io
 
 from fastapi.testclient import TestClient
 
-from src import auth, jobs_api, redis_client
+from src import auth_principal, jobs_api, redis_client
 from src.config import WEBAPP_URL
 from src.main import app
 
@@ -111,8 +111,8 @@ def test_bot_feedback_requires_internal_auth_when_no_init_data():
 
 def test_feedback_get_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/feedback")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_robokassa_result_accepts_get_method():
@@ -125,20 +125,20 @@ def test_robokassa_result_accepts_get_method():
 def test_payment_cabinet_requires_telegram_identity():
     """Кабинет не ходит в БД без Telegram identity."""
     r = client.get("/payments/cabinet")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_detailed_job_status_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_job_result_download_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_cors_allows_configured_webapp_origin():
@@ -197,16 +197,28 @@ def test_upload_invalid_mime_does_not_reserve_idempotency_key(monkeypatch):
         return None
 
     fake_redis = FakeRedis()
-    monkeypatch.setattr(
-        jobs_api,
-        "resolve_telegram_auth",
-        lambda **_kwargs: auth.AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
+
+    async def fake_require_auth_principal(_conn, **_kwargs):
+        return auth_principal.AuthPrincipal(
+            user_id=77,
+            authority="telegram",
+            subject="123456789",
             auth_channel="website",
-            auth_date=1700000000,
-        ),
-    )
+        )
+
+    class FakeAcquire:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakePool:
+        def acquire(self):
+            return FakeAcquire()
+
+    monkeypatch.setattr(jobs_api, "require_auth_principal", fake_require_auth_principal)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool())
     monkeypatch.setattr(jobs_api, "enforce_rate_limit", fake_enforce_rate_limit)
     monkeypatch.setattr(jobs_api, "_get_render_queue_client", lambda *_args, **_kwargs: fake_redis)
 

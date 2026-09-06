@@ -4,7 +4,7 @@ import json
 from fastapi.testclient import TestClient
 
 from src import fitment_checks_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 from src.fitment.providers.base import ProviderError
 from src.fitment.schemas import AxleFitment, FitmentProfile, OffsetReference
 from src.main import app
@@ -169,22 +169,23 @@ class Provider:
 
 def _patch_auth_and_inputs(monkeypatch, conn, *, loaded_row=None, provider=Provider):
     monkeypatch.setattr(fitment_checks_api.fitment_config, "FITMENT_VERDICT_ENABLED", True)
-    monkeypatch.setattr(
-        fitment_checks_api,
-        "_auth",
-        lambda *_args: AuthContext(telegram_user_id=1, username="test", auth_channel="website"),
-    )
 
-    async def ensure(_conn, telegram_user_id, username):
-        assert (telegram_user_id, username) == (1, "test")
-        return 7
+    async def fake_auth(*_args):
+        return AuthPrincipal(
+            user_id=7,
+            authority="telegram",
+            subject="1",
+            auth_channel="website",
+            telegram_username="test",
+        )
+
+    monkeypatch.setattr(fitment_checks_api, "_auth", fake_auth)
 
     async def load(_conn, user_id, request):
         assert user_id == 7
         assert str(request.vehicle_identity_id) == VEHICLE_ID
         return _row() if loaded_row is None else loaded_row
 
-    monkeypatch.setattr(fitment_checks_api, "ensure_user", ensure)
     monkeypatch.setattr(fitment_checks_api, "_load", load)
     monkeypatch.setattr(fitment_checks_api.db, "get_pool", lambda: FakePool(conn))
     monkeypatch.setattr(fitment_checks_api, "WheelSizeProvider", provider)

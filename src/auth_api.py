@@ -17,6 +17,7 @@ from src.auth import (
 )
 from src.auth_principal import AuthPrincipalError, resolve_auth_principal
 from src.config import TELEGRAM_AUTH_TOKEN_TTL_SEC, TELEGRAM_LOGIN_CLIENT_ID
+from src.credits_service import ensure_credit_account_state
 from src.users_service import ensure_user
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,19 @@ class AuthMeResponse(BaseModel):
     auth_channel: str
 
 
+class AuthBootstrapAccount(BaseModel):
+    balance: int
+    starter_grant_granted_now: bool
+    saved_name: str | None = None
+
+
+class AuthBootstrapResponse(BaseModel):
+    authenticated: bool = True
+    authority: Literal["supabase"] = "supabase"
+    auth_channel: str = "supabase"
+    account: AuthBootstrapAccount
+
+
 @router.get("/me", response_model=AuthMeResponse)
 async def auth_me(
     init_data: Annotated[str | None, Query()] = None,
@@ -79,6 +93,61 @@ async def auth_me(
         raise HTTPException(status_code=500, detail="Authentication service unavailable") from exc
 
     return AuthMeResponse(authority=principal.authority, auth_channel=principal.auth_channel)
+
+
+@router.post("/bootstrap", response_model=AuthBootstrapResponse)
+async def auth_bootstrap(
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Provision the authenticated Supabase account exactly once.
+
+    This endpoint deliberately keeps account side effects separate from the
+    narrow ``/auth/me`` principal probe.  Telegram accounts continue to use
+    their existing ``/start`` credit bootstrap path.
+    """
+    pool = db.get_pool()
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                principal = await resolve_auth_principal(
+                    conn,
+                    init_data=None,
+                    telegram_user_id=None,
+                    authorization=authorization,
+                    auth_name="auth bootstrap",
+                )
+                if principal.authority != "supabase":
+                    raise HTTPException(status_code=403, detail="Supabase account required")
+                credit_state = await ensure_credit_account_state(conn, principal.user_id)
+                saved_name = await conn.fetchval(
+                    """
+                    SELECT NULLIF(BTRIM(username), '')
+                    FROM users
+                    WHERE id = $1
+                    """,
+                    principal.user_id,
+                )
+    except HTTPException:
+        raise
+    except AuthPrincipalError as exc:
+        if exc.code == "IDENTITY_RESOLUTION_FAILED":
+            logger.exception("❌ auth/bootstrap identity resolution failed")
+            raise HTTPException(
+                status_code=503, detail="Authentication service unavailable"
+            ) from exc
+        logger.info("auth/bootstrap rejected credentials reason=%s", exc.code)
+        raise HTTPException(status_code=401, detail="Authentication required") from exc
+    except Exception as exc:
+        logger.exception("❌ auth/bootstrap unavailable")
+        raise HTTPException(status_code=500, detail="Authentication service unavailable") from exc
+
+    return AuthBootstrapResponse(
+        account=AuthBootstrapAccount(
+            balance=credit_state.balance,
+            starter_grant_granted_now=credit_state.starter_credits_granted_now,
+            saved_name=saved_name,
+        )
+    )
 
 
 @router.get("/telegram/nonce", response_model=TelegramLoginNonceResponse)

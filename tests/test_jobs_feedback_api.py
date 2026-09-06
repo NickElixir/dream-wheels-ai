@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from fastapi.testclient import TestClient
 
 from src import jobs_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 from src.main import app
 
 client = TestClient(app)
@@ -29,26 +29,27 @@ class FakePool:
 
 
 def _patch_auth(monkeypatch, *, user_id: int = 10) -> None:
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return AuthPrincipal(
+            user_id=user_id,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
+    async def fake_feedback_user_id(*_args, **_kwargs):
+        return user_id
+
     monkeypatch.setattr(
         jobs_api,
         "_resolve_jobs_auth",
-        lambda **_kwargs: AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
-            auth_channel="website",
-        ),
+        fake_resolve_jobs_auth,
     )
-
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None = None):
-        assert telegram_user_id == 123456789
-        assert username in ("dw-user", None)
-        return user_id
-
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
     monkeypatch.setattr(
         jobs_api,
-        "_telegram_user_id_from_feedback_request",
-        lambda *_args, **_kwargs: 123456789,
+        "_user_id_from_feedback_request",
+        fake_feedback_user_id,
     )
 
 

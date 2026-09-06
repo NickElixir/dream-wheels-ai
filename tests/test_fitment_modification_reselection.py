@@ -97,7 +97,7 @@ def test_synthetic_demo_ids_never_use_the_real_fitment_jobs_api() -> None:
         "async function loadFitmentVehicleCatalogue", 1
     )[0]
     assert overview.index("if (shouldUseDemoFitment(jobId))") < overview.index(
-        "const response = await fetch"
+        "const response = await authenticatedFetch"
     )
     assert "return { ...parsed, job_id: GUEST_FITMENT_DEMO_JOB_ID };" in APP_JS
 

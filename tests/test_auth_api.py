@@ -162,6 +162,113 @@ def test_auth_me_rejects_invalid_legacy_bearer(monkeypatch):
     assert response.json() == {"detail": "Authentication required"}
 
 
+def test_auth_bootstrap_grants_supabase_account_and_returns_safe_presentation(monkeypatch):
+    class FakeTransaction:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchval(self, query, *args):
+            assert "NULLIF(BTRIM(username), '')" in query
+            assert args == (42,)
+            return "Saved username"
+
+    class FakeAcquire:
+        async def __aenter__(self):
+            return FakeConn()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakePool:
+        def acquire(self):
+            return FakeAcquire()
+
+    async def fake_resolve(*_args, **_kwargs):
+        return auth_principal.AuthPrincipal(
+            user_id=42,
+            authority="supabase",
+            subject="00000000-0000-0000-0000-000000000001",
+            auth_channel="supabase",
+        )
+
+    async def fake_credit_state(_conn, user_id):
+        assert user_id == 42
+        return type("CreditState", (), {"balance": 3, "starter_credits_granted_now": True})()
+
+    monkeypatch.setattr(auth_api.db, "get_pool", lambda: FakePool())
+    monkeypatch.setattr(auth_api, "resolve_auth_principal", fake_resolve)
+    monkeypatch.setattr(auth_api, "ensure_credit_account_state", fake_credit_state)
+
+    response = client.post("/auth/bootstrap", headers={"Authorization": "Bearer verified"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "authenticated": True,
+        "authority": "supabase",
+        "auth_channel": "supabase",
+        "account": {
+            "balance": 3,
+            "starter_grant_granted_now": True,
+            "saved_name": "Saved username",
+        },
+    }
+
+
+def test_auth_bootstrap_does_not_grant_telegram_accounts(monkeypatch):
+    async def fake_resolve(*_args, **_kwargs):
+        return auth_principal.AuthPrincipal(
+            user_id=9,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+        )
+
+    class FakeTransaction:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+    class FakeAcquire:
+        async def __aenter__(self):
+            return FakeConn()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakePool:
+        def acquire(self):
+            return FakeAcquire()
+
+    grant_calls = 0
+
+    async def fake_credit_state(*_args):
+        nonlocal grant_calls
+        grant_calls += 1
+        return None
+
+    monkeypatch.setattr(auth_api.db, "get_pool", lambda: FakePool())
+    monkeypatch.setattr(auth_api, "resolve_auth_principal", fake_resolve)
+    monkeypatch.setattr(auth_api, "ensure_credit_account_state", fake_credit_state)
+
+    response = client.post("/auth/bootstrap", headers={"Authorization": "Bearer telegram"})
+
+    assert response.status_code == 403
+    assert grant_calls == 0
+
+
 def test_telegram_login_nonce_returns_nonce_and_nonce_token(monkeypatch):
     monkeypatch.setattr(auth_api, "TELEGRAM_LOGIN_CLIENT_ID", "123456789")
     monkeypatch.setattr(

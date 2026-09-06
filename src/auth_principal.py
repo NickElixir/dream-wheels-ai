@@ -44,6 +44,31 @@ class AuthPrincipalError(RuntimeError):
         self.code = code
 
 
+def preflight_auth_credentials(
+    *,
+    init_data: str | None,
+    telegram_user_id: int | None,
+    authorization: str | None = None,
+    auth_name: str,
+) -> None:
+    """Reject missing credentials before opening a DB connection.
+
+    Supabase bearer verification and identity resolution still happen through
+    :func:`require_auth_principal`.  The preflight intentionally handles only
+    the no-bearer path, avoiding a pool acquisition for an obvious authentication failure.
+    """
+    if authorization or init_data:
+        return
+    if telegram_user_id is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    resolve_telegram_auth(
+        init_data=None,
+        telegram_user_id=telegram_user_id,
+        authorization=None,
+        auth_name=auth_name,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class AuthPrincipal:
     """Authenticated canonical Dream Wheels user."""
@@ -220,3 +245,34 @@ async def resolve_auth_principal(
         telegram_user_id=telegram_user_id,
         auth_name=auth_name,
     )
+
+
+async def require_auth_principal(
+    conn: asyncpg.Connection,
+    *,
+    init_data: str | None,
+    telegram_user_id: int | None,
+    authorization: str | None = None,
+    auth_name: str,
+) -> AuthPrincipal:
+    """Resolve a request credential or return the stable public auth error.
+
+    All user-facing API routes use this adapter so a provider-specific
+    verification failure cannot leak implementation details or turn into a
+    FastAPI 500.  The returned value is deliberately the canonical user id,
+    never a fabricated Telegram id for a Supabase identity.
+    """
+    try:
+        return await resolve_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name=auth_name,
+        )
+    except AuthPrincipalError as exc:
+        if exc.code == "IDENTITY_RESOLUTION_FAILED":
+            raise HTTPException(
+                status_code=503, detail="Authentication service unavailable"
+            ) from exc
+        raise HTTPException(status_code=401, detail="Authentication required") from exc
