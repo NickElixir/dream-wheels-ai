@@ -10,6 +10,8 @@ cabinet API.
 BASELINE_SHA                       = 786170342ab64cc205775feb4090888b4126d5d7
 BRANCH                             = feature/auth-v11-integration
 BASE                                = staging
+HEAD                                = 82b6494c1ac2a92ce99f34f99f0fc0f912b684e4
+PR                                  = 162 (Draft)
 PRODUCTION                         = NOT_TOUCHED
 INTEGRATION_PR                     = DRAFT
 MERGE_INTEGRATION_PR               = NO
@@ -195,6 +197,8 @@ AUTH_AUTHENTICATED_FETCH_WRAPPER          = NOT_STARTED
 AUTH_6A_PROTECTED_API_ACCIDENTAL_CUTOVER  = NONE (contract + guards)
 AUTH_6A_WRONG_AUTHORITY_REQUEST           = NONE (contract + guards)
 AUTH_6A_XSS_REVIEW                        = PASS (focused)
+FULL_AUTOMATED_TESTS                       = PASS
+GITHUB_CI_RUN                             = 294 (PASS)
 ```
 
 Automated Auth tests pass, the new app-auth bundle builds, and the main page
@@ -204,7 +208,7 @@ Browser CLI or Playwright installation is available. Therefore the following
 remain pending direct browser evidence:
 
 ```text
-VERCEL_PREVIEW                         = PENDING
+VERCEL_PREVIEW                         = PASS (deployment status)
 AUTH_EMAIL_LOGIN_SURFACE_BROWSER       = PENDING
 AUTH_TURNSTILE_MAIN_UI_BROWSER         = PENDING
 AUTH_TELEGRAM_WEBSITE_BROWSER          = PENDING
