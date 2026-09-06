@@ -207,8 +207,10 @@ unchanged.
 FRONTEND_AUTH_TESTS                   = PASS (40 passed)
 FULL_TEST_SUITE                       = PASS (500 passed, 5 skipped)
 RUFF / FORMAT / COMPILE / DIFF_CHECK  = PASS
-STAGING_DEPLOYMENT_6B2                = PENDING (exact acceptance SHA)
-LIVE_CANONICAL_STAGING_6B2            = PENDING (user browser flow)
+STAGING_DEPLOYMENT_6B2                = PASS (Render live; exact SHA 7b469c3)
+VERCEL_STAGING_DEPLOYMENT_6B2         = PASS (READY; canonical alias updated)
+LIVE_TURNSTILE_CANONICAL_STAGING      = PASS (Managed challenge completed)
+LIVE_CANONICAL_STAGING_6B2            = PENDING (fresh OTP requires user code)
 ```
 
 ## Remaining acceptance gates
@@ -230,6 +232,6 @@ beyond this request boundary slice and do not merge automatically.
 ```text
 AUTH_REQUEST_BOUNDARY               = PASS (automated)
 AUTH_6B_IMPLEMENTATION              = PASS
-AUTH_6B_LIVE_ACCEPTANCE             = PENDING_USER_BROWSER_FLOW
+AUTH_6B_LIVE_ACCEPTANCE             = PENDING_USER_OTP_CODE
 MERGE_PR_162                        = NO (until live blocking gates pass)
 ```
