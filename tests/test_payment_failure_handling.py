@@ -224,6 +224,8 @@ def test_retry_creates_a_new_payment_and_invoice(monkeypatch):
         pricing_version="credits-v1",
         source_screen="cabinet",
         receipt_email="user@example.com",
+        client_channel="telegram",
+        return_to="/t/",
     )
 
     first = asyncio.run(create_topup_payment(conn, user_id=77, intent=intent))
@@ -273,8 +275,26 @@ def test_robokassa_fail_redirect_marks_payment_and_returns_to_webapp(monkeypatch
         assert out_sum == "200.00"
         return {"invoice_id": 42, "status": "failed"}
 
+    async def fake_get_return_context(
+        _conn,
+        *,
+        invoice_id: int,
+        provider_payment_id: str,
+        out_sum: str | None,
+    ):
+        assert invoice_id == 42
+        assert provider_payment_id == "payment-42"
+        assert out_sum == "200.00"
+        return {
+            "invoice_id": 42,
+            "status": "failed",
+            "client_channel": "telegram",
+            "return_to": "/t/",
+        }
+
     monkeypatch.setattr(payments_api.db, "get_pool", lambda: FakePool())
     monkeypatch.setattr(payments_api, "mark_payment_failed", fake_mark_failed)
+    monkeypatch.setattr(payments_api, "get_payment_return_context", fake_get_return_context)
     monkeypatch.setattr(
         payments_api,
         "WEBAPP_URL",
@@ -293,6 +313,119 @@ def test_robokassa_fail_redirect_marks_payment_and_returns_to_webapp(monkeypatch
         "https://dream-wheels-ai-webapp-staging.vercel.app/t/?payment=fail&invoice_id=42"
     )
     assert "/t/t/" not in location
+
+
+def test_robokassa_fail_redirect_uses_persisted_web_route(monkeypatch):
+    class FakeTransaction:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+    class FakeAcquire:
+        async def __aenter__(self):
+            return FakeConn()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakePool:
+        def acquire(self):
+            return FakeAcquire()
+
+    async def fake_mark_failed(_conn, **kwargs):
+        assert kwargs == {
+            "invoice_id": 42,
+            "provider_payment_id": "payment-42",
+            "out_sum": "200.00",
+        }
+        return {"invoice_id": 42, "status": "failed"}
+
+    async def fake_get_return_context(_conn, **kwargs):
+        assert kwargs["invoice_id"] == 42
+        return {
+            "invoice_id": 42,
+            "status": "failed",
+            "client_channel": "web",
+            "return_to": "/app/new?market=ru&utm_source=test",
+        }
+
+    monkeypatch.setattr(payments_api.db, "get_pool", lambda: FakePool())
+    monkeypatch.setattr(payments_api, "mark_payment_failed", fake_mark_failed)
+    monkeypatch.setattr(payments_api, "get_payment_return_context", fake_get_return_context)
+    monkeypatch.setattr(payments_api, "WEBAPP_URL", "https://staging.example")
+
+    response = client.get(
+        "/payments/robokassa/fail",
+        params={"InvId": "42", "OutSum": "200.00", "Shp_payment_id": "payment-42"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        "https://staging.example/app/new?market=ru&utm_source=test" "&payment=fail&invoice_id=42"
+    )
+
+
+def test_robokassa_success_redirect_does_not_settle_payment(monkeypatch):
+    class FakeTransaction:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+    class FakeAcquire:
+        async def __aenter__(self):
+            return FakeConn()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class FakePool:
+        def acquire(self):
+            return FakeAcquire()
+
+    async def fail_if_settlement_called(*_args, **_kwargs):
+        raise AssertionError("SuccessURL must not settle payment")
+
+    async def fake_get_return_context(_conn, **kwargs):
+        assert kwargs == {
+            "invoice_id": 42,
+            "provider_payment_id": "payment-42",
+            "out_sum": "200.00",
+        }
+        return {
+            "invoice_id": 42,
+            "status": "paid",
+            "client_channel": "web",
+            "return_to": "/app",
+        }
+
+    monkeypatch.setattr(payments_api.db, "get_pool", lambda: FakePool())
+    monkeypatch.setattr(payments_api, "mark_payment_paid", fail_if_settlement_called)
+    monkeypatch.setattr(payments_api, "get_payment_return_context", fake_get_return_context)
+    monkeypatch.setattr(payments_api, "WEBAPP_URL", "https://staging.example")
+
+    response = client.post(
+        "/payments/robokassa/success",
+        data={"InvId": "42", "OutSum": "200.00", "Shp_payment_id": "payment-42"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert (
+        response.headers["location"] == "https://staging.example/app?payment=success&invoice_id=42"
+    )
 
 
 def test_failed_payment_has_terminal_wallet_mapping():

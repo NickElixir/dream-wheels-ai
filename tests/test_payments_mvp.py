@@ -171,6 +171,8 @@ def test_create_topup_requires_init_data_when_dev_auth_disabled():
             "pricing_version": "2026-06-balance-v1",
             "source_screen": "cabinet_quick_amount",
             "email": "user@example.com",
+            "client_channel": "web",
+            "return_to": "/app",
             "telegram_user_id": 123456789,
         },
     )
@@ -301,10 +303,12 @@ def test_create_topup_persists_robokassa_provider_neutral_fields(monkeypatch):
                 ],
                 "email": "user@example.com",
             }
-            assert args[10:13] == (
+            assert args[10:15] == (
                 "credits-v1",
                 "cabinet",
                 "website",
+                "web",
+                "/app",
             )
             return {
                 "id": "11111111-1111-1111-1111-111111111111",
@@ -323,6 +327,8 @@ def test_create_topup_persists_robokassa_provider_neutral_fields(monkeypatch):
                 pricing_version="credits-v1",
                 source_screen="cabinet",
                 receipt_email="user@example.com",
+                client_channel="web",
+                return_to="/app",
             ),
         )
     )
@@ -348,6 +354,8 @@ def test_build_payment_url_uses_configured_payment_url(monkeypatch):
             pricing_version="credits-v1",
             source_screen="cabinet",
             receipt_email="user@example.com",
+            client_channel="web",
+            return_to="/app",
         ),
     )
 
@@ -372,6 +380,8 @@ def test_build_payment_url_requires_test_credentials_in_test_mode(monkeypatch):
                 pricing_version="credits-v1",
                 source_screen="cabinet",
                 receipt_email="user@example.com",
+                client_channel="web",
+                return_to="/app",
             ),
         )
 

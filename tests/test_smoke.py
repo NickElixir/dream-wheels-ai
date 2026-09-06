@@ -70,6 +70,8 @@ def test_topup_requires_init_data_when_dev_auth_disabled():
             "pricing_version": "credits-v1",
             "source_screen": "cabinet",
             "email": "user@example.com",
+            "client_channel": "web",
+            "return_to": "/app",
             "telegram_user_id": 1,
         },
     )

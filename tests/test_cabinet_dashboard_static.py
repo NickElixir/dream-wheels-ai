@@ -154,6 +154,15 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert "Робокассу" in INDEX_HTML
 
 
+def test_payment_creation_sends_channel_aware_return_context() -> None:
+    assert "function paymentReturnContext()" in APP_JS
+    assert 'client_channel: "telegram"' in APP_JS
+    assert 'return_to: "/t/"' in APP_JS
+    assert 'client_channel: "web"' in APP_JS
+    assert 'safeApplicationReturnPath(window.location) || "/app"' in APP_JS
+    assert "window.location.href" in APP_JS
+
+
 def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
     assert 'titleLine1: "Примерьте"' in APP_JS
     assert 'titleLine2: "новые диски"' in APP_JS
