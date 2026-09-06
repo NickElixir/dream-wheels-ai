@@ -2240,8 +2240,20 @@ function withAuthHeaders(headers = {}) {
     return accessToken ? { ...headers, Authorization: `Bearer ${accessToken}` } : headers;
 }
 
+function authenticatedFetch(input, init = {}, options = {}) {
+    const controller = frontendAuthController();
+    if (typeof controller?.authenticatedFetch === "function") {
+        return controller.authenticatedFetch(input, init, options);
+    }
+    return fetch(input, init);
+}
+
 function isWebsiteAuthMode() {
     return Boolean(getWebsiteAuthToken());
+}
+
+function hasBearerFrontendAuth() {
+    return isWebsiteAuthMode() || isSupabaseFrontendAuth();
 }
 
 function updateWebsiteAuthUi() {
@@ -2565,6 +2577,7 @@ async function loginWithTelegram() {
             username: verified.username || "",
         };
         sessionStorage.setItem(WEBSITE_AUTH_STORAGE_KEY, JSON.stringify(state.websiteAuth));
+        frontendAuthController()?.markLegacyWebsiteAuthenticated?.();
         void trackEvent("auth_completed", { auth_channel: "website" });
         state.renderHistory = [];
         state.renderHistoryError = "";
@@ -2713,6 +2726,7 @@ async function resumeFitmentAfterLogin() {
 
 function logoutWebsiteAuth() {
     clearWebsiteAuthSession({ refreshUi: false });
+    frontendAuthController()?.markLegacyWebsiteSignedOut?.();
     state.balance = null;
     state.payments = [];
     state.starterGrant = null;
@@ -3419,7 +3433,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
             vehicle_identity_id: overview.vehicle_identity_id,
             rim_setup_id: overview.rim_setup_id,
         });
-        const response = await fetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
+        const response = await authenticatedFetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
             headers: withAuthHeaders(),
         });
         if (response.status === 401) {
@@ -3432,7 +3446,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
         if (!state.fitmentCheck && state.fitmentCheckHistory.length) {
             const latest = state.fitmentCheckHistory.find((item) => item.is_current) || state.fitmentCheckHistory[0];
             if (latest?.id && latest.execution_status === "completed") {
-                const detail = await fetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+                const detail = await authenticatedFetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
                 if (detail.ok) state.fitmentCheck = await detail.json();
             }
         }
@@ -4635,7 +4649,7 @@ function fitmentPreviewAsset(job, kind) {
 }
 
 async function ensureFitmentPreviewAsset(job, kind) {
-    if (!job?.job_id || isGuestRenderJob(job) || !getWebsiteAuthToken()) return;
+    if (!job?.job_id || isGuestRenderJob(job) || !hasFrontendAuth()) return;
     const assetKey = kind === "vehicle" ? "car_original" : "rim_original";
     const asset = job.assets?.[assetKey];
     if (!asset?.download_url || state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey]) return;
@@ -4643,7 +4657,9 @@ async function ensureFitmentPreviewAsset(job, kind) {
         ? apiUrl(asset.download_url)
         : asset.download_url;
     try {
-        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        const response = asset.download_url.startsWith("/")
+            ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
+            : await fetch(sourceUrl);
         if (!response.ok) return;
         const objectUrl = URL.createObjectURL(await response.blob());
         const previousUrl = state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey];
@@ -5790,7 +5806,7 @@ async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.
         } else {
             const query = new URLSearchParams(params);
             const suffix = query.toString() ? `?${query}` : "";
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-catalogue/${kind}${suffix}`, { includeIdentity: true }),
                 { headers: withAuthHeaders(), signal: controller.signal }
             );
@@ -6071,7 +6087,7 @@ async function loadFitmentOverview(
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
             return restoration;
         }
-        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (response.status === 401) {
@@ -6297,7 +6313,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceController = controller;
     const requestTimeout = window.setTimeout(() => controller.abort(), RIM_SOURCE_RESOLVE_TIMEOUT_MS);
     try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/rim-source/resolve`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6398,7 +6414,7 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
     state.fitmentMessage = "";
     renderFitment();
     try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
@@ -6455,7 +6471,7 @@ async function loadFitmentVehicleVariantsForReselection() {
             );
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/reselect`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
@@ -6524,7 +6540,7 @@ async function replaceFitmentVehicleVariant(variant) {
             state.fitmentActiveStep = fitmentSectionToStep("vehicle");
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/replace`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6614,7 +6630,7 @@ async function refreshFitmentCheckCurrentness() {
     const checkId = state.fitmentCheck?.id;
     if (!checkId || !state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
     try {
-        const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+        const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
@@ -6632,7 +6648,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
     const poll = async () => {
         if (token !== state.fitmentCheckPollToken || state.view !== "fitment" || contextKey !== fitmentCheckContextKey()) return;
         try {
-            const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+            const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
             if (response.status === 401) {
                 showFitmentAuthRequired();
                 return;
@@ -6668,7 +6684,7 @@ async function runFitmentCheck() {
     state.fitmentError = "";
     renderFitment();
     try {
-        const response = await fetch(apiUrl("/fitment/checks", { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl("/fitment/checks", { includeIdentity: true }), {
             method: "POST",
             headers: withAuthHeaders({
                 "Content-Type": "application/json",
@@ -6713,7 +6729,7 @@ async function applyFitmentVehicleVariant(variant) {
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/apply`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6788,7 +6804,7 @@ async function saveFitment(event) {
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true }),
             {
                 method: "PATCH",
@@ -6856,7 +6872,7 @@ async function fetchRenderHistory({ limit = 20, offset = 0 } = {}) {
     const params = new URLSearchParams();
     params.set("limit", String(limit));
     params.set("offset", String(offset));
-    const response = await fetch(apiUrl("/jobs", { includeIdentity: true, params }), {
+    const response = await authenticatedFetch(apiUrl("/jobs", { includeIdentity: true, params }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -7402,12 +7418,12 @@ function assetDownloadUrlForJob(job, kind) {
     const downloadUrl = job.assets[assetKey].download_url;
     if (!downloadUrl) return "";
     if (downloadUrl.startsWith("/")) {
-        return getWebsiteAuthToken()
+        return hasBearerFrontendAuth()
             ? apiUrl(downloadUrl)
             : apiUrl(downloadUrl, { includeIdentity: true });
     }
     if (canUseIdentityAssetUrls()) return withIdentityQuery(downloadUrl);
-    return getWebsiteAuthToken() ? downloadUrl : "";
+    return hasBearerFrontendAuth() ? downloadUrl : "";
 }
 
 function proxiedAssetUrl(asset) {
@@ -7416,7 +7432,7 @@ function proxiedAssetUrl(asset) {
     // Website auth lives in Authorization header, so direct <img src> or <a href>
     // cannot use protected asset endpoints. Those flows must go through fetch+blob.
     if (assetPath.startsWith("/")) {
-        if (getWebsiteAuthToken()) return "";
+        if (hasBearerFrontendAuth()) return "";
         return apiUrl(assetPath, { includeIdentity: true });
     }
     if (!canUseIdentityAssetUrls()) return "";
@@ -7450,7 +7466,7 @@ async function ensureAssetBlobUrl(job, kind) {
     if (!job?.job_id || kind !== "original") return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
-    if (!getWebsiteAuthToken()) return "";
+    if (!hasFrontendAuth()) return "";
     if (isAssetBlobLoading(job, kind)) return "";
 
     const sourceUrl = assetDownloadUrlForJob(job, kind);
@@ -7461,7 +7477,9 @@ async function ensureAssetBlobUrl(job, kind) {
     renderDashboard();
 
     try {
-        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        const response = job.assets?.car_original?.download_url?.startsWith("/")
+            ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
+            : await fetch(sourceUrl);
         if (!response.ok) throw new Error(await parseApiError(response));
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
@@ -7758,7 +7776,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
     renderRenders();
 
     try {
-        const response = await fetch(apiUrl(`/jobs/${jobId}/feedback`), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/feedback`), {
             method: deleting ? "DELETE" : "PUT",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(
@@ -7927,7 +7945,9 @@ async function repeatRenderWithSavedPhotos(jobId) {
     try {
         const fetchAsset = async (asset) => {
             const url = asset.download_url.startsWith("/") ? apiUrl(asset.download_url) : asset.download_url;
-            const response = await fetch(url, { headers: withAuthHeaders() });
+            const response = asset.download_url.startsWith("/")
+                ? await authenticatedFetch(url, { headers: withAuthHeaders() })
+                : await fetch(url);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
             return { blob, name: `${asset.kind}.jpg`, size: blob.size, type: blob.type || "image/jpeg" };
@@ -8022,7 +8042,7 @@ function mergeStatusIntoHistory(jobId, statusData) {
 }
 
 async function fetchJobStatusForHistory(jobId) {
-    const response = await fetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
+    const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -8228,7 +8248,7 @@ async function loadFitmentReturnContext(jobId) {
     if (!jobId || shouldUseDemoFitment(jobId) || state.fitmentContextLoadingByJob[jobId]) return;
     state.fitmentContextLoadingByJob[jobId] = true;
     try {
-        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) return;
@@ -8316,7 +8336,7 @@ async function loadCabinet(options = {}) {
 
 async function requestCabinet({ silent = false } = {}) {
     const identity = getIdentitySearchParams();
-    if (!identity.toString() && !getWebsiteAuthToken()) {
+    if (!hasFrontendAuth()) {
         setWalletMessage("");
         renderWallet();
         renderDashboard();
@@ -8331,7 +8351,7 @@ async function requestCabinet({ silent = false } = {}) {
         setWalletLoading(false);
     }
     try {
-        const response = await fetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) {
@@ -8425,7 +8445,7 @@ function openPaymentUrl(url) {
 
 async function createPayment() {
     const identity = getIdentityPayload();
-    if (!identity.init_data && !identity.telegram_user_id && !getWebsiteAuthToken()) {
+    if (!identity.init_data && !identity.telegram_user_id && !hasFrontendAuth()) {
         setWalletMessage("");
         renderWalletStatus();
         focusWalletAuthNotice();
@@ -8436,7 +8456,7 @@ async function createPayment() {
     setWalletMessage(t("wallet.openingPayment"));
     void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: normalizeTopUpAmount(state.selectedAmount) });
     try {
-        const response = await fetch(apiUrl("/payments/topups"), {
+        const response = await authenticatedFetch(apiUrl("/payments/topups"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
@@ -8446,7 +8466,7 @@ async function createPayment() {
                 source_screen: "cabinet",
                 ...identity,
             }),
-        });
+        }, { retryOnAuth401: false });
         if (!response.ok) {
             const detail = await parseApiError(response);
             if (response.status === 403) {
@@ -8979,8 +8999,10 @@ async function downloadResult() {
     state.downloading = true;
     setDownloadButtonState({ disabled: true, text: t("actions.requestingDownload") });
     try {
-        if (isWebsiteAuthMode()) {
-            const response = await fetch(state.resultDownloadUrl, { headers: withAuthHeaders() });
+        if (isWebsiteAuthMode() || isSupabaseFrontendAuth()) {
+            const response = state.resultDownloadUrl.startsWith("/")
+                ? await authenticatedFetch(state.resultDownloadUrl, { headers: withAuthHeaders() })
+                : await fetch(state.resultDownloadUrl);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
@@ -9133,7 +9155,7 @@ async function resolveIdentity() {
     }
 
     try {
-        const resp = await fetch(apiUrl("/identity/resolve"), {
+        const resp = await authenticatedFetch(apiUrl("/identity/resolve"), {
             method: "POST",
             headers: withAuthHeaders(),
             body: formData,
@@ -9252,7 +9274,7 @@ async function submitJob() {
     if (identity.init_data) payload.init_data = identity.init_data;
     if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
     try {
-        const resp = await fetch(apiUrl("/jobs/from-assets"), {
+        const resp = await authenticatedFetch(apiUrl("/jobs/from-assets"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
@@ -9278,7 +9300,7 @@ async function submitJob() {
         await sleep(POLL_INTERVAL_MS);
         let statusData;
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
@@ -9327,7 +9349,7 @@ async function refreshExistingJobStatus() {
         setView("renders");
         return;
     }
-    const response = await fetch(apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }), {
+    const response = await authenticatedFetch(apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     const data = await response.json().catch(() => ({}));
@@ -10058,6 +10080,7 @@ function initializeFrontendAuthBridge() {
     controller.configure({
         isTelegramMiniApp: () => HAS_TG && Boolean(tg?.initData),
         hasLegacyWebsiteAuth: () => Boolean(getWebsiteAuthToken()),
+        getLegacyWebsiteAuthToken: getWebsiteAuthToken,
         legacySignOut: logoutWebsiteAuth,
     });
     controller.subscribe(handleFrontendAuthState);

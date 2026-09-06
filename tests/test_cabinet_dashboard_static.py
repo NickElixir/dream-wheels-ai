@@ -547,10 +547,10 @@ def test_rim_source_status_is_contextual_and_not_a_permanent_pipeline() -> None:
 
 def test_website_auth_does_not_inline_private_asset_urls() -> None:
     assert "function proxiedAssetUrl(asset)" in APP_JS
-    assert 'if (getWebsiteAuthToken()) return "";' in APP_JS
+    assert 'if (hasBearerFrontendAuth()) return "";' in APP_JS
     assert "Website auth lives in Authorization header" in APP_JS
     assert "function assetDownloadUrlForJob(job, kind)" in APP_JS
-    assert "return getWebsiteAuthToken()" in APP_JS
+    assert "return hasBearerFrontendAuth()" in APP_JS
     assert "if (getWebsiteAuthToken()) return resultUrlForJob(job);" in APP_JS
 
 

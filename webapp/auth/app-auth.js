@@ -68,6 +68,9 @@ export function createFrontendAuthController({
     let initializationPromise = null;
     let reconciliationPromise = null;
     let authUnsubscribe = null;
+    let legacyWebsiteAuthToken = () => null;
+    let refreshPromise = null;
+    let suppressLegacyFallback = false;
     const listeners = new Set();
 
     function getState() {
@@ -89,6 +92,9 @@ export function createFrontendAuthController({
         if (typeof options.isTelegramMiniApp === "function") isTelegramMiniApp = options.isTelegramMiniApp;
         if (typeof options.hasLegacyWebsiteAuth === "function") hasLegacyWebsiteAuth = options.hasLegacyWebsiteAuth;
         if (typeof options.legacySignOut === "function") legacySignOut = options.legacySignOut;
+        if (typeof options.getLegacyWebsiteAuthToken === "function") {
+            legacyWebsiteAuthToken = options.getLegacyWebsiteAuthToken;
+        }
         return getState();
     }
 
@@ -101,6 +107,18 @@ export function createFrontendAuthController({
             protectedApiReady: false,
             sessionPresent: false,
             errorCode: null,
+        }, event);
+    }
+
+    function setSupabaseExpired(errorCode = "SESSION_EXPIRED", event = "SESSION_EXPIRED") {
+        setState({
+            status: AUTH_SESSION_STATES.SESSION_EXPIRED,
+            authority: "supabase",
+            authChannel: "email_otp",
+            principalVerified: false,
+            protectedApiReady: false,
+            sessionPresent: true,
+            errorCode,
         }, event);
     }
 
@@ -190,7 +208,7 @@ export function createFrontendAuthController({
                 authority: "supabase",
                 authChannel: "email_otp",
                 principalVerified: true,
-                protectedApiReady: false,
+                protectedApiReady: true,
                 sessionPresent: true,
                 errorCode: null,
             }, "PRINCIPAL_VERIFIED");
@@ -224,9 +242,127 @@ export function createFrontendAuthController({
                 setUnauthenticated(event);
                 return;
             }
+            if (event === "TOKEN_REFRESHED" && state.authority === "supabase" && state.principalVerified) {
+                setState({
+                    status: AUTH_SESSION_STATES.AUTHENTICATED,
+                    authority: "supabase",
+                    authChannel: "email_otp",
+                    principalVerified: true,
+                    protectedApiReady: true,
+                    sessionPresent: true,
+                    errorCode: null,
+                }, event);
+                return;
+            }
             if (sessionState?.sessionPresent) void reconcile();
             else if (!hasLegacyWebsiteAuth()) setUnauthenticated(event);
         });
+    }
+
+    function selectedAuthority() {
+        if (isTelegramMiniApp()) return "telegram_mini_app";
+        if (state.authority === "supabase" && state.principalVerified) return "supabase";
+        if (state.authority === "telegram" && state.authChannel === "website_telegram") return "telegram_website";
+        if (!suppressLegacyFallback && hasLegacyWebsiteAuth() && legacyWebsiteAuthToken()) return "telegram_website";
+        return null;
+    }
+
+    function authRequestError(code) {
+        const error = new Error(code);
+        error.name = "AuthRequestError";
+        error.code = code;
+        return error;
+    }
+
+    function replayableBody(body) {
+        if (body === undefined || body === null || typeof body === "string") return true;
+        if (typeof FormData !== "undefined" && body instanceof FormData) return true;
+        if (typeof Blob !== "undefined" && body instanceof Blob) return true;
+        if (typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) return true;
+        if (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView(body)) return true;
+        if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams) return true;
+        return false;
+    }
+
+    function requestInitWithAuth(init = {}, token = null) {
+        const nextInit = { ...init };
+        const headers = new Headers(init.headers || {});
+        headers.delete("Authorization");
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+        nextInit.headers = headers;
+        return nextInit;
+    }
+
+    async function refreshSupabaseOnce() {
+        if (!refreshPromise) {
+            refreshPromise = (async () => {
+                try {
+                    await sessionController.refreshSession();
+                    const token = await sessionController.getAccessToken();
+                    if (!token) throw authRequestError("SESSION_EXPIRED");
+                    return token;
+                } catch (error) {
+                    if (error?.code === "SESSION_EXPIRED") {
+                        setSupabaseExpired("SESSION_EXPIRED", "REFRESH_FAILED");
+                        throw authRequestError("SESSION_EXPIRED");
+                    }
+                    throw authRequestError("NETWORK_ERROR");
+                } finally {
+                    refreshPromise = null;
+                }
+            })();
+        }
+        return refreshPromise;
+    }
+
+    async function authenticatedFetch(input, init = {}, options = {}) {
+        const authRequired = options.authRequired !== false;
+        const retryOnAuth401 = options.retryOnAuth401 !== false;
+        const authority = selectedAuthority();
+        if (authRequired && !authority) throw authRequestError("AUTH_REQUIRED");
+        if (!authRequired) return fetchImpl(input, init);
+
+        let token = null;
+        if (authority === "supabase") {
+            token = await sessionController.getAccessToken();
+            if (!token) {
+                setSupabaseExpired("SESSION_EXPIRED", "TOKEN_MISSING");
+                throw authRequestError("SESSION_EXPIRED");
+            }
+        } else if (authority === "telegram_website") {
+            token = legacyWebsiteAuthToken();
+            if (!token) throw authRequestError("AUTH_REQUIRED");
+        }
+
+        const requestInit = requestInitWithAuth(init, token);
+        const response = await fetchImpl(input, requestInit);
+        if (response?.status !== 401 || authority !== "supabase" || !retryOnAuth401 || !replayableBody(init.body)) {
+            return response;
+        }
+
+        token = await refreshSupabaseOnce();
+        const retryResponse = await fetchImpl(input, requestInitWithAuth(init, token));
+        if (retryResponse?.status === 401) setSupabaseExpired("SESSION_EXPIRED", "RETRY_REJECTED");
+        return retryResponse;
+    }
+
+    function markLegacyWebsiteAuthenticated() {
+        suppressLegacyFallback = false;
+        setState({
+            status: AUTH_SESSION_STATES.AUTHENTICATED,
+            authority: "telegram",
+            authChannel: "website_telegram",
+            principalVerified: true,
+            protectedApiReady: true,
+            sessionPresent: false,
+            errorCode: null,
+        }, "LEGACY_WEBSITE_SESSION");
+    }
+
+    function markLegacyWebsiteSignedOut() {
+        if (state.authority === "telegram" && state.authChannel === "website_telegram") {
+            setUnauthenticated("SIGNED_OUT");
+        }
     }
 
     async function initialize() {
@@ -270,6 +406,7 @@ export function createFrontendAuthController({
     async function signOutCurrentAuthority() {
         if (state.authority === "supabase" || normalizedSessionState(sessionController).sessionPresent) {
             await sessionController.signOut();
+            suppressLegacyFallback = true;
         } else if (state.authority === "telegram" && state.authChannel === "website_telegram") {
             legacySignOut?.();
         }
@@ -285,6 +422,9 @@ export function createFrontendAuthController({
         requestEmailOtp: requestEmailCode,
         verifyEmailOtp: verifyEmailCode,
         probeCurrentUser,
+        authenticatedFetch,
+        markLegacyWebsiteAuthenticated,
+        markLegacyWebsiteSignedOut,
         signOut: signOutCurrentAuthority,
     });
 }

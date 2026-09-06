@@ -1,8 +1,7 @@
-# Dream Wheels AI — Auth V1.1 Slice 6A Handoff
+# Dream Wheels AI — Auth V1.1 Slice 6A/6B Handoff
 
-Status: development slice complete, Draft PR only. Slice 6B is still required
-before a Supabase-authenticated website user can use the ordinary protected
-cabinet API.
+Status: Slice 6A/6B implementation complete, Draft PR only. Live protected API
+browser evidence is still required before the integration PR can be reviewed.
 
 ## Baseline and boundary
 
@@ -20,7 +19,9 @@ MERGE_INTEGRATION_PR               = NO
 The accepted Supabase foundation remains the single source of truth for the
 browser client, persistent session, OTP operations, Turnstile token handling,
 refresh/sign-out behavior, and auth telemetry. Slice 6A adds the main WebApp
-bridge and UI without replacing the legacy application request transport.
+bridge and UI; Slice 6B adds the central provider-aware request boundary and
+protected application cutover. See
+`docs/handoffs/auth-v11-request-boundary.md` for the full inventory.
 
 ## Current legacy Auth audit
 
@@ -88,10 +89,10 @@ No credential or raw session is stored in this state. The email and OTP fields
 are transient login-form values, separate from the central Auth state, and are
 never sent to telemetry.
 
-For Slice 6A specifically:
+Current application behavior:
 
 ```text
-Supabase AUTHENTICATED       -> protectedApiReady = false
+Supabase AUTHENTICATED       -> protectedApiReady = true after /auth/me probe
 Legacy Telegram authenticated -> protectedApiReady = true
 Telegram Mini App             -> protectedApiReady = true
 ```
@@ -135,12 +136,11 @@ safe normalized errors, keyboard labels and status announcements. Telegram is
 kept as an explicit secondary action. The generic website login button uses a
 neutral account icon.
 
-When a Supabase user is authenticated but `protectedApiReady` is false, the
-dashboard shows a safe signed-in notice that the cabinet will become available
-after the protected request boundary is connected. It does not send cabinet,
-history, wallet, render, fitment or payment requests with a stale legacy
-credential. Guest/demo behavior remains available where it was already
-allowed.
+When the Supabase principal probe succeeds, dashboard, cabinet, history,
+render, fitment, asset and payment requests use the central asynchronous
+boundary. A missing authority fails locally; a Supabase `401` gets one
+single-flight refresh/retry, while payment creation opts out of retry. Guest
+and Telegram behavior remains available where it was already allowed.
 
 ## `/auth/me` boundary
 
@@ -151,10 +151,11 @@ reference after the request. A successful response must identify an
 authenticated Supabase principal. This is not a general authenticated fetch
 wrapper.
 
-`withAuthHeaders()` remains legacy-only by design. `getIdentityPayload()` also
-returns no Telegram identity when the current UI authority is Supabase, which
-prevents a simultaneous local/development Telegram identity from leaking into
-protected requests.
+`withAuthHeaders()` remains legacy-only by design, while
+`authenticatedFetch()` selects the active provider and overwrites only the
+Authorization header. `getIdentityPayload()` also returns no Telegram identity
+when the current UI authority is Supabase, which prevents a simultaneous
+local/development Telegram identity from leaking into protected requests.
 
 ## Rollout guard
 
@@ -191,9 +192,9 @@ Cloudflare origin when the dialog is opened.
 AUTH_CENTRAL_FRONTEND_STATE              = PASS (bridge unit tests)
 AUTH_DUAL_SESSION_SPLIT_BRAIN_TEST       = PASS
 AUTH_UI_API_SPLIT_BRAIN                   = NONE
-AUTH_PROTECTED_API_READY_SUPABASE         = NO
-AUTH_MASS_ENDPOINT_CUTOVER                = NONE
-AUTH_AUTHENTICATED_FETCH_WRAPPER          = NOT_STARTED
+AUTH_PROTECTED_API_READY_SUPABASE         = PASS (after principal probe)
+AUTH_MASS_ENDPOINT_CUTOVER                = PASS (Slice 6B boundary)
+AUTH_AUTHENTICATED_FETCH_WRAPPER          = PASS (automated)
 AUTH_6A_PROTECTED_API_ACCIDENTAL_CUTOVER  = NONE (contract + guards)
 AUTH_6A_WRONG_AUTHORITY_REQUEST           = NONE (contract + guards)
 AUTH_6A_XSS_REVIEW                        = PASS (focused)
@@ -218,14 +219,15 @@ AUTH_6A_RESPONSIVE_BROWSER             = PENDING
 
 ## Deferred work
 
-Slice 6B must introduce the central asynchronous authenticated request
-boundary, including one Supabase refresh/retry on 401, then migrate protected
-application endpoints. Only after that work is verified may
-`protectedApiReady` become true for Supabase and the integration PR become
-Ready for review.
+Live browser evidence on a preview built from the current PR is still needed
+for the protected cabinet/history/render flows, and a safe live Telegram
+context remains optional regression evidence. The canonical staging URL
+currently points to an older deployment; production was not touched.
 
 ```text
-AUTH_6A_READY                           = YES (development slice)
+AUTH_6A_READY                           = YES
+AUTH_6B_IMPLEMENTATION                  = YES
+AUTH_6B_LIVE_ACCEPTANCE                 = PENDING
 MERGE_INTEGRATION_PR                    = NO
-RECOMMENDATION                          = CONTINUE WITH SLICE 6B
+RECOMMENDATION                          = KEEP PR #162 DRAFT UNTIL LIVE GATES PASS
 ```
