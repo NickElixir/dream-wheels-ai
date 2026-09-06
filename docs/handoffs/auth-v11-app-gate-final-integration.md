@@ -37,7 +37,7 @@ requested view is restored.
 
 ## Route and return-path contract
 
-Supported application views are mapped in `webapp/app-route.js`. A safe return
+Supported application views are mapped in `webapp/app-route.mjs`. A safe return
 path is same-origin and limited to the known `/app` views. Only `market` and
 the supported UTM keys are preserved. Unknown query keys and unsafe targets
 such as external URLs, `javascript:`, `data:`, `/admin`, `/api/**`, and `/t/**`

@@ -2,7 +2,7 @@ import {
     applicationRouteContext,
     isApplicationRoute,
     safeApplicationReturnPath,
-} from "./app-route.js";
+} from "./app-route.mjs";
 
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");

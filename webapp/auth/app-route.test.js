@@ -5,7 +5,7 @@ import {
     applicationRouteView,
     isApplicationRoute,
     safeApplicationReturnPath,
-} from "../app-route.js";
+} from "../app-route.mjs";
 
 const ORIGIN = "https://dreamwheels.example";
 
@@ -44,4 +44,3 @@ test("unsafe and non-application return targets are rejected", () => {
         assert.equal(safeApplicationReturnPath(target, ORIGIN), null, target);
     }
 });
-

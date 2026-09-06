@@ -499,7 +499,7 @@ def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:
     assert {"source": "/app/", "destination": "/index.html"} in rewrites
     assert {"source": "/app/(.*)", "destination": "/index.html"} in rewrites
     assert "import {" in APP_JS
-    assert 'from "./app-route.js"' in APP_JS
+    assert 'from "./app-route.mjs"' in APP_JS
     assert "data-application-auth-gate" in INDEX_HTML
     assert "bootstrapAuthenticatedApplication" in APP_JS
 
