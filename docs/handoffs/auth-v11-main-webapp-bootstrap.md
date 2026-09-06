@@ -10,7 +10,7 @@ cabinet API.
 BASELINE_SHA                       = 786170342ab64cc205775feb4090888b4126d5d7
 BRANCH                             = feature/auth-v11-integration
 BASE                                = staging
-HEAD                                = 82b6494c1ac2a92ce99f34f99f0fc0f912b684e4
+HEAD                                = see PR #162 (current branch head)
 PR                                  = 162 (Draft)
 PRODUCTION                         = NOT_TOUCHED
 INTEGRATION_PR                     = DRAFT
@@ -198,7 +198,7 @@ AUTH_6A_PROTECTED_API_ACCIDENTAL_CUTOVER  = NONE (contract + guards)
 AUTH_6A_WRONG_AUTHORITY_REQUEST           = NONE (contract + guards)
 AUTH_6A_XSS_REVIEW                        = PASS (focused)
 FULL_AUTOMATED_TESTS                       = PASS
-GITHUB_CI_RUN                             = 294 (PASS)
+GITHUB_CI                               = PASS (latest run for current head)
 ```
 
 Automated Auth tests pass, the new app-auth bundle builds, and the main page
