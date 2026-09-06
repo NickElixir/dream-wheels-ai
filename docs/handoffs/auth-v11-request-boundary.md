@@ -118,7 +118,7 @@ AUTH_6B_BROWSER_PROTECTED_API       = PENDING_PREVIEW_DEPLOYMENT
 AUTH_6B_SUPABASE_REFRESH_RETRY      = PENDING_LIVE_401_SCENARIO
 AUTH_6B_BALANCE_HISTORY_RENDER      = PENDING_PREVIEW_DEPLOYMENT
 AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
-CI                                  = run after this head is pushed
+CI                                  = PASS (GitHub Actions run #300)
 ```
 
 Keep PR #162 Draft until these blocking gates are either evidenced or
