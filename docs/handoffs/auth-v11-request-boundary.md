@@ -225,6 +225,22 @@ AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
 CI                                  = PASS (GitHub Actions for the pushed PR head; see PR checks)
 ```
 
+Post-deploy user-controlled browser evidence on 2026-09-06: canonical staging
+accepted the real email OTP flow and the WebApp cabinet rendered the authenticated
+email presentation with the reconciled starter balance. A reload restored the
+authenticated state, and a newly opened staging tab restored the same session;
+the Balance route loaded without the former protected-route `401`. No OTP,
+session credential, or token is recorded here.
+
+```text
+AUTH_6B_BROWSER_PROTECTED_API       = PASS (authenticated balance route)
+AUTH_6B_BALANCE_HISTORY_RENDER      = PASS (balance and starter package visible)
+AUTH_6B_RELOAD_RESTORE              = PASS (user browser)
+AUTH_6B_TAB_REOPEN_RESTORE          = PASS (user browser)
+AUTH_6B_SUPABASE_REFRESH_RETRY      = PENDING (not forced in this smoke)
+AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
+```
+
 Keep PR #162 Draft until these blocking gates are either evidenced or
 explicitly accepted by the project owner. Do not add main WebApp integration
 beyond this request boundary slice and do not merge automatically.
@@ -232,6 +248,6 @@ beyond this request boundary slice and do not merge automatically.
 ```text
 AUTH_REQUEST_BOUNDARY               = PASS (automated)
 AUTH_6B_IMPLEMENTATION              = PASS
-AUTH_6B_LIVE_ACCEPTANCE             = PENDING_USER_OTP_CODE
+AUTH_6B_LIVE_ACCEPTANCE             = PASS (user-controlled OTP/session smoke)
 MERGE_PR_162                        = NO (until live blocking gates pass)
 ```
