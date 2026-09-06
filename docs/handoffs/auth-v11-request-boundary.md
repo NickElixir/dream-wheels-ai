@@ -1,10 +1,8 @@
 # Dream Wheels AI — Auth V1.1 Slice 6B Handoff
 
-Status: implementation complete in the Draft PR. The exact PR head is deployed
-to a READY Vercel preview; live protected-API browser evidence remains pending
-because the managed Chrome session blocks the preview `/auth/*` assets and the
-in-app browser is stopped by Vercel deployment protection. Production was not
-touched.
+Status: implementation complete in the Draft PR. The application is deployed
+to canonical staging; live protected-API browser evidence remains pending until
+the user-controlled Chrome flow is completed. Production was not touched.
 
 ## Scope
 
@@ -22,6 +20,8 @@ PROTECTED_APPLICATION_CUTOVER       = IMPLEMENTED
 AUTH_6B_ACCEPTANCE_SHA              = df5f1896638756f298cd0b99d3cb053e513d0ecc
 AUTH_6B_PREVIEW_DEPLOYMENT          = PASS (READY; dpl_GYhXyRYr2QJNmJK1dz1BZeC57G5L)
 AUTH_6B_PREVIEW_URL                 = https://dream-wheels-ai-webapp-staging-cnzz1qm0g.vercel.app/
+AUTH_6B_CANONICAL_STAGING           = PASS (READY; dpl_BieXaWSVhdJKRNBo487nH2Pt1xBx)
+AUTH_6B_CANONICAL_STAGING_URL       = https://dream-wheels-ai-webapp-staging.vercel.app/
 LIVE_BROWSER_PROTECTED_API_SMOKE    = PENDING_BROWSER_ENVIRONMENT
 ```
 
@@ -106,26 +106,26 @@ AUTH_BOUNDARY_UNIT_COVERAGE          = PASS (bearer, Headers, FormData,
                                              concurrent single-flight,
                                              missing authority, legacy routing)
 PREVIEW_DEPLOYMENT_6B                = PASS (exact acceptance SHA; READY)
-LIVE_CANONICAL_STAGING_6B            = PENDING (browser environment cannot execute preview auth assets)
+LIVE_CANONICAL_STAGING_6B            = PENDING (deployment PASS; user browser flow remains)
 PRODUCTION                           = NOT_TOUCHED
 ```
 
-The exact PR head preview responds with the staging Supabase URL, public
+The canonical staging deployment responds with the staging Supabase URL, public
 non-secret configuration, `mainWebAppEnabled=true`, six-digit OTP settings,
-and the Turnstile site-key configuration. The managed Chrome session rendered
-the main dashboard, but its client-side blocker prevented execution of
-`/auth/harness-config.js` and `/auth/app-auth.bundle.js`; the in-app browser
-redirected to Vercel login protection. No OTP was sent again and no
-Supabase/admin mechanism was used to simulate live evidence.
+and the Turnstile site-key configuration. The user-controlled Chrome session
+confirmed both Auth resources with HTTP 200 and showed the main dashboard with
+the generic login action; its Console contained no Auth bootstrap errors. No
+OTP was sent again and no Supabase/admin mechanism was used to simulate live
+evidence.
 
 ## Remaining acceptance gates
 
 The following require live browser/API evidence on the current WebApp build:
 
 ```text
-AUTH_6B_BROWSER_PROTECTED_API       = PENDING_BROWSER_ENVIRONMENT
+AUTH_6B_BROWSER_PROTECTED_API       = PENDING_USER_BROWSER_FLOW
 AUTH_6B_SUPABASE_REFRESH_RETRY      = PENDING_LIVE_401_SCENARIO
-AUTH_6B_BALANCE_HISTORY_RENDER      = PENDING_BROWSER_ENVIRONMENT
+AUTH_6B_BALANCE_HISTORY_RENDER      = PENDING_USER_BROWSER_FLOW
 AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
 CI                                  = PASS (GitHub Actions for the pushed PR head; see PR checks)
 ```
@@ -137,6 +137,6 @@ beyond this request boundary slice and do not merge automatically.
 ```text
 AUTH_REQUEST_BOUNDARY               = PASS (automated)
 AUTH_6B_IMPLEMENTATION              = PASS
-AUTH_6B_LIVE_ACCEPTANCE             = PENDING_BROWSER_ENVIRONMENT
+AUTH_6B_LIVE_ACCEPTANCE             = PENDING_USER_BROWSER_FLOW
 MERGE_PR_162                        = NO (until live blocking gates pass)
 ```

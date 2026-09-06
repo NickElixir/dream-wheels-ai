@@ -17,6 +17,8 @@ INTEGRATION_PR                     = DRAFT
 MERGE_INTEGRATION_PR               = NO
 PREVIEW_DEPLOYMENT                 = PASS (READY; dpl_GYhXyRYr2QJNmJK1dz1BZeC57G5L)
 PREVIEW_URL                        = https://dream-wheels-ai-webapp-staging-cnzz1qm0g.vercel.app/
+CANONICAL_STAGING_DEPLOYMENT       = PASS (READY; dpl_BieXaWSVhdJKRNBo487nH2Pt1xBx)
+CANONICAL_STAGING_URL              = https://dream-wheels-ai-webapp-staging.vercel.app/
 ```
 
 The accepted Supabase foundation remains the single source of truth for the
@@ -205,15 +207,14 @@ FULL_AUTOMATED_TESTS                       = PASS
 GITHUB_CI                               = PASS (latest run for current head)
 ```
 
-Automated Auth tests pass, the new app-auth bundle builds, and the main page
-and static asset references are present. The exact PR head preview is READY
-and renders the main dashboard. Direct Auth browser acceptance remains pending:
-managed Chrome blocks the preview `/auth/*` assets, while the in-app browser
-requires Vercel login protection. Therefore the following remain pending direct
-browser evidence:
+Automated Auth tests pass, the new app-auth bundle builds, and the canonical
+staging deployment is READY. User-controlled Chrome confirmed the Auth assets
+with HTTP 200 and rendered the main dashboard without Auth bootstrap errors.
+Direct Auth acceptance remains pending for the interactive login and protected
+API flow. Therefore the following remain pending direct browser evidence:
 
 ```text
-VERCEL_PREVIEW                         = PASS (exact head; READY)
+VERCEL_PREVIEW                         = PASS (READY)
 AUTH_EMAIL_LOGIN_SURFACE_BROWSER       = PENDING
 AUTH_TURNSTILE_MAIN_UI_BROWSER         = PENDING
 AUTH_TELEGRAM_WEBSITE_BROWSER          = PENDING
@@ -223,10 +224,10 @@ AUTH_6A_RESPONSIVE_BROWSER             = PENDING
 
 ## Deferred work
 
-Live browser evidence on the deployed preview is still needed for the protected
+Live browser evidence on canonical staging is still needed for the protected
 cabinet/history/render flows, and a safe live Telegram context remains optional
-regression evidence. The canonical staging URL currently points to an older
-deployment; production was not touched. No OTP was resent during this attempt.
+regression evidence. Production was not touched. No OTP was resent during this
+attempt.
 
 ```text
 AUTH_6A_READY                           = YES
