@@ -9,6 +9,7 @@ PR                                  = 162 (Draft)
 BRANCH                              = feature/auth-v11-integration
 BASE                                = staging
 CURRENT_BASE_SHA                    = 052acb3740ddfd14d6b5a94f5cbabcdcc3580317
+CURRENT_PR_HEAD                     = 94f7f7c
 STAGING_SHA_AT_START                = 786170342ab64cc205775feb4090888b4126d5d7
 PRODUCTION                          = NOT_TOUCHED
 SLICE_6B2_STATE_MACHINE              = PRESERVED
