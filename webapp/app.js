@@ -264,6 +264,31 @@ const I18N = {
             preparing: "Подготавливаем вход...",
             logout: "Выйти",
             failed: "Не удалось войти через Telegram",
+            dashboardLoginPrompt: "Войдите, чтобы увидеть баланс",
+            partialAccess: "Вход выполнен. Кабинет будет доступен после подключения защищённых запросов.",
+            dialogTitle: "Войти в Dream Wheels",
+            dialogDescription: "Введите электронную почту — мы пришлём код для входа.",
+            emailLabel: "Электронная почта",
+            getCode: "Получить код",
+            codeLabel: "Код из письма",
+            codeDescription: "Мы отправили шестизначный код на указанную почту.",
+            verify: "Войти",
+            resend: "Отправить код ещё раз",
+            changeEmail: "Изменить почту",
+            telegramSecondary: "Войти через Telegram",
+            invalidEmail: "Введите корректный адрес электронной почты.",
+            invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
+            expiredOtp: "Срок действия кода истёк. Запросите новый.",
+            rateLimited: "Слишком много попыток. Попробуйте немного позже.",
+            networkError: "Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.",
+            providerError: "Не удалось выполнить вход. Попробуйте ещё раз.",
+            turnstileRequired: "Подтвердите, что вы человек, чтобы получить код.",
+            turnstileUnavailable: "Проверка безопасности недоступна. Попробуйте ещё раз.",
+            sendingCode: "Отправляем код...",
+            checkingCode: "Проверяем код...",
+            codeSent: "Код отправлен. Проверьте почту.",
+            signedIn: "Вход выполнен",
+            resendIn: "Повторно отправить код можно через {seconds} сек.",
         },
         menu: {
             dashboard: "Главная",
@@ -656,6 +681,31 @@ const I18N = {
             preparing: "Preparing login...",
             logout: "Log out",
             failed: "Telegram login failed",
+            dashboardLoginPrompt: "Sign in to see your balance",
+            partialAccess: "Signed in. The cabinet will be available after protected requests are connected.",
+            dialogTitle: "Sign in to Dream Wheels",
+            dialogDescription: "Enter your email and we’ll send you a sign-in code.",
+            emailLabel: "Email",
+            getCode: "Get code",
+            codeLabel: "Code from email",
+            codeDescription: "We sent a six-digit code to your email.",
+            verify: "Sign in",
+            resend: "Send code again",
+            changeEmail: "Change email",
+            telegramSecondary: "Sign in with Telegram",
+            invalidEmail: "Enter a valid email address.",
+            invalidOtp: "The code is incorrect. Check it and try again.",
+            expiredOtp: "The code has expired. Request a new one.",
+            rateLimited: "Too many attempts. Please try again later.",
+            networkError: "Could not reach the server. Check your connection and try again.",
+            providerError: "We could not complete sign-in. Please try again.",
+            turnstileRequired: "Complete the security check to get a code.",
+            turnstileUnavailable: "The security check is unavailable. Please try again.",
+            sendingCode: "Sending code...",
+            checkingCode: "Checking code...",
+            codeSent: "Code sent. Check your inbox.",
+            signedIn: "Signed in",
+            resendIn: "You can send another code in {seconds}s.",
         },
         menu: {
             dashboard: "Home",
@@ -1136,6 +1186,26 @@ const state = {
     websiteLoginNoncePromise: null,
     websiteLoginNonce: null,
     websiteLoginNonceFetchedAt: 0,
+    frontendAuthState: {
+        status: "BOOTSTRAPPING",
+        authority: null,
+        authChannel: null,
+        principalVerified: false,
+        protectedApiReady: false,
+        sessionPresent: false,
+        errorCode: null,
+    },
+    authDialogOpen: false,
+    authDialogStep: "email",
+    authDialogBusy: false,
+    authDialogError: "",
+    authDialogEmail: "",
+    authDialogOtp: "",
+    authDialogCooldownUntil: 0,
+    authDialogCooldownTimer: null,
+    authDialogTurnstileWidgetId: null,
+    authDialogTurnstileToken: null,
+    authDialogTurnstileLoading: false,
     view: "dashboard",
     menuOpen: false,
     moreOpen: false,
@@ -2104,7 +2174,38 @@ function updateAccountBlock() {
     const subtitle = document.querySelector("[data-account-subtitle]");
     if (name) name.textContent = displayName;
     if (avatar) avatar.textContent = getInitials(displayName);
-    if (subtitle) subtitle.textContent = HAS_TG ? "Открыто в Telegram" : "Вход через Telegram";
+    if (subtitle) {
+        subtitle.textContent = HAS_TG
+            ? "Открыто в Telegram"
+            : isSupabaseFrontendAuth()
+                ? "Вы вошли"
+                : "Вход через Telegram";
+    }
+}
+
+function frontendAuthController() {
+    return window.DreamWheelsAuth || null;
+}
+
+function isSupabaseFrontendAuth() {
+    const authState = state.frontendAuthState || {};
+    return authState.authority === "supabase" && authState.status === "AUTHENTICATED";
+}
+
+function isSupabasePartialAuth() {
+    return isSupabaseFrontendAuth() && state.frontendAuthState.protectedApiReady === false;
+}
+
+function isFrontendUserAuthenticated() {
+    return Boolean(
+        HAS_TG
+        || getWebsiteAuthToken()
+        || state.frontendAuthState?.status === "AUTHENTICATED"
+    );
+}
+
+function isAuthIntegrationEnabled() {
+    return Boolean(frontendAuthController()?.isIntegrationEnabled?.());
 }
 
 function getWebsiteAuthToken() {
@@ -2119,6 +2220,18 @@ function getWebsiteAuthToken() {
 function clearWebsiteAuthSession({ refreshUi = true } = {}) {
     state.websiteAuth = null;
     sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
+    if (state.frontendAuthState?.authChannel === "website_telegram") {
+        state.frontendAuthState = {
+            ...state.frontendAuthState,
+            status: "UNAUTHENTICATED",
+            authority: null,
+            authChannel: null,
+            principalVerified: false,
+            protectedApiReady: false,
+            sessionPresent: false,
+            errorCode: null,
+        };
+    }
     if (refreshUi) updateWebsiteAuthUi();
 }
 
@@ -2139,8 +2252,8 @@ function updateWebsiteAuthUi() {
     const websiteAuthLabel = document.querySelector("[data-website-auth-label]");
     if (button) button.hidden = HAS_TG;
     if (dashboardLogin) {
-        dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending;
-        const label = state.websiteLoginPending
+        dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending || state.authDialogBusy;
+        const label = state.websiteLoginPending || state.authDialogBusy
             ? t("auth.loggingIn")
             : state.websiteLoginWarmupPending
                 ? t("auth.preparing")
@@ -2153,16 +2266,166 @@ function updateWebsiteAuthUi() {
     }
     if (!button || HAS_TG) return;
 
-    const label = state.websiteLoginPending
+    const label = state.websiteLoginPending || state.authDialogBusy
         ? t("auth.loggingIn")
         : state.websiteAuth
             ? t("auth.logout")
-            : t("auth.loginShort");
+            : isFrontendUserAuthenticated()
+                ? t("auth.logout")
+                : t("auth.loginShort");
     button.disabled = state.websiteLoginPending;
+    button.disabled = button.disabled || state.authDialogBusy;
     if (websiteAuthLabel) websiteAuthLabel.textContent = label;
     button.setAttribute("aria-label", label);
     updateCreateFooter();
     updateAccountBlock();
+}
+
+function authErrorMessage(code) {
+    return {
+        invalid_otp: t("auth.invalidOtp"),
+        expired_otp: t("auth.expiredOtp"),
+        rate_limited: t("auth.rateLimited"),
+        network_error: t("auth.networkError"),
+        provider_error: t("auth.providerError"),
+        session_missing: t("auth.providerError"),
+        SESSION_EXPIRED: t("auth.networkError"),
+    }[code] || t("auth.providerError");
+}
+
+function setAuthDialogMessage(message, isError = false) {
+    const target = document.querySelector("[data-auth-message]");
+    if (target) {
+        target.textContent = message || "";
+        target.dataset.tone = isError ? "error" : "neutral";
+    }
+}
+
+function updateAuthDialogCooldown() {
+    const target = document.querySelector("[data-auth-cooldown]");
+    const resend = document.querySelector("[data-auth-resend]");
+    const remaining = Math.max(0, Math.ceil((state.authDialogCooldownUntil - Date.now()) / 1000));
+    if (target) target.textContent = remaining ? t("auth.resendIn").replace("{seconds}", String(remaining)) : "";
+    if (resend) resend.disabled = state.authDialogBusy || remaining > 0;
+    if (!remaining && state.authDialogCooldownTimer) {
+        clearInterval(state.authDialogCooldownTimer);
+        state.authDialogCooldownTimer = null;
+    }
+}
+
+function startAuthDialogCooldown() {
+    const seconds = Number(window.__DREAM_WHEELS_AUTH_CONFIG__?.resendWindowSeconds || 60);
+    state.authDialogCooldownUntil = Date.now() + Math.max(1, seconds) * 1000;
+    if (!state.authDialogCooldownTimer) state.authDialogCooldownTimer = window.setInterval(updateAuthDialogCooldown, 1000);
+    updateAuthDialogCooldown();
+}
+
+function resetAuthDialogTurnstile() {
+    state.authDialogTurnstileToken = null;
+    if (state.authDialogTurnstileWidgetId !== null && window.turnstile?.reset) {
+        window.turnstile.reset(state.authDialogTurnstileWidgetId);
+    }
+}
+
+function renderAuthDialogTurnstile() {
+    const container = document.querySelector("[data-auth-turnstile]");
+    const widget = document.querySelector("[data-auth-turnstile-widget]");
+    const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
+    if (!container || !widget || !siteKey) return;
+    container.hidden = false;
+    if (state.authDialogTurnstileWidgetId !== null || !window.turnstile?.render) return;
+    state.authDialogTurnstileWidgetId = window.turnstile.render(widget, {
+        sitekey: siteKey,
+        callback(token) {
+            state.authDialogTurnstileToken = typeof token === "string" && token.trim() ? token.trim() : null;
+        },
+        "expired-callback"() { state.authDialogTurnstileToken = null; },
+        "error-callback"() {
+            state.authDialogTurnstileToken = null;
+            setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
+        },
+    });
+}
+
+function loadAuthDialogTurnstile() {
+    const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
+    if (!siteKey) return;
+    const existing = document.querySelector("script[data-auth-turnstile-script]");
+    if (window.turnstile?.render) {
+        renderAuthDialogTurnstile();
+        return;
+    }
+    if (existing || state.authDialogTurnstileLoading) return;
+    state.authDialogTurnstileLoading = true;
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.dataset.authTurnstileScript = "true";
+    script.addEventListener("load", () => {
+        state.authDialogTurnstileLoading = false;
+        renderAuthDialogTurnstile();
+    }, { once: true });
+    script.addEventListener("error", () => {
+        state.authDialogTurnstileLoading = false;
+        setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
+    }, { once: true });
+    document.head.append(script);
+}
+
+function renderAuthDialog() {
+    const dialog = document.querySelector("[data-auth-dialog]");
+    const emailForm = document.querySelector("[data-auth-email-form]");
+    const otpForm = document.querySelector("[data-auth-otp-form]");
+    const emailInput = document.querySelector("[data-auth-email]");
+    const otpInput = document.querySelector("[data-auth-otp]");
+    const title = document.querySelector("[data-auth-dialog-title]");
+    const description = document.querySelector("[data-auth-dialog-description]");
+    if (!dialog || !emailForm || !otpForm) return;
+    dialog.hidden = !state.authDialogOpen;
+    emailForm.hidden = !state.authDialogOpen || state.authDialogStep !== "email";
+    otpForm.hidden = !state.authDialogOpen || state.authDialogStep !== "otp";
+    if (title) title.textContent = t("auth.dialogTitle");
+    if (description) description.textContent = state.authDialogStep === "otp"
+        ? t("auth.codeDescription")
+        : t("auth.dialogDescription");
+    if (emailInput && emailInput.value !== state.authDialogEmail) emailInput.value = state.authDialogEmail;
+    if (otpInput && otpInput.value !== state.authDialogOtp) otpInput.value = state.authDialogOtp;
+    document.querySelector("[data-auth-send]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
+    document.querySelector("[data-auth-telegram]")?.toggleAttribute("disabled", state.authDialogBusy);
+    updateAuthDialogCooldown();
+    if (state.authDialogOpen && state.authDialogStep === "email") loadAuthDialogTurnstile();
+}
+
+function openAuthDialog() {
+    if (!isAuthIntegrationEnabled() || HAS_TG) return;
+    state.authDialogOpen = true;
+    state.authDialogStep = "email";
+    state.authDialogError = "";
+    state.authDialogBusy = false;
+    state.authDialogOtp = "";
+    setAuthDialogMessage("");
+    renderAuthDialog();
+    window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
+}
+
+function closeAuthDialog() {
+    state.authDialogOpen = false;
+    state.authDialogBusy = false;
+    resetAuthDialogTurnstile();
+    renderAuthDialog();
+}
+
+function handleFrontendAuthState(nextState) {
+    state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
+        if (state.authDialogOpen && state.authDialogStep === "otp") setAuthDialogMessage(t("auth.signedIn"));
+        closeAuthDialog();
+    }
+    updateWebsiteAuthUi();
+    renderWalletStatus();
+    renderDashboard();
 }
 
 function apiUrl(path, { includeIdentity = false, params = null } = {}) {
@@ -2330,6 +2593,95 @@ async function loginWithTelegram() {
     }
 }
 
+function validFrontendEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(String(email || "").trim());
+}
+
+async function requestFrontendEmailOtp({ resend = false } = {}) {
+    const controller = frontendAuthController();
+    const email = String(state.authDialogEmail || "").trim();
+    if (!controller || !isAuthIntegrationEnabled()) return;
+    if (!validFrontendEmail(email)) {
+        setAuthDialogMessage(t("auth.invalidEmail"), true);
+        document.querySelector("[data-auth-email]")?.focus();
+        return;
+    }
+    if (resend && Date.now() < state.authDialogCooldownUntil) return;
+    if (!state.authDialogTurnstileToken) {
+        setAuthDialogMessage(t("auth.turnstileRequired"), true);
+        return;
+    }
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.sendingCode"));
+    renderAuthDialog();
+    try {
+        await controller.requestEmailOtp(email, state.authDialogTurnstileToken);
+        state.authDialogStep = "otp";
+        state.authDialogOtp = "";
+        startAuthDialogCooldown();
+        setAuthDialogMessage(t("auth.codeSent"));
+        resetAuthDialogTurnstile();
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
+    } catch (error) {
+        setAuthDialogMessage(authErrorMessage(error?.code), true);
+    } finally {
+        state.authDialogBusy = false;
+        renderAuthDialog();
+        updateWebsiteAuthUi();
+    }
+}
+
+async function verifyFrontendEmailOtp() {
+    const controller = frontendAuthController();
+    const email = String(state.authDialogEmail || "").trim();
+    const otp = String(state.authDialogOtp || "").trim();
+    if (!controller || !isAuthIntegrationEnabled()) return;
+    if (!/^\d{6}$/u.test(otp)) {
+        setAuthDialogMessage(t("auth.invalidOtp"), true);
+        return;
+    }
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.checkingCode"));
+    renderAuthDialog();
+    try {
+        await controller.verifyEmailOtp(email, otp);
+        if (!isSupabaseFrontendAuth()) setAuthDialogMessage(t("auth.providerError"), true);
+    } catch (error) {
+        setAuthDialogMessage(authErrorMessage(error?.code), true);
+    } finally {
+        state.authDialogBusy = false;
+        renderAuthDialog();
+        updateWebsiteAuthUi();
+    }
+}
+
+function logoutCurrentFrontendAuthority() {
+    const controller = frontendAuthController();
+    if (isSupabaseFrontendAuth() && controller) {
+        state.authDialogBusy = true;
+        void controller.signOut()
+            .catch((error) => setWalletMessage(authErrorMessage(error?.code), "error"))
+            .finally(() => {
+                state.authDialogBusy = false;
+                updateWebsiteAuthUi();
+                renderDashboard();
+            });
+        return;
+    }
+    logoutWebsiteAuth();
+}
+
+function handleWebsiteAuthAction() {
+    if (isSupabaseFrontendAuth()) {
+        logoutCurrentFrontendAuthority();
+    } else if (isAuthIntegrationEnabled()) {
+        openAuthDialog();
+    } else {
+        void loginWithTelegram();
+    }
+}
+
 function showFitmentAuthRequired() {
     clearFitmentRuntimeRequests();
     persistFitmentTransientDraft("reauth");
@@ -2481,7 +2833,7 @@ function classifyIdentityError(message) {
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
-    if (isWebsiteAuthMode()) return {};
+    if (isWebsiteAuthMode() || state.frontendAuthState?.authority === "supabase") return {};
     if (HAS_TG && tg?.initData) {
         const payload = { init_data: tg.initData };
         if (includeTelegramUserId && tg.initDataUnsafe?.user?.id != null) {
@@ -6655,10 +7007,14 @@ function renderWalletStatus() {
     syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
     const authNotice = document.querySelector("[data-wallet-auth-notice]");
     if (authNotice) {
-        const visible = !hasFrontendAuth();
+        const visible = !isFrontendUserAuthenticated() || isSupabasePartialAuth();
         authNotice.hidden = !visible;
         authNotice.dataset.visible = String(visible);
         authNotice.setAttribute("aria-hidden", String(!visible));
+        const text = document.querySelector("[data-wallet-auth-notice-text]");
+        if (text) text.textContent = isSupabasePartialAuth()
+            ? t("auth.partialAccess")
+            : t("wallet.authRequired");
     }
 }
 
@@ -6925,7 +7281,11 @@ function escapeHtml(value) {
 }
 
 function hasFrontendAuth() {
-    return Boolean(getIdentitySearchParams().toString() || getWebsiteAuthToken());
+    return Boolean(
+        getIdentitySearchParams().toString()
+        || getWebsiteAuthToken()
+        || state.frontendAuthState?.protectedApiReady === true
+    );
 }
 
 function formatDateTime(value) {
@@ -7703,6 +8063,7 @@ function renderDashboard() {
     const loading = document.querySelector("[data-dashboard-loading]");
     const auth = document.querySelector("[data-dashboard-auth]");
     const authInfo = document.querySelector("[data-dashboard-auth-info]");
+    const authInfoText = document.querySelector("[data-dashboard-auth-info-text]");
     const error = document.querySelector("[data-dashboard-error]");
     const errorText = document.querySelector("[data-dashboard-error-text]");
     const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
@@ -7727,8 +8088,13 @@ function renderDashboard() {
         Boolean(state.walletLoading && state.balance === null)
     );
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
-    if (auth) auth.dataset.visible = String(!hasFrontendAuth());
-    if (authInfo) authInfo.dataset.visible = String(!hasFrontendAuth());
+    const frontendAuthenticated = isFrontendUserAuthenticated();
+    if (auth) auth.dataset.visible = String(!frontendAuthenticated);
+    if (authInfo) {
+        authInfo.hidden = !isSupabasePartialAuth();
+        authInfo.dataset.visible = String(isSupabasePartialAuth());
+    }
+    if (authInfoText) authInfoText.textContent = t("auth.partialAccess");
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
     if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
@@ -7887,6 +8253,15 @@ async function loadRenderHistory(options = {}) {
 }
 
 async function requestRenderHistory({ silent = false } = {}) {
+    if (isSupabasePartialAuth()) {
+        state.renderHistoryLoading = false;
+        state.renderHistory = [];
+        state.renderHistoryError = "";
+        state.expandedJobId = "";
+        renderRenders();
+        renderDashboard();
+        return;
+    }
     if (!hasFrontendAuth()) {
         state.renderHistoryLoading = false;
         state.renderHistory = guestRenderHistory();
@@ -9040,10 +9415,7 @@ function bindEvents() {
     document.querySelector("[data-more-backdrop]")?.addEventListener("click", () => setMoreOpen(false));
 
     const websiteAuthButton = document.querySelector("[data-website-auth-button]");
-    websiteAuthButton?.addEventListener("click", () => {
-        if (state.websiteAuth) logoutWebsiteAuth();
-        else void loginWithTelegram();
-    });
+    websiteAuthButton?.addEventListener("click", handleWebsiteAuthAction);
     ["pointerdown", "mouseenter", "focus"].forEach((eventName) => {
         websiteAuthButton?.addEventListener(eventName, warmWebsiteLoginResources, { passive: true });
     });
@@ -9053,6 +9425,44 @@ function bindEvents() {
         else void loginWithTelegram();
     });
     document.querySelector("[data-dashboard-auth-login]")?.addEventListener("click", () => {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    });
+    document.querySelector("[data-auth-close]")?.addEventListener("click", closeAuthDialog);
+    document.querySelector("[data-auth-dialog]")?.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) closeAuthDialog();
+    });
+    document.querySelector("[data-auth-email]")?.addEventListener("input", (event) => {
+        state.authDialogEmail = event.target.value.trim();
+        state.authDialogError = "";
+    });
+    document.querySelector("[data-auth-otp]")?.addEventListener("input", (event) => {
+        state.authDialogOtp = event.target.value.replace(/\D+/gu, "").slice(0, 6);
+        event.target.value = state.authDialogOtp;
+        renderAuthDialog();
+    });
+    document.querySelector("[data-auth-email-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void requestFrontendEmailOtp();
+    });
+    document.querySelector("[data-auth-otp-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void verifyFrontendEmailOtp();
+    });
+    document.querySelector("[data-auth-resend]")?.addEventListener("click", () => {
+        void requestFrontendEmailOtp({ resend: true });
+    });
+    document.querySelector("[data-auth-change-email]")?.addEventListener("click", () => {
+        state.authDialogStep = "email";
+        state.authDialogOtp = "";
+        state.authDialogError = "";
+        resetAuthDialogTurnstile();
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
+    });
+    document.querySelector("[data-auth-telegram]")?.addEventListener("click", () => {
+        closeAuthDialog();
         void loginWithTelegram();
     });
     document.querySelector("[data-identity-error-retry]")?.addEventListener("click", () => {
@@ -9642,6 +10052,18 @@ function bindEvents() {
     }, true);
 }
 
+function initializeFrontendAuthBridge() {
+    const controller = frontendAuthController();
+    if (!controller) return Promise.resolve();
+    controller.configure({
+        isTelegramMiniApp: () => HAS_TG && Boolean(tg?.initData),
+        hasLegacyWebsiteAuth: () => Boolean(getWebsiteAuthToken()),
+        legacySignOut: logoutWebsiteAuth,
+    });
+    controller.subscribe(handleFrontendAuthState);
+    return controller.initialize();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     void trackEvent("app_opened", { surface: HAS_TG ? "telegram" : "website" });
     if (HAS_TG && tg?.initData) void trackEvent("auth_completed", { auth_channel: "mini_app" });
@@ -9653,6 +10075,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     observeUiCopyRule();
     warmWebsiteLoginResources();
     handlePaymentReturn();
+    const authReady = initializeFrontendAuthBridge();
 
     syncEmailInput();
 
@@ -9660,6 +10083,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderWallet();
     renderRenders();
     renderDashboard();
+    renderAuthDialog();
     updateTopbarCaption();
     setMenuOpen(false);
     setMoreOpen(false);
@@ -9684,6 +10108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await hydrateFilesFromDraft();
     renderIdentityFlow();
     refreshButtonsForCurrentView();
+    await authReady;
     await loadDashboardData();
 
     if (state.fitmentPreviewForced && !new URLSearchParams(window.location.search).get("payment")) {

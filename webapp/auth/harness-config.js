@@ -1,4 +1,4 @@
-// Public browser configuration for the isolated staging auth harness only.
+// Public browser configuration for the staging Auth harness and Slice 6A.
 // Never put SMTP credentials, Turnstile secrets, service-role keys, or JWT
 // secrets in this file.
 globalThis.__DREAM_WHEELS_SUPABASE_CONFIG__ = Object.freeze({
@@ -12,4 +12,7 @@ globalThis.__DREAM_WHEELS_AUTH_CONFIG__ = Object.freeze({
     resendWindowSeconds: 60,
     turnstileSiteKey: "0x4AAAAAAEpc6oyj1KFbS7FR",
     analyticsEndpoint: "/api/backend/analytics/events",
+    // Main WebApp Auth is enabled only on the canonical staging host and the
+    // integration branch preview host allowlist in app-auth.js.
+    mainWebAppEnabled: true,
 });
