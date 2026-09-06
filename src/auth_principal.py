@@ -51,15 +51,16 @@ def preflight_auth_credentials(
     authorization: str | None = None,
     auth_name: str,
 ) -> None:
-    """Reject missing or invalid legacy credential shapes before opening a DB connection.
+    """Reject missing credentials before opening a DB connection.
 
     Supabase bearer verification and identity resolution still happen through
     :func:`require_auth_principal`.  The preflight intentionally handles only
-    the no-bearer Telegram path, preserving the established API contract for
-    anonymous requests while avoiding a pool acquisition for an obvious 4xx.
+    the no-bearer path, avoiding a pool acquisition for an obvious authentication failure.
     """
     if authorization or init_data:
         return
+    if telegram_user_id is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
     resolve_telegram_auth(
         init_data=None,
         telegram_user_id=telegram_user_id,

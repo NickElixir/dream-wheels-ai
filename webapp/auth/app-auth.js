@@ -1,6 +1,7 @@
 import {
     AUTH_SESSION_STATES,
     getAccessToken as getSupabaseAccessToken,
+    getCurrentAuthUser as getSupabaseCurrentAuthUser,
     getAuthSessionState as getSupabaseSessionState,
     initializeAuthSession,
     requestEmailOtp,
@@ -17,6 +18,17 @@ const DEFAULT_STATE = Object.freeze({
     protectedApiReady: false,
     sessionPresent: false,
     errorCode: null,
+    interactionState: "restoring",
+    authenticationSource: null,
+    account: null,
+});
+
+export const AUTH_INTERACTION_STATES = Object.freeze({
+    RESTORING: "restoring",
+    UNAUTHENTICATED: "unauthenticated",
+    OTP_REQUESTED: "otp_requested",
+    OTP_VERIFYING: "otp_verifying",
+    AUTHENTICATED: "authenticated",
 });
 
 const SUPABASE_AUTH_EVENTS = new Set([
@@ -31,6 +43,7 @@ const defaultSessionController = Object.freeze({
     initializeAuthSession,
     getAccessToken: getSupabaseAccessToken,
     getAuthSessionState: getSupabaseSessionState,
+    getCurrentAuthUser: getSupabaseCurrentAuthUser,
     signOut: signOutSupabase,
     subscribeToAuthChanges,
 });
@@ -107,6 +120,9 @@ export function createFrontendAuthController({
             protectedApiReady: false,
             sessionPresent: false,
             errorCode: null,
+            interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
+            authenticationSource: null,
+            account: null,
         }, event);
     }
 
@@ -119,6 +135,9 @@ export function createFrontendAuthController({
             protectedApiReady: false,
             sessionPresent: true,
             errorCode,
+            interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
+            authenticationSource: null,
+            account: null,
         }, event);
     }
 
@@ -132,6 +151,9 @@ export function createFrontendAuthController({
                 protectedApiReady: true,
                 sessionPresent: false,
                 errorCode: null,
+                interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+                authenticationSource: "telegram",
+                account: null,
             }, "TELEGRAM_MINI_APP");
             return true;
         }
@@ -151,6 +173,9 @@ export function createFrontendAuthController({
                     protectedApiReady: true,
                     sessionPresent: false,
                     errorCode: null,
+                    interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+                    authenticationSource: "telegram",
+                    account: null,
                 }, "LEGACY_WEBSITE_SESSION");
             } else {
                 setUnauthenticated("NO_SESSION");
@@ -203,6 +228,7 @@ export function createFrontendAuthController({
                 setState({ status: AUTH_SESSION_STATES.SESSION_EXPIRED, errorCode: "BACKEND_REJECTED" }, "ME_REJECTED");
                 return getState();
             }
+            const account = await bootstrapSupabaseAccount();
             setState({
                 status: AUTH_SESSION_STATES.AUTHENTICATED,
                 authority: "supabase",
@@ -211,8 +237,26 @@ export function createFrontendAuthController({
                 protectedApiReady: true,
                 sessionPresent: true,
                 errorCode: null,
+                interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+                authenticationSource: "restored_session",
+                account,
             }, "PRINCIPAL_VERIFIED");
-        } catch {
+        } catch (error) {
+            if (error?.code === "SESSION_EXPIRED") {
+                setState({
+                    status: AUTH_SESSION_STATES.SESSION_EXPIRED,
+                    authority: "supabase",
+                    authChannel: "email_otp",
+                    principalVerified: false,
+                    protectedApiReady: false,
+                    sessionPresent: true,
+                    errorCode: "SESSION_EXPIRED",
+                    interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
+                    authenticationSource: null,
+                    account: null,
+                }, "BOOTSTRAP_REJECTED");
+                return getState();
+            }
             setState({
                 status: AUTH_SESSION_STATES.NETWORK_ERROR,
                 authority: "supabase",
@@ -221,6 +265,9 @@ export function createFrontendAuthController({
                 protectedApiReady: false,
                 sessionPresent: true,
                 errorCode: "NETWORK_ERROR",
+                interactionState: AUTH_INTERACTION_STATES.RESTORING,
+                authenticationSource: null,
+                account: null,
             }, "ME_UNAVAILABLE");
         }
         return getState();
@@ -251,6 +298,8 @@ export function createFrontendAuthController({
                     protectedApiReady: true,
                     sessionPresent: true,
                     errorCode: null,
+                    interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+                    authenticationSource: state.authenticationSource || "restored_session",
                 }, event);
                 return;
             }
@@ -272,6 +321,29 @@ export function createFrontendAuthController({
         error.name = "AuthRequestError";
         error.code = code;
         return error;
+    }
+
+    async function bootstrapSupabaseAccount() {
+        const accessToken = await sessionController.getAccessToken();
+        if (!accessToken) throw authRequestError("SESSION_EXPIRED");
+        const response = await fetchImpl("/api/backend/auth/bootstrap", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (response?.status === 401) throw authRequestError("SESSION_EXPIRED");
+        if (!response?.ok) throw authRequestError("NETWORK_ERROR");
+        const payload = typeof response?.json === "function"
+            ? await response.json().catch(() => null)
+            : null;
+        const account = payload?.account;
+        if (!account || typeof account !== "object") return null;
+        return {
+            balance: Number.isFinite(Number(account.balance)) ? Number(account.balance) : null,
+            starterGrantGrantedNow: account.starter_grant_granted_now === true,
+            savedName: typeof account.saved_name === "string" && account.saved_name.trim()
+                ? account.saved_name.trim()
+                : null,
+        };
     }
 
     function replayableBody(body) {
@@ -356,6 +428,9 @@ export function createFrontendAuthController({
             protectedApiReady: true,
             sessionPresent: false,
             errorCode: null,
+            interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+            authenticationSource: "telegram",
+            account: null,
         }, "LEGACY_WEBSITE_SESSION");
     }
 
@@ -393,13 +468,41 @@ export function createFrontendAuthController({
 
     async function requestEmailCode(email, captchaToken = null) {
         if (!initialized) await initialize();
-        return otpRequest(email, captchaToken);
+        await reconcile();
+        if (state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified) {
+            throw authRequestError("ALREADY_AUTHENTICATED");
+        }
+        if (state.status === AUTH_SESSION_STATES.BOOTSTRAPPING || state.sessionPresent) {
+            throw authRequestError("AUTHENTICATION_IN_PROGRESS");
+        }
+        const result = await otpRequest(email, captchaToken);
+        setState({
+            interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED,
+            authenticationSource: null,
+            errorCode: null,
+        }, "OTP_REQUESTED");
+        return result;
     }
 
     async function verifyEmailCode(email, otp) {
         if (!initialized) await initialize();
-        const result = await otpVerify(email, otp);
-        await reconcile();
+        setState({ interactionState: AUTH_INTERACTION_STATES.OTP_VERIFYING, errorCode: null }, "OTP_VERIFYING");
+        let result;
+        try {
+            result = await otpVerify(email, otp);
+            await reconcile();
+        } catch (error) {
+            setState({ interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED }, "OTP_VERIFY_FAILED");
+            throw error;
+        }
+        if (!(state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified)) {
+            setState({ interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED }, "OTP_SESSION_MISSING");
+            throw authRequestError("SESSION_EXPIRED");
+        }
+        setState({
+            interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
+            authenticationSource: "fresh_email_otp",
+        }, "OTP_VERIFIED");
         return result;
     }
 
@@ -421,6 +524,7 @@ export function createFrontendAuthController({
         subscribe,
         requestEmailOtp: requestEmailCode,
         verifyEmailOtp: verifyEmailCode,
+        getCurrentAuthUser: () => sessionController.getCurrentAuthUser?.() || null,
         probeCurrentUser,
         authenticatedFetch,
         markLegacyWebsiteAuthenticated,

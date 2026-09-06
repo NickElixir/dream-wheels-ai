@@ -2377,6 +2377,17 @@ h2 {
     gap: 8px 16px;
 }
 
+.auth-dialog-restored {
+    display: grid;
+    gap: 12px;
+}
+
+.auth-dialog-restored-copy {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
 .auth-dialog-cooldown,
 .auth-dialog-status {
     min-height: 20px;

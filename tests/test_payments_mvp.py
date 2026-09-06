@@ -50,7 +50,7 @@ def test_create_topup_rejects_invalid_email_before_db():
 
 def test_cabinet_requires_identity_before_db():
     response = client.get("/payments/cabinet")
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 def test_robokassa_result_requires_required_params_before_db():

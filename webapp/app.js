@@ -288,6 +288,13 @@ const I18N = {
             checkingCode: "Проверяем код...",
             codeSent: "Код отправлен. Проверьте почту.",
             signedIn: "Вход выполнен",
+            restoring: "Проверяем текущий вход...",
+            alreadySignedIn: "Вы уже вошли",
+            alreadySignedInDescription: "В этой вкладке уже есть действующий вход в Dream Wheels.",
+            continue: "Продолжить",
+            switchAccount: "Выйти / сменить аккаунт",
+            alreadyAuthenticated: "Вы уже вошли. Чтобы использовать другой аккаунт, сначала выйдите.",
+            authenticationInProgress: "Проверяем текущий вход. Попробуйте ещё раз через секунду.",
             resendIn: "Повторно отправить код можно через {seconds} сек.",
         },
         menu: {
@@ -705,6 +712,13 @@ const I18N = {
             checkingCode: "Checking code...",
             codeSent: "Code sent. Check your inbox.",
             signedIn: "Signed in",
+            restoring: "Checking your current sign-in...",
+            alreadySignedIn: "You're already signed in",
+            alreadySignedInDescription: "This tab already has an active Dream Wheels session.",
+            continue: "Continue",
+            switchAccount: "Sign out / switch account",
+            alreadyAuthenticated: "You're already signed in. Sign out first to use another account.",
+            authenticationInProgress: "Checking your current sign-in. Try again in a moment.",
             resendIn: "You can send another code in {seconds}s.",
         },
         menu: {
@@ -1194,9 +1208,14 @@ const state = {
         protectedApiReady: false,
         sessionPresent: false,
         errorCode: null,
+        interactionState: "restoring",
+        authenticationSource: null,
+        account: null,
     },
+    frontendAuthUser: null,
+    frontendAuthSavedName: null,
     authDialogOpen: false,
-    authDialogStep: "email",
+    authDialogStep: "restoring",
     authDialogBusy: false,
     authDialogError: "",
     authDialogEmail: "",
@@ -2149,6 +2168,11 @@ function getDisplayName() {
         return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || `id ${user.id}`;
     }
     if (state.websiteAuth?.username) return `@${state.websiteAuth.username}`;
+    if (state.frontendAuthState?.authority === "supabase") {
+        const email = state.frontendAuthUser?.email;
+        if (email) return email;
+        if (state.frontendAuthSavedName) return state.frontendAuthSavedName;
+    }
     return "Dream Wheels";
 }
 
@@ -2301,6 +2325,8 @@ function authErrorMessage(code) {
         network_error: t("auth.networkError"),
         provider_error: t("auth.providerError"),
         session_missing: t("auth.providerError"),
+        ALREADY_AUTHENTICATED: t("auth.alreadyAuthenticated"),
+        AUTHENTICATION_IN_PROGRESS: t("auth.authenticationInProgress"),
         SESSION_EXPIRED: t("auth.networkError"),
     }[code] || t("auth.providerError");
 }
@@ -2389,6 +2415,7 @@ function renderAuthDialog() {
     const dialog = document.querySelector("[data-auth-dialog]");
     const emailForm = document.querySelector("[data-auth-email-form]");
     const otpForm = document.querySelector("[data-auth-otp-form]");
+    const restoredState = document.querySelector("[data-auth-restored-state]");
     const emailInput = document.querySelector("[data-auth-email]");
     const otpInput = document.querySelector("[data-auth-otp]");
     const title = document.querySelector("[data-auth-dialog-title]");
@@ -2397,15 +2424,29 @@ function renderAuthDialog() {
     dialog.hidden = !state.authDialogOpen;
     emailForm.hidden = !state.authDialogOpen || state.authDialogStep !== "email";
     otpForm.hidden = !state.authDialogOpen || state.authDialogStep !== "otp";
+    if (restoredState) restoredState.hidden = !state.authDialogOpen || state.authDialogStep !== "restored";
     if (title) title.textContent = t("auth.dialogTitle");
     if (description) description.textContent = state.authDialogStep === "otp"
         ? t("auth.codeDescription")
+        : state.authDialogStep === "restored"
+            ? t("auth.alreadySignedInDescription")
+            : state.authDialogStep === "restoring"
+                ? t("auth.restoring")
         : t("auth.dialogDescription");
+    if (title && state.authDialogStep === "restored") title.textContent = t("auth.alreadySignedIn");
+    const restoredCopy = document.querySelector("[data-auth-restored-copy]");
+    if (restoredCopy) restoredCopy.textContent = t("auth.alreadySignedInDescription");
+    const continueButton = document.querySelector("[data-auth-continue]");
+    const switchButton = document.querySelector("[data-auth-switch]");
+    if (continueButton) continueButton.textContent = t("auth.continue");
+    if (switchButton) switchButton.textContent = t("auth.switchAccount");
     if (emailInput && emailInput.value !== state.authDialogEmail) emailInput.value = state.authDialogEmail;
     if (otpInput && otpInput.value !== state.authDialogOtp) otpInput.value = state.authDialogOtp;
     document.querySelector("[data-auth-send]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
     document.querySelector("[data-auth-telegram]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-continue]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
     updateAuthDialogCooldown();
     if (state.authDialogOpen && state.authDialogStep === "email") loadAuthDialogTurnstile();
 }
@@ -2413,12 +2454,26 @@ function renderAuthDialog() {
 function openAuthDialog() {
     if (!isAuthIntegrationEnabled() || HAS_TG) return;
     state.authDialogOpen = true;
-    state.authDialogStep = "email";
+    const authState = state.frontendAuthState || {};
+    state.authDialogStep = authState.interactionState === "restoring"
+        || authState.status === "BOOTSTRAPPING"
+        ? "restoring"
+        : authState.status === "AUTHENTICATED" && authState.principalVerified
+            ? "restored"
+            : "email";
     state.authDialogError = "";
     state.authDialogBusy = false;
     state.authDialogOtp = "";
     setAuthDialogMessage("");
     renderAuthDialog();
+    if (state.authDialogStep === "restoring") {
+        void frontendAuthController()?.initialize?.().then(() => {
+            if (!state.authDialogOpen || state.authDialogStep !== "restoring") return;
+            const next = frontendAuthController()?.getState?.() || {};
+            state.authDialogStep = next.status === "AUTHENTICATED" && next.principalVerified ? "restored" : "email";
+            renderAuthDialog();
+        });
+    }
     window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
 }
 
@@ -2431,9 +2486,20 @@ function closeAuthDialog() {
 
 function handleFrontendAuthState(nextState) {
     state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
+    state.frontendAuthUser = currentUser;
+    state.frontendAuthSavedName = nextState.account?.savedName || state.frontendAuthSavedName || null;
     if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
-        if (state.authDialogOpen && state.authDialogStep === "otp") setAuthDialogMessage(t("auth.signedIn"));
-        closeAuthDialog();
+        if (state.authDialogOpen && state.authDialogStep !== "otp") {
+            state.authDialogStep = "restored";
+            setAuthDialogMessage("");
+            renderAuthDialog();
+        }
+    } else if (nextState.interactionState === "UNAUTHENTICATED" || nextState.status === "UNAUTHENTICATED") {
+        if (state.authDialogOpen && state.authDialogStep === "restoring") {
+            state.authDialogStep = "email";
+            renderAuthDialog();
+        }
     }
     updateWebsiteAuthUi();
     renderWalletStatus();
@@ -2637,6 +2703,12 @@ async function requestFrontendEmailOtp({ resend = false } = {}) {
         renderAuthDialog();
         window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
     } catch (error) {
+        if (error?.code === "ALREADY_AUTHENTICATED") {
+            state.authDialogStep = "restored";
+            setAuthDialogMessage("");
+            renderAuthDialog();
+            return;
+        }
         setAuthDialogMessage(authErrorMessage(error?.code), true);
     } finally {
         state.authDialogBusy = false;
@@ -2658,8 +2730,14 @@ async function verifyFrontendEmailOtp() {
     setAuthDialogMessage(t("auth.checkingCode"));
     renderAuthDialog();
     try {
-        await controller.verifyEmailOtp(email, otp);
-        if (!isSupabaseFrontendAuth()) setAuthDialogMessage(t("auth.providerError"), true);
+        const result = await controller.verifyEmailOtp(email, otp);
+        if (!isSupabaseFrontendAuth()) {
+            setAuthDialogMessage(t("auth.providerError"), true);
+            return;
+        }
+        state.frontendAuthSavedName = result?.account?.saved_name || state.frontendAuthSavedName || null;
+        closeAuthDialog();
+        await loadDashboardData({ silent: true });
     } catch (error) {
         setAuthDialogMessage(authErrorMessage(error?.code), true);
     } finally {
@@ -2677,12 +2755,39 @@ function logoutCurrentFrontendAuthority() {
             .catch((error) => setWalletMessage(authErrorMessage(error?.code), "error"))
             .finally(() => {
                 state.authDialogBusy = false;
+                state.frontendAuthUser = null;
+                state.frontendAuthSavedName = null;
                 updateWebsiteAuthUi();
                 renderDashboard();
             });
         return;
     }
     logoutWebsiteAuth();
+}
+
+function continueWithRestoredSession() {
+    closeAuthDialog();
+}
+
+function switchFromRestoredSession() {
+    const controller = frontendAuthController();
+    if (!controller || state.authDialogBusy) return;
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.loggingIn"));
+    renderAuthDialog();
+    void controller.signOut()
+        .then(() => {
+            state.authDialogStep = "email";
+            state.authDialogOtp = "";
+            state.frontendAuthUser = null;
+            state.frontendAuthSavedName = null;
+            setAuthDialogMessage("");
+        })
+        .catch((error) => setAuthDialogMessage(authErrorMessage(error?.code), true))
+        .finally(() => {
+            state.authDialogBusy = false;
+            renderAuthDialog();
+        });
 }
 
 function handleWebsiteAuthAction() {
@@ -9451,6 +9556,8 @@ function bindEvents() {
         else void loginWithTelegram();
     });
     document.querySelector("[data-auth-close]")?.addEventListener("click", closeAuthDialog);
+    document.querySelector("[data-auth-continue]")?.addEventListener("click", continueWithRestoredSession);
+    document.querySelector("[data-auth-switch]")?.addEventListener("click", switchFromRestoredSession);
     document.querySelector("[data-auth-dialog]")?.addEventListener("click", (event) => {
         if (event.target === event.currentTarget) closeAuthDialog();
     });

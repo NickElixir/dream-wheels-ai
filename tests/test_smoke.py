@@ -111,8 +111,8 @@ def test_bot_feedback_requires_internal_auth_when_no_init_data():
 
 def test_feedback_get_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/feedback")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_robokassa_result_accepts_get_method():
@@ -125,20 +125,20 @@ def test_robokassa_result_accepts_get_method():
 def test_payment_cabinet_requires_telegram_identity():
     """Кабинет не ходит в БД без Telegram identity."""
     r = client.get("/payments/cabinet")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_detailed_job_status_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_job_result_download_requires_identity():
     r = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
-    assert r.status_code == 400
-    assert r.json()["detail"] == "init_data or telegram_user_id is required"
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Authentication required"
 
 
 def test_cors_allows_configured_webapp_origin():

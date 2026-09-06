@@ -162,7 +162,13 @@ export function createAuthSessionController({ client, telemetry = null }) {
     let readyPromise = null;
     let authSubscription = null;
     let sessionRestoredReported = false;
+    let currentAuthUser = null;
     const listeners = new Set();
+
+    function safeAuthUser(session) {
+        const email = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
+        return email ? { email } : null;
+    }
 
     function getState() {
         return { ...state };
@@ -180,6 +186,7 @@ export function createAuthSessionController({ client, telemetry = null }) {
     }
 
     function setFromSession(status, session, event = null) {
+        currentAuthUser = safeAuthUser(session);
         setState({
             status,
             ...sessionMetadata(session),
@@ -297,6 +304,10 @@ export function createAuthSessionController({ client, telemetry = null }) {
         return () => listeners.delete(listener);
     }
 
+    function getCurrentAuthUser() {
+        return currentAuthUser ? { ...currentAuthUser } : null;
+    }
+
     return Object.freeze({
         initializeAuthSession: initialize,
         getSession,
@@ -305,6 +316,7 @@ export function createAuthSessionController({ client, telemetry = null }) {
         signOut,
         subscribeToAuthChanges,
         getAuthSessionState: getState,
+        getCurrentAuthUser,
     });
 }
 
@@ -430,6 +442,7 @@ function defaultAuthSession() {
             async signOut() { throw new AuthSessionError(code); },
             subscribeToAuthChanges() { return () => {}; },
             getAuthSessionState() { return { ...errorState }; },
+            getCurrentAuthUser() { return null; },
         };
         defaultController = Object.freeze(unavailable);
     }
@@ -443,6 +456,7 @@ export const refreshSession = () => defaultAuthSession().refreshSession();
 export const signOut = () => defaultAuthSession().signOut();
 export const subscribeToAuthChanges = (listener) => defaultAuthSession().subscribeToAuthChanges(listener);
 export const getAuthSessionState = () => defaultAuthSession().getAuthSessionState();
+export const getCurrentAuthUser = () => defaultAuthSession().getCurrentAuthUser();
 export const authSessionReady = initializeAuthSession();
 
 function defaultAuthOtp() {

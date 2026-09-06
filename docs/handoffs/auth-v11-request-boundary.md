@@ -167,6 +167,50 @@ the generic login action; its Console contained no Auth bootstrap errors. No
 OTP was sent again and no Supabase/admin mechanism was used to simulate live
 evidence.
 
+## Slice 6B.2 session restore / OTP / account bootstrap hardening
+
+```text
+SLICE_6B2_BASE_SHA                    = e2d672c29f5009020a447c70fbaf91f55db853f0
+STAGING_SHA_AT_START                  = 786170342ab64cc205775feb4090888b4126d5d7
+AUTH_OTP_REQUEST_DOES_NOT_AUTHENTICATE = PASS (automated)
+AUTH_RESTORE_OTP_RACE                 = PASS (automated)
+AUTH_DUPLICATE_OTP_REQUEST_ON_RESTORE = NONE (automated)
+AUTH_MISSING_CREDENTIALS_STATUS       = PASS (401)
+AUTH_STARTER_GRANT_ON_OTP_REQUEST     = NONE
+AUTH_EMAIL_AS_IDENTITY_KEY            = NO
+AUTH_AUTO_ACCOUNT_LINKING             = NONE
+PRODUCTION                            = NOT_TOUCHED
+```
+
+The frontend now keeps session state separate from OTP interaction state. A
+restored Supabase session is labelled `restored_session` and presents an
+explicit “already signed in” action; it no longer closes an active OTP dialog
+on a generic Supabase auth event. The controller rechecks the principal after
+bootstrap/reconciliation and rejects a request-code action with an existing
+verified session before calling `signInWithOtp`.
+
+Authenticated Supabase reconciliation now calls the narrow `POST /auth/bootstrap`
+operation after `/auth/me`. The backend resolves `AuthPrincipal` first, then
+reuses `ensure_credit_account_state()` and returns only safe account
+presentation data. The existing credit ledger remains authoritative and its
+canonical idempotency key is unchanged. Telegram bootstrap continues to be
+owned by `/start`; the new operation does not grant Telegram accounts.
+
+Supabase email is exposed only through an in-memory safe presentation accessor
+(`email`), with no custom storage or telemetry field. Website display precedence
+is email, saved username, then `Dream Wheels`; Telegram display behavior is
+unchanged. Missing credentials in protected user-route preflight now return
+`401 Authentication required`, while business validation responses remain
+unchanged.
+
+```text
+FRONTEND_AUTH_TESTS                   = PASS (40 passed)
+FULL_TEST_SUITE                       = PASS (500 passed, 5 skipped)
+RUFF / FORMAT / COMPILE / DIFF_CHECK  = PASS
+STAGING_DEPLOYMENT_6B2                = PENDING (exact acceptance SHA)
+LIVE_CANONICAL_STAGING_6B2            = PENDING (user browser flow)
+```
+
 ## Remaining acceptance gates
 
 The following require live browser/API evidence on the current WebApp build:
