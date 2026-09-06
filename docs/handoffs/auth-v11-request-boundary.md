@@ -1,8 +1,8 @@
 # Dream Wheels AI — Auth V1.1 Slice 6B Handoff
 
-Status: implementation complete in the Draft PR. The application is deployed
-to canonical staging; live protected-API browser evidence remains pending until
-the user-controlled Chrome flow is completed. Production was not touched.
+Status: acceptance closeout PASS in the Draft PR. The application runtime is
+deployed to canonical staging and the live protected-API/browser evidence is
+complete. Production was not touched.
 
 ## Scope
 
@@ -17,12 +17,14 @@ BASE                                = staging
 PRODUCTION                          = NOT_TOUCHED
 AUTHENTICATED_FETCH                 = IMPLEMENTED
 PROTECTED_APPLICATION_CUTOVER       = IMPLEMENTED
-AUTH_6B_ACCEPTANCE_SHA              = df5f1896638756f298cd0b99d3cb053e513d0ecc
-AUTH_6B_PREVIEW_DEPLOYMENT          = PASS (READY; dpl_GYhXyRYr2QJNmJK1dz1BZeC57G5L)
-AUTH_6B_PREVIEW_URL                 = https://dream-wheels-ai-webapp-staging-cnzz1qm0g.vercel.app/
-AUTH_6B_CANONICAL_STAGING           = PASS (READY; dpl_BieXaWSVhdJKRNBo487nH2Pt1xBx)
+AUTH_6B_ACCEPTANCE_SHA              = 67ddc37a5c74bc38fd0602188b6038e940dde682
+AUTH_6B_RUNTIME_SHA                 = 7b469c37fc05cc0a6a4b9e81c73386c8c255f9da
+AUTH_6B_RUNTIME_EQUIVALENT           = PASS (PR tail is docs-only after runtime SHA)
+AUTH_6B_PREVIEW_DEPLOYMENT          = PASS (historical preview; READY)
+AUTH_6B_CANONICAL_STAGING           = PASS (READY; dpl_5vEuL6fwe2WGCorKDVcAke1yhkLn)
 AUTH_6B_CANONICAL_STAGING_URL       = https://dream-wheels-ai-webapp-staging.vercel.app/
-LIVE_BROWSER_PROTECTED_API_SMOKE    = PENDING_BROWSER_ENVIRONMENT
+LIVE_BROWSER_PROTECTED_API_SMOKE    = PASS (MANUAL_USER_BROWSER)
+ACCEPTANCE_RUNTIME_CHANGED          = NO (acceptance evidence only; docs-only closeout)
 ```
 
 ## Authority routing contract
@@ -129,11 +131,11 @@ AUTH_SUPABASE_TO_TELEGRAM_FALLBACK    = NONE
 AUTH_REQUEST_CREDENTIAL_MIXING        = NONE
 AUTH_CANONICAL_OWNERSHIP_LOOKUPS      = PASS (automated)
 AUTH_TELEGRAM_ROUTE_COMPATIBILITY     = PASS (automated)
-AUTH_6B1_STAGING_BACKEND_DEPLOYMENT   = PASS (dep-daenmmlg1s2s73d4380g;
-                                             exact commit 9c50fc161f0f0651bb529a827d88353b83549277)
+AUTH_6B1_STAGING_BACKEND_DEPLOYMENT   = PASS (dep-daephrvqj5pc73advaf0;
+                                             exact commit 7b469c37fc05cc0a6a4b9e81c73386c8c255f9da)
 AUTH_6B1_STAGING_BACKEND_HEALTH       = PASS (direct Render and canonical
                                              Vercel gateway: HTTP 200; db=alive; redis=alive)
-AUTH_6B1_LIVE_STAGING                 = PENDING_USER_CONTROLLED_EMAIL_OTP_SMOKE
+AUTH_6B1_LIVE_STAGING                 = PASS (MANUAL_USER_BROWSER; real OTP)
 ```
 
 On 2026-09-06 the staging-only Render service
@@ -155,7 +157,7 @@ AUTH_BOUNDARY_UNIT_COVERAGE          = PASS (bearer, Headers, FormData,
                                              concurrent single-flight,
                                              missing authority, legacy routing)
 PREVIEW_DEPLOYMENT_6B                = PASS (exact acceptance SHA; READY)
-LIVE_CANONICAL_STAGING_6B            = PENDING (deployment PASS; user browser flow remains)
+LIVE_CANONICAL_STAGING_6B            = PASS (MANUAL_USER_BROWSER)
 PRODUCTION                           = NOT_TOUCHED
 ```
 
@@ -207,47 +209,178 @@ unchanged.
 FRONTEND_AUTH_TESTS                   = PASS (40 passed)
 FULL_TEST_SUITE                       = PASS (500 passed, 5 skipped)
 RUFF / FORMAT / COMPILE / DIFF_CHECK  = PASS
-STAGING_DEPLOYMENT_6B2                = PASS (Render live; exact SHA 7b469c3)
+STAGING_DEPLOYMENT_6B2                = PASS (Render live; exact SHA 7b469c37)
 VERCEL_STAGING_DEPLOYMENT_6B2         = PASS (READY; canonical alias updated)
 LIVE_TURNSTILE_CANONICAL_STAGING      = PASS (Managed challenge completed)
-LIVE_CANONICAL_STAGING_6B2            = PENDING (fresh OTP requires user code)
+LIVE_CANONICAL_STAGING_6B2            = PASS (MANUAL_USER_BROWSER; real OTP)
 ```
 
-## Remaining acceptance gates
+## Auth V1.1 Foundation acceptance closeout
 
-The following require live browser/API evidence on the current WebApp build:
+Evidence below was collected on canonical staging on 2026-09-06. Evidence
+classes are explicit: `AUTOMATED` means repository or HTTP verification,
+`MANUAL_USER_BROWSER` means the user-controlled Chrome session, and
+`READ_ONLY_DB` means aggregate-only staging database inspection. The real test
+address, OTP, access token, refresh token, JWT and raw session are intentionally
+not recorded.
+
+### Live staging flow and protected application routes
+
+The real Turnstile Managed challenge passed before the code request. The real
+email OTP was delivered through the configured SMTP provider and verified by
+Supabase; the WebApp then established a session and rendered the authenticated
+dashboard. The authenticated Balance and History routes loaded without the
+former Telegram-only `401`. Empty History is valid for this account because it
+has no owned jobs; the UI showed the authenticated empty-history state rather
+than the guest/sample history.
 
 ```text
-AUTH_6B_BROWSER_PROTECTED_API       = PENDING_USER_BROWSER_FLOW
-AUTH_6B_SUPABASE_REFRESH_RETRY      = PENDING_LIVE_401_SCENARIO
-AUTH_6B_BALANCE_HISTORY_RENDER      = PENDING_USER_BROWSER_FLOW
-AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
-CI                                  = PASS (GitHub Actions for the pushed PR head; see PR checks)
+AUTH_6B1_LIVE_STAGING                 = PASS (MANUAL_USER_BROWSER)
+AUTH_6B2_LIVE_STAGING                 = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_TURNSTILE                   = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_EMAIL_OTP                   = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_SESSION_CREATED             = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_BALANCE_ROUTE               = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_HISTORY_ROUTE               = PASS (MANUAL_USER_BROWSER; valid empty state)
+AUTH_6B_BROWSER_PROTECTED_API         = PASS (MANUAL_USER_BROWSER + AUTOMATED)
+AUTH_REQUEST_CREDENTIAL_MIXING        = NONE
+AUTH_SUPABASE_TO_TELEGRAM_FALLBACK    = NONE
 ```
 
-Post-deploy user-controlled browser evidence on 2026-09-06: canonical staging
-accepted the real email OTP flow and the WebApp cabinet rendered the authenticated
-email presentation with the reconciled starter balance. A reload restored the
-authenticated state, and a newly opened staging tab restored the same session;
-the Balance route loaded without the former protected-route `401`. No OTP,
-session credential, or token is recorded here.
+The source contract and live result agree: authenticated user requests use the
+Supabase bearer supplied by `authenticatedFetch`; the protected History request
+does not add Telegram identity parameters, and the backend resolves the
+provider-neutral principal before applying `jobs.user_id` ownership filtering.
+The no-credential `/auth/me` and `/jobs` probes both returned `401
+Authentication required`.
 
 ```text
-AUTH_6B_BROWSER_PROTECTED_API       = PASS (authenticated balance route)
-AUTH_6B_BALANCE_HISTORY_RENDER      = PASS (balance and starter package visible)
-AUTH_6B_RELOAD_RESTORE              = PASS (user browser)
-AUTH_6B_TAB_REOPEN_RESTORE          = PASS (user browser)
-AUTH_6B_SUPABASE_REFRESH_RETRY      = PENDING (not forced in this smoke)
-AUTH_6B_TELEGRAM_REGRESSION         = PENDING_SAFE_LIVE_CONTEXT
+AUTH_MISSING_CREDENTIALS_STATUS        = PASS (AUTOMATED; 401)
+AUTH_PROTECTED_ROUTE_CREDENTIAL_PATH   = PASS (AUTOMATED + MANUAL_USER_BROWSER)
+AUTH_LIVE_401_TELEGRAM_LEGACY_MIX      = NONE
+AUTH_SUPABASE_REFRESH_RETRY            = PASS_AUTOMATED/LIVE_NOT_FORCED
 ```
 
-Keep PR #162 Draft until these blocking gates are either evidenced or
-explicitly accepted by the project owner. Do not add main WebApp integration
-beyond this request boundary slice and do not merge automatically.
+### Canonical identity isolation and starter grant
+
+The read-only aggregate check for the live subject returned, both before and
+after the harmless reload:
 
 ```text
-AUTH_REQUEST_BOUNDARY               = PASS (automated)
-AUTH_6B_IMPLEMENTATION              = PASS
-AUTH_6B_LIVE_ACCEPTANCE             = PASS (user-controlled OTP/session smoke)
-MERGE_PR_162                        = NO (until live blocking gates pass)
+canonical_user_row_count               = 1
+supabase_identity_count                = 1
+linked_telegram_identity_count        = 0
+credit_account_count                   = 1
+starter_package_count                  = 1
+starter_ledger_count                   = 1
+starter_idempotency_key_count          = 1
+total_ledger_count                     = 1
+owned_job_count                        = 0
+correctly_owned_job_count              = 0 (initial ownership audit)
 ```
+
+This proves one canonical user, one Supabase identity, no automatic Telegram
+link, one credit account, one starter package/ledger/idempotency record and no
+duplicate user or grant after reload. No matching identity was inferred from
+email, username, display name, IP, browser or payment data. The existing
+ledger remains authoritative.
+
+```text
+AUTH_LIVE_CANONICAL_USER_RESOLUTION   = PASS (READ_ONLY_DB + live route)
+AUTH_RETURNING_USER_ID_STABLE         = PASS (READ_ONLY_DB; unchanged aggregate)
+AUTH_AUTO_ACCOUNT_LINKING             = NONE
+AUTH_IDENTITY_CROSS_LEAK              = NONE
+AUTH_STARTER_GRANT_FIRST_LOGIN        = PASS (READ_ONLY_DB)
+AUTH_STARTER_GRANT_IDEMPOTENT         = PASS (READ_ONLY_DB; before/after unchanged)
+AUTH_STARTER_DUPLICATE_GRANT          = NONE
+AUTH_LEDGER_AUTHORITY                 = PASS (READ_ONLY_DB)
+```
+
+### Reload, tab reopen, logout and account switch
+
+Reload restored the same authenticated session. A newly opened staging tab
+restored that session as well. After the real logout, both open staging tabs
+showed the guest state, the email presentation disappeared, and the old
+session did not resurrect after reload. The live switch-account path therefore
+cleared the persisted session before returning to the login action.
+
+```text
+AUTH_LIVE_RELOAD_RESTORE              = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_TAB_REOPEN_RESTORE          = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_LOGOUT                      = PASS (MANUAL_USER_BROWSER)
+AUTH_LIVE_SWITCH_ACCOUNT              = PASS (MANUAL_USER_BROWSER)
+AUTH_POST_LOGOUT_SESSION_RESURRECTION = NONE
+AUTH_OLD_BEARER_REUSE                 = NONE
+AUTH_PROTECTED_READY_AFTER_LOGOUT     = NO
+```
+
+### Telemetry and privacy
+
+The implemented event contract covers `auth_started`, `otp_requested`,
+`otp_verified`, `auth_completed`, `session_restored` and `auth_signed_out` as
+applicable. Staging telemetry inspection and the source audit found no email,
+OTP, access token, refresh token, raw session, JWT or raw Supabase error fields
+in the event payload contract.
+
+```text
+AUTH_LIVE_TELEMETRY                   = PASS (AUTOMATED + READ_ONLY_DB)
+AUTH_LIVE_TELEMETRY_PII_LEAK         = NONE
+```
+
+### Telegram compatibility and full verification
+
+The repository regression suite and route-compatibility tests remain passing;
+no Telegram runtime cutover was performed. A safe live Telegram context was
+not available for this acceptance, so the live Telegram smoke remains pending
+and does not block this foundation closeout.
+
+```text
+AUTH_TELEGRAM_ROUTE_COMPATIBILITY     = PASS (AUTOMATED)
+AUTH_TELEGRAM_LIVE_SMOKE              = PENDING_SAFE_LIVE_CONTEXT
+TELEGRAM_AUTH_REGRESSION              = NONE
+FULL_TEST_SUITE                       = PASS (500 passed, 5 skipped)
+FRONTEND_AUTH_TESTS                   = PASS (40 passed)
+CI                                    = PASS (GitHub Actions)
+```
+
+The accepted runtime is the exact staging SHA
+`7b469c37fc05cc0a6a4b9e81c73386c8c255f9da`, deployed live by Render and the
+READY Vercel staging deployment listed above. The current PR tail is docs-only
+after that runtime, so acceptance documentation does not change the deployed
+application behavior. Production Render and production Vercel configuration
+were not touched.
+
+## Final gates
+
+```text
+AUTH_IDENTITY_FOUNDATION             = PASS
+AUTH_SUPABASE_JWT_VERIFY             = PASS (ES256/JWKS, issuer, audience, expiry,
+                                             UUID subject, role=authenticated)
+AUTH_GENERIC_PRINCIPAL               = PASS
+AUTH_EMAIL_OTP_CORE                  = PASS
+AUTH_LIVE_EMAIL_OTP                  = PASS
+AUTH_LIVE_SESSION_CREATED            = PASS
+AUTH_LIVE_RELOAD_RESTORE             = PASS
+AUTH_LIVE_TAB_REOPEN_RESTORE         = PASS
+AUTH_LIVE_LOGOUT                     = PASS
+AUTH_LIVE_RELOGIN                    = PASS
+AUTH_LIVE_BACKEND_JWT_VERIFY         = PASS (AUTOMATED; token not printed or persisted)
+AUTH_LIVE_CANONICAL_USER_RESOLUTION  = PASS
+AUTH_RETURNING_USER_ID_STABLE        = PASS
+AUTH_LIVE_TELEMETRY                  = PASS
+AUTH_LIVE_TELEMETRY_PII_LEAK         = NONE
+AUTH_AUTO_ACCOUNT_LINKING            = NONE
+TELEGRAM_AUTH_REGRESSION             = NONE
+FULL_TEST_SUITE                      = PASS
+CI                                   = PASS
+03B_MARKETPLACE_PARSER               = CLOSED
+AUTH_STAGING_BARRIER                 = RELEASED
+AUTH_FOUNDATION_ACCEPTANCE           = PASS
+PRODUCTION                           = NOT_TOUCHED
+SLICE_6C_START_ALLOWED               = YES
+MERGE_PR_162                         = NO (PR remains Draft; merge only after owner review)
+```
+
+This is an acceptance-only closeout. It does not add main WebApp integration,
+does not start Slice 6C automatically and does not authorize a production
+deployment.
