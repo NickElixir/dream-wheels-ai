@@ -134,16 +134,34 @@ PR #140 was not merged or cherry-picked. Its OAuth redirect, request Cookie,
 Set-Cookie, multiple-cookie, `Vary: Cookie`, and provider-session changes remain
 separately reviewable. PR #140 remains open.
 
-## Current decision
+## Merge and post-merge closeout
+
+The hardening was merged as PR #165. The accepted application runtime did not
+change: the only files between the accepted runtime SHA and the staging merge
+tree are this handoff document.
 
 ```ini
-GATEWAY_SECURITY_FIX_ACCEPTANCE = PASS
-GATEWAY_HOST_CONTROL_HARDENING = READY_FOR_MERGE
-PR = READY
-MERGE = YES (owner approval required; not performed automatically)
-PRODUCTION = NOT_TOUCHED
+PR_165                              = MERGED
+PR_165_MERGE_SHA                    = a3d79ea38eb770a73d6f16c9c6a571192435e8cb
+RUNTIME_ACCEPTANCE_SHA              = a3d07e73496d4da7f752af7437b9ef4794ce8895
+RUNTIME_EQUIVALENCE                 = PASS (docs-only after accepted runtime)
+POST_MERGE_RENDER_HEALTH            = PASS (/health 200)
+POST_MERGE_VERCEL_HEALTH            = PASS (/api/backend/health 200)
+POST_MERGE_DEEP_PATH                = PASS (/api/backend/auth/telegram/nonce 200)
+POST_MERGE_PROTECTED_SMOKE          = PASS (auth/me, payments/cabinet, jobs 200)
+PRODUCTION                          = NOT_TOUCHED
 ```
 
-All blocking gates are now satisfied. The PR can proceed to owner review and
-manual merge; the post-merge smoke must repeat `/api/backend/health`, the deep
-path, and one representative protected request.
+The canonical Vercel staging deployment remained the accepted runtime
+`a3d07e7…`; no new frontend deployment was required for the docs-only merge.
+The post-merge probes were read-only and did not create a job, payment, or
+generation operation.
+
+```ini
+GATEWAY_SECURITY_FIX_ACCEPTANCE     = PASS
+GATEWAY_HOST_CONTROL_HARDENING      = CLOSED
+GATEWAY_PROTECTED_REQUEST_SMOKE     = PASS
+GATEWAY_DEEP_PATH_STAGING_SMOKE     = PASS
+PAYMENT_RUNTIME_CHANGE               = NONE
+DATABASE_MIGRATION                    = NONE
+```
