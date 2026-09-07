@@ -71,3 +71,134 @@ production must not be changed as part of this slice.
    late ResultURL.
 5. Keep the PR Draft until external Robokassa settings and live staging
    browser returns are verified.
+
+## Current staging rebase and acceptance state
+
+Recorded: 2026-09-08. The existing PR #164 branch was rebased onto the
+canonical staging tree after Auth V1.1 closeout and gateway hardening. No
+second payment PR was created.
+
+```ini
+PAYMENT_05B1_OLD_BASE_SHA              = 0dd3a92d35168b76f62c07559f85c3c3666223f5
+PAYMENT_05B1_PRE_REBASE_HEAD          = ee50abd96607108df5f66e7b92d6cc252294be8c
+PAYMENT_05B1_CURRENT_STAGING_SHA      = 9ff620a1fc19806717aff5d98999240e78375b3c
+PAYMENT_05B1_REBASED_HEAD             = b01adae5d3bced34d275eba9cabe01157b593fa7
+PAYMENT_05B1_REBASE_METHOD             = git rebase origin/staging
+PR_164                                = OPEN / DRAFT
+PRODUCTION                            = NOT_TOUCHED
+```
+
+The post-rebase diff remains limited to payment return routing, payment
+service/API code, migration 0033, payment/UI tests, and this workstream's
+handoff. It does not change Auth V1.1, gateway origin-control hardening,
+fitment, generation, vehicle recognition, unrelated migrations, or production
+configuration.
+
+## Staging migration audit
+
+The staging database was queried read-only through the Supabase management
+connection. Migration `payment_return_routing` is present exactly once in the
+remote migration inventory (`20260906202357`). The migration was not reapplied
+by this closeout.
+
+```ini
+PAYMENT_RETURN_STAGING_MIGRATION       = PASS
+PAYMENTS_TOTAL                         = 44
+PAYMENTS_DISTINCT_INVOICES             = 44
+LEGACY_TELEGRAM_BACKFILL               = 44 / 44 (`telegram`, `/t/`)
+INVALID_CLIENT_CHANNELS                = 0
+EMPTY_RETURN_ROUTES                    = 0
+ROUTING_COLUMNS                        = PASS (`client_channel`, `return_to`)
+ROUTING_CONSTRAINTS                    = PASS (channel, non-empty route)
+PAYMENT_STATES_OUTSIDE_CONTRACT        = 0
+CREDIT_LEDGER_IDEMPOTENCY_DUPLICATES   = 0
+```
+
+The snapshot contained 1 failed, 15 paid, and 28 pending payments. The SQL
+migration only backfills the two routing columns on `payments`; it does not
+write balances or the credit ledger. No payment row was created or reset by
+this acceptance.
+
+## Automated and exact-head staging verification
+
+```ini
+PAYMENT_FOCUSED_TESTS                  = PASS (113 passed)
+AUTH_FOCUSED_TESTS                     = PASS (51 passed, 2 skipped)
+GATEWAY_NODE_TESTS                     = PASS (3 passed)
+FULL_PYTEST                            = PASS (531 passed, 5 skipped)
+FRONTEND_AUTH_TESTS                    = PASS (43 passed)
+FRONTEND_BUILD                         = PASS
+RUFF_CHECK                             = PASS
+RUFF_FORMAT                            = PASS (131 files formatted)
+COMPILEALL                             = PASS
+GIT_DIFF_CHECK                         = PASS
+PAYMENT_CLIENT_CHANNEL_CONTRACT        = PASS
+PAYMENT_RETURN_OPEN_REDIRECT           = NONE (automated)
+PAYMENT_CHANNEL_RETURN_MISMATCH        = REJECTED (automated)
+PAYMENT_DB_RETURN_INJECTION            = NONE (automated)
+PAYMENT_INVALID_STORED_RETURN_FALLBACK = PASS (automated)
+PAYMENT_401_RETRY                      = DISABLED (financial POST)
+PAYMENT_CREDIT_IDEMPOTENCY             = PASS (automated)
+PAYMENT_DUPLICATE_CREDIT               = NONE (automated)
+PAYMENT_RETRY_NEW_INVOICE              = PASS (automated)
+AUTH_PAYMENT_REGRESSION                = NONE
+GATEWAY_HOST_CONTROL_REGRESSION        = NONE
+```
+
+Exact staging deployments used the rebased runtime SHA:
+
+```ini
+PAYMENT_05B1_EXACT_HEAD_STAGING        = PASS
+RENDER_SERVICE                         = dream-wheels-ai-robokassa-staging
+RENDER_DEPLOYMENT_ID                   = dep-dafk7nv40ujc73blocsg
+RENDER_DEPLOYMENT_STATUS               = live
+VERCEL_PROJECT                         = dream-wheels-ai-webapp-staging
+VERCEL_DEPLOYMENT_ID                   = dpl_9Y9LpcXHTJVgeHL3xtj96mNswxoe
+VERCEL_DEPLOYMENT_STATUS               = READY
+VERCEL_CANONICAL_ALIAS                 = https://dream-wheels-ai-webapp-staging.vercel.app
+RENDER_HEALTH                          = PASS (200)
+VERCEL_GATEWAY_HEALTH                  = PASS (200)
+```
+
+The direct Render SuccessURL handler was also exercised read-only with an
+existing paid staging fixture: it returned `303` to the persisted legacy
+Telegram route and did not settle or grant credits. This confirms the
+callback classification and stored-route lookup without creating a payment.
+
+```ini
+ROBOKASSA_CALLBACK_CLASSIFICATION     = PASS (automated + direct staging SuccessURL)
+PAYMENT_SUCCESS_RETURN_DIRECT         = PASS (read-only existing paid fixture)
+```
+
+## Remaining live blocker
+
+The current browser-control security check did not grant access to the
+existing authenticated Chrome staging tab. Therefore the Robokassa merchant
+dashboard settings and the ordinary WebApp test-payment browser return could
+not be re-verified in this run. No security control was bypassed.
+
+```ini
+PAYMENT_EXTERNAL_ROBOKASSA_CONFIG     = PENDING_BROWSER_SECURITY_CHECK
+PAYMENT_WEB_FAIL_RETURN_LIVE          = PENDING
+PAYMENT_WEB_SUCCESS_RETURN_LIVE       = PENDING
+PAYMENT_WEB_RESULT_UI                 = PENDING
+PAYMENT_RETURN_TOKEN_LEAK              = PENDING_BROWSER_CHECK
+PAYMENT_RETURN_PII_LEAK               = PENDING_BROWSER_CHECK
+PAYMENT_TELEGRAM_RETURN               = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
+PAYMENT_05B1_LIVE_ACCEPTANCE          = BLOCKED_EXTERNAL_CONFIG_AND_BROWSER
+PR_164                                = DRAFT
+MERGE                                 = NO
+PRODUCTION                            = NOT_TOUCHED
+```
+
+The external staging merchant must be confirmed to use the backend handlers,
+not a legacy direct `/t/` Vercel URL:
+
+```text
+https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/result
+https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/success
+https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/fail
+```
+
+Until that external configuration and the WebApp SuccessURL/FailURL smoke are
+verified, #164 must remain Draft and must not be merged.
