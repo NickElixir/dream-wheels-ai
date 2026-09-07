@@ -3,6 +3,7 @@ const { PassThrough } = require("node:stream");
 const { test } = require("node:test");
 
 const gateway = require("../webapp/api/backend-gateway");
+const proxy = require("../webapp/lib/backend-proxy");
 
 function responseRecorder() {
     const response = new PassThrough();
@@ -45,6 +46,19 @@ test("normalizes the wildcard path and rejects malformed control values", () => 
     assert.equal(gateway.backendPathFromRequest({ query: { __backend_path: "" } }), "/");
     assert.equal(gateway.backendPathFromRequest({ query: {} }), null);
     assert.equal(gateway.backendPathFromRequest({ query: { __backend_path: "jobs/123?x=1" } }), null);
+    const backslash = String.fromCharCode(92);
+    assert.equal(
+        gateway.backendPathFromRequest({ query: { __backend_path: `${backslash}evil.example` } }),
+        null,
+    );
+    assert.equal(
+        gateway.backendPathFromRequest({ query: { __backend_path: `foo${backslash}bar` } }),
+        null,
+    );
+    assert.equal(
+        gateway.backendPathFromRequest({ query: { __backend_path: `${decodeURIComponent("%5C")}evil.example` } }),
+        null,
+    );
 });
 
 test("forwards deep paths, query, method, headers, body, and response bytes", async () => {
@@ -90,6 +104,7 @@ test("forwards deep paths, query, method, headers, body, and response bytes", as
             fetchCalls[0].url,
             "https://backend.test/jobs/123/assets/car_original/download?tag=a%2Fb&tag=second&empty=",
         );
+        assert.equal(new URL(fetchCalls[0].url).origin, "https://backend.test");
         assert.equal(fetchCalls[0].options.method, "PATCH");
         assert.equal(fetchCalls[0].options.headers.get("authorization"), "Bearer test-token");
         assert.equal(fetchCalls[0].options.headers.get("content-type"), "application/json");
@@ -98,9 +113,47 @@ test("forwards deep paths, query, method, headers, body, and response bytes", as
 
         const snapshot = response.snapshot();
         assert.equal(snapshot.statusCode, 206);
+        assert.equal(snapshot.headers.get("cache-control"), "no-store, max-age=0");
         assert.equal(snapshot.headers.get("content-type"), "image/jpeg");
         assert.equal(snapshot.headers.get("content-disposition"), "inline; filename=car.jpg");
         assert.equal(snapshot.body, "asset-bytes");
+    } finally {
+        if (previousBackendUrl === undefined) delete process.env.BACKEND_URL;
+        else process.env.BACKEND_URL = previousBackendUrl;
+        global.fetch = previousFetch;
+    }
+});
+
+test("rejects malformed and host-switching backend paths before fetch", async () => {
+    const previousFetch = global.fetch;
+    const previousBackendUrl = process.env.BACKEND_URL;
+    let fetchCalls = 0;
+    global.fetch = async () => {
+        fetchCalls += 1;
+        throw new Error("fetch must not be called");
+    };
+
+    try {
+        process.env.BACKEND_URL = "https://backend.test";
+        const backslash = String.fromCharCode(92);
+        const dangerousPaths = [
+            "//evil.example",
+            `/${backslash}evil.example`,
+            "http://evil.example/",
+            "http://[malformed",
+        ];
+
+        for (const backendPath of dangerousPaths) {
+            const response = responseRecorder();
+            await proxy.proxyBackendRequest(
+                { method: "GET", url: "/api/backend-gateway", headers: {} },
+                response,
+                { backendPath },
+            );
+            assert.equal(response.snapshot().statusCode, 400, backendPath);
+        }
+
+        assert.equal(fetchCalls, 0);
     } finally {
         if (previousBackendUrl === undefined) delete process.env.BACKEND_URL;
         else process.env.BACKEND_URL = previousBackendUrl;

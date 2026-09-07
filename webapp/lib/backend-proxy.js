@@ -67,7 +67,17 @@ async function proxyBackendRequest(req, res, { backendPath, stripQueryKeys = [] 
 
     const requestUrl = new URL(req.url || "/", "https://webapp.invalid");
     const path = backendPath ?? requestUrl.pathname.replace(/^\/api\/backend(?:\/|$)/, "");
-    const target = new URL(path, `${backendUrl.toString().replace(/\/$/, "")}/`);
+    let target;
+    try {
+        target = new URL(path, `${backendUrl.toString().replace(/\/$/, "")}/`);
+    } catch {
+        res.status(400).json({ detail: "A valid backend path is required" });
+        return;
+    }
+    if (target.origin !== backendUrl.origin) {
+        res.status(400).json({ detail: "A valid backend path is required" });
+        return;
+    }
     target.search = requestSearch(requestUrl, stripQueryKeys);
 
     try {
