@@ -104,13 +104,18 @@ GATEWAY_HOST_OVERRIDE_LIVE = NOT_REQUIRED_AUTOMATED_PROOF
 The live malformed-path request was not sent to an uncontrolled host. The
 host-control property is proven by mocked fetch tests, as required.
 
-Protected browser smoke is still pending because the available Chrome staging
-tab is currently anonymous and shows the Auth gate. No new OTP request was
-initiated solely for this security slice.
+The authenticated Chrome staging tab confirmed the current user, restored
+session, and no Auth gate flash after reload. Read-only requests through the
+gateway returned `200` for `/auth/me`, `/payments/cabinet`, and `/jobs`.
+`/app/new` also opened successfully. No financial mutation was initiated.
+
+The browser security check then became unavailable for further scripted tab
+access. No security control was bypassed.
 
 ```ini
-GATEWAY_PROTECTED_REQUEST_SMOKE = PENDING_AUTH_SESSION
-GATEWAY_DEEP_PATH_STAGING_SMOKE = PENDING_AUTH_SESSION
+GATEWAY_PROTECTED_REQUEST_SMOKE = PARTIAL (auth/me, payments/cabinet, jobs 200)
+AUTH_BOOTSTRAP_LIVE = PENDING_BROWSER_SECURITY_CHECK
+GATEWAY_DEEP_PATH_STAGING_SMOKE = PENDING_BROWSER_SECURITY_CHECK
 ```
 
 ## PR #140 reconciliation
@@ -127,7 +132,7 @@ separately reviewable. PR #140 remains open.
 ## Current decision
 
 ```ini
-GATEWAY_SECURITY_FIX_ACCEPTANCE = BLOCKED_PENDING_LIVE_AUTH_SMOKE
+GATEWAY_SECURITY_FIX_ACCEPTANCE = BLOCKED_PENDING_BOOTSTRAP_AND_DEEP_SMOKE
 GATEWAY_HOST_CONTROL_HARDENING = NOT_READY
 PR = DRAFT
 MERGE = NO
