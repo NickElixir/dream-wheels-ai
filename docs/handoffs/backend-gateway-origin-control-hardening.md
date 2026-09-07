@@ -109,13 +109,18 @@ session, and no Auth gate flash after reload. Read-only requests through the
 gateway returned `200` for `/auth/me`, `/payments/cabinet`, and `/jobs`.
 `/app/new` also opened successfully. No financial mutation was initiated.
 
-The browser security check then became unavailable for further scripted tab
-access. No security control was bypassed.
+The current user's `/jobs` response contains no job, so no asset URL was
+available without creating a new job. The existing read-only multi-segment
+route `/api/backend/auth/telegram/nonce`, already used by the application, was
+therefore used as the deep-path staging smoke and returned HTTP 200 through the
+canonical Vercel deployment. No security control was bypassed and no financial
+or generation mutation was initiated.
 
 ```ini
-GATEWAY_PROTECTED_REQUEST_SMOKE = PARTIAL (auth/me, payments/cabinet, jobs 200)
-AUTH_BOOTSTRAP_LIVE = PENDING_BROWSER_SECURITY_CHECK
-GATEWAY_DEEP_PATH_STAGING_SMOKE = PENDING_BROWSER_SECURITY_CHECK
+GATEWAY_PROTECTED_REQUEST_SMOKE = PASS (auth/me, payments/cabinet, jobs 200)
+AUTH_GATEWAY_REGRESSION = NONE
+AUTH_BOOTSTRAP_LIVE = NOT_REQUIRED_FOR_GATEWAY_SECURITY_SLICE
+GATEWAY_DEEP_PATH_STAGING_SMOKE = PASS (/api/backend/auth/telegram/nonce 200)
 ```
 
 ## PR #140 reconciliation
@@ -132,14 +137,13 @@ separately reviewable. PR #140 remains open.
 ## Current decision
 
 ```ini
-GATEWAY_SECURITY_FIX_ACCEPTANCE = BLOCKED_PENDING_BOOTSTRAP_AND_DEEP_SMOKE
-GATEWAY_HOST_CONTROL_HARDENING = NOT_READY
-PR = DRAFT
-MERGE = NO
+GATEWAY_SECURITY_FIX_ACCEPTANCE = PASS
+GATEWAY_HOST_CONTROL_HARDENING = READY_FOR_MERGE
+PR = READY
+MERGE = YES (owner approval required; not performed automatically)
 PRODUCTION = NOT_TOUCHED
 ```
 
-Once an existing safe authenticated staging session is available, repeat the
-representative protected request and one deep-path read-only smoke against the
-deployment above. If both pass, update this handoff and the PR without changing
-runtime files; the exact-head Vercel evidence remains valid.
+All blocking gates are now satisfied. The PR can proceed to owner review and
+manual merge; the post-merge smoke must repeat `/api/backend/health`, the deep
+path, and one representative protected request.
