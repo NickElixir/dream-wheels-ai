@@ -186,29 +186,67 @@ ROBOKASSA_CALLBACK_CLASSIFICATION     = PASS (automated + direct staging Success
 PAYMENT_SUCCESS_RETURN_DIRECT         = PASS (read-only existing paid fixture)
 ```
 
-## Remaining live blocker
+## Live invoice audit
 
-The current browser-control security check did not grant access to the
-existing authenticated Chrome staging tab. Therefore the Robokassa merchant
-dashboard settings and the ordinary WebApp test-payment browser return could
-not be re-verified in this run. No security control was bypassed.
+The two user-created staging invoices were checked read-only in Supabase. No
+payment, balance, or ledger row was changed by this audit.
 
 ```ini
-PAYMENT_EXTERNAL_ROBOKASSA_CONFIG     = PENDING_BROWSER_SECURITY_CHECK
-PAYMENT_WEB_FAIL_RETURN_LIVE          = PENDING
-PAYMENT_WEB_SUCCESS_RETURN_LIVE       = PENDING
-PAYMENT_WEB_RESULT_UI                 = PENDING
-PAYMENT_RETURN_TOKEN_LEAK              = PENDING_PAYMENT_FLOW_CHECK
-PAYMENT_RETURN_PII_LEAK                = PENDING_PAYMENT_FLOW_CHECK
+FAIL_INVOICE_50_STATUS                 = pending
+FAIL_INVOICE_50_FAILED_AT              = NULL
+FAIL_INVOICE_50_CLIENT_CHANNEL          = web
+FAIL_INVOICE_50_RETURN_TO               = /app
+FAIL_INVOICE_50_PURCHASE_GRANTS         = 0
+FAIL_INVOICE_50_LEDGER_ROWS             = 0
+FAIL_INVOICE_50_RESULT                  = NOT_PASS (FailURL state transition not evidenced)
+
+SUCCESS_INVOICE_51_STATUS               = paid
+SUCCESS_INVOICE_51_PAID_AT              = PRESENT
+SUCCESS_INVOICE_51_CLIENT_CHANNEL       = web
+SUCCESS_INVOICE_51_RETURN_TO            = /app
+SUCCESS_INVOICE_51_PURCHASE_GRANTS      = 1 (3 credits)
+SUCCESS_INVOICE_51_LEDGER_ROWS          = 1 (+3 credits)
+SUCCESS_INVOICE_51_IDEMPOTENCY_ROWS     = 1
+SUCCESS_INVOICE_51_BALANCE              = 3 -> 6
+SUCCESS_INVOICE_51_RESULT               = PASS (ResultURL-backed settlement and one grant)
+
+SUCCESS_BROWSER_RETURN_PATH             = /app?payment=success&invoice_id=51
+PAYMENT_RETURN_TOKEN_LEAK               = NONE (observed URL)
+PAYMENT_RETURN_PII_LEAK                 = NONE (observed URL)
+```
+
+The success URL contained only the expected `payment` and `invoice_id`
+parameters. The canonical browser tab currently shows the Auth gate because
+the restored browser session had expired, so the URL and database evidence are
+recorded separately. No fail-return URL for invoice 50 was available in the
+browser history, and its database row proves that the expected `pending ->
+failed` transition did not occur.
+
+## Remaining live blocker
+
+The success flow is verified, but the fail flow is not. Invoice 50 remains
+`pending` with no `failed_at`, which means the staging FailURL callback did not
+complete the required state transition for that test. The merchant dashboard
+configuration itself was not re-read in this audit; production remains
+untouched.
+
+```ini
+PAYMENT_EXTERNAL_ROBOKASSA_CONFIG     = PARTIAL (success evidence; FailURL unverified)
+PAYMENT_WEB_FAIL_RETURN_LIVE          = BLOCKED (invoice 50 remains pending)
+PAYMENT_WEB_SUCCESS_RETURN_LIVE       = PASS (invoice 51)
+PAYMENT_WEB_RESULT_UI                 = PASS (success return URL observed)
+PAYMENT_RETURN_TOKEN_LEAK              = NONE
+PAYMENT_RETURN_PII_LEAK                = NONE
 PAYMENT_TELEGRAM_RETURN               = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
-PAYMENT_05B1_LIVE_ACCEPTANCE          = PENDING_EXTERNAL_CONFIG_AND_PAYMENT_FLOW
+PAYMENT_05B1_LIVE_ACCEPTANCE          = PENDING_FAIL_FLOW_CALLBACK
 PR_164                                = DRAFT
 MERGE                                 = NO
 PRODUCTION                            = NOT_TOUCHED
 ```
 
-The external staging merchant must be confirmed to use the backend handlers,
-not a legacy direct `/t/` Vercel URL:
+The external staging merchant must still be confirmed to use the backend
+handlers, not a legacy direct `/t/` Vercel URL, and invoice 50 must be
+retested until the FailURL transition is visible:
 
 ```text
 https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/result
