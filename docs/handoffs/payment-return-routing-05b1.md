@@ -84,7 +84,7 @@ PAYMENT_05B1_PRE_REBASE_HEAD          = ee50abd96607108df5f66e7b92d6cc252294be8c
 PAYMENT_05B1_CURRENT_STAGING_SHA      = 9ff620a1fc19806717aff5d98999240e78375b3c
 PAYMENT_05B1_REBASED_HEAD             = b01adae5d3bced34d275eba9cabe01157b593fa7
 PAYMENT_05B1_REBASE_METHOD             = git rebase origin/staging
-PR_164                                = OPEN / DRAFT
+PR_164                                = MERGED
 PRODUCTION                            = NOT_TOUCHED
 ```
 
@@ -273,8 +273,37 @@ PAYMENT_RETURN_TOKEN_LEAK               = NONE
 PAYMENT_RETURN_PII_LEAK                 = NONE
 PAYMENT_TELEGRAM_RETURN                 = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
 PAYMENT_05B1_LIVE_ACCEPTANCE            = PASS_WITH_PROVIDER_LIMITATION
-PR_164                                  = READY
-MERGE                                   = NO
+
+## 05B.1 Post-merge closeout
+
+Recorded: 2026-09-08 after owner-approved merge commit
+`709e547a27b6be53932f587d17310c7329b2405a`.
+
+```ini
+05B_1_PAYMENT_RETURN_ROUTING             = CLOSED
+PAYMENT_RETURN_ROUTING_ACCEPTANCE        = PASS
+PR_164                                  = MERGED
+MERGE                                   = YES (owner-approved merge commit)
+POST_MERGE_RENDER_HEALTH                = PASS (200)
+POST_MERGE_VERCEL_GATEWAY_HEALTH        = PASS (200)
+POST_MERGE_STATIC_APP_ROUTES            = PASS (/, /app, /app/new, /app/history = 200)
+POST_MERGE_AUTHENTICATED_APP            = PASS (/app, /app/new, /app/history; no Auth gate)
+POST_MERGE_PROTECTED_API_SMOKE          = PASS (/auth/me, /payments/cabinet, /jobs)
+POST_MERGE_FAILED_INVOICE_52            = PASS (failed visible; no credit regression)
+POST_MERGE_VERCEL_DEPLOYMENT            = dpl_Z8jWxw8zV5iRhyGbFmAcAwc8E6Wf
+GATEWAY_HOST_CONTROL                    = INTACT
+AUTH_RESTORE                            = INTACT
+PAYMENT_RETURN_ROUTING_MIGRATION        = INTACT
+PRODUCTION                              = NOT_TOUCHED
+```
+
+The canonical staging alias remained healthy after merge. The authenticated
+browser session opened the App, creation flow, and render history; cabinet
+and history data loaded, and invoice 52 remained visibly failed with no credit
+grant. The Render service was not redeployed.
+
+PR_164                                  = MERGED
+MERGE                                   = YES
 PRODUCTION                              = NOT_TOUCHED
 ```
 
