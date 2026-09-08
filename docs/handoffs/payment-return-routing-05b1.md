@@ -153,12 +153,28 @@ RENDER_SERVICE                         = dream-wheels-ai-robokassa-staging
 RENDER_DEPLOYMENT_ID                   = dep-dafk7nv40ujc73blocsg
 RENDER_DEPLOYMENT_STATUS               = live
 VERCEL_PROJECT                         = dream-wheels-ai-webapp-staging
-VERCEL_DEPLOYMENT_ID                   = dpl_9Y9LpcXHTJVgeHL3xtj96mNswxoe
+VERCEL_DEPLOYMENT_ID                   = dpl_626HQ9tKD3LerpLxq4VnF84vLEx3
 VERCEL_DEPLOYMENT_STATUS               = READY
 VERCEL_CANONICAL_ALIAS                 = https://dream-wheels-ai-webapp-staging.vercel.app
 RENDER_HEALTH                          = PASS (200)
 VERCEL_GATEWAY_HEALTH                  = PASS (200)
+PAYMENT_05B1_VERCEL_STATIC_APP         = PASS
+PAYMENT_05B1_EXACT_HEAD_STAGING        = PASS
 ```
+
+The earlier deployment `dpl_9Y9LpcXHTJVgeHL3xtj96mNswxoe` was not accepted:
+its prebuilt output omitted the normal static WebApp files. It was replaced by
+the fresh exact-runtime deployment above. The new clean-worktree build
+contained `static/index.html`, the SPA rewrite target, `app.js`, CSS, and Auth
+bundles; Vercel metadata reports Git SHA
+`b01adae5d3bced34d275eba9cabe01157b593fa7`.
+
+Anonymous HTTP checks on the canonical alias returned 200 for `/`, `/app`,
+`/app/new`, `/app/history`, `/index.html`, `/app.js`, `/style.css`,
+`/auth/app-auth.bundle.js`, `/version.json`, and `/api/backend/health`.
+The existing authenticated browser session also restored after reload and
+opened `/app`, `/app/new`, and `/app/history` without an Auth/login flash.
+Render was not redeployed or changed.
 
 The direct Render SuccessURL handler was also exercised read-only with an
 existing paid staging fixture: it returned `303` to the persisted legacy
@@ -182,10 +198,10 @@ PAYMENT_EXTERNAL_ROBOKASSA_CONFIG     = PENDING_BROWSER_SECURITY_CHECK
 PAYMENT_WEB_FAIL_RETURN_LIVE          = PENDING
 PAYMENT_WEB_SUCCESS_RETURN_LIVE       = PENDING
 PAYMENT_WEB_RESULT_UI                 = PENDING
-PAYMENT_RETURN_TOKEN_LEAK              = PENDING_BROWSER_CHECK
-PAYMENT_RETURN_PII_LEAK               = PENDING_BROWSER_CHECK
+PAYMENT_RETURN_TOKEN_LEAK              = PENDING_PAYMENT_FLOW_CHECK
+PAYMENT_RETURN_PII_LEAK                = PENDING_PAYMENT_FLOW_CHECK
 PAYMENT_TELEGRAM_RETURN               = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
-PAYMENT_05B1_LIVE_ACCEPTANCE          = BLOCKED_EXTERNAL_CONFIG_AND_BROWSER
+PAYMENT_05B1_LIVE_ACCEPTANCE          = PENDING_EXTERNAL_CONFIG_AND_PAYMENT_FLOW
 PR_164                                = DRAFT
 MERGE                                 = NO
 PRODUCTION                            = NOT_TOUCHED
