@@ -23,6 +23,7 @@ from src.config import (
     STARTER_GRANT_TTL_DAYS,
 )
 from src.credits_service import create_credit_package, get_balance
+from src.payment_return import safe_payment_return_context
 from src.payments.providers.robokassa import (
     RobokassaConfig,
     RobokassaPaymentProvider,
@@ -65,6 +66,8 @@ class TopUpIntent:
     pricing_version: str
     source_screen: str
     receipt_email: str
+    client_channel: str
+    return_to: str
 
     @property
     def credits_granted(self) -> int:
@@ -157,7 +160,9 @@ async def create_topup_payment(
             receipt_payload,
             pricing_version,
             source_screen,
-            delivery_channel
+            delivery_channel,
+            client_channel,
+            return_to
         )
         VALUES (
             $1,
@@ -173,7 +178,9 @@ async def create_topup_payment(
             $10::jsonb,
             $11,
             $12,
-            $13
+            $13,
+            $14,
+            $15
         )
         RETURNING id, invoice_id, amount_rub, credits_granted, pricing_version
         """,
@@ -190,6 +197,8 @@ async def create_topup_payment(
         intent.pricing_version,
         intent.source_screen,
         PAYMENT_DELIVERY_CHANNEL_WEBSITE,
+        intent.client_channel,
+        intent.return_to,
     )
     invoice_id = int(row["invoice_id"])
     payment_url = build_payment_url(invoice_id=invoice_id, payment_id=payment_id, intent=intent)
@@ -314,6 +323,52 @@ async def get_payment_status_by_invoice(
     payload = serialize_payment_row(row)
     payload["balance"] = int(row["balance"] or 0)
     return payload
+
+
+async def get_payment_return_context(
+    conn: asyncpg.Connection,
+    *,
+    invoice_id: int,
+    provider_payment_id: str,
+    out_sum: str | None = None,
+) -> dict[str, Any]:
+    """Validate a browser return and return only its safe routing context."""
+    row = await conn.fetchrow(
+        """
+        SELECT invoice_id,
+               status,
+               amount_rub,
+               provider_payment_id,
+               client_channel,
+               return_to
+        FROM payments
+        WHERE invoice_id = $1
+        """,
+        invoice_id,
+    )
+    if row is None:
+        raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
+    if row["provider_payment_id"] != provider_payment_id:
+        raise PaymentValidationError(f"invoice_id={invoice_id} provider_payment_id mismatch")
+    if out_sum and normalize_amount_rub(out_sum) != row["amount_rub"]:
+        raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
+
+    return_to, client_channel, used_fallback = safe_payment_return_context(
+        client_channel=row["client_channel"],
+        return_to=row["return_to"],
+    )
+    if used_fallback:
+        logger.warning(
+            "⚠️ Invalid payment return context; using safe fallback invoice_id=%s channel=%s",
+            invoice_id,
+            client_channel,
+        )
+    return {
+        "invoice_id": int(row["invoice_id"]),
+        "status": row["status"],
+        "client_channel": client_channel,
+        "return_to": return_to,
+    }
 
 
 def verify_result_signature(

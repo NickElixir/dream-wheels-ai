@@ -2257,7 +2257,6 @@ function isApplicationAuthGranted() {
         state.frontendAuthState?.status === "AUTHENTICATED"
         && state.frontendAuthState?.principalVerified === true
         && state.frontendAuthState?.protectedApiReady === true
-        && state.applicationDataReady === true
     );
 }
 
@@ -2268,12 +2267,8 @@ function renderApplicationAuthGate() {
     const copy = document.querySelector("[data-application-auth-gate-copy]");
     const login = document.querySelector("[data-application-auth-gate-login]");
     if (!gate) return;
-    const authSessionReady = state.frontendAuthState?.status === "AUTHENTICATED"
-        && state.frontendAuthState?.principalVerified === true
-        && state.frontendAuthState?.protectedApiReady === true;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
-        || state.frontendAuthState?.interactionState === "restoring"
-        || (authSessionReady && !state.applicationDataReady);
+        || state.frontendAuthState?.interactionState === "restoring";
     const authenticated = isApplicationAuthGranted();
     gate.hidden = authenticated;
     if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
@@ -2321,7 +2316,8 @@ function initializeApplicationRoute() {
     state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/app";
     if (state.applicationAuthReturnPath) {
         const currentPath = `${window.location.pathname}${window.location.search}`;
-        if (currentPath !== state.applicationAuthReturnPath && window.history?.replaceState) {
+        const paymentReturn = new URLSearchParams(window.location.search).get("payment");
+        if (!paymentReturn && currentPath !== state.applicationAuthReturnPath && window.history?.replaceState) {
             window.history.replaceState({}, "", state.applicationAuthReturnPath);
             state.applicationRoute = applicationRouteContext(window.location) || state.applicationRoute;
         }
@@ -8701,6 +8697,17 @@ function openPaymentUrl(url) {
     window.location.href = url;
 }
 
+function paymentReturnContext() {
+    const pathname = window.location.pathname.replace(/\/+$/u, "") || "/";
+    if (HAS_TG || pathname === "/t" || pathname.startsWith("/t/")) {
+        return { client_channel: "telegram", return_to: "/t/" };
+    }
+    return {
+        client_channel: "web",
+        return_to: safeApplicationReturnPath(window.location) || "/app",
+    };
+}
+
 async function createPayment() {
     const identity = getIdentityPayload();
     if (!identity.init_data && !identity.telegram_user_id && !hasFrontendAuth()) {
@@ -8722,6 +8729,7 @@ async function createPayment() {
                 email: state.email || null,
                 pricing_version: PRICING_VERSION,
                 source_screen: "cabinet",
+                ...paymentReturnContext(),
                 ...identity,
             }),
         }, { retryOnAuth401: false });
@@ -8749,11 +8757,11 @@ function handlePaymentReturn() {
     state.paymentReturnState = paymentState || "";
     if (paymentState === "success") {
         setWalletMessage(t("wallet.paymentSuccess"), "success");
-        setView("wallet");
+        if (!state.applicationAuthRequired) setView("wallet");
     } else if (paymentState === "fail") {
         void trackEvent("payment_failed", { return_channel: "browser" });
         setWalletMessage(t("wallet.paymentFail"), "warning");
-        setView("wallet");
+        if (!state.applicationAuthRequired) setView("wallet");
     }
 }
 

@@ -154,6 +154,15 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert "Робокассу" in INDEX_HTML
 
 
+def test_payment_creation_sends_channel_aware_return_context() -> None:
+    assert "function paymentReturnContext()" in APP_JS
+    assert 'client_channel: "telegram"' in APP_JS
+    assert 'return_to: "/t/"' in APP_JS
+    assert 'client_channel: "web"' in APP_JS
+    assert 'safeApplicationReturnPath(window.location) || "/app"' in APP_JS
+    assert "window.location.href" in APP_JS
+
+
 def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
     assert 'titleLine1: "Примерьте"' in APP_JS
     assert 'titleLine2: "новые диски"' in APP_JS
@@ -510,6 +519,16 @@ def test_browser_app_auth_wall_suppresses_protected_bootstrap_until_auth() -> No
     assert "if (!isApplicationAuthSessionReady())" in APP_JS
     assert "clearApplicationSessionState();" in APP_JS
     assert "applicationAuthReturnPath" in APP_JS
+
+
+def test_browser_app_auth_wall_opens_after_principal_verification_without_data_gate() -> None:
+    granted_start = APP_JS.index("function isApplicationAuthGranted()")
+    granted_end = APP_JS.index("function renderApplicationAuthGate()", granted_start)
+    gate_start = APP_JS.index("function renderApplicationAuthGate()")
+    gate_end = APP_JS.index("function setApplicationShellVisible", gate_start)
+
+    assert "state.applicationDataReady" not in APP_JS[granted_start:granted_end]
+    assert "authSessionReady && !state.applicationDataReady" not in APP_JS[gate_start:gate_end]
 
 
 def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:

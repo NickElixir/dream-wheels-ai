@@ -36,6 +36,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0030_results_bucket_20m.sql` — увеличивает per-bucket limit `results` до 20 MiB для Wan output
 - `0031_auth_v11_identities.sql` — canonical external identities, Telegram backfill и nullable legacy Telegram ID
 - `0032_auth_v11_telemetry_allowlist.sql` — расширяет allow-list product analytics событиями Email OTP/Auth session
+- `0033_payment_return_routing.sql` — сохраняет UI-канал и валидированный внутренний маршрут возврата Robokassa
 
 ## Стратегия применения
 
@@ -67,6 +68,7 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Перед выкладкой Wan runtime integration применить `0029_wan_provider_task_metadata.sql`: worker сохраняет безопасный Alibaba task identifier в `jobs.provider_task_id`.
 - Перед применением `0030_results_bucket_20m.sql` проверить в Supabase Storage Settings, что global file-size limit не ниже 20 MiB. На текущем rollout результат не перекодируется; будущая WebP/JPEG-нормализация остаётся отдельной задачей оптимизации.
 - Перед rollout Auth V1.1 foundation применить `0031_auth_v11_identities.sql`: она сохраняет `users.id`, backfill-ит Telegram identities, разрешает `users.telegram_user_id IS NULL` для Supabase-only users и оставляет `user_identities` server-only через RLS без public policies.
+- Перед rollout 05B.1 применить `0033_payment_return_routing.sql`: она добавляет `payments.client_channel` и `payments.return_to`, backfill-ит подтвержденные legacy Telegram-платежи значениями `telegram` и `/t/`, и не меняет `delivery_channel`, balance или ledger.
 - `0023` не создаёт публичных RLS-политик: `user_credit_accounts` доступна только серверному database/service-role пути, а не Mini App через PostgREST.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
