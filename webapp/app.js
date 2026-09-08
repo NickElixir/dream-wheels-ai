@@ -2547,6 +2547,7 @@ function renderAuthDialogTurnstile() {
         "expired-callback"() { state.authDialogTurnstileToken = null; },
         "error-callback"() {
             state.authDialogTurnstileToken = null;
+            container.hidden = true;
             setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
         },
     });
