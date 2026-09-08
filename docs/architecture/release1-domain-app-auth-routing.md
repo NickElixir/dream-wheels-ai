@@ -1,8 +1,17 @@
 # Release 1 — Domain, Landing, App & Auth Routing Architecture
 
-Status: **APPROVED**\
+Status: **RECONCILED FOR REVIEW**\
 Scope: **Release 1**\
-Production: **NOT TOUCHED**
+Production: **NOT TOUCHED**\
+
+This document is reconciled against the closed Auth V1.1 staging baseline and
+the closed 05B.1 Payment Return Routing contract. It remains architecture
+documentation only: no runtime, DNS, Vercel, Supabase, Auth-provider, or
+production configuration is changed by this PR.
+
+Release 1 ordinary WebApp authentication is Email OTP through Supabase.
+Telegram remains the compatible legacy website/Mini App authority. Yandex, VK,
+Google, Apple, Microsoft, and other social OAuth providers are deferred.
 
 ## 1. Основные принципы
 
@@ -68,8 +77,7 @@ CTA «Попробовать»
         ↓
 https://dreamwheels.pro/app/new
         + market=ru
-        + entry=ru_landing
-        + preserved UTM
+        + preserved supported UTM
 ```
 
 ## Международный рынок
@@ -96,17 +104,19 @@ Cross-domain SSO для Release 1 не требуется.
 
 # 3. Routing contract
 
-Предварительная production-карта:
+Согласованная production-карта:
 ```
 /                    Global Landing
-/app                 WebApp
+/app                 Auth-gated WebApp
 /app/new             начало нового пользовательского сценария
-/app/...             authenticated WebApp routes
-/t/...               Telegram Mini App
+/app/...             Auth-gated WebApp routes
+/t/...               Telegram Mini App channel
 /api/backend/**      Generic Vercel Backend Gateway
 ```
 
-Точный Auth callback routing определяется реализацией Auth V1.1 и используемым Supabase/OAuth flow.
+Auth restoration and payment browser returns are separate contracts. The
+ordinary WebApp Auth flow is Supabase Email OTP; Telegram remains an existing
+compatibility channel. No social-OAuth callback is part of Release 1.
 
 Не создавать новые per-endpoint Vercel proxy routes.
 
@@ -131,9 +141,15 @@ session?
    вернуть пользователя в /app/new
 ```
 
-Auth должен поддерживать внутренний `return_to`.
+Auth должен поддерживать отдельный transient `auth_intended_route` — исходный
+разрешённый App route, который нужно восстановить после успешной авторизации.
+Это не поле `payments.return_to` и не платёжный callback context.
 
-`return_to` должен принимать только разрешённые внутренние App routes и не должен превращаться в произвольный внешний redirect.
+`auth_intended_route` строится через allowlist текущих App routes (`/app`,
+`/app/new`, `/app/history`, `/app/wallet`, `/app/settings`, `/app/support`,
+`/app/photo-guide`, `/app/docs`, `/app/render-detail`, `/app/fitment`) и
+сохраняет только `market` и поддержанные UTM-параметры. Внешние URL, `/api/**`,
+Telegram routes и неизвестные App paths отклоняются.
 
 Пример:
 ```
@@ -143,6 +159,19 @@ Auth должен поддерживать внутренний `return_to`.
 ```
 
 После успешной авторизации пользователь не должен возвращаться на Landing.
+
+Payment routing использует отдельный persisted `payments.return_to`, связанный
+с `payments.client_channel`:
+
+| Контекст | Persisted contract | Назначение |
+| --- | --- | --- |
+| Auth | transient `auth_intended_route` | вернуть пользователя в исходный App route после Auth |
+| Web payment | `client_channel=web`, validated `payments.return_to` | browser SuccessURL/FailURL → `/app`-family route |
+| Telegram payment | `client_channel=telegram`, validated `payments.return_to` | browser callback → `/t/` |
+
+SuccessURL/FailURL только возвращают браузер и не подтверждают оплату. Credits
+и финальный `paid` остаются за authoritative ResultURL; payment `return_to`
+не используется как Auth redirect.
 
 ---
 
@@ -223,8 +252,11 @@ Browser storage российского Landing нельзя считать до�
 Дополнительно:
 ```
 market=ru
-entry=ru_landing
 ```
+
+`entry=ru_landing` не является частью финального Auth return contract. Если
+Landing analytics использует entry context, он остаётся отдельным attribution
+событием и не переносится в persisted Auth/payment route.
 
 После входа на `dreamwheels.pro` существующая Analytics / UTM subsystem должна зафиксировать attribution.
 
@@ -276,14 +308,19 @@ Auth V1.1 должна учитывать:
 
 - `dreamwheels.pro` как production application origin;
 - приложение закрыто Auth gate;
-- `return_to`;
+- transient `auth_intended_route` для восстановления App route;
+- persisted payment `payments.return_to`, изолированный от Auth routing;
 - переход из RU Landing;
 - сохранение UTM;
 - отсутствие cross-domain SSO;
 - Telegram как сохранённый канал;
-- non-Telegram authentication для обычного WebApp.
+- Email OTP через Supabase для обычного WebApp;
+- отсутствие social OAuth в Release 1.
 
-Production OAuth configuration выполняется после успешного staging Auth gate и подключения production domain.
+После подключения production domain выполняется отдельная production Auth
+wiring для Supabase Email OTP и разрешённых Telegram сценариев. Yandex, VK,
+Google, Apple и Microsoft OAuth остаются deferred и не являются частью этого
+PR или Release 1 acceptance.
 
 ---
 
@@ -326,11 +363,15 @@ Domain rollout не должен возвращать namespace-specific proxy h
 ```
 Auth staging ready
 ↓
+Auth V1.1 + 05B.1 staging closeout
+↓
+PR #163 architecture review/merge
+↓
 Production domain wiring
 ↓
 DNS / Vercel
 ↓
-production Auth configuration
+production Supabase Email OTP configuration
 ↓
 Landing deployment
 ↓
@@ -369,7 +410,7 @@ Production не изменяется в рамках принятия этого
 - `колесамечты.рф` открывает RU Landing;
 - `dreamwheels.pro` открывает Global Landing;
 - `/app/new` требует Auth;
-- authenticated user возвращается в исходный `return_to`;
+- authenticated user возвращается в исходный `auth_intended_route`;
 - RU CTA сохраняет UTM + `market=ru`;
 - Global CTA работает без RU-specific state;
 - reload защищённых `/app/*` routes работает;
@@ -379,5 +420,13 @@ Production не изменяется в рамках принятия этого
 - HTTPS корректен;
 - staging не индексируется;
 - production secrets отсутствуют во frontend;
-- Auth provider redirects работают на production configuration;
+- Email OTP verification и session restore работают на production configuration;
 - UTM сохраняется через Landing → App → Auth → authenticated user.
+
+Отдельно для payment routing проверить:
+
+- web payment callback использует только validated `payments.return_to`;
+- Telegram payment callback использует только validated Telegram route;
+- SuccessURL/FailURL не выдаются за доказательство оплаты;
+- settlement и credits подтверждаются только ResultURL;
+- payment callback не может изменить Auth intended route или открыть внешний URL.
