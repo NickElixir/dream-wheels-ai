@@ -2531,9 +2531,15 @@ function renderAuthDialogTurnstile() {
     const widget = document.querySelector("[data-auth-turnstile-widget]");
     const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
     if (!container || !widget || !siteKey) return;
-    container.hidden = false;
-    if (state.authDialogTurnstileWidgetId !== null || !window.turnstile?.render) return;
-    state.authDialogTurnstileWidgetId = window.turnstile.render(widget, {
+    if (state.authDialogTurnstileWidgetId !== null) {
+        container.hidden = false;
+        return;
+    }
+    if (!window.turnstile?.render) {
+        container.hidden = true;
+        return;
+    }
+    const widgetId = window.turnstile.render(widget, {
         sitekey: siteKey,
         callback(token) {
             state.authDialogTurnstileToken = typeof token === "string" && token.trim() ? token.trim() : null;
@@ -2544,6 +2550,8 @@ function renderAuthDialogTurnstile() {
             setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
         },
     });
+    state.authDialogTurnstileWidgetId = widgetId;
+    container.hidden = false;
 }
 
 function loadAuthDialogTurnstile() {
