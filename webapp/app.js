@@ -285,7 +285,6 @@ const I18N = {
             resend: "Отправить ещё раз",
             changeEmail: "Изменить почту",
             telegramSecondary: "Продолжить через Telegram",
-            trustCopy: "Без пароля. Код действует 10 минут.",
             legalPrivacy: "Продолжая, вы соглашаетесь с политикой конфиденциальности.",
             invalidEmail: "Введите корректный адрес электронной почты.",
             invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
@@ -717,7 +716,6 @@ const I18N = {
             resend: "Send again",
             changeEmail: "Change email",
             telegramSecondary: "Continue with Telegram",
-            trustCopy: "No password. The code is valid for 10 minutes.",
             legalPrivacy: "By continuing, you agree to the privacy policy.",
             invalidEmail: "Enter a valid email address.",
             invalidOtp: "The code is incorrect. Check it and try again.",
@@ -2629,7 +2627,6 @@ function renderAuthDialog() {
     const verifyButton = document.querySelector("[data-auth-verify]");
     const changeEmailButton = document.querySelector("[data-auth-change-email]");
     const telegramLabel = document.querySelector("[data-auth-telegram-label]");
-    const trustCopy = document.querySelector("[data-auth-trust]");
     const legalCopy = document.querySelector("[data-auth-legal]");
     if (emailLabel) emailLabel.textContent = t("auth.emailLabel");
     if (otpLabel) otpLabel.textContent = t("auth.codeLabel");
@@ -2638,7 +2635,6 @@ function renderAuthDialog() {
     if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
     if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
     if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
-    if (trustCopy) trustCopy.textContent = t("auth.trustCopy");
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
         if (legalLink) legalLink.textContent = locale === "ru" ? "политикой конфиденциальности" : "privacy policy";
