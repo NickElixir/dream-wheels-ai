@@ -2381,8 +2381,12 @@ h2 {
 }
 
 .auth-turnstile {
-    min-height: 66px;
+    min-height: 0;
     overflow: hidden;
+}
+
+.auth-turnstile:has(iframe) {
+    min-height: 66px;
 }
 
 .auth-dialog-primary {

@@ -41,6 +41,7 @@ test("restore gate keeps the session gate independent from cabinet data", () => 
     assert.match(html, /data-application-auth-gate-spinner/);
     assert.match(app, /restoring: "Открываем приложение…"/);
     assert.match(css, /\.application-auth-gate-spinner/);
+    assert.match(css, /\.auth-turnstile:has\(iframe\)/);
     assert.match(css, /prefers-reduced-motion: reduce/);
     const start = app.indexOf("function isApplicationAuthGranted()");
     const end = app.indexOf("\n}\n", start);
