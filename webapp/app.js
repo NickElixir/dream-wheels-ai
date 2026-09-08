@@ -2257,7 +2257,6 @@ function isApplicationAuthGranted() {
         state.frontendAuthState?.status === "AUTHENTICATED"
         && state.frontendAuthState?.principalVerified === true
         && state.frontendAuthState?.protectedApiReady === true
-        && state.applicationDataReady === true
     );
 }
 
@@ -2268,12 +2267,8 @@ function renderApplicationAuthGate() {
     const copy = document.querySelector("[data-application-auth-gate-copy]");
     const login = document.querySelector("[data-application-auth-gate-login]");
     if (!gate) return;
-    const authSessionReady = state.frontendAuthState?.status === "AUTHENTICATED"
-        && state.frontendAuthState?.principalVerified === true
-        && state.frontendAuthState?.protectedApiReady === true;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
-        || state.frontendAuthState?.interactionState === "restoring"
-        || (authSessionReady && !state.applicationDataReady);
+        || state.frontendAuthState?.interactionState === "restoring";
     const authenticated = isApplicationAuthGranted();
     gate.hidden = authenticated;
     if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");

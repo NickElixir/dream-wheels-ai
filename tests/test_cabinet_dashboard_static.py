@@ -521,6 +521,16 @@ def test_browser_app_auth_wall_suppresses_protected_bootstrap_until_auth() -> No
     assert "applicationAuthReturnPath" in APP_JS
 
 
+def test_browser_app_auth_wall_opens_after_principal_verification_without_data_gate() -> None:
+    granted_start = APP_JS.index("function isApplicationAuthGranted()")
+    granted_end = APP_JS.index("function renderApplicationAuthGate()", granted_start)
+    gate_start = APP_JS.index("function renderApplicationAuthGate()")
+    gate_end = APP_JS.index("function setApplicationShellVisible", gate_start)
+
+    assert "state.applicationDataReady" not in APP_JS[granted_start:granted_end]
+    assert "authSessionReady && !state.applicationDataReady" not in APP_JS[gate_start:gate_end]
+
+
 def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "function shouldUseBrowserApiProxy()" in APP_JS
