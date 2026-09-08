@@ -2308,9 +2308,15 @@ h2 {
 }
 
 .auth-dialog-description {
+    display: grid;
+    gap: 2px;
     margin: 0;
     color: var(--text-subtle);
     line-height: 1.5;
+}
+
+.auth-dialog-description p {
+    margin: 0;
 }
 
 .auth-dialog-close {
@@ -2381,8 +2387,12 @@ h2 {
 }
 
 .auth-turnstile {
+    align-items: center;
+    display: flex;
+    justify-content: center;
     min-height: 0;
     overflow: hidden;
+    width: 100%;
 }
 
 .auth-turnstile:has(iframe) {
@@ -2437,8 +2447,12 @@ h2 {
 }
 
 .auth-dialog-otp-destination {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
     margin-top: -4px;
-    text-align: left;
+    overflow-wrap: anywhere;
+    text-align: center;
 }
 
 .auth-dialog-actions {
@@ -2459,8 +2473,89 @@ h2 {
 }
 
 .auth-dialog-resend-row .link-button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--accent-strong);
+    font: inherit;
+    font-weight: 800;
+    min-height: 0;
+    padding: 0;
+    text-align: left;
+    white-space: normal;
+}
+
+.auth-dialog-resend-row .link-button:disabled {
+    color: var(--text-subtle);
+    cursor: default;
+    opacity: 1;
+}
+
+.auth-dialog-tertiary {
+    align-self: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--text-subtle);
+    font-weight: 800;
     min-height: 32px;
     padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-dialog-tertiary:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text);
+}
+
+.auth-dialog-back-button {
+    justify-self: center;
+}
+
+.auth-dialog-account-card {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-dialog-account-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.auth-dialog-account-copy strong,
+.auth-dialog-account-copy span {
+    overflow-wrap: anywhere;
+}
+
+.auth-dialog-account-copy span {
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+
+.auth-logout-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-logout-confirm {
+    border-color: rgba(255, 119, 119, 0.32);
+    color: #ffabab;
+}
+
+.auth-logout-confirm:hover {
+    background: rgba(255, 119, 119, 0.08);
+    border-color: rgba(255, 119, 119, 0.5);
+    color: #ffc2c2;
 }
 
 .auth-dialog-restored {
