@@ -186,6 +186,31 @@ ROBOKASSA_CALLBACK_CLASSIFICATION     = PASS (automated + direct staging Success
 PAYMENT_SUCCESS_RETURN_DIRECT         = PASS (read-only existing paid fixture)
 ```
 
+## Auth return unblock and latest staging
+
+The post-payment WebApp regression was isolated to the application gate: it
+waited for cabinet/history data before revealing the already authenticated
+application. The gate now opens after `/auth/me` principal verification and
+`/auth/bootstrap` protected-API readiness; cabinet and history continue to
+load behind their normal loading states.
+
+```ini
+PAYMENT_AUTH_APP_GATE_FIX              = PASS
+PAYMENT_AUTH_APP_GATE_REGRESSION_TEST  = PASS
+PAYMENT_AUTH_SUCCESS_RETURN_APP        = PASS (invoice 51 URL; reload opened cabinet)
+PAYMENT_AUTH_FAIL_RETURN_APP           = PASS (invoice 52 URL; reload opened cabinet)
+PAYMENT_FIX_COMMIT                     = a21332573b01235c97b75948d2787b08a5f26cb9
+PAYMENT_FIX_VERCEL_DEPLOYMENT          = dpl_BuWBxSN4eSSbDQACmGESMNQhcfai
+PAYMENT_FIX_VERCEL_STATUS              = READY / PROMOTED
+PAYMENT_FIX_VERCEL_METADATA_SHA        = a21332573b01235c97b75948d2787b08a5f26cb9
+PAYMENT_FIX_VERCEL_CANONICAL_ALIAS     = https://dream-wheels-ai-webapp-staging.vercel.app
+PAYMENT_FIX_VERCEL_BUILD               = PASS (normal remote npm run build)
+```
+
+The Render service was not redeployed. Canonical staging checks remained 200
+for `/`, `/app`, `/app/new`, `/app/history`, static bundles, and
+`/api/backend/health`.
+
 ## Live invoice audit
 
 The two user-created staging invoices were checked read-only in Supabase. No
@@ -216,37 +241,44 @@ PAYMENT_RETURN_PII_LEAK                 = NONE (observed URL)
 ```
 
 The success URL contained only the expected `payment` and `invoice_id`
-parameters. The canonical browser tab currently shows the Auth gate because
-the restored browser session had expired, so the URL and database evidence are
-recorded separately. No fail-return URL for invoice 50 was available in the
-browser history, and its database row proves that the expected `pending ->
-failed` transition did not occur.
+parameters. Invoice 50 remains a separate provider-demo observation: the
+Robokassa demo error button did not call FailURL and left that invoice
+`pending`. It is not treated as a Dream Wheels handler failure.
 
-## Remaining live blocker
+## Final live acceptance
 
-The success flow is verified, but the fail flow is not. Invoice 50 remains
-`pending` with no `failed_at`, which means the staging FailURL callback did not
-complete the required state transition for that test. The merchant dashboard
-configuration itself was not re-read in this audit; production remains
-untouched.
+Invoice 52 was created through the ordinary WebApp UI and used only for the
+deterministic staging FailURL handler smoke. The provider payment page was not
+completed.
 
 ```ini
-PAYMENT_EXTERNAL_ROBOKASSA_CONFIG     = PARTIAL (success evidence; FailURL unverified)
-PAYMENT_WEB_FAIL_RETURN_LIVE          = BLOCKED (invoice 50 remains pending)
-PAYMENT_WEB_SUCCESS_RETURN_LIVE       = PASS (invoice 51)
-PAYMENT_WEB_RESULT_UI                 = PASS (success return URL observed)
-PAYMENT_RETURN_TOKEN_LEAK              = NONE
-PAYMENT_RETURN_PII_LEAK                = NONE
-PAYMENT_TELEGRAM_RETURN               = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
-PAYMENT_05B1_LIVE_ACCEPTANCE          = PENDING_FAIL_FLOW_CALLBACK
-PR_164                                = DRAFT
-MERGE                                 = NO
-PRODUCTION                            = NOT_TOUCHED
+FAIL_INVOICE_52_STATUS                 = failed
+FAIL_INVOICE_52_FAILED_AT              = PRESENT
+FAIL_INVOICE_52_CLIENT_CHANNEL          = web
+FAIL_INVOICE_52_RETURN_TO               = /app
+FAIL_INVOICE_52_BALANCE                 = 0 -> 0
+FAIL_INVOICE_52_PURCHASE_GRANTS         = 0
+FAIL_INVOICE_52_LEDGER_ROWS             = 0
+FAIL_INVOICE_52_HANDLER                 = PASS (HTTP 303, no follow-redirect)
+FAIL_INVOICE_52_LOCATION                = /app?payment=fail&invoice_id=52
+FAIL_INVOICE_52_BROWSER_RETURN          = PASS (authenticated cabinet; Сбой #52)
+
+ROBOKASSA_FAILURL_CONFIG                = OWNER_VERIFIED_BY_USER
+ROBOKASSA_DEMO_FAIL_REDIRECT            = NOT_REPRODUCIBLE (provider-side demo error; invoice 50)
+PAYMENT_FAIL_HANDLER_STAGING_DIRECT     = PASS
+PAYMENT_WEB_FAIL_RETURN_LIVE            = PASS (direct staging handler, invoice 52)
+PAYMENT_WEB_SUCCESS_RETURN_LIVE         = PASS (invoice 51)
+PAYMENT_WEB_RESULT_UI                   = PASS (success and fail browser returns open App)
+PAYMENT_RETURN_TOKEN_LEAK               = NONE
+PAYMENT_RETURN_PII_LEAK                 = NONE
+PAYMENT_TELEGRAM_RETURN                 = PASS_AUTOMATED_PENDING_SAFE_LIVE_CONTEXT
+PAYMENT_05B1_LIVE_ACCEPTANCE            = PASS_WITH_PROVIDER_LIMITATION
+PR_164                                  = READY
+MERGE                                   = NO
+PRODUCTION                              = NOT_TOUCHED
 ```
 
-The external staging merchant must still be confirmed to use the backend
-handlers, not a legacy direct `/t/` Vercel URL, and invoice 50 must be
-retested until the FailURL transition is visible:
+The external staging merchant handlers remain:
 
 ```text
 https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/result
@@ -254,5 +286,6 @@ https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/succes
 https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/fail
 ```
 
-Until that external configuration and the WebApp SuccessURL/FailURL smoke are
-verified, #164 must remain Draft and must not be merged.
+The Robokassa demo UI limitation is documented separately and does not block
+the deterministic handler acceptance. #164 is ready for owner review and must
+not be merged automatically.
