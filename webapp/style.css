@@ -2298,14 +2298,25 @@ h2 {
     gap: 8px;
 }
 
+.auth-dialog-wordmark {
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
 .auth-dialog-header h2 {
     margin: 0;
 }
 
 .auth-dialog-description {
+    display: grid;
+    gap: 2px;
     margin: 0;
     color: var(--text-subtle);
     line-height: 1.5;
+}
+
+.auth-dialog-description p {
+    margin: 0;
 }
 
 .auth-dialog-close {
@@ -2356,25 +2367,195 @@ h2 {
     box-shadow: 0 0 0 3px rgba(221, 255, 0, 0.1);
 }
 
+.auth-dialog-input[aria-invalid="true"] {
+    border-color: rgba(255, 119, 119, 0.7);
+    box-shadow: 0 0 0 3px rgba(255, 119, 119, 0.1);
+}
+
+.auth-dialog-field-error {
+    margin: -4px 0 0;
+    color: var(--danger, #ff8b8b);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
 .auth-otp-input {
     letter-spacing: 0.32em;
     font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    text-align: center;
 }
 
 .auth-turnstile {
-    min-height: 66px;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
     overflow: hidden;
+    width: 100%;
+}
+
+.auth-turnstile:has(iframe) {
+    min-height: 66px;
 }
 
 .auth-dialog-primary {
     width: 100%;
 }
 
+.auth-dialog-divider {
+    align-items: center;
+    color: var(--text-subtle);
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.auth-dialog-divider::before,
+.auth-dialog-divider::after {
+    background: rgba(255, 255, 255, 0.1);
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.auth-dialog-telegram {
+    width: 100%;
+}
+
+.auth-telegram-icon {
+    flex: 0 0 18px;
+    height: 18px;
+    width: 18px;
+}
+
+.auth-dialog-legal,
+.auth-dialog-otp-destination {
+    color: var(--text-subtle);
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 0;
+    text-align: center;
+}
+
+.auth-dialog-legal a {
+    color: var(--text);
+    text-underline-offset: 3px;
+}
+
+.auth-dialog-otp-destination {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: -4px;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
 .auth-dialog-actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 8px 16px;
+}
+
+.auth-dialog-resend-row {
+    align-items: center;
+    color: var(--text-subtle);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 13px;
+    gap: 4px 8px;
+    line-height: 1.4;
+}
+
+.auth-dialog-resend-row .link-button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--accent-strong);
+    font: inherit;
+    font-weight: 800;
+    min-height: 0;
+    padding: 0;
+    text-align: left;
+    white-space: normal;
+}
+
+.auth-dialog-resend-row .link-button:disabled {
+    color: var(--text-subtle);
+    cursor: default;
+    opacity: 1;
+}
+
+.auth-dialog-tertiary {
+    align-self: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--text-subtle);
+    font-weight: 800;
+    min-height: 32px;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-dialog-tertiary:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text);
+}
+
+.auth-dialog-back-button {
+    justify-self: center;
+}
+
+.auth-dialog-account-card {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-dialog-account-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.auth-dialog-account-copy strong,
+.auth-dialog-account-copy span {
+    overflow-wrap: anywhere;
+}
+
+.auth-dialog-account-copy span {
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+
+.auth-logout-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-logout-confirm {
+    border-color: rgba(255, 119, 119, 0.32);
+    color: #ffabab;
+}
+
+.auth-logout-confirm:hover {
+    background: rgba(255, 119, 119, 0.08);
+    border-color: rgba(255, 119, 119, 0.5);
+    color: #ffc2c2;
 }
 
 .auth-dialog-restored {
@@ -2388,7 +2569,6 @@ h2 {
     line-height: 1.45;
 }
 
-.auth-dialog-cooldown,
 .auth-dialog-status {
     min-height: 20px;
     color: var(--text-subtle);
@@ -2396,12 +2576,13 @@ h2 {
     line-height: 1.4;
 }
 
-.auth-dialog-status[data-tone="error"] {
-    color: var(--danger);
+.auth-dialog-cooldown {
+    color: var(--text-subtle);
+    font-size: 12px;
 }
 
-.auth-dialog-telegram {
-    width: 100%;
+.auth-dialog-status[data-tone="error"] {
+    color: var(--danger);
 }
 
 @media (max-width: 560px) {
@@ -2414,6 +2595,12 @@ h2 {
         width: 100%;
         padding: 26px 20px 20px;
         border-radius: 24px;
+    }
+
+    .auth-dialog-resend-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
     }
 }
 
@@ -5060,6 +5247,29 @@ body.has-fallback-main-button #app {
     width: 100%;
 }
 
+.application-auth-gate-wordmark {
+    margin: 0 auto 22px;
+}
+
+.application-auth-gate-spinner {
+    animation: application-auth-gate-spin 900ms linear infinite;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    border-top-color: var(--accent, #ddff00);
+    height: 22px;
+    margin: 0 auto 18px;
+    width: 22px;
+}
+
+@keyframes application-auth-gate-spin {
+    to { transform: rotate(360deg); }
+}
+
+.application-auth-gate-title {
+    font-size: clamp(20px, 3vw, 24px);
+    margin: 0 0 10px;
+}
+
 .application-auth-gate-card h1 {
     margin: 12px 0;
 }
@@ -5074,9 +5284,21 @@ body.has-fallback-main-button #app {
     min-width: 160px;
 }
 
+.application-auth-gate[data-restoring="true"] .application-auth-gate-copy {
+    display: none;
+}
+
+.application-auth-gate[data-restoring="false"] .application-auth-gate-spinner {
+    display: none;
+}
+
 @media (max-width: 640px) {
     .application-auth-gate-card {
         border-radius: 22px;
         padding: 28px 22px;
+    }
+
+    .application-auth-gate-wordmark {
+        font-size: 14px;
     }
 }

@@ -272,16 +272,26 @@ const I18N = {
             failed: "Не удалось войти через Telegram",
             dashboardLoginPrompt: "Войдите, чтобы увидеть баланс",
             partialAccess: "Вход выполнен. Кабинет будет доступен после подключения защищённых запросов.",
-            dialogTitle: "Войти в Dream Wheels",
-            dialogDescription: "Введите электронную почту — мы пришлём код для входа.",
+            dialogTitle: "Войдите в аккаунт",
+            emailIntro: "Введите электронную почту",
+            emailSubcopy: "Мы пришлём код для входа",
+            changeEmailTitle: "Изменить почту",
+            changeEmailIntro: "Введите другой адрес",
+            changeEmailSubcopy: "Мы отправим на него новый код",
             emailLabel: "Электронная почта",
             getCode: "Получить код",
+            getNewCode: "Получить новый код",
+            otpTitle: "Проверьте почту",
             codeLabel: "Код из письма",
-            codeDescription: "Мы отправили шестизначный код на указанную почту.",
+            otpSentTo: "Мы отправили код на",
             verify: "Войти",
-            resend: "Отправить код ещё раз",
+            resendPrompt: "Не пришёл код?",
+            resend: "Отправить ещё раз",
+            resendIn: "Отправить ещё раз через {seconds} сек",
             changeEmail: "Изменить почту",
-            telegramSecondary: "Войти через Telegram",
+            back: "Назад",
+            telegramSecondary: "Продолжить через Telegram",
+            legalPrivacy: "Продолжая, вы соглашаетесь с политикой конфиденциальности.",
             invalidEmail: "Введите корректный адрес электронной почты.",
             invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
             expiredOtp: "Срок действия кода истёк. Запросите новый.",
@@ -292,16 +302,18 @@ const I18N = {
             turnstileUnavailable: "Проверка безопасности недоступна. Попробуйте ещё раз.",
             sendingCode: "Отправляем код...",
             checkingCode: "Проверяем код...",
-            codeSent: "Код отправлен. Проверьте почту.",
             signedIn: "Вход выполнен",
-            restoring: "Проверяем текущий вход...",
+            restoring: "Открываем приложение…",
             alreadySignedIn: "Вы уже вошли",
-            alreadySignedInDescription: "В этой вкладке уже есть действующий вход в Dream Wheels.",
             continue: "Продолжить",
-            switchAccount: "Выйти / сменить аккаунт",
+            switchAccount: "Сменить аккаунт",
+            providerTelegram: "Telegram",
+            providerEmail: "Email",
+            logoutTitle: "Выйти из аккаунта?",
+            logoutDescription: "После выхода потребуется снова войти",
+            cancel: "Отмена",
             alreadyAuthenticated: "Вы уже вошли. Чтобы использовать другой аккаунт, сначала выйдите.",
             authenticationInProgress: "Проверяем текущий вход. Попробуйте ещё раз через секунду.",
-            resendIn: "Повторно отправить код можно через {seconds} сек.",
             appGateTitle: "Войдите, чтобы открыть приложение",
             appGateDescription: "Приложение доступно после подтверждения входа.",
             appGateRestoring: "Проверяем защищённую сессию перед открытием приложения.",
@@ -699,16 +711,26 @@ const I18N = {
             failed: "Telegram login failed",
             dashboardLoginPrompt: "Sign in to see your balance",
             partialAccess: "Signed in. The cabinet will be available after protected requests are connected.",
-            dialogTitle: "Sign in to Dream Wheels",
-            dialogDescription: "Enter your email and we’ll send you a sign-in code.",
+            dialogTitle: "Sign in to your account",
+            emailIntro: "Enter your email",
+            emailSubcopy: "We’ll send you a sign-in code",
+            changeEmailTitle: "Change email",
+            changeEmailIntro: "Enter another address",
+            changeEmailSubcopy: "We’ll send a new code there",
             emailLabel: "Email",
             getCode: "Get code",
+            getNewCode: "Get new code",
+            otpTitle: "Check your email",
             codeLabel: "Code from email",
-            codeDescription: "We sent a six-digit code to your email.",
+            otpSentTo: "We sent a code to",
             verify: "Sign in",
-            resend: "Send code again",
+            resendPrompt: "Didn't get a code?",
+            resend: "Send again",
+            resendIn: "Send again in {seconds}s",
             changeEmail: "Change email",
-            telegramSecondary: "Sign in with Telegram",
+            back: "Back",
+            telegramSecondary: "Continue with Telegram",
+            legalPrivacy: "By continuing, you agree to the privacy policy.",
             invalidEmail: "Enter a valid email address.",
             invalidOtp: "The code is incorrect. Check it and try again.",
             expiredOtp: "The code has expired. Request a new one.",
@@ -719,16 +741,18 @@ const I18N = {
             turnstileUnavailable: "The security check is unavailable. Please try again.",
             sendingCode: "Sending code...",
             checkingCode: "Checking code...",
-            codeSent: "Code sent. Check your inbox.",
             signedIn: "Signed in",
-            restoring: "Checking your current sign-in...",
+            restoring: "Opening the app…",
             alreadySignedIn: "You're already signed in",
-            alreadySignedInDescription: "This tab already has an active Dream Wheels session.",
             continue: "Continue",
-            switchAccount: "Sign out / switch account",
+            switchAccount: "Switch account",
+            providerTelegram: "Telegram",
+            providerEmail: "Email",
+            logoutTitle: "Sign out of your account?",
+            logoutDescription: "You’ll need to sign in again",
+            cancel: "Cancel",
             alreadyAuthenticated: "You're already signed in. Sign out first to use another account.",
             authenticationInProgress: "Checking your current sign-in. Try again in a moment.",
-            resendIn: "You can send another code in {seconds}s.",
             appGateTitle: "Sign in to open the app",
             appGateDescription: "The app is available after you confirm your sign-in.",
             appGateRestoring: "Checking your protected session before opening the app.",
@@ -1230,13 +1254,19 @@ const state = {
     authDialogStep: "restoring",
     authDialogBusy: false,
     authDialogError: "",
+    authDialogEmailError: "",
+    authDialogOtpError: "",
     authDialogEmail: "",
     authDialogOtp: "",
+    authDialogChangeEmailOriginal: "",
+    authDialogOtpBeforeChange: "",
     authDialogCooldownUntil: 0,
     authDialogCooldownTimer: null,
     authDialogTurnstileWidgetId: null,
     authDialogTurnstileToken: null,
     authDialogTurnstileLoading: false,
+    logoutDialogOpen: false,
+    logoutDialogBusy: false,
     applicationRoute: null,
     applicationAuthRequired: false,
     applicationAuthGateReady: false,
@@ -2210,19 +2240,34 @@ function getInitials(name) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
+function getAuthAccountPresentation() {
+    const telegramUser = tg?.initDataUnsafe?.user;
+    if (HAS_TG || state.websiteAuth) {
+        const username = telegramUser?.username || state.websiteAuth?.username || "";
+        const fallback = getDisplayName();
+        return {
+            identifier: username ? `@${String(username).replace(/^@/, "")}` : fallback,
+            provider: t("auth.providerTelegram"),
+        };
+    }
+    if (isSupabaseFrontendAuth()) {
+        return {
+            identifier: state.frontendAuthUser?.email || state.frontendAuthSavedName || "Dream Wheels",
+            provider: t("auth.providerEmail"),
+        };
+    }
+    return { identifier: "Dream Wheels", provider: "" };
+}
+
 function updateAccountBlock() {
-    const displayName = getDisplayName();
+    const account = getAuthAccountPresentation();
     const name = document.querySelector("[data-account-name]");
     const avatar = document.querySelector("[data-account-avatar]");
     const subtitle = document.querySelector("[data-account-subtitle]");
-    if (name) name.textContent = displayName;
-    if (avatar) avatar.textContent = getInitials(displayName);
+    if (name) name.textContent = account.identifier;
+    if (avatar) avatar.textContent = getInitials(account.identifier);
     if (subtitle) {
-        subtitle.textContent = HAS_TG
-            ? "Открыто в Telegram"
-            : isSupabaseFrontendAuth()
-                ? "Вы вошли"
-                : "Вход через Telegram";
+        subtitle.textContent = account.provider || "Кабинет";
     }
 }
 
@@ -2266,13 +2311,18 @@ function renderApplicationAuthGate() {
     const title = document.querySelector("[data-application-auth-gate-title]");
     const copy = document.querySelector("[data-application-auth-gate-copy]");
     const login = document.querySelector("[data-application-auth-gate-login]");
+    const spinner = document.querySelector("[data-application-auth-gate-spinner]");
     if (!gate) return;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
         || state.frontendAuthState?.interactionState === "restoring";
     const authenticated = isApplicationAuthGranted();
     gate.hidden = authenticated;
+    gate.dataset.restoring = String(restoring);
+    gate.setAttribute("aria-busy", String(restoring));
     if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
     if (copy) copy.textContent = restoring ? t("auth.appGateRestoring") : t("auth.appGateDescription");
+    if (copy) copy.hidden = restoring;
+    if (spinner) spinner.hidden = !restoring;
     if (login) {
         login.hidden = restoring;
         login.disabled = state.authDialogBusy;
@@ -2487,8 +2537,15 @@ function updateAuthDialogCooldown() {
     const target = document.querySelector("[data-auth-cooldown]");
     const resend = document.querySelector("[data-auth-resend]");
     const remaining = Math.max(0, Math.ceil((state.authDialogCooldownUntil - Date.now()) / 1000));
-    if (target) target.textContent = remaining ? t("auth.resendIn").replace("{seconds}", String(remaining)) : "";
-    if (resend) resend.disabled = state.authDialogBusy || remaining > 0;
+    const resendLabel = remaining
+        ? t("auth.resendIn").replace("{seconds}", String(remaining))
+        : t("auth.resend");
+    if (target) target.textContent = "";
+    if (resend) {
+        resend.textContent = resendLabel;
+        resend.disabled = state.authDialogBusy || remaining > 0;
+        resend.setAttribute("aria-label", resendLabel);
+    }
     if (!remaining && state.authDialogCooldownTimer) {
         clearInterval(state.authDialogCooldownTimer);
         state.authDialogCooldownTimer = null;
@@ -2514,9 +2571,15 @@ function renderAuthDialogTurnstile() {
     const widget = document.querySelector("[data-auth-turnstile-widget]");
     const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
     if (!container || !widget || !siteKey) return;
-    container.hidden = false;
-    if (state.authDialogTurnstileWidgetId !== null || !window.turnstile?.render) return;
-    state.authDialogTurnstileWidgetId = window.turnstile.render(widget, {
+    if (state.authDialogTurnstileWidgetId !== null) {
+        container.hidden = false;
+        return;
+    }
+    if (!window.turnstile?.render) {
+        container.hidden = true;
+        return;
+    }
+    const widgetId = window.turnstile.render(widget, {
         sitekey: siteKey,
         callback(token) {
             state.authDialogTurnstileToken = typeof token === "string" && token.trim() ? token.trim() : null;
@@ -2524,9 +2587,12 @@ function renderAuthDialogTurnstile() {
         "expired-callback"() { state.authDialogTurnstileToken = null; },
         "error-callback"() {
             state.authDialogTurnstileToken = null;
+            container.hidden = true;
             setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
         },
     });
+    state.authDialogTurnstileWidgetId = widgetId;
+    container.hidden = false;
 }
 
 function loadAuthDialogTurnstile() {
@@ -2564,35 +2630,113 @@ function renderAuthDialog() {
     const otpInput = document.querySelector("[data-auth-otp]");
     const title = document.querySelector("[data-auth-dialog-title]");
     const description = document.querySelector("[data-auth-dialog-description]");
+    const emailError = document.querySelector("[data-auth-email-error]");
+    const otpError = document.querySelector("[data-auth-otp-error]");
+    const otpDestination = document.querySelector("[data-auth-otp-destination]");
+    const descriptionLine1 = document.querySelector("[data-auth-description-line1]");
+    const descriptionLine2 = document.querySelector("[data-auth-description-line2]");
+    const resendPrompt = document.querySelector("[data-auth-resend-prompt]");
+    const telegramAlternative = document.querySelector("[data-auth-telegram]");
+    const emailAlternative = document.querySelectorAll("[data-auth-email-alternative]");
+    const initialOnly = document.querySelectorAll("[data-auth-initial-only]");
+    const backButton = document.querySelector("[data-auth-back-to-otp]");
+    const restoredAvatar = document.querySelector("[data-auth-restored-avatar]");
+    const restoredName = document.querySelector("[data-auth-restored-name]");
+    const restoredProvider = document.querySelector("[data-auth-restored-provider]");
     if (!dialog || !emailForm || !otpForm) return;
     dialog.hidden = !state.authDialogOpen;
-    emailForm.hidden = !state.authDialogOpen || state.authDialogStep !== "email";
-    otpForm.hidden = !state.authDialogOpen || state.authDialogStep !== "otp";
-    if (restoredState) restoredState.hidden = !state.authDialogOpen || state.authDialogStep !== "restored";
-    if (title) title.textContent = t("auth.dialogTitle");
-    if (description) description.textContent = state.authDialogStep === "otp"
-        ? t("auth.codeDescription")
-        : state.authDialogStep === "restored"
-            ? t("auth.alreadySignedInDescription")
-            : state.authDialogStep === "restoring"
+    const isInitialEmailStep = state.authDialogOpen && state.authDialogStep === "email";
+    const isChangeEmailStep = state.authDialogOpen && state.authDialogStep === "change-email";
+    const isEmailStep = isInitialEmailStep || isChangeEmailStep;
+    const isOtpStep = state.authDialogOpen && state.authDialogStep === "otp";
+    const isRestoredStep = state.authDialogOpen && state.authDialogStep === "restored";
+    const isRestoringStep = state.authDialogOpen && state.authDialogStep === "restoring";
+    emailForm.hidden = !isEmailStep;
+    otpForm.hidden = !isOtpStep;
+    if (restoredState) restoredState.hidden = !isRestoredStep;
+    if (title) title.textContent = state.authDialogStep === "otp"
+        ? t("auth.otpTitle")
+        : isRestoredStep
+            ? t("auth.alreadySignedIn")
+            : isRestoringStep
                 ? t("auth.restoring")
-        : t("auth.dialogDescription");
-    if (title && state.authDialogStep === "restored") title.textContent = t("auth.alreadySignedIn");
-    const restoredCopy = document.querySelector("[data-auth-restored-copy]");
-    if (restoredCopy) restoredCopy.textContent = t("auth.alreadySignedInDescription");
+                : isChangeEmailStep
+                    ? t("auth.changeEmailTitle")
+                    : t("auth.dialogTitle");
+    if (description) description.hidden = isRestoredStep || isRestoringStep;
+    if (descriptionLine1) descriptionLine1.textContent = isOtpStep
+        ? t("auth.otpSentTo")
+        : isChangeEmailStep
+            ? t("auth.changeEmailIntro")
+            : t("auth.emailIntro");
+    if (descriptionLine2) descriptionLine2.textContent = isOtpStep
+        ? ""
+        : isChangeEmailStep
+            ? t("auth.changeEmailSubcopy")
+            : t("auth.emailSubcopy");
     const continueButton = document.querySelector("[data-auth-continue]");
     const switchButton = document.querySelector("[data-auth-switch]");
     if (continueButton) continueButton.textContent = t("auth.continue");
     if (switchButton) switchButton.textContent = t("auth.switchAccount");
+    const emailLabel = document.querySelector('label[for="auth-email-input"]');
+    const otpLabel = document.querySelector('label[for="auth-otp-input"]');
+    const sendButton = document.querySelector("[data-auth-send]");
+    const verifyButton = document.querySelector("[data-auth-verify]");
+    const changeEmailButton = document.querySelector("[data-auth-change-email]");
+    const telegramLabel = document.querySelector("[data-auth-telegram-label]");
+    const legalCopy = document.querySelector("[data-auth-legal]");
+    if (emailLabel) emailLabel.textContent = t("auth.emailLabel");
+    if (otpLabel) otpLabel.textContent = t("auth.codeLabel");
+    if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
+    if (verifyButton) verifyButton.textContent = t("auth.verify");
+    if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
+    if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
+    if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
+    if (legalCopy) {
+        const legalLink = legalCopy.querySelector("a");
+        if (legalLink) legalLink.textContent = locale === "ru" ? "политикой конфиденциальности" : "privacy policy";
+        legalCopy.firstChild.textContent = locale === "ru" ? "Продолжая, вы соглашаетесь с " : "By continuing, you agree to the ";
+        if (legalLink) legalCopy.lastChild.textContent = locale === "ru" ? "." : ".";
+    }
+    if (telegramAlternative) telegramAlternative.hidden = !isInitialEmailStep;
+    emailAlternative.forEach((element) => {
+        element.hidden = !isInitialEmailStep;
+    });
+    initialOnly.forEach((element) => {
+        element.hidden = !isInitialEmailStep;
+    });
+    if (otpDestination) {
+        otpDestination.textContent = isOtpStep && state.authDialogEmail
+            ? maskAuthEmail(state.authDialogEmail)
+            : "";
+    }
+    if (emailError) {
+        emailError.textContent = state.authDialogEmailError || "";
+        emailError.hidden = !state.authDialogEmailError;
+    }
+    if (otpError) {
+        otpError.textContent = state.authDialogOtpError || "";
+        otpError.hidden = !state.authDialogOtpError;
+    }
+    emailInput?.toggleAttribute("aria-invalid", Boolean(state.authDialogEmailError));
+    otpInput?.toggleAttribute("aria-invalid", Boolean(state.authDialogOtpError));
     if (emailInput && emailInput.value !== state.authDialogEmail) emailInput.value = state.authDialogEmail;
     if (otpInput && otpInput.value !== state.authDialogOtp) otpInput.value = state.authDialogOtp;
+    if (backButton) {
+        backButton.hidden = !isChangeEmailStep;
+        backButton.textContent = t("auth.back");
+    }
+    const account = getAuthAccountPresentation();
+    if (restoredAvatar) restoredAvatar.textContent = getInitials(account.identifier);
+    if (restoredName) restoredName.textContent = account.identifier;
+    if (restoredProvider) restoredProvider.textContent = account.provider;
     document.querySelector("[data-auth-send]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
     document.querySelector("[data-auth-telegram]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-continue]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
     updateAuthDialogCooldown();
-    if (state.authDialogOpen && state.authDialogStep === "email") loadAuthDialogTurnstile();
+    if (state.authDialogOpen && ["email", "change-email"].includes(state.authDialogStep)) loadAuthDialogTurnstile();
 }
 
 function openAuthDialog() {
@@ -2606,8 +2750,12 @@ function openAuthDialog() {
             ? "restored"
             : "email";
     state.authDialogError = "";
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
     state.authDialogBusy = false;
     state.authDialogOtp = "";
+    state.authDialogChangeEmailOriginal = "";
+    state.authDialogOtpBeforeChange = "";
     setAuthDialogMessage("");
     renderAuthDialog();
     if (state.authDialogStep === "restoring") {
@@ -2618,12 +2766,21 @@ function openAuthDialog() {
             renderAuthDialog();
         });
     }
-    window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
+    window.requestAnimationFrame(() => {
+        const selector = state.authDialogStep === "restored"
+            ? "[data-auth-continue]"
+            : state.authDialogStep === "otp"
+                ? "[data-auth-otp]"
+                : "[data-auth-email]";
+        document.querySelector(selector)?.focus();
+    });
 }
 
 function closeAuthDialog() {
     state.authDialogOpen = false;
     state.authDialogBusy = false;
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
     resetAuthDialogTurnstile();
     renderAuthDialog();
 }
@@ -2806,7 +2963,9 @@ async function loginWithTelegram() {
         }
         return true;
     } catch (error) {
-        console.error("[DW] Telegram website login failed", error);
+        console.warn("[DW] Telegram website login failed", {
+            code: typeof error?.code === "string" ? error.code : "unknown",
+        });
         const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
             ? "Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз."
             : "Не удалось войти через Telegram. Попробуйте ещё раз.";
@@ -2825,12 +2984,22 @@ function validFrontendEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(String(email || "").trim());
 }
 
+function maskAuthEmail(email) {
+    const [local = "", domain = ""] = String(email || "").trim().split("@");
+    if (!local || !domain) return "";
+    const visible = local.length === 1 ? local : local.slice(0, 2);
+    const mask = local.length === 1 ? "•••" : "••••";
+    return `${visible}${mask}@${domain}`;
+}
+
 async function requestFrontendEmailOtp({ resend = false } = {}) {
     const controller = frontendAuthController();
     const email = String(state.authDialogEmail || "").trim();
     if (!controller || !isAuthIntegrationEnabled()) return;
     if (!validFrontendEmail(email)) {
-        setAuthDialogMessage(t("auth.invalidEmail"), true);
+        state.authDialogEmailError = t("auth.invalidEmail");
+        setAuthDialogMessage("");
+        renderAuthDialog();
         document.querySelector("[data-auth-email]")?.focus();
         return;
     }
@@ -2839,6 +3008,8 @@ async function requestFrontendEmailOtp({ resend = false } = {}) {
         setAuthDialogMessage(t("auth.turnstileRequired"), true);
         return;
     }
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
     state.authDialogBusy = true;
     setAuthDialogMessage(t("auth.sendingCode"));
     renderAuthDialog();
@@ -2847,7 +3018,7 @@ async function requestFrontendEmailOtp({ resend = false } = {}) {
         state.authDialogStep = "otp";
         state.authDialogOtp = "";
         startAuthDialogCooldown();
-        setAuthDialogMessage(t("auth.codeSent"));
+        setAuthDialogMessage("");
         resetAuthDialogTurnstile();
         renderAuthDialog();
         window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
@@ -2872,9 +3043,13 @@ async function verifyFrontendEmailOtp() {
     const otp = String(state.authDialogOtp || "").trim();
     if (!controller || !isAuthIntegrationEnabled()) return;
     if (!/^\d{6}$/u.test(otp)) {
-        setAuthDialogMessage(t("auth.invalidOtp"), true);
+        state.authDialogOtpError = t("auth.invalidOtp");
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        document.querySelector("[data-auth-otp]")?.focus();
         return;
     }
+    state.authDialogOtpError = "";
     state.authDialogBusy = true;
     setAuthDialogMessage(t("auth.checkingCode"));
     renderAuthDialog();
@@ -2889,7 +3064,12 @@ async function verifyFrontendEmailOtp() {
         if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
         else await loadDashboardData({ silent: true });
     } catch (error) {
-        setAuthDialogMessage(authErrorMessage(error?.code), true);
+        if (error?.code === "invalid_otp" || error?.code === "expired_otp") {
+            state.authDialogOtpError = authErrorMessage(error?.code);
+            setAuthDialogMessage("");
+        } else {
+            setAuthDialogMessage(authErrorMessage(error?.code), true);
+        }
     } finally {
         state.authDialogBusy = false;
         renderAuthDialog();
@@ -2897,23 +3077,67 @@ async function verifyFrontendEmailOtp() {
     }
 }
 
-function logoutCurrentFrontendAuthority() {
+function renderLogoutDialog() {
+    const dialog = document.querySelector("[data-logout-dialog]");
+    if (!dialog) return;
+    const title = document.querySelector("[data-logout-title]");
+    const description = document.querySelector("[data-logout-description]");
+    const cancel = document.querySelector("[data-logout-cancel]");
+    const confirm = document.querySelector("[data-logout-confirm]");
+    dialog.hidden = !state.logoutDialogOpen;
+    if (title) title.textContent = t("auth.logoutTitle");
+    if (description) description.textContent = t("auth.logoutDescription");
+    if (cancel) {
+        cancel.textContent = t("auth.cancel");
+        cancel.disabled = state.logoutDialogBusy;
+    }
+    if (confirm) {
+        confirm.textContent = t("auth.logout");
+        confirm.disabled = state.logoutDialogBusy;
+    }
+}
+
+function openLogoutDialog() {
+    if (!isFrontendUserAuthenticated()) return;
+    state.logoutDialogOpen = true;
+    state.logoutDialogBusy = false;
+    renderLogoutDialog();
+    window.requestAnimationFrame(() => document.querySelector("[data-logout-cancel]")?.focus());
+}
+
+function closeLogoutDialog() {
+    if (state.logoutDialogBusy) return;
+    state.logoutDialogOpen = false;
+    renderLogoutDialog();
+}
+
+async function logoutCurrentFrontendAuthority() {
     const controller = frontendAuthController();
     if (isSupabaseFrontendAuth() && controller) {
-        state.authDialogBusy = true;
-        void controller.signOut()
-            .catch((error) => setWalletMessage(authErrorMessage(error?.code), "error"))
-            .finally(() => {
-                state.authDialogBusy = false;
-                state.frontendAuthUser = null;
-                state.frontendAuthSavedName = null;
-                clearApplicationSessionState();
-                updateWebsiteAuthUi();
-                renderDashboard();
-            });
+        await controller.signOut();
+        state.frontendAuthUser = null;
+        state.frontendAuthSavedName = null;
+        clearApplicationSessionState();
+        updateWebsiteAuthUi();
+        renderDashboard();
         return;
     }
     logoutWebsiteAuth();
+}
+
+async function confirmLogout() {
+    if (state.logoutDialogBusy) return;
+    state.logoutDialogBusy = true;
+    renderLogoutDialog();
+    try {
+        await logoutCurrentFrontendAuthority();
+        state.logoutDialogOpen = false;
+    } catch (error) {
+        setWalletMessage(authErrorMessage(error?.code), "error");
+    } finally {
+        state.logoutDialogBusy = false;
+        renderLogoutDialog();
+    }
 }
 
 function continueWithRestoredSession() {
@@ -2930,6 +3154,8 @@ function switchFromRestoredSession() {
         .then(() => {
             state.authDialogStep = "email";
             state.authDialogOtp = "";
+            state.authDialogChangeEmailOriginal = "";
+            state.authDialogOtpBeforeChange = "";
             state.frontendAuthUser = null;
             state.frontendAuthSavedName = null;
             setAuthDialogMessage("");
@@ -2942,8 +3168,8 @@ function switchFromRestoredSession() {
 }
 
 function handleWebsiteAuthAction() {
-    if (isSupabaseFrontendAuth()) {
-        logoutCurrentFrontendAuthority();
+    if (isFrontendUserAuthenticated()) {
+        openLogoutDialog();
     } else if (isAuthIntegrationEnabled()) {
         openAuthDialog();
     } else {
@@ -9726,12 +9952,23 @@ function bindEvents() {
     document.querySelector("[data-auth-dialog]")?.addEventListener("click", (event) => {
         if (event.target === event.currentTarget) closeAuthDialog();
     });
+    document.querySelector("[data-logout-close]")?.addEventListener("click", closeLogoutDialog);
+    document.querySelector("[data-logout-cancel]")?.addEventListener("click", closeLogoutDialog);
+    document.querySelector("[data-logout-confirm]")?.addEventListener("click", () => {
+        void confirmLogout();
+    });
+    document.querySelector("[data-logout-dialog]")?.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) closeLogoutDialog();
+    });
     document.querySelector("[data-auth-email]")?.addEventListener("input", (event) => {
         state.authDialogEmail = event.target.value.trim();
         state.authDialogError = "";
+        state.authDialogEmailError = "";
+        renderAuthDialog();
     });
     document.querySelector("[data-auth-otp]")?.addEventListener("input", (event) => {
         state.authDialogOtp = event.target.value.replace(/\D+/gu, "").slice(0, 6);
+        state.authDialogOtpError = "";
         event.target.value = state.authDialogOtp;
         renderAuthDialog();
     });
@@ -9747,13 +9984,29 @@ function bindEvents() {
         void requestFrontendEmailOtp({ resend: true });
     });
     document.querySelector("[data-auth-change-email]")?.addEventListener("click", () => {
-        state.authDialogStep = "email";
+        state.authDialogChangeEmailOriginal = state.authDialogEmail;
+        state.authDialogOtpBeforeChange = state.authDialogOtp;
+        state.authDialogStep = "change-email";
         state.authDialogOtp = "";
         state.authDialogError = "";
+        state.authDialogEmailError = "";
+        state.authDialogOtpError = "";
         resetAuthDialogTurnstile();
         setAuthDialogMessage("");
         renderAuthDialog();
         window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
+    });
+    document.querySelector("[data-auth-back-to-otp]")?.addEventListener("click", () => {
+        state.authDialogStep = "otp";
+        state.authDialogEmail = state.authDialogChangeEmailOriginal;
+        state.authDialogOtp = state.authDialogOtpBeforeChange;
+        state.authDialogChangeEmailOriginal = "";
+        state.authDialogOtpBeforeChange = "";
+        state.authDialogEmailError = "";
+        state.authDialogOtpError = "";
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
     });
     document.querySelector("[data-auth-telegram]")?.addEventListener("click", () => {
         closeAuthDialog();

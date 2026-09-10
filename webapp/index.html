@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260903-console-fixes-1">
+<html lang="ru" data-app-build="20260909-auth-ui-polish-2">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,15 +7,18 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260903-console-fixes-1">
+    <link rel="stylesheet" href="/style.css?v=20260909-auth-ui-polish-2">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
 <body>
     <section class="application-auth-gate" data-application-auth-gate hidden aria-live="polite">
         <div class="application-auth-gate-card">
-            <p class="section-label">Dream Wheels</p>
-            <h1 data-application-auth-gate-title>Восстанавливаем вход</h1>
+            <p class="application-auth-gate-wordmark brand-wordmark" aria-label="Dream Wheels AI">
+                <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+            </p>
+            <div class="application-auth-gate-spinner" data-application-auth-gate-spinner aria-hidden="true"></div>
+            <h1 class="application-auth-gate-title" data-application-auth-gate-title>Открываем приложение…</h1>
             <p class="application-auth-gate-copy" data-application-auth-gate-copy>Проверяем защищённую сессию перед открытием приложения.</p>
             <button type="button" class="primary-button" data-application-auth-gate-login hidden>Войти</button>
         </div>
@@ -1036,40 +1039,80 @@
         <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description">
             <button type="button" class="auth-dialog-close" data-auth-close aria-label="Закрыть">×</button>
             <div class="auth-dialog-header">
-                <p class="section-label">Dream Wheels</p>
-                <h2 id="auth-dialog-title" data-auth-dialog-title>Войти в Dream Wheels</h2>
-                <p id="auth-dialog-description" class="auth-dialog-description" data-auth-dialog-description>Введите электронную почту — мы пришлём код для входа.</p>
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
+                    <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+                </p>
+                <h2 id="auth-dialog-title" data-auth-dialog-title>Войдите в аккаунт</h2>
+                <div id="auth-dialog-description" class="auth-dialog-description" data-auth-dialog-description>
+                    <p data-auth-description-line1>Введите электронную почту</p>
+                    <p data-auth-description-line2>Мы пришлём код для входа</p>
+                </div>
             </div>
             <form class="auth-dialog-form" data-auth-email-form novalidate>
                 <label class="auth-dialog-label" for="auth-email-input">Электронная почта</label>
-                <input id="auth-email-input" class="auth-dialog-input" type="email" inputmode="email" autocomplete="email" data-auth-email required>
+                <input id="auth-email-input" class="auth-dialog-input" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" aria-describedby="auth-email-error" data-auth-email required>
+                <p id="auth-email-error" class="auth-dialog-field-error" data-auth-email-error role="alert" aria-live="polite" hidden></p>
                 <div class="auth-turnstile" data-auth-turnstile hidden>
                     <div data-auth-turnstile-widget></div>
                 </div>
                 <button type="submit" class="primary-button auth-dialog-primary" data-auth-send>Получить код</button>
+                <button type="button" class="link-button auth-dialog-tertiary auth-dialog-back-button" data-auth-back-to-otp hidden>Назад</button>
             </form>
+            <div class="auth-dialog-divider" data-auth-email-alternative data-auth-initial-only aria-hidden="true"><span>или</span></div>
             <form class="auth-dialog-form" data-auth-otp-form hidden>
                 <label class="auth-dialog-label" for="auth-otp-input">Код из письма</label>
-                <input id="auth-otp-input" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" data-auth-otp>
+                <p class="auth-dialog-otp-destination" data-auth-otp-destination></p>
+                <input id="auth-otp-input" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" aria-describedby="auth-otp-error" pattern="[0-9]{6}" maxlength="6" data-auth-otp>
+                <p id="auth-otp-error" class="auth-dialog-field-error" data-auth-otp-error role="alert" aria-live="polite" hidden></p>
                 <button type="submit" class="primary-button auth-dialog-primary" data-auth-verify>Войти</button>
-                <div class="auth-dialog-actions">
-                    <button type="button" class="link-button" data-auth-resend>Отправить код ещё раз</button>
-                    <button type="button" class="link-button" data-auth-change-email>Изменить почту</button>
+                <div class="auth-dialog-resend-row">
+                    <span data-auth-resend-prompt>Не пришёл код?</span>
+                    <button type="button" class="link-button" data-auth-resend>Отправить ещё раз</button>
+                    <span class="auth-dialog-cooldown" data-auth-cooldown aria-live="polite"></span>
                 </div>
-                <div class="auth-dialog-cooldown" data-auth-cooldown aria-live="polite"></div>
+                <div class="auth-dialog-actions">
+                    <button type="button" class="link-button auth-dialog-tertiary" data-auth-change-email>Изменить почту</button>
+                </div>
             </form>
             <div class="auth-dialog-restored" data-auth-restored-state hidden>
-                <p class="auth-dialog-restored-copy" data-auth-restored-copy>Вы уже вошли в Dream Wheels.</p>
+                <div class="auth-dialog-account-card">
+                    <div class="account-avatar" data-auth-restored-avatar>DW</div>
+                    <div class="auth-dialog-account-copy">
+                        <strong data-auth-restored-name>Dream Wheels</strong>
+                        <span data-auth-restored-provider>Email</span>
+                    </div>
+                </div>
                 <button type="button" class="primary-button auth-dialog-primary" data-auth-continue>Продолжить</button>
-                <button type="button" class="ghost-button auth-dialog-telegram" data-auth-switch>Выйти / сменить аккаунт</button>
+                <button type="button" class="link-button auth-dialog-tertiary" data-auth-switch>Сменить аккаунт</button>
             </div>
             <div class="auth-dialog-status" data-auth-message role="status" aria-live="polite"></div>
-            <button type="button" class="ghost-button auth-dialog-telegram" data-auth-telegram>Войти через Telegram</button>
+            <button type="button" class="ghost-button auth-dialog-telegram" data-auth-telegram data-auth-initial-only>
+                <svg class="auth-telegram-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
+                <span data-auth-telegram-label>Продолжить через Telegram</span>
+            </button>
+            <p class="auth-dialog-legal" data-auth-legal data-auth-email-alternative data-auth-initial-only>Продолжая, вы соглашаетесь с <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" target="_blank" rel="noopener noreferrer">политикой конфиденциальности</a>.</p>
+        </section>
+    </div>
+
+    <div class="auth-dialog-backdrop" data-logout-dialog hidden>
+        <section class="auth-dialog auth-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+            <button type="button" class="auth-dialog-close" data-logout-close aria-label="Закрыть">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
+                    <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+                </p>
+                <h2 id="logout-dialog-title" data-logout-title>Выйти из аккаунта?</h2>
+                <p id="logout-dialog-description" class="auth-dialog-description" data-logout-description>После выхода потребуется снова войти</p>
+            </div>
+            <div class="auth-dialog-actions auth-logout-actions">
+                <button type="button" class="ghost-button" data-logout-cancel>Отмена</button>
+                <button type="button" class="ghost-button auth-logout-confirm" data-logout-confirm>Выйти</button>
+            </div>
         </section>
     </div>
 
     <script src="/auth/harness-config.js"></script>
     <script src="/auth/app-auth.bundle.js"></script>
-    <script src="/app.js?v=20260903-console-fixes-1" type="module"></script>
+    <script src="/app.js?v=20260909-auth-ui-polish-2" type="module"></script>
 </body>
 </html>
