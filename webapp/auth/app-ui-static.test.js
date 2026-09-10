@@ -79,3 +79,22 @@ test("restore gate keeps the session gate independent from cabinet data", () => 
     assert.notEqual(end, -1);
     assert.doesNotMatch(app.slice(start, end), /applicationDataReady/);
 });
+
+test("wallet polish separates credits from payment history and keeps checkout explicit", () => {
+    assert.match(html, /data-wallet-topup/);
+    assert.match(html, /data-i18n="wallet\.creditsTitle">Ваши credits/);
+    assert.match(html, /data-i18n="wallet\.topUpHistory">История пополнений/);
+    assert.match(html, /data-i18n="wallet\.emailHint">Чек будет отправлен на этот email/);
+    assert.match(html, /data-i18n="wallet\.privacyDetails">Подробнее — в Политике обработки персональных данных/);
+    assert.match(html, /data-pay-button disabled data-i18n="wallet\.choosePackage">Выберите пакет/);
+    assert.doesNotMatch(html, /class="topup-icon"/);
+    assert.doesNotMatch(html, /data-topup-amount="(?:100|200|500|1000)"[\s\S]{0,220}[⚡🏁💎👑]/u);
+    assert.match(app, /selectedAmount: null/);
+    assert.match(app, /receiptEmailTouched: false/);
+    assert.match(app, /function syncReceiptEmailForAuth\(\)/);
+    assert.match(app, /receiptEmailDefault\(\)/);
+    assert.doesNotMatch(app, /const rememberedEmail = state\.payments/);
+    assert.match(app, /state\.receiptEmailTouched = true/);
+    assert.match(app, /paySelected: "Оплатить \{amount\}"/);
+    assert.match(app, /const topUpPackage = getTopUpPackage\(state\.selectedAmount\)/);
+});

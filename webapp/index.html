@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260909-auth-ui-polish-2">
+<html lang="ru" data-app-build="20260911-wallet-ux-polish-1">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260909-auth-ui-polish-2">
+    <link rel="stylesheet" href="/style.css?v=20260911-wallet-ux-polish-1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -339,46 +339,41 @@
         </section>
 
         <section class="view" data-view="wallet" hidden>
-            <section class="balance-tile wallet-balance-tile">
-                <div class="dashboard-balance-subisland">
-                    <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit" data-balance-unit>рендеров</div>
-                    <div class="balance-note" data-balance-note>
-                        <span class="balance-note-value" data-balance-note-value></span>
-                     </div>
-                 </div>
+            <section class="panel wallet-balance-summary" id="wallet-balance-summary">
+                <div class="wallet-balance-summary-copy">
+                    <p class="section-label" data-i18n="wallet.balanceLabel">Баланс</p>
+                    <div class="wallet-balance-figure">
+                        <strong class="wallet-balance-value" data-balance-value>3</strong>
+                        <span class="wallet-balance-unit" data-balance-unit>рендеров</span>
+                    </div>
+                    <p class="wallet-balance-note" data-i18n="wallet.balanceHint">Доступно для примерок</p>
+                </div>
+                <button type="button" class="primary-button compact-button wallet-balance-action" data-wallet-topup data-i18n="wallet.topUpCta">Пополнить</button>
             </section>
 
-            <section class="panel last-invoice-panel">
+            <section class="panel last-invoice-panel" id="wallet-latest-payment">
                 <div class="panel-head">
                     <div>
                         <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последняя оплата</p>
-                        <h2 data-i18n="wallet.lastInvoiceTitle">Платежей пока нет</h2>
+                        <h2 data-last-invoice-title data-i18n="wallet.lastInvoiceTitle">Платежей пока нет</h2>
                     </div>
                     <span class="status-pill neutral" data-payment-status>Нет платежей</span>
                 </div>
                 <p class="panel-note warning-note" data-last-payment-error hidden></p>
-                <div class="payment-card payment-card-grant" data-last-invoice-empty>
+                <div class="payment-card payment-card-empty" data-last-invoice-empty>
                     <div>
-                        <div class="payment-card-title" data-i18n="wallet.noPaymentsTitle">Платежей пока нет</div>
-                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовые рендеры по команде /start действуют 30 дней и появятся в истории пополнений</div>
+                        <div class="payment-card-title" data-i18n="wallet.noPaymentsMeta">История пополнений появится после первой оплаты</div>
                     </div>
                 </div>
                 <div class="payment-card" data-last-invoice-card hidden>
                     <div>
-                        <div class="payment-card-title" data-last-invoice-number>#000000</div>
-                        <div class="payment-card-meta" data-last-invoice-meta>Сегодня</div>
+                        <div class="payment-card-title" data-last-invoice-number>0 ₽ — +0 рендеров</div>
+                        <div class="payment-card-meta" data-last-invoice-meta>Сегодня — #000000</div>
                     </div>
                     <button type="button" class="payment-card-action" data-refresh-invoice hidden data-i18n="wallet.refreshInvoice">Обновить статус</button>
                 </div>
-                <div class="invoice-card" data-last-invoice-details hidden>
-                    <div class="invoice-row">
-                        <div>
-                            <div class="invoice-number" data-last-invoice-amount>0 ₽</div>
-                            <div class="invoice-meta" data-last-invoice-state>Черновик</div>
-                        </div>
-                        <span class="status-pill" data-last-invoice-status>Pending</span>
-                    </div>
+                <details class="invoice-card latest-payment-details" data-last-invoice-details hidden>
+                    <summary class="latest-payment-details-toggle" data-i18n="wallet.details">Подробнее</summary>
                     <div class="invoice-grid">
                         <div class="invoice-field">
                             <span data-i18n="wallet.invoiceEmail">Email</span>
@@ -396,8 +391,16 @@
                             <span data-i18n="wallet.invoiceNumber">Номер оплаты</span>
                             <strong data-last-invoice-number-copy>#000000</strong>
                         </div>
+                        <div class="invoice-field">
+                            <span data-i18n="wallet.invoiceState">Состояние</span>
+                            <strong data-last-invoice-state>В ожидании</strong>
+                        </div>
+                        <div class="invoice-field">
+                            <span data-i18n="wallet.invoiceStatus">Статус</span>
+                            <strong data-last-invoice-status>В ожидании</strong>
+                        </div>
                     </div>
-                </div>
+                </details>
             </section>
 
             <section class="panel wizard-panel">
@@ -434,28 +437,24 @@
                         <div class="topup-island topup-packages-island" data-topup-panel="package" data-active="true" aria-hidden="false">
                             <div class="topup-grid">
                                 <button type="button" class="topup-card" data-topup-amount="100" data-topup-credits="3" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">⚡</span>
                                     <span class="package-main">
                                         <span class="package-name">100 ₽</span>
                                         <span class="package-meta" data-topup-meta>3 примерки</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="200" data-topup-credits="7" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">🏁</span>
                                     <span class="package-main">
                                         <span class="package-name">200 ₽</span>
                                         <span class="package-meta" data-topup-meta>7 примерок</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="500" data-topup-credits="20" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">💎</span>
                                     <span class="package-main">
                                         <span class="package-name">500 ₽</span>
                                         <span class="package-meta" data-topup-meta>20 примерок</span>
                                     </span>
                                 </button>
                                 <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">👑</span>
                                     <span class="package-main">
                                         <span class="package-name">1 000 ₽</span>
                                         <span class="package-meta" data-topup-meta>45 примерок</span>
@@ -481,10 +480,8 @@
                         </div>
                         <input id="wallet-email" class="topup-email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-topup-email>
                         <p class="topup-email-error" data-topup-email-error hidden></p>
-                        <p class="email-privacy-note">
-                            <span data-i18n="wallet.emailPrivacyPrefix">Email используется для отправки чека и обработки платежа.</span>
-                            <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.privacyDetails">Подробнее — в Политике обработки персональных данных</a>.
-                        </p>
+                        <p class="email-privacy-note" data-i18n="wallet.emailHint">Чек будет отправлен на этот email</p>
+                        <p class="wallet-privacy-link"><a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.privacyDetails">Подробнее — в Политике обработки персональных данных</a></p>
                     </div>
 
                     <div class="topup-island topup-step-island topup-action-island">
@@ -502,9 +499,11 @@
                         <div class="topup-summary">
                             <div class="topup-summary-title" data-topup-summary-title data-i18n="wallet.summaryEmptyTitle">Выберите пакет</div>
                             <div class="topup-summary-meta" data-topup-summary-meta data-i18n="wallet.summaryEmptyMeta">Здесь появится выбранный пакет перед оплатой</div>
+                            <div class="topup-summary-receipt" data-topup-summary-receipt hidden></div>
                         </div>
-                        <button type="button" class="ghost-button compact-button topup-reset-button" data-reset-wizard data-i18n="wallet.reset">Сбросить</button>
-                        <button type="button" class="primary-button wallet-pay-button" data-pay-button data-i18n="wallet.pay">Оплатить через Робокассу</button>
+                        <button type="button" class="ghost-button compact-button topup-reset-button" data-reset-wizard hidden data-i18n="wallet.reset">Изменить выбор</button>
+                        <button type="button" class="primary-button wallet-pay-button" data-pay-button disabled data-i18n="wallet.choosePackage">Выберите пакет</button>
+                        <p class="secure-payment-note" data-i18n="wallet.paymentProvider">Оплата через Robokassa</p>
                         <p class="payment-acceptance">
                             <span data-i18n="wallet.acceptancePrefix">Нажимая «Оплатить», вы принимаете</span>
                             <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="wallet.offerLink">Публичную оферту</a>
@@ -515,38 +514,30 @@
                 </div>
             </section>
 
-            <details class="collapsible panel payment-history-details" data-wallet-history-details open>
-                <summary>
-                            <span>
-                        <strong class="history-summary-title" data-i18n="wallet.paymentHistory">История платежей</strong>
-                    </span>
-                    <span class="summary-action" data-wallet-history-toggle data-i18n="wallet.closeHistory">Скрыть</span>
-                </summary>
-                <div class="wallet-history-stack">
-                    <section class="topup-island wallet-history-island wallet-expiry-section" data-wallet-expiry-section>
-                        <div class="wallet-history-island-head">
-                            <p class="section-label" data-i18n="wallet.availableRenders">Доступные рендеры</p>
-                            <div class="wallet-history-caption" data-i18n="wallet.availableRendersHint">Сначала списываются пакеты с ближайшей датой окончания</div>
+            <section class="panel wallet-sections-panel" id="wallet-history">
+                <section class="topup-island wallet-history-island wallet-expiry-section" data-wallet-expiry-section>
+                    <div class="wallet-history-island-head">
+                        <h2 class="wallet-section-title" data-i18n="wallet.creditsTitle">Ваши credits</h2>
+                        <div class="wallet-history-caption" data-i18n="wallet.availableRendersHint">Сначала списываются пакеты с ближайшей датой окончания</div>
+                    </div>
+                    <div class="wallet-expiry-list" data-wallet-expiry-list></div>
+                    <div class="wallet-expiry-note wallet-expiry-inline-note" data-wallet-expiry-note hidden></div>
+                </section>
+                <section class="topup-island wallet-history-island wallet-history-section" id="wallet-payment-history">
+                    <div class="wallet-history-island-head wallet-history-island-head-split">
+                        <div>
+                            <h2 class="wallet-section-title" data-i18n="wallet.topUpHistory">История пополнений</h2>
+                            <div class="wallet-history-caption" data-wallet-history-hint hidden></div>
                         </div>
-                        <div class="wallet-expiry-list" data-wallet-expiry-list></div>
-                        <div class="wallet-expiry-note wallet-expiry-inline-note" data-wallet-expiry-note hidden></div>
-                    </section>
-                    <section class="topup-island wallet-history-island wallet-history-section">
-                        <div class="wallet-history-island-head wallet-history-island-head-split">
-                            <div>
-                                <p class="section-label" data-i18n="wallet.topUpHistory">История пополнений</p>
-                                <div class="wallet-history-caption" data-wallet-history-hint hidden></div>
-                            </div>
-                            <div class="wallet-history-pager" data-wallet-history-pager hidden>
-                                <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-prev data-i18n="wallet.previousPage">Назад</button>
-                                <span class="wallet-history-page-label" data-wallet-history-page-label>1-10 из 10</span>
-                                <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-next data-i18n="wallet.nextPage">Далее</button>
-                            </div>
+                        <div class="wallet-history-pager" data-wallet-history-pager hidden>
+                            <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-prev data-i18n="wallet.previousPage">Назад</button>
+                            <span class="wallet-history-page-label" data-wallet-history-page-label>1-10 из 10</span>
+                            <button type="button" class="ghost-button compact-button wallet-history-page-button" data-wallet-history-next data-i18n="wallet.nextPage">Далее</button>
                         </div>
-                        <div class="history-list wallet-history-list" data-payment-history-list></div>
-                    </section>
-                </div>
-            </details>
+                    </div>
+                    <div class="history-list wallet-history-list" data-payment-history-list></div>
+                </section>
+            </section>
         </section>
 
         <section class="view" data-view="renders" hidden>
@@ -1113,6 +1104,6 @@
 
     <script src="/auth/harness-config.js"></script>
     <script src="/auth/app-auth.bundle.js"></script>
-    <script src="/app.js?v=20260909-auth-ui-polish-2" type="module"></script>
+    <script src="/app.js?v=20260911-wallet-ux-polish-1" type="module"></script>
 </body>
 </html>

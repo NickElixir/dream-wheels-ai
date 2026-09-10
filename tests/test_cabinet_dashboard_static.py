@@ -149,9 +149,10 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert "/identity/resolve" in APP_JS
     assert "/jobs/from-assets" in APP_JS
     assert "/payments/topups" in APP_JS
+    assert 'class="topup-icon"' not in INDEX_HTML
     for icon in ("⚡", "🏁", "💎", "👑"):
-        assert icon in INDEX_HTML
-    assert "Робокассу" in INDEX_HTML
+        assert icon not in INDEX_HTML
+    assert "Robokassa" in INDEX_HTML
 
 
 def test_payment_creation_sends_channel_aware_return_context() -> None:
