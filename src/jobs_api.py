@@ -127,6 +127,7 @@ class JobFromAssetsRequest(BaseModel):
     draft_id: str
     idempotency_key: str
     vehicle: identity_service.VehicleCandidate
+    vehicle_user_confirmed: bool = False
     rim: identity_service.RimProposal
     rim_user_confirmed: bool = True
     init_data: str | None = None
@@ -159,6 +160,7 @@ class JobStatusResponse(BaseModel):
     feedback: JobFeedbackSummary | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
     render_input_snapshot: dict[str, object] | None = None
+    vehicle_identity: "VehicleIdentitySummary | None" = None
 
 
 class JobStatusDetailedResponse(BaseModel):
@@ -174,6 +176,7 @@ class JobStatusDetailedResponse(BaseModel):
     feedback: JobFeedbackSummary | None = None
     assets: dict[str, "JobAssetResponse"] | None = None
     render_input_snapshot: dict[str, object] | None = None
+    vehicle_identity: "VehicleIdentitySummary | None" = None
 
 
 class JobAssetResponse(BaseModel):
@@ -186,6 +189,15 @@ class JobAssetResponse(BaseModel):
     created_at: datetime | None = None
     url: str | None = None
     download_url: str | None = None
+
+
+class VehicleIdentitySummary(BaseModel):
+    make: str
+    model: str
+    year: int | None = None
+    year_start: int | None = None
+    year_end: int | None = None
+    is_user_confirmed: bool
 
 
 class JobHistoryItem(BaseModel):
@@ -202,6 +214,7 @@ class JobHistoryItem(BaseModel):
     feedback: JobFeedbackSummary | None = None
     assets: dict[str, JobAssetResponse] = Field(default_factory=dict)
     render_input_snapshot: dict[str, object] | None = None
+    vehicle_identity: VehicleIdentitySummary | None = None
 
 
 class JobHistoryResponse(BaseModel):
@@ -721,6 +734,21 @@ def _snapshot_from_row(row, *, job_id: str) -> dict[str, object] | None:
     return None
 
 
+def _vehicle_identity_from_row(row) -> VehicleIdentitySummary | None:
+    make = row.get("vehicle_identity_make")
+    model = row.get("vehicle_identity_model")
+    if not make or not model:
+        return None
+    return VehicleIdentitySummary(
+        make=make,
+        model=model,
+        year=row.get("vehicle_identity_year"),
+        year_start=row.get("vehicle_identity_year_start"),
+        year_end=row.get("vehicle_identity_year_end"),
+        is_user_confirmed=bool(row.get("vehicle_identity_is_user_confirmed")),
+    )
+
+
 def _job_assets_select_clause() -> str:
     return """
         car_asset.id AS car_asset_id,
@@ -760,6 +788,25 @@ def _fitment_available_clause() -> str:
         "AND jobs.rim_setup_id IS NOT NULL "
         "THEN true ELSE false END AS fitment_available"
     )
+
+
+def _vehicle_identity_select_clause() -> str:
+    return """
+        vehicle_identity.make AS vehicle_identity_make,
+        vehicle_identity.model AS vehicle_identity_model,
+        vehicle_identity.year AS vehicle_identity_year,
+        vehicle_identity.year_start AS vehicle_identity_year_start,
+        vehicle_identity.year_end AS vehicle_identity_year_end,
+        vehicle_identity.is_user_confirmed AS vehicle_identity_is_user_confirmed
+    """
+
+
+def _vehicle_identity_join_clause() -> str:
+    return """
+        LEFT JOIN vehicle_identities AS vehicle_identity
+          ON vehicle_identity.id = jobs.vehicle_identity_id
+         AND vehicle_identity.owner_user_id = jobs.user_id
+    """
 
 
 def _job_assets_join_clause() -> str:
@@ -2271,6 +2318,14 @@ async def create_job_from_assets(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Create a render job from confirmed Sprint 2 identity draft assets."""
+    if not request.vehicle_user_confirmed:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "vehicle_confirmation_required",
+                "message": "Explicit vehicle confirmation is required before rendering",
+            },
+        )
     preflight_auth_credentials(
         init_data=request.init_data,
         telegram_user_id=request.telegram_user_id,
@@ -2345,7 +2400,7 @@ async def create_job_from_assets(
                 vehicle_candidates, rim_candidates = (
                     identity_service.field_candidates_from_identity_proposal(proposal)
                 )
-                canonical_vehicle = identity_service.prefill_vehicle_from_proposal(
+                canonical_vehicle = identity_service.canonical_vehicle_for_confirmation(
                     request.vehicle,
                     proposal,
                 )
@@ -2358,6 +2413,7 @@ async def create_job_from_assets(
                     conn,
                     owner_user_id=user_id,
                     vehicle=canonical_vehicle,
+                    user_confirmed=request.vehicle_user_confirmed,
                     field_candidates=vehicle_candidates,
                 )
                 rim_spec_id = await identity_service.insert_rim_spec(
@@ -2375,7 +2431,7 @@ async def create_job_from_assets(
                 snapshot = identity_service.render_input_snapshot(
                     vehicle_identity_id=vehicle_identity_id,
                     rim_setup_id=rim_setup_id,
-                    vehicle=request.vehicle,
+                    vehicle=canonical_vehicle,
                     rim=request.rim,
                     rim_user_confirmed=request.rim_user_confirmed,
                     car_asset_id=draft["car_asset_id"],
@@ -2404,9 +2460,7 @@ async def create_job_from_assets(
                     rim_setup_id,
                     json.dumps(snapshot),
                 )
-                initial_vehicle_confirmed = identity_service.is_user_source(
-                    canonical_vehicle.source
-                )
+                initial_vehicle_confirmed = request.vehicle_user_confirmed
                 initial_vehicle_meta = {
                     "source": _normalized_identity_source(canonical_vehicle.source),
                     "confidence": canonical_vehicle.confidence,
@@ -2613,9 +2667,11 @@ async def list_jobs(
                 jobs.provider_request_id,
                 {_fitment_available_clause()},
                 jobs.render_input_snapshot,
+                {_vehicle_identity_select_clause()},
                 {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_vehicle_identity_join_clause()}
             {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.user_id = $1
@@ -2642,6 +2698,7 @@ async def list_jobs(
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
+            vehicle_identity=_vehicle_identity_from_row(row),
         )
         for row in rows
     ]
@@ -2689,9 +2746,11 @@ async def get_job_status(
                 jobs.error_code,
                 jobs.error_message,
                 jobs.render_input_snapshot,
+                {_vehicle_identity_select_clause()},
                 {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_vehicle_identity_join_clause()}
             {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
@@ -2714,6 +2773,7 @@ async def get_job_status(
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
+            vehicle_identity=_vehicle_identity_from_row(row),
         ).model_dump(mode="json", exclude_none=True)
     )
 
@@ -2746,9 +2806,11 @@ async def get_job_status_detailed(
                 jobs.error_message,
                 {_fitment_available_clause()},
                 jobs.render_input_snapshot,
+                {_vehicle_identity_select_clause()},
                 {_feedback_select_clause()},
                 {_job_assets_select_clause()}
             FROM jobs
+            {_vehicle_identity_join_clause()}
             {_job_feedback_join_clause()}
             {_job_assets_join_clause()}
             WHERE jobs.id = $1::uuid
@@ -2773,6 +2835,7 @@ async def get_job_status_detailed(
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
+            vehicle_identity=_vehicle_identity_from_row(row),
         ).model_dump(mode="json", exclude_none=True)
     )
 

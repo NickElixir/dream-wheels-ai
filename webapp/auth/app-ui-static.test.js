@@ -138,6 +138,18 @@ test("latest payment card keeps its status and removes the details action", () =
     assert.doesNotMatch(css, /latest-payment-details/);
 });
 
+test("vehicle proposals require explicit confirmation and preserve provenance", () => {
+    assert.match(html, /data-manual-vehicle-toggle/);
+    assert.match(html, /Не подходит\? Указать вручную/);
+    assert.match(html, /data-manual-vehicle-back/);
+    assert.match(app, /selectedVehicleIndex: null/);
+    assert.match(app, /state\.selectedVehicleIndex = null/);
+    assert.match(app, /vehicle_user_confirmed: true/);
+    assert.doesNotMatch(app, /vehicle: \{ \.\.\.selectedVehicle, source: "user_confirmed", confidence: 1 \}/);
+    assert.match(app, /source: "user_input"/);
+    assert.match(app, /manualVehicleMode/);
+});
+
 test("visibility changes do not reload the active app view", () => {
     const visibilityHandler = app
         .split('document.addEventListener("visibilitychange"')[1]
