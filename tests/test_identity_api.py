@@ -169,6 +169,92 @@ def test_rim_proposal_allows_a_source_url_without_technical_values() -> None:
     assert snapshot["rim"]["pcd_display"] is None
 
 
+def test_unconfirmed_vehicle_cannot_create_render_job() -> None:
+    response = client.post(
+        "/jobs/from-assets",
+        json={
+            "draft_id": "11111111-1111-4111-8111-111111111111",
+            "idempotency_key": "unconfirmed-key",
+            "vehicle": {
+                "make": "Zeer",
+                "model": "Zeer 1",
+                "year": 2023,
+                "confidence": 0.99,
+                "source": "vlm_visual",
+            },
+            "rim": {"confidence": 0, "source": "unknown"},
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error_code"] == "vehicle_confirmation_required"
+
+
+def _proposal_with_candidates() -> identity_service.IdentityProposal:
+    proposal = identity_service.parse_identity_proposal(
+        {
+            "vehicle": {
+                "primary": {
+                    "make": "Zeer",
+                    "model": "Zeer 1",
+                    "year": 2023,
+                    "confidence": 0.82,
+                    "source": "vlm",
+                },
+                "alternatives": [
+                    {
+                        "make": "Acura",
+                        "model": "ADX",
+                        "year": 2025,
+                        "confidence": 0.64,
+                        "source": "vlm",
+                    }
+                ],
+            }
+        }
+    )
+    assert proposal is not None
+    return proposal
+
+
+def test_vehicle_confirmation_preserves_ai_provenance_and_matching_year() -> None:
+    proposal = _proposal_with_candidates()
+    selected = identity_service.canonical_vehicle_for_confirmation(
+        identity_service.VehicleCandidate(
+            make=" acura ",
+            model="ADX",
+            confidence=1,
+            source="user_input",
+        ),
+        proposal,
+    )
+
+    assert selected.make == "Acura"
+    assert selected.model == "ADX"
+    assert selected.year == 2025
+    assert selected.confidence == 0.64
+    assert selected.source == "vlm_visual"
+
+
+def test_manual_vehicle_mismatch_does_not_inherit_ai_year_or_provenance() -> None:
+    proposal = _proposal_with_candidates()
+    manual = identity_service.canonical_vehicle_for_confirmation(
+        identity_service.VehicleCandidate(
+            make="Acura",
+            model="MDX",
+            confidence=0.99,
+            source="vlm_visual",
+        ),
+        proposal,
+    )
+
+    assert manual.make == "Acura"
+    assert manual.model == "MDX"
+    assert manual.year is None
+    assert manual.confidence == 1
+    assert manual.source == "user_input"
+
+
 def test_insert_rim_spec_persists_only_source_url_when_specs_are_unknown() -> None:
     captured: list[object] = []
 
@@ -318,6 +404,7 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
                 "confidence": 0.72,
                 "source": "vlm",
             },
+            "vehicle_user_confirmed": True,
             "rim": {
                 "product_url": "https://shop.example.test/selected-wheel-20",
                 "wheel_diameter_in": 20,
@@ -338,7 +425,13 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     assert "fitment" not in fake_redis.queue_payloads[0].lower()
 
     vehicle_insert = next(call for call in calls if call[0] == "insert_vehicle_identity")
-    assert vehicle_insert[1][6] is False
+    assert vehicle_insert[1][6] is True
+    vehicle_provenance = json.loads(vehicle_insert[1][7])
+    assert vehicle_provenance["make"] == {
+        "source": "vlm_visual",
+        "confidence": 0.72,
+        "is_user_confirmed": True,
+    }
     vehicle_candidates = json.loads(vehicle_insert[1][8])
     assert vehicle_candidates["model"][0]["value"] == "RX"
     assert vehicle_candidates["model"][0]["source"] == "vlm_visual"
