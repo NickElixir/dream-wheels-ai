@@ -619,7 +619,6 @@ const I18N = {
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
             noPaymentsMeta: "История пополнений появится после первой оплаты",
-            details: "Подробнее",
             creditsTitle: "Ваши рендеры",
             invalidEmail: "Введите корректный email",
             loading: "Загружаем кабинет...",
@@ -7694,7 +7693,6 @@ function renderWallet() {
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
     const cardBlock = document.querySelector("[data-last-invoice-card]");
-    const cardDetails = document.querySelector("[data-last-invoice-details]");
     const history = document.querySelector("[data-payment-history-list]");
     const expiryList = document.querySelector("[data-wallet-expiry-list]");
     const expiryNote = document.querySelector("[data-wallet-expiry-note]");
@@ -7704,7 +7702,6 @@ function renderWallet() {
     const historyPrev = document.querySelector("[data-wallet-history-prev]");
     const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
-    const detailStatus = document.querySelector("[data-last-invoice-status-detail]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
@@ -7713,7 +7710,6 @@ function renderWallet() {
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
         if (cardBlock) cardBlock.hidden = true;
-        if (cardDetails) cardDetails.hidden = true;
         if (lastInvoiceTitle) {
             lastInvoiceTitle.hidden = false;
             lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
@@ -7722,22 +7718,14 @@ function renderWallet() {
     } else {
         if (emptyBlock) emptyBlock.hidden = true;
         if (cardBlock) cardBlock.hidden = false;
-        if (cardDetails) cardDetails.hidden = false;
         if (lastInvoiceTitle) lastInvoiceTitle.hidden = true;
         if (cardBlock) cardBlock.dataset.status = lastInvoice.status;
         if (statusPill) {
             statusPill.textContent = formatPaymentStatus(lastInvoice.status);
             statusPill.className = `status-pill ${statusTone(lastInvoice.status)}`;
         }
-        if (detailStatus) {
-            detailStatus.textContent = formatPaymentStatus(lastInvoice.status);
-        }
         document.querySelector("[data-last-invoice-amount]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
         document.querySelector("[data-last-invoice-renders]")?.replaceChildren(document.createTextNode(formatRenderCount(lastInvoice.credits)));
-        document.querySelector("[data-last-invoice-amount-copy]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
-        document.querySelector("[data-last-invoice-email]")?.replaceChildren(document.createTextNode(lastInvoice.email || "—"));
-        document.querySelector("[data-last-invoice-credits]")?.replaceChildren(document.createTextNode(`${lastInvoice.credits} ${t("credits")}`));
-        document.querySelector("[data-last-invoice-number-copy]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
         document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         if (refreshButton) refreshButton.hidden = lastInvoice.status !== "pending";
