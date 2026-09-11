@@ -512,6 +512,8 @@ def test_wallet_payment_summaries_use_layout_without_punctuation_separators() ->
     assert "data-last-invoice-status-detail" in INDEX_HTML
     assert "data-last-invoice-state" not in INDEX_HTML
     assert "data-topup-summary-values" in INDEX_HTML
+    assert 'data-i18n="wallet.creditsTitle">Ваши рендеры' in INDEX_HTML
+    assert "Ваши credits" not in INDEX_HTML
     assert "payment-history-renders" in APP_JS
     assert "payment-history-meta" in APP_JS
     assert "packageDuration:" in APP_JS
@@ -526,6 +528,19 @@ def test_wallet_payment_summaries_use_layout_without_punctuation_separators() ->
         in APP_JS
     )
     assert "WALLET_MIDDLE_DOT_SEPARATOR" not in APP_JS
+
+
+def test_wallet_spacing_status_alignment_and_visibility_preserve_active_view() -> None:
+    assert "gap: 14px;" in STYLE_CSS
+    assert "padding: 20px 24px;" in STYLE_CSS
+    assert ".payment-card-top" in STYLE_CSS
+    assert ".payment-card-top .status-pill," in STYLE_CSS
+    assert ".payment-history-item .status-pill" in STYLE_CSS
+    visibility_handler = APP_JS.split('document.addEventListener("visibilitychange"', 1)[1].split(
+        'window.addEventListener("pagehide"', 1
+    )[0]
+    assert "checkCurrentBuild" not in visibility_handler
+    assert "void checkCurrentBuild();" in APP_JS
 
 
 def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:

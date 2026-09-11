@@ -620,7 +620,7 @@ const I18N = {
             noPaymentsTitle: "Платежей пока нет",
             noPaymentsMeta: "История пополнений появится после первой оплаты",
             details: "Подробнее",
-            creditsTitle: "Ваши credits",
+            creditsTitle: "Ваши рендеры",
             invalidEmail: "Введите корректный email",
             loading: "Загружаем кабинет...",
             refreshInvoice: "Обновить статус",
@@ -10760,7 +10760,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!document.hidden && state.view === "renders") {
             scheduleRenderHistoryPolling();
         }
-        if (!document.hidden) void checkCurrentBuild();
         if (document.hidden) {
             clearRenderHistoryPolling();
         }

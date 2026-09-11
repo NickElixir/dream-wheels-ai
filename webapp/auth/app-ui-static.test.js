@@ -82,7 +82,8 @@ test("restore gate keeps the session gate independent from cabinet data", () => 
 
 test("wallet polish separates credits from payment history and keeps checkout explicit", () => {
     assert.match(html, /data-wallet-topup/);
-    assert.match(html, /data-i18n="wallet\.creditsTitle">Ваши credits/);
+    assert.match(html, /data-i18n="wallet\.creditsTitle">Ваши рендеры/);
+    assert.doesNotMatch(html, /Ваши credits/);
     assert.match(html, /data-i18n="wallet\.topUpHistory">История пополнений/);
     assert.match(html, /data-i18n="wallet\.emailHint">Чек будет отправлен на этот email/);
     assert.match(html, /data-i18n="wallet\.privacyDetails">Подробнее — в Политике обработки персональных данных/);
@@ -121,4 +122,19 @@ test("wallet payment summaries use layout elements instead of punctuation separa
     assert.match(app, /formatPaymentStatus\(lastInvoice\.status\)/);
     assert.match(app, /telegramUser\?\.id \|\| state\.websiteAuth\?\.telegramUserId \|\| state\.websiteAuth\?\.username/);
     assert.doesNotMatch(`${html}\n${app}`, /\b\+\$\{formatRenderCount/);
+});
+
+test("wallet spacing and payment statuses keep their visual alignment", () => {
+    assert.match(css, /\.wizard-panel\s*\{[\s\S]*?gap: 14px;[\s\S]*?padding: 20px 24px;/);
+    assert.match(css, /\.topup-wizard\s*\{[\s\S]*?gap: 12px;/);
+    assert.match(css, /\.payment-card-top\s*\{[\s\S]*?align-items: center;/);
+    assert.match(css, /\.payment-card-top \.status-pill,\s*\.payment-history-item \.status-pill\s*\{[\s\S]*?align-self: center;/);
+});
+
+test("visibility changes do not reload the active app view", () => {
+    const visibilityHandler = app
+        .split('document.addEventListener("visibilitychange"')[1]
+        .split('window.addEventListener("pagehide"', 1)[0];
+    assert.doesNotMatch(visibilityHandler, /checkCurrentBuild/);
+    assert.match(app, /void checkCurrentBuild\(\);/);
 });
