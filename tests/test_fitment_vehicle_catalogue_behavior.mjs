@@ -7,6 +7,10 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_SOURCE = fs.readFileSync(path.join(REPO_ROOT, "webapp", "app.js"), "utf8");
+const APP_SOURCE_FOR_VM = APP_SOURCE.replace(
+    /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
+    "",
+);
 
 function response(body, status = 200) {
     return {
@@ -121,7 +125,11 @@ function createHarness({ catalogue = {}, deferred = false } = {}) {
     };
     context.globalThis = context;
 
-    const apiSource = `${APP_SOURCE}
+    const apiSource = `
+const applicationRouteContext = () => null;
+const isApplicationRoute = () => false;
+const safeApplicationReturnPath = () => null;
+${APP_SOURCE_FOR_VM}
 renderFitment = () => {};
 globalThis.__fitmentCatalogueTestApi = {
     state,

@@ -11,7 +11,9 @@ Use this after any Robokassa/payment hardening change on staging.
    - `provider = robokassa`
    - `currency = RUB`
    - `amount_provider_units = amount_rub * 100`
-   - `delivery_channel = website`
+   - `delivery_channel = website` (provider-neutral legacy field)
+   - `client_channel = web` or `telegram`
+   - `return_to` is the approved internal route for that channel
 5. Confirm `payment_url` opens Robokassa in test mode.
 6. Send the callback to `/payments/robokassa/result`.
 7. Confirm the payment becomes `paid`, `credit_ledger` gets `purchase_grant`, and cabinet balance increases.
@@ -35,8 +37,10 @@ Expected result:
 
 - `Result URL` должен указывать на backend callback:
   `https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/result`
-- `Success URL` и `Fail URL` для staging должны указывать на staging webapp, а не на main:
-  `https://dream-wheels-ai-webapp-staging.vercel.app/t/`
+- `Success URL` для staging должен указывать на backend browser-return handler:
+  `https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/success`
+- `Fail URL` для staging должен указывать на backend browser-return handler:
+  `https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/fail`
 - В кабинете Robokassa есть отдельный блок `Параметры проведения тестовых платежей`.
 - При `ROBOKASSA_IS_TEST=true` Robokassa валидирует подпись по test-паролям, а не по боевым.
 
@@ -58,7 +62,7 @@ Expected result:
    - `ROBOKASSA_TEST_PASSWORD1=<test password #1>`
    - `ROBOKASSA_TEST_PASSWORD2=<test password #2>`
    - `ROBOKASSA_IS_TEST=true`
-3. Проверить, что `Success URL`/`Fail URL` указывают на staging webapp.
+3. Проверить, что `Success URL`/`Fail URL` указывают на backend handlers.
 4. Проверить, что `Result URL` указывает на `/payments/robokassa/result`.
 5. Создать платеж в staging Mini App.
 6. Убедиться, что открывается Robokassa без ошибки `29`.

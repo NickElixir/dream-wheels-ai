@@ -69,25 +69,33 @@ Result URL:
 https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/result
 ```
 
-For the 05B staging E2E set `Fail URL` to:
+For the 05B.1 staging E2E set both browser return URLs to backend handlers:
 
 ```text
 https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/fail
 ```
 
+```text
+Success URL:
+https://dream-wheels-ai-robokassa-staging.onrender.com/payments/robokassa/success
+```
+
 GET and POST are both accepted. The handler redirects the browser back to:
 
 ```text
-${WEBAPP_URL}/t/?payment=fail&invoice_id=<InvId>
+${WEBAPP_URL}/app?payment=fail&invoice_id=<InvId>
 ```
 
 If the payment has already become `paid` by the time the FailURL request acquires the lock, the browser is redirected with `payment=success` instead.
 
-Success URL can remain the existing staging webapp success return. Successful balance changes still depend on ResultURL, not that redirect.
+The SuccessURL handler never settles a payment. Successful balance changes still depend on ResultURL, not that browser redirect.
 
 ## Schema changes
 
-None.
+Migration `0033_payment_return_routing.sql` adds `payments.client_channel` and
+`payments.return_to`. Legacy Telegram-first rows are backfilled to
+`telegram` + `/t/`; `delivery_channel` remains a separate provider-neutral
+field and is not reused for UI routing.
 
 Existing migration `0009_payments_mvp.sql` already provides:
 
@@ -103,7 +111,8 @@ Existing migration `0009_payments_mvp.sql` already provides:
   - made paid transition clear a previous advisory `failed_at` on late success.
 - `src/payments_api.py`
   - added GET/POST `/payments/robokassa/fail`;
-  - redirects back to the webapp after persisting the terminal UX state.
+  - added GET/POST `/payments/robokassa/success`;
+  - redirects both browser paths using the payment's persisted routing context.
 - `tests/test_payment_failure_handling.py`
   - focused state-machine and retry regressions.
 

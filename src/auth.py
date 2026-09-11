@@ -26,15 +26,20 @@ import time
 from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import parse_qsl
+from uuid import UUID
 
 import httpx
 from fastapi import HTTPException
 from itsdangerous import BadSignature, BadTimeSignature, URLSafeTimedSerializer
 from joserfc import jwt
+from joserfc.errors import InvalidKeyIdError
 from joserfc.jwk import KeySet
 
 from src.config import (
     BOT_TOKEN,
+    SUPABASE_AUTH_AUDIENCE,
+    SUPABASE_AUTH_ISSUER,
+    SUPABASE_AUTH_JWKS_URL,
     TELEGRAM_AUTH_TOKEN_SECRET,
     TELEGRAM_AUTH_TOKEN_TTL_SEC,
     TELEGRAM_LOGIN_CLIENT_ID,
@@ -68,9 +73,36 @@ class WebsiteAuthInvalid(Exception):
     """Website auth token, nonce, или Telegram id_token не прошли проверку."""
 
 
+class SupabaseAccessTokenInvalid(Exception):
+    """Supabase user access token не прошёл локальную криптографическую проверку."""
+
+    def __init__(self, message: str, *, code: str = "INVALID_SUPABASE_TOKEN"):
+        super().__init__(message)
+        self.code = code
+
+
+@dataclass(frozen=True, slots=True)
+class SupabaseTokenClaims:
+    """Минимальный доверенный набор claims из Supabase access token.
+
+    Raw JWT и profile claims намеренно не сохраняются: внешняя каноническая
+    identity — только UUID из `sub`.
+    """
+
+    subject: UUID
+    session_id: UUID | None
+    issuer: str
+    audience: tuple[str, ...]
+    role: str
+    aal: str | None
+
+
 _JWKS_CACHE: KeySet | None = None
 _JWKS_CACHE_EXPIRES_AT = 0.0
 _JWKS_CACHE_TTL_SEC = 300
+_SUPABASE_JWKS_CACHE: KeySet | None = None
+_SUPABASE_JWKS_CACHE_EXPIRES_AT = 0.0
+_SUPABASE_JWKS_CACHE_TTL_SEC = 300
 _WEBSITE_NONCE_SALT = "telegram-login-nonce"
 _WEBSITE_AUTH_TOKEN_SALT = "telegram-auth-token"
 
@@ -324,6 +356,121 @@ async def _get_telegram_jwks() -> KeySet:
     _JWKS_CACHE = KeySet.import_key_set(jwks)
     _JWKS_CACHE_EXPIRES_AT = now + _JWKS_CACHE_TTL_SEC
     return _JWKS_CACHE
+
+
+async def _get_supabase_jwks(*, force_refresh: bool = False) -> KeySet:
+    """Return cached Supabase public signing keys, refreshing after rotation."""
+    global _SUPABASE_JWKS_CACHE, _SUPABASE_JWKS_CACHE_EXPIRES_AT
+
+    if not SUPABASE_AUTH_JWKS_URL:
+        raise SupabaseAccessTokenInvalid("SUPABASE_URL is not configured")
+
+    now = time.time()
+    if (
+        not force_refresh
+        and _SUPABASE_JWKS_CACHE is not None
+        and now < _SUPABASE_JWKS_CACHE_EXPIRES_AT
+    ):
+        return _SUPABASE_JWKS_CACHE
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(SUPABASE_AUTH_JWKS_URL)
+            response.raise_for_status()
+            jwks = response.json()
+        key_set = KeySet.import_key_set(jwks)
+    except Exception as exc:
+        raise SupabaseAccessTokenInvalid("Unable to load Supabase signing keys") from exc
+
+    _SUPABASE_JWKS_CACHE = key_set
+    _SUPABASE_JWKS_CACHE_EXPIRES_AT = now + _SUPABASE_JWKS_CACHE_TTL_SEC
+    return key_set
+
+
+def _supabase_audience(value: object) -> tuple[str, ...]:
+    if isinstance(value, str) and value:
+        return (value,)
+    if isinstance(value, list) and value and all(isinstance(item, str) and item for item in value):
+        return tuple(value)
+    raise SupabaseAccessTokenInvalid("Invalid Supabase audience")
+
+
+def _supabase_uuid_claim(value: object, *, claim: str, required: bool) -> UUID | None:
+    if value is None and not required:
+        return None
+    if not isinstance(value, str):
+        raise SupabaseAccessTokenInvalid(f"Invalid Supabase {claim}")
+    try:
+        return UUID(value)
+    except ValueError as exc:
+        raise SupabaseAccessTokenInvalid(f"Invalid Supabase {claim}") from exc
+
+
+def _validated_supabase_claims(claims: dict) -> SupabaseTokenClaims:
+    if not SUPABASE_AUTH_ISSUER:
+        raise SupabaseAccessTokenInvalid("SUPABASE_URL is not configured")
+
+    issuer = claims.get("iss")
+    if issuer != SUPABASE_AUTH_ISSUER:
+        raise SupabaseAccessTokenInvalid("Invalid Supabase issuer")
+
+    audience = _supabase_audience(claims.get("aud"))
+    if SUPABASE_AUTH_AUDIENCE not in audience:
+        raise SupabaseAccessTokenInvalid("Invalid Supabase audience")
+
+    exp = claims.get("exp")
+    if type(exp) is not int or exp <= int(time.time()):
+        raise SupabaseAccessTokenInvalid(
+            "Expired Supabase access token", code="EXPIRED_CREDENTIALS"
+        )
+
+    subject = _supabase_uuid_claim(claims.get("sub"), claim="subject", required=True)
+    if subject is None:
+        raise SupabaseAccessTokenInvalid("Invalid Supabase subject")
+    session_id = _supabase_uuid_claim(claims.get("session_id"), claim="session_id", required=False)
+
+    role = claims.get("role")
+    if role != "authenticated":
+        raise SupabaseAccessTokenInvalid("Supabase token is not an authenticated user token")
+
+    aal = claims.get("aal")
+    if aal is not None and not isinstance(aal, str):
+        raise SupabaseAccessTokenInvalid("Invalid Supabase aal")
+
+    return SupabaseTokenClaims(
+        subject=subject,
+        session_id=session_id,
+        issuer=issuer,
+        audience=audience,
+        role=role,
+        aal=aal,
+    )
+
+
+async def verify_supabase_access_token(token: str) -> SupabaseTokenClaims:
+    """Verify a Supabase ES256/RS256 access token using its public JWKS.
+
+    This primitive deliberately has no route integration. A newly rotated
+    `kid` receives one forced JWKS refresh before verification fails closed.
+    """
+    if not isinstance(token, str) or not token:
+        raise SupabaseAccessTokenInvalid("Malformed Supabase access token")
+
+    key_set = await _get_supabase_jwks()
+    try:
+        decoded = jwt.decode(token, key_set, algorithms=["ES256", "RS256"])
+    except InvalidKeyIdError:
+        key_set = await _get_supabase_jwks(force_refresh=True)
+        try:
+            decoded = jwt.decode(token, key_set, algorithms=["ES256", "RS256"])
+        except Exception as exc:
+            raise SupabaseAccessTokenInvalid("Invalid Supabase access token signature") from exc
+    except Exception as exc:
+        raise SupabaseAccessTokenInvalid("Invalid Supabase access token signature") from exc
+
+    if not isinstance(decoded.claims, dict):
+        raise SupabaseAccessTokenInvalid("Invalid Supabase access token claims")
+    return _validated_supabase_claims(decoded.claims)
 
 
 async def verify_telegram_login_id_token(

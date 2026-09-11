@@ -969,6 +969,58 @@ h2 {
     padding: 28px 24px;
 }
 
+.wallet-balance-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 148px;
+    background:
+        radial-gradient(circle at 86% 18%, rgba(221, 255, 0, 0.12), transparent 32%),
+        linear-gradient(180deg, rgba(29, 34, 43, 0.98), rgba(18, 21, 28, 0.98));
+}
+
+.wallet-balance-summary-copy {
+    min-width: 0;
+}
+
+.wallet-balance-summary .section-label {
+    margin-bottom: 12px;
+}
+
+.wallet-balance-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
+.wallet-balance-value {
+    color: var(--accent);
+    font-size: clamp(40px, 7vw, 60px);
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+}
+
+.wallet-balance-unit {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.wallet-balance-note {
+    margin: 10px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.wallet-balance-action {
+    flex: 0 0 auto;
+    width: auto;
+}
+
 .dashboard-balance-subisland {
     width: min(220px, 100%);
     aspect-ratio: 1;
@@ -1057,7 +1109,7 @@ h2 {
 
 .last-invoice-panel .panel-head > div {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
 }
 
@@ -1066,9 +1118,50 @@ h2 {
     margin: 0;
 }
 
-.last-invoice-panel [data-payment-status] {
-    flex: 0 0 auto;
-    margin-top: 4px;
+.last-invoice-panel h2 {
+    font-size: clamp(20px, 3.5vw, 28px);
+}
+
+.latest-payment-details {
+    gap: 14px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.latest-payment-details[open] {
+    width: 100%;
+}
+
+.latest-payment-details[hidden] {
+    display: none;
+}
+
+.latest-payment-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: start;
+    width: fit-content;
+    min-height: 44px;
+    padding: 0 20px;
+    color: var(--accent-strong);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 800;
+    list-style: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.latest-payment-details-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.latest-payment-details .invoice-grid {
+    padding: 0 18px 18px;
 }
 
 .warning-note {
@@ -1144,7 +1237,8 @@ h2 {
 
 .wizard-panel {
     display: grid;
-    gap: 18px;
+    gap: 14px;
+    padding: 20px 24px;
 }
 
 .wallet-wizard-header {
@@ -1154,6 +1248,12 @@ h2 {
 
 .wallet-wizard-header .wallet-auth-notice {
     margin: 0;
+}
+
+.wizard-panel .topup-wizard > .topup-step-island {
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 
 .wallet-pay-button {
@@ -1354,7 +1454,7 @@ h2 {
 
 .topup-wizard {
     display: grid;
-    gap: 16px;
+    gap: 12px;
 }
 
 .topup-island {
@@ -1373,8 +1473,8 @@ h2 {
 }
 
 .topup-step-index {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 999px;
     background: rgba(221, 255, 0, 0.12);
     border: 1px solid rgba(221, 255, 0, 0.24);
@@ -1387,7 +1487,7 @@ h2 {
 }
 
 .topup-step-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 800;
 }
 
@@ -1398,7 +1498,19 @@ h2 {
 }
 
 .topup-reset-button {
-    width: 100%;
+    width: auto;
+    justify-self: start;
+    min-height: 36px;
+    padding-inline: 4px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.topup-reset-button:hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--accent-strong);
 }
 
 .topup-packages-island {
@@ -1416,12 +1528,11 @@ h2 {
 .topup-card {
     appearance: none;
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
     width: 100%;
-    min-height: 92px;
-    padding: 16px;
+    min-height: 76px;
+    padding: 14px 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.02);
@@ -1437,6 +1548,10 @@ h2 {
     background: rgba(221, 255, 0, 0.09);
 }
 
+.topup-card[data-selected="true"] {
+    box-shadow: inset 0 0 0 1px rgba(221, 255, 0, 0.18);
+}
+
 .topup-card:active {
     transform: translateY(1px);
 }
@@ -1446,18 +1561,6 @@ h2 {
     cursor: not-allowed;
 }
 
-.topup-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 21px;
-}
-
 .package-main {
     display: grid;
     gap: 4px;
@@ -1465,7 +1568,7 @@ h2 {
 }
 
 .package-name {
-    font-size: 28px;
+    font-size: clamp(20px, 3vw, 26px);
     font-weight: 900;
     letter-spacing: -0.03em;
 }
@@ -1514,6 +1617,12 @@ h2 {
     line-height: 1.55;
 }
 
+.wallet-privacy-link {
+    margin: -4px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
 .email-privacy-note a,
 .payment-acceptance a,
 .legal-inline-links a,
@@ -1530,7 +1639,9 @@ h2 {
 }
 
 .topup-summary {
-    padding: 18px;
+    display: grid;
+    gap: 5px;
+    padding: 16px;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.02);
@@ -1544,11 +1655,42 @@ h2 {
 }
 
 .topup-summary-meta {
-    margin-top: 6px;
     color: var(--text);
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 900;
-    line-height: 1.45;
+    line-height: 1.3;
+}
+
+.topup-summary-meta[hidden],
+.topup-summary-values[hidden] {
+    display: none;
+}
+
+.topup-summary-values {
+    display: grid;
+    gap: 3px;
+}
+
+.topup-summary-amount {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.15;
+}
+
+.topup-summary-credits,
+.topup-summary-duration {
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.topup-summary-receipt {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .secure-payment-note {
@@ -1581,11 +1723,21 @@ h2 {
     min-height: 52px;
 }
 
+.secure-payment-note {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+}
+
 .payment-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    display: grid;
+    gap: 10px;
     padding: 18px;
     border-radius: 20px;
     border: 1px solid rgba(255, 159, 67, 0.26);
@@ -1595,6 +1747,11 @@ h2 {
 .last-invoice-panel .payment-card,
 .last-invoice-panel .invoice-card {
     margin-top: 0;
+}
+
+.last-invoice-panel .payment-card {
+    position: relative;
+    padding-right: 190px;
 }
 
 .payment-card[data-status="paid"] {
@@ -1609,7 +1766,7 @@ h2 {
     background: rgba(255, 123, 123, 0.08);
 }
 
-.payment-card-grant {
+.payment-card-empty {
     border-color: rgba(221, 255, 0, 0.25);
     background: rgba(221, 255, 0, 0.06);
 }
@@ -1619,10 +1776,55 @@ h2 {
     font-weight: 900;
 }
 
+.payment-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.payment-card-top .status-pill,
+.payment-history-item .status-pill {
+    align-self: center;
+}
+
+.last-invoice-panel .payment-card-top .status-pill {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+}
+
+.payment-card-main {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.payment-card-amount {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.05;
+}
+
+.payment-card-renders {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
 .payment-card-meta {
-    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
     color: var(--text-subtle);
+    font-size: 13px;
     line-height: 1.4;
+}
+
+.payment-card-meta span {
+    overflow-wrap: anywhere;
 }
 
 .payment-card-badge {
@@ -2253,6 +2455,355 @@ h2 {
 @keyframes fitment-step-fade {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+.login-button-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
+.website-auth-button .telegram-button-icon,
+.dashboard-auth-action .telegram-button-icon {
+    display: none;
+}
+
+.auth-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(5, 6, 9, 0.78);
+    backdrop-filter: blur(12px);
+}
+
+.auth-dialog-backdrop[hidden] {
+    display: none;
+}
+
+.auth-dialog {
+    position: relative;
+    width: min(100%, 460px);
+    display: grid;
+    gap: 18px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    background: var(--panel, #171a20);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+
+.auth-dialog-header {
+    display: grid;
+    gap: 8px;
+}
+
+.auth-dialog-wordmark {
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
+.auth-dialog-header h2 {
+    margin: 0;
+}
+
+.auth-dialog-description {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    color: var(--text-subtle);
+    line-height: 1.5;
+}
+
+.auth-dialog-description p {
+    margin: 0;
+}
+
+.auth-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-subtle);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.auth-dialog-close:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+}
+
+.auth-dialog-form {
+    display: grid;
+    gap: 12px;
+}
+
+.auth-dialog-label {
+    color: var(--text-subtle);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.auth-dialog-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font: inherit;
+}
+
+.auth-dialog-input:focus {
+    border-color: rgba(221, 255, 0, 0.45);
+    box-shadow: 0 0 0 3px rgba(221, 255, 0, 0.1);
+}
+
+.auth-dialog-input[aria-invalid="true"] {
+    border-color: rgba(255, 119, 119, 0.7);
+    box-shadow: 0 0 0 3px rgba(255, 119, 119, 0.1);
+}
+
+.auth-dialog-field-error {
+    margin: -4px 0 0;
+    color: var(--danger, #ff8b8b);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.auth-otp-input {
+    letter-spacing: 0.32em;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    text-align: center;
+}
+
+.auth-turnstile {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.auth-turnstile:has(iframe) {
+    min-height: 66px;
+}
+
+.auth-dialog-primary {
+    width: 100%;
+}
+
+.auth-dialog-divider {
+    align-items: center;
+    color: var(--text-subtle);
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.auth-dialog-divider::before,
+.auth-dialog-divider::after {
+    background: rgba(255, 255, 255, 0.1);
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.auth-dialog-telegram {
+    width: 100%;
+}
+
+.auth-telegram-icon {
+    flex: 0 0 18px;
+    height: 18px;
+    width: 18px;
+}
+
+.auth-dialog-legal,
+.auth-dialog-otp-destination {
+    color: var(--text-subtle);
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 0;
+    text-align: center;
+}
+
+.auth-dialog-legal a {
+    color: var(--text);
+    text-underline-offset: 3px;
+}
+
+.auth-dialog-otp-destination {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: -4px;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.auth-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px 16px;
+}
+
+.auth-dialog-resend-row {
+    align-items: center;
+    color: var(--text-subtle);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 13px;
+    gap: 4px 8px;
+    line-height: 1.4;
+}
+
+.auth-dialog-resend-row .link-button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--accent-strong);
+    font: inherit;
+    font-weight: 800;
+    min-height: 0;
+    padding: 0;
+    text-align: left;
+    white-space: normal;
+}
+
+.auth-dialog-resend-row .link-button:disabled {
+    color: var(--text-subtle);
+    cursor: default;
+    opacity: 1;
+}
+
+.auth-dialog-tertiary {
+    align-self: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--text-subtle);
+    font-weight: 800;
+    min-height: 32px;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-dialog-tertiary:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text);
+}
+
+.auth-dialog-back-button {
+    justify-self: center;
+}
+
+.auth-dialog-account-card {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-dialog-account-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.auth-dialog-account-copy strong,
+.auth-dialog-account-copy span {
+    overflow-wrap: anywhere;
+}
+
+.auth-dialog-account-copy span {
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+
+.auth-logout-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-logout-confirm {
+    border-color: rgba(255, 119, 119, 0.32);
+    color: #ffabab;
+}
+
+.auth-logout-confirm:hover {
+    background: rgba(255, 119, 119, 0.08);
+    border-color: rgba(255, 119, 119, 0.5);
+    color: #ffc2c2;
+}
+
+.auth-dialog-restored {
+    display: grid;
+    gap: 12px;
+}
+
+.auth-dialog-restored-copy {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.auth-dialog-status {
+    min-height: 20px;
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.auth-dialog-cooldown {
+    color: var(--text-subtle);
+    font-size: 12px;
+}
+
+.auth-dialog-status[data-tone="error"] {
+    color: var(--danger);
+}
+
+@media (max-width: 560px) {
+    .auth-dialog-backdrop {
+        align-items: end;
+        padding: 10px;
+    }
+
+    .auth-dialog {
+        width: 100%;
+        padding: 26px 20px 20px;
+        border-radius: 24px;
+    }
+
+    .auth-dialog-resend-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3818,6 +4369,23 @@ h2 {
     padding: 4px 20px 20px;
 }
 
+.wallet-sections-panel {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+}
+
+.wallet-sections-panel > .topup-island {
+    padding: 18px;
+}
+
+.wallet-section-title {
+    margin: 0;
+    font-size: clamp(20px, 3vw, 25px);
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+}
+
 .wallet-history-island {
     gap: 16px;
 }
@@ -3910,7 +4478,7 @@ h2 {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 14px;
     align-items: center;
-    padding: 18px 22px;
+    padding: 14px 16px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.025);
@@ -3919,7 +4487,23 @@ h2 {
 .wallet-expiry-row strong,
 .payment-history-item strong {
     display: block;
-    font-size: 18px;
+    font-size: 16px;
+}
+
+.payment-history-main {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.payment-history-amount {
+    font-size: 17px;
+}
+
+.payment-history-renders {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .wallet-expiry-row .meta,
@@ -3927,6 +4511,12 @@ h2 {
     margin-top: 4px;
     color: var(--text-muted);
     line-height: 1.4;
+}
+
+.payment-history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
 }
 
 .wallet-expiry-inline-note {
@@ -4870,5 +5460,148 @@ body.has-fallback-main-button #app {
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
+    }
+}
+/* Auth-gated browser App shell. The gate is visible only while /app/**
+   is reconciling the session or waiting for sign-in. */
+.application-auth-gate {
+    align-items: center;
+    background: var(--bg, #070809);
+    color: var(--text, #eef2f6);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 24px;
+    position: fixed;
+    z-index: 20;
+}
+
+.application-auth-gate-card {
+    background: rgba(23, 25, 30, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+    max-width: 460px;
+    padding: 36px;
+    text-align: center;
+    width: 100%;
+}
+
+.application-auth-gate-wordmark {
+    margin: 0 auto 22px;
+}
+
+.application-auth-gate-spinner {
+    animation: application-auth-gate-spin 900ms linear infinite;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    border-top-color: var(--accent, #ddff00);
+    height: 22px;
+    margin: 0 auto 18px;
+    width: 22px;
+}
+
+@keyframes application-auth-gate-spin {
+    to { transform: rotate(360deg); }
+}
+
+.application-auth-gate-title {
+    font-size: clamp(20px, 3vw, 24px);
+    margin: 0 0 10px;
+}
+
+.application-auth-gate-card h1 {
+    margin: 12px 0;
+}
+
+.application-auth-gate-copy {
+    color: var(--text-muted, #a3adba);
+    line-height: 1.5;
+    margin: 0 0 24px;
+}
+
+.application-auth-gate-card [data-application-auth-gate-login] {
+    min-width: 160px;
+}
+
+.application-auth-gate[data-restoring="true"] .application-auth-gate-copy {
+    display: none;
+}
+
+.application-auth-gate[data-restoring="false"] .application-auth-gate-spinner {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .application-auth-gate-card {
+        border-radius: 22px;
+        padding: 28px 22px;
+    }
+
+    .application-auth-gate-wordmark {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 560px) {
+    .wallet-balance-summary {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 0;
+    }
+
+    .wallet-balance-action {
+        width: 100%;
+    }
+
+    .topup-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .topup-card {
+        min-height: 68px;
+        padding: 12px;
+    }
+
+    .package-name {
+        font-size: 20px;
+    }
+
+    .package-meta {
+        font-size: 12px;
+    }
+
+    .wallet-sections-panel {
+        padding: 12px;
+    }
+
+    .wallet-sections-panel > .topup-island {
+        padding: 14px;
+    }
+
+    .last-invoice-panel .payment-card-action {
+        width: 100%;
+    }
+
+    .last-invoice-panel .payment-card {
+        padding-right: 18px;
+    }
+
+    .payment-card-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .payment-card-top .status-pill {
+        align-self: flex-start;
+        position: static;
+        transform: none;
+    }
+
+    .latest-payment-details .invoice-grid {
+        padding-inline: 14px;
     }
 }

@@ -1,3 +1,9 @@
+import {
+    applicationRouteContext,
+    isApplicationRoute,
+    safeApplicationReturnPath,
+} from "./app-route.mjs";
+
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
@@ -70,10 +76,10 @@ const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
 const PAYMENT_HISTORY_PAGE_SIZE = 10;
 const TOPUP_PACKAGES = [
-    { amount: 100, credits: 3, icon: "⚡" },
-    { amount: 200, credits: 7, icon: "🏁" },
-    { amount: 500, credits: 20, icon: "💎" },
-    { amount: 1000, credits: 45, icon: "👑" },
+    { amount: 100, credits: 3 },
+    { amount: 200, credits: 7 },
+    { amount: 500, credits: 20 },
+    { amount: 1000, credits: 45 },
 ];
 const PAYMENT_PENDING_FRESH_MS = 60 * 1000;
 const PAYMENT_PENDING_STALE_MS = 15 * 60 * 1000;
@@ -264,6 +270,53 @@ const I18N = {
             preparing: "Подготавливаем вход...",
             logout: "Выйти",
             failed: "Не удалось войти через Telegram",
+            dashboardLoginPrompt: "Войдите, чтобы увидеть баланс",
+            partialAccess: "Вход выполнен. Кабинет будет доступен после подключения защищённых запросов.",
+            dialogTitle: "Войдите в аккаунт",
+            emailIntro: "Введите электронную почту",
+            emailSubcopy: "Мы пришлём код для входа",
+            changeEmailTitle: "Изменить почту",
+            changeEmailIntro: "Введите другой адрес",
+            changeEmailSubcopy: "Мы отправим на него новый код",
+            emailLabel: "Электронная почта",
+            getCode: "Получить код",
+            getNewCode: "Получить новый код",
+            otpTitle: "Проверьте почту",
+            codeLabel: "Код из письма",
+            otpSentTo: "Мы отправили код на",
+            verify: "Войти",
+            resendPrompt: "Не пришёл код?",
+            resend: "Отправить ещё раз",
+            resendIn: "Отправить ещё раз через {seconds} сек",
+            changeEmail: "Изменить почту",
+            back: "Назад",
+            telegramSecondary: "Продолжить через Telegram",
+            legalPrivacy: "Продолжая, вы соглашаетесь с политикой конфиденциальности.",
+            invalidEmail: "Введите корректный адрес электронной почты.",
+            invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
+            expiredOtp: "Срок действия кода истёк. Запросите новый.",
+            rateLimited: "Слишком много попыток. Попробуйте немного позже.",
+            networkError: "Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.",
+            providerError: "Не удалось выполнить вход. Попробуйте ещё раз.",
+            turnstileRequired: "Подтвердите, что вы человек, чтобы получить код.",
+            turnstileUnavailable: "Проверка безопасности недоступна. Попробуйте ещё раз.",
+            sendingCode: "Отправляем код...",
+            checkingCode: "Проверяем код...",
+            signedIn: "Вход выполнен",
+            restoring: "Открываем приложение…",
+            alreadySignedIn: "Вы уже вошли",
+            continue: "Продолжить",
+            switchAccount: "Сменить аккаунт",
+            providerTelegram: "Telegram",
+            providerEmail: "Email",
+            logoutTitle: "Выйти из аккаунта?",
+            logoutDescription: "После выхода потребуется снова войти",
+            cancel: "Отмена",
+            alreadyAuthenticated: "Вы уже вошли. Чтобы использовать другой аккаунт, сначала выйдите.",
+            authenticationInProgress: "Проверяем текущий вход. Попробуйте ещё раз через секунду.",
+            appGateTitle: "Войдите, чтобы открыть приложение",
+            appGateDescription: "Приложение доступно после подтверждения входа.",
+            appGateRestoring: "Проверяем защищённую сессию перед открытием приложения.",
         },
         menu: {
             dashboard: "Главная",
@@ -506,6 +559,9 @@ const I18N = {
             eyebrow: "Кабинет",
             title: "Баланс",
             lede: "1 рендер — 1 генерация виртуальной примерки",
+            balanceLabel: "Баланс",
+            balanceHint: "Доступно для примерок",
+            topUpCta: "Пополнить",
             gift: "Подарок",
             lastInvoiceLabel: "Последняя оплата",
             lastInvoiceTitle: "Платежей пока нет",
@@ -514,9 +570,9 @@ const I18N = {
             invoiceNumber: "Номер оплаты",
             invoiceEmail: "Email",
             invoiceCredits: "Получено",
-            invoiceState: "Состояние",
+            invoiceStatus: "Статус",
             wizardLabel: "Пополнение",
-            reset: "Сбросить",
+            reset: "Изменить выбор",
             stepAmount: "Сумма",
             stepEmail: "Email",
             stepConfirm: "Подтверждение",
@@ -528,14 +584,18 @@ const I18N = {
             modeCustom: "Своя сумма",
             customAmountLabel: "Своя сумма",
             emailLabel: "Email для чека",
-            emailHint: "",
+            emailHint: "Чек будет отправлен на этот email",
             back: "Назад",
             nextToConfirm: "Продолжить",
             confirmAmount: "Сумма",
             confirmEmail: "Email",
             confirmCredits: "Будет получено",
             confirmHint: "",
-            pay: "Оплатить через Робокассу",
+            pay: "Оплатить",
+            choosePackage: "Выберите пакет",
+            enterEmail: "Укажите email",
+            paySelected: "Оплатить {amount}",
+            paymentProvider: "Оплата через Robokassa",
             payWithAmount: "Оплатить",
             emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
             privacyDetails: "Подробнее — в Политике обработки персональных данных",
@@ -558,7 +618,10 @@ const I18N = {
             pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
-            noPaymentsMeta: "Стартовые рендеры по команде /start действуют 30 дней и появятся в истории пополнений",
+            noPaymentsMeta: "История пополнений появится после первой оплаты",
+            details: "Подробнее",
+            creditsTitle: "Ваши рендеры",
+            invalidEmail: "Введите корректный email",
             loading: "Загружаем кабинет...",
             refreshInvoice: "Обновить статус",
             refreshingInvoice: "Обновляем статус оплаты...",
@@ -570,17 +633,18 @@ const I18N = {
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
             fallbackDisabled: "Вход с сайта временно недоступен",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} — получено по команде /start",
+            starterGrantMeta: "{credits}\nПолучено по команде /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Оплата #{invoiceId} — {amount}",
-            paidInvoice: "Оплата #{invoiceId} — {amount}",
-            failedInvoice: "Оплата #{invoiceId} — {amount}",
+            pendingInvoice: "Оплата #{invoiceId}\n{amount}",
+            paidInvoice: "Оплата #{invoiceId}\n{amount}",
+            failedInvoice: "Оплата #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel} / 30 дней",
+            packageDuration: "30 дней",
+            receiptSummary: "Чек: {email}",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -656,6 +720,53 @@ const I18N = {
             preparing: "Preparing login...",
             logout: "Log out",
             failed: "Telegram login failed",
+            dashboardLoginPrompt: "Sign in to see your balance",
+            partialAccess: "Signed in. The cabinet will be available after protected requests are connected.",
+            dialogTitle: "Sign in to your account",
+            emailIntro: "Enter your email",
+            emailSubcopy: "We’ll send you a sign-in code",
+            changeEmailTitle: "Change email",
+            changeEmailIntro: "Enter another address",
+            changeEmailSubcopy: "We’ll send a new code there",
+            emailLabel: "Email",
+            getCode: "Get code",
+            getNewCode: "Get new code",
+            otpTitle: "Check your email",
+            codeLabel: "Code from email",
+            otpSentTo: "We sent a code to",
+            verify: "Sign in",
+            resendPrompt: "Didn't get a code?",
+            resend: "Send again",
+            resendIn: "Send again in {seconds}s",
+            changeEmail: "Change email",
+            back: "Back",
+            telegramSecondary: "Continue with Telegram",
+            legalPrivacy: "By continuing, you agree to the privacy policy.",
+            invalidEmail: "Enter a valid email address.",
+            invalidOtp: "The code is incorrect. Check it and try again.",
+            expiredOtp: "The code has expired. Request a new one.",
+            rateLimited: "Too many attempts. Please try again later.",
+            networkError: "Could not reach the server. Check your connection and try again.",
+            providerError: "We could not complete sign-in. Please try again.",
+            turnstileRequired: "Complete the security check to get a code.",
+            turnstileUnavailable: "The security check is unavailable. Please try again.",
+            sendingCode: "Sending code...",
+            checkingCode: "Checking code...",
+            signedIn: "Signed in",
+            restoring: "Opening the app…",
+            alreadySignedIn: "You're already signed in",
+            continue: "Continue",
+            switchAccount: "Switch account",
+            providerTelegram: "Telegram",
+            providerEmail: "Email",
+            logoutTitle: "Sign out of your account?",
+            logoutDescription: "You’ll need to sign in again",
+            cancel: "Cancel",
+            alreadyAuthenticated: "You're already signed in. Sign out first to use another account.",
+            authenticationInProgress: "Checking your current sign-in. Try again in a moment.",
+            appGateTitle: "Sign in to open the app",
+            appGateDescription: "The app is available after you confirm your sign-in.",
+            appGateRestoring: "Checking your protected session before opening the app.",
         },
         menu: {
             dashboard: "Home",
@@ -898,6 +1009,9 @@ const I18N = {
             eyebrow: "Cabinet",
             title: "Wallet",
             lede: "Balance, last invoice, and a three-step payment flow in one place",
+            balanceLabel: "Balance",
+            balanceHint: "Available for try-ons",
+            topUpCta: "Top up",
             gift: "Gift",
             lastInvoiceLabel: "Last invoice",
             lastInvoiceTitle: "No payments yet",
@@ -906,9 +1020,9 @@ const I18N = {
             invoiceNumber: "Invoice",
             invoiceEmail: "Email",
             invoiceCredits: "Renders",
-            invoiceState: "Status",
+            invoiceStatus: "Status",
             wizardLabel: "Top up",
-            reset: "Reset",
+            reset: "Change selection",
             stepAmount: "Amount",
             stepEmail: "Email",
             stepConfirm: "Confirm",
@@ -920,14 +1034,18 @@ const I18N = {
             modeCustom: "Custom",
             customAmountLabel: "Custom amount",
             emailLabel: "Receipt email",
-            emailHint: "",
+            emailHint: "The receipt will be sent to this email",
             back: "Back",
             nextToConfirm: "Continue",
             confirmAmount: "Amount",
             confirmEmail: "Email",
             confirmCredits: "Credits",
             confirmHint: "",
-            pay: "Pay via Robokassa",
+            pay: "Pay",
+            choosePackage: "Choose a package",
+            enterEmail: "Enter an email",
+            paySelected: "Pay {amount}",
+            paymentProvider: "Payment via Robokassa",
             payWithAmount: "Pay",
             emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
             privacyDetails: "Learn more in the Personal Data Processing Policy",
@@ -950,7 +1068,10 @@ const I18N = {
             pageRange: "{from}-{to} of {total}",
             emptyHistory: "No payments yet",
             noPaymentsTitle: "No payments yet",
-            noPaymentsMeta: "Your 30-day /start starter grant will appear in payment history",
+            noPaymentsMeta: "Top-up history will appear after your first payment",
+            details: "Details",
+            creditsTitle: "Your credits",
+            invalidEmail: "Enter a valid email",
             loading: "Loading cabinet...",
             refreshInvoice: "Refresh invoice",
             refreshingInvoice: "Refreshing invoice status...",
@@ -962,17 +1083,18 @@ const I18N = {
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
             fallbackDisabled: "Web fallback is disabled on the backend",
             starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders — added on /start",
+            starterGrantMeta: "{credits} renders\nAdded on /start",
             starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
             summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId} — {amount}",
-            paidInvoice: "Invoice #{invoiceId} — {amount}",
-            failedInvoice: "Invoice #{invoiceId} — {amount}",
+            pendingInvoice: "Invoice #{invoiceId}\n{amount}",
+            paidInvoice: "Invoice #{invoiceId}\n{amount}",
+            failedInvoice: "Invoice #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel} / 30 days",
+            packageDuration: "30 days",
+            receiptSummary: "Receipt: {email}",
         },
         renders: {
             eyebrow: "Finished work",
@@ -1136,13 +1258,52 @@ const state = {
     websiteLoginNoncePromise: null,
     websiteLoginNonce: null,
     websiteLoginNonceFetchedAt: 0,
+    frontendAuthState: {
+        status: "BOOTSTRAPPING",
+        authority: null,
+        authChannel: null,
+        principalVerified: false,
+        protectedApiReady: false,
+        sessionPresent: false,
+        errorCode: null,
+        interactionState: "restoring",
+        authenticationSource: null,
+        account: null,
+    },
+    frontendAuthUser: null,
+    frontendAuthSavedName: null,
+    authDialogOpen: false,
+    authDialogStep: "restoring",
+    authDialogBusy: false,
+    authDialogError: "",
+    authDialogEmailError: "",
+    authDialogOtpError: "",
+    authDialogEmail: "",
+    authDialogOtp: "",
+    authDialogChangeEmailOriginal: "",
+    authDialogOtpBeforeChange: "",
+    authDialogCooldownUntil: 0,
+    authDialogCooldownTimer: null,
+    authDialogTurnstileWidgetId: null,
+    authDialogTurnstileToken: null,
+    authDialogTurnstileLoading: false,
+    logoutDialogOpen: false,
+    logoutDialogBusy: false,
+    applicationRoute: null,
+    applicationAuthRequired: false,
+    applicationAuthGateReady: false,
+    applicationDataReady: false,
+    applicationAuthReturnPath: null,
     view: "dashboard",
     menuOpen: false,
     moreOpen: false,
     paymentStep: 1,
-    selectedAmount: 500,
+    selectedAmount: null,
     topUpMode: "package",
     email: "",
+    receiptEmailTouched: false,
+    receiptEmailAuthKey: null,
+    walletEmailError: "",
     balance: null,
     payments: [],
     starterGrant: null,
@@ -1265,6 +1426,8 @@ const state = {
 // page load into duplicate cabinet/history calls.
 let cabinetRequestPromise = null;
 let renderHistoryRequestPromise = null;
+let applicationDataPromise = null;
+let applicationDataGeneration = 0;
 
 function isGuestRenderJob(job) {
     return Boolean(job?.is_guest_demo);
@@ -2079,6 +2242,11 @@ function getDisplayName() {
         return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || `id ${user.id}`;
     }
     if (state.websiteAuth?.username) return `@${state.websiteAuth.username}`;
+    if (state.frontendAuthState?.authority === "supabase") {
+        const email = state.frontendAuthUser?.email;
+        if (email) return email;
+        if (state.frontendAuthSavedName) return state.frontendAuthSavedName;
+    }
     return "Dream Wheels";
 }
 
@@ -2097,14 +2265,226 @@ function getInitials(name) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
+function getAuthAccountPresentation() {
+    const telegramUser = tg?.initDataUnsafe?.user;
+    if (HAS_TG || state.websiteAuth) {
+        const username = telegramUser?.username || state.websiteAuth?.username || "";
+        const fallback = getDisplayName();
+        return {
+            identifier: username ? `@${String(username).replace(/^@/, "")}` : fallback,
+            provider: t("auth.providerTelegram"),
+        };
+    }
+    if (isSupabaseFrontendAuth()) {
+        return {
+            identifier: state.frontendAuthUser?.email || state.frontendAuthSavedName || "Dream Wheels",
+            provider: t("auth.providerEmail"),
+        };
+    }
+    return { identifier: "Dream Wheels", provider: "" };
+}
+
 function updateAccountBlock() {
-    const displayName = getDisplayName();
+    const account = getAuthAccountPresentation();
     const name = document.querySelector("[data-account-name]");
     const avatar = document.querySelector("[data-account-avatar]");
     const subtitle = document.querySelector("[data-account-subtitle]");
-    if (name) name.textContent = displayName;
-    if (avatar) avatar.textContent = getInitials(displayName);
-    if (subtitle) subtitle.textContent = HAS_TG ? "Открыто в Telegram" : "Вход через Telegram";
+    if (name) name.textContent = account.identifier;
+    if (avatar) avatar.textContent = getInitials(account.identifier);
+    if (subtitle) {
+        subtitle.textContent = account.provider || "Кабинет";
+    }
+}
+
+function frontendAuthController() {
+    return window.DreamWheelsAuth || null;
+}
+
+function isSupabaseFrontendAuth() {
+    const authState = state.frontendAuthState || {};
+    return authState.authority === "supabase" && authState.status === "AUTHENTICATED";
+}
+
+function isSupabasePartialAuth() {
+    return isSupabaseFrontendAuth() && state.frontendAuthState.protectedApiReady === false;
+}
+
+function isFrontendUserAuthenticated() {
+    return Boolean(
+        HAS_TG
+        || getWebsiteAuthToken()
+        || state.frontendAuthState?.status === "AUTHENTICATED"
+    );
+}
+
+function receiptEmailAccountKey() {
+    if (isSupabaseFrontendAuth()) {
+        const user = state.frontendAuthUser;
+        return `supabase:${user?.id || user?.email || ""}`;
+    }
+    if (HAS_TG || state.websiteAuth) {
+        const telegramUser = tg?.initDataUnsafe?.user;
+        return `telegram:${telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username || ""}`;
+    }
+    return "anonymous";
+}
+
+function receiptEmailDefault() {
+    if (!isSupabaseFrontendAuth()) return "";
+    return String(state.frontendAuthUser?.email || "").trim();
+}
+
+function syncReceiptEmailForAuth() {
+    const accountKey = receiptEmailAccountKey();
+    if (state.receiptEmailAuthKey !== accountKey) {
+        state.receiptEmailAuthKey = accountKey;
+        state.receiptEmailTouched = false;
+        state.email = "";
+        state.walletEmailError = "";
+    }
+    if (!state.receiptEmailTouched) {
+        const nextDefault = receiptEmailDefault();
+        if (state.email !== nextDefault) state.email = nextDefault;
+    }
+    syncEmailInput();
+}
+
+function isAuthIntegrationEnabled() {
+    return Boolean(frontendAuthController()?.isIntegrationEnabled?.());
+}
+
+function isApplicationAuthGranted() {
+    if (!state.applicationAuthRequired) return true;
+    return Boolean(
+        state.frontendAuthState?.status === "AUTHENTICATED"
+        && state.frontendAuthState?.principalVerified === true
+        && state.frontendAuthState?.protectedApiReady === true
+    );
+}
+
+function renderApplicationAuthGate() {
+    if (!state.applicationAuthRequired) return;
+    const gate = document.querySelector("[data-application-auth-gate]");
+    const title = document.querySelector("[data-application-auth-gate-title]");
+    const copy = document.querySelector("[data-application-auth-gate-copy]");
+    const login = document.querySelector("[data-application-auth-gate-login]");
+    const spinner = document.querySelector("[data-application-auth-gate-spinner]");
+    if (!gate) return;
+    const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
+        || state.frontendAuthState?.interactionState === "restoring";
+    const authenticated = isApplicationAuthGranted();
+    gate.hidden = authenticated;
+    gate.dataset.restoring = String(restoring);
+    gate.setAttribute("aria-busy", String(restoring));
+    if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
+    if (copy) copy.textContent = restoring ? t("auth.appGateRestoring") : t("auth.appGateDescription");
+    if (copy) copy.hidden = restoring;
+    if (spinner) spinner.hidden = !restoring;
+    if (login) {
+        login.hidden = restoring;
+        login.disabled = state.authDialogBusy;
+        login.textContent = t("auth.loginShort");
+    }
+}
+
+function setApplicationShellVisible(visible) {
+    if (!state.applicationAuthRequired) return;
+    document.querySelector(".desktop-sidebar")?.toggleAttribute("hidden", !visible);
+    document.querySelector("#app")?.toggleAttribute("hidden", !visible);
+    document.querySelector(".mobile-bottom-nav")?.toggleAttribute("hidden", !visible);
+}
+
+function syncApplicationAuthWall() {
+    if (!state.applicationAuthRequired) return;
+    const unlocked = isApplicationAuthGranted();
+    state.applicationAuthGateReady = unlocked;
+    setApplicationShellVisible(unlocked);
+    renderApplicationAuthGate();
+    if (unlocked && state.applicationRoute?.view && state.view !== state.applicationRoute.view) {
+        setView(state.applicationRoute.view, { refreshData: false });
+    }
+}
+
+function initializeApplicationRoute() {
+    if (HAS_TG || !isApplicationRoute(window.location)) return;
+    state.applicationAuthRequired = true;
+    state.applicationRoute = applicationRouteContext(window.location);
+    if (!state.applicationRoute && window.history?.replaceState) {
+        window.history.replaceState({}, "", "/app");
+        state.applicationRoute = applicationRouteContext(window.location);
+    }
+    state.applicationRoute = state.applicationRoute || {
+        path: "/app",
+        view: "dashboard",
+        returnPath: "/app",
+        market: null,
+        query: new URLSearchParams(),
+    };
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/app";
+    if (state.applicationAuthReturnPath) {
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        const paymentReturn = new URLSearchParams(window.location.search).get("payment");
+        if (!paymentReturn && currentPath !== state.applicationAuthReturnPath && window.history?.replaceState) {
+            window.history.replaceState({}, "", state.applicationAuthReturnPath);
+            state.applicationRoute = applicationRouteContext(window.location) || state.applicationRoute;
+        }
+    }
+}
+
+async function bootstrapAuthenticatedApplication() {
+    if (!state.applicationAuthRequired || !isApplicationAuthSessionReady()) return false;
+    if (applicationDataPromise) return applicationDataPromise;
+    state.applicationDataReady = false;
+    syncApplicationAuthWall();
+    const generation = applicationDataGeneration;
+    const promise = (async () => {
+        await hydrateFilesFromDraft();
+        renderIdentityFlow();
+        refreshButtonsForCurrentView();
+        await loadDashboardData();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        state.applicationDataReady = true;
+        syncApplicationAuthWall();
+        return true;
+    })();
+    applicationDataPromise = promise;
+    promise.then(
+        () => {
+            if (applicationDataPromise === promise) applicationDataPromise = null;
+        },
+        () => {
+            if (applicationDataPromise === promise) applicationDataPromise = null;
+        },
+    );
+    return promise;
+}
+
+function isApplicationAuthSessionReady() {
+    return Boolean(
+        state.frontendAuthState?.status === "AUTHENTICATED"
+        && state.frontendAuthState?.principalVerified === true
+        && state.frontendAuthState?.protectedApiReady === true
+    );
+}
+
+function clearApplicationSessionState() {
+    applicationDataGeneration += 1;
+    applicationDataPromise = null;
+    state.applicationDataReady = false;
+    state.email = "";
+    state.receiptEmailTouched = false;
+    state.receiptEmailAuthKey = null;
+    state.walletEmailError = "";
+    state.balance = null;
+    state.payments = [];
+    state.starterGrant = null;
+    state.renderHistory = [];
+    state.renderHistoryError = "";
+    state.renderHistoryLoading = false;
+    state.expandedJobId = "";
+    state.files = { car: null, wheel: null };
+    resetIdentityState();
+    syncApplicationAuthWall();
 }
 
 function getWebsiteAuthToken() {
@@ -2119,6 +2499,18 @@ function getWebsiteAuthToken() {
 function clearWebsiteAuthSession({ refreshUi = true } = {}) {
     state.websiteAuth = null;
     sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
+    if (state.frontendAuthState?.authChannel === "website_telegram") {
+        state.frontendAuthState = {
+            ...state.frontendAuthState,
+            status: "UNAUTHENTICATED",
+            authority: null,
+            authChannel: null,
+            principalVerified: false,
+            protectedApiReady: false,
+            sessionPresent: false,
+            errorCode: null,
+        };
+    }
     if (refreshUi) updateWebsiteAuthUi();
 }
 
@@ -2127,8 +2519,20 @@ function withAuthHeaders(headers = {}) {
     return accessToken ? { ...headers, Authorization: `Bearer ${accessToken}` } : headers;
 }
 
+function authenticatedFetch(input, init = {}, options = {}) {
+    const controller = frontendAuthController();
+    if (typeof controller?.authenticatedFetch === "function") {
+        return controller.authenticatedFetch(input, init, options);
+    }
+    return fetch(input, init);
+}
+
 function isWebsiteAuthMode() {
     return Boolean(getWebsiteAuthToken());
+}
+
+function hasBearerFrontendAuth() {
+    return isWebsiteAuthMode() || isSupabaseFrontendAuth();
 }
 
 function updateWebsiteAuthUi() {
@@ -2139,8 +2543,8 @@ function updateWebsiteAuthUi() {
     const websiteAuthLabel = document.querySelector("[data-website-auth-label]");
     if (button) button.hidden = HAS_TG;
     if (dashboardLogin) {
-        dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending;
-        const label = state.websiteLoginPending
+        dashboardLogin.disabled = state.websiteLoginPending || state.websiteLoginWarmupPending || state.authDialogBusy;
+        const label = state.websiteLoginPending || state.authDialogBusy
             ? t("auth.loggingIn")
             : state.websiteLoginWarmupPending
                 ? t("auth.preparing")
@@ -2153,16 +2557,318 @@ function updateWebsiteAuthUi() {
     }
     if (!button || HAS_TG) return;
 
-    const label = state.websiteLoginPending
+    const label = state.websiteLoginPending || state.authDialogBusy
         ? t("auth.loggingIn")
         : state.websiteAuth
             ? t("auth.logout")
-            : t("auth.loginShort");
+            : isFrontendUserAuthenticated()
+                ? t("auth.logout")
+                : t("auth.loginShort");
     button.disabled = state.websiteLoginPending;
+    button.disabled = button.disabled || state.authDialogBusy;
     if (websiteAuthLabel) websiteAuthLabel.textContent = label;
     button.setAttribute("aria-label", label);
     updateCreateFooter();
     updateAccountBlock();
+}
+
+function authErrorMessage(code) {
+    return {
+        invalid_otp: t("auth.invalidOtp"),
+        expired_otp: t("auth.expiredOtp"),
+        rate_limited: t("auth.rateLimited"),
+        network_error: t("auth.networkError"),
+        provider_error: t("auth.providerError"),
+        session_missing: t("auth.providerError"),
+        ALREADY_AUTHENTICATED: t("auth.alreadyAuthenticated"),
+        AUTHENTICATION_IN_PROGRESS: t("auth.authenticationInProgress"),
+        SESSION_EXPIRED: t("auth.networkError"),
+    }[code] || t("auth.providerError");
+}
+
+function setAuthDialogMessage(message, isError = false) {
+    const target = document.querySelector("[data-auth-message]");
+    if (target) {
+        target.textContent = message || "";
+        target.dataset.tone = isError ? "error" : "neutral";
+    }
+}
+
+function updateAuthDialogCooldown() {
+    const target = document.querySelector("[data-auth-cooldown]");
+    const resend = document.querySelector("[data-auth-resend]");
+    const remaining = Math.max(0, Math.ceil((state.authDialogCooldownUntil - Date.now()) / 1000));
+    const resendLabel = remaining
+        ? t("auth.resendIn").replace("{seconds}", String(remaining))
+        : t("auth.resend");
+    if (target) target.textContent = "";
+    if (resend) {
+        resend.textContent = resendLabel;
+        resend.disabled = state.authDialogBusy || remaining > 0;
+        resend.setAttribute("aria-label", resendLabel);
+    }
+    if (!remaining && state.authDialogCooldownTimer) {
+        clearInterval(state.authDialogCooldownTimer);
+        state.authDialogCooldownTimer = null;
+    }
+}
+
+function startAuthDialogCooldown() {
+    const seconds = Number(window.__DREAM_WHEELS_AUTH_CONFIG__?.resendWindowSeconds || 60);
+    state.authDialogCooldownUntil = Date.now() + Math.max(1, seconds) * 1000;
+    if (!state.authDialogCooldownTimer) state.authDialogCooldownTimer = window.setInterval(updateAuthDialogCooldown, 1000);
+    updateAuthDialogCooldown();
+}
+
+function resetAuthDialogTurnstile() {
+    state.authDialogTurnstileToken = null;
+    if (state.authDialogTurnstileWidgetId !== null && window.turnstile?.reset) {
+        window.turnstile.reset(state.authDialogTurnstileWidgetId);
+    }
+}
+
+function renderAuthDialogTurnstile() {
+    const container = document.querySelector("[data-auth-turnstile]");
+    const widget = document.querySelector("[data-auth-turnstile-widget]");
+    const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
+    if (!container || !widget || !siteKey) return;
+    if (state.authDialogTurnstileWidgetId !== null) {
+        container.hidden = false;
+        return;
+    }
+    if (!window.turnstile?.render) {
+        container.hidden = true;
+        return;
+    }
+    const widgetId = window.turnstile.render(widget, {
+        sitekey: siteKey,
+        callback(token) {
+            state.authDialogTurnstileToken = typeof token === "string" && token.trim() ? token.trim() : null;
+        },
+        "expired-callback"() { state.authDialogTurnstileToken = null; },
+        "error-callback"() {
+            state.authDialogTurnstileToken = null;
+            container.hidden = true;
+            setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
+        },
+    });
+    state.authDialogTurnstileWidgetId = widgetId;
+    container.hidden = false;
+}
+
+function loadAuthDialogTurnstile() {
+    const siteKey = window.__DREAM_WHEELS_AUTH_CONFIG__?.turnstileSiteKey;
+    if (!siteKey) return;
+    const existing = document.querySelector("script[data-auth-turnstile-script]");
+    if (window.turnstile?.render) {
+        renderAuthDialogTurnstile();
+        return;
+    }
+    if (existing || state.authDialogTurnstileLoading) return;
+    state.authDialogTurnstileLoading = true;
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.dataset.authTurnstileScript = "true";
+    script.addEventListener("load", () => {
+        state.authDialogTurnstileLoading = false;
+        renderAuthDialogTurnstile();
+    }, { once: true });
+    script.addEventListener("error", () => {
+        state.authDialogTurnstileLoading = false;
+        setAuthDialogMessage(t("auth.turnstileUnavailable"), true);
+    }, { once: true });
+    document.head.append(script);
+}
+
+function renderAuthDialog() {
+    const dialog = document.querySelector("[data-auth-dialog]");
+    const emailForm = document.querySelector("[data-auth-email-form]");
+    const otpForm = document.querySelector("[data-auth-otp-form]");
+    const restoredState = document.querySelector("[data-auth-restored-state]");
+    const emailInput = document.querySelector("[data-auth-email]");
+    const otpInput = document.querySelector("[data-auth-otp]");
+    const title = document.querySelector("[data-auth-dialog-title]");
+    const description = document.querySelector("[data-auth-dialog-description]");
+    const emailError = document.querySelector("[data-auth-email-error]");
+    const otpError = document.querySelector("[data-auth-otp-error]");
+    const otpDestination = document.querySelector("[data-auth-otp-destination]");
+    const descriptionLine1 = document.querySelector("[data-auth-description-line1]");
+    const descriptionLine2 = document.querySelector("[data-auth-description-line2]");
+    const resendPrompt = document.querySelector("[data-auth-resend-prompt]");
+    const telegramAlternative = document.querySelector("[data-auth-telegram]");
+    const emailAlternative = document.querySelectorAll("[data-auth-email-alternative]");
+    const initialOnly = document.querySelectorAll("[data-auth-initial-only]");
+    const backButton = document.querySelector("[data-auth-back-to-otp]");
+    const restoredAvatar = document.querySelector("[data-auth-restored-avatar]");
+    const restoredName = document.querySelector("[data-auth-restored-name]");
+    const restoredProvider = document.querySelector("[data-auth-restored-provider]");
+    if (!dialog || !emailForm || !otpForm) return;
+    dialog.hidden = !state.authDialogOpen;
+    const isInitialEmailStep = state.authDialogOpen && state.authDialogStep === "email";
+    const isChangeEmailStep = state.authDialogOpen && state.authDialogStep === "change-email";
+    const isEmailStep = isInitialEmailStep || isChangeEmailStep;
+    const isOtpStep = state.authDialogOpen && state.authDialogStep === "otp";
+    const isRestoredStep = state.authDialogOpen && state.authDialogStep === "restored";
+    const isRestoringStep = state.authDialogOpen && state.authDialogStep === "restoring";
+    emailForm.hidden = !isEmailStep;
+    otpForm.hidden = !isOtpStep;
+    if (restoredState) restoredState.hidden = !isRestoredStep;
+    if (title) title.textContent = state.authDialogStep === "otp"
+        ? t("auth.otpTitle")
+        : isRestoredStep
+            ? t("auth.alreadySignedIn")
+            : isRestoringStep
+                ? t("auth.restoring")
+                : isChangeEmailStep
+                    ? t("auth.changeEmailTitle")
+                    : t("auth.dialogTitle");
+    if (description) description.hidden = isRestoredStep || isRestoringStep;
+    if (descriptionLine1) descriptionLine1.textContent = isOtpStep
+        ? t("auth.otpSentTo")
+        : isChangeEmailStep
+            ? t("auth.changeEmailIntro")
+            : t("auth.emailIntro");
+    if (descriptionLine2) descriptionLine2.textContent = isOtpStep
+        ? ""
+        : isChangeEmailStep
+            ? t("auth.changeEmailSubcopy")
+            : t("auth.emailSubcopy");
+    const continueButton = document.querySelector("[data-auth-continue]");
+    const switchButton = document.querySelector("[data-auth-switch]");
+    if (continueButton) continueButton.textContent = t("auth.continue");
+    if (switchButton) switchButton.textContent = t("auth.switchAccount");
+    const emailLabel = document.querySelector('label[for="auth-email-input"]');
+    const otpLabel = document.querySelector('label[for="auth-otp-input"]');
+    const sendButton = document.querySelector("[data-auth-send]");
+    const verifyButton = document.querySelector("[data-auth-verify]");
+    const changeEmailButton = document.querySelector("[data-auth-change-email]");
+    const telegramLabel = document.querySelector("[data-auth-telegram-label]");
+    const legalCopy = document.querySelector("[data-auth-legal]");
+    if (emailLabel) emailLabel.textContent = t("auth.emailLabel");
+    if (otpLabel) otpLabel.textContent = t("auth.codeLabel");
+    if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
+    if (verifyButton) verifyButton.textContent = t("auth.verify");
+    if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
+    if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
+    if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
+    if (legalCopy) {
+        const legalLink = legalCopy.querySelector("a");
+        if (legalLink) legalLink.textContent = locale === "ru" ? "политикой конфиденциальности" : "privacy policy";
+        legalCopy.firstChild.textContent = locale === "ru" ? "Продолжая, вы соглашаетесь с " : "By continuing, you agree to the ";
+        if (legalLink) legalCopy.lastChild.textContent = locale === "ru" ? "." : ".";
+    }
+    if (telegramAlternative) telegramAlternative.hidden = !isInitialEmailStep;
+    emailAlternative.forEach((element) => {
+        element.hidden = !isInitialEmailStep;
+    });
+    initialOnly.forEach((element) => {
+        element.hidden = !isInitialEmailStep;
+    });
+    if (otpDestination) {
+        otpDestination.textContent = isOtpStep && state.authDialogEmail
+            ? maskAuthEmail(state.authDialogEmail)
+            : "";
+    }
+    if (emailError) {
+        emailError.textContent = state.authDialogEmailError || "";
+        emailError.hidden = !state.authDialogEmailError;
+    }
+    if (otpError) {
+        otpError.textContent = state.authDialogOtpError || "";
+        otpError.hidden = !state.authDialogOtpError;
+    }
+    emailInput?.toggleAttribute("aria-invalid", Boolean(state.authDialogEmailError));
+    otpInput?.toggleAttribute("aria-invalid", Boolean(state.authDialogOtpError));
+    if (emailInput && emailInput.value !== state.authDialogEmail) emailInput.value = state.authDialogEmail;
+    if (otpInput && otpInput.value !== state.authDialogOtp) otpInput.value = state.authDialogOtp;
+    if (backButton) {
+        backButton.hidden = !isChangeEmailStep;
+        backButton.textContent = t("auth.back");
+    }
+    const account = getAuthAccountPresentation();
+    if (restoredAvatar) restoredAvatar.textContent = getInitials(account.identifier);
+    if (restoredName) restoredName.textContent = account.identifier;
+    if (restoredProvider) restoredProvider.textContent = account.provider;
+    document.querySelector("[data-auth-send]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
+    document.querySelector("[data-auth-telegram]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-continue]")?.toggleAttribute("disabled", state.authDialogBusy);
+    document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
+    updateAuthDialogCooldown();
+    if (state.authDialogOpen && ["email", "change-email"].includes(state.authDialogStep)) loadAuthDialogTurnstile();
+}
+
+function openAuthDialog() {
+    if (!isAuthIntegrationEnabled() || HAS_TG) return;
+    state.authDialogOpen = true;
+    const authState = state.frontendAuthState || {};
+    state.authDialogStep = authState.interactionState === "restoring"
+        || authState.status === "BOOTSTRAPPING"
+        ? "restoring"
+        : authState.status === "AUTHENTICATED" && authState.principalVerified
+            ? "restored"
+            : "email";
+    state.authDialogError = "";
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
+    state.authDialogBusy = false;
+    state.authDialogOtp = "";
+    state.authDialogChangeEmailOriginal = "";
+    state.authDialogOtpBeforeChange = "";
+    setAuthDialogMessage("");
+    renderAuthDialog();
+    if (state.authDialogStep === "restoring") {
+        void frontendAuthController()?.initialize?.().then(() => {
+            if (!state.authDialogOpen || state.authDialogStep !== "restoring") return;
+            const next = frontendAuthController()?.getState?.() || {};
+            state.authDialogStep = next.status === "AUTHENTICATED" && next.principalVerified ? "restored" : "email";
+            renderAuthDialog();
+        });
+    }
+    window.requestAnimationFrame(() => {
+        const selector = state.authDialogStep === "restored"
+            ? "[data-auth-continue]"
+            : state.authDialogStep === "otp"
+                ? "[data-auth-otp]"
+                : "[data-auth-email]";
+        document.querySelector(selector)?.focus();
+    });
+}
+
+function closeAuthDialog() {
+    state.authDialogOpen = false;
+    state.authDialogBusy = false;
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
+    resetAuthDialogTurnstile();
+    renderAuthDialog();
+}
+
+function handleFrontendAuthState(nextState) {
+    state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
+    state.frontendAuthUser = currentUser;
+    state.frontendAuthSavedName = nextState.account?.savedName || state.frontendAuthSavedName || null;
+    syncReceiptEmailForAuth();
+    renderConfirmation();
+    if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
+        if (state.authDialogOpen && state.authDialogStep !== "otp") {
+            state.authDialogStep = "restored";
+            setAuthDialogMessage("");
+            renderAuthDialog();
+        }
+    } else if (nextState.interactionState === "UNAUTHENTICATED" || nextState.status === "UNAUTHENTICATED") {
+        if (state.authDialogOpen && state.authDialogStep === "restoring") {
+            state.authDialogStep = "email";
+            renderAuthDialog();
+        }
+    }
+    updateWebsiteAuthUi();
+    renderWalletStatus();
+    renderDashboard();
+    syncApplicationAuthWall();
 }
 
 function apiUrl(path, { includeIdentity = false, params = null } = {}) {
@@ -2302,6 +3008,7 @@ async function loginWithTelegram() {
             username: verified.username || "",
         };
         sessionStorage.setItem(WEBSITE_AUTH_STORAGE_KEY, JSON.stringify(state.websiteAuth));
+        frontendAuthController()?.markLegacyWebsiteAuthenticated?.();
         void trackEvent("auth_completed", { auth_channel: "website" });
         state.renderHistory = [];
         state.renderHistoryError = "";
@@ -2309,13 +3016,19 @@ async function loginWithTelegram() {
         updateWebsiteAuthUi();
         renderDashboard();
         renderRenders();
-        await Promise.all([loadCabinet(), loadRenderHistory()]);
+        if (state.applicationAuthRequired) {
+            await bootstrapAuthenticatedApplication();
+        } else {
+            await Promise.all([loadCabinet(), loadRenderHistory()]);
+        }
         if (state.identityError && state.files.car?.blob && state.files.wheel?.blob) {
             await resolveIdentity();
         }
         return true;
     } catch (error) {
-        console.error("[DW] Telegram website login failed", error);
+        console.warn("[DW] Telegram website login failed", {
+            code: typeof error?.code === "string" ? error.code : "unknown",
+        });
         const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
             ? "Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз."
             : "Не удалось войти через Telegram. Попробуйте ещё раз.";
@@ -2327,6 +3040,206 @@ async function loginWithTelegram() {
         invalidateWebsiteLoginNonce();
         warmWebsiteLoginResources();
         updateWebsiteAuthUi();
+    }
+}
+
+function validFrontendEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(String(email || "").trim());
+}
+
+function maskAuthEmail(email) {
+    const [local = "", domain = ""] = String(email || "").trim().split("@");
+    if (!local || !domain) return "";
+    const visible = local.length === 1 ? local : local.slice(0, 2);
+    const mask = local.length === 1 ? "•••" : "••••";
+    return `${visible}${mask}@${domain}`;
+}
+
+async function requestFrontendEmailOtp({ resend = false } = {}) {
+    const controller = frontendAuthController();
+    const email = String(state.authDialogEmail || "").trim();
+    if (!controller || !isAuthIntegrationEnabled()) return;
+    if (!validFrontendEmail(email)) {
+        state.authDialogEmailError = t("auth.invalidEmail");
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        document.querySelector("[data-auth-email]")?.focus();
+        return;
+    }
+    if (resend && Date.now() < state.authDialogCooldownUntil) return;
+    if (!state.authDialogTurnstileToken) {
+        setAuthDialogMessage(t("auth.turnstileRequired"), true);
+        return;
+    }
+    state.authDialogEmailError = "";
+    state.authDialogOtpError = "";
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.sendingCode"));
+    renderAuthDialog();
+    try {
+        await controller.requestEmailOtp(email, state.authDialogTurnstileToken);
+        state.authDialogStep = "otp";
+        state.authDialogOtp = "";
+        startAuthDialogCooldown();
+        setAuthDialogMessage("");
+        resetAuthDialogTurnstile();
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
+    } catch (error) {
+        if (error?.code === "ALREADY_AUTHENTICATED") {
+            state.authDialogStep = "restored";
+            setAuthDialogMessage("");
+            renderAuthDialog();
+            return;
+        }
+        setAuthDialogMessage(authErrorMessage(error?.code), true);
+    } finally {
+        state.authDialogBusy = false;
+        renderAuthDialog();
+        updateWebsiteAuthUi();
+    }
+}
+
+async function verifyFrontendEmailOtp() {
+    const controller = frontendAuthController();
+    const email = String(state.authDialogEmail || "").trim();
+    const otp = String(state.authDialogOtp || "").trim();
+    if (!controller || !isAuthIntegrationEnabled()) return;
+    if (!/^\d{6}$/u.test(otp)) {
+        state.authDialogOtpError = t("auth.invalidOtp");
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        document.querySelector("[data-auth-otp]")?.focus();
+        return;
+    }
+    state.authDialogOtpError = "";
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.checkingCode"));
+    renderAuthDialog();
+    try {
+        const result = await controller.verifyEmailOtp(email, otp);
+        if (!isSupabaseFrontendAuth()) {
+            setAuthDialogMessage(t("auth.providerError"), true);
+            return;
+        }
+        state.frontendAuthSavedName = result?.account?.saved_name || state.frontendAuthSavedName || null;
+        closeAuthDialog();
+        if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
+        else await loadDashboardData({ silent: true });
+    } catch (error) {
+        if (error?.code === "invalid_otp" || error?.code === "expired_otp") {
+            state.authDialogOtpError = authErrorMessage(error?.code);
+            setAuthDialogMessage("");
+        } else {
+            setAuthDialogMessage(authErrorMessage(error?.code), true);
+        }
+    } finally {
+        state.authDialogBusy = false;
+        renderAuthDialog();
+        updateWebsiteAuthUi();
+    }
+}
+
+function renderLogoutDialog() {
+    const dialog = document.querySelector("[data-logout-dialog]");
+    if (!dialog) return;
+    const title = document.querySelector("[data-logout-title]");
+    const description = document.querySelector("[data-logout-description]");
+    const cancel = document.querySelector("[data-logout-cancel]");
+    const confirm = document.querySelector("[data-logout-confirm]");
+    dialog.hidden = !state.logoutDialogOpen;
+    if (title) title.textContent = t("auth.logoutTitle");
+    if (description) description.textContent = t("auth.logoutDescription");
+    if (cancel) {
+        cancel.textContent = t("auth.cancel");
+        cancel.disabled = state.logoutDialogBusy;
+    }
+    if (confirm) {
+        confirm.textContent = t("auth.logout");
+        confirm.disabled = state.logoutDialogBusy;
+    }
+}
+
+function openLogoutDialog() {
+    if (!isFrontendUserAuthenticated()) return;
+    state.logoutDialogOpen = true;
+    state.logoutDialogBusy = false;
+    renderLogoutDialog();
+    window.requestAnimationFrame(() => document.querySelector("[data-logout-cancel]")?.focus());
+}
+
+function closeLogoutDialog() {
+    if (state.logoutDialogBusy) return;
+    state.logoutDialogOpen = false;
+    renderLogoutDialog();
+}
+
+async function logoutCurrentFrontendAuthority() {
+    const controller = frontendAuthController();
+    if (isSupabaseFrontendAuth() && controller) {
+        await controller.signOut();
+        state.frontendAuthUser = null;
+        state.frontendAuthSavedName = null;
+        syncReceiptEmailForAuth();
+        clearApplicationSessionState();
+        updateWebsiteAuthUi();
+        renderDashboard();
+        return;
+    }
+    logoutWebsiteAuth();
+}
+
+async function confirmLogout() {
+    if (state.logoutDialogBusy) return;
+    state.logoutDialogBusy = true;
+    renderLogoutDialog();
+    try {
+        await logoutCurrentFrontendAuthority();
+        state.logoutDialogOpen = false;
+    } catch (error) {
+        setWalletMessage(authErrorMessage(error?.code), "error");
+    } finally {
+        state.logoutDialogBusy = false;
+        renderLogoutDialog();
+    }
+}
+
+function continueWithRestoredSession() {
+    closeAuthDialog();
+}
+
+function switchFromRestoredSession() {
+    const controller = frontendAuthController();
+    if (!controller || state.authDialogBusy) return;
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.loggingIn"));
+    renderAuthDialog();
+    void controller.signOut()
+        .then(() => {
+            state.authDialogStep = "email";
+            state.authDialogOtp = "";
+            state.authDialogChangeEmailOriginal = "";
+            state.authDialogOtpBeforeChange = "";
+            state.frontendAuthUser = null;
+            state.frontendAuthSavedName = null;
+            syncReceiptEmailForAuth();
+            renderConfirmation();
+            setAuthDialogMessage("");
+        })
+        .catch((error) => setAuthDialogMessage(authErrorMessage(error?.code), true))
+        .finally(() => {
+            state.authDialogBusy = false;
+            renderAuthDialog();
+        });
+}
+
+function handleWebsiteAuthAction() {
+    if (isFrontendUserAuthenticated()) {
+        openLogoutDialog();
+    } else if (isAuthIntegrationEnabled()) {
+        openAuthDialog();
+    } else {
+        void loginWithTelegram();
     }
 }
 
@@ -2361,9 +3274,10 @@ async function resumeFitmentAfterLogin() {
 
 function logoutWebsiteAuth() {
     clearWebsiteAuthSession({ refreshUi: false });
-    state.balance = null;
-    state.payments = [];
-    state.starterGrant = null;
+    frontendAuthController()?.markLegacyWebsiteSignedOut?.();
+    clearApplicationSessionState();
+    syncReceiptEmailForAuth();
+    renderConfirmation();
     updateWebsiteAuthUi();
     setWalletMessage(t("wallet.authRequired"), "warning");
     renderWallet();
@@ -2394,11 +3308,13 @@ function normalizeTopUpAmount(amount) {
 }
 
 function getTopUpPackage(amount) {
+    if (amount === null || amount === undefined || amount === "") return null;
     const normalized = normalizeTopUpAmount(amount);
     return TOPUP_PACKAGES.find((item) => item.amount === normalized) || null;
 }
 
 function creditsForAmount(amount) {
+    if (getTopUpPackage(amount) === null && (amount === null || amount === undefined || amount === "")) return 0;
     const normalized = normalizeTopUpAmount(amount);
     const topUpPackage = getTopUpPackage(normalized);
     if (topUpPackage) return topUpPackage.credits;
@@ -2481,7 +3397,7 @@ function classifyIdentityError(message) {
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
-    if (isWebsiteAuthMode()) return {};
+    if (isWebsiteAuthMode() || state.frontendAuthState?.authority === "supabase") return {};
     if (HAS_TG && tg?.initData) {
         const payload = { init_data: tg.initData };
         if (includeTelegramUserId && tg.initDataUnsafe?.user?.id != null) {
@@ -3067,7 +3983,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
             vehicle_identity_id: overview.vehicle_identity_id,
             rim_setup_id: overview.rim_setup_id,
         });
-        const response = await fetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
+        const response = await authenticatedFetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
             headers: withAuthHeaders(),
         });
         if (response.status === 401) {
@@ -3080,7 +3996,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
         if (!state.fitmentCheck && state.fitmentCheckHistory.length) {
             const latest = state.fitmentCheckHistory.find((item) => item.is_current) || state.fitmentCheckHistory[0];
             if (latest?.id && latest.execution_status === "completed") {
-                const detail = await fetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+                const detail = await authenticatedFetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
                 if (detail.ok) state.fitmentCheck = await detail.json();
             }
         }
@@ -4283,7 +5199,7 @@ function fitmentPreviewAsset(job, kind) {
 }
 
 async function ensureFitmentPreviewAsset(job, kind) {
-    if (!job?.job_id || isGuestRenderJob(job) || !getWebsiteAuthToken()) return;
+    if (!job?.job_id || isGuestRenderJob(job) || !hasFrontendAuth()) return;
     const assetKey = kind === "vehicle" ? "car_original" : "rim_original";
     const asset = job.assets?.[assetKey];
     if (!asset?.download_url || state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey]) return;
@@ -4291,7 +5207,9 @@ async function ensureFitmentPreviewAsset(job, kind) {
         ? apiUrl(asset.download_url)
         : asset.download_url;
     try {
-        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        const response = asset.download_url.startsWith("/")
+            ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
+            : await fetch(sourceUrl);
         if (!response.ok) return;
         const objectUrl = URL.createObjectURL(await response.blob());
         const previousUrl = state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey];
@@ -5438,7 +6356,7 @@ async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.
         } else {
             const query = new URLSearchParams(params);
             const suffix = query.toString() ? `?${query}` : "";
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-catalogue/${kind}${suffix}`, { includeIdentity: true }),
                 { headers: withAuthHeaders(), signal: controller.signal }
             );
@@ -5719,7 +6637,7 @@ async function loadFitmentOverview(
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
             return restoration;
         }
-        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (response.status === 401) {
@@ -5945,7 +6863,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceController = controller;
     const requestTimeout = window.setTimeout(() => controller.abort(), RIM_SOURCE_RESOLVE_TIMEOUT_MS);
     try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/rim-source/resolve`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6046,7 +6964,7 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
     state.fitmentMessage = "";
     renderFitment();
     try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
@@ -6103,7 +7021,7 @@ async function loadFitmentVehicleVariantsForReselection() {
             );
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/reselect`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
@@ -6172,7 +7090,7 @@ async function replaceFitmentVehicleVariant(variant) {
             state.fitmentActiveStep = fitmentSectionToStep("vehicle");
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/replace`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6262,7 +7180,7 @@ async function refreshFitmentCheckCurrentness() {
     const checkId = state.fitmentCheck?.id;
     if (!checkId || !state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
     try {
-        const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+        const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
@@ -6280,7 +7198,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
     const poll = async () => {
         if (token !== state.fitmentCheckPollToken || state.view !== "fitment" || contextKey !== fitmentCheckContextKey()) return;
         try {
-            const response = await fetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+            const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
             if (response.status === 401) {
                 showFitmentAuthRequired();
                 return;
@@ -6316,7 +7234,7 @@ async function runFitmentCheck() {
     state.fitmentError = "";
     renderFitment();
     try {
-        const response = await fetch(apiUrl("/fitment/checks", { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl("/fitment/checks", { includeIdentity: true }), {
             method: "POST",
             headers: withAuthHeaders({
                 "Content-Type": "application/json",
@@ -6361,7 +7279,7 @@ async function applyFitmentVehicleVariant(variant) {
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants/apply`, { includeIdentity: true }),
             {
                 method: "POST",
@@ -6436,7 +7354,7 @@ async function saveFitment(event) {
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             return;
         }
-        const response = await fetch(
+        const response = await authenticatedFetch(
             apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true }),
             {
                 method: "PATCH",
@@ -6504,7 +7422,7 @@ async function fetchRenderHistory({ limit = 20, offset = 0 } = {}) {
     const params = new URLSearchParams();
     params.set("limit", String(limit));
     params.set("offset", String(offset));
-    const response = await fetch(apiUrl("/jobs", { includeIdentity: true, params }), {
+    const response = await authenticatedFetch(apiUrl("/jobs", { includeIdentity: true, params }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -6621,9 +7539,13 @@ function setPaymentStep(step) {
 }
 
 function setSelectedAmount(amount) {
-    state.selectedAmount = normalizeTopUpAmount(amount);
+    state.selectedAmount = amount === null || amount === undefined || amount === ""
+        ? null
+        : normalizeTopUpAmount(amount);
     document.querySelectorAll("[data-topup-amount]").forEach((btn) => {
-        btn.dataset.selected = String(Number(btn.dataset.topupAmount) === state.selectedAmount);
+        const selected = Number(btn.dataset.topupAmount) === state.selectedAmount;
+        btn.dataset.selected = String(selected);
+        btn.setAttribute("aria-pressed", String(selected));
     });
     renderConfirmation();
 }
@@ -6655,10 +7577,14 @@ function renderWalletStatus() {
     syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
     const authNotice = document.querySelector("[data-wallet-auth-notice]");
     if (authNotice) {
-        const visible = !hasFrontendAuth();
+        const visible = !isFrontendUserAuthenticated() || isSupabasePartialAuth();
         authNotice.hidden = !visible;
         authNotice.dataset.visible = String(visible);
         authNotice.setAttribute("aria-hidden", String(!visible));
+        const text = document.querySelector("[data-wallet-auth-notice-text]");
+        if (text) text.textContent = isSupabasePartialAuth()
+            ? t("auth.partialAccess")
+            : t("wallet.authRequired");
     }
 }
 
@@ -6761,9 +7687,10 @@ function schedulePendingInvoiceRefresh() {
 }
 
 function renderWallet() {
+    syncReceiptEmailForAuth();
     const balanceValue = document.querySelector("[data-balance-value]");
     const balanceUnit = document.querySelector("[data-balance-unit]");
-    const balanceNoteValue = document.querySelector("[data-balance-note-value]");
+    const lastInvoiceTitle = document.querySelector("[data-last-invoice-title]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
     const cardBlock = document.querySelector("[data-last-invoice-card]");
@@ -6777,57 +7704,42 @@ function renderWallet() {
     const historyPrev = document.querySelector("[data-wallet-history-prev]");
     const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
-    const headingStatus = document.querySelector("[data-payment-status]");
+    const detailStatus = document.querySelector("[data-last-invoice-status-detail]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNoteValue) balanceNoteValue.textContent = getAccountLabel();
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
         if (cardBlock) cardBlock.hidden = true;
         if (cardDetails) cardDetails.hidden = true;
-        if (headingStatus) {
-            headingStatus.textContent = state.balance === null ? t("wallet.loading") : t("wallet.noPaymentsTitle");
-            headingStatus.className = "status-pill neutral";
+        if (lastInvoiceTitle) {
+            lastInvoiceTitle.hidden = false;
+            lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
         }
         if (refreshButton) refreshButton.hidden = true;
     } else {
         if (emptyBlock) emptyBlock.hidden = true;
         if (cardBlock) cardBlock.hidden = false;
         if (cardDetails) cardDetails.hidden = false;
+        if (lastInvoiceTitle) lastInvoiceTitle.hidden = true;
         if (cardBlock) cardBlock.dataset.status = lastInvoice.status;
-        if (headingStatus) {
-            headingStatus.textContent = formatPaymentStatus(lastInvoice.status);
-            headingStatus.className = `status-pill ${statusTone(lastInvoice.status)}`;
-        }
         if (statusPill) {
             statusPill.textContent = formatPaymentStatus(lastInvoice.status);
             statusPill.className = `status-pill ${statusTone(lastInvoice.status)}`;
         }
+        if (detailStatus) {
+            detailStatus.textContent = formatPaymentStatus(lastInvoice.status);
+        }
         document.querySelector("[data-last-invoice-amount]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
+        document.querySelector("[data-last-invoice-renders]")?.replaceChildren(document.createTextNode(formatRenderCount(lastInvoice.credits)));
         document.querySelector("[data-last-invoice-amount-copy]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
         document.querySelector("[data-last-invoice-email]")?.replaceChildren(document.createTextNode(lastInvoice.email || "—"));
         document.querySelector("[data-last-invoice-credits]")?.replaceChildren(document.createTextNode(`${lastInvoice.credits} ${t("credits")}`));
-        document.querySelector("[data-last-invoice-state]")?.replaceChildren(document.createTextNode(formatPaymentStatus(lastInvoice.status)));
-        document.querySelector("[data-last-invoice-number]")?.replaceChildren(
-            document.createTextNode(
-                formatTemplate(
-                    lastInvoice.status === "paid"
-                        ? "wallet.paidInvoice"
-                        : lastInvoice.status === "failed" || lastInvoice.status === "cancelled" || lastInvoice.status === "expired"
-                          ? "wallet.failedInvoice"
-                          : "wallet.pendingInvoice",
-                    {
-                        invoiceId: String(lastInvoice.invoiceId).padStart(6, "0"),
-                        amount: formatRub(lastInvoice.amount),
-                    }
-                )
-            )
-        );
         document.querySelector("[data-last-invoice-number-copy]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
-        document.querySelector("[data-last-invoice-meta]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
+        document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
+        document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         if (refreshButton) refreshButton.hidden = lastInvoice.status !== "pending";
     }
 
@@ -6857,10 +7769,14 @@ function renderWallet() {
         history.innerHTML = historyState.visibleItems
             .map((item) => {
                 return `
-                    <div class="history-item payment-history-item">
-                        <div>
-                            <strong>${formatRub(item.amount)} / ${item.credits} ${t("credits")}</strong>
-                            <div class="meta">Robokassa — ${item.createdAt}</div>
+                        <div class="history-item payment-history-item">
+                        <div class="payment-history-main">
+                            <strong class="payment-history-amount">${formatRub(item.amount)}</strong>
+                            <span class="payment-history-renders">${formatRenderCount(item.credits)}</span>
+                            <div class="meta payment-history-meta">
+                                <span>${item.createdAt}</span>
+                                <span>#${String(item.invoiceId).padStart(6, "0")}</span>
+                            </div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -6895,26 +7811,60 @@ function renderWallet() {
 }
 
 function renderConfirmation() {
-    const credits = creditsForAmount(state.selectedAmount);
-    document.querySelector("[data-topup-summary-title]")?.replaceChildren(
-        document.createTextNode(getTopUpPackage(state.selectedAmount) ? t("wallet.summaryPackageTitle") : t("wallet.summaryCustomTitle"))
-    );
-    document.querySelector("[data-topup-summary-meta]")?.replaceChildren(
-        document.createTextNode(
-            formatTemplate("wallet.packageSummary", {
-                amount: formatRub(state.selectedAmount),
-                creditsLabel: formatRenderCount(credits),
-            })
-        )
-    );
+    const topUpPackage = getTopUpPackage(state.selectedAmount);
+    const credits = topUpPackage?.credits || 0;
+    const summaryTitle = document.querySelector("[data-topup-summary-title]");
+    const summaryMeta = document.querySelector("[data-topup-summary-meta]");
+    const summaryValues = document.querySelector("[data-topup-summary-values]");
+    const summaryAmount = document.querySelector("[data-topup-summary-amount]");
+    const summaryCredits = document.querySelector("[data-topup-summary-credits]");
+    const summaryDuration = document.querySelector("[data-topup-summary-duration]");
+    const summaryReceipt = document.querySelector("[data-topup-summary-receipt]");
+    const resetButton = document.querySelector("[data-reset-wizard]");
+    if (summaryTitle) summaryTitle.textContent = topUpPackage ? t("wallet.summaryPackageTitle") : t("wallet.summaryEmptyTitle");
+    if (summaryMeta) {
+        summaryMeta.hidden = Boolean(topUpPackage);
+        summaryMeta.textContent = t("wallet.summaryEmptyMeta");
+    }
+    if (summaryValues) {
+        summaryValues.hidden = !topUpPackage;
+    }
+    if (topUpPackage) {
+        if (summaryAmount) summaryAmount.textContent = formatRub(topUpPackage.amount);
+        if (summaryCredits) summaryCredits.textContent = formatRenderCount(credits);
+        if (summaryDuration) summaryDuration.textContent = t("wallet.packageDuration");
+    }
+    if (summaryReceipt) {
+        summaryReceipt.hidden = !topUpPackage;
+        summaryReceipt.textContent = topUpPackage
+            ? formatTemplate("wallet.receiptSummary", { email: state.email || "—" })
+            : "";
+    }
+    if (resetButton) resetButton.hidden = !topUpPackage;
     const payButton = document.querySelector("[data-pay-button]");
-    if (payButton) payButton.textContent = state.walletBusy ? t("wallet.openingPayment") : t("wallet.pay");
+    if (payButton) {
+        const validEmail = validFrontendEmail(state.email);
+        payButton.textContent = state.walletBusy
+            ? t("wallet.openingPayment")
+            : !topUpPackage
+                ? t("wallet.choosePackage")
+                : !validEmail
+                    ? t("wallet.enterEmail")
+                    : formatTemplate("wallet.paySelected", { amount: formatRub(topUpPackage.amount) });
+        payButton.disabled = Boolean(state.walletBusy || !topUpPackage || !validEmail);
+    }
 }
 
 function syncEmailInput() {
     const emailInput = document.querySelector("[data-topup-email]");
     if (emailInput && emailInput.value !== state.email) {
         emailInput.value = state.email;
+    }
+    if (emailInput) emailInput.toggleAttribute("aria-invalid", Boolean(state.walletEmailError));
+    const emailError = document.querySelector("[data-topup-email-error]");
+    if (emailError) {
+        emailError.hidden = !state.walletEmailError;
+        emailError.textContent = state.walletEmailError;
     }
 }
 
@@ -6925,7 +7875,11 @@ function escapeHtml(value) {
 }
 
 function hasFrontendAuth() {
-    return Boolean(getIdentitySearchParams().toString() || getWebsiteAuthToken());
+    return Boolean(
+        getIdentitySearchParams().toString()
+        || getWebsiteAuthToken()
+        || state.frontendAuthState?.protectedApiReady === true
+    );
 }
 
 function formatDateTime(value) {
@@ -7042,12 +7996,12 @@ function assetDownloadUrlForJob(job, kind) {
     const downloadUrl = job.assets[assetKey].download_url;
     if (!downloadUrl) return "";
     if (downloadUrl.startsWith("/")) {
-        return getWebsiteAuthToken()
+        return hasBearerFrontendAuth()
             ? apiUrl(downloadUrl)
             : apiUrl(downloadUrl, { includeIdentity: true });
     }
     if (canUseIdentityAssetUrls()) return withIdentityQuery(downloadUrl);
-    return getWebsiteAuthToken() ? downloadUrl : "";
+    return hasBearerFrontendAuth() ? downloadUrl : "";
 }
 
 function proxiedAssetUrl(asset) {
@@ -7056,7 +8010,7 @@ function proxiedAssetUrl(asset) {
     // Website auth lives in Authorization header, so direct <img src> or <a href>
     // cannot use protected asset endpoints. Those flows must go through fetch+blob.
     if (assetPath.startsWith("/")) {
-        if (getWebsiteAuthToken()) return "";
+        if (hasBearerFrontendAuth()) return "";
         return apiUrl(assetPath, { includeIdentity: true });
     }
     if (!canUseIdentityAssetUrls()) return "";
@@ -7090,7 +8044,7 @@ async function ensureAssetBlobUrl(job, kind) {
     if (!job?.job_id || kind !== "original") return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
-    if (!getWebsiteAuthToken()) return "";
+    if (!hasFrontendAuth()) return "";
     if (isAssetBlobLoading(job, kind)) return "";
 
     const sourceUrl = assetDownloadUrlForJob(job, kind);
@@ -7101,7 +8055,9 @@ async function ensureAssetBlobUrl(job, kind) {
     renderDashboard();
 
     try {
-        const response = await fetch(sourceUrl, { headers: withAuthHeaders() });
+        const response = job.assets?.car_original?.download_url?.startsWith("/")
+            ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
+            : await fetch(sourceUrl);
         if (!response.ok) throw new Error(await parseApiError(response));
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
@@ -7398,7 +8354,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
     renderRenders();
 
     try {
-        const response = await fetch(apiUrl(`/jobs/${jobId}/feedback`), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/feedback`), {
             method: deleting ? "DELETE" : "PUT",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(
@@ -7567,7 +8523,9 @@ async function repeatRenderWithSavedPhotos(jobId) {
     try {
         const fetchAsset = async (asset) => {
             const url = asset.download_url.startsWith("/") ? apiUrl(asset.download_url) : asset.download_url;
-            const response = await fetch(url, { headers: withAuthHeaders() });
+            const response = asset.download_url.startsWith("/")
+                ? await authenticatedFetch(url, { headers: withAuthHeaders() })
+                : await fetch(url);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
             return { blob, name: `${asset.kind}.jpg`, size: blob.size, type: blob.type || "image/jpeg" };
@@ -7662,7 +8620,7 @@ function mergeStatusIntoHistory(jobId, statusData) {
 }
 
 async function fetchJobStatusForHistory(jobId) {
-    const response = await fetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
+    const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     if (!response.ok) throw new Error(await parseApiError(response));
@@ -7703,6 +8661,7 @@ function renderDashboard() {
     const loading = document.querySelector("[data-dashboard-loading]");
     const auth = document.querySelector("[data-dashboard-auth]");
     const authInfo = document.querySelector("[data-dashboard-auth-info]");
+    const authInfoText = document.querySelector("[data-dashboard-auth-info-text]");
     const error = document.querySelector("[data-dashboard-error]");
     const errorText = document.querySelector("[data-dashboard-error-text]");
     const dashboardExpiryCard = document.querySelector("[data-dashboard-expiry]");
@@ -7727,8 +8686,13 @@ function renderDashboard() {
         Boolean(state.walletLoading && state.balance === null)
     );
     if (loading) loading.dataset.visible = String(state.walletLoading || state.renderHistoryLoading);
-    if (auth) auth.dataset.visible = String(!hasFrontendAuth());
-    if (authInfo) authInfo.dataset.visible = String(!hasFrontendAuth());
+    const frontendAuthenticated = isFrontendUserAuthenticated();
+    if (auth) auth.dataset.visible = String(!frontendAuthenticated);
+    if (authInfo) {
+        authInfo.hidden = !isSupabasePartialAuth();
+        authInfo.dataset.visible = String(isSupabasePartialAuth());
+    }
+    if (authInfoText) authInfoText.textContent = t("auth.partialAccess");
     if (error) error.dataset.visible = String(Boolean(state.walletMessageTone === "error" || state.renderHistoryError));
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
     if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
@@ -7862,7 +8826,7 @@ async function loadFitmentReturnContext(jobId) {
     if (!jobId || shouldUseDemoFitment(jobId) || state.fitmentContextLoadingByJob[jobId]) return;
     state.fitmentContextLoadingByJob[jobId] = true;
     try {
-        const response = await fetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) return;
@@ -7887,6 +8851,15 @@ async function loadRenderHistory(options = {}) {
 }
 
 async function requestRenderHistory({ silent = false } = {}) {
+    if (isSupabasePartialAuth()) {
+        state.renderHistoryLoading = false;
+        state.renderHistory = [];
+        state.renderHistoryError = "";
+        state.expandedJobId = "";
+        renderRenders();
+        renderDashboard();
+        return;
+    }
     if (!hasFrontendAuth()) {
         state.renderHistoryLoading = false;
         state.renderHistory = guestRenderHistory();
@@ -7941,7 +8914,7 @@ async function loadCabinet(options = {}) {
 
 async function requestCabinet({ silent = false } = {}) {
     const identity = getIdentitySearchParams();
-    if (!identity.toString() && !getWebsiteAuthToken()) {
+    if (!hasFrontendAuth()) {
         setWalletMessage("");
         renderWallet();
         renderDashboard();
@@ -7956,7 +8929,7 @@ async function requestCabinet({ silent = false } = {}) {
         setWalletLoading(false);
     }
     try {
-        const response = await fetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
+        const response = await authenticatedFetch(apiUrl("/payments/cabinet", { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) {
@@ -8000,12 +8973,7 @@ async function requestCabinet({ silent = false } = {}) {
             remainingCredits: Number(item.remaining_credits || 0),
             expiresAt: item.expires_at || "",
         }));
-        const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
-        if (rememberedEmail && !state.email) {
-            state.email = rememberedEmail;
-            syncEmailInput();
-            renderConfirmation();
-        }
+        syncReceiptEmailForAuth();
         const pendingMessage = getPendingWalletMessage(getLastInvoice());
         if (state.paymentReturnState === "success") {
             setWalletMessage(t("wallet.paymentSuccess"), "success");
@@ -8048,9 +9016,33 @@ function openPaymentUrl(url) {
     window.location.href = url;
 }
 
+function paymentReturnContext() {
+    const pathname = window.location.pathname.replace(/\/+$/u, "") || "/";
+    if (HAS_TG || pathname === "/t" || pathname.startsWith("/t/")) {
+        return { client_channel: "telegram", return_to: "/t/" };
+    }
+    return {
+        client_channel: "web",
+        return_to: safeApplicationReturnPath(window.location) || "/app",
+    };
+}
+
 async function createPayment() {
+    const topUpPackage = getTopUpPackage(state.selectedAmount);
+    if (!topUpPackage) {
+        setWalletMessage("");
+        renderConfirmation();
+        return;
+    }
+    if (!validFrontendEmail(state.email)) {
+        state.walletEmailError = t("wallet.invalidEmail");
+        syncEmailInput();
+        renderConfirmation();
+        document.querySelector("[data-topup-email]")?.focus();
+        return;
+    }
     const identity = getIdentityPayload();
-    if (!identity.init_data && !identity.telegram_user_id && !getWebsiteAuthToken()) {
+    if (!identity.init_data && !identity.telegram_user_id && !hasFrontendAuth()) {
         setWalletMessage("");
         renderWalletStatus();
         focusWalletAuthNotice();
@@ -8059,19 +9051,20 @@ async function createPayment() {
 
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
-    void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: normalizeTopUpAmount(state.selectedAmount) });
+    void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: topUpPackage.amount });
     try {
-        const response = await fetch(apiUrl("/payments/topups"), {
+        const response = await authenticatedFetch(apiUrl("/payments/topups"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
-                amount_rub: normalizeTopUpAmount(state.selectedAmount).toFixed(2),
+                amount_rub: topUpPackage.amount.toFixed(2),
                 email: state.email || null,
                 pricing_version: PRICING_VERSION,
                 source_screen: "cabinet",
+                ...paymentReturnContext(),
                 ...identity,
             }),
-        });
+        }, { retryOnAuth401: false });
         if (!response.ok) {
             const detail = await parseApiError(response);
             if (response.status === 403) {
@@ -8096,11 +9089,11 @@ function handlePaymentReturn() {
     state.paymentReturnState = paymentState || "";
     if (paymentState === "success") {
         setWalletMessage(t("wallet.paymentSuccess"), "success");
-        setView("wallet");
+        if (!state.applicationAuthRequired) setView("wallet");
     } else if (paymentState === "fail") {
         void trackEvent("payment_failed", { return_channel: "browser" });
         setWalletMessage(t("wallet.paymentFail"), "warning");
-        setView("wallet");
+        if (!state.applicationAuthRequired) setView("wallet");
     }
 }
 
@@ -8604,8 +9597,10 @@ async function downloadResult() {
     state.downloading = true;
     setDownloadButtonState({ disabled: true, text: t("actions.requestingDownload") });
     try {
-        if (isWebsiteAuthMode()) {
-            const response = await fetch(state.resultDownloadUrl, { headers: withAuthHeaders() });
+        if (isWebsiteAuthMode() || isSupabaseFrontendAuth()) {
+            const response = state.resultDownloadUrl.startsWith("/")
+                ? await authenticatedFetch(state.resultDownloadUrl, { headers: withAuthHeaders() })
+                : await fetch(state.resultDownloadUrl);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
@@ -8758,7 +9753,7 @@ async function resolveIdentity() {
     }
 
     try {
-        const resp = await fetch(apiUrl("/identity/resolve"), {
+        const resp = await authenticatedFetch(apiUrl("/identity/resolve"), {
             method: "POST",
             headers: withAuthHeaders(),
             body: formData,
@@ -8877,7 +9872,7 @@ async function submitJob() {
     if (identity.init_data) payload.init_data = identity.init_data;
     if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
     try {
-        const resp = await fetch(apiUrl("/jobs/from-assets"), {
+        const resp = await authenticatedFetch(apiUrl("/jobs/from-assets"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
@@ -8903,7 +9898,7 @@ async function submitJob() {
         await sleep(POLL_INTERVAL_MS);
         let statusData;
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
@@ -8952,7 +9947,7 @@ async function refreshExistingJobStatus() {
         setView("renders");
         return;
     }
-    const response = await fetch(apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }), {
+    const response = await authenticatedFetch(apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
     const data = await response.json().catch(() => ({}));
@@ -9040,10 +10035,7 @@ function bindEvents() {
     document.querySelector("[data-more-backdrop]")?.addEventListener("click", () => setMoreOpen(false));
 
     const websiteAuthButton = document.querySelector("[data-website-auth-button]");
-    websiteAuthButton?.addEventListener("click", () => {
-        if (state.websiteAuth) logoutWebsiteAuth();
-        else void loginWithTelegram();
-    });
+    websiteAuthButton?.addEventListener("click", handleWebsiteAuthAction);
     ["pointerdown", "mouseenter", "focus"].forEach((eventName) => {
         websiteAuthButton?.addEventListener(eventName, warmWebsiteLoginResources, { passive: true });
     });
@@ -9053,6 +10045,77 @@ function bindEvents() {
         else void loginWithTelegram();
     });
     document.querySelector("[data-dashboard-auth-login]")?.addEventListener("click", () => {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    });
+    document.querySelector("[data-application-auth-gate-login]")?.addEventListener("click", () => {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    });
+    document.querySelector("[data-auth-close]")?.addEventListener("click", closeAuthDialog);
+    document.querySelector("[data-auth-continue]")?.addEventListener("click", continueWithRestoredSession);
+    document.querySelector("[data-auth-switch]")?.addEventListener("click", switchFromRestoredSession);
+    document.querySelector("[data-auth-dialog]")?.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) closeAuthDialog();
+    });
+    document.querySelector("[data-logout-close]")?.addEventListener("click", closeLogoutDialog);
+    document.querySelector("[data-logout-cancel]")?.addEventListener("click", closeLogoutDialog);
+    document.querySelector("[data-logout-confirm]")?.addEventListener("click", () => {
+        void confirmLogout();
+    });
+    document.querySelector("[data-logout-dialog]")?.addEventListener("click", (event) => {
+        if (event.target === event.currentTarget) closeLogoutDialog();
+    });
+    document.querySelector("[data-auth-email]")?.addEventListener("input", (event) => {
+        state.authDialogEmail = event.target.value.trim();
+        state.authDialogError = "";
+        state.authDialogEmailError = "";
+        renderAuthDialog();
+    });
+    document.querySelector("[data-auth-otp]")?.addEventListener("input", (event) => {
+        state.authDialogOtp = event.target.value.replace(/\D+/gu, "").slice(0, 6);
+        state.authDialogOtpError = "";
+        event.target.value = state.authDialogOtp;
+        renderAuthDialog();
+    });
+    document.querySelector("[data-auth-email-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void requestFrontendEmailOtp();
+    });
+    document.querySelector("[data-auth-otp-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void verifyFrontendEmailOtp();
+    });
+    document.querySelector("[data-auth-resend]")?.addEventListener("click", () => {
+        void requestFrontendEmailOtp({ resend: true });
+    });
+    document.querySelector("[data-auth-change-email]")?.addEventListener("click", () => {
+        state.authDialogChangeEmailOriginal = state.authDialogEmail;
+        state.authDialogOtpBeforeChange = state.authDialogOtp;
+        state.authDialogStep = "change-email";
+        state.authDialogOtp = "";
+        state.authDialogError = "";
+        state.authDialogEmailError = "";
+        state.authDialogOtpError = "";
+        resetAuthDialogTurnstile();
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
+    });
+    document.querySelector("[data-auth-back-to-otp]")?.addEventListener("click", () => {
+        state.authDialogStep = "otp";
+        state.authDialogEmail = state.authDialogChangeEmailOriginal;
+        state.authDialogOtp = state.authDialogOtpBeforeChange;
+        state.authDialogChangeEmailOriginal = "";
+        state.authDialogOtpBeforeChange = "";
+        state.authDialogEmailError = "";
+        state.authDialogOtpError = "";
+        setAuthDialogMessage("");
+        renderAuthDialog();
+        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
+    });
+    document.querySelector("[data-auth-telegram]")?.addEventListener("click", () => {
+        closeAuthDialog();
         void loginWithTelegram();
     });
     document.querySelector("[data-identity-error-retry]")?.addEventListener("click", () => {
@@ -9114,7 +10177,16 @@ function bindEvents() {
 
     document.querySelector("[data-topup-email]")?.addEventListener("input", (event) => {
         state.email = event.target.value.trim();
+        state.receiptEmailTouched = true;
+        state.walletEmailError = state.email && !validFrontendEmail(state.email)
+            ? t("wallet.invalidEmail")
+            : "";
+        syncEmailInput();
         renderConfirmation();
+    });
+
+    document.querySelector("[data-wallet-topup]")?.addEventListener("click", () => {
+        document.querySelector("[data-topup-amount]")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
@@ -9138,11 +10210,10 @@ function bindEvents() {
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
         state.paymentStep = 1;
-        state.selectedAmount = 500;
-        state.email = "";
-        const input = document.querySelector("[data-topup-email]");
-        if (input) input.value = "";
-        setSelectedAmount(state.selectedAmount);
+        setSelectedAmount(null);
+        state.receiptEmailTouched = false;
+        state.walletEmailError = "";
+        syncReceiptEmailForAuth();
         renderConfirmation();
         setWalletMessage("");
         setWalletLoading(false);
@@ -9642,17 +10713,33 @@ function bindEvents() {
     }, true);
 }
 
+function initializeFrontendAuthBridge() {
+    const controller = frontendAuthController();
+    if (!controller) return Promise.resolve();
+    controller.configure({
+        isTelegramMiniApp: () => HAS_TG && Boolean(tg?.initData),
+        hasLegacyWebsiteAuth: () => Boolean(getWebsiteAuthToken()),
+        getLegacyWebsiteAuthToken: getWebsiteAuthToken,
+        legacySignOut: logoutWebsiteAuth,
+    });
+    controller.subscribe(handleFrontendAuthState);
+    return controller.initialize();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     void trackEvent("app_opened", { surface: HAS_TG ? "telegram" : "website" });
     if (HAS_TG && tg?.initData) void trackEvent("auth_completed", { auth_channel: "mini_app" });
     void checkCurrentBuild();
     applyTranslations();
     initTelegram();
+    initializeApplicationRoute();
+    syncApplicationAuthWall();
     updateWebsiteAuthUi();
     bindEvents();
     observeUiCopyRule();
     warmWebsiteLoginResources();
     handlePaymentReturn();
+    const authReady = initializeFrontendAuthBridge();
 
     syncEmailInput();
 
@@ -9660,6 +10747,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderWallet();
     renderRenders();
     renderDashboard();
+    renderAuthDialog();
     updateTopbarCaption();
     setMenuOpen(false);
     setMoreOpen(false);
@@ -9672,7 +10760,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!document.hidden && state.view === "renders") {
             scheduleRenderHistoryPolling();
         }
-        if (!document.hidden) void checkCurrentBuild();
         if (document.hidden) {
             clearRenderHistoryPolling();
         }
@@ -9680,6 +10767,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("pagehide", () => {
         if (state.view === "fitment") persistFitmentTransientDraft("navigation");
     });
+
+    renderIdentityFlow();
+    refreshButtonsForCurrentView();
+    await authReady;
+    if (state.applicationAuthRequired) {
+        syncApplicationAuthWall();
+        if (!isApplicationAuthSessionReady()) {
+            clearApplicationSessionState();
+            renderApplicationAuthGate();
+            return;
+        }
+        await bootstrapAuthenticatedApplication();
+        return;
+    }
 
     await hydrateFilesFromDraft();
     renderIdentityFlow();

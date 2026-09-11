@@ -11,14 +11,20 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from src import db
-from src.auth import resolve_telegram_auth
-from src.users_service import ensure_user
+from src.auth_principal import require_auth_principal
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 EventName = Literal[
     "app_opened",
     "auth_completed",
+    "auth_started",
+    "otp_requested",
+    "otp_verified",
+    "session_restored",
+    "session_refresh_failed",
+    "auth_failed",
+    "auth_signed_out",
     "upload_started",
     "upload_completed",
     "render_started",
@@ -86,23 +92,24 @@ async def ingest_event(
     request: AnalyticsEventRequest,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    user_id = None
-    if authorization or request.init_data or request.telegram_user_id is not None:
-        auth = resolve_telegram_auth(
-            init_data=request.init_data or "",
-            telegram_user_id=request.telegram_user_id,
-            authorization=authorization,
-            auth_name="analytics",
-        )
-    else:
-        auth = None
+    has_credentials = bool(
+        authorization or request.init_data or request.telegram_user_id is not None
+    )
     touch = request.attribution.model_dump(mode="json", exclude_none=True)
     properties = _clean_properties(request.properties)
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            if auth:
-                user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            user_id = None
+            if has_credentials:
+                principal = await require_auth_principal(
+                    conn,
+                    init_data=request.init_data,
+                    telegram_user_id=request.telegram_user_id,
+                    authorization=authorization,
+                    auth_name="analytics",
+                )
+                user_id = principal.user_id
             await conn.execute(
                 """
                 INSERT INTO analytics_visitors (

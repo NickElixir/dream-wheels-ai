@@ -1,0 +1,2299 @@
+{
+  "dataset_version": 1,
+  "dataset_base_commit": "e5b93c1b49268e02f64a1ec8271055d9c8fc916b",
+  "implementation_commit": "0c889eaa66d1be46a4ea701d500639fdc978fa58",
+  "benchmark_timestamp": "2026-09-05T17:55:38Z",
+  "execution_method": {
+    "adapter": "src.yandex_market_adapter.resolve_yandex_product_url_with_diagnostics",
+    "resolver_root": "/Users/nikolai/.codex/.chatgpt-projects/g-p-697289e1bcf48191bf9363551cb3983c/auth-01-worktree",
+    "network": "direct fixed-profile HTTP; no browser cookies, proxy, session, account state, or arbitrary endpoint",
+    "runtime_behavior_changed": true,
+    "request_profile": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Accept-Encoding": "gzip, deflate",
+      "Upgrade-Insecure-Requests": "1",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36"
+    },
+    "body_limit_bytes": 2097152,
+    "secondary_request": true
+  },
+  "observations": [
+    {
+      "case_id": "ym-001",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/ganz-disk-shtampovannyy-r15-6j-4x108651-et27-silver-grn15046/5882809305",
+      "ground_truth": {
+        "title": "GANZ Диск штампованный R15 6J 4x108/65.1 ET27 Silver GRN15046",
+        "brand": "GANZ",
+        "model": "GRN15046",
+        "sku_or_article": "GRN15046",
+        "diameter": 15,
+        "width": 6.0,
+        "pcd": "4x108",
+        "et": 27,
+        "dia": 65.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "ET and DIA confirmed in the expanded characteristics section."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1961467,
+        "redirect_count": 0,
+        "duration_ms": 614.58,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/ganz-disk-shtampovannyy-r15-6j-4x108651-et27-silver-grn15046/5882809305",
+        "values": {
+          "brand": "GANZ",
+          "bolt_count": 4,
+          "pcd_mm": 108.0,
+          "offset_et_mm": 27.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "GANZ",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 4,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 108.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 27.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "4e3c6561b468e58c07adb10d57e40afd37b08ce37fa1c9d1521dce2c597c0f18"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "GANZ",
+            "actual": "GANZ"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "GRN15046",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "GRN15046",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 15,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 6.0,
+            "actual": null
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "4x108",
+            "actual": "4x108"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 27,
+            "actual": 27.0
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 65.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-002",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-avtomobilnyy-khomen-wheels-1723-toyota-fortuner--toyota-hilux-8x17-6x1397-et30-1061-black/6183243215",
+      "ground_truth": {
+        "title": "Диск автомобильный Khomen Wheels 1723 Toyota Fortuner / Toyota Hilux 8x17 6x139,7 ET30 106,1 Black",
+        "brand": "Khomen Wheels",
+        "model": "1723",
+        "sku_or_article": null,
+        "diameter": 17,
+        "width": 8.0,
+        "pcd": "6x139.7",
+        "et": 30,
+        "dia": 106.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Vehicle names and finish are part of the current title; recommendations include other Khomen SKUs and are excluded."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 14487,
+        "redirect_count": 3,
+        "duration_ms": 187.14,
+        "useful_document": false,
+        "current_product_anchored": false,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": true
+      },
+      "resolver": {
+        "final_url": "https://market.yandex.ru/showcaptcha?cc=1&form-fb-hint=2.9&mt=A0D4D679C9FD021333A6DACE8D40BBF8DCFAE1F16ED24518643AF3EE8D202063EF9D65CA357BDE80DB7EC5D825AC1516027A89E6E3DF71E11AD4904CFD861CCE79281D1CA9A90E3A6A71A947B3C1BAA43C6C7E092C9FD885EBACD468DB624B350B330157745EB7D2DE38030653BE217F542DF56CB00DA4F703F39434619DFA9451C0469C81FFBA8A5B8FA0CE225323CA7D2BE6DC0D78479FF8321FEAE2223393803D8FD3D9558E9E5961FFB7812D4C766CD4625CE6B0BFD25984DA40A6B6FE16424AC925A9AD20DC18589DE46D7200E3E3B4240B1B341986AB724C46DD62C6E8F39798F5C5AB0054846A92660A90BC854619&retpath=aHR0cHM6Ly9tYXJrZXQueWFuZGV4LnJ1L2NhcmQvZGlzay1hdnRvbW9iaWxueXkta2hvbWVuLXdoZWVscy0xNzIzLXRveW90YS1mb3J0dW5lci0tdG95b3RhLWhpbHV4LTh4MTctNngxMzk3LWV0MzAtMTA2MS1ibGFjay82MTgzMjQzMjE1P3RhcmdldEJ1c2luZXNzVHlwZT1tMmI%2C_317ebcd25255c2983aeb428734ece3a4&t=2%252F1788630932%252F3167153f479a022961d04d2ef02a77ea&u=9352525535697352997&s=939fe226e367bc9487258a9060af3ede",
+        "values": {},
+        "candidates": [],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "70e69d1f1efa145455843341675289f90b7a8a634dad39d3d846e1f1c93bb757"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "missing_extraction",
+            "expected": "Khomen Wheels",
+            "actual": null
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "1723",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 17,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 8.0,
+            "actual": null
+          },
+          "pcd": {
+            "status": "missing_extraction",
+            "expected": "6x139.7",
+            "actual": null
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 30,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 106.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "brand",
+          "model",
+          "diameter",
+          "width",
+          "pcd",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "JS_ONLY",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-003",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-kolesnyy-cross-street-cr-26-60x15-4x100-dia601-et37-tsvet-mb-matovyy-chernyy/5728803701",
+      "ground_truth": {
+        "title": "Диск колесный Cross Street CR-26 6,0x15 4x100 Dia60.1 ET37 цвет MB (матовый черный)",
+        "brand": "Cross Street",
+        "model": "CR-26",
+        "sku_or_article": "CR-26",
+        "diameter": 15,
+        "width": 6.0,
+        "pcd": "4x100",
+        "et": 37,
+        "dia": 60.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Current card identifies a single wheel; nearby products are not variants."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1889726,
+        "redirect_count": 0,
+        "duration_ms": 669.56,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/disk-kolesnyy-cross-street-cr-26-60x15-4x100-dia601-et37-tsvet-mb-matovyy-chernyy/5728803701",
+        "values": {
+          "brand": "Cross Street",
+          "bolt_count": 4,
+          "pcd_mm": 100.0,
+          "center_bore_mm": 60.1,
+          "wheel_diameter_in": 15.0,
+          "wheel_width_j": 6.0,
+          "offset_et_mm": 37.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "Cross Street",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 4,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 100.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "center_bore_mm",
+            "value": 60.1,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 15.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 6.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 37.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "9a5ea095159c58b8aebaaf1cff9d7e8b950a8ddb73e8beebbe3164b1875d7eca"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "Cross Street",
+            "actual": "Cross Street"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "CR-26",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "CR-26",
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 15,
+            "actual": 15.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 6.0,
+            "actual": 6.0
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "4x100",
+            "actual": "4x100"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 37,
+            "actual": 37.0
+          },
+          "dia": {
+            "status": "correct",
+            "expected": 60.1,
+            "actual": 60.1
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-004",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-kolesa-gazel-gazel-biznes-gazel-next-usilennyy-1500kg-r16-v-firm-kartonnoy-korobke/4628685295",
+      "ground_truth": {
+        "title": "Pravt Диск колеса для а/м Г-3302, Бизнес, Некст усиленный 1500кг (R16) (в фирм. картонной коробке) PR.3302-3101015-1500",
+        "brand": "PRAVT",
+        "model": null,
+        "sku_or_article": "PR.3302-3101015-1500",
+        "diameter": 16,
+        "width": 5.5,
+        "pcd": "6x170",
+        "et": 50,
+        "dia": 110.0,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "ET50 and DIA110 were only visible after opening the full characteristics section; they are not guessed from recommendations."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 14472,
+        "redirect_count": 3,
+        "duration_ms": 169.82,
+        "useful_document": false,
+        "current_product_anchored": false,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": true
+      },
+      "resolver": {
+        "final_url": "https://market.yandex.ru/showcaptcha?cc=1&form-fb-hint=2.9&mt=E3A9B446B88349AE70DADBD098E52ED50BC660F63826F1A312828B2B87386E30A659D38EBF98454C442643D523398DC4C8EF197DF4841F2DC796C937A1FDA7CBC2D814F0BA457DFD8429A77EFEEC095F92BD7F79481C142944F8D585C906126533C4AAD3F7526563D82A5BE3F18EAB9D9C6CC202AAFE320AB12CB041A78249D2EED5C8293C2AE454D618376988D33EF441ADD87DACCAEA62569E7EC99BD00EAAFE955472CA9EE1E9510B236E85F5A5D5BBFA602236A484A84607728A5AFFDB1D563A6B18060622DE76A022F1E87073D3B849FAA6D44CD353AFB4C28B9EF64CA22562BC1262D91D1D61584473C6B4A04C18E6&retpath=aHR0cHM6Ly9tYXJrZXQueWFuZGV4LnJ1L2NhcmQvZGlzay1rb2xlc2EtZ2F6ZWwtZ2F6ZWwtYml6bmVzLWdhemVsLW5leHQtdXNpbGVubnl5LTE1MDBrZy1yMTYtdi1maXJtLWthcnRvbm5veS1rb3JvYmtlLzQ2Mjg2ODUyOTU_dGFyZ2V0QnVzaW5lc3NUeXBlPW0yYg%2C%2C_282649e76edd393f5048d29f75ec3104&t=2%252F1788630933%252Fcd86f279e77cbb7da5febff19f1a45a8&u=9352525592001689986&s=6716240081b91e8f33a69e2d46c20714",
+        "values": {},
+        "candidates": [],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "52efde8fa6bdcc62573ee0792dacdeebe81199bececdf22fd48cc0767ed04c01"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "missing_extraction",
+            "expected": "PRAVT",
+            "actual": null
+          },
+          "model": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "PR.3302-3101015-1500",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 16,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 5.5,
+            "actual": null
+          },
+          "pcd": {
+            "status": "missing_extraction",
+            "expected": "6x170",
+            "actual": null
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 50,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 110.0,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "brand",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "pcd",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "JS_ONLY",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-005",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-usilennyy-vaz-niva-stalnoy-chernyy-5x1397-65xr15-d985-et35-treug/102555834550",
+      "ground_truth": {
+        "title": "Диск усиленный ВАЗ нива стальной черный 5x139,7 6,5xR15 d98,5 ET+35 (треуг.)",
+        "brand": "OFF-ROAD Wheels",
+        "model": null,
+        "sku_or_article": null,
+        "diameter": 15,
+        "width": 6.5,
+        "pcd": "5x139.7",
+        "et": 35,
+        "dia": 98.5,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "OFF-ROAD Wheels is the expanded-card brand; title uses the vehicle/application description."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 2097152,
+        "redirect_count": 0,
+        "duration_ms": 736.86,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": true,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/disk-usilennyy-vaz-niva-stalnoy-chernyy-5x1397-65xr15-d985-et35-treug/102555834550",
+        "values": {
+          "brand": "OFF-ROAD Wheels",
+          "bolt_count": 5,
+          "pcd_mm": 139.7,
+          "center_bore_mm": 98.5,
+          "wheel_diameter_in": 15.0,
+          "wheel_width_j": 6.5,
+          "offset_et_mm": 35.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "OFF-ROAD Wheels",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 139.7,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "center_bore_mm",
+            "value": 98.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 15.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 6.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 35.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "784781bf109c42c443ecee059e186c48928761f21d679705a144343178379538"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "OFF-ROAD Wheels",
+            "actual": "OFF-ROAD Wheels"
+          },
+          "model": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 15,
+            "actual": 15.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 6.5,
+            "actual": 6.5
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x139.7",
+            "actual": "5x139.7"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 35,
+            "actual": 35.0
+          },
+          "dia": {
+            "status": "correct",
+            "expected": 98.5,
+            "actual": 98.5
+          }
+        },
+        "missing_fields": [],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "SUPPORTED",
+      "manual_fallback_applicable": false
+    },
+    {
+      "case_id": "ym-006",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-avtomobilnyy-ifree-token-65x17-5x108-et33-601-blek-dzhek/5196789737",
+      "ground_truth": {
+        "title": "Диск автомобильный iFree Uno Токен 6,5x17 5x108 ET33 60,1 Блэк джек",
+        "brand": "i Free",
+        "model": "Uno Токен",
+        "sku_or_article": null,
+        "diameter": 17,
+        "width": 6.5,
+        "pcd": "5x108",
+        "et": 33,
+        "dia": 60.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Unusual brand spacing is preserved exactly as displayed in the characteristics table."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1993137,
+        "redirect_count": 0,
+        "duration_ms": 699.67,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/disk-avtomobilnyy-ifree-token-65x17-5x108-et33-601-blek-dzhek/5196789737",
+        "values": {
+          "brand": "i Free",
+          "bolt_count": 5,
+          "pcd_mm": 108.0,
+          "wheel_diameter_in": 17.0,
+          "wheel_width_j": 6.5,
+          "offset_et_mm": 33.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "i Free",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 108.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 17.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 6.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 33.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "6e9b4ddab987223064c0e9c31c88002ede76e2f6074a12054e15c42e01f368f5"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "i Free",
+            "actual": "i Free"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "Uno Токен",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 17,
+            "actual": 17.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 6.5,
+            "actual": 6.5
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x108",
+            "actual": "5x108"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 33,
+            "actual": 33.0
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 60.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "model",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-007",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/diski-legkovyye-lityye-7517-61397-et25-h1061-rst-r107-bhtsvet/4823166178",
+      "ground_truth": {
+        "title": "Диски легковые литые 7.5*17 6*139.7 et25 h106.1 RST R107 BH(цвет)",
+        "brand": "RST",
+        "model": "R107",
+        "sku_or_article": "R107",
+        "diameter": 17,
+        "width": 7.5,
+        "pcd": "6x139.7",
+        "et": 25,
+        "dia": 106.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Color suffix BH is retained in title; card is a current product, not a recommendation."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 14397,
+        "redirect_count": 3,
+        "duration_ms": 275.27,
+        "useful_document": false,
+        "current_product_anchored": false,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": true
+      },
+      "resolver": {
+        "final_url": "https://market.yandex.ru/showcaptcha?cc=1&form-fb-hint=2.9&mt=D180634A32F063D06F8BF0BA8C959911CB55FC3AA73F5F804A528D2C2E94A8C7D6AB0352E173D4A7E1402AB32D6ACAAF17EB111B76F647F5995E784FD44485942D44DFE1904D28FE1CF855A0A584C008A8DD60A3D2B6D02E5579143DD0B6B31C3FE7E8A7B794AB3FFE605C7621AAA14CA07468A15070ECB04343CAED9AD88D3C995C458013AD82985A6BAE71DBD89AAE5A76D1F1F01964CE287BF50457FD9E73745B8C7515BF7B89A476BC14C98963E6FCFDED6A85FBA216BC150C986E99BE6EF6D706FAF741B62712DE38AE13AF0CE83C6B3E52063B7611AA13CB5B1FC26DBDD017815B75AE28C58411AD66E2950935A6F5&retpath=aHR0cHM6Ly9tYXJrZXQueWFuZGV4LnJ1L2NhcmQvZGlza2ktbGVna292eXllLWxpdHl5ZS03NTE3LTYxMzk3LWV0MjUtaDEwNjEtcnN0LXIxMDctYmh0c3ZldC80ODIzMTY2MTc4P3RhcmdldEJ1c2luZXNzVHlwZT1tMmI%2C_0e756165a2708356d39c0686837166c6&t=2%252F1788630934%252F174c8e044c71b593b72e12f49d2364e6&u=9352525700449614307&s=5545ca3f422fdaa211c6a36982bedfe0",
+        "values": {},
+        "candidates": [],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "aa24ca8db67d4c457cecf4ed063704c601834357c85ce6566c9df98653dc16aa"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "missing_extraction",
+            "expected": "RST",
+            "actual": null
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "R107",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "R107",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 17,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 7.5,
+            "actual": null
+          },
+          "pcd": {
+            "status": "missing_extraction",
+            "expected": "6x139.7",
+            "actual": null
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 25,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 106.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "brand",
+          "model",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "pcd",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "JS_ONLY",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-008",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/kolesnyy-disk-magnetto-14003-55xr14-4x98-et35-dia586/102227200711",
+      "ground_truth": {
+        "title": "14003 R14x5.5 4x98 ET35 CB58.6 Black",
+        "brand": "Magnetto Wheels",
+        "model": "14003",
+        "sku_or_article": "14003",
+        "diameter": 14,
+        "width": 5.5,
+        "pcd": "4x98",
+        "et": 35,
+        "dia": 58.6,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "ET/DIA are unambiguous in the current title, while the expanded table exposes brand and stamped type."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 14382,
+        "redirect_count": 3,
+        "duration_ms": 284.11,
+        "useful_document": false,
+        "current_product_anchored": false,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": true
+      },
+      "resolver": {
+        "final_url": "https://market.yandex.ru/showcaptcha?cc=1&form-fb-hint=2.9&mt=19FE4BB8C4384E21432B9754BEF94CF667261166F0D35EE6689F5CE5D8B64BD8FC2FC53C1879CBAF36918EE9A983DED82915D2604D6DCC9D840614378AC477574F7CBE390AD9EDE7BE9235DC4370084DE50E593C3E36B534DA8C628121C87E10DC7D7436A1F29C8052F10DBEC523B3754DDD5E1DFC49FFEE18EC15E43E46C677DF2FD96E01F6E007284687A908D37B5689537CBF53DE033DEBD83000840E61A2E3C2902CE6072E6875E7F7F7865440D84E31F0A07D4BF3F8DD8A13314F6F50ECE7E3D34E4C93F1ADF7CF98A36CFC8ED2C0DB20E9B760F3216CC8BEDDAC0004D311586CDEF102AC751CA1FD09858F6692FE16&retpath=aHR0cHM6Ly9tYXJrZXQueWFuZGV4LnJ1L2NhcmQva29sZXNueXktZGlzay1tYWduZXR0by0xNDAwMy01NXhyMTQtNHg5OC1ldDM1LWRpYTU4Ni8xMDIyMjcyMDA3MTE_dGFyZ2V0QnVzaW5lc3NUeXBlPW0yYg%2C%2C_01c5274445d4939c7d0d2abfa8400638&t=2%252F1788630934%252F4a4c3cf9c569aba02c305de02601f643&u=9352525718973532401&s=8b70bfb2c770a7ba4f4c8bb7f07955c6",
+        "values": {},
+        "candidates": [],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "499f4d1a35581a7496a49c3db303ce39487ba5cd6f33141ebd62cba65923fcd2"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "missing_extraction",
+            "expected": "Magnetto Wheels",
+            "actual": null
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "14003",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "14003",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 14,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 5.5,
+            "actual": null
+          },
+          "pcd": {
+            "status": "missing_extraction",
+            "expected": "4x98",
+            "actual": null
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 35,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 58.6,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "brand",
+          "model",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "pcd",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "JS_ONLY",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-009",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/avtodisk-fm-032-55j13-4100-et38-dia731-hb/6063078285",
+      "ground_truth": {
+        "title": "Автодиск FM 032 5,5J*13 4*100 ET38 DIA73,1 HB",
+        "brand": "FM",
+        "model": "032",
+        "sku_or_article": "032",
+        "diameter": 13,
+        "width": 5.5,
+        "pcd": "4x100",
+        "et": 38,
+        "dia": 73.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Asterisk notation is preserved as observed; expanded characteristics confirm ET/DIA."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 14335,
+        "redirect_count": 3,
+        "duration_ms": 229.88,
+        "useful_document": false,
+        "current_product_anchored": false,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": true
+      },
+      "resolver": {
+        "final_url": "https://market.yandex.ru/showcaptcha?cc=1&form-fb-hint=2.9&mt=4871E554F5C9166ACBE5D037305D9FFB0701BCCCE0F1B1DC24399DE4663C2DB504E41FC28463DF0685933C11046462F83E6B85B7E988B61BBCA695E3C8DAEDD3FD3A2114AEEFAEAACE8D936281CB45F496FF1E26FF38FBF62EEF2E7C1314955A4D0F26FC6A65AD5347E5BA20452C9D8F8BF61699F907975352DCDE77906290AA478584AADCDAE6A5BF373C57B2B16876FF193EDF6E26AE31EF0DFB0349EE47FB66DF94363B0E51741AC824D1EF63FDA1540CE36BEB3059FF26A6575F67C2AC71F9BF25D936F8F55A2F5154FFE90C63552F7CD86D51F55FACDA39627076FAD8A5C24E0FA50416D95A69842AB9CC63CA98EE9C&retpath=aHR0cHM6Ly9tYXJrZXQueWFuZGV4LnJ1L2NhcmQvYXZ0b2Rpc2stZm0tMDMyLTU1ajEzLTQxMDAtZXQzOC1kaWE3MzEtaGIvNjA2MzA3ODI4NT90YXJnZXRCdXNpbmVzc1R5cGU9bTJi_2f90d9e29fbc984c57b6a2fc851fef78&t=2%252F1788630935%252Fb7182ec5de58fd10789a12ed2b25bc84&u=9352525740312909109&s=fe7a1dccddb1217af2900c43bac709ac",
+        "values": {},
+        "candidates": [],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "4bac2c28ca518e6208a107c35a6af2a72b23cffd41ab4d7df4058f5952d9ff2b"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "missing_extraction",
+            "expected": "FM",
+            "actual": null
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "032",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "032",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 13,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 5.5,
+            "actual": null
+          },
+          "pcd": {
+            "status": "missing_extraction",
+            "expected": "4x100",
+            "actual": null
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 38,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 73.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "brand",
+          "model",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "pcd",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "JS_ONLY",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-010",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-usilennyy-suzuki-jimny-stalnoy-chernyy-5x1397-55xr16-d1081-et5-treug-melkiy/4558433610",
+      "ground_truth": {
+        "title": "Диск усиленный Suzuki Jimny стальной черный 5x139,7 5,5xR16 d108,1 ET+5 (треуг. мелкий)",
+        "brand": "OFF-ROAD Wheels",
+        "model": null,
+        "sku_or_article": null,
+        "diameter": 16,
+        "width": 5.5,
+        "pcd": "5x139.7",
+        "et": 5,
+        "dia": 108.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Plus sign in ET+5 is normalized to numeric 5 only in the benchmark reference."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 2003995,
+        "redirect_count": 0,
+        "duration_ms": 683.98,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/disk-usilennyy-suzuki-jimny-stalnoy-chernyy-5x1397-55xr16-d1081-et5-treug-melkiy/4558433610",
+        "values": {
+          "brand": "OFF-ROAD Wheels",
+          "bolt_count": 5,
+          "pcd_mm": 139.7,
+          "center_bore_mm": 108.1,
+          "wheel_diameter_in": 16.0,
+          "wheel_width_j": 5.5,
+          "offset_et_mm": 5.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "OFF-ROAD Wheels",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 139.7,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "center_bore_mm",
+            "value": 108.1,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 16.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 5.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 5.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "ac1cec7d223f0c37f429df8a7affbea73ae0f50369bbbd5fb8f30d5237380fb0"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "OFF-ROAD Wheels",
+            "actual": "OFF-ROAD Wheels"
+          },
+          "model": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "field_not_present_on_page",
+            "expected": null,
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 16,
+            "actual": 16.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 5.5,
+            "actual": 5.5
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x139.7",
+            "actual": "5x139.7"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 5,
+            "actual": 5.0
+          },
+          "dia": {
+            "status": "correct",
+            "expected": 108.1,
+            "actual": 108.1
+          }
+        },
+        "missing_fields": [],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "SUPPORTED",
+      "manual_fallback_applicable": false
+    },
+    {
+      "case_id": "ym-011",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/diski-rst-r015-rio-solaris-60x15-4x100-d541-et48-tsvet-bl-chernyy-glyantsevyy/103737426247",
+      "ground_truth": {
+        "title": "Диск колесный RST R015 (Rio, Solaris) 6,0x15 4x100 Dia54.1 ET48 цвет BL (черный глянцевый)",
+        "brand": "RST",
+        "model": "R015",
+        "sku_or_article": "R015",
+        "diameter": 15,
+        "width": 6.0,
+        "pcd": "4x100",
+        "et": 48,
+        "dia": 54.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Vehicle application is part of the current title, not a fitment assertion."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1973505,
+        "redirect_count": 0,
+        "duration_ms": 670.4,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/diski-rst-r015-rio-solaris-60x15-4x100-d541-et48-tsvet-bl-chernyy-glyantsevyy/103737426247",
+        "values": {
+          "brand": "RST",
+          "bolt_count": 4,
+          "pcd_mm": 100.0,
+          "center_bore_mm": 54.1,
+          "wheel_diameter_in": 15.0,
+          "wheel_width_j": 6.0,
+          "offset_et_mm": 48.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "RST",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 4,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 100.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "center_bore_mm",
+            "value": 54.1,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 15.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 6.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 48.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "fa8db28ed6728fad389be54189bd1c866b1470967445d57989758eb746066839"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "RST",
+            "actual": "RST"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "R015",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "R015",
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 15,
+            "actual": 15.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 6.0,
+            "actual": 6.0
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "4x100",
+            "actual": "4x100"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 48,
+            "actual": 48.0
+          },
+          "dia": {
+            "status": "correct",
+            "expected": 54.1,
+            "actual": 54.1
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-012",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/diski-trebl-r-1752-santa-fe-75x18-5x1143-d671-et50-tsvet-black/4416110722",
+      "ground_truth": {
+        "title": "Диск колесный Trebl R-1752 (Santa Fe) 7,5x18 5x114,3 Dia67.1 ET50 цвет Black",
+        "brand": "Trebl",
+        "model": "R-1752",
+        "sku_or_article": "R-1752",
+        "diameter": 18,
+        "width": 7.5,
+        "pcd": "5x114.3",
+        "et": 50,
+        "dia": 67.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Steel type confirmed in expanded characteristics; no recommendation was used."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1817885,
+        "redirect_count": 0,
+        "duration_ms": 473.34,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/diski-trebl-r-1752-santa-fe-75x18-5x1143-d671-et50-tsvet-black/4416110722",
+        "values": {
+          "brand": "Trebl",
+          "bolt_count": 5,
+          "pcd_mm": 114.3,
+          "center_bore_mm": 67.1,
+          "wheel_diameter_in": 18.0,
+          "wheel_width_j": 7.5,
+          "offset_et_mm": 50.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "Trebl",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 114.3,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "center_bore_mm",
+            "value": 67.1,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 18.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 7.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 50.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "2a0cbc15e03d5c4f4721b92aa437c8bb1d2dc5286ca5ea1050bada0edbc2f09f"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "Trebl",
+            "actual": "Trebl"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "R-1752",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "R-1752",
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 18,
+            "actual": 18.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 7.5,
+            "actual": 7.5
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x114.3",
+            "actual": "5x114.3"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 50,
+            "actual": 50.0
+          },
+          "dia": {
+            "status": "correct",
+            "expected": 67.1,
+            "actual": 67.1
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-013",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/rst-r137-7-x-17-5108-36-651-bl/103222862205",
+      "ground_truth": {
+        "title": "RST R137 7 x 17 5*108 36 65.1 BL",
+        "brand": "RST",
+        "model": "R137",
+        "sku_or_article": "R137",
+        "diameter": 17,
+        "width": 7.0,
+        "pcd": "5x108",
+        "et": 36,
+        "dia": 65.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Compact numeric title notation is intentionally retained as an edge case."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1906337,
+        "redirect_count": 0,
+        "duration_ms": 642.7,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/rst-r137-7-x-17-5108-36-651-bl/103222862205",
+        "values": {
+          "brand": "RST",
+          "bolt_count": 5,
+          "pcd_mm": 108.0,
+          "wheel_diameter_in": 17.0,
+          "wheel_width_j": 7.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "RST",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 108.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 17.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 7.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "3ccb38be1f55e2aa9ad0dd04b8de8dfb21577a438efcd2525fb304c20094e1f8"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "RST",
+            "actual": "RST"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "R137",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "R137",
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 17,
+            "actual": 17.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 7.0,
+            "actual": 7.0
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x108",
+            "actual": "5x108"
+          },
+          "et": {
+            "status": "missing_extraction",
+            "expected": 36,
+            "actual": null
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 65.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article",
+          "et",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-014",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/diski-avtomobilnyye-rr-css356-1565-41143-et40-671-blkm/6173463307",
+      "ground_truth": {
+        "title": "Диски автомобильные RR CSS356 15*6,5 4*114,3 ET40 67,1 BLK/M",
+        "brand": "Race Ready",
+        "model": "CSS356",
+        "sku_or_article": "CSS356",
+        "diameter": 15,
+        "width": 6.5,
+        "pcd": "4x114.3",
+        "et": 40,
+        "dia": 67.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Expanded characteristics identify the brand as Race Ready; RR is the title abbreviation."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 1987038,
+        "redirect_count": 0,
+        "duration_ms": 533.21,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/diski-avtomobilnyye-rr-css356-1565-41143-et40-671-blkm/6173463307",
+        "values": {
+          "brand": "Race Ready",
+          "bolt_count": 4,
+          "pcd_mm": 114.3,
+          "offset_et_mm": 40.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "Race Ready",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 4,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 114.3,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 40.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "d313ceaa16d6b037fa017b700fa718d81881b26ee851cb7afb8aa1d42ac82ec8"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "Race Ready",
+            "actual": "Race Ready"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "CSS356",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "CSS356",
+            "actual": null
+          },
+          "diameter": {
+            "status": "missing_extraction",
+            "expected": 15,
+            "actual": null
+          },
+          "width": {
+            "status": "missing_extraction",
+            "expected": 6.5,
+            "actual": null
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "4x114.3",
+            "actual": "4x114.3"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 40,
+            "actual": 40.0
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 67.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article",
+          "diameter",
+          "width",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    },
+    {
+      "case_id": "ym-015",
+      "marketplace": "yandex_market",
+      "requested_url": "https://business.market.yandex.ru/card/disk-avtomobilnyy-rplc-vektor-hav242-haval-m6-65x17-5x1143-et50-641-b/6025127562",
+      "ground_truth": {
+        "title": "Диск автомобильный RPLC (Вектор) HAV242 Haval M6 6,5x17 5x114,3 ET50 64,1 B",
+        "brand": "RPLC-Wheels",
+        "model": "HAV242",
+        "sku_or_article": "HAV242",
+        "diameter": 17,
+        "width": 6.5,
+        "pcd": "5x114.3",
+        "et": 50,
+        "dia": 64.1,
+        "selected_variant": null,
+        "variant_count_visible": 1,
+        "variants": [],
+        "image_available": true,
+        "product_image_url_observable": true,
+        "variant_specific_image": null,
+        "region": "Novoyivanovskoye default",
+        "login_required": false,
+        "ground_truth_conflict": false,
+        "notes": "Brand value follows the expanded characteristics table; vehicle name remains descriptive."
+      },
+      "fetch": {
+        "outcome": "success",
+        "http_status": 200,
+        "content_type": "text/html",
+        "response_size": 2016156,
+        "redirect_count": 0,
+        "duration_ms": 705.28,
+        "useful_document": true,
+        "current_product_anchored": true,
+        "body_truncated_at_limit": false,
+        "secondary_request_used": false
+      },
+      "resolver": {
+        "final_url": "https://business.market.yandex.ru/card/disk-avtomobilnyy-rplc-vektor-hav242-haval-m6-65x17-5x1143-et50-641-b/6025127562",
+        "values": {
+          "brand": "RPLC-Wheels",
+          "bolt_count": 5,
+          "pcd_mm": 114.3,
+          "wheel_diameter_in": 17.0,
+          "wheel_width_j": 6.5,
+          "offset_et_mm": 50.0
+        },
+        "candidates": [
+          {
+            "field": "brand",
+            "value": "RPLC-Wheels",
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "bolt_count",
+            "value": 5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "pcd_mm",
+            "value": 114.3,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_diameter_in",
+            "value": 17.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "wheel_width_j",
+            "value": 6.5,
+            "source": "json_ld",
+            "confidence": 0.95
+          },
+          {
+            "field": "offset_et_mm",
+            "value": 50.0,
+            "source": "json_ld",
+            "confidence": 0.95
+          }
+        ],
+        "conflicts": [],
+        "variants": [],
+        "selection_required": false,
+        "selected_variant_sku": null,
+        "source_fingerprint": "df429748619a13ee5e90f2122b8e12bc5b2b585756b05d76857237b73dd233a2"
+      },
+      "comparison": {
+        "field_comparisons": {
+          "brand": {
+            "status": "correct",
+            "expected": "RPLC-Wheels",
+            "actual": "RPLC-Wheels"
+          },
+          "model": {
+            "status": "missing_extraction",
+            "expected": "HAV242",
+            "actual": null
+          },
+          "sku_or_article": {
+            "status": "missing_extraction",
+            "expected": "HAV242",
+            "actual": null
+          },
+          "diameter": {
+            "status": "correct",
+            "expected": 17,
+            "actual": 17.0
+          },
+          "width": {
+            "status": "correct",
+            "expected": 6.5,
+            "actual": 6.5
+          },
+          "pcd": {
+            "status": "correct",
+            "expected": "5x114.3",
+            "actual": "5x114.3"
+          },
+          "et": {
+            "status": "correct",
+            "expected": 50,
+            "actual": 50.0
+          },
+          "dia": {
+            "status": "missing_extraction",
+            "expected": 64.1,
+            "actual": null
+          }
+        },
+        "missing_fields": [
+          "model",
+          "sku_or_article",
+          "dia"
+        ],
+        "incorrect_fields": [],
+        "critical_false_data": [],
+        "critical_false_data_count": 0
+      },
+      "variant": {
+        "applicable": false,
+        "variant_detected_correctly": null,
+        "selection_required_correctly": true,
+        "selected_variant_correctly": null,
+        "cross_variant_contamination": null
+      },
+      "error": null,
+      "failure_class": "DATA_MISSING",
+      "manual_fallback_applicable": true
+    }
+  ],
+  "metrics": {
+    "case_count": 15,
+    "fetch_success_rate": 1.0,
+    "failure_distribution": {
+      "DATA_MISSING": 8,
+      "JS_ONLY": 5,
+      "SUPPORTED": 2
+    },
+    "critical_false_positive_rate": 0.0,
+    "critical_false_data_count": 0,
+    "fields": {
+      "brand": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 10,
+        "extraction_rate": 0.6667,
+        "correct_cases": 10,
+        "precision": 1.0
+      },
+      "model": {
+        "available_cases": 12,
+        "availability_rate": 0.8,
+        "extracted_cases": 0,
+        "extraction_rate": 0.0,
+        "correct_cases": 0,
+        "precision": null
+      },
+      "sku_or_article": {
+        "available_cases": 11,
+        "availability_rate": 0.7333,
+        "extracted_cases": 0,
+        "extraction_rate": 0.0,
+        "correct_cases": 0,
+        "precision": null
+      },
+      "diameter": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 8,
+        "extraction_rate": 0.5333,
+        "correct_cases": 8,
+        "precision": 1.0
+      },
+      "width": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 8,
+        "extraction_rate": 0.5333,
+        "correct_cases": 8,
+        "precision": 1.0
+      },
+      "pcd": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 10,
+        "extraction_rate": 0.6667,
+        "correct_cases": 10,
+        "precision": 1.0
+      },
+      "et": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 9,
+        "extraction_rate": 0.6,
+        "correct_cases": 9,
+        "precision": 1.0
+      },
+      "dia": {
+        "available_cases": 15,
+        "availability_rate": 1.0,
+        "extracted_cases": 5,
+        "extraction_rate": 0.3333,
+        "correct_cases": 5,
+        "precision": 1.0
+      }
+    },
+    "variant_detection_rate": null,
+    "variant_selection_correctness": null,
+    "cross_variant_contamination_rate": null,
+    "manual_fallback_applicable": {
+      "applicable_cases": 13,
+      "not_applicable_cases": 2
+    },
+    "by_marketplace": {
+      "yandex_market": {
+        "case_count": 15,
+        "fetch_success_rate": 1.0,
+        "failure_distribution": {
+          "DATA_MISSING": 8,
+          "JS_ONLY": 5,
+          "SUPPORTED": 2
+        },
+        "critical_false_positive_rate": 0.0,
+        "critical_false_data_count": 0,
+        "fields": {
+          "brand": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 10,
+            "extraction_rate": 0.6667,
+            "correct_cases": 10,
+            "precision": 1.0
+          },
+          "model": {
+            "available_cases": 12,
+            "availability_rate": 0.8,
+            "extracted_cases": 0,
+            "extraction_rate": 0.0,
+            "correct_cases": 0,
+            "precision": null
+          },
+          "sku_or_article": {
+            "available_cases": 11,
+            "availability_rate": 0.7333,
+            "extracted_cases": 0,
+            "extraction_rate": 0.0,
+            "correct_cases": 0,
+            "precision": null
+          },
+          "diameter": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 8,
+            "extraction_rate": 0.5333,
+            "correct_cases": 8,
+            "precision": 1.0
+          },
+          "width": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 8,
+            "extraction_rate": 0.5333,
+            "correct_cases": 8,
+            "precision": 1.0
+          },
+          "pcd": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 10,
+            "extraction_rate": 0.6667,
+            "correct_cases": 10,
+            "precision": 1.0
+          },
+          "et": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 9,
+            "extraction_rate": 0.6,
+            "correct_cases": 9,
+            "precision": 1.0
+          },
+          "dia": {
+            "available_cases": 15,
+            "availability_rate": 1.0,
+            "extracted_cases": 5,
+            "extraction_rate": 0.3333,
+            "correct_cases": 5,
+            "precision": 1.0
+          }
+        },
+        "variant_detection_rate": null,
+        "variant_selection_correctness": null,
+        "cross_variant_contamination_rate": null,
+        "manual_fallback_applicable": {
+          "applicable_cases": 13,
+          "not_applicable_cases": 2
+        }
+      }
+    }
+  }
+}

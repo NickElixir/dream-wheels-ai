@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src import auth, payments_api
+from src.auth_principal import AuthPrincipal
 from src.main import app
 from src.payments_service import (
     PaymentConfigError,
@@ -49,7 +50,7 @@ def test_create_topup_rejects_invalid_email_before_db():
 
 def test_cabinet_requires_identity_before_db():
     response = client.get("/payments/cabinet")
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 def test_robokassa_result_requires_required_params_before_db():
@@ -170,6 +171,8 @@ def test_create_topup_requires_init_data_when_dev_auth_disabled():
             "pricing_version": "2026-06-balance-v1",
             "source_screen": "cabinet_quick_amount",
             "email": "user@example.com",
+            "client_channel": "web",
+            "return_to": "/app",
             "telegram_user_id": 123456789,
         },
     )
@@ -220,31 +223,26 @@ def test_payment_status_is_scoped_to_resolved_user(monkeypatch):
         def acquire(self):
             return FakeAcquire()
 
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456789
-        assert username == "dw-user"
-        return 77
+    async def fake_require_auth_principal(_conn, **kwargs):
+        assert kwargs["auth_name"] == "payments"
+        return AuthPrincipal(
+            user_id=77,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="mini_app",
+            telegram_username="dw-user",
+        )
 
     async def fake_get_status(_conn, *, invoice_id: int, user_id: int | None = None):
         assert invoice_id == 42
         assert user_id == 77
         return {"invoice_id": 42, "status": "pending", "balance": 3}
 
-    monkeypatch.setattr(
-        payments_api,
-        "resolve_telegram_auth",
-        lambda **_kwargs: auth.AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
-            auth_channel="mini_app",
-            auth_date=1700000000,
-        ),
-    )
     monkeypatch.setattr(payments_api.db, "get_pool", lambda: FakePool())
-    monkeypatch.setattr(payments_api, "ensure_user", fake_ensure_user)
+    monkeypatch.setattr(payments_api, "require_auth_principal", fake_require_auth_principal)
     monkeypatch.setattr(payments_api, "get_payment_status_by_invoice", fake_get_status)
 
-    response = client.get("/payments/42/status")
+    response = client.get("/payments/42/status", headers={"Authorization": "Bearer test"})
     assert response.status_code == 200
     assert response.json() == {"invoice_id": 42, "status": "pending", "balance": 3}
 
@@ -305,10 +303,12 @@ def test_create_topup_persists_robokassa_provider_neutral_fields(monkeypatch):
                 ],
                 "email": "user@example.com",
             }
-            assert args[10:13] == (
+            assert args[10:15] == (
                 "credits-v1",
                 "cabinet",
                 "website",
+                "web",
+                "/app",
             )
             return {
                 "id": "11111111-1111-1111-1111-111111111111",
@@ -327,6 +327,8 @@ def test_create_topup_persists_robokassa_provider_neutral_fields(monkeypatch):
                 pricing_version="credits-v1",
                 source_screen="cabinet",
                 receipt_email="user@example.com",
+                client_channel="web",
+                return_to="/app",
             ),
         )
     )
@@ -352,6 +354,8 @@ def test_build_payment_url_uses_configured_payment_url(monkeypatch):
             pricing_version="credits-v1",
             source_screen="cabinet",
             receipt_email="user@example.com",
+            client_channel="web",
+            return_to="/app",
         ),
     )
 
@@ -376,6 +380,8 @@ def test_build_payment_url_requires_test_credentials_in_test_mode(monkeypatch):
                 pricing_version="credits-v1",
                 source_screen="cabinet",
                 receipt_email="user@example.com",
+                client_channel="web",
+                return_to="/app",
             ),
         )
 

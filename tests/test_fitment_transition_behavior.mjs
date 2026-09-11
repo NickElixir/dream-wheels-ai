@@ -7,6 +7,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_SOURCE = fs.readFileSync(path.join(ROOT, "webapp", "app.js"), "utf8");
+const APP_SOURCE_FOR_VM = APP_SOURCE.replace(
+    /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
+    "",
+);
 
 function storage() {
     const values = new Map();
@@ -45,7 +49,12 @@ function workflowApi() {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`${APP_SOURCE}\n globalThis.__workflowApi = { deriveFitmentNextIntent, deriveVehicleWorkspaceMode, deriveResultRecovery, deriveNavigatorPresentation };`, context);
+    vm.runInNewContext(`
+const applicationRouteContext = () => null;
+const isApplicationRoute = () => false;
+const safeApplicationReturnPath = () => null;
+${APP_SOURCE_FOR_VM}
+globalThis.__workflowApi = { deriveFitmentNextIntent, deriveVehicleWorkspaceMode, deriveResultRecovery, deriveNavigatorPresentation };`, context);
     return context.__workflowApi;
 }
 
@@ -129,7 +138,11 @@ function navigationApi({ routes = {} } = {}) {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`${APP_SOURCE}
+    vm.runInNewContext(`
+        const applicationRouteContext = () => null;
+        const isApplicationRoute = () => false;
+        const safeApplicationReturnPath = () => null;
+        ${APP_SOURCE_FOR_VM}
         globalThis.__fitmentRenderedWorkspace = "";
         renderFitment = () => { globalThis.__fitmentRenderedWorkspace = state.fitmentActiveSection; };
         loadFitmentVehicleCatalogue = () => {};
@@ -205,7 +218,11 @@ function pcdProjectionApi() {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`${APP_SOURCE}
+    vm.runInNewContext(`
+        const applicationRouteContext = () => null;
+        const isApplicationRoute = () => false;
+        const safeApplicationReturnPath = () => null;
+        ${APP_SOURCE_FOR_VM}
         globalThis.__pcdProjectionApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview,
             syncFitmentPcdControl, renderFitment,

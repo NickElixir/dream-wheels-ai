@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src import assets_service, db, identity_service, redis_client, storage
 from src.assets_service import AssetKind
-from src.auth import AuthContext, resolve_telegram_auth
+from src.auth_principal import AuthPrincipal, preflight_auth_credentials, require_auth_principal
 from src.config import (
     API_INTERNAL_TOKEN,
     REDIS_JOB_QUEUE,
@@ -78,11 +78,9 @@ FEEDBACK_REASONS = frozenset(
 )
 
 
-def _get_render_queue_client(endpoint: str, telegram_user_id: int):
+def _get_render_queue_client(endpoint: str, user_id: int):
     if not WORKER_ENABLED:
-        logger.warning(
-            "⛔ Render queue disabled: endpoint=%s tg_user=%s", endpoint, telegram_user_id
-        )
+        logger.warning("⛔ Render queue disabled: endpoint=%s user_id=%s", endpoint, user_id)
         raise HTTPException(status_code=503, detail="Render worker disabled")
     try:
         return redis_client.get_client()
@@ -90,7 +88,7 @@ def _get_render_queue_client(endpoint: str, telegram_user_id: int):
         logger.exception(
             "❌ Render queue unavailable: endpoint=%s tg_user=%s: %s",
             endpoint,
-            telegram_user_id,
+            user_id,
             exc,
         )
         raise HTTPException(status_code=503, detail="Render queue unavailable") from exc
@@ -542,28 +540,21 @@ class FeedbackPutRequest(FeedbackAuthRequest):
         return v
 
 
-def _telegram_user_id_from_feedback_request(
+async def _user_id_from_feedback_request(
     request: FeedbackAuthRequest,
     internal_token: str | None,
     authorization: str | None = None,
 ) -> int:
-    if request.init_data:
-        auth = resolve_telegram_auth(
-            init_data=request.init_data,
-            telegram_user_id=request.telegram_user_id,
-            authorization=authorization,
-            auth_name="feedback",
-        )
-        return auth.telegram_user_id
-
-    if authorization:
-        auth = resolve_telegram_auth(
-            init_data=None,
-            telegram_user_id=request.telegram_user_id,
-            authorization=authorization,
-            auth_name="feedback",
-        )
-        return auth.telegram_user_id
+    if request.init_data or authorization:
+        async with db.get_pool().acquire() as conn:
+            principal = await require_auth_principal(
+                conn,
+                init_data=request.init_data,
+                telegram_user_id=request.telegram_user_id,
+                authorization=authorization,
+                auth_name="feedback",
+            )
+        return principal.user_id
 
     if not API_INTERNAL_TOKEN:
         logger.error("API_INTERNAL_TOKEN не сконфигурирован: bot feedback отключён")
@@ -572,7 +563,8 @@ def _telegram_user_id_from_feedback_request(
         raise HTTPException(status_code=401, detail="Invalid internal token")
     if request.telegram_user_id is None:
         raise HTTPException(status_code=400, detail="telegram_user_id required")
-    return request.telegram_user_id
+    async with db.get_pool().acquire() as conn:
+        return await ensure_user(conn, request.telegram_user_id)
 
 
 def _download_filename(job_id: str, content_type: str | None) -> str:
@@ -594,25 +586,33 @@ def _has_auth_inputs(
     return bool(init_data or authorization or telegram_user_id is not None)
 
 
-def _resolve_jobs_auth(
+async def _resolve_jobs_auth(
     *,
     init_data: str | None,
     telegram_user_id: int | None,
     authorization: str | None,
     required: bool,
-) -> AuthContext | None:
+) -> AuthPrincipal | None:
     if not required and not _has_auth_inputs(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
     ):
         return None
-    return resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
         auth_name="jobs history",
     )
+    async with db.get_pool().acquire() as conn:
+        return await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="jobs history",
+        )
 
 
 def _asset_from_row(row, prefix: str, *, job_id: str) -> JobAssetResponse | None:
@@ -2076,17 +2076,26 @@ async def upload_job(
     4. Льём оба файла в Storage `raw`.
     5. Создаём job в БД, кидаем в Redis-очередь воркеру.
     """
-    auth = resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
         auth_name="jobs upload",
     )
-
-    rds = _get_render_queue_client("/jobs/upload", auth.telegram_user_id)
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="jobs upload",
+        )
+    user_id = principal.user_id
+    rds = _get_render_queue_client("/jobs/upload", user_id)
     await enforce_rate_limit(
         scope="jobs_upload",
-        identifier=auth.telegram_user_id,
+        identifier=user_id,
         limit=UPLOAD_RATE_LIMIT,
         window_sec=UPLOAD_RATE_WINDOW_SEC,
     )
@@ -2109,7 +2118,7 @@ async def upload_job(
         if len(data) == 0:
             raise HTTPException(status_code=400, detail=f"{label}: пустой файл")
 
-    idem_redis_key = redis_client.key(f"idem:jobs_upload:{auth.telegram_user_id}:{idempotency_key}")
+    idem_redis_key = redis_client.key(f"idem:jobs_upload:{user_id}:{idempotency_key}")
     job_id = str(uuid.uuid4())
     reserved = await rds.set(idem_redis_key, job_id, ex=IDEMPOTENCY_TTL_SEC, nx=True)
     if not reserved:
@@ -2117,19 +2126,15 @@ async def upload_job(
         if not existing_job_id:
             raise HTTPException(status_code=409, detail="Upload retry in progress")
         logger.info(
-            f"♻️  Idempotent replay: tg_user={auth.telegram_user_id} "
+            f"♻️  Idempotent replay: user_id={user_id} "
             f"key={idempotency_key} → job={existing_job_id}"
         )
         return JobCreateResponse(job_id=existing_job_id, status="queued")
 
     logger.info(
-        f"📥 /jobs/upload tg_user={auth.telegram_user_id} job={job_id} "
+        f"📥 /jobs/upload user_id={user_id} job={job_id} "
         f"car={len(car_bytes)}B wheel={len(wheel_bytes)}B"
     )
-
-    pool = db.get_pool()
-    async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
 
     uploaded_assets: list[assets_service.AssetUpload] = []
     try:
@@ -2207,7 +2212,7 @@ async def upload_job(
                     uploaded_asset.id,
                     cleanup_exc,
                 )
-        logger.warning(f"❌ Недостаточно credits для tg_user={auth.telegram_user_id}: {exc}")
+        logger.warning("❌ Insufficient credits for user_id=%s: %s", user_id, exc)
         raise HTTPException(status_code=402, detail="Insufficient credits") from exc
     except Exception as db_err:
         await rds.delete(idem_redis_key)
@@ -2231,7 +2236,6 @@ async def upload_job(
                 {
                     "job_id": job_id,
                     "user_id": user_id,
-                    "telegram_user_id": auth.telegram_user_id,
                     "source": "webapp",
                     "car_storage_path": car_asset.storage_key,
                     "wheel_storage_path": rim_asset.storage_key,
@@ -2242,10 +2246,9 @@ async def upload_job(
         )
     except Exception as queue_err:
         logger.exception(
-            "❌ Queue publish failed for job_id=%s user_id=%s telegram_user_id=%s: %s",
+            "❌ Queue publish failed for job_id=%s user_id=%s: %s",
             job_id,
             user_id,
-            auth.telegram_user_id,
             queue_err,
         )
         await _compensate_queue_publish_failure(
@@ -2268,24 +2271,31 @@ async def create_job_from_assets(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Create a render job from confirmed Sprint 2 identity draft assets."""
-    auth = resolve_telegram_auth(
-        init_data=request.init_data or "",
+    preflight_auth_credentials(
+        init_data=request.init_data,
         telegram_user_id=request.telegram_user_id,
         authorization=authorization,
         auth_name="jobs from assets",
     )
-
-    rds = _get_render_queue_client("/jobs/from-assets", auth.telegram_user_id)
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=request.init_data,
+            telegram_user_id=request.telegram_user_id,
+            authorization=authorization,
+            auth_name="jobs from assets",
+        )
+    user_id = principal.user_id
+    rds = _get_render_queue_client("/jobs/from-assets", user_id)
     await enforce_rate_limit(
         scope="jobs_upload",
-        identifier=auth.telegram_user_id,
+        identifier=user_id,
         limit=UPLOAD_RATE_LIMIT,
         window_sec=UPLOAD_RATE_WINDOW_SEC,
     )
 
-    idem_redis_key = redis_client.key(
-        f"idem:jobs_from_assets:{auth.telegram_user_id}:{request.idempotency_key}"
-    )
+    idem_redis_key = redis_client.key(f"idem:jobs_from_assets:{user_id}:{request.idempotency_key}")
     job_id = str(uuid.uuid4())
     reserved = await rds.set(idem_redis_key, job_id, ex=IDEMPOTENCY_TTL_SEC, nx=True)
     if not reserved:
@@ -2293,18 +2303,16 @@ async def create_job_from_assets(
         if not existing_job_id:
             raise HTTPException(status_code=409, detail="Create retry in progress")
         logger.info(
-            "♻️  Idempotent replay: tg_user=%s key=%s → job=%s",
-            auth.telegram_user_id,
+            "♻️  Idempotent replay: user_id=%s key=%s → job=%s",
+            user_id,
             request.idempotency_key,
             existing_job_id,
         )
         return JobCreateResponse(job_id=existing_job_id, status="queued")
 
-    pool = db.get_pool()
     try:
         async with pool.acquire() as conn:
             async with conn.transaction():
-                user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
                 draft = await conn.fetchrow(
                     """
                     SELECT
@@ -2522,7 +2530,7 @@ async def create_job_from_assets(
                 await reserve_job_credit(conn, user_id=user_id, job_id=job_id)
     except InsufficientCreditsError as exc:
         await rds.delete(idem_redis_key)
-        logger.warning("❌ Недостаточно credits для tg_user=%s: %s", auth.telegram_user_id, exc)
+        logger.warning("❌ Insufficient credits for user_id=%s: %s", user_id, exc)
         raise HTTPException(status_code=402, detail="Insufficient credits") from exc
     except HTTPException:
         await rds.delete(idem_redis_key)
@@ -2539,7 +2547,6 @@ async def create_job_from_assets(
                 {
                     "job_id": job_id,
                     "user_id": user_id,
-                    "telegram_user_id": auth.telegram_user_id,
                     "source": "webapp",
                     "car_storage_path": draft["car_storage_key"],
                     "wheel_storage_path": draft["rim_storage_key"],
@@ -2552,10 +2559,9 @@ async def create_job_from_assets(
         )
     except Exception as queue_err:
         logger.exception(
-            "❌ Queue publish failed for job_id=%s user_id=%s telegram_user_id=%s: %s",
+            "❌ Queue publish failed for job_id=%s user_id=%s: %s",
             job_id,
             user_id,
-            auth.telegram_user_id,
             queue_err,
         )
         await _compensate_queue_publish_failure(
@@ -2582,7 +2588,7 @@ async def list_jobs(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """История последних jobs текущего авторизованного пользователя."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2592,7 +2598,7 @@ async def list_jobs(
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         rows = await conn.fetch(
             f"""
             SELECT
@@ -2654,7 +2660,7 @@ async def get_job_status(
     Без auth возвращает legacy contract для бота. С auth проверяет владельца
     и добавляет durable asset metadata.
     """
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2671,7 +2677,7 @@ async def get_job_status(
                 raise HTTPException(status_code=404, detail="Job not found")
             return {"status": row["status"], "output_image_url": row["output_image_url"]}
 
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await conn.fetchrow(
             f"""
             SELECT
@@ -2720,7 +2726,7 @@ async def get_job_status_detailed(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Расширенный статус для webapp polling: status + result_url + error."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2729,7 +2735,7 @@ async def get_job_status_detailed(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await conn.fetchrow(
             f"""
             SELECT
@@ -2778,7 +2784,7 @@ async def get_fitment_overview(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2788,7 +2794,7 @@ async def get_fitment_overview(
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
         current_check = (
             await _current_check_for_job(conn, row) if row and hasattr(conn, "fetch") else None
@@ -2809,7 +2815,7 @@ async def get_fitment_history(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2819,7 +2825,7 @@ async def get_fitment_history(
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
         if not row:
             raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -2855,7 +2861,7 @@ async def _require_fitment_catalogue_access(
     telegram_user_id: int | None,
     authorization: str | None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -2863,7 +2869,7 @@ async def _require_fitment_catalogue_access(
     )
     assert auth is not None
     async with db.get_pool().acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
@@ -3155,7 +3161,7 @@ async def resolve_fitment_rim_source(
     if not RIM_URL_RESOLVER_ENABLED:
         raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
 
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3164,7 +3170,7 @@ async def resolve_fitment_rim_source(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         await enforce_rate_limit(
             "fitment_rim_source",
             user_id,
@@ -3396,7 +3402,7 @@ async def find_fitment_vehicle_variants(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """List candidates and persist only their revision-bound state outcome."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3405,7 +3411,7 @@ async def find_fitment_vehicle_variants(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -3447,7 +3453,7 @@ async def reselect_fitment_vehicle_variants(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Read candidates for a confirmed modification without changing state."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3456,7 +3462,7 @@ async def reselect_fitment_vehicle_variants(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -3491,7 +3497,7 @@ async def replace_fitment_vehicle_variant(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Atomically replace one confirmed modification with another current candidate."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3500,7 +3506,7 @@ async def replace_fitment_vehicle_variant(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -3614,7 +3620,7 @@ async def apply_fitment_vehicle_variant(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3623,7 +3629,7 @@ async def apply_fitment_vehicle_variant(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -3731,7 +3737,7 @@ async def save_fitment_details(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -3747,7 +3753,7 @@ async def save_fitment_details(
     pool = db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+            user_id = auth.user_id
             row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
             if not row:
                 raise HTTPException(status_code=404, detail="Fitment overview not found")
@@ -4365,7 +4371,7 @@ async def download_job_asset(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Proxy download for an authorized user's durable job asset."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -4375,7 +4381,7 @@ async def download_job_asset(
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await conn.fetchrow(
             """
             SELECT assets.bucket, assets.storage_key, assets.content_type
@@ -4421,7 +4427,7 @@ async def get_job_feedback(
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -4430,7 +4436,7 @@ async def get_job_feedback(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
         row = await conn.fetchrow(
             f"""
@@ -4458,14 +4464,13 @@ async def put_feedback(
     authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
-    telegram_user_id = _telegram_user_id_from_feedback_request(
+    user_id = await _user_id_from_feedback_request(
         request,
         x_internal_token,
         authorization,
     )
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, telegram_user_id)
         await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
         feedback = await _upsert_feedback(
             conn,
@@ -4475,11 +4480,11 @@ async def put_feedback(
             reason=request.reason,
         )
     logger.info(
-        "👍 Feedback saved sentiment=%s reason=%s для job_id=%s tg_user=%s",
+        "👍 Feedback saved sentiment=%s reason=%s для job_id=%s user_id=%s",
         feedback.sentiment,
         feedback.reason,
         job_id,
-        telegram_user_id,
+        user_id,
     )
     return JobFeedbackEnvelope(feedback=feedback).model_dump(mode="json", exclude_none=False)
 
@@ -4491,14 +4496,13 @@ async def submit_feedback_legacy(
     authorization: Annotated[str | None, Header()] = None,
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
-    telegram_user_id = _telegram_user_id_from_feedback_request(
+    user_id = await _user_id_from_feedback_request(
         request,
         x_internal_token,
         authorization,
     )
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, telegram_user_id)
         await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
         feedback = await _upsert_feedback(
             conn,
@@ -4508,10 +4512,10 @@ async def submit_feedback_legacy(
             reason=None,
         )
     logger.info(
-        "👍 Legacy feedback alias saved sentiment=%s для job_id=%s tg_user=%s",
+        "👍 Legacy feedback alias saved sentiment=%s для job_id=%s user_id=%s",
         feedback.sentiment,
         job_id,
-        telegram_user_id,
+        user_id,
     )
 
 
@@ -4523,14 +4527,13 @@ async def delete_feedback(
     x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
 ):
     """Удалить feedback на результат для владельца job."""
-    telegram_user_id = _telegram_user_id_from_feedback_request(
+    user_id = await _user_id_from_feedback_request(
         request,
         x_internal_token,
         authorization,
     )
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, telegram_user_id)
         await _require_feedback_job_access(conn, job_id=job_id, user_id=user_id)
         await conn.execute(
             """
@@ -4541,7 +4544,7 @@ async def delete_feedback(
             job_id,
             user_id,
         )
-    logger.info("👍 Feedback deleted для job_id=%s tg_user=%s", job_id, telegram_user_id)
+    logger.info("👍 Feedback deleted для job_id=%s user_id=%s", job_id, user_id)
 
 
 @router.get("/{job_id}/download")
@@ -4552,7 +4555,7 @@ async def download_job_result(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Отдать результат как attachment для Telegram.WebApp.downloadFile."""
-    auth = _resolve_jobs_auth(
+    auth = await _resolve_jobs_auth(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
@@ -4561,7 +4564,7 @@ async def download_job_result(
     assert auth is not None
     pool = db.get_pool()
     async with pool.acquire() as conn:
-        user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
+        user_id = auth.user_id
         row = await conn.fetchrow(
             """
             SELECT status, output_image_url

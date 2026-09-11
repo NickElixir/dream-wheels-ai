@@ -1,0 +1,26 @@
+{
+  "audit": {
+    "dataset_namespace": "diagnostic_only",
+    "browser_tool": "agent-browser via npx --yes agent-browser",
+    "raw_html_saved": false,
+    "recovery_target": "3-5 verified automotive wheel product URLs"
+  },
+  "attempts": [
+    {
+      "attempt_id": "wb-recovery-search-001",
+      "url": "https://www.wildberries.ru/catalog/0/search.aspx?search=%D0%B4%D0%B8%D1%81%D0%BA%D0%B8%20%D0%BA%D0%BE%D0%BB%D0%B5%D1%81%D0%BD%D1%8B%D0%B5",
+      "browser_result": "ANTI_BOT",
+      "observed_title": "...",
+      "observed_body_markers": ["Подозрительная активность", "captcha-support@rwb.ru"],
+      "verified_product_card": false,
+      "backend_tested": false,
+      "reason": "No direct product URL could be obtained from public indexed/category sources without guessing a product ID."
+    }
+  ],
+  "conclusion": {
+    "browser_discovery": "NO",
+    "backend_capability": "UNKNOWN",
+    "classification": "ANTI_BOT for browser discovery; UNKNOWN for backend fetch",
+    "release_1_complexity": "HEAVY"
+  }
+}

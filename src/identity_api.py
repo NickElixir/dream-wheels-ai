@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, ValidationError
 
 from src import assets_service, db, identity_service, storage
-from src.auth import resolve_telegram_auth
+from src.auth_principal import preflight_auth_credentials, require_auth_principal
 from src.config import (
     VEHICLE_IDENTITY_ENABLED,
     VEHICLE_IDENTITY_MAX_IMAGE_EDGE,
@@ -27,7 +27,6 @@ from src.identity.schemas import (
 from src.identity.service import get_vehicle_identity_resolver
 from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES
 from src.rate_limit import enforce_rate_limit
-from src.users_service import ensure_user
 from src.vision.image_normalization import ImageNormalizationError, normalize_image
 
 logger = logging.getLogger(__name__)
@@ -82,15 +81,25 @@ async def resolve_identity(
     authorization: Annotated[str | None, Header()] = None,
 ) -> IdentityResolveResponse:
     """Persist source assets and return a non-canonical vehicle proposal."""
-    auth = resolve_telegram_auth(
+    preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
         authorization=authorization,
         auth_name="identity resolve",
     )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="identity resolve",
+        )
+    owner_user_id = principal.user_id
     await enforce_rate_limit(
         scope="identity_resolve",
-        identifier=auth.telegram_user_id,
+        identifier=owner_user_id,
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,
     )
@@ -111,9 +120,7 @@ async def resolve_identity(
     except ImageNormalizationError as exc:
         raise _normalization_http_error(exc) from exc
 
-    pool = db.get_pool()
     async with pool.acquire() as conn:
-        owner_user_id = await ensure_user(conn, auth.telegram_user_id, auth.username)
         draft_id = str(
             await conn.fetchval(
                 """

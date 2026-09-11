@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from fastapi.testclient import TestClient
 
 from src import jobs_api
-from src.auth import AuthContext
+from src.auth_principal import AuthPrincipal
 from src.main import app
 
 client = TestClient(app)
@@ -68,22 +68,20 @@ class FakePool:
 
 
 def _patch_auth(monkeypatch, *, user_id: int = 10) -> None:
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return AuthPrincipal(
+            user_id=user_id,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
     monkeypatch.setattr(
         jobs_api,
         "_resolve_jobs_auth",
-        lambda **_kwargs: AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
-            auth_channel="website",
-        ),
+        fake_resolve_jobs_auth,
     )
-
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456789
-        assert username == "dw-user"
-        return user_id
-
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
 
 
 def test_history_query_is_scoped_to_authenticated_user(monkeypatch):
@@ -138,25 +136,21 @@ def test_history_drops_non_object_snapshot_payload(monkeypatch):
 def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
     auth_calls: dict[str, str | None] = {}
 
-    def fake_resolve_telegram_auth(**kwargs):
+    async def fake_resolve_jobs_auth(**kwargs):
         auth_calls.update(kwargs)
-        return AuthContext(
-            telegram_user_id=123456789,
-            username="dw-user",
+        return AuthPrincipal(
+            user_id=10,
+            authority="telegram",
+            subject="123456789",
             auth_channel="website",
+            telegram_username="dw-user",
         )
 
     class FakeConn:
         async def fetch(self, *_args):
             return [_job_row()]
 
-    async def fake_ensure_user(_conn, telegram_user_id: int, username: str | None):
-        assert telegram_user_id == 123456789
-        assert username == "dw-user"
-        return 10
-
-    monkeypatch.setattr(jobs_api, "resolve_telegram_auth", fake_resolve_telegram_auth)
-    monkeypatch.setattr(jobs_api, "ensure_user", fake_ensure_user)
+    monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", fake_resolve_jobs_auth)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
 
     response = client.get(
@@ -167,7 +161,6 @@ def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
     assert auth_calls["init_data"] is None
     assert auth_calls["telegram_user_id"] is None
     assert auth_calls["authorization"] == "Bearer website-token"
-    assert auth_calls["auth_name"] == "jobs history"
 
 
 def test_job_detail_returns_404_for_non_owner(monkeypatch):
@@ -325,7 +318,10 @@ def test_result_download_query_is_scoped_to_authenticated_user(monkeypatch):
 
 
 def test_legacy_job_response_keeps_existing_shape(monkeypatch):
-    monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", lambda **_kwargs: None)
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", fake_resolve_jobs_auth)
 
     class FakeConn:
         async def fetchrow(self, query: str, *args):

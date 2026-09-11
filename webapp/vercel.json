@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": ".",
   "git": {
     "deploymentEnabled": false
   },
@@ -8,6 +9,9 @@
       "source": "/api/backend/(.*)",
       "destination": "/api/backend-gateway?__backend_path=$1"
     },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/", "destination": "/index.html" },
+    { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/t", "destination": "/index.html" },
     { "source": "/t/", "destination": "/index.html" }
   ],
