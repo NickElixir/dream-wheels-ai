@@ -1124,8 +1124,14 @@ h2 {
 
 .latest-payment-details {
     gap: 14px;
+    width: fit-content;
+    max-width: 100%;
     padding: 0;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.latest-payment-details[open] {
+    width: 100%;
 }
 
 .latest-payment-details[hidden] {
@@ -1133,12 +1139,21 @@ h2 {
 }
 
 .latest-payment-details-toggle {
-    padding: 14px 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: start;
+    width: fit-content;
+    min-height: 44px;
+    padding: 0 20px;
     color: var(--accent-strong);
     cursor: pointer;
     font-size: 14px;
     font-weight: 800;
     list-style: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .latest-payment-details-toggle::-webkit-details-marker {
@@ -1734,6 +1749,11 @@ h2 {
     margin-top: 0;
 }
 
+.last-invoice-panel .payment-card {
+    position: relative;
+    padding-right: 190px;
+}
+
 .payment-card[data-status="paid"] {
     border-color: rgba(39, 216, 138, 0.28);
     background: rgba(39, 216, 138, 0.08);
@@ -1766,6 +1786,13 @@ h2 {
 .payment-card-top .status-pill,
 .payment-history-item .status-pill {
     align-self: center;
+}
+
+.last-invoice-panel .payment-card-top .status-pill {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
 }
 
 .payment-card-main {
@@ -5559,6 +5586,10 @@ body.has-fallback-main-button #app {
         width: 100%;
     }
 
+    .last-invoice-panel .payment-card {
+        padding-right: 18px;
+    }
+
     .payment-card-top {
         flex-direction: column;
         align-items: flex-start;
@@ -5566,6 +5597,8 @@ body.has-fallback-main-button #app {
 
     .payment-card-top .status-pill {
         align-self: flex-start;
+        position: static;
+        transform: none;
     }
 
     .latest-payment-details .invoice-grid {

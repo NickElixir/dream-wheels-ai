@@ -536,6 +536,10 @@ def test_wallet_spacing_status_alignment_and_visibility_preserve_active_view() -
     assert ".payment-card-top" in STYLE_CSS
     assert ".payment-card-top .status-pill," in STYLE_CSS
     assert ".payment-history-item .status-pill" in STYLE_CSS
+    assert "position: absolute;" in STYLE_CSS
+    assert "padding-right: 190px;" in STYLE_CSS
+    assert "width: fit-content;" in STYLE_CSS
+    assert ".latest-payment-details[open]" in STYLE_CSS
     visibility_handler = APP_JS.split('document.addEventListener("visibilitychange"', 1)[1].split(
         'window.addEventListener("pagehide"', 1
     )[0]

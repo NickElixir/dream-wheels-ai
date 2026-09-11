@@ -131,6 +131,14 @@ test("wallet spacing and payment statuses keep their visual alignment", () => {
     assert.match(css, /\.payment-card-top \.status-pill,\s*\.payment-history-item \.status-pill\s*\{[\s\S]*?align-self: center;/);
 });
 
+test("latest payment status and details action use the compact card treatment", () => {
+    assert.match(css, /\.last-invoice-panel \.payment-card\s*\{[\s\S]*?position: relative;[\s\S]*?padding-right: 190px;/);
+    assert.match(css, /\.last-invoice-panel \.payment-card-top \.status-pill\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 50%;[\s\S]*?transform: translateY\(-50%\);/);
+    assert.match(css, /\.latest-payment-details\s*\{[\s\S]*?width: fit-content;[\s\S]*?max-width: 100%;/);
+    assert.match(css, /\.latest-payment-details-toggle\s*\{[\s\S]*?display: inline-flex;[\s\S]*?justify-self: start;[\s\S]*?width: fit-content;[\s\S]*?min-height: 44px;/);
+    assert.match(css, /\.latest-payment-details\[open\]\s*\{[\s\S]*?width: 100%;/);
+});
+
 test("visibility changes do not reload the active app view", () => {
     const visibilityHandler = app
         .split('document.addEventListener("visibilitychange"')[1]
