@@ -76,10 +76,10 @@ const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
 const PAYMENT_HISTORY_PAGE_SIZE = 10;
 const TOPUP_PACKAGES = [
-    { amount: 100, credits: 3, icon: "⚡" },
-    { amount: 200, credits: 7, icon: "🏁" },
-    { amount: 500, credits: 20, icon: "💎" },
-    { amount: 1000, credits: 45, icon: "👑" },
+    { amount: 100, credits: 3 },
+    { amount: 200, credits: 7 },
+    { amount: 500, credits: 20 },
+    { amount: 1000, credits: 45 },
 ];
 const PAYMENT_PENDING_FRESH_MS = 60 * 1000;
 const PAYMENT_PENDING_STALE_MS = 15 * 60 * 1000;
@@ -559,6 +559,9 @@ const I18N = {
             eyebrow: "Кабинет",
             title: "Баланс",
             lede: "1 рендер — 1 генерация виртуальной примерки",
+            balanceLabel: "Баланс",
+            balanceHint: "Доступно для примерок",
+            topUpCta: "Пополнить",
             gift: "Подарок",
             lastInvoiceLabel: "Последняя оплата",
             lastInvoiceTitle: "Платежей пока нет",
@@ -567,9 +570,9 @@ const I18N = {
             invoiceNumber: "Номер оплаты",
             invoiceEmail: "Email",
             invoiceCredits: "Получено",
-            invoiceState: "Состояние",
+            invoiceStatus: "Статус",
             wizardLabel: "Пополнение",
-            reset: "Сбросить",
+            reset: "Изменить выбор",
             stepAmount: "Сумма",
             stepEmail: "Email",
             stepConfirm: "Подтверждение",
@@ -581,14 +584,18 @@ const I18N = {
             modeCustom: "Своя сумма",
             customAmountLabel: "Своя сумма",
             emailLabel: "Email для чека",
-            emailHint: "",
+            emailHint: "Чек будет отправлен на этот email",
             back: "Назад",
             nextToConfirm: "Продолжить",
             confirmAmount: "Сумма",
             confirmEmail: "Email",
             confirmCredits: "Будет получено",
             confirmHint: "",
-            pay: "Оплатить через Робокассу",
+            pay: "Оплатить",
+            choosePackage: "Выберите пакет",
+            enterEmail: "Укажите email",
+            paySelected: "Оплатить {amount}",
+            paymentProvider: "Оплата через Robokassa",
             payWithAmount: "Оплатить",
             emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
             privacyDetails: "Подробнее — в Политике обработки персональных данных",
@@ -611,7 +618,10 @@ const I18N = {
             pageRange: "{from}-{to} из {total}",
             emptyHistory: "Платежей пока нет",
             noPaymentsTitle: "Платежей пока нет",
-            noPaymentsMeta: "Стартовые рендеры по команде /start действуют 30 дней и появятся в истории пополнений",
+            noPaymentsMeta: "История пополнений появится после первой оплаты",
+            details: "Подробнее",
+            creditsTitle: "Ваши рендеры",
+            invalidEmail: "Введите корректный email",
             loading: "Загружаем кабинет...",
             refreshInvoice: "Обновить статус",
             refreshingInvoice: "Обновляем статус оплаты...",
@@ -623,17 +633,18 @@ const I18N = {
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
             fallbackDisabled: "Вход с сайта временно недоступен",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} — получено по команде /start",
+            starterGrantMeta: "{credits}\nПолучено по команде /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Оплата #{invoiceId} — {amount}",
-            paidInvoice: "Оплата #{invoiceId} — {amount}",
-            failedInvoice: "Оплата #{invoiceId} — {amount}",
+            pendingInvoice: "Оплата #{invoiceId}\n{amount}",
+            paidInvoice: "Оплата #{invoiceId}\n{amount}",
+            failedInvoice: "Оплата #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel} / 30 дней",
+            packageDuration: "30 дней",
+            receiptSummary: "Чек: {email}",
         },
         renders: {
             eyebrow: "Готовые работы",
@@ -998,6 +1009,9 @@ const I18N = {
             eyebrow: "Cabinet",
             title: "Wallet",
             lede: "Balance, last invoice, and a three-step payment flow in one place",
+            balanceLabel: "Balance",
+            balanceHint: "Available for try-ons",
+            topUpCta: "Top up",
             gift: "Gift",
             lastInvoiceLabel: "Last invoice",
             lastInvoiceTitle: "No payments yet",
@@ -1006,9 +1020,9 @@ const I18N = {
             invoiceNumber: "Invoice",
             invoiceEmail: "Email",
             invoiceCredits: "Renders",
-            invoiceState: "Status",
+            invoiceStatus: "Status",
             wizardLabel: "Top up",
-            reset: "Reset",
+            reset: "Change selection",
             stepAmount: "Amount",
             stepEmail: "Email",
             stepConfirm: "Confirm",
@@ -1020,14 +1034,18 @@ const I18N = {
             modeCustom: "Custom",
             customAmountLabel: "Custom amount",
             emailLabel: "Receipt email",
-            emailHint: "",
+            emailHint: "The receipt will be sent to this email",
             back: "Back",
             nextToConfirm: "Continue",
             confirmAmount: "Amount",
             confirmEmail: "Email",
             confirmCredits: "Credits",
             confirmHint: "",
-            pay: "Pay via Robokassa",
+            pay: "Pay",
+            choosePackage: "Choose a package",
+            enterEmail: "Enter an email",
+            paySelected: "Pay {amount}",
+            paymentProvider: "Payment via Robokassa",
             payWithAmount: "Pay",
             emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
             privacyDetails: "Learn more in the Personal Data Processing Policy",
@@ -1050,7 +1068,10 @@ const I18N = {
             pageRange: "{from}-{to} of {total}",
             emptyHistory: "No payments yet",
             noPaymentsTitle: "No payments yet",
-            noPaymentsMeta: "Your 30-day /start starter grant will appear in payment history",
+            noPaymentsMeta: "Top-up history will appear after your first payment",
+            details: "Details",
+            creditsTitle: "Your credits",
+            invalidEmail: "Enter a valid email",
             loading: "Loading cabinet...",
             refreshInvoice: "Refresh invoice",
             refreshingInvoice: "Refreshing invoice status...",
@@ -1062,17 +1083,18 @@ const I18N = {
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
             fallbackDisabled: "Web fallback is disabled on the backend",
             starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders — added on /start",
+            starterGrantMeta: "{credits} renders\nAdded on /start",
             starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
             summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId} — {amount}",
-            paidInvoice: "Invoice #{invoiceId} — {amount}",
-            failedInvoice: "Invoice #{invoiceId} — {amount}",
+            pendingInvoice: "Invoice #{invoiceId}\n{amount}",
+            paidInvoice: "Invoice #{invoiceId}\n{amount}",
+            failedInvoice: "Invoice #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} / {creditsLabel} / 30 days",
+            packageDuration: "30 days",
+            receiptSummary: "Receipt: {email}",
         },
         renders: {
             eyebrow: "Finished work",
@@ -1276,9 +1298,12 @@ const state = {
     menuOpen: false,
     moreOpen: false,
     paymentStep: 1,
-    selectedAmount: 500,
+    selectedAmount: null,
     topUpMode: "package",
     email: "",
+    receiptEmailTouched: false,
+    receiptEmailAuthKey: null,
+    walletEmailError: "",
     balance: null,
     payments: [],
     starterGrant: null,
@@ -2292,6 +2317,38 @@ function isFrontendUserAuthenticated() {
     );
 }
 
+function receiptEmailAccountKey() {
+    if (isSupabaseFrontendAuth()) {
+        const user = state.frontendAuthUser;
+        return `supabase:${user?.id || user?.email || ""}`;
+    }
+    if (HAS_TG || state.websiteAuth) {
+        const telegramUser = tg?.initDataUnsafe?.user;
+        return `telegram:${telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username || ""}`;
+    }
+    return "anonymous";
+}
+
+function receiptEmailDefault() {
+    if (!isSupabaseFrontendAuth()) return "";
+    return String(state.frontendAuthUser?.email || "").trim();
+}
+
+function syncReceiptEmailForAuth() {
+    const accountKey = receiptEmailAccountKey();
+    if (state.receiptEmailAuthKey !== accountKey) {
+        state.receiptEmailAuthKey = accountKey;
+        state.receiptEmailTouched = false;
+        state.email = "";
+        state.walletEmailError = "";
+    }
+    if (!state.receiptEmailTouched) {
+        const nextDefault = receiptEmailDefault();
+        if (state.email !== nextDefault) state.email = nextDefault;
+    }
+    syncEmailInput();
+}
+
 function isAuthIntegrationEnabled() {
     return Boolean(frontendAuthController()?.isIntegrationEnabled?.());
 }
@@ -2414,6 +2471,10 @@ function clearApplicationSessionState() {
     applicationDataGeneration += 1;
     applicationDataPromise = null;
     state.applicationDataReady = false;
+    state.email = "";
+    state.receiptEmailTouched = false;
+    state.receiptEmailAuthKey = null;
+    state.walletEmailError = "";
     state.balance = null;
     state.payments = [];
     state.starterGrant = null;
@@ -2790,6 +2851,8 @@ function handleFrontendAuthState(nextState) {
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
     state.frontendAuthSavedName = nextState.account?.savedName || state.frontendAuthSavedName || null;
+    syncReceiptEmailForAuth();
+    renderConfirmation();
     if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
         if (state.authDialogOpen && state.authDialogStep !== "otp") {
             state.authDialogStep = "restored";
@@ -3117,6 +3180,7 @@ async function logoutCurrentFrontendAuthority() {
         await controller.signOut();
         state.frontendAuthUser = null;
         state.frontendAuthSavedName = null;
+        syncReceiptEmailForAuth();
         clearApplicationSessionState();
         updateWebsiteAuthUi();
         renderDashboard();
@@ -3158,6 +3222,8 @@ function switchFromRestoredSession() {
             state.authDialogOtpBeforeChange = "";
             state.frontendAuthUser = null;
             state.frontendAuthSavedName = null;
+            syncReceiptEmailForAuth();
+            renderConfirmation();
             setAuthDialogMessage("");
         })
         .catch((error) => setAuthDialogMessage(authErrorMessage(error?.code), true))
@@ -3210,6 +3276,8 @@ function logoutWebsiteAuth() {
     clearWebsiteAuthSession({ refreshUi: false });
     frontendAuthController()?.markLegacyWebsiteSignedOut?.();
     clearApplicationSessionState();
+    syncReceiptEmailForAuth();
+    renderConfirmation();
     updateWebsiteAuthUi();
     setWalletMessage(t("wallet.authRequired"), "warning");
     renderWallet();
@@ -3240,11 +3308,13 @@ function normalizeTopUpAmount(amount) {
 }
 
 function getTopUpPackage(amount) {
+    if (amount === null || amount === undefined || amount === "") return null;
     const normalized = normalizeTopUpAmount(amount);
     return TOPUP_PACKAGES.find((item) => item.amount === normalized) || null;
 }
 
 function creditsForAmount(amount) {
+    if (getTopUpPackage(amount) === null && (amount === null || amount === undefined || amount === "")) return 0;
     const normalized = normalizeTopUpAmount(amount);
     const topUpPackage = getTopUpPackage(normalized);
     if (topUpPackage) return topUpPackage.credits;
@@ -7469,9 +7539,13 @@ function setPaymentStep(step) {
 }
 
 function setSelectedAmount(amount) {
-    state.selectedAmount = normalizeTopUpAmount(amount);
+    state.selectedAmount = amount === null || amount === undefined || amount === ""
+        ? null
+        : normalizeTopUpAmount(amount);
     document.querySelectorAll("[data-topup-amount]").forEach((btn) => {
-        btn.dataset.selected = String(Number(btn.dataset.topupAmount) === state.selectedAmount);
+        const selected = Number(btn.dataset.topupAmount) === state.selectedAmount;
+        btn.dataset.selected = String(selected);
+        btn.setAttribute("aria-pressed", String(selected));
     });
     renderConfirmation();
 }
@@ -7613,9 +7687,10 @@ function schedulePendingInvoiceRefresh() {
 }
 
 function renderWallet() {
+    syncReceiptEmailForAuth();
     const balanceValue = document.querySelector("[data-balance-value]");
     const balanceUnit = document.querySelector("[data-balance-unit]");
-    const balanceNoteValue = document.querySelector("[data-balance-note-value]");
+    const lastInvoiceTitle = document.querySelector("[data-last-invoice-title]");
     const lastInvoice = getLastInvoice();
     const emptyBlock = document.querySelector("[data-last-invoice-empty]");
     const cardBlock = document.querySelector("[data-last-invoice-card]");
@@ -7629,57 +7704,42 @@ function renderWallet() {
     const historyPrev = document.querySelector("[data-wallet-history-prev]");
     const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
-    const headingStatus = document.querySelector("[data-payment-status]");
+    const detailStatus = document.querySelector("[data-last-invoice-status-detail]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
     if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-    if (balanceNoteValue) balanceNoteValue.textContent = getAccountLabel();
 
     if (!lastInvoice) {
         if (emptyBlock) emptyBlock.hidden = false;
         if (cardBlock) cardBlock.hidden = true;
         if (cardDetails) cardDetails.hidden = true;
-        if (headingStatus) {
-            headingStatus.textContent = state.balance === null ? t("wallet.loading") : t("wallet.noPaymentsTitle");
-            headingStatus.className = "status-pill neutral";
+        if (lastInvoiceTitle) {
+            lastInvoiceTitle.hidden = false;
+            lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
         }
         if (refreshButton) refreshButton.hidden = true;
     } else {
         if (emptyBlock) emptyBlock.hidden = true;
         if (cardBlock) cardBlock.hidden = false;
         if (cardDetails) cardDetails.hidden = false;
+        if (lastInvoiceTitle) lastInvoiceTitle.hidden = true;
         if (cardBlock) cardBlock.dataset.status = lastInvoice.status;
-        if (headingStatus) {
-            headingStatus.textContent = formatPaymentStatus(lastInvoice.status);
-            headingStatus.className = `status-pill ${statusTone(lastInvoice.status)}`;
-        }
         if (statusPill) {
             statusPill.textContent = formatPaymentStatus(lastInvoice.status);
             statusPill.className = `status-pill ${statusTone(lastInvoice.status)}`;
         }
+        if (detailStatus) {
+            detailStatus.textContent = formatPaymentStatus(lastInvoice.status);
+        }
         document.querySelector("[data-last-invoice-amount]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
+        document.querySelector("[data-last-invoice-renders]")?.replaceChildren(document.createTextNode(formatRenderCount(lastInvoice.credits)));
         document.querySelector("[data-last-invoice-amount-copy]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
         document.querySelector("[data-last-invoice-email]")?.replaceChildren(document.createTextNode(lastInvoice.email || "—"));
         document.querySelector("[data-last-invoice-credits]")?.replaceChildren(document.createTextNode(`${lastInvoice.credits} ${t("credits")}`));
-        document.querySelector("[data-last-invoice-state]")?.replaceChildren(document.createTextNode(formatPaymentStatus(lastInvoice.status)));
-        document.querySelector("[data-last-invoice-number]")?.replaceChildren(
-            document.createTextNode(
-                formatTemplate(
-                    lastInvoice.status === "paid"
-                        ? "wallet.paidInvoice"
-                        : lastInvoice.status === "failed" || lastInvoice.status === "cancelled" || lastInvoice.status === "expired"
-                          ? "wallet.failedInvoice"
-                          : "wallet.pendingInvoice",
-                    {
-                        invoiceId: String(lastInvoice.invoiceId).padStart(6, "0"),
-                        amount: formatRub(lastInvoice.amount),
-                    }
-                )
-            )
-        );
         document.querySelector("[data-last-invoice-number-copy]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
-        document.querySelector("[data-last-invoice-meta]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
+        document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
+        document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         if (refreshButton) refreshButton.hidden = lastInvoice.status !== "pending";
     }
 
@@ -7709,10 +7769,14 @@ function renderWallet() {
         history.innerHTML = historyState.visibleItems
             .map((item) => {
                 return `
-                    <div class="history-item payment-history-item">
-                        <div>
-                            <strong>${formatRub(item.amount)} / ${item.credits} ${t("credits")}</strong>
-                            <div class="meta">Robokassa — ${item.createdAt}</div>
+                        <div class="history-item payment-history-item">
+                        <div class="payment-history-main">
+                            <strong class="payment-history-amount">${formatRub(item.amount)}</strong>
+                            <span class="payment-history-renders">${formatRenderCount(item.credits)}</span>
+                            <div class="meta payment-history-meta">
+                                <span>${item.createdAt}</span>
+                                <span>#${String(item.invoiceId).padStart(6, "0")}</span>
+                            </div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -7747,26 +7811,60 @@ function renderWallet() {
 }
 
 function renderConfirmation() {
-    const credits = creditsForAmount(state.selectedAmount);
-    document.querySelector("[data-topup-summary-title]")?.replaceChildren(
-        document.createTextNode(getTopUpPackage(state.selectedAmount) ? t("wallet.summaryPackageTitle") : t("wallet.summaryCustomTitle"))
-    );
-    document.querySelector("[data-topup-summary-meta]")?.replaceChildren(
-        document.createTextNode(
-            formatTemplate("wallet.packageSummary", {
-                amount: formatRub(state.selectedAmount),
-                creditsLabel: formatRenderCount(credits),
-            })
-        )
-    );
+    const topUpPackage = getTopUpPackage(state.selectedAmount);
+    const credits = topUpPackage?.credits || 0;
+    const summaryTitle = document.querySelector("[data-topup-summary-title]");
+    const summaryMeta = document.querySelector("[data-topup-summary-meta]");
+    const summaryValues = document.querySelector("[data-topup-summary-values]");
+    const summaryAmount = document.querySelector("[data-topup-summary-amount]");
+    const summaryCredits = document.querySelector("[data-topup-summary-credits]");
+    const summaryDuration = document.querySelector("[data-topup-summary-duration]");
+    const summaryReceipt = document.querySelector("[data-topup-summary-receipt]");
+    const resetButton = document.querySelector("[data-reset-wizard]");
+    if (summaryTitle) summaryTitle.textContent = topUpPackage ? t("wallet.summaryPackageTitle") : t("wallet.summaryEmptyTitle");
+    if (summaryMeta) {
+        summaryMeta.hidden = Boolean(topUpPackage);
+        summaryMeta.textContent = t("wallet.summaryEmptyMeta");
+    }
+    if (summaryValues) {
+        summaryValues.hidden = !topUpPackage;
+    }
+    if (topUpPackage) {
+        if (summaryAmount) summaryAmount.textContent = formatRub(topUpPackage.amount);
+        if (summaryCredits) summaryCredits.textContent = formatRenderCount(credits);
+        if (summaryDuration) summaryDuration.textContent = t("wallet.packageDuration");
+    }
+    if (summaryReceipt) {
+        summaryReceipt.hidden = !topUpPackage;
+        summaryReceipt.textContent = topUpPackage
+            ? formatTemplate("wallet.receiptSummary", { email: state.email || "—" })
+            : "";
+    }
+    if (resetButton) resetButton.hidden = !topUpPackage;
     const payButton = document.querySelector("[data-pay-button]");
-    if (payButton) payButton.textContent = state.walletBusy ? t("wallet.openingPayment") : t("wallet.pay");
+    if (payButton) {
+        const validEmail = validFrontendEmail(state.email);
+        payButton.textContent = state.walletBusy
+            ? t("wallet.openingPayment")
+            : !topUpPackage
+                ? t("wallet.choosePackage")
+                : !validEmail
+                    ? t("wallet.enterEmail")
+                    : formatTemplate("wallet.paySelected", { amount: formatRub(topUpPackage.amount) });
+        payButton.disabled = Boolean(state.walletBusy || !topUpPackage || !validEmail);
+    }
 }
 
 function syncEmailInput() {
     const emailInput = document.querySelector("[data-topup-email]");
     if (emailInput && emailInput.value !== state.email) {
         emailInput.value = state.email;
+    }
+    if (emailInput) emailInput.toggleAttribute("aria-invalid", Boolean(state.walletEmailError));
+    const emailError = document.querySelector("[data-topup-email-error]");
+    if (emailError) {
+        emailError.hidden = !state.walletEmailError;
+        emailError.textContent = state.walletEmailError;
     }
 }
 
@@ -8875,12 +8973,7 @@ async function requestCabinet({ silent = false } = {}) {
             remainingCredits: Number(item.remaining_credits || 0),
             expiresAt: item.expires_at || "",
         }));
-        const rememberedEmail = state.payments.find((payment) => payment.email)?.email || "";
-        if (rememberedEmail && !state.email) {
-            state.email = rememberedEmail;
-            syncEmailInput();
-            renderConfirmation();
-        }
+        syncReceiptEmailForAuth();
         const pendingMessage = getPendingWalletMessage(getLastInvoice());
         if (state.paymentReturnState === "success") {
             setWalletMessage(t("wallet.paymentSuccess"), "success");
@@ -8935,6 +9028,19 @@ function paymentReturnContext() {
 }
 
 async function createPayment() {
+    const topUpPackage = getTopUpPackage(state.selectedAmount);
+    if (!topUpPackage) {
+        setWalletMessage("");
+        renderConfirmation();
+        return;
+    }
+    if (!validFrontendEmail(state.email)) {
+        state.walletEmailError = t("wallet.invalidEmail");
+        syncEmailInput();
+        renderConfirmation();
+        document.querySelector("[data-topup-email]")?.focus();
+        return;
+    }
     const identity = getIdentityPayload();
     if (!identity.init_data && !identity.telegram_user_id && !hasFrontendAuth()) {
         setWalletMessage("");
@@ -8945,13 +9051,13 @@ async function createPayment() {
 
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
-    void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: normalizeTopUpAmount(state.selectedAmount) });
+    void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: topUpPackage.amount });
     try {
         const response = await authenticatedFetch(apiUrl("/payments/topups"), {
             method: "POST",
             headers: withAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
-                amount_rub: normalizeTopUpAmount(state.selectedAmount).toFixed(2),
+                amount_rub: topUpPackage.amount.toFixed(2),
                 email: state.email || null,
                 pricing_version: PRICING_VERSION,
                 source_screen: "cabinet",
@@ -10071,7 +10177,16 @@ function bindEvents() {
 
     document.querySelector("[data-topup-email]")?.addEventListener("input", (event) => {
         state.email = event.target.value.trim();
+        state.receiptEmailTouched = true;
+        state.walletEmailError = state.email && !validFrontendEmail(state.email)
+            ? t("wallet.invalidEmail")
+            : "";
+        syncEmailInput();
         renderConfirmation();
+    });
+
+    document.querySelector("[data-wallet-topup]")?.addEventListener("click", () => {
+        document.querySelector("[data-topup-amount]")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
@@ -10095,11 +10210,10 @@ function bindEvents() {
     });
     document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
         state.paymentStep = 1;
-        state.selectedAmount = 500;
-        state.email = "";
-        const input = document.querySelector("[data-topup-email]");
-        if (input) input.value = "";
-        setSelectedAmount(state.selectedAmount);
+        setSelectedAmount(null);
+        state.receiptEmailTouched = false;
+        state.walletEmailError = "";
+        syncReceiptEmailForAuth();
         renderConfirmation();
         setWalletMessage("");
         setWalletLoading(false);
@@ -10646,7 +10760,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!document.hidden && state.view === "renders") {
             scheduleRenderHistoryPolling();
         }
-        if (!document.hidden) void checkCurrentBuild();
         if (document.hidden) {
             clearRenderHistoryPolling();
         }

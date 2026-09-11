@@ -149,9 +149,10 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert "/identity/resolve" in APP_JS
     assert "/jobs/from-assets" in APP_JS
     assert "/payments/topups" in APP_JS
+    assert 'class="topup-icon"' not in INDEX_HTML
     for icon in ("⚡", "🏁", "💎", "👑"):
-        assert icon in INDEX_HTML
-    assert "Робокассу" in INDEX_HTML
+        assert icon not in INDEX_HTML
+    assert "Robokassa" in INDEX_HTML
 
 
 def test_payment_creation_sends_channel_aware_return_context() -> None:
@@ -500,6 +501,50 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert "Сначала спишутся рендеры с ближайшим сроком действия" in APP_JS
     assert "data-dashboard-expiry" in INDEX_HTML
     assert "data-wallet-expiry-list" in INDEX_HTML
+
+
+def test_wallet_payment_summaries_use_layout_without_punctuation_separators() -> None:
+    assert "payment-card-top" in INDEX_HTML
+    assert "data-last-invoice-amount" in INDEX_HTML
+    assert "data-last-invoice-renders" in INDEX_HTML
+    assert "data-last-invoice-date" in INDEX_HTML
+    assert "data-last-invoice-number-meta" in INDEX_HTML
+    assert "data-last-invoice-status-detail" in INDEX_HTML
+    assert "data-last-invoice-state" not in INDEX_HTML
+    assert "data-topup-summary-values" in INDEX_HTML
+    assert 'data-i18n="wallet.creditsTitle">Ваши рендеры' in INDEX_HTML
+    assert "Ваши credits" not in INDEX_HTML
+    assert "payment-history-renders" in APP_JS
+    assert "payment-history-meta" in APP_JS
+    assert "packageDuration:" in APP_JS
+    assert "0 ₽ — +0 рендеров" not in INDEX_HTML
+    assert "— +${formatRenderCount(lastInvoice.credits)}" not in APP_JS
+    assert "— +${formatRenderCount(item.credits)}" not in APP_JS
+    assert 'formatTemplate("wallet.packageSummary"' not in APP_JS
+    assert "invoiceState:" not in APP_JS
+    assert "formatPaymentStatus(lastInvoice.status)" in APP_JS
+    assert (
+        "telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username"
+        in APP_JS
+    )
+    assert "WALLET_MIDDLE_DOT_SEPARATOR" not in APP_JS
+
+
+def test_wallet_spacing_status_alignment_and_visibility_preserve_active_view() -> None:
+    assert "gap: 14px;" in STYLE_CSS
+    assert "padding: 20px 24px;" in STYLE_CSS
+    assert ".payment-card-top" in STYLE_CSS
+    assert ".payment-card-top .status-pill," in STYLE_CSS
+    assert ".payment-history-item .status-pill" in STYLE_CSS
+    assert "position: absolute;" in STYLE_CSS
+    assert "padding-right: 190px;" in STYLE_CSS
+    assert "width: fit-content;" in STYLE_CSS
+    assert ".latest-payment-details[open]" in STYLE_CSS
+    visibility_handler = APP_JS.split('document.addEventListener("visibilitychange"', 1)[1].split(
+        'window.addEventListener("pagehide"', 1
+    )[0]
+    assert "checkCurrentBuild" not in visibility_handler
+    assert "void checkCurrentBuild();" in APP_JS
 
 
 def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:

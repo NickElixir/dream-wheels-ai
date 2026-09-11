@@ -969,6 +969,58 @@ h2 {
     padding: 28px 24px;
 }
 
+.wallet-balance-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 148px;
+    background:
+        radial-gradient(circle at 86% 18%, rgba(221, 255, 0, 0.12), transparent 32%),
+        linear-gradient(180deg, rgba(29, 34, 43, 0.98), rgba(18, 21, 28, 0.98));
+}
+
+.wallet-balance-summary-copy {
+    min-width: 0;
+}
+
+.wallet-balance-summary .section-label {
+    margin-bottom: 12px;
+}
+
+.wallet-balance-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
+.wallet-balance-value {
+    color: var(--accent);
+    font-size: clamp(40px, 7vw, 60px);
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+}
+
+.wallet-balance-unit {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.wallet-balance-note {
+    margin: 10px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.wallet-balance-action {
+    flex: 0 0 auto;
+    width: auto;
+}
+
 .dashboard-balance-subisland {
     width: min(220px, 100%);
     aspect-ratio: 1;
@@ -1057,7 +1109,7 @@ h2 {
 
 .last-invoice-panel .panel-head > div {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
 }
 
@@ -1066,9 +1118,50 @@ h2 {
     margin: 0;
 }
 
-.last-invoice-panel [data-payment-status] {
-    flex: 0 0 auto;
-    margin-top: 4px;
+.last-invoice-panel h2 {
+    font-size: clamp(20px, 3.5vw, 28px);
+}
+
+.latest-payment-details {
+    gap: 14px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.latest-payment-details[open] {
+    width: 100%;
+}
+
+.latest-payment-details[hidden] {
+    display: none;
+}
+
+.latest-payment-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: start;
+    width: fit-content;
+    min-height: 44px;
+    padding: 0 20px;
+    color: var(--accent-strong);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 800;
+    list-style: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.latest-payment-details-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.latest-payment-details .invoice-grid {
+    padding: 0 18px 18px;
 }
 
 .warning-note {
@@ -1144,7 +1237,8 @@ h2 {
 
 .wizard-panel {
     display: grid;
-    gap: 18px;
+    gap: 14px;
+    padding: 20px 24px;
 }
 
 .wallet-wizard-header {
@@ -1154,6 +1248,12 @@ h2 {
 
 .wallet-wizard-header .wallet-auth-notice {
     margin: 0;
+}
+
+.wizard-panel .topup-wizard > .topup-step-island {
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 
 .wallet-pay-button {
@@ -1354,7 +1454,7 @@ h2 {
 
 .topup-wizard {
     display: grid;
-    gap: 16px;
+    gap: 12px;
 }
 
 .topup-island {
@@ -1373,8 +1473,8 @@ h2 {
 }
 
 .topup-step-index {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 999px;
     background: rgba(221, 255, 0, 0.12);
     border: 1px solid rgba(221, 255, 0, 0.24);
@@ -1387,7 +1487,7 @@ h2 {
 }
 
 .topup-step-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 800;
 }
 
@@ -1398,7 +1498,19 @@ h2 {
 }
 
 .topup-reset-button {
-    width: 100%;
+    width: auto;
+    justify-self: start;
+    min-height: 36px;
+    padding-inline: 4px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.topup-reset-button:hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--accent-strong);
 }
 
 .topup-packages-island {
@@ -1416,12 +1528,11 @@ h2 {
 .topup-card {
     appearance: none;
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
     width: 100%;
-    min-height: 92px;
-    padding: 16px;
+    min-height: 76px;
+    padding: 14px 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.02);
@@ -1437,6 +1548,10 @@ h2 {
     background: rgba(221, 255, 0, 0.09);
 }
 
+.topup-card[data-selected="true"] {
+    box-shadow: inset 0 0 0 1px rgba(221, 255, 0, 0.18);
+}
+
 .topup-card:active {
     transform: translateY(1px);
 }
@@ -1446,18 +1561,6 @@ h2 {
     cursor: not-allowed;
 }
 
-.topup-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 21px;
-}
-
 .package-main {
     display: grid;
     gap: 4px;
@@ -1465,7 +1568,7 @@ h2 {
 }
 
 .package-name {
-    font-size: 28px;
+    font-size: clamp(20px, 3vw, 26px);
     font-weight: 900;
     letter-spacing: -0.03em;
 }
@@ -1514,6 +1617,12 @@ h2 {
     line-height: 1.55;
 }
 
+.wallet-privacy-link {
+    margin: -4px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
 .email-privacy-note a,
 .payment-acceptance a,
 .legal-inline-links a,
@@ -1530,7 +1639,9 @@ h2 {
 }
 
 .topup-summary {
-    padding: 18px;
+    display: grid;
+    gap: 5px;
+    padding: 16px;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.02);
@@ -1544,11 +1655,42 @@ h2 {
 }
 
 .topup-summary-meta {
-    margin-top: 6px;
     color: var(--text);
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 900;
-    line-height: 1.45;
+    line-height: 1.3;
+}
+
+.topup-summary-meta[hidden],
+.topup-summary-values[hidden] {
+    display: none;
+}
+
+.topup-summary-values {
+    display: grid;
+    gap: 3px;
+}
+
+.topup-summary-amount {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.15;
+}
+
+.topup-summary-credits,
+.topup-summary-duration {
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.topup-summary-receipt {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .secure-payment-note {
@@ -1581,11 +1723,21 @@ h2 {
     min-height: 52px;
 }
 
+.secure-payment-note {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+}
+
 .payment-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    display: grid;
+    gap: 10px;
     padding: 18px;
     border-radius: 20px;
     border: 1px solid rgba(255, 159, 67, 0.26);
@@ -1595,6 +1747,11 @@ h2 {
 .last-invoice-panel .payment-card,
 .last-invoice-panel .invoice-card {
     margin-top: 0;
+}
+
+.last-invoice-panel .payment-card {
+    position: relative;
+    padding-right: 190px;
 }
 
 .payment-card[data-status="paid"] {
@@ -1609,7 +1766,7 @@ h2 {
     background: rgba(255, 123, 123, 0.08);
 }
 
-.payment-card-grant {
+.payment-card-empty {
     border-color: rgba(221, 255, 0, 0.25);
     background: rgba(221, 255, 0, 0.06);
 }
@@ -1619,10 +1776,55 @@ h2 {
     font-weight: 900;
 }
 
+.payment-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.payment-card-top .status-pill,
+.payment-history-item .status-pill {
+    align-self: center;
+}
+
+.last-invoice-panel .payment-card-top .status-pill {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+}
+
+.payment-card-main {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.payment-card-amount {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.05;
+}
+
+.payment-card-renders {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
 .payment-card-meta {
-    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
     color: var(--text-subtle);
+    font-size: 13px;
     line-height: 1.4;
+}
+
+.payment-card-meta span {
+    overflow-wrap: anywhere;
 }
 
 .payment-card-badge {
@@ -4167,6 +4369,23 @@ h2 {
     padding: 4px 20px 20px;
 }
 
+.wallet-sections-panel {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+}
+
+.wallet-sections-panel > .topup-island {
+    padding: 18px;
+}
+
+.wallet-section-title {
+    margin: 0;
+    font-size: clamp(20px, 3vw, 25px);
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+}
+
 .wallet-history-island {
     gap: 16px;
 }
@@ -4259,7 +4478,7 @@ h2 {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 14px;
     align-items: center;
-    padding: 18px 22px;
+    padding: 14px 16px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.025);
@@ -4268,7 +4487,23 @@ h2 {
 .wallet-expiry-row strong,
 .payment-history-item strong {
     display: block;
-    font-size: 18px;
+    font-size: 16px;
+}
+
+.payment-history-main {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.payment-history-amount {
+    font-size: 17px;
+}
+
+.payment-history-renders {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .wallet-expiry-row .meta,
@@ -4276,6 +4511,12 @@ h2 {
     margin-top: 4px;
     color: var(--text-muted);
     line-height: 1.4;
+}
+
+.payment-history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
 }
 
 .wallet-expiry-inline-note {
@@ -5300,5 +5541,67 @@ body.has-fallback-main-button #app {
 
     .application-auth-gate-wordmark {
         font-size: 14px;
+    }
+}
+
+@media (max-width: 560px) {
+    .wallet-balance-summary {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 0;
+    }
+
+    .wallet-balance-action {
+        width: 100%;
+    }
+
+    .topup-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .topup-card {
+        min-height: 68px;
+        padding: 12px;
+    }
+
+    .package-name {
+        font-size: 20px;
+    }
+
+    .package-meta {
+        font-size: 12px;
+    }
+
+    .wallet-sections-panel {
+        padding: 12px;
+    }
+
+    .wallet-sections-panel > .topup-island {
+        padding: 14px;
+    }
+
+    .last-invoice-panel .payment-card-action {
+        width: 100%;
+    }
+
+    .last-invoice-panel .payment-card {
+        padding-right: 18px;
+    }
+
+    .payment-card-top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .payment-card-top .status-pill {
+        align-self: flex-start;
+        position: static;
+        transform: none;
+    }
+
+    .latest-payment-details .invoice-grid {
+        padding-inline: 14px;
     }
 }
