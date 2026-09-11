@@ -98,3 +98,23 @@ test("wallet polish separates credits from payment history and keeps checkout ex
     assert.match(app, /paySelected: "Оплатить \{amount\}"/);
     assert.match(app, /const topUpPackage = getTopUpPackage\(state\.selectedAmount\)/);
 });
+
+test("wallet payment summaries use layout elements instead of punctuation separators", () => {
+    assert.match(html, /payment-card-top/);
+    assert.match(html, /data-last-invoice-amount/);
+    assert.match(html, /data-last-invoice-renders/);
+    assert.match(html, /data-last-invoice-date/);
+    assert.match(html, /data-last-invoice-number-meta/);
+    assert.match(html, /data-last-invoice-status-detail/);
+    assert.match(html, /data-topup-summary-values/);
+    assert.match(app, /payment-history-renders/);
+    assert.match(app, /payment-history-meta/);
+    assert.match(app, /packageDuration:/);
+    assert.doesNotMatch(`${html}\n${app}`, /0 ₽ — \+0 рендеров/);
+    assert.doesNotMatch(app, /— \+\$\{formatRenderCount\(lastInvoice\.credits\)\}/);
+    assert.doesNotMatch(app, /— \+\$\{formatRenderCount\(item\.credits\)\}/);
+    assert.doesNotMatch(app, /formatTemplate\("wallet\.packageSummary"/);
+    assert.doesNotMatch(app, /data-last-invoice-date[^\n]*—/);
+    assert.doesNotMatch(app, /data-last-invoice-number-meta[^\n]*·/);
+    assert.doesNotMatch(`${html}\n${app}`, /\b\+\$\{formatRenderCount/);
+});

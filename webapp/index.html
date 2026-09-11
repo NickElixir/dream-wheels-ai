@@ -357,7 +357,6 @@
                         <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последняя оплата</p>
                         <h2 data-last-invoice-title data-i18n="wallet.lastInvoiceTitle">Платежей пока нет</h2>
                     </div>
-                    <span class="status-pill neutral" data-payment-status>Нет платежей</span>
                 </div>
                 <p class="panel-note warning-note" data-last-payment-error hidden></p>
                 <div class="payment-card payment-card-empty" data-last-invoice-empty>
@@ -366,9 +365,16 @@
                     </div>
                 </div>
                 <div class="payment-card" data-last-invoice-card hidden>
-                    <div>
-                        <div class="payment-card-title" data-last-invoice-number>0 ₽ — +0 рендеров</div>
-                        <div class="payment-card-meta" data-last-invoice-meta>Сегодня — #000000</div>
+                    <div class="payment-card-top">
+                        <div class="payment-card-main">
+                            <strong class="payment-card-amount" data-last-invoice-amount>0 ₽</strong>
+                            <span class="payment-card-renders" data-last-invoice-renders>0 рендеров</span>
+                        </div>
+                        <span class="status-pill neutral" data-last-invoice-status>В ожидании</span>
+                    </div>
+                    <div class="payment-card-meta" data-last-invoice-meta>
+                        <span data-last-invoice-date>Сегодня</span>
+                        <span data-last-invoice-number-meta>#000000</span>
                     </div>
                     <button type="button" class="payment-card-action" data-refresh-invoice hidden data-i18n="wallet.refreshInvoice">Обновить статус</button>
                 </div>
@@ -397,7 +403,7 @@
                         </div>
                         <div class="invoice-field">
                             <span data-i18n="wallet.invoiceStatus">Статус</span>
-                            <strong data-last-invoice-status>В ожидании</strong>
+                            <strong data-last-invoice-status-detail>В ожидании</strong>
                         </div>
                     </div>
                 </details>
@@ -499,6 +505,11 @@
                         <div class="topup-summary">
                             <div class="topup-summary-title" data-topup-summary-title data-i18n="wallet.summaryEmptyTitle">Выберите пакет</div>
                             <div class="topup-summary-meta" data-topup-summary-meta data-i18n="wallet.summaryEmptyMeta">Здесь появится выбранный пакет перед оплатой</div>
+                            <div class="topup-summary-values" data-topup-summary-values hidden>
+                                <strong class="topup-summary-amount" data-topup-summary-amount>0 ₽</strong>
+                                <span class="topup-summary-credits" data-topup-summary-credits>0 рендеров</span>
+                                <span class="topup-summary-duration" data-topup-summary-duration>30 дней</span>
+                            </div>
                             <div class="topup-summary-receipt" data-topup-summary-receipt hidden></div>
                         </div>
                         <button type="button" class="ghost-button compact-button topup-reset-button" data-reset-wizard hidden data-i18n="wallet.reset">Изменить выбор</button>

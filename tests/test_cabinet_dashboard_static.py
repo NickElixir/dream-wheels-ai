@@ -503,6 +503,24 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert "data-wallet-expiry-list" in INDEX_HTML
 
 
+def test_wallet_payment_summaries_use_layout_without_punctuation_separators() -> None:
+    assert "payment-card-top" in INDEX_HTML
+    assert "data-last-invoice-amount" in INDEX_HTML
+    assert "data-last-invoice-renders" in INDEX_HTML
+    assert "data-last-invoice-date" in INDEX_HTML
+    assert "data-last-invoice-number-meta" in INDEX_HTML
+    assert "data-last-invoice-status-detail" in INDEX_HTML
+    assert "data-topup-summary-values" in INDEX_HTML
+    assert "payment-history-renders" in APP_JS
+    assert "payment-history-meta" in APP_JS
+    assert "packageDuration:" in APP_JS
+    assert "0 ₽ — +0 рендеров" not in INDEX_HTML
+    assert "— +${formatRenderCount(lastInvoice.credits)}" not in APP_JS
+    assert "— +${formatRenderCount(item.credits)}" not in APP_JS
+    assert 'formatTemplate("wallet.packageSummary"' not in APP_JS
+    assert "WALLET_MIDDLE_DOT_SEPARATOR" not in APP_JS
+
+
 def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:
     rewrites = VERCEL_JSON.get("rewrites", [])
     assert {"source": "/app", "destination": "/index.html"} in rewrites

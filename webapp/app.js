@@ -634,17 +634,17 @@ const I18N = {
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
             fallbackDisabled: "Вход с сайта временно недоступен",
             starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits} — получено по команде /start",
+            starterGrantMeta: "{credits}\nПолучено по команде /start",
             starterGrantBadge: "Подарок",
             summaryEmptyTitle: "Выберите пакет",
             summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
             summaryPackageTitle: "Выбранный пакет",
             summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Оплата #{invoiceId} — {amount}",
-            paidInvoice: "Оплата #{invoiceId} — {amount}",
-            failedInvoice: "Оплата #{invoiceId} — {amount}",
+            pendingInvoice: "Оплата #{invoiceId}\n{amount}",
+            paidInvoice: "Оплата #{invoiceId}\n{amount}",
+            failedInvoice: "Оплата #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} — {creditsLabel} — 30 дней",
+            packageDuration: "30 дней",
             receiptSummary: "Чек: {email}",
         },
         renders: {
@@ -1085,17 +1085,17 @@ const I18N = {
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
             fallbackDisabled: "Web fallback is disabled on the backend",
             starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders — added on /start",
+            starterGrantMeta: "{credits} renders\nAdded on /start",
             starterGrantBadge: "Gift",
             summaryEmptyTitle: "Choose a package",
             summaryEmptyMeta: "The selected package will appear here before payment",
             summaryPackageTitle: "Selected package",
             summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId} — {amount}",
-            paidInvoice: "Invoice #{invoiceId} — {amount}",
-            failedInvoice: "Invoice #{invoiceId} — {amount}",
+            pendingInvoice: "Invoice #{invoiceId}\n{amount}",
+            paidInvoice: "Invoice #{invoiceId}\n{amount}",
+            failedInvoice: "Invoice #{invoiceId}\n{amount}",
             packageMetaDays: "{creditsLabel}",
-            packageSummary: "{amount} — {creditsLabel} — 30 days",
+            packageDuration: "30 days",
             receiptSummary: "Receipt: {email}",
         },
         renders: {
@@ -7706,7 +7706,7 @@ function renderWallet() {
     const historyPrev = document.querySelector("[data-wallet-history-prev]");
     const historyNext = document.querySelector("[data-wallet-history-next]");
     const statusPill = document.querySelector("[data-last-invoice-status]");
-    const headingStatus = document.querySelector("[data-payment-status]");
+    const detailStatus = document.querySelector("[data-last-invoice-status-detail]");
     const refreshButton = document.querySelector("[data-refresh-invoice]");
 
     if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
@@ -7716,40 +7716,33 @@ function renderWallet() {
         if (emptyBlock) emptyBlock.hidden = false;
         if (cardBlock) cardBlock.hidden = true;
         if (cardDetails) cardDetails.hidden = true;
-        if (headingStatus) {
-            headingStatus.textContent = state.balance === null ? t("wallet.loading") : t("wallet.noPaymentsTitle");
-            headingStatus.className = "status-pill neutral";
+        if (lastInvoiceTitle) {
+            lastInvoiceTitle.hidden = false;
+            lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
         }
-        if (lastInvoiceTitle) lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
         if (refreshButton) refreshButton.hidden = true;
     } else {
         if (emptyBlock) emptyBlock.hidden = true;
         if (cardBlock) cardBlock.hidden = false;
         if (cardDetails) cardDetails.hidden = false;
+        if (lastInvoiceTitle) lastInvoiceTitle.hidden = true;
         if (cardBlock) cardBlock.dataset.status = lastInvoice.status;
-        if (headingStatus) {
-            headingStatus.textContent = formatPaymentStatus(lastInvoice.status);
-            headingStatus.className = `status-pill ${statusTone(lastInvoice.status)}`;
-        }
-        if (lastInvoiceTitle) {
-            lastInvoiceTitle.textContent = `${formatRub(lastInvoice.amount)} — +${formatRenderCount(lastInvoice.credits)}`;
-        }
         if (statusPill) {
             statusPill.textContent = formatPaymentStatus(lastInvoice.status);
             statusPill.className = `status-pill ${statusTone(lastInvoice.status)}`;
         }
+        if (detailStatus) {
+            detailStatus.textContent = formatPaymentStatus(lastInvoice.status);
+        }
         document.querySelector("[data-last-invoice-amount]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
+        document.querySelector("[data-last-invoice-renders]")?.replaceChildren(document.createTextNode(formatRenderCount(lastInvoice.credits)));
         document.querySelector("[data-last-invoice-amount-copy]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
         document.querySelector("[data-last-invoice-email]")?.replaceChildren(document.createTextNode(lastInvoice.email || "—"));
         document.querySelector("[data-last-invoice-credits]")?.replaceChildren(document.createTextNode(`${lastInvoice.credits} ${t("credits")}`));
         document.querySelector("[data-last-invoice-state]")?.replaceChildren(document.createTextNode(formatPaymentStatus(lastInvoice.status)));
-        document.querySelector("[data-last-invoice-number]")?.replaceChildren(
-            document.createTextNode(`${formatRub(lastInvoice.amount)} — +${formatRenderCount(lastInvoice.credits)}`)
-        );
         document.querySelector("[data-last-invoice-number-copy]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
-        document.querySelector("[data-last-invoice-meta]")?.replaceChildren(
-            document.createTextNode(`${lastInvoice.createdAt} — #${String(lastInvoice.invoiceId).padStart(6, "0")}`)
-        );
+        document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
+        document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         if (refreshButton) refreshButton.hidden = lastInvoice.status !== "pending";
     }
 
@@ -7779,10 +7772,14 @@ function renderWallet() {
         history.innerHTML = historyState.visibleItems
             .map((item) => {
                 return `
-                    <div class="history-item payment-history-item">
-                        <div>
-                            <strong>${formatRub(item.amount)} — +${formatRenderCount(item.credits)}</strong>
-                            <div class="meta">${item.createdAt} — #${String(item.invoiceId).padStart(6, "0")}</div>
+                        <div class="history-item payment-history-item">
+                        <div class="payment-history-main">
+                            <strong class="payment-history-amount">${formatRub(item.amount)}</strong>
+                            <span class="payment-history-renders">${formatRenderCount(item.credits)}</span>
+                            <div class="meta payment-history-meta">
+                                <span>${item.createdAt}</span>
+                                <span>#${String(item.invoiceId).padStart(6, "0")}</span>
+                            </div>
                         </div>
                         <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
                     </div>
@@ -7821,16 +7818,24 @@ function renderConfirmation() {
     const credits = topUpPackage?.credits || 0;
     const summaryTitle = document.querySelector("[data-topup-summary-title]");
     const summaryMeta = document.querySelector("[data-topup-summary-meta]");
+    const summaryValues = document.querySelector("[data-topup-summary-values]");
+    const summaryAmount = document.querySelector("[data-topup-summary-amount]");
+    const summaryCredits = document.querySelector("[data-topup-summary-credits]");
+    const summaryDuration = document.querySelector("[data-topup-summary-duration]");
     const summaryReceipt = document.querySelector("[data-topup-summary-receipt]");
     const resetButton = document.querySelector("[data-reset-wizard]");
     if (summaryTitle) summaryTitle.textContent = topUpPackage ? t("wallet.summaryPackageTitle") : t("wallet.summaryEmptyTitle");
     if (summaryMeta) {
-        summaryMeta.textContent = topUpPackage
-            ? formatTemplate("wallet.packageSummary", {
-                amount: formatRub(topUpPackage.amount),
-                creditsLabel: formatRenderCount(credits),
-            })
-            : t("wallet.summaryEmptyMeta");
+        summaryMeta.hidden = Boolean(topUpPackage);
+        summaryMeta.textContent = t("wallet.summaryEmptyMeta");
+    }
+    if (summaryValues) {
+        summaryValues.hidden = !topUpPackage;
+    }
+    if (topUpPackage) {
+        if (summaryAmount) summaryAmount.textContent = formatRub(topUpPackage.amount);
+        if (summaryCredits) summaryCredits.textContent = formatRenderCount(credits);
+        if (summaryDuration) summaryDuration.textContent = t("wallet.packageDuration");
     }
     if (summaryReceipt) {
         summaryReceipt.hidden = !topUpPackage;
