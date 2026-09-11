@@ -570,7 +570,6 @@ const I18N = {
             invoiceNumber: "Номер оплаты",
             invoiceEmail: "Email",
             invoiceCredits: "Получено",
-            invoiceState: "Состояние",
             invoiceStatus: "Статус",
             wizardLabel: "Пополнение",
             reset: "Изменить выбор",
@@ -1021,7 +1020,6 @@ const I18N = {
             invoiceNumber: "Invoice",
             invoiceEmail: "Email",
             invoiceCredits: "Renders",
-            invoiceState: "Status",
             invoiceStatus: "Status",
             wizardLabel: "Top up",
             reset: "Change selection",
@@ -2326,7 +2324,7 @@ function receiptEmailAccountKey() {
     }
     if (HAS_TG || state.websiteAuth) {
         const telegramUser = tg?.initDataUnsafe?.user;
-        return `telegram:${telegramUser?.id || state.websiteAuth?.username || ""}`;
+        return `telegram:${telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username || ""}`;
     }
     return "anonymous";
 }
@@ -7739,7 +7737,6 @@ function renderWallet() {
         document.querySelector("[data-last-invoice-amount-copy]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
         document.querySelector("[data-last-invoice-email]")?.replaceChildren(document.createTextNode(lastInvoice.email || "—"));
         document.querySelector("[data-last-invoice-credits]")?.replaceChildren(document.createTextNode(`${lastInvoice.credits} ${t("credits")}`));
-        document.querySelector("[data-last-invoice-state]")?.replaceChildren(document.createTextNode(formatPaymentStatus(lastInvoice.status)));
         document.querySelector("[data-last-invoice-number-copy]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
         document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
         document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));

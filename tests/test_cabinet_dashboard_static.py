@@ -510,6 +510,7 @@ def test_wallet_payment_summaries_use_layout_without_punctuation_separators() ->
     assert "data-last-invoice-date" in INDEX_HTML
     assert "data-last-invoice-number-meta" in INDEX_HTML
     assert "data-last-invoice-status-detail" in INDEX_HTML
+    assert "data-last-invoice-state" not in INDEX_HTML
     assert "data-topup-summary-values" in INDEX_HTML
     assert "payment-history-renders" in APP_JS
     assert "payment-history-meta" in APP_JS
@@ -518,6 +519,12 @@ def test_wallet_payment_summaries_use_layout_without_punctuation_separators() ->
     assert "— +${formatRenderCount(lastInvoice.credits)}" not in APP_JS
     assert "— +${formatRenderCount(item.credits)}" not in APP_JS
     assert 'formatTemplate("wallet.packageSummary"' not in APP_JS
+    assert "invoiceState:" not in APP_JS
+    assert "formatPaymentStatus(lastInvoice.status)" in APP_JS
+    assert (
+        "telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username"
+        in APP_JS
+    )
     assert "WALLET_MIDDLE_DOT_SEPARATOR" not in APP_JS
 
 

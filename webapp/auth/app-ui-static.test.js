@@ -106,6 +106,7 @@ test("wallet payment summaries use layout elements instead of punctuation separa
     assert.match(html, /data-last-invoice-date/);
     assert.match(html, /data-last-invoice-number-meta/);
     assert.match(html, /data-last-invoice-status-detail/);
+    assert.doesNotMatch(html, /data-last-invoice-state/);
     assert.match(html, /data-topup-summary-values/);
     assert.match(app, /payment-history-renders/);
     assert.match(app, /payment-history-meta/);
@@ -116,5 +117,8 @@ test("wallet payment summaries use layout elements instead of punctuation separa
     assert.doesNotMatch(app, /formatTemplate\("wallet\.packageSummary"/);
     assert.doesNotMatch(app, /data-last-invoice-date[^\n]*—/);
     assert.doesNotMatch(app, /data-last-invoice-number-meta[^\n]*·/);
+    assert.doesNotMatch(`${html}\n${app}`, /invoiceState/);
+    assert.match(app, /formatPaymentStatus\(lastInvoice\.status\)/);
+    assert.match(app, /telegramUser\?\.id \|\| state\.websiteAuth\?\.telegramUserId \|\| state\.websiteAuth\?\.username/);
     assert.doesNotMatch(`${html}\n${app}`, /\b\+\$\{formatRenderCount/);
 });
