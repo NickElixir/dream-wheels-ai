@@ -106,7 +106,6 @@ test("wallet payment summaries use layout elements instead of punctuation separa
     assert.match(html, /data-last-invoice-renders/);
     assert.match(html, /data-last-invoice-date/);
     assert.match(html, /data-last-invoice-number-meta/);
-    assert.match(html, /data-last-invoice-status-detail/);
     assert.doesNotMatch(html, /data-last-invoice-state/);
     assert.match(html, /data-topup-summary-values/);
     assert.match(app, /payment-history-renders/);
@@ -131,12 +130,12 @@ test("wallet spacing and payment statuses keep their visual alignment", () => {
     assert.match(css, /\.payment-card-top \.status-pill,\s*\.payment-history-item \.status-pill\s*\{[\s\S]*?align-self: center;/);
 });
 
-test("latest payment status and details action use the compact card treatment", () => {
+test("latest payment card keeps its status and removes the details action", () => {
     assert.match(css, /\.last-invoice-panel \.payment-card\s*\{[\s\S]*?position: relative;[\s\S]*?padding-right: 190px;/);
     assert.match(css, /\.last-invoice-panel \.payment-card-top \.status-pill\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 50%;[\s\S]*?transform: translateY\(-50%\);/);
-    assert.match(css, /\.latest-payment-details\s*\{[\s\S]*?width: fit-content;[\s\S]*?max-width: 100%;/);
-    assert.match(css, /\.latest-payment-details-toggle\s*\{[\s\S]*?display: inline-flex;[\s\S]*?justify-self: start;[\s\S]*?width: fit-content;[\s\S]*?min-height: 44px;/);
-    assert.match(css, /\.latest-payment-details\[open\]\s*\{[\s\S]*?width: 100%;/);
+    assert.doesNotMatch(html, /data-last-invoice-details|latest-payment-details|data-last-invoice-status-detail/);
+    assert.doesNotMatch(app, /data-last-invoice-(email|credits|amount-copy|number-copy|status-detail)/);
+    assert.doesNotMatch(css, /latest-payment-details/);
 });
 
 test("visibility changes do not reload the active app view", () => {

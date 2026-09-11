@@ -509,7 +509,8 @@ def test_wallet_payment_summaries_use_layout_without_punctuation_separators() ->
     assert "data-last-invoice-renders" in INDEX_HTML
     assert "data-last-invoice-date" in INDEX_HTML
     assert "data-last-invoice-number-meta" in INDEX_HTML
-    assert "data-last-invoice-status-detail" in INDEX_HTML
+    assert "data-last-invoice-details" not in INDEX_HTML
+    assert "latest-payment-details" not in INDEX_HTML
     assert "data-last-invoice-state" not in INDEX_HTML
     assert "data-topup-summary-values" in INDEX_HTML
     assert 'data-i18n="wallet.creditsTitle">Ваши рендеры' in INDEX_HTML
@@ -538,8 +539,7 @@ def test_wallet_spacing_status_alignment_and_visibility_preserve_active_view() -
     assert ".payment-history-item .status-pill" in STYLE_CSS
     assert "position: absolute;" in STYLE_CSS
     assert "padding-right: 190px;" in STYLE_CSS
-    assert "width: fit-content;" in STYLE_CSS
-    assert ".latest-payment-details[open]" in STYLE_CSS
+    assert "latest-payment-details" not in STYLE_CSS
     visibility_handler = APP_JS.split('document.addEventListener("visibilitychange"', 1)[1].split(
         'window.addEventListener("pagehide"', 1
     )[0]

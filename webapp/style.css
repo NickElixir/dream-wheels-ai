@@ -1122,48 +1122,6 @@ h2 {
     font-size: clamp(20px, 3.5vw, 28px);
 }
 
-.latest-payment-details {
-    gap: 14px;
-    width: fit-content;
-    max-width: 100%;
-    padding: 0;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.latest-payment-details[open] {
-    width: 100%;
-}
-
-.latest-payment-details[hidden] {
-    display: none;
-}
-
-.latest-payment-details-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    justify-self: start;
-    width: fit-content;
-    min-height: 44px;
-    padding: 0 20px;
-    color: var(--accent-strong);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 800;
-    list-style: none;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.latest-payment-details-toggle::-webkit-details-marker {
-    display: none;
-}
-
-.latest-payment-details .invoice-grid {
-    padding: 0 18px 18px;
-}
-
 .warning-note {
     color: #ff8f8f;
 }
@@ -1180,13 +1138,6 @@ h2 {
     font-size: 13px;
 }
 
-.invoice-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.invoice-field,
 .confirm-row {
     padding: 16px 18px;
     border-radius: 18px;
@@ -1194,14 +1145,12 @@ h2 {
     background: rgba(255, 255, 255, 0.02);
 }
 
-.invoice-field span,
 .confirm-row span {
     display: block;
     margin-bottom: 8px;
     color: var(--text-subtle);
 }
 
-.invoice-field strong,
 .confirm-row strong {
     font-size: 16px;
 }
@@ -5324,7 +5273,6 @@ body.has-fallback-main-button #app {
         border-radius: 24px;
     }
 
-    .invoice-grid,
     .amount-grid,
     .topup-grid,
     .support-grid,
@@ -5601,7 +5549,4 @@ body.has-fallback-main-button #app {
         transform: none;
     }
 
-    .latest-payment-details .invoice-grid {
-        padding-inline: 14px;
-    }
 }
