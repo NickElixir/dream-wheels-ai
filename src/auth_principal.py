@@ -80,6 +80,7 @@ class AuthPrincipal:
     session_id: UUID | None = None
     aal: str | None = None
     telegram_username: str | None = None
+    email: str | None = None
 
 
 def _jwt_header_routing_hint(token: str) -> str | None:
@@ -125,6 +126,7 @@ def _principal_from_supabase(*, user_id: int, claims: SupabaseTokenClaims) -> Au
         auth_channel="supabase",
         session_id=claims.session_id,
         aal=claims.aal,
+        email=claims.email,
     )
 
 

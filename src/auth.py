@@ -95,6 +95,7 @@ class SupabaseTokenClaims:
     audience: tuple[str, ...]
     role: str
     aal: str | None
+    email: str | None = None
 
 
 _JWKS_CACHE: KeySet | None = None
@@ -437,6 +438,10 @@ def _validated_supabase_claims(claims: dict) -> SupabaseTokenClaims:
     if aal is not None and not isinstance(aal, str):
         raise SupabaseAccessTokenInvalid("Invalid Supabase aal")
 
+    email = claims.get("email")
+    if email is not None and (not isinstance(email, str) or "@" not in email):
+        email = None
+
     return SupabaseTokenClaims(
         subject=subject,
         session_id=session_id,
@@ -444,6 +449,7 @@ def _validated_supabase_claims(claims: dict) -> SupabaseTokenClaims:
         audience=audience,
         role=role,
         aal=aal,
+        email=email,
     )
 
 

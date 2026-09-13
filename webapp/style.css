@@ -222,6 +222,12 @@ a {
 }
 
 .sidebar-account {
+    appearance: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    width: 100%;
     margin-top: auto;
     display: flex;
     align-items: center;
@@ -230,6 +236,75 @@ a {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-account:hover,
+.sidebar-account:focus-visible {
+    border-color: rgba(221, 255, 0, 0.26);
+    background: rgba(221, 255, 0, 0.06);
+}
+
+.account-settings-panel {
+    padding-top: 24px;
+}
+
+.account-settings-head {
+    display: grid;
+    gap: 10px;
+    padding: 0 20px 20px;
+}
+
+.account-settings-head .lede {
+    margin: 0;
+}
+
+.account-settings-panel .form-row {
+    align-items: center;
+}
+
+.account-settings-panel .form-row > div {
+    min-width: 0;
+}
+
+.account-settings-panel .form-row p {
+    margin: 4px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.account-settings-note {
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(39, 216, 138, 0.24);
+    background: rgba(39, 216, 138, 0.07);
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.account-settings-empty,
+.account-settings-error {
+    padding: 14px 16px;
+    color: var(--text-muted);
+}
+
+.account-link-dialog .auth-dialog-status[data-tone="error"] {
+    color: var(--danger);
+}
+
+@media (max-width: 560px) {
+    .account-settings-panel {
+        padding-top: 20px;
+    }
+
+    .account-settings-panel .form-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .account-settings-panel .form-row .compact-button,
+    .account-settings-panel .form-row .status-pill {
+        align-self: stretch;
+        width: 100%;
+    }
 }
 
 .account-avatar {
