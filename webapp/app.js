@@ -291,6 +291,7 @@ const I18N = {
             changeEmail: "Изменить почту",
             back: "Назад",
             telegramSecondary: "Продолжить через Telegram",
+            openingTelegram: "Открываем Telegram… Не закрывайте эту страницу.",
             legalPrivacy: "Продолжая, вы соглашаетесь с политикой конфиденциальности.",
             invalidEmail: "Введите корректный адрес электронной почты.",
             invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
@@ -740,6 +741,7 @@ const I18N = {
             changeEmail: "Change email",
             back: "Back",
             telegramSecondary: "Continue with Telegram",
+            openingTelegram: "Opening Telegram… Keep this page open.",
             legalPrivacy: "By continuing, you agree to the privacy policy.",
             invalidEmail: "Enter a valid email address.",
             invalidOtp: "The code is incorrect. Check it and try again.",
@@ -1252,6 +1254,7 @@ const state = {
     fitmentPreviewForced: resolveFitmentPreviewMode(),
     websiteLoginPending: false,
     websiteLoginWarmupPending: false,
+    websiteLoginWarmupPromise: null,
     websiteLoginError: "",
     websiteLoginLibraryPromise: null,
     websiteLoginNoncePromise: null,
@@ -2793,7 +2796,19 @@ function renderAuthDialog() {
     if (restoredProvider) restoredProvider.textContent = account.provider;
     document.querySelector("[data-auth-send]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
-    document.querySelector("[data-auth-telegram]")?.toggleAttribute("disabled", state.authDialogBusy);
+    const telegramLoginReady = Boolean(getPreparedTelegramLoginResources());
+    const telegramLoginPreparing = !telegramLoginReady && state.websiteLoginWarmupPending;
+    if (telegramLabel) {
+        telegramLabel.textContent = state.websiteLoginPending
+            ? t("auth.openingTelegram")
+            : telegramLoginPreparing
+                ? t("auth.preparing")
+                : t("auth.telegramSecondary");
+    }
+    document.querySelector("[data-auth-telegram]")?.toggleAttribute(
+        "disabled",
+        state.authDialogBusy || state.websiteLoginPending || telegramLoginPreparing
+    );
     document.querySelector("[data-auth-continue]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
     updateAuthDialogCooldown();
@@ -2818,6 +2833,7 @@ function openAuthDialog() {
     state.authDialogChangeEmailOriginal = "";
     state.authDialogOtpBeforeChange = "";
     setAuthDialogMessage("");
+    void warmWebsiteLoginResources();
     renderAuthDialog();
     if (state.authDialogStep === "restoring") {
         void frontendAuthController()?.initialize?.().then(() => {
@@ -2958,29 +2974,43 @@ function invalidateWebsiteLoginNonce() {
     state.websiteLoginNonceFetchedAt = 0;
 }
 
+function getPreparedTelegramLoginResources() {
+    const telegramLogin = window.Telegram?.Login;
+    if (!telegramLogin || !hasFreshWebsiteLoginNonce()) return null;
+    return {
+        nonce: state.websiteLoginNonce,
+        telegramLogin,
+    };
+}
+
 function warmWebsiteLoginResources() {
-    if (HAS_TG || state.websiteAuth) return;
-    if (state.websiteLoginWarmupPending) return;
+    if (HAS_TG || state.websiteAuth) return Promise.resolve();
+    if (state.websiteLoginWarmupPending) return state.websiteLoginWarmupPromise || Promise.resolve();
     state.websiteLoginWarmupPending = true;
     updateWebsiteAuthUi();
     const warmup = Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()]);
-    void warmup.finally(() => {
+    state.websiteLoginWarmupPromise = warmup.finally(() => {
         state.websiteLoginWarmupPending = false;
+        state.websiteLoginWarmupPromise = null;
         updateWebsiteAuthUi();
+        renderAuthDialog();
     });
+    return state.websiteLoginWarmupPromise;
 }
 
 warmWebsiteLoginResources();
 
-async function loginWithTelegram() {
+async function loginWithTelegram({ preparedResources = null } = {}) {
     if (state.websiteLoginPending) return;
     state.websiteLoginPending = true;
     state.websiteLoginError = "";
     updateWebsiteAuthUi();
 
     try {
-        const [{ client_id: clientId, nonce, nonce_token: nonceToken }, telegramLogin] =
-            await Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()]);
+        const resources = preparedResources || getPreparedTelegramLoginResources();
+        const [{ client_id: clientId, nonce, nonce_token: nonceToken }, telegramLogin] = resources
+            ? [resources.nonce, resources.telegramLogin]
+            : await Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()]);
         const numericClientId = Number(clientId);
         if (!Number.isSafeInteger(numericClientId)) throw new Error("Invalid Telegram client_id");
 
@@ -3041,6 +3071,41 @@ async function loginWithTelegram() {
         warmWebsiteLoginResources();
         updateWebsiteAuthUi();
     }
+}
+
+function startAuthDialogTelegramLogin() {
+    if (state.authDialogBusy || state.websiteLoginPending) return;
+    const resources = getPreparedTelegramLoginResources();
+    if (!resources) {
+        state.authDialogBusy = true;
+        setAuthDialogMessage(t("auth.preparing"));
+        renderAuthDialog();
+        void warmWebsiteLoginResources().then(() => {
+            if (!state.authDialogOpen || !state.authDialogBusy) return;
+            state.authDialogBusy = false;
+            if (getPreparedTelegramLoginResources()) {
+                setAuthDialogMessage("");
+            } else {
+                setAuthDialogMessage(t("auth.failed"), true);
+            }
+            renderAuthDialog();
+        });
+        return;
+    }
+
+    state.authDialogBusy = true;
+    setAuthDialogMessage(t("auth.openingTelegram"));
+    renderAuthDialog();
+    void loginWithTelegram({ preparedResources: resources }).then((signedIn) => {
+        if (signedIn) {
+            closeAuthDialog();
+            return;
+        }
+        if (!state.authDialogOpen) return;
+        state.authDialogBusy = false;
+        setAuthDialogMessage(state.websiteLoginError || t("auth.failed"), true);
+        renderAuthDialog();
+    });
 }
 
 function validFrontendEmail(email) {
@@ -10126,9 +10191,10 @@ function bindEvents() {
         renderAuthDialog();
         window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
     });
-    document.querySelector("[data-auth-telegram]")?.addEventListener("click", () => {
-        closeAuthDialog();
-        void loginWithTelegram();
+    const authTelegramButton = document.querySelector("[data-auth-telegram]");
+    authTelegramButton?.addEventListener("click", startAuthDialogTelegramLogin);
+    ["pointerdown", "mouseenter", "focus"].forEach((eventName) => {
+        authTelegramButton?.addEventListener(eventName, warmWebsiteLoginResources, { passive: true });
     });
     document.querySelector("[data-identity-error-retry]")?.addEventListener("click", () => {
         void resolveIdentity();
