@@ -3101,7 +3101,10 @@ function startAuthDialogTelegramLogin() {
             closeAuthDialog();
             return;
         }
-        if (!state.authDialogOpen) return;
+        // A provider popup can finish after the browser has delivered a late
+        // backdrop click. Cancellation must always return people to the same
+        // actionable dialog instead of stranding them behind the auth wall.
+        state.authDialogOpen = true;
         state.authDialogBusy = false;
         setAuthDialogMessage(state.websiteLoginError || t("auth.failed"), true);
         renderAuthDialog();
