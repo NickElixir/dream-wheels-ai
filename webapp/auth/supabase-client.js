@@ -473,3 +473,31 @@ function defaultAuthOtp() {
 
 export const requestEmailOtp = (email, captchaToken = null) => defaultAuthOtp().requestEmailOtp(email, captchaToken);
 export const verifyEmailOtp = (email, otp) => defaultAuthOtp().verifyEmailOtp(email, otp);
+
+export function createEphemeralEmailLinkController() {
+    const { url, publishableKey } = publicConfig();
+    const client = createClient(url, publishableKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+        },
+    });
+    const sessionController = {
+        async getSession() {
+            const { data, error } = await client.auth.getSession();
+            if (error) throw normalizeAuthError(error, "verify");
+            return data.session;
+        },
+    };
+    const otpController = createEmailOtpController({ client, sessionController });
+    return Object.freeze({
+        requestEmailOtp: otpController.requestEmailOtp,
+        async verifyEmailOtp(email, otp) {
+            await otpController.verifyEmailOtp(email, otp);
+            const session = await sessionController.getSession();
+            if (!session?.access_token) throw new AuthOtpError("session_missing");
+            return session.access_token;
+        },
+    });
+}

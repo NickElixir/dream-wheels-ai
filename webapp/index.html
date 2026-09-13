@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="20260911-vehicle-identity-confirmation-1">
+<html lang="ru" data-app-build="20260913-auth-account-linking-1">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,7 +7,7 @@
     <title>Dream Wheels AI</title>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
-    <link rel="stylesheet" href="/style.css?v=20260911-vehicle-identity-confirmation-1">
+    <link rel="stylesheet" href="/style.css?v=20260913-auth-account-linking-1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script async src="https://oauth.telegram.org/js/telegram-login.js?5" data-telegram-login-library></script>
 </head>
@@ -42,13 +42,13 @@
                 <button type="button" class="sidebar-item" data-nav="docs">Документы</button>
             </div>
         </nav>
-        <div class="sidebar-account" data-account-block>
+        <button type="button" class="sidebar-account" data-account-block data-nav="settings" aria-label="Открыть аккаунт">
             <div class="account-avatar" data-account-avatar>DW</div>
             <div>
                 <div class="account-name" data-account-name>Dream Wheels</div>
                 <div class="account-subtitle" data-account-subtitle>Кабинет</div>
             </div>
-        </div>
+        </button>
     </aside>
 
     <main id="app">
@@ -850,30 +850,13 @@
         </section>
 
         <section class="view" data-view="settings" hidden>
-            <section class="panel">
-                <div class="form-stack">
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.profileTitle">Профиль Telegram</strong>
-                            <p data-i18n="settings.profileText">Связан автоматически с Mini App</p>
-                        </div>
-                        <span class="status-pill neutral" data-i18n="settings.linked">Подключено</span>
-                    </div>
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.notificationsTitle">Уведомления</strong>
-                            <p data-i18n="settings.notificationsText">Будут добавлены позже</p>
-                        </div>
-                        <span class="status-pill muted" data-i18n="settings.soon">Скоро</span>
-                    </div>
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.languageTitle">Язык интерфейса</strong>
-                            <p data-i18n="settings.languageText">Определяется по Telegram</p>
-                        </div>
-                        <span class="status-pill neutral" data-locale-label>RU</span>
-                    </div>
+            <section class="panel account-settings-panel">
+                <div class="account-settings-head">
+                    <p class="section-label">Аккаунт</p>
+                    <h1>Способы входа</h1>
+                    <p class="lede">Подключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.</p>
                 </div>
+                <div class="form-stack" data-account-settings-content aria-live="polite"></div>
             </section>
         </section>
 
@@ -1005,10 +988,55 @@
     <div class="more-sheet-backdrop" data-more-backdrop hidden></div>
     <section class="more-sheet" data-more-sheet hidden aria-label="Ещё">
         <button type="button" class="sheet-handle" data-more-close aria-label="Закрыть"></button>
+        <button type="button" class="sheet-item" data-nav="settings">Аккаунт</button>
         <button type="button" class="sheet-item" data-nav="support">Поддержка</button>
         <button type="button" class="sheet-item" data-nav="photo-guide">Как подготовить фото</button>
         <button type="button" class="sheet-item" data-nav="docs">Документы</button>
     </section>
+
+    <div class="auth-dialog-backdrop" data-account-link-dialog hidden>
+        <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-link-dialog-title">
+            <button type="button" class="auth-dialog-close" data-account-link-close aria-label="Закрыть">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
+                <h2 id="account-link-dialog-title" data-account-link-title>Подключить Email</h2>
+                <div class="auth-dialog-description"><p data-account-link-copy>Подтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.</p></div>
+            </div>
+            <form class="auth-dialog-form" data-account-link-email-form>
+                <label class="auth-dialog-label" for="account-link-email">Электронная почта</label>
+                <input id="account-link-email" class="auth-dialog-input" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-account-link-email>
+                <div class="auth-turnstile" data-account-link-turnstile hidden><div data-account-link-turnstile-widget></div></div>
+                <button type="submit" class="primary-button auth-dialog-primary" data-account-link-send>Получить код</button>
+            </form>
+            <form class="auth-dialog-form" data-account-link-otp-form hidden>
+                <label class="auth-dialog-label" for="account-link-otp">Код из письма</label>
+                <p class="auth-dialog-otp-destination" data-account-link-destination></p>
+                <input id="account-link-otp" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-account-link-otp>
+                <button type="submit" class="primary-button auth-dialog-primary" data-account-link-verify>Подтвердить</button>
+            </form>
+            <p class="auth-dialog-status" data-account-link-status aria-live="polite"></p>
+        </section>
+    </div>
+
+    <div class="auth-dialog-backdrop" data-account-merge-dialog hidden>
+        <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-merge-dialog-title">
+            <button type="button" class="auth-dialog-close" data-account-merge-close aria-label="Закрыть">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
+                <h2 id="account-merge-dialog-title">Объединить аккаунты?</h2>
+            </div>
+            <div class="auth-dialog-restored">
+                <p class="auth-dialog-restored-copy" data-account-merge-copy>Этот способ входа уже используется в другом аккаунте Dream Wheels.</p>
+                <p class="auth-dialog-restored-copy">После объединения баланс, история рендеров и оплаты сохранятся и станут общими.</p>
+                <p class="auth-dialog-restored-copy">Объединение нельзя отменить.</p>
+                <div class="auth-logout-actions">
+                    <button type="button" class="ghost-button" data-account-merge-cancel>Отмена</button>
+                    <button type="button" class="primary-button" data-account-merge-confirm>Объединить аккаунты</button>
+                </div>
+                <p class="auth-dialog-status" data-account-merge-status aria-live="polite"></p>
+            </div>
+        </section>
+    </div>
 
     <div class="auth-dialog-backdrop" data-auth-dialog hidden>
         <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description">
@@ -1088,6 +1116,6 @@
 
     <script src="/auth/harness-config.js"></script>
     <script src="/auth/app-auth.bundle.js"></script>
-    <script src="/app.js?v=20260911-vehicle-identity-confirmation-1" type="module"></script>
+    <script src="/app.js?v=20260913-auth-account-linking-1" type="module"></script>
 </body>
 </html>

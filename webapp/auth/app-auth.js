@@ -3,6 +3,7 @@ import {
     getAccessToken as getSupabaseAccessToken,
     getCurrentAuthUser as getSupabaseCurrentAuthUser,
     getAuthSessionState as getSupabaseSessionState,
+    createEphemeralEmailLinkController,
     initializeAuthSession,
     requestEmailOtp,
     signOut as signOutSupabase,
@@ -535,4 +536,7 @@ export function createFrontendAuthController({
 }
 
 const browserAuth = createFrontendAuthController();
-globalThis.DreamWheelsAuth = browserAuth;
+globalThis.DreamWheelsAuth = Object.freeze({
+    ...browserAuth,
+    createEphemeralEmailLinkController,
+});

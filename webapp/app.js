@@ -1283,6 +1283,26 @@ const state = {
     authDialogEmail: "",
     authDialogOtp: "",
     authDialogChangeEmailOriginal: "",
+    accountState: null,
+    accountStateLoading: false,
+    accountStateError: "",
+    accountSettingsNotice: "",
+    accountLinkDialogOpen: false,
+    accountLinkMode: null,
+    accountLinkBusy: false,
+    accountLinkStep: "email",
+    accountLinkEmail: "",
+    accountLinkOtp: "",
+    accountLinkStatus: "",
+    accountLinkStatusError: false,
+    accountLinkEmailController: null,
+    accountLinkTurnstileToken: null,
+    accountLinkTurnstileWidget: null,
+    accountMergeOpen: false,
+    accountMergeBusy: false,
+    accountMergeToken: null,
+    accountMergeProvider: null,
+    accountMergeStatus: "",
     authDialogOtpBeforeChange: "",
     authDialogCooldownUntil: 0,
     authDialogCooldownTimer: null,
@@ -2269,6 +2289,13 @@ function getInitials(name) {
 }
 
 function getAuthAccountPresentation() {
+    const linked = state.accountState?.identities;
+    if (linked?.telegram?.linked && linked?.email?.linked) {
+        return {
+            identifier: linked.telegram.display || "Dream Wheels",
+            provider: "Email + Telegram",
+        };
+    }
     const telegramUser = tg?.initDataUnsafe?.user;
     if (HAS_TG || state.websiteAuth) {
         const username = telegramUser?.username || state.websiteAuth?.username || "";
@@ -2296,6 +2323,309 @@ function updateAccountBlock() {
     if (avatar) avatar.textContent = getInitials(account.identifier);
     if (subtitle) {
         subtitle.textContent = account.provider || "Кабинет";
+    }
+}
+
+function accountRequestUrl(path) {
+    return apiUrl(path, { includeIdentity: true });
+}
+
+function accountProviderLabel(provider) {
+    return provider === "telegram" ? "Telegram" : "Email";
+}
+
+function renderAccountSettings() {
+    const container = document.querySelector("[data-account-settings-content]");
+    if (!container) return;
+    if (state.accountStateLoading) {
+        container.innerHTML = '<div class="account-settings-empty">Загружаем способы входа…</div>';
+        return;
+    }
+    if (state.accountStateError) {
+        container.innerHTML = `<div class="account-settings-error">${escapeHtml(state.accountStateError)}</div>`;
+        return;
+    }
+    const identities = state.accountState?.identities;
+    if (!identities) {
+        container.innerHTML = '<div class="account-settings-empty">Войдите, чтобы увидеть способы входа.</div>';
+        return;
+    }
+    const renderRow = (provider, identity) => {
+        const title = accountProviderLabel(provider);
+        const description = identity.linked
+            ? (identity.display || "Подтверждён")
+            : "Не подключён";
+        const action = identity.linked
+            ? '<span class="status-pill success">Подключено</span>'
+            : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">Подключить</button>`;
+        return `<div class="form-row"><div><strong>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
+    };
+    const bothLinked = identities.email?.linked && identities.telegram?.linked;
+    container.innerHTML = [
+        renderRow("supabase", identities.email || { linked: false }),
+        renderRow("telegram", identities.telegram || { linked: false }),
+        bothLinked
+            ? '<div class="account-settings-note">Email и Telegram ведут в один аккаунт. Баланс, история рендеров и оплаты общие.</div>'
+            : "",
+        state.accountSettingsNotice
+            ? `<div class="account-settings-note">${escapeHtml(state.accountSettingsNotice)}</div>`
+            : "",
+    ].join("");
+}
+
+async function loadAccountState({ silent = false } = {}) {
+    if (!isFrontendUserAuthenticated()) return;
+    state.accountStateLoading = !silent;
+    state.accountStateError = "";
+    renderAccountSettings();
+    try {
+        const response = await authenticatedFetch(accountRequestUrl("/auth/account"));
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const payload = await response.json();
+        state.accountState = payload;
+        updateAccountBlock();
+    } catch (error) {
+        state.accountStateError = "Не удалось загрузить способы входа. Попробуйте ещё раз.";
+    } finally {
+        state.accountStateLoading = false;
+        renderAccountSettings();
+    }
+}
+
+function renderAccountLinkDialog() {
+    const dialog = document.querySelector("[data-account-link-dialog]");
+    const title = document.querySelector("[data-account-link-title]");
+    const copy = document.querySelector("[data-account-link-copy]");
+    const emailForm = document.querySelector("[data-account-link-email-form]");
+    const otpForm = document.querySelector("[data-account-link-otp-form]");
+    const destination = document.querySelector("[data-account-link-destination]");
+    const status = document.querySelector("[data-account-link-status]");
+    if (!dialog) return;
+    dialog.hidden = !state.accountLinkDialogOpen;
+    const emailMode = state.accountLinkMode === "supabase";
+    if (title) title.textContent = emailMode ? "Подключить Email" : "Подключить Telegram";
+    if (copy) copy.textContent = emailMode
+        ? "Подтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт."
+        : "Подтверждаем Telegram, чтобы подключить его к этому аккаунту.";
+    if (emailForm) emailForm.hidden = !emailMode || state.accountLinkStep !== "email";
+    if (otpForm) otpForm.hidden = !emailMode || state.accountLinkStep !== "otp";
+    if (destination) destination.textContent = state.accountLinkEmail ? `Код отправлен на ${maskAuthEmail(state.accountLinkEmail)}` : "";
+    if (status) {
+        status.textContent = state.accountLinkStatus;
+        status.dataset.tone = state.accountLinkStatusError ? "error" : "";
+    }
+    document.querySelectorAll("[data-account-link-dialog] button, [data-account-link-dialog] input")
+        .forEach((element) => { element.disabled = state.accountLinkBusy; });
+}
+
+function closeAccountLinkDialog() {
+    if (state.accountLinkBusy) return;
+    state.accountLinkDialogOpen = false;
+    state.accountLinkMode = null;
+    state.accountLinkStatus = "";
+    state.accountLinkStatusError = false;
+    renderAccountLinkDialog();
+}
+
+function resetAccountLinkFlow(provider) {
+    state.accountLinkDialogOpen = true;
+    state.accountLinkMode = provider;
+    state.accountLinkBusy = false;
+    state.accountLinkStep = provider === "supabase" ? "email" : "telegram";
+    state.accountLinkEmail = "";
+    state.accountLinkOtp = "";
+    state.accountLinkStatus = "";
+    state.accountLinkStatusError = false;
+    state.accountLinkEmailController = null;
+    renderAccountLinkDialog();
+    if (provider === "supabase") renderAccountLinkTurnstile();
+}
+
+function renderAccountLinkTurnstile() {
+    const config = window.__DREAM_WHEELS_AUTH_CONFIG__ || {};
+    const sitekey = typeof config.turnstileSiteKey === "string" ? config.turnstileSiteKey.trim() : "";
+    const wrapper = document.querySelector("[data-account-link-turnstile]");
+    const widget = document.querySelector("[data-account-link-turnstile-widget]");
+    if (!wrapper || !widget) return;
+    wrapper.hidden = !sitekey;
+    if (!sitekey || state.accountLinkTurnstileWidget !== null) return;
+    if (!globalThis.turnstile?.render) {
+        if (!document.querySelector("script[data-account-link-turnstile-script]")) {
+            const script = document.createElement("script");
+            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+            script.async = true;
+            script.defer = true;
+            script.dataset.accountLinkTurnstileScript = "true";
+            script.addEventListener("load", renderAccountLinkTurnstile, { once: true });
+            document.head.append(script);
+        }
+        return;
+    }
+    state.accountLinkTurnstileWidget = globalThis.turnstile.render(widget, {
+        sitekey,
+        callback(token) {
+            state.accountLinkTurnstileToken = typeof token === "string" && token.trim() ? token.trim() : null;
+        },
+        "expired-callback"() {
+            state.accountLinkTurnstileToken = null;
+        },
+        "error-callback"() {
+            state.accountLinkTurnstileToken = null;
+        },
+    });
+}
+
+async function submitAccountLink(provider, proof) {
+    const response = await authenticatedFetch(accountRequestUrl("/auth/account/link"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, proof }),
+    });
+    if (!response.ok) throw new Error(await parseApiError(response));
+    return response.json();
+}
+
+function showAccountMerge(result, provider) {
+    state.accountLinkDialogOpen = false;
+    state.accountMergeOpen = true;
+    state.accountMergeBusy = false;
+    state.accountMergeToken = result.merge_token;
+    state.accountMergeProvider = provider;
+    state.accountMergeStatus = "";
+    const copy = document.querySelector("[data-account-merge-copy]");
+    if (copy) {
+        copy.textContent = `${accountProviderLabel(provider)} уже используется в другом аккаунте Dream Wheels.`;
+    }
+    document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", false);
+    renderAccountLinkDialog();
+}
+
+async function finishAccountLink(result, provider) {
+    if (result.status === "merge_required") {
+        showAccountMerge(result, provider);
+        return;
+    }
+    state.accountLinkStatus = result.status === "already_linked" ? "Этот способ входа уже подключён." : "Способ входа подключён.";
+    await loadAccountState({ silent: true });
+    state.accountLinkBusy = false;
+    renderAccountLinkDialog();
+    window.setTimeout(closeAccountLinkDialog, 900);
+}
+
+async function requestAccountLinkEmailOtp() {
+    const email = String(document.querySelector("[data-account-link-email]")?.value || "").trim();
+    if (!validFrontendEmail(email)) {
+        state.accountLinkStatus = "Введите корректный Email.";
+        state.accountLinkStatusError = true;
+        renderAccountLinkDialog();
+        return;
+    }
+    const config = window.__DREAM_WHEELS_AUTH_CONFIG__ || {};
+    if (config.turnstileSiteKey && !state.accountLinkTurnstileToken) {
+        state.accountLinkStatus = "Подтвердите, что вы человек, чтобы получить код.";
+        state.accountLinkStatusError = true;
+        renderAccountLinkDialog();
+        return;
+    }
+    state.accountLinkBusy = true;
+    state.accountLinkStatus = "Отправляем код…";
+    state.accountLinkStatusError = false;
+    renderAccountLinkDialog();
+    try {
+        state.accountLinkEmailController ||= frontendAuthController()?.createEphemeralEmailLinkController?.();
+        if (!state.accountLinkEmailController) throw new Error("Email linking is unavailable");
+        await state.accountLinkEmailController.requestEmailOtp(email, state.accountLinkTurnstileToken);
+        state.accountLinkEmail = email;
+        state.accountLinkStep = "otp";
+        state.accountLinkStatus = "Введите код из письма.";
+    } catch (_) {
+        state.accountLinkStatus = "Не удалось отправить код. Попробуйте ещё раз.";
+        state.accountLinkStatusError = true;
+    } finally {
+        state.accountLinkBusy = false;
+        renderAccountLinkDialog();
+    }
+}
+
+async function verifyAccountLinkEmailOtp() {
+    const otp = String(document.querySelector("[data-account-link-otp]")?.value || "").replace(/\D+/gu, "");
+    if (!otp) return;
+    state.accountLinkBusy = true;
+    state.accountLinkStatus = "Проверяем код…";
+    state.accountLinkStatusError = false;
+    renderAccountLinkDialog();
+    try {
+        const accessToken = await state.accountLinkEmailController.verifyEmailOtp(state.accountLinkEmail, otp);
+        const result = await submitAccountLink("supabase", { access_token: accessToken });
+        await finishAccountLink(result, "supabase");
+    } catch (_) {
+        state.accountLinkStatus = "Не удалось подтвердить Email. Проверьте код и попробуйте ещё раз.";
+        state.accountLinkStatusError = true;
+        state.accountLinkBusy = false;
+        renderAccountLinkDialog();
+    }
+}
+
+async function startTelegramAccountLink() {
+    resetAccountLinkFlow("telegram");
+    state.accountLinkBusy = true;
+    state.accountLinkStatus = "Подготавливаем вход…";
+    renderAccountLinkDialog();
+    try {
+        const resources = getPreparedTelegramLoginResources()
+            || { nonce: await fetchWebsiteLoginNonce(), telegramLogin: await loadTelegramLoginLibrary() };
+        state.accountLinkStatus = "Открываем Telegram…";
+        renderAccountLinkDialog();
+        const numericClientId = Number(resources.nonce.client_id);
+        if (!Number.isSafeInteger(numericClientId)) throw new Error("Invalid Telegram client id");
+        const result = await new Promise((resolve, reject) => {
+            resources.telegramLogin.auth(
+                { client_id: numericClientId, lang: locale, nonce: resources.nonce.nonce },
+                (response) => response?.id_token ? resolve(response) : reject(new Error(response?.error || "cancelled")),
+            );
+        });
+        const linked = await submitAccountLink("telegram", {
+            id_token: result.id_token,
+            nonce_token: resources.nonce.nonce_token,
+        });
+        await finishAccountLink(linked, "telegram");
+    } catch (_) {
+        state.accountLinkBusy = false;
+        state.accountLinkStatus = "Telegram не подключён. Ничего не изменилось.";
+        state.accountLinkStatusError = true;
+        renderAccountLinkDialog();
+    } finally {
+        invalidateWebsiteLoginNonce();
+        warmWebsiteLoginResources();
+    }
+}
+
+async function confirmAccountMerge() {
+    if (!state.accountMergeToken || state.accountMergeBusy) return;
+    state.accountMergeBusy = true;
+    state.accountMergeStatus = "Объединяем аккаунты…";
+    const status = document.querySelector("[data-account-merge-status]");
+    if (status) status.textContent = state.accountMergeStatus;
+    try {
+        const response = await authenticatedFetch(accountRequestUrl("/auth/account/merge"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ merge_token: state.accountMergeToken }),
+        });
+        if (!response.ok) throw new Error(await parseApiError(response));
+        await loadAccountState({ silent: true });
+        state.accountSettingsNotice = "Аккаунты объединены. Баланс, история рендеров и оплаты сохранены.";
+        state.accountMergeOpen = false;
+        document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
+        renderAccountSettings();
+    } catch (_) {
+        state.accountMergeStatus = "Не удалось объединить аккаунты. Данные не изменены. Попробуйте ещё раз.";
+        if (status) {
+            status.textContent = state.accountMergeStatus;
+            status.dataset.tone = "error";
+        }
+    } finally {
+        state.accountMergeBusy = false;
     }
 }
 
@@ -2484,6 +2814,10 @@ function clearApplicationSessionState() {
     state.renderHistory = [];
     state.renderHistoryError = "";
     state.renderHistoryLoading = false;
+    state.accountState = null;
+    state.accountStateLoading = false;
+    state.accountStateError = "";
+    state.accountSettingsNotice = "";
     state.expandedJobId = "";
     state.files = { car: null, wheel: null };
     resetIdentityState();
@@ -2884,6 +3218,9 @@ function handleFrontendAuthState(nextState) {
     updateWebsiteAuthUi();
     renderWalletStatus();
     renderDashboard();
+    if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
+        void loadAccountState({ silent: true });
+    }
     syncApplicationAuthWall();
 }
 
@@ -7592,6 +7929,8 @@ function setView(view, { refreshData = true } = {}) {
         renderRenderDetail();
     } else if (view === "fitment") {
         renderFitment();
+    } else if (view === "settings") {
+        void loadAccountState();
     }
 }
 
@@ -10113,6 +10452,29 @@ function bindEvents() {
     });
     document.querySelector("[data-more-close]")?.addEventListener("click", () => setMoreOpen(false));
     document.querySelector("[data-more-backdrop]")?.addEventListener("click", () => setMoreOpen(false));
+    document.querySelector("[data-account-link-close]")?.addEventListener("click", closeAccountLinkDialog);
+    document.querySelector("[data-account-merge-close]")?.addEventListener("click", () => {
+        if (state.accountMergeBusy) return;
+        state.accountMergeOpen = false;
+        document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
+    });
+    document.querySelector("[data-account-merge-cancel]")?.addEventListener("click", () => {
+        if (state.accountMergeBusy) return;
+        state.accountMergeOpen = false;
+        state.accountMergeToken = null;
+        document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
+    });
+    document.querySelector("[data-account-merge-confirm]")?.addEventListener("click", () => {
+        void confirmAccountMerge();
+    });
+    document.querySelector("[data-account-link-email-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void requestAccountLinkEmailOtp();
+    });
+    document.querySelector("[data-account-link-otp-form]")?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void verifyAccountLinkEmailOtp();
+    });
 
     const websiteAuthButton = document.querySelector("[data-website-auth-button]");
     websiteAuthButton?.addEventListener("click", handleWebsiteAuthAction);
@@ -10542,6 +10904,13 @@ function bindEvents() {
     });
 
     document.addEventListener("click", (event) => {
+        const accountLinkButton = event.target.closest("[data-account-link]");
+        if (accountLinkButton) {
+            const provider = accountLinkButton.dataset.accountLink;
+            if (provider === "telegram") void startTelegramAccountLink();
+            if (provider === "supabase") resetAccountLinkFlow("supabase");
+            return;
+        }
         const navButton = event.target.closest("[data-nav]");
         if (navButton) {
             const expandLatestJobId = navButton.dataset.expandLatest;
