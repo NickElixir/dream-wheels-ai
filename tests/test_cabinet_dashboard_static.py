@@ -106,6 +106,28 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
 
 
+def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
+    listener = APP_JS.split('authTelegramButton?.addEventListener("click", ')[1].split(");", 1)[0]
+    assert "startAuthDialogTelegramLogin" in listener
+    assert "closeAuthDialog" not in listener
+    assert "function getPreparedTelegramLoginResources()" in APP_JS
+    assert "function startAuthDialogTelegramLogin()" in APP_JS
+    assert 'setAuthDialogMessage(t("auth.openingTelegram"))' in APP_JS
+    assert (
+        "void warmWebsiteLoginResources();"
+        in APP_JS.split("function openAuthDialog()", 1)[1].split("function closeAuthDialog()", 1)[0]
+    )
+    assert "authTelegramButton?.addEventListener(eventName, warmWebsiteLoginResources" in APP_JS
+    backdrop_listener = APP_JS.split(
+        'document.querySelector("[data-auth-dialog]")?.addEventListener("click", '
+    )[1].split(");", 1)[0]
+    assert "!state.authDialogBusy && !state.websiteLoginPending" in backdrop_listener
+    failure_handler = APP_JS.split(
+        "void loginWithTelegram({ preparedResources: resources }).then((signedIn) => {"
+    )[1].split("function validFrontendEmail", 1)[0]
+    assert "state.authDialogOpen = true;" in failure_handler
+
+
 def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() -> None:
     assert "function clearWebsiteAuthSession" in APP_JS
     assert 'throw new Error("identity_auth_required")' in APP_JS

@@ -7,7 +7,7 @@ STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 
 
 def test_website_login_keeps_the_auth_label_element_for_logout_state() -> None:
-    login = APP_JS.split("async function loginWithTelegram() {")[1].split(
+    login = APP_JS.split("async function loginWithTelegram(")[1].split(
         "function logoutWebsiteAuth()"
     )[0]
 
