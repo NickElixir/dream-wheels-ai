@@ -10133,7 +10133,9 @@ function bindEvents() {
     document.querySelector("[data-auth-continue]")?.addEventListener("click", continueWithRestoredSession);
     document.querySelector("[data-auth-switch]")?.addEventListener("click", switchFromRestoredSession);
     document.querySelector("[data-auth-dialog]")?.addEventListener("click", (event) => {
-        if (event.target === event.currentTarget) closeAuthDialog();
+        if (event.target === event.currentTarget && !state.authDialogBusy && !state.websiteLoginPending) {
+            closeAuthDialog();
+        }
     });
     document.querySelector("[data-logout-close]")?.addEventListener("click", closeLogoutDialog);
     document.querySelector("[data-logout-cancel]")?.addEventListener("click", closeLogoutDialog);
