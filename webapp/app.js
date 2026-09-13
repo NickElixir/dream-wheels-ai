@@ -1324,7 +1324,8 @@ const state = {
     identityProposal: null,
     identityResolving: false,
     identityError: "",
-    selectedVehicleIndex: 0,
+    selectedVehicleIndex: null,
+    manualVehicleMode: false,
     manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
     rimProductUrl: "",
     jobId: null,
@@ -7890,7 +7891,13 @@ function formatDateTime(value) {
 }
 
 function humanRenderTitle(job) {
-    const vehicle = job?.render_input_snapshot?.vehicle || job?.vehicle || job?.vehicle_identity || job?.metadata?.vehicle;
+    const confirmedVehicle = job?.vehicle_identity?.is_user_confirmed
+        ? job.vehicle_identity
+        : null;
+    const vehicle = confirmedVehicle
+        || job?.render_input_snapshot?.vehicle
+        || job?.vehicle
+        || job?.metadata?.vehicle;
     const makeModel = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
     return makeModel || (locale === "ru" ? "Виртуальная примерка" : "Virtual render");
 }
@@ -9207,7 +9214,8 @@ function resetIdentityState() {
     state.identityProposal = null;
     state.identityResolving = false;
     state.identityError = "";
-    state.selectedVehicleIndex = 0;
+    state.selectedVehicleIndex = null;
+    state.manualVehicleMode = false;
     state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
     renderIdentityFlow();
 }
@@ -9221,7 +9229,11 @@ function identityVehicles() {
 
 function selectedVehicleCandidate() {
     const vehicles = identityVehicles();
-    if (vehicles.length) return vehicles[state.selectedVehicleIndex] || vehicles[0] || null;
+    if (vehicles.length && !state.manualVehicleMode) {
+        return Number.isInteger(state.selectedVehicleIndex) && state.selectedVehicleIndex >= 0
+            ? vehicles[state.selectedVehicleIndex] || null
+            : null;
+    }
     const manual = state.manualVehicle;
     if (!manual.make.trim() || !manual.model.trim()) return null;
     const year = Number(manual.year) || null;
@@ -9231,7 +9243,7 @@ function selectedVehicleCandidate() {
     if ((yearStart && !yearEnd) || (!yearStart && yearEnd) || (yearStart && yearEnd && yearStart > yearEnd)) return null;
     return {
         make: manual.make.trim(), model: manual.model.trim(), year,
-        year_start: yearStart, year_end: yearEnd, confidence: 1, source: "user_confirmed",
+        year_start: yearStart, year_end: yearEnd, confidence: 1, source: "user_input",
     };
 }
 
@@ -9334,8 +9346,14 @@ function renderIdentityFlow() {
     const vehicles = identityVehicles();
     const selectedVehicle = selectedVehicleCandidate();
     const needsManualVehicle = vehicles.length === 0;
-    document.querySelector("[data-manual-vehicle-fields]")?.toggleAttribute("hidden", !needsManualVehicle);
-    document.querySelector("[data-manual-vehicle-note]")?.toggleAttribute("hidden", !needsManualVehicle);
+    const manualVehicleActive = needsManualVehicle || state.manualVehicleMode;
+    document.querySelector("[data-vehicle-options]")?.toggleAttribute("hidden", manualVehicleActive);
+    const manualToggle = document.querySelector("[data-manual-vehicle-toggle]");
+    if (manualToggle) manualToggle.hidden = needsManualVehicle || manualVehicleActive;
+    const manualBack = document.querySelector("[data-manual-vehicle-back]");
+    if (manualBack) manualBack.hidden = !state.manualVehicleMode || needsManualVehicle;
+    document.querySelector("[data-manual-vehicle-fields]")?.toggleAttribute("hidden", !manualVehicleActive);
+    document.querySelector("[data-manual-vehicle-note]")?.toggleAttribute("hidden", !manualVehicleActive);
     document.querySelectorAll("[data-manual-identity-input]").forEach((input) => {
         const [, field] = input.dataset.manualIdentityInput.split(".");
         input.value = state.manualVehicle[field] || "";
@@ -9345,7 +9363,7 @@ function renderIdentityFlow() {
         vehicleOptions.innerHTML = vehicles
             .slice(0, 3)
             .map((candidate, index) => {
-                const selected = index === state.selectedVehicleIndex;
+                const selected = !state.manualVehicleMode && index === state.selectedVehicleIndex;
                 const actionText = selected ? "✓ Выбрано" : "Выбрать";
                 return `
                     <button type="button" class="identity-choice" data-vehicle-choice="${index}" data-selected="${selected}">
@@ -9358,7 +9376,11 @@ function renderIdentityFlow() {
     }
 
     const vehicleConfidence = document.querySelector("[data-vehicle-confidence]");
-    if (vehicleConfidence) vehicleConfidence.textContent = confidenceLabel(selectedVehicle?.confidence);
+    if (vehicleConfidence) {
+        vehicleConfidence.textContent = manualVehicleActive
+            ? "введено вручную"
+            : confidenceLabel(vehicles[0]?.confidence);
+    }
     const vehicleTitle = document.querySelector("[data-vehicle-resolution-title]");
     if (vehicleTitle) {
         vehicleTitle.textContent = needsManualVehicle
@@ -9781,7 +9803,8 @@ async function resolveIdentity() {
             pcdDisplay: data.pcd_display,
             resolver: data.resolver,
         };
-        state.selectedVehicleIndex = 0;
+        state.selectedVehicleIndex = null;
+        state.manualVehicleMode = false;
         haptic("success");
         requestAnimationFrame(() => {
             document.querySelector("[data-identity-confirmations]")?.scrollIntoView({
@@ -9853,7 +9876,8 @@ async function submitJob() {
     const payload = {
         draft_id: state.identityDraftId,
         idempotency_key: idempotencyKey,
-        vehicle: { ...selectedVehicle, source: "user_confirmed", confidence: 1 },
+        vehicle: selectedVehicle,
+        vehicle_user_confirmed: true,
         rim,
         rim_user_confirmed: false,
     };
@@ -10422,6 +10446,16 @@ function bindEvents() {
             renderIdentityFlow();
         });
     });
+    document.querySelector("[data-manual-vehicle-toggle]")?.addEventListener("click", () => {
+        state.manualVehicleMode = true;
+        state.selectedVehicleIndex = null;
+        renderIdentityFlow();
+    });
+    document.querySelector("[data-manual-vehicle-back]")?.addEventListener("click", () => {
+        state.manualVehicleMode = false;
+        state.selectedVehicleIndex = null;
+        renderIdentityFlow();
+    });
     document.querySelector("[data-rim-product-url]")?.addEventListener("input", (event) => {
         state.rimProductUrl = event.target.value;
         renderIdentityFlow();
@@ -10675,6 +10709,7 @@ function bindEvents() {
 
         const vehicleChoice = event.target.closest("[data-vehicle-choice]");
         if (vehicleChoice) {
+            state.manualVehicleMode = false;
             state.selectedVehicleIndex = Number(vehicleChoice.dataset.vehicleChoice || 0);
             renderIdentityFlow();
             haptic("light");

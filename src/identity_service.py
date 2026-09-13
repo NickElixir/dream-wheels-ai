@@ -422,16 +422,97 @@ def prefill_vehicle_from_proposal(
 ) -> VehicleCandidate:
     if proposal is None:
         return vehicle
-    primary = proposal.vehicle.primary
-    if primary is None:
+    candidates = [
+        candidate
+        for candidate in [proposal.vehicle.primary, *proposal.vehicle.alternatives]
+        if candidate
+    ]
+    matching_candidate = next(
+        (
+            candidate
+            for candidate in candidates
+            if vehicle_matches_proposal_candidate(vehicle, candidate)
+        ),
+        None,
+    )
+    if matching_candidate is None:
         return vehicle
     update: dict[str, object] = {}
     for field_name in ("year", "year_start", "year_end"):
-        if getattr(vehicle, field_name) is None and getattr(primary, field_name) is not None:
-            update[field_name] = getattr(primary, field_name)
+        if (
+            getattr(vehicle, field_name) is None
+            and getattr(matching_candidate, field_name) is not None
+        ):
+            update[field_name] = getattr(matching_candidate, field_name)
     if not update:
         return vehicle
     return vehicle.model_copy(update=update)
+
+
+def _normalized_vehicle_text(value: object) -> str:
+    return " ".join(str(value or "").strip().split()).casefold()
+
+
+def vehicle_matches_proposal_candidate(
+    vehicle: VehicleCandidate,
+    candidate: object,
+) -> bool:
+    """Match a submitted vehicle to an exact AI proposal candidate.
+
+    Missing year data is allowed so a matching candidate may provide a safe
+    year prefill. Any year data supplied by the caller must match exactly;
+    this deliberately avoids fuzzy correction or cross-vehicle year leakage.
+    """
+    if not getattr(candidate, "make", None) or not getattr(candidate, "model", None):
+        return False
+    if _normalized_vehicle_text(vehicle.make) != _normalized_vehicle_text(
+        candidate.make
+    ) or _normalized_vehicle_text(vehicle.model) != _normalized_vehicle_text(candidate.model):
+        return False
+    for field_name in ("year", "year_start", "year_end"):
+        submitted = getattr(vehicle, field_name)
+        if submitted is not None and submitted != getattr(candidate, field_name):
+            return False
+    return True
+
+
+def canonical_vehicle_for_confirmation(
+    vehicle: VehicleCandidate,
+    proposal: IdentityProposal | None,
+) -> VehicleCandidate:
+    """Preserve provider provenance for an explicitly selected AI candidate.
+
+    A submitted vehicle that does not match a persisted proposal is treated as
+    explicit manual input. Client-provided AI source/confidence are never
+    trusted as canonical provenance on their own.
+    """
+    if proposal is not None:
+        candidates = [
+            candidate
+            for candidate in [proposal.vehicle.primary, *proposal.vehicle.alternatives]
+            if candidate
+        ]
+        matching_candidate = next(
+            (
+                candidate
+                for candidate in candidates
+                if vehicle_matches_proposal_candidate(vehicle, candidate)
+            ),
+            None,
+        )
+        if matching_candidate is not None:
+            return prefill_vehicle_from_proposal(vehicle, proposal).model_copy(
+                update={
+                    "make": matching_candidate.make,
+                    "model": matching_candidate.model,
+                    "year": matching_candidate.year,
+                    "year_start": matching_candidate.year_start,
+                    "year_end": matching_candidate.year_end,
+                    "confidence": matching_candidate.confidence,
+                    "source": "vlm_visual",
+                }
+            )
+    return vehicle.model_copy(update={"confidence": 1, "source": "user_input"})
 
 
 def prefill_rim_from_proposal(
@@ -510,15 +591,15 @@ async def insert_vehicle_identity(
     *,
     owner_user_id: int,
     vehicle: VehicleCandidate,
+    user_confirmed: bool = False,
     field_candidates: dict[str, list[dict]] | None = None,
 ) -> str:
-    confirmed = is_user_source(vehicle.source)
     field_provenance = {
-        "make": _field_meta(vehicle.source, vehicle.confidence, confirmed=confirmed),
-        "model": _field_meta(vehicle.source, vehicle.confidence, confirmed=confirmed),
-        "year": _field_meta(vehicle.source, vehicle.confidence, confirmed=confirmed),
-        "year_start": _field_meta(vehicle.source, vehicle.confidence, confirmed=confirmed),
-        "year_end": _field_meta(vehicle.source, vehicle.confidence, confirmed=confirmed),
+        "make": _field_meta(vehicle.source, vehicle.confidence, confirmed=user_confirmed),
+        "model": _field_meta(vehicle.source, vehicle.confidence, confirmed=user_confirmed),
+        "year": _field_meta(vehicle.source, vehicle.confidence, confirmed=user_confirmed),
+        "year_start": _field_meta(vehicle.source, vehicle.confidence, confirmed=user_confirmed),
+        "year_end": _field_meta(vehicle.source, vehicle.confidence, confirmed=user_confirmed),
     }
     return str(
         await conn.fetchval(
@@ -536,7 +617,7 @@ async def insert_vehicle_identity(
             vehicle.year,
             vehicle.year_start,
             vehicle.year_end,
-            confirmed,
+            user_confirmed,
             json.dumps(field_provenance),
             json.dumps(field_candidates or {}),
         )

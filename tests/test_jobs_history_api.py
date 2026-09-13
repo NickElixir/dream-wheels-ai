@@ -40,6 +40,12 @@ def _job_row(**overrides) -> dict:
         "feedback_created_at": None,
         "feedback_updated_at": None,
         "render_input_snapshot": None,
+        "vehicle_identity_make": None,
+        "vehicle_identity_model": None,
+        "vehicle_identity_year": None,
+        "vehicle_identity_year_start": None,
+        "vehicle_identity_year_end": None,
+        "vehicle_identity_is_user_confirmed": False,
     }
     row.update(_base_asset_fields("car", kind="car_original"))
     row.update(_base_asset_fields("rim", kind="rim_original"))
@@ -117,6 +123,60 @@ def test_history_parses_jsonb_snapshot_string(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["jobs"][0]["render_input_snapshot"] == {"vehicle": {"make": "Lexus"}}
+
+
+def test_history_exposes_current_confirmed_identity_without_rewriting_snapshot(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    render_input_snapshot={
+                        "vehicle": {"make": "Zeer", "model": "Zeer 1", "year": 2023}
+                    },
+                    vehicle_identity_make="Acura",
+                    vehicle_identity_model="ADX",
+                    vehicle_identity_year=2025,
+                    vehicle_identity_is_user_confirmed=True,
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    body = response.json()["jobs"][0]
+    assert body["render_input_snapshot"]["vehicle"]["model"] == "Zeer 1"
+    assert body["vehicle_identity"] == {
+        "make": "Acura",
+        "model": "ADX",
+        "year": 2025,
+        "year_start": None,
+        "year_end": None,
+        "is_user_confirmed": True,
+    }
+
+
+def test_history_keeps_unconfirmed_identity_as_non_authoritative(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    render_input_snapshot={"vehicle": {"make": "Zeer", "model": "Zeer 1"}},
+                    vehicle_identity_make="Acura",
+                    vehicle_identity_model="ADX",
+                    vehicle_identity_is_user_confirmed=False,
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["vehicle_identity"]["is_user_confirmed"] is False
 
 
 def test_history_drops_non_object_snapshot_payload(monkeypatch):

@@ -193,6 +193,20 @@ def test_selected_vehicle_choice_uses_selected_status_not_correctness_claim() ->
     assert "color: var(--success)" in selected_choice_css
 
 
+def test_vehicle_identity_requires_explicit_confirmation_and_manual_fallback() -> None:
+    assert "selectedVehicleIndex: null" in APP_JS
+    assert "manualVehicleMode: false" in APP_JS
+    assert "vehicles[state.selectedVehicleIndex] || vehicles[0]" not in APP_JS
+    assert "vehicle_user_confirmed: true" in APP_JS
+    assert 'source: "user_input"' in APP_JS
+    assert "data-manual-vehicle-toggle" in INDEX_HTML
+    assert "Не подходит? Указать вручную" in INDEX_HTML
+    assert "data-manual-vehicle-back" in INDEX_HTML
+    assert "vehicle_confirmation_required" in JOBS_API
+    assert "canonical_vehicle_for_confirmation" in JOBS_API
+    assert "vehicle_identity" in JOBS_API
+
+
 def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert 'data-view="fitment"' in INDEX_HTML
     assert "data-open-fitment-result" in INDEX_HTML
