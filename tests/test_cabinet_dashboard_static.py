@@ -118,9 +118,13 @@ def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
         in APP_JS.split("function openAuthDialog()", 1)[1].split("function closeAuthDialog()", 1)[0]
     )
     assert "authTelegramButton?.addEventListener(eventName, warmWebsiteLoginResources" in APP_JS
-    backdrop_listener = APP_JS.split('document.querySelector("[data-auth-dialog]")?.addEventListener("click", ')[1].split(");", 1)[0]
+    backdrop_listener = APP_JS.split(
+        'document.querySelector("[data-auth-dialog]")?.addEventListener("click", '
+    )[1].split(");", 1)[0]
     assert "!state.authDialogBusy && !state.websiteLoginPending" in backdrop_listener
-    failure_handler = APP_JS.split("void loginWithTelegram({ preparedResources: resources }).then((signedIn) => {")[1].split("function validFrontendEmail", 1)[0]
+    failure_handler = APP_JS.split(
+        "void loginWithTelegram({ preparedResources: resources }).then((signedIn) => {"
+    )[1].split("function validFrontendEmail", 1)[0]
     assert "state.authDialogOpen = true;" in failure_handler
 
 
