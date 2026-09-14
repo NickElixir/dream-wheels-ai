@@ -106,7 +106,9 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
     assert "WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS" in APP_JS
     assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
-    loader = APP_JS.split("function loadTelegramLoginLibrary()", 1)[1].split("function hasFreshWebsiteLoginNonce", 1)[0]
+    loader = APP_JS.split("function loadTelegramLoginLibrary()", 1)[1].split(
+        "function hasFreshWebsiteLoginNonce", 1
+    )[0]
     assert 'document.querySelector("script[data-telegram-login-library]")?.remove();' in loader
     assert "Telegram Login library timed out" in loader
     assert "window.clearTimeout(timeoutId);" in loader
