@@ -83,7 +83,14 @@ def test_account_menu_stays_in_place_with_long_identity() -> None:
     assert "flex: 0 0 auto;" in STYLE_CSS.split(".sidebar-account", 1)[1].split("}", 1)[0]
     assert ".sidebar-account > div:last-child" in STYLE_CSS
     assert "overflow-wrap: anywhere;" in STYLE_CSS.split(".account-name", 1)[1].split("}", 1)[0]
+    sidebar_nav = STYLE_CSS.split(".sidebar-nav", 1)[1].split("}", 1)[0]
+    assert "overflow-y: auto;" in sidebar_nav
+    assert "min-height: 0;" in sidebar_nav
     assert "Настройки аккаунта" in INDEX_HTML
+
+
+def test_create_view_is_hidden_in_initial_markup() -> None:
+    assert '<section class="view" data-view="create" hidden>' in INDEX_HTML
 
 
 def test_unauthenticated_state_prompts_telegram_login() -> None:

@@ -176,6 +176,12 @@ a {
 .sidebar-nav {
     display: grid;
     gap: 28px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    padding-right: 2px;
+    scrollbar-width: thin;
 }
 
 .sidebar-section {
@@ -228,7 +234,7 @@ a {
     font: inherit;
     text-align: left;
     width: 100%;
-    margin-top: auto;
+    margin-top: 0;
     flex: 0 0 auto;
     min-width: 0;
     display: flex;
