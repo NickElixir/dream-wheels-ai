@@ -229,6 +229,8 @@ a {
     text-align: left;
     width: 100%;
     margin-top: auto;
+    flex: 0 0 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -236,6 +238,11 @@ a {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-account > div:last-child {
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .sidebar-account:hover,
@@ -321,12 +328,16 @@ a {
 }
 
 .account-name {
+    min-width: 0;
     font-weight: 900;
+    overflow-wrap: anywhere;
 }
 
 .account-subtitle {
+    min-width: 0;
     color: var(--text-subtle);
     font-size: 12px;
+    overflow-wrap: anywhere;
 }
 
 @media (max-width: 560px) {

@@ -17,7 +17,7 @@ test("Account screen exposes explicit Email and Telegram linking without a clien
     ]);
 
     assert.match(html, /data-nav="settings"/);
-    assert.match(html, /Способы входа/);
+    assert.match(html, /Настройки аккаунта/);
     assert.match(app, /\/auth\/account\/link/);
     assert.match(app, /\/auth\/account\/merge/);
     assert.match(app, /createEphemeralEmailLinkController/);
