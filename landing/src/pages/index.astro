@@ -1,0 +1,125 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BeforeAfter from '../components/BeforeAfter';
+import MiniCatalog from '../components/MiniCatalog';
+---
+
+<Layout>
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="Dream Wheels home"><span>DW</span> Dream Wheels</a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="#catalog">Catalog</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="header-actions">
+      <a class="login-link" href="https://dreamwheels.pro/app/new" data-login-link>Log in</a>
+      <a class="button button-small button-orange" href="https://dreamwheels.pro/app/new" data-primary-cta>Try your car</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero section-shell" id="top">
+      <div class="hero-copy">
+        <span class="section-index">01 / 09</span>
+        <h1>Your car.<br /><em>Your style.</em></h1>
+        <p class="hero-lead">Choose a wheel. Check if it fits. See it on your car before you buy.</p>
+        <div class="hero-actions">
+          <a class="button button-orange" href="https://dreamwheels.pro/app/new" data-primary-cta>Try wheels on my car <span aria-hidden="true">↗</span></a>
+          <a class="text-link" href="#catalog">Explore the catalog <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="Editorial automotive visual">
+        <img src="/assets/mock/zeekr-001.webp" width="1536" height="1024" alt="Mock editorial render of a Zeekr 001 in a dark architectural garage" fetchpriority="high" />
+        <div class="hero-visual-fade" aria-hidden="true" />
+        <div class="hero-caption"><span>Dream Wheels / 001</span><span>Visual fitment preview</span></div>
+      </div>
+      <div class="hero-bottom"><span>Visual try-on, separate technical check</span><span>Scroll to explore <b aria-hidden="true">↓</b></span></div>
+    </section>
+
+    <section class="catalog-section section-shell" id="catalog" aria-labelledby="catalog-title">
+      <MiniCatalog client:load />
+    </section>
+
+    <section class="questions-section section-shell" id="questions">
+      <div class="questions-intro">
+        <span class="section-index">03 / 09</span>
+        <h2>Two questions.<br /><em>One clear answer.</em></h2>
+        <p>Dream Wheels keeps what you see and what you know in the right order.</p>
+      </div>
+      <div class="question-grid">
+        <article class="question-card question-visual">
+          <div class="question-number">01</div>
+          <div><span class="question-label">How does it look?</span><h3>Visual try-on</h3><p>Explore proportion, finish and attitude on a scene that feels like your own.</p></div>
+          <span class="question-arrow" aria-hidden="true">↗</span>
+        </article>
+        <article class="question-card question-fitment">
+          <div class="question-number">02</div>
+          <div><span class="question-label">Does it fit technically?</span><h3>Preliminary check</h3><p>PCD, DIA, diameter, width and ET are checked separately from the image.</p></div>
+          <span class="question-arrow" aria-hidden="true">↗</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="how-section section-shell" id="how-it-works">
+      <div class="section-heading-row">
+        <div><span class="section-index">04 / 09</span><h2>Less guessing.<br /><em>More knowing.</em></h2></div>
+        <p>From the first reference to a more confident shortlist, in three calm steps.</p>
+      </div>
+      <div class="steps-line">
+        <article class="step"><span>01</span><h3>Choose the wheel</h3><p>Start with a specific style, finish and size.</p></article>
+        <article class="step"><span>02</span><h3>Check the numbers</h3><p>Keep visual inspiration separate from technical compatibility.</p></article>
+        <article class="step"><span>03</span><h3>See your car change</h3><p>Make a faster, more personal decision before purchase.</p></article>
+      </div>
+      <div class="video-frame">
+        <div class="video-frame-top"><span>Product film / coming soon</span><span>00:48</span></div>
+        <video controls muted playsinline preload="none" poster="/assets/mock/zeekr-001.webp" data-demo-video aria-label="Dream Wheels product video placeholder">
+          <source src="/media/dream-wheels-demo.webm" type="video/webm" />
+          <source src="/media/dream-wheels-demo.mp4" type="video/mp4" />
+        </video>
+        <div class="video-overlay"><span class="play-mark" aria-hidden="true">▶</span><p>A short look at the flow from wheel to car.</p></div>
+      </div>
+    </section>
+
+    <section class="before-after-section section-shell" id="before-after">
+      <div class="section-heading-row"><div><span class="section-index">05 / 09</span><h2>From reference<br /><em>to direction.</em></h2></div><p>Move through the image. Keep the decision yours.</p></div>
+      <BeforeAfter client:load />
+    </section>
+
+    <section class="cta-section section-shell">
+      <div class="cta-copy"><span class="section-index">06 / 09</span><h2>Make the next<br /><em>move visual.</em></h2><p>Bring your own car into the conversation.</p><a class="button button-orange" href="https://dreamwheels.pro/app/new" data-primary-cta>Try wheels on my car <span aria-hidden="true">↗</span></a></div>
+      <div class="cta-mark" aria-hidden="true"><span>DW</span><small>Dream Wheels AI</small></div>
+    </section>
+
+    <section class="faq-section section-shell" id="faq">
+      <div class="section-heading-row"><div><span class="section-index">07 / 09</span><h2>Good questions<br /><em>belong here.</em></h2></div><p>Short answers to keep the process clear.</p></div>
+      <div class="faq-list">
+        <details open><summary>Is the visual result a technical fitment check?</summary><p>No. Visual try-on shows how the wheel may look. Compatibility is a separate preliminary check based on structured technical parameters.</p></details>
+        <details><summary>Can I use my own car photo?</summary><p>Yes. The app is built around your own vehicle image and a selected wheel from the catalog.</p></details>
+        <details><summary>What do PCD, DIA and ET mean here?</summary><p>They are technical fields used for the separate fitment step. The landing keeps that information compact and does not replace an installer’s confirmation.</p></details>
+        <details><summary>Are the catalog vehicles production-ready?</summary><p>This first landing shell uses clearly marked mock catalog data. Showcase assets will be swapped later without changing the catalog architecture.</p></details>
+      </div>
+    </section>
+
+    <section class="follow-section section-shell">
+      <div><span class="section-index">08 / 09</span><h2>Follow the<br /><em>build.</em></h2></div>
+      <div class="follow-links"><a href="https://t.me/" target="_blank" rel="noreferrer" data-social="telegram">Telegram <span>↗</span></a><a href="https://instagram.com/" target="_blank" rel="noreferrer" data-social="instagram">Instagram <span>↗</span></a><a href="https://www.youtube.com/" target="_blank" rel="noreferrer" data-social="youtube">YouTube <span>↗</span></a></div>
+    </section>
+  </main>
+
+  <footer class="site-footer section-shell"><a class="wordmark" href="#top"><span>DW</span> Dream Wheels</a><span>Visual fitment, with more certainty.</span><span>© 2026 Dream Wheels AI</span></footer>
+
+  <script>
+    import { getAppTarget } from '../lib/attribution';
+    import { trackEvent } from '../lib/analytics';
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-primary-cta], [data-login-link]').forEach((link) => {
+      link.href = getAppTarget();
+      link.addEventListener('click', () => trackEvent(link.hasAttribute('data-login-link') ? 'login_clicked' : 'primary_cta_clicked'));
+    });
+    document.querySelectorAll<HTMLAnchorElement>('[data-social]').forEach((link) => link.addEventListener('click', () => trackEvent('social_clicked', { channel: link.dataset.social })));
+    document.querySelector<HTMLVideoElement>('[data-demo-video]')?.addEventListener('play', () => trackEvent('demo_video_started'));
+    document.querySelector<HTMLVideoElement>('[data-demo-video]')?.addEventListener('ended', () => trackEvent('demo_video_completed'));
+    window.addEventListener('dreamwheels:landing-viewed', () => trackEvent('landing_viewed'));
+  </script>
+</Layout>
