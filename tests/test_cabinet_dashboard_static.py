@@ -79,6 +79,13 @@ def test_frontend_does_not_offer_cross_owner_query_inputs() -> None:
     assert "owner_user_id" not in APP_JS
 
 
+def test_account_menu_stays_in_place_with_long_identity() -> None:
+    assert "flex: 0 0 auto;" in STYLE_CSS.split(".sidebar-account", 1)[1].split("}", 1)[0]
+    assert ".sidebar-account > div:last-child" in STYLE_CSS
+    assert "overflow-wrap: anywhere;" in STYLE_CSS.split(".account-name", 1)[1].split("}", 1)[0]
+    assert "Настройки аккаунта" in INDEX_HTML
+
+
 def test_unauthenticated_state_prompts_telegram_login() -> None:
     assert "data-website-auth-button" in INDEX_HTML
     assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
