@@ -4,7 +4,7 @@
 
 - Branch: `feature/landing-v1-shell-catalog`
 - Base: current `origin/staging` (`dev` is local-only and has no `origin/dev` ref)
-- Commit: `4a086ce feat(landing): add v1 shell and mini catalog`
+- Commit: `3d9457e feat(landing): add v1 shell and mini catalog`
 - Existing `webapp/` was not modified.
 - No production deploy, merge or PR was performed.
 - The experimental `feature/editorial-garage-pipeline` branch was not merged and its draft composites are not consumed.
