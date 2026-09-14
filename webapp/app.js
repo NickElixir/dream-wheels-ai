@@ -66,6 +66,7 @@ const FITMENT_WIDTH_PRESETS = [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 1
 const FITMENT_DIA_PRESETS = [54, 54.1, 56.6, 57.1, 58.5, 58.6, 60.1, 62.5, 62.6, 63.3, 63.35, 63.4, 64.1, 65.1, 66.1, 66.45, 66.5, 66.6, 67.1, 71.6, 72.6, 74.1, 75.1, 77.8, 84.1, 95.1, 98, 98.1, 98.5, 100.1, 106.1, 108.4, 108.5, 110, 110.1, 130];
 const FITMENT_PCD_PRESETS = [[4, 98], [4, 100], [4, 108], [5, 98], [5, 100], [5, 108], [5, 110], [5, 112], [5, 114.3], [5, 115], [5, 120], [5, 127], [5, 130], [5, 135], [5, 139.7], [6, 114.3], [6, 130]];
 const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.js?5";
+const TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS = 12 * 1000;
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const PRICING_VERSION = "credits-v1";
@@ -268,6 +269,7 @@ const I18N = {
             loginShort: "Войти",
             loggingIn: "Входим...",
             preparing: "Подготавливаем вход...",
+            retryTelegram: "Повторить вход через Telegram",
             logout: "Выйти",
             failed: "Не удалось войти через Telegram",
             dashboardLoginPrompt: "Войдите, чтобы увидеть баланс",
@@ -718,6 +720,7 @@ const I18N = {
             loginShort: "Log in",
             loggingIn: "Logging in...",
             preparing: "Preparing login...",
+            retryTelegram: "Retry Telegram login",
             logout: "Log out",
             failed: "Telegram login failed",
             dashboardLoginPrompt: "Sign in to see your balance",
@@ -3132,11 +3135,19 @@ function renderAuthDialog() {
     document.querySelector("[data-auth-verify]")?.toggleAttribute("disabled", state.authDialogBusy || state.authDialogOtp.length !== 6);
     const telegramLoginReady = Boolean(getPreparedTelegramLoginResources());
     const telegramLoginPreparing = !telegramLoginReady && state.websiteLoginWarmupPending;
+    const telegramLoginRetryAvailable = Boolean(
+        state.authDialogMessageError &&
+        !state.authDialogBusy &&
+        !state.websiteLoginPending &&
+        !telegramLoginPreparing
+    );
     if (telegramLabel) {
         telegramLabel.textContent = state.websiteLoginPending
             ? t("auth.openingTelegram")
             : telegramLoginPreparing
                 ? t("auth.preparing")
+                : telegramLoginRetryAvailable
+                    ? t("auth.retryTelegram")
                 : t("auth.telegramSecondary");
     }
     document.querySelector("[data-auth-telegram]")?.toggleAttribute(
@@ -3241,27 +3252,37 @@ function loadTelegramLoginLibrary() {
     if (window.Telegram?.Login) return Promise.resolve(window.Telegram.Login);
     if (state.websiteLoginLibraryPromise) return state.websiteLoginLibraryPromise;
 
-    function resolveLoginLibrary(resolve, reject) {
-        if (window.Telegram?.Login) resolve(window.Telegram.Login);
-        else reject(new Error("Telegram Login library is unavailable"));
-    }
-
     state.websiteLoginLibraryPromise = new Promise((resolve, reject) => {
-        const existingScript = document.querySelector("script[data-telegram-login-library]");
-        if (existingScript) {
-            existingScript.addEventListener("load", () => resolveLoginLibrary(resolve, reject), {
-                once: true,
-            });
-            existingScript.addEventListener("error", reject, { once: true });
-            return;
-        }
+        // The OAuth script used to be added as an async tag in index.html. If it
+        // had already emitted load/error by the time this code subscribed, the
+        // promise never settled and the UI stayed on "Preparing login" forever.
+        document.querySelector("script[data-telegram-login-library]")?.remove();
 
         const script = document.createElement("script");
         script.src = TELEGRAM_LOGIN_SCRIPT_URL;
         script.async = true;
         script.dataset.telegramLoginLibrary = "true";
-        script.addEventListener("load", () => resolveLoginLibrary(resolve, reject), { once: true });
-        script.addEventListener("error", reject, { once: true });
+        let settled = false;
+        const settle = (callback, value) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timeoutId);
+            callback(value);
+        };
+        const fail = (error) => {
+            script.remove();
+            settle(reject, error instanceof Error ? error : new Error("Telegram Login library is unavailable"));
+        };
+        const timeoutId = window.setTimeout(
+            () => fail(new Error("Telegram Login library timed out")),
+            TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS
+        );
+        script.addEventListener("load", () => {
+            const telegramLogin = window.Telegram?.Login;
+            if (telegramLogin) settle(resolve, telegramLogin);
+            else fail(new Error("Telegram Login library is unavailable"));
+        }, { once: true });
+        script.addEventListener("error", () => fail(new Error("Telegram Login library failed to load")), { once: true });
         document.head.append(script);
     }).catch((error) => {
         state.websiteLoginLibraryPromise = null;

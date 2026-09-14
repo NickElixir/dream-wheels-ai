@@ -90,10 +90,12 @@ def test_unauthenticated_state_prompts_telegram_login() -> None:
 def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert 'href="https://oauth.telegram.org"' in INDEX_HTML
     assert 'href="//oauth.telegram.org"' in INDEX_HTML
-    assert 'src="https://oauth.telegram.org/js/telegram-login.js?5"' in INDEX_HTML
-    assert "data-telegram-login-library" in INDEX_HTML
+    assert 'src="https://oauth.telegram.org/js/telegram-login.js?5"' not in INDEX_HTML
+    assert "data-telegram-login-library" not in INDEX_HTML
     assert "WEBSITE_LOGIN_NONCE_MAX_AGE_MS" in APP_JS
+    assert "TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS" in APP_JS
     assert "auth.preparing" in APP_JS
+    assert "auth.retryTelegram" in APP_JS
     assert "function warmWebsiteLoginResources()" in APP_JS
     assert "websiteLoginWarmupPending" in APP_JS
     assert "button.disabled = state.websiteLoginPending;" in APP_JS
@@ -104,6 +106,12 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
     assert "WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS" in APP_JS
     assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
+    loader = APP_JS.split("function loadTelegramLoginLibrary()", 1)[1].split(
+        "function hasFreshWebsiteLoginNonce", 1
+    )[0]
+    assert 'document.querySelector("script[data-telegram-login-library]")?.remove();' in loader
+    assert "Telegram Login library timed out" in loader
+    assert "window.clearTimeout(timeoutId);" in loader
 
 
 def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
