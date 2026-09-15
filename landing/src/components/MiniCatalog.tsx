@@ -78,7 +78,7 @@ export default function MiniCatalog() {
           <div class="spec-title"><div><span class="spec-kicker">SELECTED WHEEL</span><h3>{wheel.brand}<br />{wheel.model}</h3><p>{wheel.finish}</p></div><button class={`favorite-button ${isFavorite ? 'is-active' : ''}`} type="button" aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'} aria-pressed={isFavorite} onClick={toggleFavorite}>{isFavorite ? '★' : '☆'}</button></div>
           <div class="spec-values">{specs.map(([label, value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
           <div class="compatibility-status"><span class="status-check" aria-hidden="true">✓</span><div><strong>{statusLabel}</strong><span>По проверенным параметрам</span></div><span aria-hidden="true">›</span></div>
-          <button type="button" class="button comparison-button action-type" onClick={() => trackEvent('primary_cta_clicked', { source: 'catalog_3d' })}>◉&nbsp; Посмотреть в 3D</button>
+          <button type="button" class="button comparison-button action-type" onClick={() => trackEvent('primary_cta_clicked', { source: 'catalog_details' })}>Посмотреть детали <span aria-hidden="true">→</span></button>
           <button type="button" class="compare-link" onClick={() => trackEvent('primary_cta_clicked', { source: 'catalog_compare' })}>□&nbsp; Добавить к сравнению</button>
           <p class="fitment-note">Визуальная примерка не подтверждает техническую совместимость.</p>
         </aside>

@@ -15,6 +15,10 @@ Implemented only the first Landing surface:
 
 Sections below Mini Catalog are no longer rendered on the Gate 1 route. Gate 2, mobile redesign, final photography, production wheel renders, Garage compositor, fitment verification, merge and deploy were not performed.
 
+### Approved product/design deviation — Catalog action
+
+Landing V1 does not advertise 3D viewing. The Catalog's strong secondary action reads “Посмотреть детали →”. It remains a Gate 1 mock interaction until a meaningful details surface is implemented. This affects copy/action semantics only, not the reference control's geometry, position, hierarchy or Catalog composition.
+
 ## Changed files
 
 - `landing/src/pages/index.astro`
