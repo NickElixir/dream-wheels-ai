@@ -1,20 +1,20 @@
 ---
 import '../styles/global.css';
 
-interface Props {
-  title?: string;
-}
-
-const { title = 'Dream Wheels AI — See the fit before you buy' } = Astro.props;
+interface Props { title?: string; }
+const { title = 'Dream Wheels AI — Примерьте стиль на своей машине' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <meta name="theme-color" content="#0b0c0d" />
-    <meta name="description" content="Choose a wheel, check preliminary compatibility, and see it on your car." />
+    <meta name="theme-color" content="#050b0e" />
+    <meta name="description" content="Примерьте диски на своей машине и проверьте предварительную совместимость." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Inter+Tight:wght@500;600&display=swap&subset=cyrillic,latin" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
   </head>
