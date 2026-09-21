@@ -10,6 +10,7 @@ The product returns two separate outcomes:
 - **Technical compatibility**: preliminary, structured assessment of whether known wheel specifications match the confirmed vehicle profile.
 
 A successful visual render is never evidence that the wheel fits physically.
+Visual try-on deliberately does not infer or display RimSpec details such as PCD, ET or DIA; those values belong to the separate technical fitment assessment.
 
 The Fitment Pipeline answers one question: **“What is known about the technical possibility of installation?”** It uses structured vehicle and wheel data plus deterministic rules. Image analysis, OCR or an LLM may help extract or explain data, but must not decide compatibility.
 

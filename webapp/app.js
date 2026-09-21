@@ -4659,7 +4659,18 @@ function fitmentVerdictMessage(item) {
     if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return ru ? "Разболтовка колесного диска не совпадает" : "The wheel bolt pattern does not match";
     if (code === "center_bore_too_small") return ru ? "Ступичное отверстие диска меньше штатного" : "The wheel center bore is smaller than the vehicle hub";
     if (["offset_deviation_check_required", "offset_out_of_range", "et_outside_reference_range"].includes(code)) {
-        const range = `ET${formatFitmentNumber(details.reference_et_min_mm).replace(/\s/g, "")}–${formatFitmentNumber(details.reference_et_max_mm).replace(/\s/g, "")}`;
+        const referenceMin = details.reference_et_min_mm;
+        const referenceMax = details.reference_et_max_mm;
+        const formattedMin = formatFitmentNumber(referenceMin).replace(/\s/g, "");
+        const formattedMax = formatFitmentNumber(referenceMax).replace(/\s/g, "");
+        const range = referenceMin !== null
+            && referenceMin !== undefined
+            && referenceMax !== null
+            && referenceMax !== undefined
+            && Number.isFinite(Number(referenceMin))
+            && Number(referenceMin) === Number(referenceMax)
+            ? `ET${formattedMin}`
+            : `ET${formattedMin}–${formattedMax}`;
         const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
         return ru
             ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}. Перед установкой проверьте внутренний и наружный зазор`
@@ -7031,6 +7042,7 @@ async function loadFitmentOverview(
     { restoreReason = null, suppressAutomaticResolver = false, preserveActiveSection = "" } = {}
 ) {
     if (!jobId) return;
+    beginFitmentCatalogueContextChange();
     // After the first Fitment entry, an overview refresh is domain data, not a
     // navigation command. The explicit option is retained for clarity at mutation
     // call sites; the current section is the safe default for all other refreshes.
@@ -7753,6 +7765,9 @@ async function saveFitment(event) {
         return;
     }
     state.fitmentFormState.validation = "valid";
+    // Saving replaces the authoritative vehicle data; invalidate every catalogue
+    // response that belongs to the previous form generation before the PATCH.
+    beginFitmentCatalogueContextChange();
     state.fitmentFormState.status = "saving";
     state.fitmentSaving = true;
     state.fitmentError = "";
@@ -10818,6 +10833,9 @@ function bindEvents() {
             refreshFitmentSaveLabel();
         });
         input.addEventListener("change", (event) => {
+            if (input.dataset.fitmentCatalogue
+                && event.isTrusted !== true
+                && document.activeElement !== input) return;
             const path = input.dataset.fitmentInput;
             const value = event.target.value;
             if (input.dataset.fitmentPreset) {
