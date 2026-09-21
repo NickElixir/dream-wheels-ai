@@ -214,3 +214,21 @@ fail-closed) — not a defect.
 Per `docs/handoffs/README.md`: update this file's bottom with final branch,
 commit SHA, PR link, and explicitly list which items still need the
 auditor's browser-based manual verification pass before they can be closed.
+
+## Completion update (2026-09-22)
+
+- implementation branch: `chore/fitment-verdict-bug-fixes`
+- implementation commits: `bbbc16e`, `973e7d2`, `aa908e8`
+- pull request: [#180](https://github.com/NickElixir/dream-wheels-ai/pull/180) into `staging`
+- automated verification: `ruff check .`, `ruff format --check .`, `pytest -q` (549 passed, 5 skipped), and fitment Node behavior tests (46 passed)
+- item 1: generation invalidation and synthetic catalogue-event guard implemented; ready for auditor browser verification
+- item 2: single-point ET copy and range copy fixed with automated coverage; done
+- item 3: `et_outside_reference_range` no longer populates `missing_fields`; uniform axle handling audited in both execution paths and retained because the existing backend already mirrors front profiles to rear for uniform setups; done
+- item 4: visual try-on/RimSpec boundary note added; done
+- item 5: repository audit found no periodic Robokassa pending-invoice reconciliation job. Separate lower-priority issue [#179](https://github.com/NickElixir/dream-wheels-ai/issues/179) opened. Robokassa merchant dashboard URL settings and the matching Render callback log were not externally verifiable from this workspace; manual verification remains required.
+
+### Remaining manual verification before closure
+
+1. On staging, reproduce the make/model blanking scenario with a delayed catalogue response around save/refetch and confirm the selected make/model/year remain intact.
+2. In the Robokassa staging merchant dashboard, confirm the Fail URL and Success URL match the endpoints documented above.
+3. Cross-check the audited invoice's Render logs for the corresponding fail callback and run the documented failed-payment smoke flow.
