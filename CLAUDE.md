@@ -36,8 +36,15 @@ except Exception as e:
 
 - Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
 - Ветви: `feature/* -> staging -> main`
+- Канонические и фактически используемые префиксы веток описаны в [CONTRIBUTING.md](CONTRIBUTING.md).
 - **НЕ пушить в `main`** напрямую — только через PR
 - Атомарные коммиты, не смешивать рефакторинг с фиксами
+
+## Worktrees
+
+Параллельная работа нескольких агентов (Codex/Claude) ведётся через `git worktree` в `worktrees/<name>`. Ветки внутри — не только `feature/fix/chore/hotfix` из CONTRIBUTING.md, но и `codex/*` (агентские ветки), `docs/*` (документационные handoff-ветки), `hardening/*`. `worktrees/` в `.gitignore` — не коммитить.
+
+Перед тем как считать директорию мусором — проверить `git worktree list` и дату последнего коммита ветки, не mtime папки.
 
 ### Безопасность
 
@@ -130,6 +137,8 @@ MCP-серверы (`render`, `supabase`, `upstash`) читают токены �
 
 Альтернатива: положить переменные в `~/.zprofile` — он читается login shell'ом и наследуется launchd, но влияет на все GUI-приложения системы.
 
+**`AUTH_HEADER_REJECTED` / `JWT could not be decoded`:** если это не `unauthorized` из-за отсутствующей переменной, токен невалиден или истёк. Пересоздать его в дашборде сервиса (для Supabase: Project Settings → API → Service Role; не путать с anon key), обновить env и перезапустить Claude Code. Проверка, что переменная вообще объявлена, здесь не поможет: токен присутствует, но сервер его отклоняет.
+
 ## Документация внешних сервисов
 
 Перед утверждениями про поведение внешних сервисов — сверяться с официальными docs (через WebFetch). Не полагаться на знание из обучения.
@@ -141,6 +150,9 @@ MCP-серверы (`render`, `supabase`, `upstash`) читают токены �
 | Render API Keys | https://dashboard.render.com/u/settings?add-api-key | создание `RENDER_API_KEY` |
 | Telegram Bot API | https://core.telegram.org/bots/api | `WebAppInfo`, file URLs, updates |
 | Telegram Mini Apps | https://core.telegram.org/bots/webapps | `tg.initData`, кнопки, lifecycle, **iOS WebView reload-on-file-picker quirk** |
+| Robokassa | https://docs.robokassa.ru/ | платежи, credit top-ups |
+| Wheel-Size API | https://wheel-size.com/api/ | fitment verdict, каталог модификаций |
+| Telegram Login (OAuth) | https://core.telegram.org/widgets/login | website auth, `TELEGRAM_LOGIN_*` |
 | Supabase | https://supabase.com/docs | Storage, Auth, Postgres |
 | Supabase Storage | https://supabase.com/docs/guides/storage | RLS, signed URLs, лимиты |
 | Upstash Redis | https://upstash.com/docs/redis | REST/RESP, лимиты Free tier |

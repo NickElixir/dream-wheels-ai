@@ -384,7 +384,7 @@ setup/spec revisions and source fingerprints. Snapshots are immutable. `GET
 /fitment/checks/{id}` and the history endpoint expose `is_current` by context
 comparison; no separate mutable stale flag is written.
 
-The backward-compatible migration `0026_fitment_rim_source_state.sql` adds
+The backward-compatible migration `0035_fitment_rim_source_state.sql` adds
 nullable source identity/SKU fields and setup revision counters. Legacy rows
 without those fields remain readable as legacy/unknown source evidence.
 
