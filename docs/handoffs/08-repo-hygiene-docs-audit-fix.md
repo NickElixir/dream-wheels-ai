@@ -162,9 +162,10 @@ with reasoning.
 
 - **Branch:** `chore/repo-hygiene-audit-fix`, created from current
   `origin/staging` (`29415ac`), for a PR back into `staging`.
-- **Latest commit at handoff update:** `85fb8fd` — `chore: ignore local
-  worktree artifacts`.
-- **PR:** not opened yet.
+- **Latest completed implementation commit:** `a8f1d2c` — `docs: record
+  repository hygiene conventions`.
+- **PR:** [#177](https://github.com/NickElixir/dream-wheels-ai/pull/177) to
+  `staging`.
 - **Completed:** renamed the two pending migrations, refreshed their
   repository references and the migration index, added local-artifact ignores,
   and documented the verified external-service links, MCP token failure mode,
@@ -182,5 +183,4 @@ with reasoning.
   would have recreated the collision. The audit also named the already-merged
   `feature/vercel-deployment-pipeline` as its base; this branch instead starts
   from its current integration destination, `origin/staging`.
-- **Next step:** run the recorded checks, push this branch and open a PR to
-  `staging`.
+- **Next step:** review and merge PR #177 into `staging` after CI passes.
