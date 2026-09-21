@@ -274,3 +274,84 @@ Largus 2019" job from the original audit.
 
 **Net status: 2 of 3 code items (1, 2) confirmed fixed live. Item 3 needs a
 follow-up fix before this handoff can close.**
+
+## Item 3 reopened — root cause and fix spec (2026-09-22)
+
+Item 5 is now closed: the product owner confirmed with Codex that Render logs
+for the audited invoice show a clean fail-callback — config and code are
+both fine, no reconciliation gap for that specific payment. No further
+action needed on item 5.
+
+A follow-up read-only investigation found the **actual** mechanism behind
+item 3, and it is not what the original PR #180 fix targeted.
+
+### Root cause
+
+The "❓ Укажите ET колесного диска для технической проверки" hint is **not**
+driven by `missing_fields`/readiness at all — PR #180's fix
+(`src/fitment/rules/verdict.py`, `_MISSING_FIELD_BY_REASON`) patched the
+wrong layer. The hint actually comes from `webapp/app.js:2971-2988`, which
+renders `check.blocking_issues`/`conditions`/`advisories` — three arrays
+returned directly by the compatibility-check API, one line per item, via
+`fitmentVerdictMessage()` (`app.js:2406-2448`). Line 2416-2417 renders the
+"Укажите ET" hint whenever an item has `code === "rim_offset_missing"`,
+completely independent of `missing_fields`.
+
+`src/fitment/rules/engine.py:42-45` runs `check_size_and_offset` separately
+for `front` and `rear` axles. For this job it is producing **two different
+results**: front axle → `et_outside_reference_range` (ET40 vs ET50, shown
+correctly per item 2's fix), rear axle → `rim_offset_missing` (shown as the
+stale-looking hint). These are two genuinely different `RuleResult`s from
+two different rule evaluations, both surfaced as separate verdict lines —
+not a copy-paste display bug.
+
+**Why would the axles differ in "uniform" mode?** `insert_rim_setup`
+(`src/identity_service.py:604-622`) sets `front_rim_spec_id ==
+rear_rim_spec_id` (same row) for a uniform setup, so they normally can't
+diverge. The strong suspect (medium confidence, **not yet confirmed against
+the actual DB row** — no DB access in the investigation) is the
+staggered↔uniform toggle path: `src/jobs_api.py:3740-3899` clones the front
+row into a new, separate rear row when switching to staggered mode; the
+"switch back to uniform" branch at `src/jobs_api.py:3900-3910` only
+re-points `rear_rim_spec_id = front_rim_spec_id` when a `setup_changed` flag
+is truthy. If mode was ever toggled staggered→uniform (or that flag didn't
+line up), the rear row stays orphaned. Subsequent uniform-mode edits
+(`src/jobs_api.py:3682-3724`) only `UPDATE rim_specs ... WHERE id =
+front_rim_spec_id` — so the front row gets ET=40 while the orphaned rear row
+keeps its stale/NULL `offset_et_mm`, producing exactly the observed split.
+
+### Required work
+
+1. **Confirm before fixing**: query the `rim_setups` row for
+   `rim_setup_id=f28f8950-8306-47e8-891c-d32e3fb3bd95` (the audited Lada
+   Largus job) — check whether `front_rim_spec_id != rear_rim_spec_id`
+   despite `is_staggered = false`. This confirms or rules out the toggle
+   theory before any code changes.
+2. **Backend fix** (if confirmed): repair the staggered→uniform toggle so
+   `rear_rim_spec_id` always re-converges to `front_rim_spec_id` on that
+   transition, not gated on a `setup_changed` flag that can fail to be true
+   when it should. Evaluate whether a one-time backfill/repair pass is
+   needed for any existing `rim_setups` rows already in this orphaned state
+   (`is_staggered = false` but `front_rim_spec_id != rear_rim_spec_id`).
+3. **Frontend defense-in-depth**: in `fitmentVerdictMessage()`/
+   `renderFitmentVerdictGroup`, don't render a `rim_offset_missing` line for
+   an axle the user never directly edited when `setup_mode === "uniform"`
+   and the visible ET field is filled. This masks the symptom for any
+   pre-existing orphaned rows without waiting on a backfill, but the
+   backend fix in item 2 above is the real correctness fix — don't treat
+   the frontend guard as sufficient on its own.
+4. Add regression coverage: a Python test asserting that toggling
+   staggered→uniform always converges `rear_rim_spec_id` to
+   `front_rim_spec_id`, and a Node test asserting the verdict UI doesn't
+   show `rim_offset_missing` for the non-edited axle in uniform mode when
+   the shared ET value is present.
+
+### Manual verification (auditor, browser, post-deploy)
+
+Re-run the exact repro: open the Lada Largus job's Fitment, "Колесный диск"
+tab, confirm setup mode is "Одинаковые параметры спереди и сзади", run
+"Проверить ещё раз", confirm the "Укажите ET" hint no longer appears
+alongside the correct ET40/ET50 explanation. If the DB investigation in
+step 1 finds this specific job's row is unrecoverably orphaned pre-fix, use
+a fresh job instead to verify the fix going forward, and separately confirm
+whichever backfill/repair approach was chosen for existing rows.
