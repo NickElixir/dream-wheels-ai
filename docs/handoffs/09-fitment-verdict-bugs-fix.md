@@ -232,3 +232,45 @@ auditor's browser-based manual verification pass before they can be closed.
 1. On staging, reproduce the make/model blanking scenario with a delayed catalogue response around save/refetch and confirm the selected make/model/year remain intact.
 2. In the Robokassa staging merchant dashboard, confirm the Fail URL and Success URL match the endpoints documented above.
 3. Cross-check the audited invoice's Render logs for the corresponding fail callback and run the documented failed-payment smoke flow.
+
+## Auditor browser verification (2026-09-22)
+
+Verified live on `dream-wheels-ai-webapp-staging.vercel.app` (confirmed the
+deployed `app.js` contains `beginFitmentCatalogueContextChange`, the
+`isTrusted` guard, and the single-point ET formatting — `version.json` is
+stale/not deploy-linked, don't use it to gate verification). Authenticated
+as `@nick_elixir`, reused jobs `46de6d95...` ("Zeekr 001") and the "Lada
+Largus 2019" job from the original audit.
+
+- **Item 1 — CONFIRMED FIXED.** Reproduced the original trigger twice on
+  the Lada Largus job's Fitment "Автомобиль" step, including a harder case
+  than the original repro (clicked "Сохранить автомобиль" the instant the
+  edit form opened, while Марка/Модель were still visibly blank from the
+  in-flight catalogue fetch). Both times `LADA Largus / 2019 / 1.6i 16V`
+  correctly persisted and displayed after save. 2/2, matching the original
+  bug's 2/2 failure rate inverted.
+- **Item 2 — CONFIRMED FIXED.** Re-ran the Fitment check ("Проверить ещё
+  раз") on the same job/wheel (X-Trike X-153, PCD 4×100, DIA 58.6, ET 40).
+  Verdict text now reads "ET диска ET40; расчётный диапазон автомобиля
+  **ET50**" — no duplicated range.
+- **Item 3 — NOT FIXED, contradicts this doc's "done" status.** On the
+  exact same fresh re-check used to verify item 2, the "❓ Укажите ET
+  колесного диска для технической проверки" hint is still shown, despite
+  ET=40 being explicitly entered and visibly used in the calculation above
+  it. The wheel setup is confirmed in "Одинаковые параметры спереди и
+  сзади" (uniform) mode. This means either the front→rear mirroring this
+  doc's completion note relies on isn't actually happening for this job, or
+  the hint is driven by something other than `missing_fields`/
+  `et_outside_reference_range` (which was correctly patched — see item 2's
+  confirmation that the ET value itself renders correctly). **Recommend
+  reopening item 3** with a targeted investigation of what specifically
+  still triggers the "please provide ET" hint when ET is present and used;
+  the previously-proposed axle-mirroring theory needs re-verification with
+  live data (e.g. inspect the actual `rim_setup`/`rim_spec` rows for both
+  axles on this job) rather than static-code confidence alone.
+- **Item 4 — not independently re-verified** (doc-only change, low risk).
+- **Item 5 — not verifiable from this session**; needs Robokassa merchant
+  dashboard access, which the auditor browser session does not have.
+
+**Net status: 2 of 3 code items (1, 2) confirmed fixed live. Item 3 needs a
+follow-up fix before this handoff can close.**
