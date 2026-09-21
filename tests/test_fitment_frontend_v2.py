@@ -100,7 +100,7 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
     assert 'data-fitment-edit="rim"' in INDEX_HTML
     assert "state.fitmentRimEditing = true;" in APP_JS
     assert "Не удалось определить параметры автоматически" in APP_JS
-    assert "Это не блокирует проверку — укажите параметры колесного диска вручную" in APP_JS
+    assert "Проверьте или заполните их вручную." in APP_JS
     assert "data-fitment-source-manual" in INDEX_HTML
     assert "data-fitment-source-retry" in INDEX_HTML
     assert "data-fitment-source-disclosure" in INDEX_HTML

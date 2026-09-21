@@ -11,6 +11,7 @@ import hashlib
 import ipaddress
 import re
 import socket
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from typing import Any
@@ -115,6 +116,46 @@ class FetchLimits:
     total_timeout_seconds: float = 15.0
 
 
+@dataclass(frozen=True, slots=True)
+class FetchedDocument:
+    requested_url: str
+    final_url: str
+    status: int
+    content_type: str
+    charset: str | None
+    body: bytes
+    text: str
+    redirect_count: int
+    body_truncated: bool = False
+
+
+_MIN_USEFUL_BODY_BYTES = 64
+_TECHNICAL_FIELDS = frozenset(
+    {
+        "bolt_count",
+        "pcd_mm",
+        "center_bore_mm",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "offset_et_mm",
+    }
+)
+_YANDEX_HOSTS = frozenset({"market.yandex.ru", "business.market.yandex.ru"})
+_EMPTY_DOCTYPE_RE = re.compile(r"^\s*<!DOCTYPE html>\s*$", re.I)
+_CHALLENGE_RE = re.compile(
+    r"showcaptcha|smartcaptcha|\bcaptcha\b|подозрительн|доступ ограничен|"
+    r"подтвердите,?\s+что вы не робот|unusual traffic|are you (a )?human|"
+    r"похож[её], нет соединения",
+    re.I,
+)
+_STRUCTURED_PRODUCT_RE = re.compile(
+    r"application/ld\+json|schema\.org/product|"
+    r"property=[\"']og:type[\"']\s+content=[\"']product|"
+    r"itemtype=[\"'][^\"']*product",
+    re.I,
+)
+
+
 _HOST_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
 _SPACE = re.compile(r"\s+")
 _SIZE = re.compile(
@@ -195,6 +236,80 @@ def validate_product_url(url: str, policy: PublicHttpsPolicy) -> str:
         raise RimUrlSecurityError("Product host or port is not allowed")
     netloc = host if port is None else f"{host}:{port}"
     return urlunsplit(SplitResult("https", netloc, parsed.path or "/", parsed.query, ""))
+
+
+def _hostname(url: str) -> str:
+    return (urlsplit(url).hostname or "").lower().removeprefix("www.")
+
+
+def is_captcha_url(url: str) -> bool:
+    path = (urlsplit(url).path or "").lower()
+    return "showcaptcha" in {segment for segment in path.split("/") if segment}
+
+
+def detect_rim_source_host(url: str) -> str:
+    host = _hostname(url)
+    labels = host.split(".")
+    if "wildberries" in labels:
+        return "wildberries"
+    if (
+        host == "ozon.ru"
+        or host.endswith(".ozon.ru")
+        or host == "ozon.by"
+        or host.endswith(".ozon.by")
+    ):
+        return "ozon"
+    if host in _YANDEX_HOSTS:
+        return "yandex"
+    return "generic"
+
+
+def _has_product_signals(text: str) -> bool:
+    return bool(_STRUCTURED_PRODUCT_RE.search(text))
+
+
+def _is_empty_shell(body: bytes, text: str) -> bool:
+    if len(body) <= _MIN_USEFUL_BODY_BYTES:
+        return True
+    return bool(_EMPTY_DOCTYPE_RE.fullmatch(text.strip()))
+
+
+def _looks_like_challenge_html(text: str) -> bool:
+    sample = text[:12_000]
+    return bool(_CHALLENGE_RE.search(sample))
+
+
+def unusable_document_reason(
+    *,
+    final_url: str,
+    status: int,
+    body: bytes,
+    text: str,
+    content_type: str,
+) -> str | None:
+    if is_captcha_url(final_url) or status in {401, 403, 429}:
+        return "rim_source_challenge"
+    if _is_empty_shell(body, text):
+        return "rim_source_empty_document"
+    html_like = content_type in {"text/html", "application/xhtml+xml"} or content_type.startswith(
+        "text/html"
+    )
+    if html_like and _looks_like_challenge_html(text) and not _has_product_signals(text):
+        return "rim_source_challenge"
+    if html_like and not _has_product_signals(text) and not text.strip():
+        return "rim_source_empty_document"
+    if html_like and not _has_product_signals(text) and len(body) <= 512:
+        return "rim_source_empty_document"
+    return None
+
+
+def _supported_content_type(content_type: str) -> bool:
+    normalized = content_type.lower()
+    return normalized in {
+        "text/html",
+        "application/xhtml+xml",
+        "application/json",
+    } or normalized.endswith("+json")
 
 
 class _PublicResolver(AbstractResolver):
@@ -345,8 +460,8 @@ def _technical_candidates(text: str, source: str, confidence: float) -> list[Rim
     return candidates
 
 
-def extract_product_page(html: str) -> tuple[RimUrlCandidate, ...]:
-    return _to_url_candidates(extract_rim_document(html).candidates)
+def extract_product_page(html: str, page_url: str | None = None) -> tuple[RimUrlCandidate, ...]:
+    return _to_url_candidates(extract_rim_document(html, page_url=page_url).candidates)
 
 
 def _to_url_candidates(
@@ -434,12 +549,20 @@ def _build_variants(extracted: ExtractedPage) -> tuple[RimUrlVariant, ...]:
     return tuple(variants)
 
 
+def _drop_technical_candidates(
+    candidates: tuple[RimUrlCandidate, ...],
+) -> tuple[RimUrlCandidate, ...]:
+    return tuple(item for item in candidates if item.field not in _TECHNICAL_FIELDS)
+
+
 def _resolve_document(
     requested_url: str,
     final_url: str,
     extracted: ExtractedPage,
 ) -> RimUrlResolution:
     candidates = _to_url_candidates(extracted.candidates)
+    if not extracted.identity_proven:
+        candidates = _drop_technical_candidates(candidates)
     values, conflicts = _values_and_conflicts(candidates)
     variants = _build_variants(extracted)
     if len(variants) == 1:
@@ -456,29 +579,10 @@ def _resolve_document(
             rim_source_fingerprint(final_url),
         )
     if len(variants) > 1:
-        for field_name in (
-            "sku",
-            "bolt_count",
-            "pcd_mm",
-            "center_bore_mm",
-            "wheel_diameter_in",
-            "wheel_width_j",
-            "offset_et_mm",
-        ):
+        for field_name in ("sku", *_TECHNICAL_FIELDS):
             values.pop(field_name, None)
         candidates = tuple(
-            item
-            for item in candidates
-            if item.field
-            not in {
-                "sku",
-                "bolt_count",
-                "pcd_mm",
-                "center_bore_mm",
-                "wheel_diameter_in",
-                "wheel_width_j",
-                "offset_et_mm",
-            }
+            item for item in candidates if item.field not in {"sku", *_TECHNICAL_FIELDS}
         )
     return RimUrlResolution(
         requested_url=requested_url,
@@ -492,57 +596,121 @@ def _resolve_document(
     )
 
 
-async def resolve_rim_product_url(
-    url: str, *, policy: PublicHttpsPolicy | None = None, limits: FetchLimits | None = None
-) -> RimUrlResolution:
-    limits = limits or FetchLimits()
-    policy = policy or PublicHttpsPolicy()
+async def fetch_public_document(
+    url: str,
+    *,
+    policy: PublicHttpsPolicy,
+    limits: FetchLimits,
+    headers: dict[str, str] | None = None,
+    redirect_allowed: Callable[[str, str], bool] | None = None,
+) -> FetchedDocument:
+    """Fetch a public HTTPS document with SSRF controls. Does not follow captcha paths."""
+    allowed = redirect_allowed or (lambda _current, next_url: not is_captcha_url(next_url))
     current_url = validate_product_url(url, policy)
+    requested_url = current_url
     timeout = aiohttp.ClientTimeout(total=limits.total_timeout_seconds)
     connector = aiohttp.TCPConnector(resolver=_PublicResolver(policy), use_dns_cache=False)
     try:
         async with aiohttp.ClientSession(
-            connector=connector, timeout=timeout, trust_env=False
+            connector=connector, timeout=timeout, trust_env=False, headers=headers
         ) as session:
             for redirect_count in range(limits.max_redirects + 1):
                 async with session.get(current_url, allow_redirects=False, proxy=None) as response:
                     if response.status in {301, 302, 303, 307, 308}:
-                        if redirect_count >= limits.max_redirects or not response.headers.get(
-                            "Location"
-                        ):
+                        location = response.headers.get("Location")
+                        if redirect_count >= limits.max_redirects or not location:
                             raise RimUrlError(
                                 "Product page redirect failed",
                                 reason_code="rim_source_redirect_failed",
                             )
-                        current_url = validate_product_url(
-                            urljoin(current_url, response.headers["Location"]), policy
-                        )
+                        next_url = validate_product_url(urljoin(current_url, location), policy)
+                        if not allowed(current_url, next_url):
+                            return FetchedDocument(
+                                requested_url=requested_url,
+                                final_url=next_url,
+                                status=response.status,
+                                content_type=response.content_type.lower(),
+                                charset=response.charset,
+                                body=b"",
+                                text="",
+                                redirect_count=redirect_count + 1,
+                            )
+                        current_url = next_url
                         continue
-                    if not 200 <= response.status < 300 or (
-                        response.content_type.lower()
-                        not in {"text/html", "application/xhtml+xml", "application/json"}
-                        and not response.content_type.lower().endswith("+json")
-                    ):
-                        raise RimUrlError(
-                            "Product page is not available as a supported document",
-                            reason_code="rim_source_unsupported_document",
-                        )
                     body = await response.content.read(limits.max_body_bytes + 1)
                     if len(body) > limits.max_body_bytes:
                         raise RimUrlError(
                             "Product page is too large",
                             reason_code="rim_source_document_too_large",
                         )
-                    content_type = response.content_type.lower()
-                    if content_type.endswith("+json"):
-                        content_type = "application/json"
-                    extracted = extract_rim_document(
-                        body.decode(response.charset or "utf-8", errors="replace"),
-                        content_type=content_type,
+                    text = body.decode(response.charset or "utf-8", errors="replace")
+                    return FetchedDocument(
+                        requested_url=requested_url,
+                        final_url=current_url,
+                        status=response.status,
+                        content_type=response.content_type.lower(),
+                        charset=response.charset,
+                        body=body,
+                        text=text,
+                        redirect_count=redirect_count,
                     )
-                    return _resolve_document(url, current_url, extracted)
-    except (aiohttp.ClientError, TimeoutError) as exc:
+    except RimUrlError:
+        raise
+    except (aiohttp.ClientError, TimeoutError, OSError) as exc:
         raise RimUrlError(
             "Product page fetch failed", reason_code="rim_source_fetch_failed"
         ) from exc
     raise RimUrlError("Product page redirect failed", reason_code="rim_source_redirect_failed")
+
+
+async def resolve_rim_product_url(
+    url: str, *, policy: PublicHttpsPolicy | None = None, limits: FetchLimits | None = None
+) -> RimUrlResolution:
+    limits = limits or FetchLimits()
+    policy = policy or PublicHttpsPolicy()
+    current_url = validate_product_url(url, policy)
+    source = detect_rim_source_host(current_url)
+    if source in {"wildberries", "ozon"}:
+        raise RimUrlError(
+            "Marketplace product page is blocked by an anti-bot challenge",
+            reason_code="rim_source_challenge",
+        )
+    if source == "yandex":
+        from src.yandex_market_adapter import resolve_yandex_product_url
+
+        return await resolve_yandex_product_url(current_url, policy=policy, limits=limits)
+
+    document = await fetch_public_document(current_url, policy=policy, limits=limits)
+    if is_captcha_url(document.final_url):
+        raise RimUrlError(
+            "Product page redirected to a challenge",
+            reason_code="rim_source_challenge",
+        )
+    reason = unusable_document_reason(
+        final_url=document.final_url,
+        status=document.status,
+        body=document.body,
+        text=document.text,
+        content_type=document.content_type,
+    )
+    if reason:
+        message = (
+            "Product page returned a challenge document"
+            if reason == "rim_source_challenge"
+            else "Product page did not contain a useful document"
+        )
+        raise RimUrlError(message, reason_code=reason)
+    if not 200 <= document.status < 300 or not _supported_content_type(document.content_type):
+        raise RimUrlError(
+            "Product page is not available as a supported document",
+            reason_code="rim_source_unsupported_document",
+        )
+    content_type = document.content_type
+    if content_type.endswith("+json"):
+        content_type = "application/json"
+    extracted = extract_rim_document(
+        document.text,
+        content_type=content_type,
+        page_url=document.final_url,
+    )
+    return _resolve_document(url, document.final_url, extracted)

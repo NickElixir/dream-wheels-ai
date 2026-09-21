@@ -2,11 +2,15 @@
 
 ## Decision
 
-`03B_C_ACCEPTANCE = FAIL`
+`YANDEX_RELEASE = BEST_EFFORT`
 
-`YANDEX_RELEASE_1 = DEFERRED`
+`WILDBERRIES_RELEASE = DEFERRED`
 
-The minimal Yandex adapter is implemented and the frozen benchmark was run, but the useful-document gate was not met. The result is deliberately kept fallback-first: incomplete data remains incomplete, and no unanchored recommendation or seller value is promoted to a rim draft.
+`OZON_RELEASE = DEFERRED`
+
+`CRITICAL_FALSE_DATA = 0`
+
+Useful current-product fetch remains request-profile/captcha sensitive. Runtime therefore treats Yandex as automatic-attempt plus user review: a useful ID-anchored document may prefill a draft; otherwise the draft stays empty and the UI asks for manual input. The historical `03B_C_ACCEPTANCE = FAIL` / `YANDEX_RELEASE_1 = DEFERRED` result below is kept as evidence that the frozen live run was `10/15` useful documents, below the original `>=14/15` gate. That gate is no longer required for this best-effort rollout.
 
 ## Reproducibility
 
@@ -63,4 +67,6 @@ The full suite completed with `453 passed, 3 skipped, 1 failed`. The sole failur
 
 ## Release recommendation
 
-Keep Yandex in automatic-attempt plus user-review/manual-completion mode. Do not claim Release 1 marketplace support until useful fetch reaches at least 14/15 under a stable, approved request profile. Do not add browser automation, cookies, CAPTCHA handling, parallel parser paths, or a Yandex-specific fitment model in this slice.
+Keep Yandex in best-effort automatic-attempt plus user-review/manual-completion mode (`YANDEX_RELEASE = BEST_EFFORT`). Do not claim unconditional marketplace support. Do not add browser automation, cookies, CAPTCHA handling, parallel parser paths, or a Yandex-specific fitment model. Wildberries and Ozon stay deferred. Frozen live re-runs stay manual and out of CI.
+
+Historical 03B-C text: do not claim Release 1 marketplace support until useful fetch reaches at least 14/15 under a stable, approved request profile. That gate failed; best-effort runtime is the follow-up decision.

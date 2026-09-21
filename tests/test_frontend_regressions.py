@@ -52,6 +52,9 @@ def test_fitment_reauth_prompt_preserves_the_unsaved_form_for_the_same_job() -> 
 def test_rim_source_errors_are_safe_and_visible_from_the_first_step() -> None:
     assert "function fitmentSourceErrorMessage(error)" in APP_JS
     assert '"Не удалось определить параметры автоматически"' in APP_JS
+    assert "rim_source_challenge" in APP_JS
+    assert "rim_source_empty_document" in APP_JS
+    assert "Проверьте или заполните их вручную." in APP_JS
     assert "state.fitmentSourceStatus = fitmentSourceErrorMessage(error);" in APP_JS
     assert 'state.fitmentSourceStatusTone = "error";' in APP_JS
     assert "data-fitment-source-status-title" in INDEX_HTML

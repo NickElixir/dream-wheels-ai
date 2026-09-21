@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from typing import Any
+from urllib.parse import urlsplit
 
 _SPACE_RE = re.compile(r"\s+")
 _KEY_RE = re.compile(r"[^a-z0-9]+")
@@ -41,6 +42,14 @@ _TECHNICAL_FIELDS = (
     "wheel_width_j",
     "offset_et_mm",
 )
+_UNTRUSTED_PRODUCT_PATHS = {
+    "itemlistelement",
+    "recommendations",
+    "related",
+    "similar",
+    "alsobought",
+    "accessories",
+}
 _EMBEDDED_JSON_IDS = {
     "__next_data__",
     "__nuxt_data__",
@@ -146,6 +155,8 @@ class ExtractedPage:
     candidates: tuple[ExtractedCandidate, ...]
     variants: tuple[ExtractedVariant, ...] = ()
     product_group_ids: tuple[str, ...] = ()
+    identity_proven: bool = True
+    product_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -510,7 +521,20 @@ def _product_contexts(root: _HtmlNode) -> list[_HtmlNode]:
     contexts = [
         node for node in _walk_nodes(root) if _is_product_scope(node) and not _is_noise_scope(node)
     ]
-    return contexts[:1] or [root]
+    page_level = [
+        node
+        for node in contexts
+        if "product" in node.attributes.get("itemtype", "").lower()
+        or any(
+            marker
+            in " ".join((node.attributes.get("class", ""), node.attributes.get("id", ""))).lower()
+            for marker in ("product-page", "product-detail")
+        )
+    ]
+    unique = page_level or contexts
+    if len(unique) == 1:
+        return unique
+    return [root]
 
 
 def _extract_html_specifications(root: _HtmlNode) -> list[ExtractedCandidate]:
@@ -668,6 +692,74 @@ def _extract_embedded_attribute_properties(root: _HtmlNode) -> list[ExtractedCan
     return candidates
 
 
+def _normalize_url_identity(url: str) -> str:
+    parsed = urlsplit(url)
+    host = (parsed.hostname or "").lower().removeprefix("www.")
+    path = (parsed.path or "/").rstrip("/") or "/"
+    return f"{host}{path}"
+
+
+def _significant_path_tail(url: str) -> str | None:
+    segments = [segment for segment in urlsplit(url).path.split("/") if segment]
+    if not segments:
+        return None
+    tail = segments[-1]
+    if len(tail) < 4:
+        return None
+    return tail.casefold()
+
+
+def _offer_urls(mapping: dict[str, Any]) -> list[str]:
+    urls: list[str] = []
+    for offer in _as_sequence(mapping.get("offers")):
+        if isinstance(offer, dict):
+            url = _mapping_url(offer)
+            if url:
+                urls.append(url)
+        elif isinstance(offer, str):
+            cleaned = _clean_text(offer, max_length=2048)
+            if cleaned:
+                urls.append(cleaned)
+    return urls
+
+
+def _product_identity_urls(mapping: dict[str, Any]) -> list[str]:
+    urls: list[str] = []
+    url = _mapping_url(mapping)
+    if url:
+        urls.append(url)
+    urls.extend(_offer_urls(mapping))
+    return list(dict.fromkeys(urls))
+
+
+def _product_matches_page(mapping: dict[str, Any], page_url: str) -> bool:
+    page_identity = _normalize_url_identity(page_url)
+    page_tail = _significant_path_tail(page_url)
+    for url in _product_identity_urls(mapping):
+        if _normalize_url_identity(url) == page_identity:
+            return True
+        if page_tail and _significant_path_tail(url) == page_tail:
+            return True
+    normalized = _mapping_by_normalized_key(mapping)
+    sku = _clean_sku(_first_value(normalized, _SKU_KEYS))
+    if sku:
+        page_segments = {
+            segment.casefold() for segment in urlsplit(page_url).path.split("/") if segment
+        }
+        if sku.casefold() in page_segments:
+            return True
+    return False
+
+
+def _path_is_untrusted(path: tuple[str, ...]) -> bool:
+    return any(part in _UNTRUSTED_PRODUCT_PATHS for part in path)
+
+
+def _drop_technical_candidates(candidates: list[ExtractedCandidate]) -> list[ExtractedCandidate]:
+    technical = set(_TECHNICAL_FIELDS)
+    return [item for item in candidates if item.field not in technical]
+
+
 def _mapping_url(mapping: dict[str, Any]) -> str | None:
     normalized = _mapping_by_normalized_key(mapping)
     value = _first_value(normalized, _URL_KEYS)
@@ -813,8 +905,24 @@ def _as_sequence(value: Any) -> list[Any]:
     return value if isinstance(value, list) else ([] if value is None else [value])
 
 
-def _extract_json_ld(data: Any) -> ExtractedPage:
-    entities = _typed_entities(data)
+def _extract_json_ld(data: Any, *, page_url: str | None = None) -> ExtractedPage:
+    return _extract_json_ld_entities(_typed_entities(data), page_url=page_url)
+
+
+def _extract_json_ld_documents(
+    documents: list[Any], *, page_url: str | None = None
+) -> ExtractedPage:
+    entities: list[tuple[dict[str, Any], tuple[str, ...]]] = []
+    for data in documents:
+        entities.extend(_typed_entities(data))
+    return _extract_json_ld_entities(entities, page_url=page_url)
+
+
+def _extract_json_ld_entities(
+    entities: list[tuple[dict[str, Any], tuple[str, ...]]],
+    *,
+    page_url: str | None = None,
+) -> ExtractedPage:
     entities_by_id = {
         identifier: item
         for item, _ in entities
@@ -884,16 +992,42 @@ def _extract_json_ld(data: Any) -> ExtractedPage:
                     source_url=_mapping_url(product),
                 )
             )
-    elif products:
-        eligible = [
-            item
-            for item in products
-            if "itemlistelement" not in item[1] and "recommendations" not in item[1]
-        ]
-        product, _ = min(eligible or products, key=lambda item: len(item[1]))
-        candidates.extend(_mapping_candidates(product, "json_ld", 0.95))
+        return ExtractedPage(
+            tuple(candidates),
+            tuple(variants),
+            tuple(sorted(group_ids)),
+            True,
+            1,
+        )
 
-    return ExtractedPage(tuple(candidates), tuple(variants), tuple(sorted(group_ids)))
+    if not products:
+        return ExtractedPage((), (), (), True, 0)
+
+    eligible = [item for item in products if not _path_is_untrusted(item[1])]
+    selected: tuple[dict[str, Any], tuple[str, ...]] | None = None
+    identity_proven = False
+    if len(products) == 1:
+        selected = products[0]
+        identity_proven = True
+    elif len(eligible) == 1:
+        selected = eligible[0]
+        identity_proven = True
+    elif page_url:
+        anchored = [
+            item for item in (eligible or products) if _product_matches_page(item[0], page_url)
+        ]
+        if len(anchored) == 1:
+            selected = anchored[0]
+            identity_proven = True
+
+    if selected is not None and identity_proven:
+        product, _ = selected
+        candidates.extend(_mapping_candidates(product, "json_ld", 0.95))
+        return ExtractedPage(tuple(candidates), (), (), True, 1)
+
+    # Several Products without a proven current-product identity. Related
+    # markings must not become primary technical values.
+    return ExtractedPage((), (), (), False, len(eligible or products))
 
 
 def _looks_like_product(mapping: dict[str, Any]) -> bool:
@@ -988,78 +1122,137 @@ def _merge_pages(pages: list[ExtractedPage]) -> ExtractedPage:
     candidates: list[ExtractedCandidate] = []
     variants: list[ExtractedVariant] = []
     group_ids: set[str] = set()
+    product_count = 0
+    identity_proven = True
     for page in pages:
         candidates.extend(page.candidates)
         variants.extend(page.variants)
         group_ids.update(page.product_group_ids)
-    return ExtractedPage(tuple(candidates), tuple(variants), tuple(sorted(group_ids)))
+        product_count += page.product_count
+        identity_proven = identity_proven and page.identity_proven
+    if product_count > 1:
+        identity_proven = False
+        candidates = _drop_technical_candidates(candidates)
+    return ExtractedPage(
+        tuple(candidates),
+        tuple(variants),
+        tuple(sorted(group_ids)),
+        identity_proven,
+        product_count,
+    )
 
 
-def _extract_json_text(text: str, source: str) -> ExtractedPage:
+def _extract_json_text(text: str, source: str, *, page_url: str | None = None) -> ExtractedPage:
     try:
         data = json.loads(text)
     except (json.JSONDecodeError, RecursionError, TypeError):
         return ExtractedPage(())
-    json_ld = _extract_json_ld(data)
-    if json_ld.candidates or json_ld.variants:
+    json_ld = _extract_json_ld(data, page_url=page_url)
+    if json_ld.candidates or json_ld.variants or json_ld.product_count:
         return json_ld
     return _extract_embedded_json(data, source)
 
 
-def extract_rim_document(content: str, *, content_type: str = "text/html") -> ExtractedPage:
+def json_ld_product_nodes(content: str) -> list[dict[str, Any]]:
+    """Return JSON-LD Product objects, excluding recommendation/list slots."""
+    parser = _ProductHtmlParser()
+    parser.feed(content)
+    products: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for block in parser.json_ld_blocks:
+        try:
+            data = json.loads(block)
+        except (json.JSONDecodeError, RecursionError, TypeError):
+            continue
+        for item, path in _typed_entities(data):
+            if "product" not in _types(item) or _path_is_untrusted(path):
+                continue
+            marker = id(item)
+            if marker in seen:
+                continue
+            seen.add(marker)
+            products.append(item)
+    return products
+
+
+def extract_rim_document(
+    content: str,
+    *,
+    content_type: str = "text/html",
+    page_url: str | None = None,
+) -> ExtractedPage:
     """Extract a primary product and semantically linked variants from HTML or JSON."""
     if content_type.split(";", 1)[0].strip().lower() == "application/json":
-        return _extract_json_text(content, "json_api")
+        return _extract_json_text(content, "json_api", page_url=page_url)
 
     parser = _ProductHtmlParser()
     parser.feed(content)
-    structured_pages = [_extract_json_text(block, "json_ld") for block in parser.json_ld_blocks]
-    structured_pages.extend(
-        _extract_json_text(block, source) for source, block in parser.embedded_json_blocks
+    json_ld_documents: list[Any] = []
+    for block in parser.json_ld_blocks:
+        try:
+            json_ld_documents.append(json.loads(block))
+        except (json.JSONDecodeError, RecursionError, TypeError):
+            continue
+    json_ld = (
+        _extract_json_ld_documents(json_ld_documents, page_url=page_url)
+        if json_ld_documents
+        else ExtractedPage(())
     )
-    structured_pages.extend(_extract_nuxt_assignments(parser.script_blocks))
-    structured = _merge_pages(structured_pages)
-    candidates = list(structured.candidates)
-    candidates.extend(_extract_microdata(parser.root))
-    candidates.extend(_extract_html_specifications(parser.root))
-    candidates.extend(_extract_embedded_attribute_properties(parser.root))
+    if json_ld.product_count or json_ld.variants or json_ld.product_group_ids:
+        structured = json_ld
+    else:
+        structured_pages = [
+            _extract_json_text(block, source) for source, block in parser.embedded_json_blocks
+        ]
+        structured_pages.extend(_extract_nuxt_assignments(parser.script_blocks))
+        structured = _merge_pages(structured_pages)
 
-    meta = dict(parser.meta)
-    _add_candidate(
-        candidates,
-        "brand",
-        meta.get("product:brand") or meta.get("og:brand"),
-        "opengraph",
-        0.8,
-    )
-    _add_candidate(
-        candidates,
-        "sku",
-        meta.get("product:retailer_item_id") or meta.get("product:sku"),
-        "opengraph",
-        0.8,
-    )
-    meta_text = " ".join(
-        value
-        for key, value in parser.meta
-        if key in {"og:title", "og:description", "product:description"}
-    )
-    _add_marking_candidates(candidates, meta_text, "opengraph", 0.75)
+    candidates = list(structured.candidates)
+    allow_unscoped = structured.identity_proven and structured.product_count <= 1
+    if allow_unscoped:
+        candidates.extend(_extract_microdata(parser.root))
+        candidates.extend(_extract_html_specifications(parser.root))
+        candidates.extend(_extract_embedded_attribute_properties(parser.root))
+
+        meta = dict(parser.meta)
+        _add_candidate(
+            candidates,
+            "brand",
+            meta.get("product:brand") or meta.get("og:brand"),
+            "opengraph",
+            0.8,
+        )
+        _add_candidate(
+            candidates,
+            "sku",
+            meta.get("product:retailer_item_id") or meta.get("product:sku"),
+            "opengraph",
+            0.8,
+        )
+        meta_text = " ".join(
+            value
+            for key, value in parser.meta
+            if key in {"og:title", "og:description", "product:description"}
+        )
+        _add_marking_candidates(candidates, meta_text, "opengraph", 0.75)
 
     contexts = _product_contexts(parser.root)
-    if contexts[0] is parser.root:
+    narrowed = contexts[0] is not parser.root
+    if narrowed:
+        visible_text = "\n".join(_node_text(context) for context in contexts)
+    else:
         visible_text = "\n".join(
             part
             for part in (_clean_text(value, max_length=20_000) for value in parser.visible_parts)
             if part
         )
-    else:
-        visible_text = "\n".join(_node_text(context) for context in contexts)
-    for field_name, pattern in _VISIBLE_FIELD_PATTERNS.items():
-        match = pattern.search(visible_text)
-        if match:
-            _add_candidate(candidates, field_name, match.group(1), "visible_text", 0.65)
-    _add_marking_candidates(candidates, visible_text, "visible_text", 0.6)
+    if allow_unscoped:
+        for field_name, pattern in _VISIBLE_FIELD_PATTERNS.items():
+            match = pattern.search(visible_text)
+            if match:
+                _add_candidate(candidates, field_name, match.group(1), "visible_text", 0.65)
+        if narrowed:
+            _add_marking_candidates(candidates, visible_text, "visible_text", 0.6)
 
     if not any(candidate.field == "model" for candidate in candidates):
         title = " ".join(parser.title_parts)
@@ -1069,6 +1262,8 @@ def extract_rim_document(content: str, *, content_type: str = "text/html") -> Ex
         tuple(candidates),
         structured.variants,
         structured.product_group_ids,
+        structured.identity_proven,
+        structured.product_count,
     )
 
 

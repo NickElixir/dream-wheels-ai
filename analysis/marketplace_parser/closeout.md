@@ -1,6 +1,22 @@
 # Dream Wheels AI — 03B Marketplace Parser Release 1 Closeout
 
-Date: 2026-09-05
+Date: 2026-09-05; follow-up 2026-09-21
+
+## Current runtime decision (2026-09-21)
+
+```text
+YANDEX_RELEASE = BEST_EFFORT
+WILDBERRIES_RELEASE = DEFERRED
+OZON_RELEASE = DEFERRED
+CRITICAL_FALSE_DATA = 0
+MANUAL_FALLBACK_REQUIRED = YES
+PRODUCTION = NOT_TOUCHED
+LIVE_CI_BENCHMARK = NO
+```
+
+Yandex Market is in runtime as a best-effort adapter: useful current-product documents may prefill a user-confirmable draft; captcha/empty shells fail closed to manual input. Useful fetch is a metric, not a release gate. Wildberries and Ozon stay fail-closed (`rim_source_challenge`) without extract. Ordinary-store extraction must not regress. Frozen `results_before.json` was not rewritten.
+
+The historical Release 1 closeout below is preserved. It recorded `YANDEX_RELEASE_1 = DEFERRED` because the isolated experiment missed the `>=14/15` useful-document gate. That gate is no longer the runtime criterion.
 
 ## Final Release 1 Scope
 
@@ -34,6 +50,8 @@ Evidence: `capability_audit.md`, `release1_support_decision.md`, `results_before
 YANDEX_ADAPTER_RELEASE_1 = REJECTED
 YANDEX_ADAPTER_RUNTIME = EXCLUDED
 ```
+
+Historical note: at closeout, `src/yandex_market_adapter.py` was absent. The 2026-09-21 follow-up restored a best-effort adapter under `YANDEX_RELEASE = BEST_EFFORT` (see top of this file). Wildberries/Ozon remain deferred and fail-closed.
 
 `src/yandex_market_adapter.py` is intentionally absent from this clean closeout branch. The rejected experiment is preserved only by commit SHA `6bba9b28908fac0961a6f01f6010c53de82cef31` and research artifacts. Wildberries/Ozon runtime code, Seller API code, marketplace-specific UI, and disabled experimental adapters were not added.
 

@@ -1,20 +1,22 @@
 # Marketplace parser benchmark and closeout (03B)
 
-This directory contains the frozen browser-discovered reference dataset, capability audit, Release 1 decision, rejected Yandex adapter benchmark, and final closeout evidence for `03B — Marketplace Parser Compatibility`. It is research evidence only; it does not add marketplace adapters or alter Release 1 parser behavior.
+This directory contains the frozen browser-discovered reference dataset, capability audit, Release 1 decision, Yandex adapter benchmark, and closeout evidence for `03B — Marketplace Parser Compatibility`. Live marketplace fetches are manual research runs; they are not part of CI.
 
-## Final status
+## Current status
 
 ```text
-03B_STATUS = CLOSED
-MARKETPLACE_AUTO_SUPPORT_RELEASE_1 = NONE
-WILDBERRIES_RELEASE_1 = DEFERRED
-OZON_RELEASE_1 = DEFERRED
-YANDEX_RELEASE_1 = DEFERRED
-MARKETPLACE_SELLER_API_RELEASE_1 = DEFERRED
+YANDEX_RELEASE = BEST_EFFORT
+WILDBERRIES_RELEASE = DEFERRED
+OZON_RELEASE = DEFERRED
+CRITICAL_FALSE_DATA = 0
 MANUAL_FALLBACK = REQUIRED
+LIVE_CI_BENCHMARK = NO
+PRODUCTION = NOT_TOUCHED
 ```
 
-The Yandex adapter attempt existed in commit `6bba9b28908fac0961a6f01f6010c53de82cef31`, but failed the useful-fetch gate (`10/15`, required `14/15`) and is not part of Release 1 runtime. The safe Release 1 boundary is automatic parsing for approved ordinary ecommerce sources and manual specification entry for marketplace URLs. Seller API work is a separate future B2B workstream.
+Yandex Market uses `src/yandex_market_adapter.py` for ID-anchored JSON-LD extraction after a fixed request profile. Empty shells and captcha fail closed. Wildberries/Ozon hosts are detected and rejected without generic extract. Ordinary stores keep the generic resolver.
+
+The original Release 1 closeout recorded `YANDEX_RELEASE_1 = DEFERRED` because useful fetch was `10/15` against a `>=14/15` gate. Best-effort runtime no longer uses that gate.
 
 ## Versioning and freeze
 

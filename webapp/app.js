@@ -6463,11 +6463,11 @@ function renderFitment() {
                 sourceStatusCopy.textContent = "";
             } else if (resolverFailure) {
                 sourceStatusTitle.textContent = locale === "ru"
-                    ? "Не удалось определить параметры автоматически"
+                    ? "Не удалось автоматически определить параметры диска"
                     : "Wheel parameters could not be determined automatically";
                 sourceStatusCopy.textContent = locale === "ru"
-                    ? "Это не блокирует проверку — укажите параметры колесного диска вручную"
-                    : "This does not block the check — enter the wheel parameters manually";
+                    ? "Проверьте или заполните их вручную."
+                    : "Check or enter them manually.";
             } else if (state.fitmentSourceDetected) {
                 sourceStatusTitle.textContent = locale === "ru" ? "Параметры найдены" : "Parameters found";
                 sourceStatusCopy.textContent = locale === "ru"
@@ -7186,7 +7186,19 @@ function closeFitmentView() {
     setView(originView);
 }
 
+function fitmentSourceErrorCode(error) {
+    const message = String(error?.message || error || "");
+    const match = message.match(/rim_source_[a-z0-9_]+/);
+    return match ? match[0] : "";
+}
+
 function fitmentSourceErrorMessage(error) {
+    const code = fitmentSourceErrorCode(error);
+    if (code === "rim_source_challenge" || code === "rim_source_empty_document") {
+        return locale === "ru"
+            ? "Не удалось автоматически определить параметры диска. Проверьте или заполните их вручную."
+            : "Wheel parameters could not be determined automatically. Check or enter them manually.";
+    }
     return locale === "ru"
         ? "Не удалось определить параметры автоматически"
         : "Wheel parameters could not be determined automatically";
@@ -7870,7 +7882,7 @@ async function parseApiError(response) {
             .join("; ");
     }
     if (detail && typeof detail === "object") {
-        return detail.message || detail.msg || JSON.stringify(detail);
+        return detail.code || detail.message || detail.msg || JSON.stringify(detail);
     }
     return String(detail || t("failed"));
 }
