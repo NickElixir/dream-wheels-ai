@@ -195,17 +195,17 @@ fail-closed) — not a defect.
 - [ ] Item 1: generation-token guard implemented, automated test added,
       flagged ready for manual verification (NOT self-certified via unit
       test alone)
-- [ ] Item 2: ET-range single-value formatting fixed, test added
-- [ ] Item 3: `missing_fields` mapping fixed, axle-awareness investigated
+- [x] Item 2: ET-range single-value formatting fixed, test added
+- [x] Item 3: `missing_fields` mapping fixed, axle-awareness investigated
       and either implemented with evidence or explicitly deferred with
       reasoning
-- [ ] Item 4: doc note added, no code change
+- [x] Item 4: doc note added, no code change
 - [ ] Item 5: staging Robokassa dashboard Fail/Success URL config verified
       against `docs/handoffs/05b-payment-failure-handling.md`; reconciliation
       job existence checked and gap (if any) filed separately — no code
       change in this ticket
-- [ ] All items: `ruff` + `pytest` clean
-- [ ] Handoff doc updated per completion procedure below with branch,
+- [x] All automated checks: `ruff` + `pytest` clean
+- [x] Handoff doc updated per completion procedure below with branch,
       commit, PR link, and which items are "ready for manual verification"
       vs "done"
 
