@@ -30,7 +30,6 @@ _MISSING_FIELD_BY_REASON = {
     ReasonCode.offset_unknown: "offset_et",
     ReasonCode.rim_offset_missing: "offset_et",
     ReasonCode.vehicle_reference_offset_missing: "vehicle_reference_offset",
-    ReasonCode.et_outside_reference_range: "offset_et",
     ReasonCode.size_unknown: "diameter_width",
     ReasonCode.size_not_in_reference: "provider_allowed_wheels",
     ReasonCode.load_rating_unknown: "load_rating",

@@ -155,6 +155,7 @@ def test_et_below_reference_interval_is_unknown_with_canonical_reason() -> None:
         "delta_mm": -5,
     }
     assert verdict.status is VerdictStatus.unknown
+    assert verdict.missing_fields == []
 
 
 def test_et_above_reference_interval_is_unknown_with_canonical_reason() -> None:

@@ -54,7 +54,7 @@ const applicationRouteContext = () => null;
 const isApplicationRoute = () => false;
 const safeApplicationReturnPath = () => null;
 ${APP_SOURCE_FOR_VM}
-globalThis.__workflowApi = { deriveFitmentNextIntent, deriveVehicleWorkspaceMode, deriveResultRecovery, deriveNavigatorPresentation };`, context);
+globalThis.__workflowApi = { deriveFitmentNextIntent, deriveVehicleWorkspaceMode, deriveResultRecovery, deriveNavigatorPresentation, fitmentVerdictMessage };`, context);
     return context.__workflowApi;
 }
 
@@ -99,6 +99,27 @@ test("confirmed optional reselection remains collapsible", () => {
     assert.equal(workspace.mode, "variant_reselect");
     assert.equal(workspace.collapsible, true);
     assert.equal(workspace.showHideAction, true);
+});
+
+test("ET verdict copy uses one value when the reference interval is a single point", () => {
+    const api = workflowApi();
+    const message = api.fitmentVerdictMessage({
+        code: "et_outside_reference_range",
+        details: { rim_et_mm: 40, reference_et_min_mm: 50, reference_et_max_mm: 50 },
+    });
+
+    assert.match(message, /ET50\b/);
+    assert.doesNotMatch(message, /ET50–50/);
+});
+
+test("ET verdict copy keeps both endpoints for a real interval", () => {
+    const api = workflowApi();
+    const message = api.fitmentVerdictMessage({
+        code: "et_outside_reference_range",
+        details: { rim_et_mm: 30, reference_et_min_mm: 35, reference_et_max_mm: 45 },
+    });
+
+    assert.match(message, /ET35–45/);
 });
 
 function response(status, body = {}) {
