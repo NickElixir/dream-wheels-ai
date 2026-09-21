@@ -1,5 +1,6 @@
 import hashlib
 import json
+from asyncio import run
 
 from fastapi.testclient import TestClient
 
@@ -321,7 +322,7 @@ def test_create_check_persists_completed_square_setup(monkeypatch):
     assert body["execution_status"] == "completed"
     assert body["verdict"] == "compatible"
     assert body["mode"] == "standard"
-    assert body["versions"] == {"provider": "wheel_size", "engine": "v2", "rules": "v2"}
+    assert body["versions"] == {"provider": "wheel_size", "engine": "v2", "rules": "v3"}
     snapshot = json.loads(conn.inserted[0][8])
     assert snapshot["rim_setup"]["front"] == snapshot["rim_setup"]["rear"]
     evaluation = json.loads(conn.inserted[0][15])
@@ -490,4 +491,77 @@ def test_create_check_records_provider_failure(monkeypatch):
     assert response.json()["execution_status"] == "failed"
     assert response.json()["verdict"] is None
     assert response.json()["error"]["code"] == "provider_unavailable"
-    assert conn.inserted[0][12:14] == ("v2", "v2")
+    assert conn.inserted[0][12:14] == ("v2", "v3")
+
+
+def test_currentness_lazily_recomputes_when_only_rules_version_changed(monkeypatch):
+    row = _row()
+    _, _, stale_snapshot = fitment_checks_api._snapshot(row)
+    stale_snapshot["check_mode"] = "standard"
+    stale_snapshot["context_identity"].update(
+        {
+            "engine_version": "v2",
+            "rules_version": "v2",
+            "provider_version": "v2",
+        }
+    )
+    profile = run(Provider().get_fitment_profile(None, user_initiated=True))
+    record = {
+        "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "vehicle_identity_id": VEHICLE_ID,
+        "rim_setup_id": RIM_SETUP_ID,
+        "execution_status": "completed",
+        "rules_version": "v2",
+        "input_snapshot": json.dumps(stale_snapshot),
+        "evaluation_snapshot": json.dumps({"normalized_profile": profile.model_dump(mode="json")}),
+        "result": json.dumps(
+            {
+                "status": "unknown",
+                "blocking_issues": [{"code": "rim_offset_missing", "applies_to": ["rear"]}],
+            }
+        ),
+    }
+
+    class RulesRefreshConn:
+        def __init__(self, persisted):
+            self.persisted = persisted
+            self.updated_args = None
+
+        async def fetchrow(self, query, *args):
+            assert "UPDATE fitment_checks" in query
+            self.updated_args = args
+            refreshed = dict(self.persisted)
+            refreshed.update(
+                {
+                    "input_hash": args[0],
+                    "input_snapshot": args[1],
+                    "result": args[2],
+                    "verdict": args[3],
+                    "engine_version": args[4],
+                    "rules_version": args[5],
+                }
+            )
+            return refreshed
+
+    async def load(_conn, user_id, request):
+        assert user_id == 7
+        assert str(request.vehicle_identity_id) == VEHICLE_ID
+        assert str(request.rim_setup_id) == RIM_SETUP_ID
+        return row
+
+    class MustNotContactProvider:
+        def __init__(self, *_args, **_kwargs):
+            raise AssertionError("rules-only refresh must not call Wheel-Size")
+
+    conn = RulesRefreshConn(record)
+    monkeypatch.setattr(fitment_checks_api, "_load", load)
+    monkeypatch.setattr(fitment_checks_api, "WheelSizeProvider", MustNotContactProvider)
+
+    refreshed, is_current = run(fitment_checks_api._current_check_row(conn, 7, record))
+
+    assert is_current is True
+    assert conn.updated_args is not None
+    assert refreshed["rules_version"] == "v3"
+    assert refreshed["verdict"] == "compatible"
+    assert json.loads(refreshed["result"])["blocking_issues"] == []
+    assert json.loads(refreshed["input_snapshot"])["context_identity"]["rules_version"] == "v3"

@@ -5,11 +5,11 @@ ET оценивается только против интервала, пере
 авторитетного профиля и выходит за пределы V1.
 """
 
-# v2 records the frozen Standard V1 ruleset correction: ET outside the exact
-# provider interval is unknown, and fastener/load rules are excluded from
-# Standard execution. `TOLERANCES_VERSION` is persisted as `rules_version` by
-# the existing check API, so both identifiers are deliberately bumped.
-TOLERANCES_VERSION = "v2"
+# v3 records the verdict-evidence correction: an ET outside a confirmed
+# provider interval is a verdict issue, not a missing rim field. The persisted
+# rules version makes existing checks lazily recompute that presentation from
+# their saved provider profile without another provider request.
+TOLERANCES_VERSION = "v3"
 ENGINE_VERSION = "v2"
 
 PCD_TOL_MM = 0.1

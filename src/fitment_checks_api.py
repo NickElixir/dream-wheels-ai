@@ -16,13 +16,25 @@ from src import db, redis_client
 from src.auth_principal import preflight_auth_credentials, require_auth_principal
 from src.config import WORKER_ENABLED
 from src.fitment import config as fitment_config
-from src.fitment.context import PROVIDER_REFERENCE_VERSION, context_hash, is_current_snapshot
+from src.fitment.context import (
+    PROVIDER_REFERENCE_VERSION,
+    context_hash,
+    context_identity,
+    is_current_snapshot,
+)
 from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.rules.engine import run_checks
 from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.rules.verdict import assemble_verdict, verdict_vehicle_not_resolved
-from src.fitment.schemas import FieldValue, RimSetup, RimSpec, Source, VehicleIdentity
+from src.fitment.schemas import (
+    FieldValue,
+    FitmentProfile,
+    RimSetup,
+    RimSpec,
+    Source,
+    VehicleIdentity,
+)
 
 router = APIRouter(prefix="/fitment", tags=["fitment"])
 logger = logging.getLogger(__name__)
@@ -309,11 +321,95 @@ def _has_current_confirmed_modification(
     )
 
 
-async def _check_is_current(conn, user_id: int, row) -> bool:
-    """Compare immutable context identity with the current canonical rows."""
+def _same_context_except_rules(check_snapshot: dict, current_snapshot: dict) -> bool:
+    """Allow a rules-only refresh, never a refresh of changed user/provider data."""
+    check_identity = context_identity(check_snapshot)
+    current_identity = context_identity(current_snapshot)
+    if not check_identity or not current_identity:
+        return False
+    return {key: value for key, value in check_identity.items() if key != "rules_version"} == {
+        key: value for key, value in current_identity.items() if key != "rules_version"
+    }
+
+
+def _recompute_result_from_evidence(
+    check_snapshot: dict,
+    evaluation_snapshot: dict,
+) -> dict | None:
+    """Re-run deterministic rules from the persisted Wheel-Size profile only."""
+    rim_setup = check_snapshot.get("rim_setup")
+    profile_snapshot = evaluation_snapshot.get("normalized_profile")
+    if not isinstance(rim_setup, dict) or not isinstance(profile_snapshot, dict):
+        return None
+    try:
+        setup = RimSetup.model_validate(rim_setup)
+        profile = FitmentProfile.model_validate(profile_snapshot)
+    except (TypeError, ValueError):
+        return None
+    if not setup.is_staggered and not profile.allowed_for_axle("rear"):
+        profile.allowed_wheels.extend(
+            item.model_copy(update={"axle": "rear"}) for item in profile.allowed_for_axle("front")
+        )
+    verdict = assemble_verdict(
+        run_checks(profile, setup), provider=profile.provider, is_preliminary=True
+    )
+    return verdict.model_dump(mode="json")
+
+
+async def _refresh_check_for_rules_version(
+    conn,
+    user_id: int,
+    row,
+    *,
+    check_snapshot: dict,
+    current_snapshot: dict,
+):
+    """Refresh a completed check only when rules are the sole changed context."""
+    if (
+        row.get("execution_status") != "completed"
+        or row.get("rules_version") == TOLERANCES_VERSION
+        or not _same_context_except_rules(check_snapshot, current_snapshot)
+    ):
+        return None
+    evaluation_snapshot = _json_object(
+        row.get("evaluation_snapshot"), field_name="fitment check evaluation_snapshot"
+    )
+    result = _recompute_result_from_evidence(check_snapshot, evaluation_snapshot)
+    if result is None:
+        return None
+    refreshed_snapshot = dict(current_snapshot)
+    refreshed_snapshot["check_mode"] = check_snapshot.get("check_mode", "standard")
+    refreshed_hash = hashlib.sha256(
+        json.dumps(refreshed_snapshot, sort_keys=True).encode()
+    ).hexdigest()
+    return await conn.fetchrow(
+        """
+        UPDATE fitment_checks
+        SET input_hash=$1, input_snapshot=$2::jsonb, result=$3::jsonb,
+            verdict=$4, engine_version=$5, rules_version=$6,
+            evaluated_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+        WHERE id=$7::uuid AND owner_user_id=$8 AND execution_status='completed'
+          AND rules_version IS DISTINCT FROM $6
+        RETURNING *
+        """,
+        refreshed_hash,
+        json.dumps(refreshed_snapshot),
+        json.dumps(result),
+        result["status"],
+        ENGINE_VERSION,
+        TOLERANCES_VERSION,
+        str(row["id"]),
+        user_id,
+    )
+
+
+async def _current_check_row(conn, user_id: int, row):
+    """Return the current row, lazily refreshing a rules-only stale verdict."""
+    if not row:
+        return row, False
     snapshot = _json_object(row.get("input_snapshot"), field_name="fitment check input_snapshot")
     if not context_hash(snapshot):
-        return False
+        return row, False
     try:
         request = CheckCreateRequest(
             vehicle_identity_id=UUID(str(row["vehicle_identity_id"])),
@@ -330,9 +426,22 @@ async def _check_is_current(conn, user_id: int, row) -> bool:
                 "provider_version": PROVIDER_REFERENCE_VERSION,
             }
         )
-        return is_current_snapshot(snapshot, current_snapshot)
+        if row.get("rules_version") == TOLERANCES_VERSION and is_current_snapshot(
+            snapshot, current_snapshot
+        ):
+            return row, True
+        refreshed = await _refresh_check_for_rules_version(
+            conn,
+            user_id,
+            row,
+            check_snapshot=snapshot,
+            current_snapshot=current_snapshot,
+        )
+        if refreshed:
+            return refreshed, True
+        return row, False
     except (AssertionError, KeyError, NotImplementedError, TypeError, ValueError):
-        return False
+        return row, False
 
 
 @router.post("/checks", response_model=CheckResponse)
@@ -397,7 +506,8 @@ async def create_check(
                     status_code=409,
                     detail="Idempotency-Key was already used for different fitment inputs",
                 )
-            return _response(existing, is_current=await _check_is_current(conn, user_id, existing))
+            existing, is_current = await _current_check_row(conn, user_id, existing)
+            return _response(existing, is_current=is_current)
         # Equivalent active work is reused even when a client retried with a
         # fresh idempotency key. Terminal completed work is also reusable for
         # the exact same context and rules/provider versions.
@@ -420,9 +530,8 @@ async def create_check(
             # idempotency lookups; production connections always support it.
             equivalent = None
         if equivalent:
-            return _response(
-                equivalent, is_current=await _check_is_current(conn, user_id, equivalent)
-            )
+            equivalent, is_current = await _current_check_row(conn, user_id, equivalent)
+            return _response(equivalent, is_current=is_current)
 
         if WORKER_ENABLED and redis_client.is_initialized():
             queued = await conn.fetchrow(
@@ -456,7 +565,8 @@ async def create_check(
                 redis_client.key(FITMENT_CHECK_QUEUE),
                 json.dumps({"kind": "fitment_check", "check_id": str(queued["id"])}),
             )
-            return _response(queued, is_current=await _check_is_current(conn, user_id, queued))
+            queued, is_current = await _current_check_row(conn, user_id, queued)
+            return _response(queued, is_current=is_current)
         try:
             provider = WheelSizeProvider()
             profile = await provider.get_fitment_profile(vehicle, user_initiated=True)
@@ -568,7 +678,8 @@ async def create_check(
                     detail="Idempotency-Key was already used for different fitment inputs",
                 )
             record = existing
-        response = _response(record, is_current=await _check_is_current(conn, user_id, record))
+        record, is_current = await _current_check_row(conn, user_id, record)
+        response = _response(record, is_current=is_current)
     return response
 
 
@@ -738,7 +849,7 @@ async def get_check(
             str(check_id),
             user_id,
         )
-        current = await _check_is_current(conn, user_id, row) if row else False
+        row, current = await _current_check_row(conn, user_id, row)
     if not row:
         raise HTTPException(status_code=404, detail="Fitment check not found")
     return _response(row, is_current=current)
@@ -782,7 +893,7 @@ async def list_checks(
         )
         items = []
         for row in rows:
-            current = await _check_is_current(conn, user_id, row)
+            row, current = await _current_check_row(conn, user_id, row)
             items.append(
                 CheckHistoryItem(
                     id=str(row["id"]),
