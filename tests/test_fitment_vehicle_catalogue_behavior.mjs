@@ -302,6 +302,22 @@ test("ignores stale make catalogue responses that arrive in reverse order", asyn
     assert.deepEqual(api.state.fitmentCatalogue.makes.items, [{ value: "ZEEKR", label: "ZEEKR" }]);
 });
 
+test("drops a catalogue response from the generation invalidated by save refetch", async () => {
+    const harness = createHarness({ deferred: true });
+    const { api, pending } = harness;
+    seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
+
+    const staleGeneration = api.beginFitmentCatalogueContextChange();
+    const staleResponse = api.loadFitmentCatalogue("makes", {}, { contextVersion: staleGeneration });
+    // saveFitment starts a new authoritative form generation before its refetch.
+    api.beginFitmentCatalogueContextChange();
+    pending[0].resolve(response({ outcome: "no_data", items: [] }));
+    await staleResponse;
+
+    assert.equal(api.state.fitmentForm.vehicle.make, "ZEEKR");
+    assert.deepEqual(api.state.fitmentCatalogue.makes.items, CATALOGUE.makes);
+});
+
 test("retrying years revalidates the dependent market resolution", async () => {
     const harness = createHarness({ catalogue: CATALOGUE });
     seedState(harness, { market: "chdm", make: "ZEEKR", model: "007", year: "2025" });
