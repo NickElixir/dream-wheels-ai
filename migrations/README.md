@@ -24,7 +24,6 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0018_render_feedback.sql` — durable `render_feedback`, backfill из legacy `jobs.feedback` и owner/job constraints для Sprint 3
 - `0019_fitment_identity_candidates.sql` — JSON candidates и revisions для Sprint 4 full editor canonical identity
 - `0020_fitment_change_events.sql` — append-only история canonical fitment edits и подтверждений
-- `0025_product_analytics.sql` — first-party UTM attribution and minimal product funnel events
 - `0021_fitment_checks.sql` — durable технические fitment verdicts
 - `0022_fitment_evidence_fallbacks.sql` — provider evidence и resolution state для verdicts
 - `0023_enable_credit_accounts_rls.sql` — повторно включает RLS для server-only credit balances при staging drift
@@ -37,6 +36,9 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0031_auth_v11_identities.sql` — canonical external identities, Telegram backfill и nullable legacy Telegram ID
 - `0032_auth_v11_telemetry_allowlist.sql` — расширяет allow-list product analytics событиями Email OTP/Auth session
 - `0033_payment_return_routing.sql` — сохраняет UI-канал и валидированный внутренний маршрут возврата Robokassa
+- `0034_auth_account_linking.sql` — аудитируемое связывание аккаунтов и защита ownership для feedback
+- `0035_fitment_rim_source_state.sql` — source fingerprint, выбранный SKU и revision для `rim_specs`/`rim_setups`
+- `0036_fitment_check_lifecycle.sql` — lifecycle-поля попыток fitment check и индекс активного контекста
 
 ## Стратегия применения
 

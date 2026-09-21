@@ -68,8 +68,8 @@ freeze. No behavioural state or visual decision changed in that correction.
 | --- | --- |
 | Existing web client | `webapp/index.html`, `webapp/app.js`, `webapp/style.css` |
 | Fitment overview, save and modification routes | `src/jobs_api.py` |
-| Check API and durable snapshots | `src/fitment_checks_api.py`, `migrations/0021_fitment_checks.sql`, `migrations/0022_fitment_evidence_fallbacks.sql`, `migrations/0027_fitment_check_lifecycle.sql` |
-| Vehicle/Rim persistence and provenance | `src/identity_service.py`, `migrations/0017_vehicle_rim_identity.sql`, `migrations/0019_fitment_identity_candidates.sql`, `migrations/0020_fitment_change_events.sql`, `migrations/0026_fitment_rim_source_state.sql` |
+| Check API and durable snapshots | `src/fitment_checks_api.py`, `migrations/0021_fitment_checks.sql`, `migrations/0022_fitment_evidence_fallbacks.sql`, `migrations/0036_fitment_check_lifecycle.sql` |
+| Vehicle/Rim persistence and provenance | `src/identity_service.py`, `migrations/0017_vehicle_rim_identity.sql`, `migrations/0019_fitment_identity_candidates.sql`, `migrations/0020_fitment_change_events.sql`, `migrations/0035_fitment_rim_source_state.sql` |
 | Wheel Size client | `src/fitment/providers/wheel_size.py` and provider cache |
 | Rim URL resolver | `src/rim_url_resolver.py`, `src/rim_url_extract.py` |
 | Deterministic rules | `src/fitment/rules/engine.py`, `checks.py`, `verdict.py`, `src/fitment/schemas.py` |
