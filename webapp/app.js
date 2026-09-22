@@ -7969,6 +7969,40 @@ function setView(view, { refreshData = true } = {}) {
     }
 }
 
+function rerenderActiveView() {
+    switch (state.view) {
+        case "dashboard":
+            renderDashboard();
+            return;
+        case "create":
+            renderIdentityFlow();
+            return;
+        case "wallet":
+            renderWallet();
+            return;
+        case "renders":
+            renderRenders();
+            return;
+        case "render-detail":
+            renderRenderDetail();
+            return;
+        case "fitment":
+            renderFitment();
+            return;
+        case "settings":
+            renderAccountSettings();
+            return;
+        case "photo-guide":
+            renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+            return;
+        case "support":
+        case "docs":
+            return;
+        default:
+            return;
+    }
+}
+
 function setPaymentStep(step) {
     state.paymentStep = Math.max(1, Math.min(3, step));
     document.querySelectorAll("[data-step]").forEach((el) => {
@@ -8788,8 +8822,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         setFeedbackNotice(jobId, "");
     }
     setFeedbackRecord(jobId, optimisticFeedback);
-    renderRenders();
-    if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+    rerenderActiveView();
 
     try {
         const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/feedback`), {
@@ -8830,9 +8863,8 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         haptic("warning");
     } finally {
         state.feedbackBusyByJob[jobId] = false;
-        renderRenders();
-        renderDashboard();
-        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+        if (state.view !== "dashboard") renderDashboard();
+        rerenderActiveView();
     }
 }
 

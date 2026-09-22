@@ -406,6 +406,27 @@ def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
     assert "data-history-feedback-reason" in APP_JS
 
 
+def test_active_view_rerender_helper_covers_every_declared_view() -> None:
+    helper = APP_JS.split("function rerenderActiveView() {", 1)[1].split("\n}\n", 1)[0]
+    for view in (
+        "dashboard",
+        "create",
+        "wallet",
+        "renders",
+        "render-detail",
+        "fitment",
+        "settings",
+        "photo-guide",
+        "support",
+        "docs",
+    ):
+        assert f'case "{view}":' in helper
+    feedback_handler = APP_JS.split("async function submitHistoryFeedback", 1)[1].split(
+        "\nfunction renderHistoryCard", 1
+    )[0]
+    assert feedback_handler.count("rerenderActiveView();") == 2
+
+
 def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
     assert "ALTER TABLE vehicle_identities" in MIGRATION_0019
     assert (
