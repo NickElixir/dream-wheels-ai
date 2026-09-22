@@ -25,7 +25,8 @@ def test_history_rating_is_optimistic_and_rolls_back_on_request_error() -> None:
     assert "setFeedbackRecord(jobId, optimisticFeedback);" in feedback
     assert "setFeedbackRecord(jobId, currentFeedback);" in feedback
     detail_guard = 'if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();'
-    assert feedback.count(detail_guard) == 3
+    assert feedback.count(detail_guard) == 1
+    assert feedback.count("rerenderActiveView();") == 2
     assert "if (state.feedbackBusyByJob[job.job_id]) return;" in APP_JS
 
 

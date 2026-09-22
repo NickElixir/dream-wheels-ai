@@ -56,6 +56,11 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert 'git ls-tree -r --name-only "$AFTER_SHA"' in workflow
     assert "working-directory: webapp" not in workflow
     assert "working-directory: admin" not in workflow
+    assert workflow.count("- name: Stamp webapp build metadata") == 3
+    assert workflow.count('build_sha="$(git rev-parse HEAD)"') == 3
+    assert workflow.count("built_at=\"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"") == 3
+    assert workflow.count('sed -i "s/__BUILD_ID__/$build_sha/g" webapp/index.html') == 3
+    assert workflow.count("> webapp/version.json") == 3
 
 
 def test_frontend_vercel_configs_disable_native_git_deployments() -> None:

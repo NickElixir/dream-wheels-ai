@@ -1441,7 +1441,6 @@ const state = {
     renderAssetBlobUrlsByJob: {},
     renderAssetBlobLoadingByJob: {},
     feedbackByJob: {},
-    feedbackReasonPickerByJob: {},
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
     feedbackNoticeByJob: {},
@@ -7970,6 +7969,40 @@ function setView(view, { refreshData = true } = {}) {
     }
 }
 
+function rerenderActiveView() {
+    switch (state.view) {
+        case "dashboard":
+            renderDashboard();
+            return;
+        case "create":
+            renderIdentityFlow();
+            return;
+        case "wallet":
+            renderWallet();
+            return;
+        case "renders":
+            renderRenders();
+            return;
+        case "render-detail":
+            renderRenderDetail();
+            return;
+        case "fitment":
+            renderFitment();
+            return;
+        case "settings":
+            renderAccountSettings();
+            return;
+        case "photo-guide":
+            renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+            return;
+        case "support":
+        case "docs":
+            return;
+        default:
+            return;
+    }
+}
+
 function setPaymentStep(step) {
     state.paymentStep = Math.max(1, Math.min(3, step));
     document.querySelectorAll("[data-step]").forEach((el) => {
@@ -8607,7 +8640,6 @@ function feedbackReasonForJob(job) {
 function setFeedbackRecord(jobId, feedback) {
     const normalized = normalizeFeedbackRecord(feedback);
     state.feedbackByJob[jobId] = normalized;
-    delete state.feedbackReasonPickerByJob[jobId];
     state.renderHistory = state.renderHistory.map((job) => (
         job.job_id === jobId ? { ...job, feedback: normalized } : job
     ));
@@ -8790,8 +8822,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         setFeedbackNotice(jobId, "");
     }
     setFeedbackRecord(jobId, optimisticFeedback);
-    renderRenders();
-    if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+    rerenderActiveView();
 
     try {
         const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/feedback`), {
@@ -8832,9 +8863,8 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         haptic("warning");
     } finally {
         state.feedbackBusyByJob[jobId] = false;
-        renderRenders();
-        renderDashboard();
-        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+        if (state.view !== "dashboard") renderDashboard();
+        rerenderActiveView();
     }
 }
 
@@ -11171,7 +11201,6 @@ function bindEvents() {
             const jobId = feedbackButton.dataset.historyFeedback;
             const sentiment = feedbackButton.dataset.feedbackSentiment;
             if (sentiment !== "liked" && sentiment !== "disliked") return;
-            delete state.feedbackReasonPickerByJob[jobId];
             void submitHistoryFeedback(jobId, sentiment);
             return;
         }

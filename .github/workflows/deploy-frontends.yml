@@ -111,6 +111,13 @@ jobs:
             exit 1
           fi
 
+      - name: Stamp webapp build metadata
+        run: |
+          build_sha="$(git rev-parse HEAD)"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          sed -i "s/__BUILD_ID__/$build_sha/g" webapp/index.html
+          printf '{\n  "build": "%s",\n  "built_at": "%s"\n}\n' "$build_sha" "$built_at" > webapp/version.json
+
       - name: Build staging artifact
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -175,6 +182,13 @@ jobs:
             echo "production BACKEND_URL missing or mismatched; refusing deployment" >&2
             exit 1
           }
+
+      - name: Stamp webapp build metadata
+        run: |
+          build_sha="$(git rev-parse HEAD)"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          sed -i "s/__BUILD_ID__/$build_sha/g" webapp/index.html
+          printf '{\n  "build": "%s",\n  "built_at": "%s"\n}\n' "$build_sha" "$built_at" > webapp/version.json
 
       - name: Build production artifact
         env:
@@ -288,6 +302,13 @@ jobs:
             echo "preview BACKEND_URL mismatch; refusing deployment" >&2
             exit 1
           }
+
+      - name: Stamp webapp build metadata
+        run: |
+          build_sha="$(git rev-parse HEAD)"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          sed -i "s/__BUILD_ID__/$build_sha/g" webapp/index.html
+          printf '{\n  "build": "%s",\n  "built_at": "%s"\n}\n' "$build_sha" "$built_at" > webapp/version.json
 
       - name: Build preview artifact
         env:
