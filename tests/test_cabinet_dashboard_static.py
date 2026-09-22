@@ -400,7 +400,7 @@ def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None
 
 
 def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
-    assert "feedbackReasonPickerByJob" in APP_JS
+    assert "feedbackReasonPickerByJob" not in APP_JS
     assert "function feedbackReasonPickerVisible(job)" in APP_JS
     assert 'sentiment === "disliked"' in APP_JS
     assert "data-history-feedback-reason" in APP_JS

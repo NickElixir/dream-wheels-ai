@@ -1441,7 +1441,6 @@ const state = {
     renderAssetBlobUrlsByJob: {},
     renderAssetBlobLoadingByJob: {},
     feedbackByJob: {},
-    feedbackReasonPickerByJob: {},
     feedbackBusyByJob: {},
     feedbackErrorByJob: {},
     feedbackNoticeByJob: {},
@@ -8607,7 +8606,6 @@ function feedbackReasonForJob(job) {
 function setFeedbackRecord(jobId, feedback) {
     const normalized = normalizeFeedbackRecord(feedback);
     state.feedbackByJob[jobId] = normalized;
-    delete state.feedbackReasonPickerByJob[jobId];
     state.renderHistory = state.renderHistory.map((job) => (
         job.job_id === jobId ? { ...job, feedback: normalized } : job
     ));
@@ -11171,7 +11169,6 @@ function bindEvents() {
             const jobId = feedbackButton.dataset.historyFeedback;
             const sentiment = feedbackButton.dataset.feedbackSentiment;
             if (sentiment !== "liked" && sentiment !== "disliked") return;
-            delete state.feedbackReasonPickerByJob[jobId];
             void submitHistoryFeedback(jobId, sentiment);
             return;
         }
