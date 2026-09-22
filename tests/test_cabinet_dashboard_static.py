@@ -120,8 +120,8 @@ def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() 
 def test_open_tabs_detect_a_new_frontend_build() -> None:
     build = VERSION_JSON["build"]
     assert f'data-app-build="{build}"' in INDEX_HTML
-    assert f"/style.css?v={build}" in INDEX_HTML
-    assert f"/app.js?v={build}" in INDEX_HTML
+    assert f"style.css?v={build}" in INDEX_HTML
+    assert f"app.js?v={build}" in INDEX_HTML
     assert "function checkCurrentBuild()" in APP_JS
     assert 'cache: "no-store"' in APP_JS
     version_headers = next(
@@ -312,15 +312,15 @@ def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> Non
 
 
 def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> None:
-    assert "/assets/photo-guide-car.jpg" in INDEX_HTML
+    assert "assets/photo-guide-car.jpg" in INDEX_HTML
     assert (ROOT / "webapp" / "assets" / "photo-guide-car.jpg").is_file()
     assert (ROOT / "webapp" / "assets" / "photo-guide-car-bad.jpg").is_file()
     assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-product.jpg").is_file()
     assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-real.jpg").is_file()
     assert "Диск снят прямо спереди" in INDEX_HTML
     assert 'data-i18n="photoGuide.readyAction">Начать примерку</button>' in INDEX_HTML
-    assert "/assets/photo-guide-wheel-product.jpg" in INDEX_HTML
-    assert "/assets/photo-guide-wheel-real.jpg" in INDEX_HTML
+    assert "assets/photo-guide-wheel-product.jpg" in INDEX_HTML
+    assert "assets/photo-guide-wheel-real.jpg" in INDEX_HTML
     assert "photo-guide-wheel-examples" in STYLE_CSS
 
 
@@ -486,6 +486,13 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     ]
     assert {"source": "/t", "destination": "/index.html"} in rewrites
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/(.*)", "destination": "/index.html"} in rewrites
+    assert {"source": "/t/(.*)", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/assets/(.*)", "destination": "/assets/$1"} in rewrites
+    assert {"source": "/t/assets/(.*)", "destination": "/assets/$1"} in rewrites
+    assert "const APP_PATH_PREFIX" in APP_JS
+    assert "function viewFromLocation()" in APP_JS
+    assert "function syncViewLocation(view)" in APP_JS
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
     assert "Срок действия" in INDEX_HTML
     assert "Сначала спишутся рендеры с ближайшим сроком действия" in APP_JS

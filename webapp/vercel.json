@@ -8,8 +8,20 @@
       "source": "/api/backend/(.*)",
       "destination": "/api/backend-gateway?__backend_path=$1"
     },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/", "destination": "/index.html" },
+    { "source": "/app/style.css", "destination": "/style.css" },
+    { "source": "/app/app.js", "destination": "/app.js" },
+    { "source": "/app/version.json", "destination": "/version.json" },
+    { "source": "/app/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/t", "destination": "/index.html" },
-    { "source": "/t/", "destination": "/index.html" }
+    { "source": "/t/", "destination": "/index.html" },
+    { "source": "/t/style.css", "destination": "/style.css" },
+    { "source": "/t/app.js", "destination": "/app.js" },
+    { "source": "/t/version.json", "destination": "/version.json" },
+    { "source": "/t/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/t/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

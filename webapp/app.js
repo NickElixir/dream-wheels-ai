@@ -1,6 +1,35 @@
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
+const APP_PATH_PREFIX = ["/app", "/t"].find((prefix) => window.location.pathname === prefix || window.location.pathname.startsWith(`${prefix}/`)) || "";
+const APP_VIEW_ROUTES = {
+    dashboard: "",
+    create: "new",
+    renders: "history",
+    wallet: "wallet",
+    support: "support",
+    "photo-guide": "photo-guide",
+    docs: "docs",
+};
+
+function appAssetPath(path) {
+    return `${APP_PATH_PREFIX}${path}`;
+}
+
+function viewFromLocation() {
+    if (!APP_PATH_PREFIX) return "dashboard";
+    const segment = window.location.pathname.slice(APP_PATH_PREFIX.length).replace(/^\/+/, "").split("/")[0];
+    return Object.entries(APP_VIEW_ROUTES).find(([, route]) => route === segment)?.[0] || "dashboard";
+}
+
+function syncViewLocation(view) {
+    if (!APP_PATH_PREFIX || !(view in APP_VIEW_ROUTES)) return;
+    const route = APP_VIEW_ROUTES[view];
+    const nextPath = route ? `${APP_PATH_PREFIX}/${route}` : `${APP_PATH_PREFIX}/`;
+    if (window.location.pathname !== nextPath) {
+        window.history.pushState({ view }, "", `${nextPath}${window.location.search}${window.location.hash}`);
+    }
+}
 
 function tgSupports(version) {
     if (!HAS_TG) return false;
@@ -103,9 +132,9 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";
-const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";
-const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";
+const GUEST_DEMO_VEHICLE_ASSET_URL = appAssetPath("/assets/demo-vehicle-zeekr.jpg");
+const GUEST_DEMO_RIM_ASSET_URL = appAssetPath("/assets/demo-rim-xtrike.png");
+const GUEST_DEMO_RESULT_ASSET_URL = appAssetPath("/assets/demo-render-zeekr-xtrike.jpg");
 const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
 const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
@@ -145,7 +174,7 @@ function trackEvent(eventName, properties = {}) {
 
 async function checkCurrentBuild() {
     try {
-        const response = await fetch(`/version.json?ts=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${appAssetPath("/version.json")}?ts=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const deployed = await response.json();
         if (deployed?.build && deployed.build !== APP_BUILD_ID) window.location.reload();
@@ -4750,7 +4779,7 @@ function setMoreOpen(open) {
     if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
-function setView(view) {
+function setView(view, { syncLocation = true } = {}) {
     const viewChanged = state.view !== view;
     const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
     if (leavingFitment) {
@@ -4758,6 +4787,7 @@ function setView(view) {
         clearFitmentRuntimeRequests();
     }
     state.view = view;
+    if (syncLocation) syncViewLocation(view);
     if (view !== "fitment") clearFitmentCheckPolling();
     if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
@@ -7735,6 +7765,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("pagehide", () => {
         if (state.view === "fitment") persistFitmentTransientDraft("navigation");
     });
+    window.addEventListener("popstate", () => {
+        setView(viewFromLocation(), { syncLocation: false });
+    });
 
     await hydrateFilesFromDraft();
     renderIdentityFlow();
@@ -7744,6 +7777,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (state.fitmentPreviewForced && !new URLSearchParams(window.location.search).get("payment")) {
         void openFitmentView(GUEST_FITMENT_DEMO_JOB_ID, { originView: "dashboard" });
     } else if (!new URLSearchParams(window.location.search).get("payment")) {
-        setView("dashboard");
+        setView(viewFromLocation(), { syncLocation: false });
     }
 });
