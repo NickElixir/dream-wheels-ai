@@ -1,0 +1,21 @@
+---
+const supportUrl = 'https://t.me/dreamwheelsai';
+const legalBaseUrl = 'https://dream-wheels-ai-legal.vercel.app/legal';
+---
+
+<footer class="site-footer" id="contacts">
+  <div class="site-footer__brand">
+    <strong>КОЛЕСА МЕЧТЫ</strong>
+    <small>© 2026 КОЛЕСА МЕЧТЫ</small>
+  </div>
+  <nav class="site-footer__links" aria-label="Навигация в footer">
+    <a href="/catalog" data-catalog-link data-catalog-source="footer">Каталог</a>
+    <a href="/#faq" data-faq-link data-faq-source="footer">FAQ</a>
+    <a href={supportUrl} target="_blank" rel="noreferrer" data-support-link data-support-source="footer">Поддержка</a>
+    <a href="mailto:dreamwheelsai@yandex.ru" data-contact-link data-contact-source="footer_email">dreamwheelsai@yandex.ru</a>
+  </nav>
+  <div class="site-footer__legal">
+    <a href={`${legalBaseUrl}/privacy`} target="_blank" rel="noreferrer">Политика конфиденциальности</a>
+    <a href={`${legalBaseUrl}/offer`} target="_blank" rel="noreferrer">Пользовательское соглашение</a>
+  </div>
+</footer>

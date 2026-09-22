@@ -18,6 +18,8 @@ lib/
 lib64/
 !admin/src/lib/
 !admin/src/lib/**
+!landing/src/lib/
+!landing/src/lib/**
 parts/
 sdist/
 var/

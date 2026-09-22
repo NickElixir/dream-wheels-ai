@@ -1,49 +1,57 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import MiniCatalog from '../components/MiniCatalog';
+import { Picture } from 'astro:assets';
+import heroImage from '../assets/hero/hero-geely-monjaro-refined.png';
+import TwoQuestions from '../components/TwoQuestions';
+import HowItWorks from '../components/HowItWorks.astro';
+import BeforeAfter from '../components/BeforeAfter';
+import SiteHeader from '../components/SiteHeader.astro';
+import Faq from '../components/Faq';
+import SiteFooter from '../components/SiteFooter.astro';
 ---
 
 <Layout>
-  <header class="site-header">
-    <a class="wordmark" href="#top" aria-label="Dream Wheels AI — на главную">DREAMWHEELS <span>AI</span></a>
-    <nav class="main-nav" aria-label="Основная навигация">
-      <a href="#catalog">Как это работает</a>
-      <a href="#catalog">Примеры</a>
-      <a href="#catalog">FAQ</a>
-    </nav>
-    <div class="header-actions">
-      <a class="login-link" href="https://dreamwheels.pro/app/new" data-login-link>Войти</a>
-      <a class="button button-small button-lime action-type" href="https://dreamwheels.pro/app/new" data-primary-cta>Попробовать <span aria-hidden="true">→</span></a>
-    </div>
-  </header>
+  <SiteHeader />
 
   <main>
     <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-media" aria-label="Автомобиль в тёмном гараже">
-        <img src="/assets/mock/zeekr-001.webp" width="1536" height="1024" alt="Временный mock-ассет Zeekr 001 в гараже" fetchpriority="high" />
+      <div class="hero-media" aria-label="Geely Monjaro в открытом гараже">
+        <Picture src={heroImage} widths={[640, 960, 1280, 1600, 1920]} sizes="100vw" formats={['avif', 'webp']} fallbackFormat="jpg" alt="Geely Monjaro в открытом гараже" loading="eager" fetchpriority="high" />
         <div class="hero-media-shade" aria-hidden="true"></div>
-        <div class="hero-caption"><span>ZEEKR 001</span><span>SAME CAR / A DIFFERENT STORY</span><span>01 / 15</span></div>
+        <div class="hero-caption"><span>ВАШ АВТОМОБИЛЬ<br />ВАШИ ДИСКИ<br />ВАША УВЕРЕННОСТЬ</span></div>
       </div>
       <div class="hero-copy">
-        <span class="eyebrow">YOUR CAR. NEW POSSIBILITIES.</span>
-        <h1 id="hero-title">БОЛЬШЕ<br />СТИЛЯ<br />В ВАШИХ<br />РУКАХ</h1>
-        <p>Примерьте конкретные диски на своей машине и посмотрите, как они выглядят, с предварительной проверкой совместимости.</p>
-        <a class="button button-lime action-type hero-cta" href="https://dreamwheels.pro/app/new" data-primary-cta>Примерить диски на своей машине <span aria-hidden="true">→</span></a>
+        <h1 id="hero-title">
+          <span class="hero-welcome">Добро пожаловать</span>
+          <span class="hero-brand">Dream Wheels</span>
+        </h1>
+        <p class="hero-subtitle">Посмотрите выбранные диски<br />на своём автомобиле</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button button-lime button-tactile action-type hero-cta" href="https://dreamwheels.pro/app/new" data-primary-cta>Попробовать</a>
+        <span class="hero-cta-note">Первые 3 примерки бесплатно</span>
       </div>
     </section>
 
-    <section class="catalog-section" id="catalog" aria-labelledby="catalog-title">
-      <MiniCatalog client:load />
-    </section>
+    <TwoQuestions />
+
+    <HowItWorks />
+
+    <BeforeAfter client:load />
+
+    <Faq client:load />
+
   </main>
+
+  <SiteFooter />
 
   <script>
     import { getAppTarget } from '../lib/attribution';
     import { trackEvent } from '../lib/analytics';
 
-    document.querySelectorAll<HTMLAnchorElement>('[data-primary-cta], [data-login-link]').forEach((link) => {
+    document.querySelectorAll<HTMLAnchorElement>('[data-primary-cta]').forEach((link) => {
       link.href = getAppTarget();
-      link.addEventListener('click', () => trackEvent(link.hasAttribute('data-login-link') ? 'login_clicked' : 'primary_cta_clicked'));
+      link.addEventListener('click', () => trackEvent('primary_cta_clicked', { source: link.dataset.primarySource ?? 'hero' }));
     });
     window.addEventListener('dreamwheels:landing-viewed', () => trackEvent('landing_viewed'));
   </script>

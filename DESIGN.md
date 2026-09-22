@@ -6,6 +6,145 @@
 
 `DESIGN.md` answers: **how should Dream Wheels feel and behave as one system across surfaces?** It deliberately abstracts reusable rules from the approved Landing reference without copying Landing V1 coordinates, section heights or page composition.
 
+### Domain-specific public branding
+
+**[APPROVED PRODUCT/DESIGN]** Public branding follows the domain language:
+
+- `колесамечты.рф` is Russian and uses the visible public brand `КОЛЕСА МЕЧТЫ` without an `AI` suffix or English brand subtitle.
+- `dreamwheels.pro` is English/global and uses the visible public brand `DREAM WHEELS`.
+
+This rule changes public presentation only. It does not rename repositories, packages, internal identifiers or code namespaces.
+
+**[APPROVED PRODUCT COPY]** The current Russian Landing Hero copy is authoritative: headline «Добро пожаловать» / «Dream Wheels» on two lines; supporting copy «Посмотрите выбранные диски» / «на своём автомобиле»; right caption «ВАШ АВТОМОБИЛЬ» / «ВАШИ ДИСКИ» / «ВАША УВЕРЕННОСТЬ» on three lines; primary CTA «Попробовать» with the note «Первые 3 примерки бесплатно». The header retains only «Войти». Do not restore older raster-derived Hero copy or removed supporting copy.
+
+**[APPROVED PRODUCT COPY]** Hero formulations and elements that the user has already changed or removed must not be automatically reintroduced by later design reconstruction, QA or integration passes. Reference raster remains authoritative for geometry only; current approved production copy has priority for text.
+
+### Hero composition integration checkpoint
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** The current Russian Landing Hero uses the refined Geely Monjaro candidate with text left and vehicle right. Desktop follows the `85svh` direction with a bounded `clamp(680px, 85svh, 920px)` minimum-height model; tablet keeps the desktop-like direction, and mobile follows text top / vehicle bottom until a dedicated mobile companion is approved.
+
+`HERO_DESKTOP_DIRECTION = APPROVED_85SVH`
+
+`HERO_DESKTOP_COMPOSITION = TEXT_LEFT_VEHICLE_RIGHT`
+
+`HERO_STATIC_SCENE = GEELY_MONJARO_REFINED_CANDIDATE`
+
+`HERO_ANIMATION = DEFERRED`
+
+`HERO_MOBILE_DIRECTION = TEXT_TOP_VEHICLE_BOTTOM`
+
+`HERO_MOBILE_ASSET = PENDING`
+
+The Hero uses only a local left-side text-readability gradient. Vehicle grounding remains asset-provided; production CSS must not add a drop shadow, radial black shadow, pseudo-element grounding shadow or dark floor vignette beneath the car. The current candidate remains a review checkpoint and must not be described as fully final-approved before user review.
+
+### Satin Lime Metal CTA checkpoint
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** The production Landing uses a hybrid CTA system. Hero primary CTA uses `Satin Lime Metal`: a restrained vertical lime gradient with soft internal light, a darker lower edge and subtle peripheral depth; it is neither neon nor glossy plastic. Header login uses `Dark Graphite Tactile`: a compact cool graphite surface with near-white text, a restrained top reflection and a short downward shadow. Keyboard focus for both is neutral light, never lime-on-lime.
+
+`PRIMARY_CTA_MATERIAL = SATIN_LIME_METAL`
+
+`HEADER_LOGIN_MATERIAL = DARK_GRAPHITE_TACTILE`
+
+`CTA_ARROWS = REMOVED`
+
+`CTA_SYSTEM = HYBRID`
+
+`CTA_HYBRID_SYSTEM = USER_REVIEW_REQUIRED`
+
+### Vehicle selector brightness checkpoint
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** Vehicle selector rows use a dark tactile graphite surface that is visibly lighter than the page canvas while remaining secondary to wheel tiles. Profile avatars are enlarged within the existing compact row geometry and sit over a local soft horizontal cool-grey halo. The halo is contained inside the avatar zone; it is not a white panel, external glow or a copy of the wheel-tile backdrop. Selected vehicle rows receive modestly brighter material, a slightly stronger halo and near-white label contrast. Hover and pressed states change material depth without lime indicators or avatar scaling.
+
+`VEHICLE_SELECTOR_STYLE = TACTILE_WITH_SOFT_HORIZONTAL_HALO`
+
+`VEHICLE_AVATAR_SCALE = INCREASED`
+
+`VEHICLE_SELECTOR_HIERARCHY = SECONDARY_TO_WHEEL_SELECTOR`
+
+`VEHICLE_SELECTOR_REFINEMENT = USER_REVIEW_REQUIRED`
+
+### Mini Catalog provisional layout freeze
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** The Mini Catalog retains frameless transparent vehicle cutouts inside tactile rows. Below the full-width Garage result, specs, compatibility and disclaimer form a left-aligned compact information island with `max-width: 820px` on wide desktop; title and favorite remain aligned to the Garage. The control-to-result gap is `clamp(30px, 3vw, 38px)` on desktop and reduces on mobile. The Catalog uses a subtle cool graphite field `#071013` to signal a change from Hero without a visible divider or page-wide card.
+
+`VEHICLE_AVATAR_FRAME = NONE`
+
+`CATALOG_RESULT_INFO = MAX_WIDTH_CONSTRAINED`
+
+`CATALOG_CONTROL_RESULT_SPACING = INCREASED`
+
+`CATALOG_SECTION_TONAL_SEPARATION = ENABLED`
+
+`MINI_CATALOG_LAYOUT = PROVISIONALLY_FROZEN`
+
+Final asset-level polish is deferred until `SHOWCASE_WHEELS_SHORTLIST + REAL_CATALOG_DATA`.
+
+### Two Questions — full-viewport editorial split
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** After the provisionally frozen Mini Catalog, Landing presents the two different Dream Wheels actions as one cinematic editorial spread: visual try-on and checking compatibility by parameters. It is not two SaaS cards and uses no card borders, lime outlines, pseudo-AR or technical diagrams. Desktop starts at a 55/45 visual split; portrait tablet and mobile become a sequential vertical narrative.
+
+`TWO_QUESTIONS_LAYOUT = FULL_VIEWPORT_EDITORIAL_SPLIT`
+
+`TWO_QUESTIONS_DESKTOP_RATIO = 55_45`
+
+`TWO_QUESTIONS_MOBILE = SEQUENTIAL`
+
+**[APPROVED PRODUCT COPY]** The `КАК БУДУТ СМОТРЕТЬСЯ?` case uses the supplied orange Zeekr 001 visual and presents the selected wheel as `Race Ready Technology CSS3347` with the technical caption `8,5/19" 5x108 ET45 DIA63,4 MK/M`. Do not insert decorative `·` separators between technical values.
+
+`HOW_IT_LOOKS_CAR = ZEEKR_001_ORANGE`
+
+`HOW_IT_LOOKS_PRODUCT = Race Ready Technology CSS3347`
+
+`HOW_IT_LOOKS_SPECS = 8,5/19" 5x108 ET45 DIA63,4 MK/M`
+
+**[APPROVED PRODUCT COPY]** The technical half describes `проверка совместимости по параметрам`. It must not imply factual installation compatibility and must not use deprecated preliminary terminology in this section.
+
+`COMPATIBILITY_TERM = "проверка совместимости по параметрам"`
+
+`PRELIMINARY_COMPATIBILITY_TERM = DEPRECATED`
+
+`TWO_QUESTIONS_LABELS = SYSTEM_01_SYSTEM_02`
+
+`TWO_QUESTIONS_BRIDGE = DARK_TONAL_BRIDGE`
+
+`TWO_QUESTIONS_GLOBAL_EXPLANATION = REMOVED`
+
+`TECHNICAL_WHEEL_VISIBILITY = SOURCE_BRIGHTNESS_PRESERVED`
+
+**[APPROVED DESIGN / USER REVIEW REQUIRED]** The technical scene uses the supplied polished vertical 4:5 workshop asset. Both Two Questions headings share one responsive typography token; only their controlled line breaks differ. The orange Zeekr crop centers the front half and preserves visual breathing room between its bumper and the dark tonal bridge.
+
+`TWO_QUESTIONS_WORKSHOP_ASSET = POLISHED_VERTICAL_4_5`
+
+`TWO_QUESTIONS_HEADINGS = UNIFIED_TYPOGRAPHY`
+
+`TWO_QUESTIONS_DESKTOP_SPLIT = APPROX_55_45`
+
+`HOW_IT_LOOKS_CROP = FRONT_HALF_FOCUS`
+
+`HOW_IT_LOOKS_BUMPER_BREATHING_ROOM = ENABLED`
+
+`TECHNICAL_TEXT_SAFE_AREA = PRESERVED`
+
+`TECHNICAL_ACTION_POSITION = LOWER_FRAME`
+
+`TWO_QUESTIONS = USER_REVIEW_REQUIRED`
+
+`SYSTEM_01_HEADING = КАК БУДУТ СМОТРЕТЬСЯ?`
+
+`SYSTEM_01_BODY = Оцените конкретные диски на своём автомобиле.`
+
+`SYSTEM_LABELS = SYSTEM_01_SYSTEM_02`
+
+`TWO_QUESTIONS_BODY_TYPOGRAPHY = UNIFIED`
+
+`HOW_IT_LOOKS_PRODUCT_NAME = Race Ready Technology CSS3347`
+
+`HOW_IT_LOOKS_SPEC_FORMAT = CANONICAL_RU_WHEEL_NAMING`
+
+`HOW_IT_LOOKS_SPEC_STYLE = TECHNICAL_SECONDARY`
+
+`TWO_QUESTIONS_BRIDGE = UNCHANGED`
+
 ### Source priority
 
 1. Approved product principles and frozen domain/UI contracts
@@ -84,6 +223,48 @@ The intended feeling is a considered automotive studio—controlled light, stron
 - luxury-fashion art direction that compromises task completion;
 - generic e-commerce marketplace.
 
+## Landing V1 catalog materiality
+
+**[APPROVED DESIGN]** Interface physicality explains state and action; it is not a decorative effect. For Landing V1, the approved language is dark tactile material UI: dark tonal surfaces, very restrained physical depth, small hover lift and a mild pressed/selected depression. Photographic automotive content remains visually primary over the interface shell.
+
+This is not classic neumorphism. Landing V1 must avoid:
+
+- oversized soft neumorphic cards;
+- glossy skeuomorphism;
+- glass everywhere;
+- neon;
+- decorative glow;
+- lime selection indicators by default.
+
+Resend is a reference direction only for restrained dark materiality, tonal surfaces, precise borders/highlights and dense premium interface behaviour. Do not copy its layout, typography, dashboard patterns, brand identity, exact colors or radii.
+
+### Wheel tile — Refined B4: Tactile Showcase
+
+**[APPROVED DESIGN]** The approved Mini Catalog wheel-selector direction is Refined B4:
+
+- square tile using the audition reference implementation size without turning that pixel size into a universal token;
+- outer radius about 10–12 px and a dark tactile metal surface;
+- outer tile and perimeter slightly deeper than the inner zone;
+- nearly imperceptible cool-neutral top highlight;
+- restrained brushed/grain texture;
+- no bright decorative border in the ordinary state.
+
+The inner zone uses a cool-grey blurred rectangular backdrop with a smaller radius than the tile. Its center is not pure white; it falls softly toward darker edges with no visible seam, inner rectangle edge or halo/glow. The wheel must remain fully visible and may have only a very soft local shadow directly beneath the wheel presentation.
+
+The current refined material pass is approved as a direction, not as a universal WebApp treatment.
+
+### Vehicle selector direction
+
+**[APPROVED DESIGN]** Production vehicle rows use the compact dark tactile-material basis with a moderate radius around 8 px. Inactive/selected states rely on material, photo contrast and text contrast without lime indicators, and rows remain compact selectors rather than large independent cards.
+
+### Vehicle thumbnail direction — model silhouette/profile
+
+**[APPROVED DESIGN]** Production vehicle selectors use model-specific profile or near-side-profile thumbnails instead of random reduced 3/4 photos. All five thumbnails share orientation, visual scale, canvas height and a simple isolated/dark treatment while preserving the recognizable identity and proportions of the exact vehicle generation used in the showcase. This is not a generic vector car icon.
+
+`VEHICLE_THUMBNAIL_DIRECTION = USER_APPROVAL_REQUIRED`
+
+The required audition compares the current 3/4 photo with an isolated side-profile/model-icon candidate using identical tile geometry, text, material and selection state. Compare recognizability, compactness, premium feel, consistency across five cars, generic-configurator risk and fit with Refined B4 wheel tiles before approval.
+
 ## Color system
 
 ### Semantic roles
@@ -128,8 +309,7 @@ These are sampled pixels, **not guaranteed original CSS tokens**. Token values m
 Use it for:
 
 - primary conversion CTA;
-- small selected marker;
-- short accent rule;
+- small selected marker, preferably a compact dot/indicator;
 - restrained tonal emphasis where appropriate;
 - compatibility-positive signal only when product evidence supports it;
 - small emphasis details with a clear semantic role.
@@ -308,13 +488,15 @@ The numeric base is intentionally open until a common runtime scale is approved.
 
 **[REFERENCE]** Landing surfaces read as 0–4 px by default. Large 16–32 px SaaS-card radii and habitual pills are prohibited unless a frozen application contract explicitly requires a component variant. Circular icon buttons are an intentional exception, not a general shape language.
 
+**[APPROVED DESIGN]** Landing V1 tactile selectors are a deliberate exception to the default 0–4 px reading: vehicle rows use about `8 px`, and wheel tiles use about `10–12 px`. These values apply to this Landing selector direction only; they are not universal rules for Landing or WebApp components.
+
 ### Borders and dividers
 
 **[DERIVED]**
 
 - Use 1 px low-contrast dividers for rhythm and separation.
 - Use a subtle interactive border before a heavy shadow.
-- Selection should normally be communicated through restrained tonal contrast plus a small accent marker/rule. Avoid enclosing the entire option in an accent border unless a specific component has separately approved visual requirements.
+- Selection should normally be communicated through restrained tonal contrast plus a compact accent dot/indicator. Avoid enclosing the entire option in an accent border or using an accent line/rule unless a specific component has separately approved visual requirements.
 - FAQ-style dense rows may use individual fully outlined rectangles with minimal radius when the grouping is a row-level interaction.
 - Dark surfaces can separate by tone or rule; they should not float by default.
 
@@ -349,13 +531,15 @@ Hover/pressed should slightly change tone or border/opacity without glow. Disabl
 
 ### Secondary strong
 
-**[REFERENCE]** A light/white rectangular control can serve a strong contextual action such as “Посмотреть детали”. It is visually subordinate to the lime conversion action but stronger than text-only control.
+**[REFERENCE]** A light/white rectangular control can serve a strong contextual action such as “Сохранить вариант”. It is visually subordinate to the lime conversion action but stronger than text-only control.
 
 Use for a meaningful non-primary action that deserves visibility without being the page/task primary CTA.
 
 ### Secondary subtle
 
 Transparent/dark action with fine border or text treatment. Use for navigation, comparison and actions that must stay available without competing with the primary CTA.
+
+Landing V1 exposes only the compact favorite control for a selected wheel; comparison is not a Landing action.
 
 ### Icon button
 
@@ -376,25 +560,48 @@ Compact and mostly monochrome. Use circular shape only where the function benefi
 
 ### Selection
 
-**[APPROVED DESIGN]** Selection must be clearly perceivable but visually subordinate to vehicle/product imagery.
+**[APPROVED DESIGN]** Selection must be clearly perceivable but visually subordinate to vehicle/product imagery. Landing V1 selected vehicle and wheel controls use a restrained neutral/material treatment and fuller text/image emphasis. The current neutral frame for a selected wheel tile is allowed; selected image and label use full contrast, while the surface may retain mild physical depth. Lime dots, accent side stripes, bottom rules and lime outlines are not used on this surface, following the later explicit user decision to remove the selection circles.
 
 Preferred mechanisms:
 
 - subtle surface or tonal change;
 - higher text/image emphasis;
-- short lime bottom rule;
-- small side marker;
-- compact icon/indicator where semantically appropriate.
+- clear tonal and text/image emphasis.
 
 Avoid by default:
 
 - full lime outline around the complete card;
 - lime-filled selected cards;
+- lime side stripes or bottom rules;
 - glow;
 - large check badges;
 - selection treatment that competes with automotive imagery.
 
 Hover, focus and selected states must remain visually distinct. **[ACCESSIBILITY]** Focus indication is independent from visual selection and must remain clearly visible for keyboard interaction.
+
+**[APPROVED DESIGN]** Landing V1 Mini Catalog exposes the compact favorite control as its only selected-wheel action. It must not add “Посмотреть детали”, comparison, 3D-viewing or another contextual action until a separately approved product capability and interaction are in scope.
+
+**[APPROVED DESIGN]** Landing V1 production Mini Catalog uses `MINI_CATALOG_LAYOUT = WIDE_GARAGE_BOTTOM_SPECS`: the profile vehicle selector sits beside square Refined B4 wheel tiles, followed by a wide Garage media plane, selected-wheel title/favorite, one grouped metal specification strip, and a separate flat compatibility status. The Garage asset remains the source of vehicle grounding; production CSS must not add a vehicle shadow, floor vignette or pseudo-element grounding treatment.
+
+**[APPROVED DESIGN]** `BOTTOM_SPECS_MATERIALITY = GROUPED_METAL_STRIP`. The strip is one calm dark graphite display-only surface with weak internal dividers, IBM Plex Sans values/labels and restrained material depth. Compatibility remains separate and flat with the existing lime status icon; it is not part of the metal strip.
+
+**[APPROVED DESIGN]** Wheel carousel navigation controls are omitted in Landing V1 when all showcase wheel variants fit simultaneously. Do not render inactive or disabled carousel controls merely to reproduce the historical reference.
+
+### USER-REJECTED ELEMENTS
+
+**[APPROVED DESIGN]** Explicitly removed copy, controls or visual treatments must not be reintroduced by later reconstruction passes without explicit user approval.
+
+Landing V1 must not restore:
+
+- Hero supporting body or “ГОТОВЫЕ ПРИМЕРКИ”;
+- “Один автомобиль — разные диски”;
+- wheel carousel arrows when there is no overflow;
+- lime dots, lines or outlines used as selection indicators;
+- “Посмотреть в 3D”;
+- “Посмотреть детали”;
+- “Добавить к сравнению”.
+
+The selected-wheel action remains Favorites only.
 
 ### Status system
 
@@ -434,6 +641,20 @@ pending
 ### Product wheel imagery
 
 Clean/studio, isolated, consistent scale and background. It exists for product evaluation; no decorative AI transformation that changes geometry, finish or details.
+
+**[APPROVED DESIGN]** Supplier imagery may be transparent PNG/cutout, white-background JPEG or another studio square image. For production showcase, prefer removing the background ahead of time and placing the transparent cutout on the approved blurred cool-grey backdrop. Preserve the original wheel geometry, finish, logo and design identity. Do not use AI re-drawing merely to unify cards when it could change those properties.
+
+`WHEEL_BACKGROUND_REMOVAL = PREFERRED PREPROCESSING`
+
+`WHEEL_DESIGN_IDENTITY = MUST BE PRESERVED`
+
+Current audition examples such as SVR Premium, RepliKey, Venti, MOMO and other temporary wheel assets are QA/design-audition fixtures only. They are not an approved showcase shortlist, fitment-approved products or final production catalog data.
+
+`SHOWCASE_WHEELS_SHORTLIST = NOT YET CREATED`
+
+`REAL_CATALOG_DATA = NOT YET INTEGRATED`
+
+`FITMENT_VERIFICATION = NOT YET COMPLETE`
 
 ### User imagery
 
@@ -498,6 +719,8 @@ current task/status + result > controls > supporting metadata
 ```
 
 This is a hierarchy guideline, not an instruction to hide controls or technical evidence.
+
+**[APPROVED DESIGN]** Mini Catalog hierarchy is: vehicle/Garage result → wheel products → selected wheel specifications → vehicle/wheel selectors → supporting status/metadata. Tactile effects remain subordinate to the vehicle.
 
 ## Surface-specific guidance
 

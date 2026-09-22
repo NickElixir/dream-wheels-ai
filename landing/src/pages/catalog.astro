@@ -1,0 +1,18 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+import MiniCatalog from '../components/MiniCatalog';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Каталог дисков — КОЛЕСА МЕЧТЫ">
+  <SiteHeader />
+  <main class="catalog-page">
+    <header class="catalog-page-heading">
+      <h1>Каталог дисков</h1>
+      <p>Выберите автомобиль и посмотрите доступные варианты.</p>
+    </header>
+    <section class="catalog-section catalog-section--page" aria-label="Каталог дисков">
+      <MiniCatalog client:load />
+    </section>
+  </main>
+</Layout>

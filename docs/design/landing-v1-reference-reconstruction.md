@@ -54,6 +54,8 @@ The dominant horizontal guide is `x=51` / `x=973`: a 51 px gutter on each side, 
 
 ## 2. Hero
 
+**[APPROVED PRODUCT COPY]** The current Russian production Hero copy is `Добро пожаловать` / `Dream Wheels`, followed by `Посмотрите выбранные диски` / `на своём автомобиле`, with the right caption `ВАШ АВТОМОБИЛЬ` / `ВАШИ ДИСКИ` / `ВАША УВЕРЕННОСТЬ` and CTA `Попробовать`. It supersedes older raster/reference wording. The reference remains a source for geometry and composition only. Later reconstruction, QA and integration passes must not automatically restore user-removed or user-edited copy.
+
 **Observed geometry.** Full-bleed region `y=0–372` (**24.2% of the full 1536 px page height**). Copy begins at `x≈52`, with a usable width of 220–240 px (**21.5–23.4% of the full 1024 px viewport width**). Its eyebrow is around `y=67`; headline spans `y≈86–236`; description around `y=258–297`; CTA at `x≈52, y≈311`, approximately 207 × 33 px. The photographic/media field (car plus architecture) occupies roughly `x=252–1024`, `y=0–371`: 772 px, or **75.4% of the full 1024 px viewport width**. The visible car silhouette itself is approximately `x=334–914`, `y=115–336`: 580 px, or **56.6% of the full 1024 px viewport width**. These are distinct measurements.
 
 **Typography.** Eyebrow is all-caps, 9–10 px, tracking about `0.24em`. The headline “БОЛЬШЕ / СТИЛЯ / В ВАШИХ / РУКАХ” is roughly 42–46 px, 0.90–0.96 line-height, light weight, slight negative tracking. It occupies four lines in the supplied Russian copy; the exact line count may change with language, but the block must stay compact and commanding. Description is 12–13 px at ~1.25–1.35 line-height. CTA is 11–12 px medium/bold, black text and a simple right arrow.
@@ -93,17 +95,43 @@ The thin lime outlines above are factual observations of the approved screenshot
 
 - no full lime outline by default;
 - restrained tonal change;
-- compact lime marker/rule;
+- no lime selection circle, line or outline, following the later explicit user decision;
 - higher selected text/image emphasis;
 - accessibility focus remains independent and clearly visible.
 
 This approved deviation affects selection styling only. It does **not** change Catalog geometry, dimensions, hierarchy, Automotive stage/media-plane behaviour, or any other reference measurement in this document or the structured measurements JSON.
 
+### Approved wheel-tile material direction
+
+**[APPROVED DESIGN]** The Mini Catalog wheel selector uses the Refined B4 — Tactile Showcase direction. The square wheel tile keeps the audition reference size, with an outer radius of about 10–12 px, a dark tactile-metal surface, a subtly deeper outer perimeter and a nearly invisible cool-neutral top highlight. The inner zone is a smaller-radius blurred cool-grey rectangle: its center is not pure white, its edges fall off softly into the tile, and there is no visible seam, halo or glow. The wheel remains fully visible; only a restrained local shadow directly beneath the wheel presentation is permitted.
+
+This is a material refinement of the selector surface only. It does not change the measured Catalog geometry, wheel-cell dimensions, labels, selected state concept or composition. The current neutral selected frame remains allowed; selected image and label retain full contrast. Lime dots, lines and lime outlines are not used as Landing selector indicators.
+
+**[APPROVED DESIGN]** Supplier wheel imagery may arrive as transparent cutout, white-background JPEG or another studio square image. Production showcase should prefer background removal as preprocessing, preserving the original wheel design identity and geometry, then use the approved blurred cool-grey backdrop. AI re-drawing is not a substitute for reliable preprocessing.
+
+`WHEEL_BACKGROUND_REMOVAL = PREFERRED PREPROCESSING`
+
+`WHEEL_DESIGN_IDENTITY = MUST BE PRESERVED`
+
+Current audition wheel examples are QA/design-audition fixtures only. They are not an approved showcase shortlist, production catalog data or fitment-approved products.
+
+`SHOWCASE_WHEELS_SHORTLIST = NOT YET CREATED`
+
+`REAL_CATALOG_DATA = NOT YET INTEGRATED`
+
+`FITMENT_VERIFICATION = NOT YET COMPLETE`
+
+### Vehicle thumbnail direction
+
+**[PROPOSED]** Consider an isolated profile or near-side-profile thumbnail for each specific vehicle, with consistent orientation, scale and canvas height. It must preserve the identity and generation of the vehicle used in the showcase and must not become a generic vector icon. The final direction remains approval-required and must first be auditioned against the current 3/4 photo using identical tile geometry, text, material and selection state.
+
+`VEHICLE_THUMBNAIL_DIRECTION = USER_APPROVAL_REQUIRED`
+
 **MUST MATCH**
 
 - Wheel choice reads as a horizontal product carousel above the automotive stage, not as a small control inside the spec rail.
 - Product images are isolated, centred wheel portraits with consistent square image treatment.
-- Carousel navigation is an understated pair of 24 px outlined circles in the upper-right.
+- The reference contains an understated pair of 24 px outlined circles in the upper-right; current Landing V1 omits them because all five showcase variants fit simultaneously.
 
 **CAN ADAPT**
 
@@ -138,7 +166,7 @@ The wheel selector creates the focus area’s upper alignment line; the car’s 
 
 ## 6. Catalog specification / compatibility rail
 
-**Observed geometry.** The rail begins at `x≈734`, `y≈524`, width ~238 px (**23.2% of the full 1024 px viewport width**; 25.8% of the 922 px content field) and runs to about `y=730`. Wheel title “OZ SUPERTURISMO” is ~15–16 px. The short descriptor is 10–11 px. Four inline measurements form a single compact row around `y=576–604` (R19 / 8.5J / 5×114.3 / ET40), labels beneath are 8–9 px. Compatibility sits as a 238 × ~42 px dark translucent row at `y≈618`, with lime check at left and chevron at right. A white, flat, 238 × ~31 px secondary button follows at `y≈670`; “Добавить к сравнению” is a plain text/action row below.
+**Observed geometry.** The rail begins at `x≈734`, `y≈524`, width ~238 px (**23.2% of the full 1024 px viewport width**; 25.8% of the 922 px content field) and runs to about `y=730`. Wheel title “OZ SUPERTURISMO” is ~15–16 px. The short descriptor is 10–11 px. Four inline measurements form a single compact row around `y=576–604` (R19 / 8.5J / 5×114.3 / ET40), labels beneath are 8–9 px. Compatibility sits as a 238 × ~42 px dark translucent row at `y≈618`, with lime check at left and chevron at right. The approved screenshot then includes a white secondary button and a lower comparison action.
 
 **MUST MATCH**
 
@@ -148,14 +176,18 @@ The wheel selector creates the focus area’s upper alignment line; the car’s 
 
 ### APPROVED PRODUCT/DESIGN DEVIATION
 
-Production Landing V1 does not advertise 3D viewing. Use “Посмотреть детали →” in the same strong white rectangular control position.
+Production Landing V1 does not advertise 3D viewing, details viewing or comparison. The Mini Catalog exposes only the compact favorite control for the selected wheel.
 
-This deviation changes copy and action semantics only. It does not alter the reference geometry, button position, size, hierarchy or Catalog composition.
+This deviation removes Catalog action semantics and controls only. It does not alter the reference geometry for vehicle rail, wheel carousel, Garage plane, technical values, compatibility status or Catalog composition.
+
+**[APPROVED DESIGN]** Wheel carousel navigation controls are omitted in Landing V1 when all showcase wheel variants fit simultaneously. For the current Gate 1, the controls are removed entirely; no disabled controls, placeholders or pagination dots replace them.
+
+**[APPROVED DESIGN]** Explicitly removed copy, controls or visual treatments must not be reintroduced by later reconstruction passes without explicit user approval.
 
 **CAN ADAPT**
 
 - Exact values, validation wording and enabled/disabled state. If data is mock, it must continue to say so in the product-appropriate wording.
-- Details action destination and comparison persistence.
+- Favorite persistence remains the only selected-wheel action in Landing V1.
 
 ## 7. Two Questions
 

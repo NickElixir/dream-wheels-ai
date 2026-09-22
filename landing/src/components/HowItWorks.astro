@@ -1,0 +1,91 @@
+---
+const source = {
+  src: '/assets/how-it-works/zeekr-source-normalized.png',
+  width: 2048,
+  height: 2048,
+  alt: 'Оранжевый Zeekr 001 до виртуальной примерки дисков',
+};
+
+const wheel = {
+  src: '/assets/how-it-works/css3347-cutout.png',
+  width: 1254,
+  height: 1254,
+  alt: 'Race Ready Technology CSS3347',
+};
+
+const result = {
+  src: '/assets/how-it-works/zeekr-result-normalized.png',
+  width: 2048,
+  height: 2048,
+  alt: 'Оранжевый Zeekr 001 после виртуальной примерки Race Ready CSS3347',
+};
+
+const vortex = {
+  src: '/assets/how-it-works/dream-wheels-vortex-transparent.png',
+  width: 1122,
+  height: 1402,
+  alt: 'Абстрактная графика этапа визуальной обработки Колеса Мечты',
+};
+---
+
+<section class="how-it-works" id="how-it-works" aria-label="Как работает примерка дисков">
+  <article class="how-it-works__stage how-it-works__stage--photo">
+    <img class="how-it-works__image" src={source.src} width={source.width} height={source.height} alt={source.alt} loading="lazy" decoding="async" />
+    <div class="how-it-works__shade" aria-hidden="true"></div>
+    <div class="how-it-works__caption">
+      <p>Загружаете фото автомобиля</p>
+      <span>01 / PHOTO</span>
+    </div>
+  </article>
+
+  <span class="how-it-works__connector how-it-works__plus how-it-works__plus--photo-wheel" aria-hidden="true">+</span>
+
+  <article class="how-it-works__stage how-it-works__stage--wheel">
+    <div class="how-it-works__wheel-stack">
+      <div class="how-it-works__object-card how-it-works__wheel-card">
+        <img class="how-it-works__wheel" src={wheel.src} width={wheel.width} height={wheel.height} alt={wheel.alt} loading="lazy" decoding="async" />
+      </div>
+      <div class="how-it-works__wheel-card-copy">
+        <strong>Race Ready CSS3347</strong>
+        <small>8,5/19&quot; 5x108 ET45 DIA63,4 MK/M</small>
+      </div>
+      <div class="how-it-works__wheel-details">
+        <div class="how-it-works__caption">
+          <p>Выбираете диск</p>
+          <span>02 / WHEEL</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <span class="how-it-works__connector how-it-works__plus" aria-hidden="true">+</span>
+
+  <article class="how-it-works__stage how-it-works__stage--try-on">
+    <div class="how-it-works__try-on-stack">
+      <div class="how-it-works__object-card how-it-works__process-card">
+        <img class="how-it-works__vortex" src={vortex.src} width={vortex.width} height={vortex.height} alt={vortex.alt} loading="lazy" decoding="async" />
+      </div>
+      <div class="how-it-works__process-label">
+        <strong>AI MODEL</strong>
+        <small>DIFFUSION MODEL</small>
+      </div>
+      <div class="how-it-works__caption">
+        <p>Визуализируем</p>
+        <span>03 / VISUAL TRY-ON</span>
+      </div>
+    </div>
+  </article>
+
+  <svg class="how-it-works__connector how-it-works__arrow" viewBox="0 0 46 24" aria-hidden="true" focusable="false">
+    <path d="M0 9.5h33V0l13 12-13 12v-9.5H0z" />
+  </svg>
+
+  <article class="how-it-works__stage how-it-works__stage--result">
+    <img class="how-it-works__image" src={result.src} width={result.width} height={result.height} alt={result.alt} loading="lazy" decoding="async" />
+    <div class="how-it-works__shade" aria-hidden="true"></div>
+    <div class="how-it-works__caption">
+      <p>Видите результат до установки</p>
+      <span>04 / RESULT</span>
+    </div>
+  </article>
+</section>

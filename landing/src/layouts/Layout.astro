@@ -2,7 +2,7 @@
 import '../styles/global.css';
 
 interface Props { title?: string; }
-const { title = 'Dream Wheels AI — Примерьте стиль на своей машине' } = Astro.props;
+const { title = 'КОЛЕСА МЕЧТЫ — Примерьте стиль на своей машине' } = Astro.props;
 ---
 
 <!doctype html>
@@ -14,14 +14,36 @@ const { title = 'Dream Wheels AI — Примерьте стиль на свое
     <meta name="description" content="Примерьте диски на своей машине и проверьте предварительную совместимость." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Inter+Tight:wght@500;600&display=swap&subset=cyrillic,latin" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Inter+Tight:ital,wght@0,500;0,600;1,500;1,600&display=swap&subset=cyrillic,latin" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
   </head>
   <body>
     <slot />
     <script>
+      import { getAppTarget } from '../lib/attribution';
+      import { trackEvent } from '../lib/analytics';
+
       document.documentElement.dataset.motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full';
+      document.querySelectorAll<HTMLAnchorElement>('[data-login-link]').forEach((link) => {
+        link.href = getAppTarget();
+        link.addEventListener('click', () => trackEvent('login_clicked'));
+      });
+      document.querySelectorAll<HTMLAnchorElement>('[data-app-target]').forEach((link) => {
+        link.href = getAppTarget();
+      });
+      document.querySelectorAll<HTMLAnchorElement>('[data-catalog-link]').forEach((link) => {
+        link.addEventListener('click', () => trackEvent('catalog_clicked', { source: link.dataset.catalogSource ?? 'header' }));
+      });
+      document.querySelectorAll<HTMLAnchorElement>('[data-faq-link]').forEach((link) => {
+        link.addEventListener('click', () => trackEvent('faq_clicked', { source: link.dataset.faqSource ?? 'header' }));
+      });
+      document.querySelectorAll<HTMLAnchorElement>('[data-support-link]').forEach((link) => {
+        link.addEventListener('click', () => trackEvent('support_clicked', { source: link.dataset.supportSource }));
+      });
+      document.querySelectorAll<HTMLAnchorElement>('[data-contact-link]').forEach((link) => {
+        link.addEventListener('click', () => trackEvent('contact_clicked', { source: link.dataset.contactSource }));
+      });
       window.dispatchEvent(new CustomEvent('dreamwheels:landing-viewed'));
     </script>
   </body>

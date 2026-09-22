@@ -1,0 +1,73 @@
+{
+  "reference": {
+    "path": "/Users/nikolai/Downloads/zeekr-styled-landing.png",
+    "widthPx": 1024,
+    "heightPx": 1536,
+    "aspectRatio": "2:3",
+    "measurementMethod": "Visual reconstruction from the native raster. Values marked approximate are not pixel-perfect claims."
+  },
+  "global": {
+    "horizontalGutterPx": 51,
+    "horizontalGutterPercentOfFullViewportWidth": 4.98,
+    "contentWidthPx": 922,
+    "contentWidthPercentOfFullViewportWidth": 90.04,
+    "background": "#050b0e",
+    "referenceSampledLimeApprox": "#C2E823",
+    "accentSamplingNote": "This is an independently sampled raster value, not a claim about the original CSS token. Final implementation should visually match the approved raster.",
+    "sectionBoundariesPx": [
+      { "id": "hero", "start": 0, "end": 372, "certainty": "high" },
+      { "id": "catalog", "start": 372, "end": 744, "certainty": "high" },
+      { "id": "two_questions", "start": 744, "end": 923, "certainty": "medium" },
+      { "id": "how_and_video", "start": 923, "end": 1130, "certainty": "medium" },
+      { "id": "before_after_primary_cta", "start": 1130, "end": 1310, "certainty": "high" },
+      { "id": "faq", "start": 1310, "end": 1476, "certainty": "high" },
+      { "id": "footer_social", "start": 1476, "end": 1536, "certainty": "high" }
+    ]
+  },
+  "hero": {
+    "mediaField": {
+      "x": 252,
+      "y": 0,
+      "width": 772,
+      "height": 372,
+      "widthPercentOfFullViewportWidth": 75.39,
+      "certainty": "medium"
+    },
+    "visibleCarSilhouette": {
+      "x": 334,
+      "y": 115,
+      "width": 580,
+      "height": 221,
+      "widthPercentOfFullViewportWidth": 56.64,
+      "certainty": "medium"
+    }
+  },
+  "miniCatalog": {
+    "region": { "x": 51, "y": 372, "width": 922, "height": 372 },
+    "regionWidthPercentOfFullViewportWidth": 90.04,
+    "regionHeightPercentOfFullPageHeight": 24.22,
+    "vehicleSelector": { "x": 51, "y": 411, "width": 188, "widthPercentOfFullViewportWidth": 18.36, "itemHeight": 45, "gap": 10, "orientation": "vertical", "certainty": "high" },
+    "wheelSelector": { "x": 311, "y": 411, "width": 580, "widthPercentOfFullViewportWidth": 56.64, "height": 90, "itemWidth": 102, "gap": 18, "itemsVisible": 5, "certainty": "medium" },
+    "wheelControls": { "x": 921, "y": 388, "size": 24, "gap": 8, "certainty": "medium" },
+    "garageScene": {
+      "mediaPlane": {
+        "xApprox": 0,
+        "yApprox": 502,
+        "rightEdgeApprox": 734,
+        "bottomEdgeApprox": 744,
+        "boundType": "faded full-bleed photographic plane integrated into the page field; not a literal DOM container",
+        "certainty": "low"
+      }
+    },
+    "catalogFocusArea": { "x": 160, "y": 522, "width": 530, "height": 222, "widthPercentOfContentField": 57.48, "heightPercentOfCatalogSection": 59.68, "meaning": "dominant visual/focus area only; not a rectangular image-card bound", "certainty": "medium" },
+    "carBounds": { "x": 177, "y": 546, "width": 500, "height": 180, "widthPercentOfFullViewportWidth": 48.83, "heightPercentOfCatalogSection": 48.39, "certainty": "medium" },
+    "specificationRail": { "x": 734, "y": 524, "width": 238, "widthPercentOfFullViewportWidth": 23.24, "height": 206, "certainty": "high" },
+    "implementationWarning": "The measured catalogFocusArea MUST NOT be implemented as a rectangular image card or visible container. The approved design uses a full-bleed/faded photographic plane integrated into the page field.",
+    "dominantRatios": {
+      "catalogFocusAreaPercentOf922pxContentFieldWidth": 57.5,
+      "specificationRailPercentOf922pxContentFieldWidth": 25.8,
+      "leftVehicleSelectorPercentOf922pxContentFieldWidth": 20.4,
+      "carBoundsHeightPercentOf372pxCatalogSectionHeight": 48.4
+    }
+  }
+}
