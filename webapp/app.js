@@ -8767,6 +8767,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         haptic(deleting ? "light" : "success");
         renderRenders();
         renderDashboard();
+        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
         return;
     }
     const identity = getIdentityPayload({ includeTelegramUserId: true });
@@ -8790,6 +8791,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
     }
     setFeedbackRecord(jobId, optimisticFeedback);
     renderRenders();
+    if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
 
     try {
         const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/feedback`), {
@@ -8832,6 +8834,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
         state.feedbackBusyByJob[jobId] = false;
         renderRenders();
         renderDashboard();
+        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
     }
 }
 
