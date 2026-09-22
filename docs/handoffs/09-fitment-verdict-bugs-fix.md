@@ -274,3 +274,184 @@ Largus 2019" job from the original audit.
 
 **Net status: 2 of 3 code items (1, 2) confirmed fixed live. Item 3 needs a
 follow-up fix before this handoff can close.**
+
+## Item 3 reopened, PR #182 hypothesis retracted — confirmed root cause (2026-09-22)
+
+Item 5 is closed: the product owner confirmed with Codex that Render logs
+for the audited invoice show a clean fail-callback — config and code are
+both fine, no reconciliation gap for that specific payment.
+
+Item 3's first reopening spec (below, superseded) proposed an orphaned
+`rim_spec` row from a staggered→uniform toggle as the cause. **The product
+owner queried the staging DB directly and disproved this**: for
+`rim_setup_id=f28f8950-8306-47e8-891c-d32e3fb3bd95`, `is_staggered = false`,
+`front_rim_spec_id = rear_rim_spec_id`, and both axles have `offset_et_mm =
+40.0`. Do not implement the staggered/uniform-toggle fix or the per-axle
+frontend guard described below this section — they would fix a bug that
+doesn't exist. That section is kept for context only; the confirmed cause
+and fix are in this one.
+
+### Confirmed root cause: stale cached Check, not a live rule-evaluation bug
+
+The auditor queried the live API directly (extracted the bearer token from
+`sessionStorage.dreamWheelsWebsiteAuth` in the browser session, called
+`GET /api/backend/fitment/checks?...` and
+`GET /api/backend/fitment/checks/{id}`):
+
+- The check's `reasons` array has **only** `et_outside_reference_range` on
+  both `front` and `rear` axles — `rim_offset_missing` does not appear
+  anywhere in the current data. The per-axle divergence theory is fully
+  disproved by the live API response, matching the DB finding.
+- The check's `evaluated_at` is `2026-09-21T19:56:05` — **before** PR #180's
+  fix commits (`bbbc16e`/`973e7d2`/`aa908e8`, dated 2026-09-22T00:04-00:06)
+  even existed.
+- Clicking "Проверить ещё раз" in the UI and immediately re-querying the API
+  confirmed: **the same check `id`, the same `evaluated_at`** is returned.
+  The button does not force re-evaluation when the vehicle/rim input hash is
+  unchanged — it serves the existing `is_current` row as-is.
+- That frozen row's `missing_fields: ["offset_et"]` was computed by
+  `assemble_verdict()`/`_MISSING_FIELD_BY_REASON` **at evaluation time**,
+  using the pre-PR#180 mapping that still included
+  `et_outside_reference_range → "offset_et"`. The code fix in
+  `src/fitment/rules/verdict.py` is correct and would produce the right
+  `missing_fields` for a *newly evaluated* check — it just never got the
+  chance to run against this (or any other) already-computed check.
+
+This also explains why item 2 (the `ET50–50` → `ET50` copy fix) looked
+correctly fixed on this exact same stale check: that fix is purely a
+frontend formatting change applied to whatever `reference_et_min_mm`/
+`reference_et_max_mm` values are in the (unchanged, already-correct-in-that-
+regard) stored data. Item 3's fix is backend-computed and stored once, so it
+never benefited from the redeploy the way item 2's client-side fix did.
+
+The check response includes `"versions": {"provider": "wheel_size",
+"engine": "v2", "rules": "v2"}` — a rules-version field that exists,
+presumably, precisely to let currentness logic detect "the rules changed,
+this cached verdict needs re-evaluation." PR #180 did not bump it.
+
+### Required work
+
+1. **Bump the rules version** (e.g. `"v2"` → `"v3"`) as part of any future
+   change to verdict-assembly/reason-code logic — including, retroactively
+   for this fix, a version bump alongside it if not already released as
+   part of PR #180 (confirm current deployed value first).
+2. **Make currentness/`is_current` logic version-aware**: a stored check
+   whose `versions.rules` doesn't match the currently-deployed rules version
+   should not be served as-is on a "check again" request — it should
+   trigger a genuine re-evaluation (re-run `assemble_verdict()` against the
+   existing, unchanged vehicle/rim data; no new provider call needed since
+   the input data hasn't changed, only the local rule/copy logic has).
+   Find wherever check idempotency/currentness is decided (likely
+   `src/fitment_checks_api.py`, the `_check_is_current`-style logic
+   referenced in earlier audits) and add the rules-version comparison there.
+3. **Backfill/cleanup consideration**: decide whether pre-existing checks
+   computed under the old rules version should be lazily re-evaluated on
+   next access (preferred, matches point 2) or need an explicit one-time
+   pass. Prefer lazy — avoids a migration and self-heals as users revisit
+   checks.
+4. **Regression test**: a test that creates a check under a simulated old
+   `rules` version with the buggy `missing_fields`, then asserts that
+   re-requesting it against the current rules version triggers
+   re-evaluation and returns the corrected `missing_fields`/`reasons`.
+
+### Manual verification (auditor, browser, post-deploy)
+
+1. Re-run the exact same repro (Lada Largus job, `rim_setup_id=
+   f28f8950-...`) — click "Проверить ещё раз" and confirm via the UI (or a
+   direct API call, same technique as above) that the check gets a **new**
+   `evaluated_at` and `missing_fields` no longer contains `"offset_et"` for
+   an axle where ET was supplied and used.
+2. Confirm the "Укажите ET" hint no longer renders alongside the correct
+   ET40/ET50 explanation.
+3. Spot-check one more, unrelated existing check (e.g. the original Zeekr
+   001 job) to confirm the version-aware re-evaluation doesn't regress a
+   verdict that was already correct.
+
+---
+
+## Superseded: original (incorrect) item 3 reopening spec — kept for context only
+
+The section below was the first reopening attempt, based on a static-code
+hypothesis that a staggered→uniform toggle left an orphaned `rim_spec` row.
+**This was disproved by a direct staging DB query** (see above) — do not
+implement anything in this section.
+## Item 3 reopened — root cause and fix spec (2026-09-22)
+
+Item 5 is now closed: the product owner confirmed with Codex that Render logs
+for the audited invoice show a clean fail-callback — config and code are
+both fine, no reconciliation gap for that specific payment. No further
+action needed on item 5.
+
+A follow-up read-only investigation found the **actual** mechanism behind
+item 3, and it is not what the original PR #180 fix targeted.
+
+### Root cause
+
+The "❓ Укажите ET колесного диска для технической проверки" hint is **not**
+driven by `missing_fields`/readiness at all — PR #180's fix
+(`src/fitment/rules/verdict.py`, `_MISSING_FIELD_BY_REASON`) patched the
+wrong layer. The hint actually comes from `webapp/app.js:2971-2988`, which
+renders `check.blocking_issues`/`conditions`/`advisories` — three arrays
+returned directly by the compatibility-check API, one line per item, via
+`fitmentVerdictMessage()` (`app.js:2406-2448`). Line 2416-2417 renders the
+"Укажите ET" hint whenever an item has `code === "rim_offset_missing"`,
+completely independent of `missing_fields`.
+
+`src/fitment/rules/engine.py:42-45` runs `check_size_and_offset` separately
+for `front` and `rear` axles. For this job it is producing **two different
+results**: front axle → `et_outside_reference_range` (ET40 vs ET50, shown
+correctly per item 2's fix), rear axle → `rim_offset_missing` (shown as the
+stale-looking hint). These are two genuinely different `RuleResult`s from
+two different rule evaluations, both surfaced as separate verdict lines —
+not a copy-paste display bug.
+
+**Why would the axles differ in "uniform" mode?** `insert_rim_setup`
+(`src/identity_service.py:604-622`) sets `front_rim_spec_id ==
+rear_rim_spec_id` (same row) for a uniform setup, so they normally can't
+diverge. The strong suspect (medium confidence, **not yet confirmed against
+the actual DB row** — no DB access in the investigation) is the
+staggered↔uniform toggle path: `src/jobs_api.py:3740-3899` clones the front
+row into a new, separate rear row when switching to staggered mode; the
+"switch back to uniform" branch at `src/jobs_api.py:3900-3910` only
+re-points `rear_rim_spec_id = front_rim_spec_id` when a `setup_changed` flag
+is truthy. If mode was ever toggled staggered→uniform (or that flag didn't
+line up), the rear row stays orphaned. Subsequent uniform-mode edits
+(`src/jobs_api.py:3682-3724`) only `UPDATE rim_specs ... WHERE id =
+front_rim_spec_id` — so the front row gets ET=40 while the orphaned rear row
+keeps its stale/NULL `offset_et_mm`, producing exactly the observed split.
+
+### Required work
+
+1. **Confirm before fixing**: query the `rim_setups` row for
+   `rim_setup_id=f28f8950-8306-47e8-891c-d32e3fb3bd95` (the audited Lada
+   Largus job) — check whether `front_rim_spec_id != rear_rim_spec_id`
+   despite `is_staggered = false`. This confirms or rules out the toggle
+   theory before any code changes.
+2. **Backend fix** (if confirmed): repair the staggered→uniform toggle so
+   `rear_rim_spec_id` always re-converges to `front_rim_spec_id` on that
+   transition, not gated on a `setup_changed` flag that can fail to be true
+   when it should. Evaluate whether a one-time backfill/repair pass is
+   needed for any existing `rim_setups` rows already in this orphaned state
+   (`is_staggered = false` but `front_rim_spec_id != rear_rim_spec_id`).
+3. **Frontend defense-in-depth**: in `fitmentVerdictMessage()`/
+   `renderFitmentVerdictGroup`, don't render a `rim_offset_missing` line for
+   an axle the user never directly edited when `setup_mode === "uniform"`
+   and the visible ET field is filled. This masks the symptom for any
+   pre-existing orphaned rows without waiting on a backfill, but the
+   backend fix in item 2 above is the real correctness fix — don't treat
+   the frontend guard as sufficient on its own.
+4. Add regression coverage: a Python test asserting that toggling
+   staggered→uniform always converges `rear_rim_spec_id` to
+   `front_rim_spec_id`, and a Node test asserting the verdict UI doesn't
+   show `rim_offset_missing` for the non-edited axle in uniform mode when
+   the shared ET value is present.
+
+### Manual verification (auditor, browser, post-deploy)
+
+Re-run the exact repro: open the Lada Largus job's Fitment, "Колесный диск"
+tab, confirm setup mode is "Одинаковые параметры спереди и сзади", run
+"Проверить ещё раз", confirm the "Укажите ET" hint no longer appears
+alongside the correct ET40/ET50 explanation. If the DB investigation in
+step 1 finds this specific job's row is unrecoverably orphaned pre-fix, use
+a fresh job instead to verify the fix going forward, and separately confirm
+whichever backfill/repair approach was chosen for existing rows.
