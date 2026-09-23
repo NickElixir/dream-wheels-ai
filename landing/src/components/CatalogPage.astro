@@ -1,0 +1,18 @@
+---
+import SiteHeader from './SiteHeader.astro';
+import MiniCatalog from './MiniCatalog';
+import Layout from '../layouts/Layout.astro';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n';
+interface Props { locale: Locale; preview?: boolean; }
+const { locale, preview = false } = Astro.props;
+const copy = getDictionary(locale).catalog;
+---
+
+<Layout locale={locale} page="catalog" preview={preview}>
+  <SiteHeader locale={locale} page="catalog" preview={preview} />
+  <main class="catalog-page">
+    <header class="catalog-page-heading"><h1>{copy.title}</h1><p>{copy.subtitle}</p></header>
+    <section class="catalog-section catalog-section--page" aria-label={copy.title}><MiniCatalog locale={locale} client:load /></section>
+  </main>
+</Layout>

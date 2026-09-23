@@ -1,10 +1,13 @@
 import { useRef, useState } from 'preact/hooks';
 import { getAppTarget } from '../lib/attribution';
 import { trackEvent } from '../lib/analytics';
+import { getDictionary, getLocalizedUrl } from '../i18n';
+import type { Locale } from '../i18n';
 
 const initialPosition = 50;
 
-export default function BeforeAfter() {
+export default function BeforeAfter({ locale, preview = false }: { locale: Locale; preview?: boolean }) {
+  const copy = getDictionary(locale).comparison;
   const [position, setPosition] = useState(initialPosition);
   const hasTrackedInteraction = useRef(false);
   const isDragging = useRef(false);
@@ -37,11 +40,11 @@ export default function BeforeAfter() {
         class="before-after-slider"
         style={{ '--split': `${position}%` }}
         role="slider"
-        aria-label="Сравнение исходных и выбранных дисков"
+        aria-label={copy.sliderLabel}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(position)}
-        aria-valuetext={`${Math.round(position)}%: до слева, после справа`}
+        aria-valuetext={copy.valueText(Math.round(position))}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={(event) => {
@@ -63,23 +66,23 @@ export default function BeforeAfter() {
         onPointerCancel={() => { isDragging.current = false; }}
         onDragStart={(event) => event.preventDefault()}
       >
-        <img class="before-after-image" src="/assets/mock/after.webp" width="1672" height="941" alt="Geely Monjaro с дисками X'trike X-141" loading="lazy" decoding="async" draggable={false} />
+        <img class="before-after-image" src="/assets/mock/after.webp" width="1672" height="941" alt={copy.imageAlt} loading="lazy" decoding="async" draggable={false} />
         <div class="before-after-before" aria-hidden="true">
           <img class="before-after-image" src="/assets/mock/before.webp" width="1672" height="941" alt="" loading="lazy" decoding="async" draggable={false} />
         </div>
         <div class="before-after-overlay" aria-hidden="true"></div>
         <header class="before-after-heading">
-          <p>ПРИМЕР ВИЗУАЛИЗАЦИИ</p>
+          <p>{copy.eyebrow}</p>
           <h2 id="monjaro-comparison-title">Geely Monjaro</h2>
         </header>
         <div class="before-after-labels" aria-hidden="true">
           <div class="before-after-label before-after-label--before">
-            <span class="before-after-label__state">ДО</span>
+            <span class="before-after-label__state">{copy.before}</span>
             <strong>Geely Monjaro <span class="before-after-label__mobile-break">Exclusive OEM</span></strong>
             <small>8/20&quot; 5x108 ET52 DIA63,4</small>
           </div>
           <div class="before-after-label before-after-label--after">
-            <span class="before-after-label__state">ПОСЛЕ</span>
+            <span class="before-after-label__state">{copy.after}</span>
             <strong>X&apos;trike X-141</strong>
             <small>8/20&quot; 5x108 ET52 DIA63,35</small>
           </div>
@@ -87,8 +90,8 @@ export default function BeforeAfter() {
         <div class="before-after-divider" aria-hidden="true"><span class="before-after-handle"><i>‹</i><i>›</i></span></div>
       </div>
       <div class="before-after-actions">
-        <a class="button button-lime button-tactile before-after-primary" href={getAppTarget()} data-app-target onClick={() => trackEvent('primary_cta_clicked', { source: 'monjaro_slider' })}>Попробовать на своей машине</a>
-        <a class="before-after-catalog-link" href="/catalog" onClick={() => trackEvent('catalog_clicked', { source: 'monjaro_slider' })}>Смотреть каталог дисков <span aria-hidden="true">→</span></a>
+        <a class="button button-lime button-tactile before-after-primary" href={getAppTarget()} data-app-target onClick={() => trackEvent('primary_cta_clicked', { source: 'monjaro_slider' })}>{copy.cta}</a>
+        <a class="before-after-catalog-link" href={preview ? getLocalizedUrl({ locale, pathname: '/catalog', preview: true }) : '/catalog'} onClick={() => trackEvent('catalog_clicked', { source: 'monjaro_slider' })}>{copy.catalog} <span aria-hidden="true">→</span></a>
       </div>
     </section>
   );

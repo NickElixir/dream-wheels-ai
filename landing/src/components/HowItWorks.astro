@@ -1,9 +1,13 @@
 ---
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n';
+interface Props { locale: Locale; }
+const copy = getDictionary(Astro.props.locale).howItWorks;
 const source = {
   src: '/assets/how-it-works/zeekr-source-normalized.png',
   width: 2048,
   height: 2048,
-  alt: 'Оранжевый Zeekr 001 до виртуальной примерки дисков',
+  alt: copy.sourceAlt,
 };
 
 const wheel = {
@@ -17,23 +21,23 @@ const result = {
   src: '/assets/how-it-works/zeekr-result-normalized.png',
   width: 2048,
   height: 2048,
-  alt: 'Оранжевый Zeekr 001 после виртуальной примерки Race Ready CSS3347',
+  alt: copy.resultAlt,
 };
 
 const vortex = {
   src: '/assets/how-it-works/dream-wheels-vortex-transparent.png',
   width: 1122,
   height: 1402,
-  alt: 'Абстрактная графика этапа визуальной обработки Колеса Мечты',
+  alt: copy.vortexAlt,
 };
 ---
 
-<section class="how-it-works" id="how-it-works" aria-label="Как работает примерка дисков">
+<section class="how-it-works" id="how-it-works" aria-label={copy.sectionLabel}>
   <article class="how-it-works__stage how-it-works__stage--photo">
     <img class="how-it-works__image" src={source.src} width={source.width} height={source.height} alt={source.alt} loading="lazy" decoding="async" />
     <div class="how-it-works__shade" aria-hidden="true"></div>
     <div class="how-it-works__caption">
-      <p>Загружаете фото автомобиля</p>
+      <p>{copy.photo}</p>
       <span>01 / PHOTO</span>
     </div>
   </article>
@@ -51,7 +55,7 @@ const vortex = {
       </div>
       <div class="how-it-works__wheel-details">
         <div class="how-it-works__caption">
-          <p>Выбираете диск</p>
+          <p>{copy.wheel}</p>
           <span>02 / WHEEL</span>
         </div>
       </div>
@@ -66,11 +70,11 @@ const vortex = {
         <img class="how-it-works__vortex" src={vortex.src} width={vortex.width} height={vortex.height} alt={vortex.alt} loading="lazy" decoding="async" />
       </div>
       <div class="how-it-works__process-label">
-        <strong>AI MODEL</strong>
+        <strong>DREAM WHEELS AI</strong>
         <small>DIFFUSION MODEL</small>
       </div>
       <div class="how-it-works__caption">
-        <p>Визуализируем</p>
+        <p>{copy.visualize}</p>
         <span>03 / VISUAL TRY-ON</span>
       </div>
     </div>
@@ -84,7 +88,7 @@ const vortex = {
     <img class="how-it-works__image" src={result.src} width={result.width} height={result.height} alt={result.alt} loading="lazy" decoding="async" />
     <div class="how-it-works__shade" aria-hidden="true"></div>
     <div class="how-it-works__caption">
-      <p>Видите результат до установки</p>
+      <p>{copy.result}</p>
       <span>04 / RESULT</span>
     </div>
   </article>

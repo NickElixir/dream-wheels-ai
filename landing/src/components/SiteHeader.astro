@@ -1,11 +1,36 @@
+---
+import { getDictionary, getLocalizedUrl } from '../i18n';
+import type { Locale } from '../i18n';
+import { domainI18nEnabled } from '../i18n/config';
+interface Props { locale: Locale; preview?: boolean; page: 'landing' | 'catalog'; }
+const { locale, preview = false, page } = Astro.props;
+const copy = getDictionary(locale).nav;
+const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
+const otherLocale: Locale = locale === 'ru' ? 'en' : 'ru';
+const otherPath = page === 'catalog' ? '/catalog' : '/';
+const otherHref = getLocalizedUrl({ locale: otherLocale, pathname: otherPath, preview: !domainI18nEnabled });
+---
 <header class="site-header">
-  <a class="wordmark" href="/" aria-label="КОЛЕСА МЕЧТЫ — на главную">КОЛЕСА МЕЧТЫ</a>
-  <nav class="main-nav" aria-label="Основная навигация">
-    <a href="/catalog" data-catalog-link>Каталог</a>
-    <a href="/#how-it-works">Как это работает</a>
-    <a href="/#faq">FAQ</a>
+  <a class="wordmark" href={local('/')} aria-label={copy.homeLabel}>{copy.brand}</a>
+  <nav class="main-nav" aria-label={copy.navigationLabel}>
+    <a href={local('/catalog')} data-catalog-link>{copy.catalog}</a>
+    <a href={`${local('/')}#how-it-works`}>{copy.howItWorks}</a>
+    <a href={`${local('/')}#faq`}>{copy.faq}</a>
   </nav>
   <div class="header-actions">
-    <a class="button button-graphite button-tactile action-type login-link" href="https://dreamwheels.pro/app/new" data-login-link>Войти</a>
+    <nav class="language-switch" aria-label={copy.languageLabel} data-domain-i18n={domainI18nEnabled}>
+      {locale === 'ru' ? <span aria-current="true">RU</span> : <a href={otherHref} data-language-target="ru">RU</a>}
+      <span aria-hidden="true">|</span>
+      {locale === 'en' ? <span aria-current="true">EN</span> : <a href={otherHref} data-language-target="en">EN</a>}
+    </nav>
+    <a class="button button-graphite button-tactile action-type login-link" href="https://dreamwheels.pro/app/new" data-login-link>{copy.login}</a>
   </div>
 </header>
+<script>
+  import { getLocalizedUrl } from '../i18n';
+  document.querySelectorAll<HTMLAnchorElement>('[data-language-target]').forEach((link) => {
+    const locale = link.dataset.languageTarget === 'en' ? 'en' : 'ru';
+    const preview = link.closest('[data-domain-i18n]')?.getAttribute('data-domain-i18n') !== 'true';
+    link.href = getLocalizedUrl({ locale, pathname: window.location.pathname, search: window.location.search, preview }) + window.location.hash;
+  });
+</script>

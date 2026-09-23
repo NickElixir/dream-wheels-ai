@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Picture } from 'astro:assets';
+import heroImage from '../assets/hero/hero-geely-monjaro-refined.png';
+import TwoQuestions from './TwoQuestions';
+import HowItWorks from './HowItWorks.astro';
+import BeforeAfter from './BeforeAfter';
+import SiteHeader from './SiteHeader.astro';
+import Faq from './Faq';
+import SiteFooter from './SiteFooter.astro';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n';
+import { domainI18nEnabled } from '../i18n/config';
+interface Props { locale: Locale; preview?: boolean; }
+const { locale, preview = false } = Astro.props;
+const copy = getDictionary(locale);
+---
+
+<Layout locale={locale} page="landing" preview={preview}>
+  <SiteHeader locale={locale} page="landing" preview={preview} />
+  <main>
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-media" aria-label={copy.hero.imageAlt}>
+        <Picture src={heroImage} widths={[640, 960, 1280, 1600, 1920]} sizes="100vw" formats={['avif', 'webp']} fallbackFormat="jpg" alt={copy.hero.imageAlt} loading="eager" fetchpriority="high" />
+        <div class="hero-media-shade" aria-hidden="true"></div>
+        <div class="hero-caption"><span>{copy.hero.slogan[0]}<br />{copy.hero.slogan[1]}<br />{copy.hero.slogan[2]}</span></div>
+      </div>
+      <div class="hero-copy">
+        <h1 id="hero-title"><span class="hero-welcome">{copy.hero.welcome}</span><span class="hero-brand">{copy.hero.brand}</span></h1>
+        <p class="hero-subtitle">{copy.hero.subtitle[0]}<br />{copy.hero.subtitle[1]}</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button button-lime button-tactile action-type hero-cta" href="https://dreamwheels.pro/app/new" data-primary-cta>{copy.hero.cta}</a>
+        <span class="hero-cta-note">{copy.hero.helper}</span>
+      </div>
+    </section>
+    <TwoQuestions locale={locale} />
+    <HowItWorks locale={locale} />
+    <BeforeAfter locale={locale} preview={preview && !domainI18nEnabled} client:load />
+    <Faq locale={locale} client:load />
+  </main>
+  <SiteFooter locale={locale} preview={preview} />
+  <script>
+    import { getAppTarget } from '../lib/attribution';
+    import { trackEvent } from '../lib/analytics';
+    document.querySelectorAll<HTMLAnchorElement>('[data-primary-cta]').forEach((link) => {
+      link.href = getAppTarget();
+      link.addEventListener('click', () => trackEvent('primary_cta_clicked', { source: link.dataset.primarySource ?? 'hero' }));
+    });
+    window.addEventListener('dreamwheels:landing-viewed', () => trackEvent('landing_viewed'));
+  </script>
+</Layout>

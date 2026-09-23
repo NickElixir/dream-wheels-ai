@@ -1,21 +1,28 @@
 ---
 const supportUrl = 'https://t.me/dreamwheelsai';
 const legalBaseUrl = 'https://dream-wheels-ai-legal.vercel.app/legal';
+import { getDictionary, getLocalizedUrl } from '../i18n';
+import type { Locale } from '../i18n';
+import { domainI18nEnabled } from '../i18n/config';
+interface Props { locale: Locale; preview?: boolean; }
+const { locale, preview = false } = Astro.props;
+const copy = getDictionary(locale);
+const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
 ---
 
 <footer class="site-footer" id="contacts">
   <div class="site-footer__brand">
-    <strong>КОЛЕСА МЕЧТЫ</strong>
-    <small>© 2026 КОЛЕСА МЕЧТЫ</small>
+    <strong>{copy.footer.brand}</strong>
+    <small>{copy.footer.copyright}</small>
   </div>
-  <nav class="site-footer__links" aria-label="Навигация в footer">
-    <a href="/catalog" data-catalog-link data-catalog-source="footer">Каталог</a>
-    <a href="/#faq" data-faq-link data-faq-source="footer">FAQ</a>
-    <a href={supportUrl} target="_blank" rel="noreferrer" data-support-link data-support-source="footer">Поддержка</a>
+  <nav class="site-footer__links" aria-label={copy.footer.navigationLabel}>
+    <a href={local('/catalog')} data-catalog-link data-catalog-source="footer">{copy.nav.catalog}</a>
+    <a href={`${local('/')}#faq`} data-faq-link data-faq-source="footer">{copy.nav.faq}</a>
+    <a href={supportUrl} target="_blank" rel="noreferrer" data-support-link data-support-source="footer">{copy.footer.support}</a>
     <a href="mailto:dreamwheelsai@yandex.ru" data-contact-link data-contact-source="footer_email">dreamwheelsai@yandex.ru</a>
   </nav>
   <div class="site-footer__legal">
-    <a href={`${legalBaseUrl}/privacy`} target="_blank" rel="noreferrer">Политика конфиденциальности</a>
-    <a href={`${legalBaseUrl}/offer`} target="_blank" rel="noreferrer">Пользовательское соглашение</a>
+    <a href={`${legalBaseUrl}/privacy`} target="_blank" rel="noreferrer">{copy.footer.privacy}</a>
+    <a href={`${legalBaseUrl}/offer`} target="_blank" rel="noreferrer">{copy.footer.agreement}</a>
   </div>
 </footer>

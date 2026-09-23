@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getVariant, getVariantsForVehicle, getVehicle, getWheel, vehicles, wheels } from '../data/catalog';
 import { trackEvent } from '../lib/analytics';
 import { sanitizeFavoriteIds, toggleFavoriteIds } from '../lib/favorites';
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n';
 
 const FAVORITES_KEY = 'dreamwheels:landing:favorites:v1';
 const FALLBACK_IMAGE = '/assets/mock/vehicle-fallback.svg';
@@ -21,7 +23,8 @@ function readFavorites(): string[] {
   try { return sanitizeFavoriteIds(JSON.parse(window.localStorage.getItem(FAVORITES_KEY) ?? '[]')); } catch { return []; }
 }
 
-export default function MiniCatalog() {
+export default function MiniCatalog({ locale }: { locale: Locale }) {
+  const copy = getDictionary(locale).catalog;
   const [vehicleId, setVehicleId] = useState(vehicles[0].id);
   const [wheelId, setWheelId] = useState(wheels[0].id);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -34,7 +37,7 @@ export default function MiniCatalog() {
   const wheel = getWheel(activeWheelId) ?? wheels[0];
   const variant = getVariant(vehicle.id, activeWheelId) ?? variants[0];
   const isFavorite = variant ? favorites.includes(variant.id) : false;
-  const statusLabel = variant?.compatibility.status === 'unknown' ? 'Требует проверки' : 'Предварительно совместим';
+  const statusLabel = variant?.compatibility.status === 'unknown' ? copy.unknown : copy.preliminary;
   const wheelCells = [...wheels, ...QA_WHEEL_CELLS];
 
   const selectVehicle = (next: string) => {
@@ -53,14 +56,14 @@ export default function MiniCatalog() {
     try { window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next)); } catch { /* optional persistence */ }
   };
   const specs = useMemo(() => [
-    ['Диаметр', `R${wheel.diameter}`], ['Ширина', `${wheel.width}J`], ['PCD', wheel.pcd], ['Вылет', `ET${wheel.et}`], ['DIA', `${wheel.dia}`],
-  ], [wheel]);
+    [copy.diameter, `R${wheel.diameter}`], [copy.width, `${wheel.width}J`], ['PCD', wheel.pcd], [copy.offset, `ET${wheel.et}`], ['DIA', `${wheel.dia}`],
+  ], [wheel, locale]);
 
   return (
     <div class="catalog-shell">
       <div class="catalog-grid">
-        <aside class="vehicle-rail" aria-label="Выберите автомобиль">
-          <span class="vehicle-label">Выберите автомобиль</span>
+        <aside class="vehicle-rail" aria-label={copy.selectVehicle}>
+          <span class="vehicle-label">{copy.selectVehicle}</span>
           <div class="vehicle-list">
             {vehicles.map((item) => <button key={item.id} type="button" class={`vehicle-row ${item.id === vehicle.id ? 'is-active' : ''}`} aria-pressed={item.id === vehicle.id} onClick={() => selectVehicle(item.id)}>
               <img class="vehicle-avatar" src={PROFILE_AVATARS[item.id] ?? item.image.src} alt="" width="1672" height="941" loading="lazy" onError={(event) => { event.currentTarget.src = item.image.src || FALLBACK_IMAGE; }} />
@@ -70,30 +73,30 @@ export default function MiniCatalog() {
         </aside>
 
         <div class="catalog-main">
-          <span class="wheel-label">Выберите диски</span>
-          <div class="wheel-carousel" aria-label="Выберите диск">
+          <span class="wheel-label">{copy.selectWheels}</span>
+          <div class="wheel-carousel" aria-label={copy.selectWheel}>
             {wheelCells.map((item, index) => {
               const isQaPreview = index >= wheels.length;
               const selected = !isQaPreview && item.id === wheel.id;
-              return <button key={item.id} type="button" disabled={isQaPreview} class={`wheel-cell ${selected ? 'is-active' : ''} ${isQaPreview ? 'is-qa-preview' : ''} ${item.thumbnail.src.endsWith('.jpg') ? 'is-jpeg' : 'is-cutout'}`} aria-pressed={selected} aria-label={isQaPreview ? `${item.model}, preview` : `${item.model}, ${getWheel(item.id)?.finish ?? ''}`} onClick={() => !isQaPreview && selectWheel(item.id)}>
+              return <button key={item.id} type="button" disabled={isQaPreview} class={`wheel-cell ${selected ? 'is-active' : ''} ${isQaPreview ? 'is-qa-preview' : ''} ${item.thumbnail.src.endsWith('.jpg') ? 'is-jpeg' : 'is-cutout'}`} aria-pressed={selected} aria-label={isQaPreview ? `${item.model}, ${copy.preview}` : `${item.model}, ${copy.finishes[item.id] ?? ''}`} onClick={() => !isQaPreview && selectWheel(item.id)}>
                 <span class="wheel-image"><img src={item.thumbnail.src} alt="" width="640" height="640" loading="lazy" onError={(event) => { event.currentTarget.src = '/assets/mock/wheel-fallback.svg'; }} /></span>
                 <span>{item.model}</span>
               </button>;
             })}
           </div>
           <div class="garage-plane" aria-live="polite">
-            {variant && <img key={stageKey} class="garage-image" src={variant.image.src} width={variant.image.width} height={variant.image.height} alt={variant.image.alt} onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }} />}
+            {variant && <img key={stageKey} class="garage-image" src={variant.image.src} width={variant.image.width} height={variant.image.height} alt={copy.imageAlt(vehicle.displayName)} onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }} />}
           </div>
-          <section class="catalog-bottom-specs" aria-label="Параметры выбранного диска">
+          <section class="catalog-bottom-specs" aria-label={copy.specsLabel}>
             <div class="catalog-bottom-spec-title">
-              <div><h3>OZ<br />Superturismo</h3><p>A motorsport classic.</p></div>
-              <button class={`favorite-button ${isFavorite ? 'is-active' : ''}`} type="button" aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'} aria-pressed={isFavorite} onClick={toggleFavorite}>{isFavorite ? '★' : '☆'}</button>
+              <div><h3>OZ<br />Superturismo</h3><p>{copy.tagline}</p></div>
+              <button class={`favorite-button ${isFavorite ? 'is-active' : ''}`} type="button" aria-label={isFavorite ? copy.removeFavorite : copy.addFavorite} aria-pressed={isFavorite} onClick={toggleFavorite}>{isFavorite ? '★' : '☆'}</button>
             </div>
             <div class="catalog-bottom-spec-strip">
               {specs.map(([label, value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}
             </div>
             <div class="catalog-bottom-compatibility"><span class="status-check" aria-hidden="true">✓</span><div><strong>{statusLabel}</strong></div></div>
-            <p class="catalog-bottom-note">Визуальная примерка не подтверждает техническую совместимость.</p>
+            <p class="catalog-bottom-note">{copy.note}</p>
           </section>
         </div>
       </div>

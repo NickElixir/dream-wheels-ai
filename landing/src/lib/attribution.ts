@@ -1,8 +1,10 @@
 const attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'market'];
+const ruDomain = new URL('https://колесамечты.рф').hostname;
 
 export function getAppTargetFromUrl(currentUrl: string, path = '/app/new') {
   const current = new URL(currentUrl);
-  const target = new URL(`https://dreamwheels.pro${path}`);
+  const targetOrigin = current.hostname === ruDomain || current.hostname === `www.${ruDomain}` ? current.origin : 'https://dreamwheels.pro';
+  const target = new URL(path, targetOrigin);
   attributionKeys.forEach((key) => {
     const value = current.searchParams.get(key);
     if (value) target.searchParams.set(key, value);

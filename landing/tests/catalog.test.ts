@@ -36,3 +36,10 @@ test('CTA keeps supported attribution parameters and drops unrelated query value
   assert.equal(target.searchParams.get('market'), 'ru');
   assert.equal(target.searchParams.has('debug'), false);
 });
+
+test('future RU domain hands off to the app on the same host', () => {
+  const target = new URL(getAppTargetFromUrl('https://колесамечты.рф/catalog?utm_source=test'));
+  assert.equal(target.hostname, new URL('https://колесамечты.рф').hostname);
+  assert.equal(target.pathname, '/app/new');
+  assert.equal(target.searchParams.get('utm_source'), 'test');
+});
