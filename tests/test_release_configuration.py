@@ -63,6 +63,26 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert workflow.count("> webapp/version.json") == 3
 
 
+def test_docs_only_push_does_not_deploy_frontends() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "deploy-frontends.yml").read_text(encoding="utf-8")
+    push_trigger = workflow.split("  push:\n", 1)[1].split("  workflow_dispatch:", 1)[0]
+    assert "branches: [main, staging]" in push_trigger
+    assert "paths-ignore:" in push_trigger
+    assert "'docs/**'" in push_trigger
+    assert "'*.md'" in push_trigger
+    assert "workflow_dispatch:" in workflow
+
+
+def test_all_html_entry_paths_are_not_cached() -> None:
+    no_store_sources = {
+        entry["source"]
+        for entry in VERCEL_JSON["headers"]
+        if {"key": "Cache-Control", "value": "no-store, max-age=0"} in entry["headers"]
+    }
+    assert {"/", "/index.html", "/app", "/app/", "/app/(.*)", "/t", "/t/"} <= no_store_sources
+    assert "/app.js" not in no_store_sources
+
+
 def test_frontend_vercel_configs_disable_native_git_deployments() -> None:
     assert VERCEL_JSON["git"]["deploymentEnabled"] is False
     assert ADMIN_VERCEL_JSON["git"]["deploymentEnabled"] is False

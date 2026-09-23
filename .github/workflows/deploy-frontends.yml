@@ -6,6 +6,9 @@ name: Deploy Frontends
 on:
   push:
     branches: [main, staging]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
   workflow_dispatch:
     inputs:
       ref:

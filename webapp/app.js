@@ -22,6 +22,9 @@ const LOCAL_API_BASE_URL = "http://127.0.0.1:10000";
 const API_MODE_STORAGE_KEY = "dreamWheelsApiMode";
 const DEV_TELEGRAM_USER_ID_STORAGE_KEY = "dreamWheelsDevTelegramUserId";
 const WEBSITE_AUTH_STORAGE_KEY = "dreamWheelsWebsiteAuth";
+const BUILD_RELOAD_GUARD_STORAGE_KEY = "dreamWheelsBuildReloadAttempted";
+const LAST_TOP_LEVEL_VIEW_STORAGE_KEY = "dreamWheelsLastTopLevelView";
+const PERSISTED_TOP_LEVEL_VIEWS = new Set(["dashboard", "renders", "wallet", "settings"]);
 const FITMENT_PREVIEW_STORAGE_KEY = "dreamWheelsFitmentPreviewState";
 const FITMENT_DEMO_OVERVIEW_VERSION = 6;
 const FITMENT_TRANSIENT_DRAFT_STORAGE_PREFIX = "dreamWheelsFitmentTransientDraft:";
@@ -256,7 +259,14 @@ async function checkCurrentBuild() {
         const response = await fetch(`/version.json?ts=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
         const deployed = await response.json();
-        if (deployed?.build && deployed.build !== APP_BUILD_ID) window.location.reload();
+        if (!deployed?.build) return;
+        if (deployed.build === APP_BUILD_ID) {
+            sessionStorage.removeItem(BUILD_RELOAD_GUARD_STORAGE_KEY);
+            return;
+        }
+        if (sessionStorage.getItem(BUILD_RELOAD_GUARD_STORAGE_KEY) === deployed.build) return;
+        sessionStorage.setItem(BUILD_RELOAD_GUARD_STORAGE_KEY, deployed.build);
+        window.location.reload();
     } catch {
         // A version check must never interrupt the current user flow.
     }
@@ -7931,6 +7941,13 @@ function setView(view, { refreshData = true } = {}) {
         clearFitmentRuntimeRequests();
     }
     state.view = view;
+    if (HAS_TG && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
+        try {
+            localStorage.setItem(LAST_TOP_LEVEL_VIEW_STORAGE_KEY, view);
+        } catch {
+            // Navigation remains usable when WebView storage is unavailable.
+        }
+    }
     if (view !== "fitment") clearFitmentCheckPolling();
     if (view !== "renders") clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
@@ -7967,6 +7984,23 @@ function setView(view, { refreshData = true } = {}) {
     } else if (view === "settings") {
         void loadAccountState();
     }
+}
+
+function lastTelegramTopLevelView() {
+    if (!HAS_TG) return "dashboard";
+    try {
+        const savedView = localStorage.getItem(LAST_TOP_LEVEL_VIEW_STORAGE_KEY);
+        return PERSISTED_TOP_LEVEL_VIEWS.has(savedView) ? savedView : "dashboard";
+    } catch {
+        return "dashboard";
+    }
+}
+
+function restoreTelegramTopLevelView() {
+    const view = lastTelegramTopLevelView();
+    setView(view, { refreshData: false });
+    if (view === "renders") scheduleRenderHistoryPolling();
+    if (view === "settings") void loadAccountState();
 }
 
 function rerenderActiveView() {
@@ -11334,9 +11368,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             // Dashboard data was hydrated immediately above; avoid starting a
             // second cabinet/history request while selecting the initial view.
-            setView("dashboard", { refreshData: false });
+            restoreTelegramTopLevelView();
         }
     } else if (!new URLSearchParams(window.location.search).get("payment")) {
-        setView("dashboard", { refreshData: false });
+        restoreTelegramTopLevelView();
     }
 });

@@ -60,6 +60,9 @@ jobs:
       - name: Fitment navigation behavioral tests
         run: node --test tests/test_fitment_transition_behavior.mjs
 
+      - name: Webapp boot behavior tests
+        run: node --test tests/test_webapp_boot_behavior.mjs
+
       - name: Webapp auth harness tests
         run: npm ci --prefix webapp && npm --prefix webapp test
 
