@@ -54,6 +54,6 @@ export const en: Dictionary = {
       'AI visualization helps you assess the overall look and proportions, but small differences from the real installation are possible.',
     ] },
   ] },
-  footer: { brand: 'DREAM WHEELS', copyright: '© 2026 DREAM WHEELS', navigationLabel: 'Footer navigation', support: 'Support', email: 'dreamwheelai@gmail.com', privacy: 'Privacy Policy (Russian)', agreement: 'Public Offer (Russian)' },
+  footer: { brand: 'DREAM WHEELS', copyright: '© 2026 DREAM WHEELS', navigationLabel: 'Footer navigation', support: 'Support', email: 'dreamwheelai@gmail.com', privacy: 'Privacy Policy', agreement: 'Terms of Service' },
   catalog: { title: 'Wheel Catalog', subtitle: 'Choose a car and explore available options.', selectVehicle: 'Choose a car', selectWheels: 'Choose wheels', selectWheel: 'Choose a wheel', specsLabel: 'Selected wheel specifications', diameter: 'Diameter', width: 'Width', offset: 'Offset', unknown: 'Fitment check needed', preliminary: 'Preliminary fitment match', addFavorite: 'Add to favorites', removeFavorite: 'Remove from favorites', note: 'A visual try-on does not confirm technical fitment.', preview: 'preview', tagline: 'A motorsport classic.', finishes: { 'wheel-a': 'Satin graphite', 'wheel-b': 'Brushed silver', 'wheel-c': 'Brushed silver' }, imageAlt: (vehicle) => `${vehicle} in a dark garage` },
 };

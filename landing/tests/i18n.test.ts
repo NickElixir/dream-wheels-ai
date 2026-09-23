@@ -22,6 +22,8 @@ test('RU and EN dictionaries have the same keys and eight FAQ entries', () => {
 test('footer email uses the international contact only for EN', () => {
   assert.equal(dictionaries.en.footer.email, 'dreamwheelai@gmail.com');
   assert.equal(dictionaries.ru.footer.email, 'dreamwheelsai@yandex.ru');
+  assert.equal(dictionaries.en.footer.privacy, 'Privacy Policy');
+  assert.equal(dictionaries.en.footer.agreement, 'Terms of Service');
 });
 
 test('host resolver supports Unicode and punycode, with deterministic safe fallback', () => {

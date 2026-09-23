@@ -1,6 +1,5 @@
 ---
 const supportUrl = 'https://t.me/dreamwheelsai';
-const legalBaseUrl = 'https://dream-wheels-ai-legal.vercel.app/legal';
 import { getDictionary, getLocalizedUrl } from '../i18n';
 import type { Locale } from '../i18n';
 import { domainI18nEnabled } from '../i18n/config';
@@ -8,6 +7,8 @@ interface Props { locale: Locale; preview?: boolean; }
 const { locale, preview = false } = Astro.props;
 const copy = getDictionary(locale);
 const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
+const legalBaseUrl = locale === 'en' ? 'https://legal.dreamwheels.pro/en/legal' : 'https://dream-wheels-ai-legal.vercel.app/legal';
+const agreementPath = locale === 'en' ? 'terms' : 'offer';
 ---
 
 <footer class="site-footer" id="contacts">
@@ -23,6 +24,6 @@ const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalized
   </nav>
   <div class="site-footer__legal">
     <a href={`${legalBaseUrl}/privacy`} target="_blank" rel="noreferrer">{copy.footer.privacy}</a>
-    <a href={`${legalBaseUrl}/offer`} target="_blank" rel="noreferrer">{copy.footer.agreement}</a>
+    <a href={`${legalBaseUrl}/${agreementPath}`} target="_blank" rel="noreferrer">{copy.footer.agreement}</a>
   </div>
 </footer>
