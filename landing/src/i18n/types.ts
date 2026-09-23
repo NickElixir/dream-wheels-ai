@@ -20,6 +20,6 @@ export interface Dictionary {
     { question: string; answer: string[] },
     { question: string; answer: string[] },
   ] };
-  footer: { brand: string; copyright: string; navigationLabel: string; support: string; privacy: string; agreement: string };
+  footer: { brand: string; copyright: string; navigationLabel: string; support: string; email: string; privacy: string; agreement: string };
   catalog: { title: string; subtitle: string; selectVehicle: string; selectWheels: string; selectWheel: string; specsLabel: string; diameter: string; width: string; offset: string; unknown: string; preliminary: string; addFavorite: string; removeFavorite: string; note: string; preview: string; tagline: string; finishes: Record<string, string>; imageAlt: (vehicle: string) => string };
 }

@@ -19,6 +19,11 @@ test('RU and EN dictionaries have the same keys and eight FAQ entries', () => {
   });
 });
 
+test('footer email uses the international contact only for EN', () => {
+  assert.equal(dictionaries.en.footer.email, 'dreamwheelai@gmail.com');
+  assert.equal(dictionaries.ru.footer.email, 'dreamwheelsai@yandex.ru');
+});
+
 test('host resolver supports Unicode and punycode, with deterministic safe fallback', () => {
   assert.equal(resolveLocale({ hostname: 'dreamwheels.pro', domainRoutingEnabled: true }), 'en');
   assert.equal(resolveLocale({ hostname: 'колесамечты.рф', domainRoutingEnabled: true }), 'ru');

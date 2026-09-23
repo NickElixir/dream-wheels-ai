@@ -19,7 +19,7 @@ const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalized
     <a href={local('/catalog')} data-catalog-link data-catalog-source="footer">{copy.nav.catalog}</a>
     <a href={`${local('/')}#faq`} data-faq-link data-faq-source="footer">{copy.nav.faq}</a>
     <a href={supportUrl} target="_blank" rel="noreferrer" data-support-link data-support-source="footer">{copy.footer.support}</a>
-    <a href="mailto:dreamwheelsai@yandex.ru" data-contact-link data-contact-source="footer_email">dreamwheelsai@yandex.ru</a>
+    <a href={`mailto:${copy.footer.email}`} data-contact-link data-contact-source="footer_email">{copy.footer.email}</a>
   </nav>
   <div class="site-footer__legal">
     <a href={`${legalBaseUrl}/privacy`} target="_blank" rel="noreferrer">{copy.footer.privacy}</a>

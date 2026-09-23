@@ -54,6 +54,6 @@ export const ru: Dictionary = {
       'AI-визуализация помогает оценить общий образ и пропорции, но небольшие различия с реальной установкой возможны.',
     ] },
   ] },
-  footer: { brand: 'КОЛЕСА МЕЧТЫ', copyright: '© 2026 КОЛЕСА МЕЧТЫ', navigationLabel: 'Навигация в footer', support: 'Поддержка', privacy: 'Политика конфиденциальности', agreement: 'Пользовательское соглашение' },
+  footer: { brand: 'КОЛЕСА МЕЧТЫ', copyright: '© 2026 КОЛЕСА МЕЧТЫ', navigationLabel: 'Навигация в footer', support: 'Поддержка', email: 'dreamwheelsai@yandex.ru', privacy: 'Политика конфиденциальности', agreement: 'Пользовательское соглашение' },
   catalog: { title: 'Каталог дисков', subtitle: 'Выберите автомобиль и посмотрите доступные варианты.', selectVehicle: 'Выберите автомобиль', selectWheels: 'Выберите диски', selectWheel: 'Выберите диск', specsLabel: 'Параметры выбранного диска', diameter: 'Диаметр', width: 'Ширина', offset: 'Вылет', unknown: 'Требует проверки', preliminary: 'Предварительно совместим', addFavorite: 'Добавить в избранное', removeFavorite: 'Удалить из избранного', note: 'Визуальная примерка не подтверждает техническую совместимость.', preview: 'пример', tagline: 'A motorsport classic.', finishes: { 'wheel-a': 'Сатиновый графит', 'wheel-b': 'Шлифованное серебро', 'wheel-c': 'Шлифованное серебро' }, imageAlt: (vehicle) => `${vehicle} в тёмном гараже` },
 };
