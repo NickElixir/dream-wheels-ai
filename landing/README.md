@@ -20,16 +20,18 @@ npm run build
 
 The catalog uses mock assets in `public/assets/mock/`, marked in the UI and data model as mock-only. Replace `variant.image.src` later with approved CDN/object-storage assets without changing the interaction layer.
 
-The static route is `/`. Hosting must route only the landing domain to this build; existing `dreamwheels.pro/app/**`, Telegram WebApp and backend gateway routes remain outside this directory.
+The static Landing owns `/` and `/catalog` behind the front door. Existing `/app/**`, Telegram WebApp `/t/**`, and `/api/backend/**` requests continue through the separate WebApp rewrites.
 
-## RU / EN foundation
+## RU / EN two-domain candidate
 
 The Landing and Catalog share Astro/Preact components and use the typed dictionaries in `src/i18n/`. Locale is a build-time page prop, so all HTML, metadata, and interactive islands use the same language without a client-side flash. Static output is preserved.
 
-- `/` and `/catalog` are the current RU production pages. They remain Russian on `dreamwheels.pro` and keep that domain as their canonical URL.
-- `/en/`, `/en/catalog`, `/ru/`, and `/ru/catalog` are static preview pages. They carry `noindex` while `domainI18nEnabled` is `false`. They let the language switcher preserve the equivalent route and query string before the RU domain is connected.
-- `resolveLocale()` supports Unicode/punycode hostname resolution and a deterministic RU fallback. The hostname mapping is prepared but deliberately inactive for the public routes.
-- `getLocalizedUrl()` centrally maps each public path to `dreamwheels.pro` or `колесамечты.рф`. Preview pages expose the future self canonical and RU/EN/x-default hreflang pair for validation, but remain non-indexable.
+- Current production still serves RU at `/` and `/catalog` on `dreamwheels.pro`. This branch is preview-only and must not be promoted until domain and legal gates pass.
+- The candidate sets `domainI18nEnabled` to `true`. Root-level Vercel Routing Middleware rewrites only `/` and `/catalog` internally to the pre-rendered `/en/`, `/en/catalog`, `/ru/`, or `/ru/catalog` page according to the request host. The visible URL stays clean and Astro remains static.
+- Direct `/en/` and `/ru/` preview paths receive an `X-Robots-Tag: noindex, follow` middleware response header. The clean public paths have locale-specific canonical and RU/EN/x-default hreflang tags.
+- `resolveLocale()` supports Unicode/punycode hostname resolution and a deterministic RU fallback. `getLocalizedUrl()` maps equivalent public routes to `dreamwheels.pro` and `колесамечты.рф`, preserving query parameters other than the preview-only `locale` override.
+- The candidate can be tested on a protected Vercel preview URL with `x-dw-candidate-host: dreamwheels.pro` or the punycode form of `колесамечты.рф`. This override is accepted only on `.vercel.app` preview deployments (`VERCEL_ENV=preview`), never on production or a custom domain.
+- The existing `/app/**`, `/t/**`, and `/api/backend/**` rewrites are unchanged and outside the middleware matcher.
 - CTA handoff stays at `/app/new`; on the future RU domain it uses the same origin. WebApp locale handling is a separate release.
 
-The static build cannot serve distinct HTML for two hostnames at the same URL without host-aware front-door routing. For the later domain cutover, first review EN copy and legal destinations; then configure host-specific rewrites for `/` and `/catalog` to the corresponding pre-rendered locale pages, enable `domainI18nEnabled` in `src/i18n/config.ts`, and validate canonical/hreflang, language switching, and `/app/**`, `/t/**`, `/api/backend/**` on a candidate. The flag alone does not activate hostname routing. This foundation does not modify Vercel routing or DNS.
+The current legal links lead to Russian-only Privacy Policy and Public Offer pages. EN labels explicitly say “(Russian)”; an approved English legal release is a blocker for public EN cutover. This candidate does not change DNS, Vercel domain assignments, production routing, WebApp, or backend.

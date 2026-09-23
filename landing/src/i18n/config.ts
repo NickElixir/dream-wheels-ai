@@ -1,2 +1,2 @@
-// Enable only together with host-based Vercel rewrites and RU domain cutover.
-export const domainI18nEnabled = false;
+// Candidate-only: never promote without the RU domain and EN legal release gates.
+export const domainI18nEnabled = true;

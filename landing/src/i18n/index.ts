@@ -1,26 +1,12 @@
 import { en } from './en';
 import { ru } from './ru';
+import { getLocaleFromHostname, localeDomains, localePreviewPrefixes } from './domains';
 import type { Dictionary, Locale } from './types';
 
 export type { Dictionary, Locale } from './types';
+export { getLocaleFromHostname, localeDomains, localePreviewPrefixes } from './domains';
 export const dictionaries: Record<Locale, Dictionary> = { ru, en };
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale];
-
-export const localeDomains: Record<Locale, string> = {
-  ru: 'https://колесамечты.рф',
-  en: 'https://dreamwheels.pro',
-};
-const localeHosts = { ru: new URL(localeDomains.ru).hostname, en: new URL(localeDomains.en).hostname };
-
-export const localePreviewPrefixes: Record<Locale, string> = { ru: '/ru', en: '/en' };
-
-export function getLocaleFromHostname(hostname: string): Locale | undefined {
-  if (!hostname) return undefined;
-  const host = new URL(`https://${hostname.toLowerCase().replace(/\.$/, '')}`).hostname;
-  if (host === localeHosts.en || host === `www.${localeHosts.en}`) return 'en';
-  if (host === localeHosts.ru || host === `www.${localeHosts.ru}`) return 'ru';
-  return undefined;
-}
 
 export function getPreviewLocale(pathname: string): Locale | undefined {
   if (pathname === '/en' || pathname.startsWith('/en/')) return 'en';
