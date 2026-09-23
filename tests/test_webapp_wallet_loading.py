@@ -28,4 +28,4 @@ def test_dashboard_initialization_does_not_duplicate_cabinet_or_history_requests
         "if (renderHistoryRequestPromise === sharedRequest) renderHistoryRequestPromise = null;"
         in app_js
     )
-    assert 'setView("dashboard", { refreshData: false });' in app_js
+    assert "setView(view, { refreshData: false });" in app_js
