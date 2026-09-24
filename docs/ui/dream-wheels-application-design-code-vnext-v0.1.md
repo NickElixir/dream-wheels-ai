@@ -650,3 +650,23 @@ Remaining before explicit VNext freeze:
 - remaining application states outside this representative flow, including
   auth/session, payment/balance detail, history processing/failed variants and
   global empty/error states.
+
+
+## 27. Dashboard island decision
+
+The Dashboard is an explicit exception to the general “avoid card everywhere”
+rule because it combines several independent product objects rather than one
+linear task.
+
+Working Dashboard structure:
+
+    Current Vehicle island
+    + Balance / render-expiry island
+    + Latest Result island
+    + flat Recent Render media tiles
+
+The islands are structural grouping, not decorative SaaS cards.
+
+The Result screen remains more image-dominant than Dashboard / Create /
+Fitment, but comparison remains the existing two-state `Результат / Оригинал`
+viewer. No additional slider is part of VNext v0.1.
