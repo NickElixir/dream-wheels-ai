@@ -927,3 +927,118 @@ states can be inspected without changing runtime code.
 
 This pass is structural QA for the review prototype. Final browser/pixel QA with
 real photographic assets is still required before explicit VNext freeze.
+
+
+## 33. State coverage prototype v3
+
+The next review artifact is:
+
+`docs/references/application-vnext-state-coverage-prototype-v3.html`
+
+It extends the accepted v2 happy-path composition without changing the current
+runtime.
+
+### Source authority used for the added states
+
+The added states are grounded in the current staging contracts and runtime
+copy:
+
+- `docs/sprint-3-ui.md` for completed / processing / failed history states;
+- `docs/commercial-beta-ux.md` for controlled generation failure and
+  no-charge recovery;
+- `docs/auth-v1.1-release-scope.md` plus the current `webapp/app.js` auth
+  vocabulary for Email OTP, Telegram and session restoration;
+- `docs/ui/pre-render-fitment-v2-state-inventory.md` for expired / restoring /
+  restored session semantics and the no-auto-replay rule;
+- current `webapp/app.js` wallet package, Robokassa, payment-state and expiry
+  vocabulary.
+
+### Real repository assets
+
+The v3 state review uses the existing staging demo assets where the technical
+scenario does not depend on synthetic Fitment values:
+
+- `webapp/assets/demo-vehicle-zeekr.jpg`;
+- `webapp/assets/demo-rim-xtrike.png`;
+- `webapp/assets/demo-render-zeekr-xtrike.jpg`.
+
+The accepted Fitment incompatibility anchor remains a controlled technical
+fixture until a real asset + fully verified technical dataset is available for
+that same scenario.
+
+### Render processing
+
+The prototype represents render work as an asynchronous state rather than a
+fake percentage progress meter.
+
+User-facing processing vocabulary remains aligned with staging:
+
+    Создаём виртуальную примерку
+    Создаём примерку...
+    Это может занять до 90 секунд
+
+History remains the durable place for the job after navigation.
+
+### History
+
+The v3 history review includes all three Sprint 3 terminal/current states:
+
+    completed  -> Готово / Открыть
+    processing -> Создаём виртуальную примерку / В обработке
+    failed     -> Не удалось создать виртуальную примерку
+                  Рендеры не списаны
+                  Повторить
+
+Processing and failed entries do not expose result comparison or rating.
+
+### Authentication and session
+
+Review states:
+
+    restoring
+    login
+    email OTP
+    expired session
+
+Release 1 authorities remain Email OTP through Supabase and Telegram.
+
+For session expiry, restoration preserves entered semantic context but never
+automatically replays the previous provider, Fitment or Render action.
+
+### Balance and payment
+
+The Balance review keeps the existing credit model:
+
+    100 ₽  -> 3 renders
+    200 ₽  -> 7 renders
+    500 ₽  -> 20 renders
+    1000 ₽ -> 45 renders
+
+Package duration shown by the current runtime is 30 days.
+
+The screen keeps expiry batches and nearest-expiry consumption guidance and
+represents payment states as:
+
+    pending
+    paid
+    failed
+
+Payment remains routed through Robokassa; the VNext work changes presentation,
+not payment architecture.
+
+### Global empty / controlled error states
+
+The prototype includes reviewable states for:
+
+- empty render history;
+- generation temporarily unavailable with the existing no-charge message;
+- balance temporarily unavailable.
+
+These states use the same quiet semantic-color system as the rest of VNext and
+avoid large destructive error surfaces.
+
+### Freeze note
+
+State coverage is now broader, but explicit VNext freeze still requires visual
+browser QA at desktop and 390 px with these real assets and the review states
+above.
