@@ -119,29 +119,40 @@ In user terms: the wheel can be used with centering / hub-centric rings.
 
 This state must not be used as a generic bucket for uncertainty.
 
-In particular:
+In particular, V2 deliberately changes the treatment of a trusted ET value
+that is outside the confirmed provider-derived range:
 
 ```text
-ET outside provider-derived interval
-  != compatible_with_conditions
+ET inside confirmed provider-derived interval
+  -> compatible
+
+ET outside confirmed provider-derived interval
+  -> incompatible
+  -> reason: offset_out_of_range
+
+missing rim ET or missing provider interval
   -> unknown
 ```
 
-because Standard V1 does not calculate physical inner/outer clearance.
+This is a **V2 product/domain delta** from the frozen Standard Fitment V1
+contract. V1 currently maps out-of-range ET to
+`unknown / et_outside_reference_range`; V2 must not silently inherit that
+runtime behaviour. Runtime rule changes remain prohibited until the V2 UI and
+domain contracts are explicitly frozen.
 
 ### `unknown`
 
 The check completed far enough to determine that the available trustworthy
 technical evidence is insufficient for a positive or negative conclusion.
 
-Examples from V1 include:
+Examples include:
 
 - missing or untrusted critical RimSpec fields;
 - unconfirmed vehicle modification;
 - missing provider reference data;
-- ET outside the provider-derived interval;
-- size outside the provider reference set where physical clearance is not
-  modeled.
+- missing ET or missing ET reference interval;
+- other cases where the available authoritative evidence is insufficient for a
+  positive or negative V2 conclusion.
 
 `unknown` is a technical evidence state. It is not an operational error and
 never means `incompatible`.
@@ -153,7 +164,9 @@ A trusted hard conflict exists under the current deterministic rules.
 Examples include:
 
 - confirmed PCD / bolt-pattern mismatch;
-- wheel center bore smaller than the vehicle hub bore.
+- wheel center bore smaller than the vehicle hub bore;
+- trusted wheel ET outside the confirmed provider-derived ET interval for the
+  applicable axle / diameter / width context.
 
 An `incompatible` verdict never removes Visual Try-on.
 
@@ -311,13 +324,20 @@ Preserve the V1 setup distinction while making provenance explicit.
 | `complete_unconfirmed` | Critical fields are present but not yet authoritative |
 | `confirmed_ready` | Required critical Standard V1 fields are present and confirmed |
 
-Critical Standard V1 fields remain:
+Critical technical fields remain:
 
 - PCD;
 - DIA;
 - diameter;
 - width;
 - ET.
+
+For V2 presentation, diameter and width are separate field-level evidence rows.
+They must not be collapsed into one generic `Размер` row. ET remains
+contextual to the applicable axle and wheel geometry. The current V1 runtime
+still evaluates diameter/width/ET through a combined rule; decomposing its
+field-level evidence is a later runtime-mapping concern, not something the
+prototype may guess locally.
 
 A partial RimSpec may still be checked and can yield `unknown`.
 
@@ -725,8 +745,8 @@ and must not derive render permission from Fitment.
 | `compatible / compatible_with_conditions / unknown / incompatible` | **KEEP** | Existing deterministic verdict vocabulary |
 | operational failure != `unknown` | **KEEP** | Remains a separate execution/error state |
 | false positive worse than `unknown` | **KEEP** | Conservative engine semantics unchanged |
-| PCD/DIA/diameter/width/ET Standard V1 scope | **KEEP** | No rule expansion in this UI artifact |
-| ET outside reference interval -> `unknown` | **KEEP** | Do not upgrade to a condition or hard conflict |
+| PCD/DIA/diameter/width/ET technical scope | **KEEP / REFRAME** | Same core fields; V2 presents diameter and width separately and changes trusted out-of-range ET semantics |
+| ET outside reference interval -> `unknown` | **CHANGE** | V2 target: trusted out-of-range ET -> `incompatible / offset_out_of_range`; missing ET/reference remains `unknown` |
 | DIA larger than hub -> hub rings condition | **KEEP** | Current Standard V1 `compatible_with_conditions` case |
 | immutable Check semantics | **KEEP / STRENGTHEN** | V2 explicitly treats Check as snapshot attached to Vehicle + Wheel |
 | session restoration without automatic replay | **KEEP** | Same user safety behaviour |
