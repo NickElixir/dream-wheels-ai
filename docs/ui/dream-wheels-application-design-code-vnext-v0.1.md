@@ -604,3 +604,49 @@ Primary questions for the next visual QA:
 
 No runtime implementation or application-wide freeze is authorized until this
 cross-surface QA is explicitly accepted.
+
+
+## 26. Cross-surface QA pass 1
+
+Status:
+
+    CROSS_SURFACE_QA_PASS_1 = COMPLETE
+    DESKTOP_STRUCTURE = PASS
+    MOBILE_390_STRUCTURE = PASS
+    PIXEL_FREEZE = NOT_REACHED
+
+The first cross-surface QA pass covered Dashboard / Garage, Create, Fitment and
+Result against the same shell and responsive system.
+
+Corrections made during the pass:
+
+- removed duplicated desktop topbar balance/date metadata where the sidebar or
+  screen already carries that information;
+- preserved compact balance context in the mobile topbar, where the desktop
+  sidebar is absent;
+- restored a visible page-level H1 on mobile instead of hiding the screen title;
+- changed Create desktop composition so the vehicle remains the main automotive
+  object while the wheel stays a substantial product object;
+- kept Create, Fitment and Result in the same near-white CTA / cold graphite /
+  restrained-divider system;
+- replaced mixed Russian/English explanatory copy with user-facing Russian;
+- replaced the middle-dot metadata separator with the approved en dash;
+- separated wheel identity and technical series in Result metadata;
+- encoded source/result image behaviour as uncropped `object-fit: contain`;
+- preserved Fitment table stacking for narrow screens and full-width mobile
+  actions;
+- preserved one shared mobile navigation model, with Fitment treated as a
+  contextual step inside Create rather than a separate bottom-navigation item.
+
+No surface-specific visual exception was required to keep the A+C hybrid
+coherent across the four tested surfaces.
+
+Remaining before explicit VNext freeze:
+
+- final photographic assets rather than schematic prototype media;
+- exact token freeze for graphite, semantic colours, focus treatment and radii;
+- browser/pixel QA of the final review build at the target desktop viewport and
+  390 px;
+- remaining application states outside this representative flow, including
+  auth/session, payment/balance detail, history processing/failed variants and
+  global empty/error states.
