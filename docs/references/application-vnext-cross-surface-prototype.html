@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090b">
+<title>Dream Wheels — Application VNext cross-surface prototype</title>
+<style>
+:root{
+  --bg:#07090b;--surface:#0f1317;--surface-2:#13181d;
+  --line:rgba(238,242,246,.10);--line-strong:rgba(238,242,246,.16);
+  --text:#f1f3f2;--muted:#9aa2a8;--subtle:#707980;
+  --cta:#f0efe9;--cta-text:#0c0f11;--lime:#d8ff37;
+  --good:#75caa0;--warn:#d8ad67;--bad:#d87979;
+  --r-sm:7px;--r-md:10px;--r-lg:12px;--sidebar:220px;
+  --safe-bottom:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;background:var(--bg)}
+body{
+  margin:0;color:var(--text);background:var(--bg);
+  font:15px/1.45 "IBM Plex Sans","Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased
+}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+.sidebar{
+  position:sticky;top:0;height:100vh;padding:26px 18px 22px;
+  border-right:1px solid var(--line);background:#080a0c;
+  display:flex;flex-direction:column
+}
+.brand{
+  display:flex;gap:9px;margin:0 8px 34px;
+  font-weight:600;letter-spacing:.16em;font-size:13px
+}
+.brand-dim{color:#8d959b}
+.nav{display:grid;gap:5px}
+.nav-label{
+  margin:20px 10px 7px;color:#5f6870;font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;font-weight:600
+}
+.nav button{
+  min-height:42px;border:0;border-radius:var(--r-sm);background:transparent;
+  color:#8f979d;text-align:left;padding:0 12px;font-weight:500
+}
+.nav button:hover{background:#0e1215;color:var(--text)}
+.nav button.active{background:#101418;color:var(--text)}
+.account{
+  margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:end;gap:12px
+}
+.account small{display:block;color:var(--subtle);font-size:11px}
+.account strong{display:block;margin-top:3px;font-size:14px;font-weight:500}
+.balance{text-align:right;font-variant-numeric:tabular-nums}
+.main{min-width:0;padding:28px clamp(22px,4vw,58px) 90px}
+.frame{width:min(1180px,100%);margin:0 auto}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding-bottom:22px;border-bottom:1px solid var(--line)
+}
+.topbar h1{margin:0;font-size:27px;line-height:1.15;font-weight:500;letter-spacing:-.025em}
+.topbar-meta{color:var(--muted);font-size:12px}
+.page{padding-top:24px}
+.eyebrow{
+  margin:0 0 8px;color:var(--subtle);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;font-weight:600
+}
+.section-title{margin:0;font-size:24px;font-weight:500;letter-spacing:-.025em}
+.section-copy{margin:7px 0 0;color:var(--muted);max-width:720px}
+.rule{border-top:1px solid var(--line);margin-top:24px}
+.btn{
+  min-height:46px;border-radius:8px;padding:0 18px;font-weight:500;
+  border:1px solid transparent
+}
+.btn-primary{background:var(--cta);color:var(--cta-text)}
+.btn-primary:hover{background:#fff}
+.btn-secondary{background:transparent;color:#d5d9dc;border-color:var(--line-strong)}
+.btn-secondary:hover{background:#101419}
+.btn-text{background:transparent;color:#bbc1c5;border:0;padding:0;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#4b5258}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.media{
+  overflow:hidden;border-radius:var(--r-lg);border:1px solid rgba(255,255,255,.06);
+  background:#101317
+}
+.media svg{display:block;width:100%;height:100%}
+.meta-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding-top:11px}
+.object-name{font-size:18px;font-weight:500}
+.object-sub{margin-top:4px;color:var(--muted);font-size:13px}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#aeb6bb}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:#778087}
+.status.good{color:#abd8be}.status.good::before{background:var(--good)}
+.status.warn{color:#dabe8c}.status.warn::before{background:var(--warn)}
+.flat-list{border-top:1px solid var(--line-strong)}
+.flat-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;
+  padding:13px 0;border-bottom:1px solid var(--line);align-items:center
+}
+.flat-row span{color:var(--muted)}
+.flat-row strong{font-weight:500;text-align:right}
+
+/* Dashboard / Garage */
+.dashboard-hero{
+  display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr);
+  gap:20px
+}
+.garage-media{aspect-ratio:16/8.5}
+.hero-copy{padding-top:14px}
+.hero-copy h2{margin:0;font-size:30px;font-weight:500;letter-spacing:-.035em}
+.hero-copy p{margin:7px 0 0;color:var(--muted)}
+.dashboard-side{
+  border-top:1px solid var(--line-strong);padding-top:15px;
+  display:grid;align-content:start;gap:19px
+}
+.balance-line{display:flex;justify-content:space-between;align-items:end;gap:16px}
+.balance-line strong{font-size:34px;font-weight:500;font-variant-numeric:tabular-nums}
+.latest-preview{aspect-ratio:16/10}
+.latest-meta{display:grid;gap:5px}
+.latest-meta strong{font-size:17px;font-weight:500}
+.recent{margin-top:30px}
+.recent-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+.recent-item{min-width:0}
+.recent-item .media{aspect-ratio:16/10}
+.recent-item strong{display:block;margin-top:9px;font-weight:500}
+.recent-item span{display:block;color:var(--subtle);font-size:12px;margin-top:3px}
+
+/* Create */
+.create-pair{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  padding-bottom:24px;border-bottom:1px solid var(--line)
+}
+.source .media{aspect-ratio:16/10}
+.source.wheel .media{aspect-ratio:1/1}
+.create-lower{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.72fr);
+  gap:32px;padding-top:26px
+}
+.create-state{display:grid;gap:18px}
+.state-block{border-top:1px solid var(--line-strong);padding-top:13px}
+.state-block h3{margin:0;font-size:16px;font-weight:500}
+.state-block p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.create-aside{border-top:1px solid var(--line-strong);padding-top:13px;color:var(--muted);font-size:12px}
+.create-aside strong{display:block;color:var(--text);font-weight:500;margin-bottom:5px}
+.create-actions{margin-top:22px}
+
+/* Result */
+.result-layout{
+  display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.65fr);
+  gap:22px
+}
+.result-viewer{min-width:0}
+.segmented{
+  display:grid;grid-template-columns:1fr 1fr;margin-bottom:10px;
+  border:1px solid var(--line-strong);border-radius:8px;overflow:hidden
+}
+.segmented button{
+  min-height:46px;border:0;background:transparent;color:#929aa0
+}
+.segmented button+button{border-left:1px solid var(--line)}
+.segmented button.active{background:#12171b;color:var(--text)}
+.result-media{aspect-ratio:16/10}
+.result-panel{
+  border-top:1px solid var(--line-strong);padding-top:15px;display:grid;align-content:start
+}
+.result-panel h2{margin:0;font-size:25px;font-weight:500;letter-spacing:-.03em}
+.result-panel .actions{margin-top:18px;display:grid}
+.result-panel .btn{width:100%}
+.rating{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+.rating-title{font-weight:500;margin-bottom:10px}
+.rating-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rating-actions button{
+  min-height:42px;border-radius:7px;border:1px solid var(--line-strong);
+  background:transparent;color:#c1c7cb
+}
+.rating-actions button:hover{background:#101419}
+.result-meta{margin-top:18px}
+.result-meta .flat-row{font-size:13px}
+
+/* Harness */
+.review{
+  position:fixed;right:16px;bottom:16px;z-index:20;
+  width:min(330px,calc(100vw - 32px));
+  background:rgba(12,15,18,.97);border:1px solid #293036;border-radius:10px;
+  box-shadow:0 16px 42px rgba(0,0,0,.38);overflow:hidden
+}
+.review:not([open]){width:auto}
+.review summary{
+  list-style:none;cursor:pointer;padding:11px 13px;color:#8e979e;
+  font-size:10px;text-transform:uppercase;letter-spacing:.13em;font-weight:600
+}
+.review summary::-webkit-details-marker{display:none}
+.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 10px 10px}
+.review button{
+  min-height:36px;border-radius:6px;border:1px solid #252b30;
+  background:#101418;color:#9ba4aa;padding:0 9px;font-size:11px
+}
+.review button.active{background:#181d21;color:var(--text);border-color:#434b51}
+.mobile-brand,.mobile-nav{display:none}
+
+@media(max-width:980px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:18px 18px calc(90px + var(--safe-bottom))}
+  .mobile-brand{display:flex;margin:0}
+  .topbar h1{display:none}
+  .dashboard-hero,.create-lower,.result-layout{grid-template-columns:1fr}
+  .dashboard-side,.create-aside,.result-panel{max-width:none}
+  .mobile-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:15;
+    display:grid;grid-template-columns:repeat(5,1fr);
+    border-top:1px solid var(--line);padding:7px 6px calc(7px + var(--safe-bottom));
+    background:rgba(8,10,12,.96);backdrop-filter:blur(14px)
+  }
+  .mobile-nav button{
+    min-height:46px;border:0;border-radius:7px;background:transparent;
+    color:#737c83;font-size:10px;font-weight:500
+  }
+  .mobile-nav button.active{color:var(--text);background:#101418}
+}
+@media(max-width:680px){
+  .page{padding-top:18px}
+  .create-pair{grid-template-columns:1fr}
+  .source.wheel{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:center}
+  .source.wheel .meta-row{padding-top:0}
+  .recent-grid{grid-template-columns:1fr}
+  .result-panel{padding-top:18px}
+  .review{position:static;width:100%;margin-top:30px}
+  .review-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:390px){
+  .main{padding-left:14px;padding-right:14px}
+  .source.wheel{grid-template-columns:104px minmax(0,1fr)}
+  .rating-actions{grid-template-columns:1fr}
+  .actions{display:grid;grid-template-columns:1fr}
+  .btn{width:100%}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+    <nav class="nav" aria-label="Основная навигация">
+      <button data-nav="dashboard">Главная</button>
+      <button data-nav="create">Примерить диски</button>
+      <button data-nav="result">Мои примерки</button>
+      <button>Баланс</button>
+    </nav>
+    <div class="nav-label">Помощь</div>
+    <nav class="nav">
+      <button>Поддержка</button>
+      <button>Документы</button>
+    </nav>
+    <div class="account">
+      <div><small>Профиль</small><strong>Nikolai</strong></div>
+      <div class="balance"><small>Рендеры</small><strong>36</strong></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="frame">
+      <header class="topbar">
+        <h1 id="pageTitle">Главная</h1>
+        <div class="mobile-brand brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+        <div class="topbar-meta" id="topMeta">36 рендеров</div>
+      </header>
+
+      <section class="page" id="screen"></section>
+
+      <details class="review">
+        <summary>Экраны VNext</summary>
+        <div class="review-grid">
+          <button data-screen="dashboard">Dashboard</button>
+          <button data-screen="create">Create</button>
+          <button data-screen="result">Result</button>
+        </div>
+      </details>
+    </div>
+  </main>
+</div>
+
+<nav class="mobile-nav" aria-label="Мобильная навигация">
+  <button data-mobile="dashboard">Главная</button>
+  <button data-mobile="create">Создать</button>
+  <button data-mobile="result">Мои</button>
+  <button>Баланс</button>
+  <button>Ещё</button>
+</nav>
+
+<script>
+function carSvg(warm){
+  return '<svg viewBox="0 0 1000 560" role="img" aria-label="Porsche Cayenne">'+
+  '<defs><linearGradient id="g'+warm+'" x1="0" y1="0" x2="1" y2="1">'+
+  '<stop offset="0" stop-color="'+(warm?'#4a4138':'#30363a')+'"/><stop offset=".48" stop-color="#171c20"/><stop offset="1" stop-color="#090c0e"/></linearGradient>'+
+  '<linearGradient id="p'+warm+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4145"/><stop offset=".5" stop-color="#171b1f"/><stop offset="1" stop-color="#050607"/></linearGradient></defs>'+
+  '<rect width="1000" height="560" fill="url(#g'+warm+')"/><rect y="398" width="1000" height="162" fill="#080a0c"/>'+
+  (warm?'<rect x="80" y="48" width="7" height="322" fill="#c0a477" opacity=".34"/><rect x="893" y="48" width="7" height="322" fill="#c0a477" opacity=".24"/>':'<rect x="90" y="56" width="5" height="300" fill="#9ca2a5" opacity=".24"/><rect x="885" y="56" width="5" height="300" fill="#9ca2a5" opacity=".18"/>')+
+  '<path d="M170 374 C210 289 310 236 438 225 L642 229 C719 239 790 282 828 342 L885 359 897 404 857 430 192 430 126 399 140 371 Z" fill="url(#p'+warm+')" stroke="#555c61" stroke-width="2"/>'+
+  '<path d="M364 245 L456 244 433 321 248 320 C278 280 317 256 364 245Z" fill="#20272c"/>'+
+  '<path d="M478 245 L636 248 C694 256 744 284 779 321 L467 321Z" fill="#1c2328"/>'+
+  '<circle cx="311" cy="416" r="62" fill="#060708"/><circle cx="311" cy="416" r="37" fill="#747b80"/><circle cx="311" cy="416" r="22" fill="#171b1e"/>'+
+  '<circle cx="743" cy="416" r="62" fill="#060708"/><circle cx="743" cy="416" r="37" fill="#747b80"/><circle cx="743" cy="416" r="22" fill="#171b1e"/>'+
+  '<rect x="805" y="341" width="70" height="9" rx="4" fill="#ece6d2" opacity=".84"/></svg>';
+}
+function wheelSvg(){
+  return '<svg viewBox="0 0 500 500" role="img" aria-label="BBS CI-R">'+
+  '<defs><radialGradient id="wb"><stop offset="0" stop-color="#384047"/><stop offset=".7" stop-color="#171b1f"/><stop offset="1" stop-color="#0c0f12"/></radialGradient><linearGradient id="wm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dedede"/><stop offset=".45" stop-color="#8c9297"/><stop offset="1" stop-color="#3d4348"/></linearGradient></defs>'+
+  '<rect width="500" height="500" fill="url(#wb)"/><circle cx="250" cy="250" r="177" fill="#0b0d0f" stroke="#555c62" stroke-width="11"/><circle cx="250" cy="250" r="145" fill="#171b1f" stroke="#838a90" stroke-width="3"/>'+
+  '<g transform="translate(250 250)" fill="url(#wm)">'+[0,36,72,108,144,180,216,252,288,324].map(function(a){return '<path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate('+a+')"/>'}).join('')+'</g>'+
+  '<circle cx="250" cy="250" r="38" fill="#0a0d0f" stroke="#777d82" stroke-width="3"/><circle cx="250" cy="250" r="8" fill="#9ba2a7"/></svg>';
+}
+
+const screens={
+dashboard:{
+  title:"Главная",
+  meta:"36 рендеров",
+  html:function(){return `
+    <div class="dashboard-hero">
+      <section>
+        <p class="eyebrow">Мой автомобиль</p>
+        <div class="media garage-media">${carSvg(false)}</div>
+        <div class="hero-copy">
+          <h2>Porsche Cayenne</h2>
+          <p>E3, 2022, Russia+</p>
+          <div class="actions" style="margin-top:16px">
+            <button class="btn btn-primary">Создать примерку</button>
+            <button class="btn btn-secondary">Изменить автомобиль</button>
+          </div>
+        </div>
+      </section>
+      <aside class="dashboard-side">
+        <div>
+          <p class="eyebrow">Баланс</p>
+          <div class="balance-line"><div><strong>36</strong><div class="object-sub">рендеров</div></div><button class="btn-text">Пополнить баланс</button></div>
+        </div>
+        <div>
+          <p class="eyebrow">Последний результат</p>
+          <div class="media latest-preview">${carSvg(true)}</div>
+          <div class="latest-meta">
+            <strong>Porsche Cayenne</strong>
+            <span class="status good">Готово</span>
+            <span class="object-sub">BBS CI-R, сегодня 14:32</span>
+          </div>
+          <div class="actions" style="margin-top:12px"><button class="btn btn-secondary">Открыть последний результат</button></div>
+        </div>
+      </aside>
+    </div>
+    <section class="recent">
+      <p class="eyebrow">Недавние примерки</p>
+      <div class="recent-grid">
+        <article class="recent-item"><div class="media">${carSvg(true)}</div><strong>Porsche Cayenne</strong><span>BBS CI-R, сегодня</span></article>
+        <article class="recent-item"><div class="media">${carSvg(false)}</div><strong>BMW X5</strong><span>Другой диск, вчера</span></article>
+        <article class="recent-item"><div class="media">${carSvg(false)}</div><strong>Zeekr 001</strong><span>Другой диск, 21 сентября</span></article>
+      </div>
+    </section>`;
+  }
+},
+create:{
+  title:"Примерить диски",
+  meta:"36 рендеров",
+  html:function(){return `
+    <div class="create-pair">
+      <article class="source">
+        <p class="eyebrow">Автомобиль</p>
+        <div class="media">${carSvg(false)}</div>
+        <div class="meta-row">
+          <div><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
+          <button class="btn-text">Изменить</button>
+        </div>
+      </article>
+      <article class="source wheel">
+        <div>
+          <p class="eyebrow">Колесный диск</p>
+          <div class="media">${wheelSvg()}</div>
+        </div>
+        <div class="meta-row">
+          <div><div class="object-name">BBS CI-R</div><div class="object-sub">20″ / 9J / 5×130 / ET 50 / DIA 71,6</div></div>
+          <button class="btn-text">Изменить</button>
+        </div>
+      </article>
+    </div>
+    <div class="create-lower">
+      <section class="create-state">
+        <div>
+          <p class="eyebrow">Текущий выбор</p>
+          <h2 class="section-title">Автомобиль и диск готовы</h2>
+          <p class="section-copy">Можно проверить техническую совместимость или перейти к визуальной примерке</p>
+        </div>
+        <div class="state-block">
+          <h3>Автомобиль подтверждён</h3>
+          <p>Porsche Cayenne E3, 2022, Russia+</p>
+        </div>
+        <div class="state-block">
+          <h3>Параметры диска подтверждены</h3>
+          <p>PCD, DIA, диаметр, ширина и ET доступны для технической проверки</p>
+        </div>
+        <div class="actions create-actions">
+          <button class="btn btn-primary">Создать изображение</button>
+          <button class="btn btn-secondary">Проверить совместимость</button>
+        </div>
+      </section>
+      <aside class="create-aside">
+        <strong>Visual Try-on и Fitment — разные проверки</strong>
+        Визуальная примерка показывает внешний вид выбранного диска на исходной фотографии автомобиля. Техническая проверка оценивает параметры установки отдельно
+      </aside>
+    </div>`;
+  }
+},
+result:{
+  title:"Результат",
+  meta:"Сегодня, 14:32",
+  html:function(){return `
+    <div class="result-layout">
+      <section class="result-viewer">
+        <div class="segmented">
+          <button class="active" data-segment="result">Результат</button>
+          <button data-segment="original">Оригинал</button>
+        </div>
+        <div class="media result-media" id="resultMedia">${carSvg(true)}</div>
+      </section>
+      <aside class="result-panel">
+        <p class="eyebrow">Виртуальная примерка</p>
+        <h2>Porsche Cayenne</h2>
+        <div class="object-sub">BBS CI-R, 20″ / 9J / ET 50</div>
+        <div class="result-meta flat-list">
+          <div class="flat-row"><span>Статус</span><strong class="status good">Готово</strong></div>
+          <div class="flat-row"><span>Создано</span><strong>Сегодня, 14:32</strong></div>
+          <div class="flat-row"><span>Рендер</span><strong>1</strong></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary">Создать ещё вариант</button>
+          <button class="btn btn-secondary">Скачать изображение</button>
+        </div>
+        <div class="rating">
+          <div class="rating-title">Как получился результат?</div>
+          <div class="rating-actions"><button>👍 Понравилось</button><button>👎 Не похоже</button></div>
+        </div>
+      </aside>
+    </div>`;
+  }
+}
+};
+
+let current=localStorage.getItem("dw-vnext-cross-surface")||"dashboard";
+
+function render(){
+  const s=screens[current];
+  document.getElementById("pageTitle").textContent=s.title;
+  document.getElementById("topMeta").textContent=s.meta;
+  document.getElementById("screen").innerHTML=s.html();
+
+  document.querySelectorAll("[data-nav]").forEach(function(b){
+    b.classList.toggle("active",b.dataset.nav===current);
+    b.onclick=function(){setScreen(b.dataset.nav)};
+  });
+  document.querySelectorAll("[data-mobile]").forEach(function(b){
+    b.classList.toggle("active",b.dataset.mobile===current);
+    b.onclick=function(){setScreen(b.dataset.mobile)};
+  });
+  document.querySelectorAll("[data-screen]").forEach(function(b){
+    b.classList.toggle("active",b.dataset.screen===current);
+    b.onclick=function(){setScreen(b.dataset.screen)};
+  });
+
+  document.querySelectorAll("[data-segment]").forEach(function(b){
+    b.onclick=function(){
+      document.querySelectorAll("[data-segment]").forEach(function(x){x.classList.remove("active")});
+      b.classList.add("active");
+      document.getElementById("resultMedia").innerHTML=carSvg(b.dataset.segment==="result");
+    };
+  });
+}
+function setScreen(key){
+  current=key;
+  localStorage.setItem("dw-vnext-cross-surface",key);
+  render();
+}
+render();
+</script>
+</body>
+</html>
