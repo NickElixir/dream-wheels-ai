@@ -278,12 +278,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .history-state{margin-top:10px}
 .history-actions{display:flex;align-items:center;justify-content:flex-end}
 .state-pill{
-  display:inline-flex;align-items:center;gap:7px;min-height:28px;padding:0 9px;border:1px solid var(--line);
+  display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border:1px solid var(--line);
   border-radius:999px;color:#aeb6bb;font-size:11px
 }
-.state-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--pending)}
-.state-pill.good{color:#abd8be;border-color:rgba(117,202,160,.25)}.state-pill.good::before{background:var(--positive)}
-.state-pill.bad{color:#df9a9a;border-color:rgba(216,121,121,.25)}.state-pill.bad::before{background:var(--negative)}
+.state-pill.good{color:#abd8be;border-color:rgba(117,202,160,.25)}
+.state-pill.bad{color:#df9a9a;border-color:rgba(216,121,121,.25)}
 .wallet-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr);gap:18px;align-items:start}
 .wallet-panel{padding:18px}
 .wallet-balance-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end}
@@ -300,6 +299,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .payment-state{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .payment-state strong{font-weight:500}
 .payment-state p{margin:5px 0 0;color:var(--muted);font-size:12px}
+
+.wallet-history{grid-column:1/-1;padding:18px}
+.wallet-history-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.wallet-history-head h3{margin:0;font-size:20px;font-weight:500}
+.payment-history-list{display:grid;border-top:1px solid var(--line)}
+.payment-history-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;
+  min-height:72px;padding:12px 0;border-bottom:1px solid var(--line)
+}
+.payment-history-main{display:grid;grid-template-columns:100px 120px minmax(0,1fr);gap:18px;align-items:baseline}
+.payment-history-amount{font-size:16px;font-weight:500}
+.payment-history-renders{color:var(--muted);font-size:12px}
+.payment-history-meta{display:flex;gap:16px;color:var(--subtle);font-size:11px}
+.wallet-history-more{margin-top:14px}
+
 .auth-preview .app{display:block}
 .auth-preview .sidebar,.auth-preview .topbar,.auth-preview .mobile-nav{display:none!important}
 .auth-preview .main{min-height:100vh;display:grid;place-items:center;padding:24px}
@@ -369,6 +383,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .history-card{grid-template-columns:150px minmax(0,1fr);gap:12px}
   .history-actions{grid-column:2;justify-content:flex-start}
   .package-grid{grid-template-columns:1fr 1fr}
+  .payment-history-main{grid-template-columns:90px 110px minmax(0,1fr)}
   .create-pair{grid-template-columns:1fr;--pair-preview-h:clamp(235px,64vw,320px);gap:22px}
   .source.wheel{display:block}
   .source.wheel .media{height:clamp(210px,58vw,270px)}
@@ -429,6 +444,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .history-card{grid-template-columns:1fr;padding:10px}
   .history-actions{grid-column:auto}
   .package-grid{grid-template-columns:1fr}
+  .payment-history-row{grid-template-columns:1fr}
+  .payment-history-main{grid-template-columns:1fr 1fr;gap:6px 12px}
+  .payment-history-meta{grid-column:1/-1;flex-direction:column;gap:2px}
   .auth-card{padding:22px 18px}
   .system-card{padding:22px 18px}
 }
@@ -756,8 +774,6 @@ wallet:{
         : '<span class="state-pill">В ожидании</span><p>Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд</p>';
     return `
     <section class="state-intro">
-      <p class="eyebrow">Кабинет</p>
-      <h2>Баланс</h2>
       <p>1 рендер – 1 генерация виртуальной примерки</p>
     </section>
     <div class="wallet-grid">
@@ -794,6 +810,58 @@ wallet:{
         <div class="payment-state">${paymentMarkup}</div>
         <div class="actions" style="margin-top:16px"><button class="btn btn-secondary">Обновить статус</button></div>
       </aside>
+
+      <section class="wallet-panel wallet-history">
+        <div class="wallet-history-head">
+          <div>
+            <p class="eyebrow">Платежи</p>
+            <h3>История пополнений</h3>
+          </div>
+        </div>
+        <div class="payment-history-list">
+          <div class="payment-history-row">
+            <div class="payment-history-main">
+              <strong class="payment-history-amount">100 ₽</strong>
+              <span class="payment-history-renders">3 рендера</span>
+              <div class="payment-history-meta"><span>08.09.2026, 22:57:35</span><span>#000052</span></div>
+            </div>
+            <span class="state-pill bad">Сбой</span>
+          </div>
+          <div class="payment-history-row">
+            <div class="payment-history-main">
+              <strong class="payment-history-amount">100 ₽</strong>
+              <span class="payment-history-renders">3 рендера</span>
+              <div class="payment-history-meta"><span>08.09.2026, 22:13:33</span><span>#000051</span></div>
+            </div>
+            <span class="state-pill good">Оплачено</span>
+          </div>
+          <div class="payment-history-row">
+            <div class="payment-history-main">
+              <strong class="payment-history-amount">100 ₽</strong>
+              <span class="payment-history-renders">3 рендера</span>
+              <div class="payment-history-meta"><span>08.09.2026, 22:13:25</span><span>#000050</span></div>
+            </div>
+            <span class="state-pill">В ожидании</span>
+          </div>
+          <div class="payment-history-row">
+            <div class="payment-history-main">
+              <strong class="payment-history-amount">500 ₽</strong>
+              <span class="payment-history-renders">20 рендеров</span>
+              <div class="payment-history-meta"><span>20.08.2026, 00:31:41</span><span>#000045</span></div>
+            </div>
+            <span class="state-pill">В ожидании</span>
+          </div>
+          <div class="payment-history-row">
+            <div class="payment-history-main">
+              <strong class="payment-history-amount">100 ₽</strong>
+              <span class="payment-history-renders">3 рендера</span>
+              <div class="payment-history-meta"><span>20.06.2026, 13:35:58</span><span>#000024</span></div>
+            </div>
+            <span class="state-pill good">Оплачено</span>
+          </div>
+        </div>
+        <div class="wallet-history-more"><button class="btn btn-secondary">Показать ещё</button></div>
+      </section>
     </div>`;
   }
 },
