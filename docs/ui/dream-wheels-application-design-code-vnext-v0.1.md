@@ -856,3 +856,74 @@ The consolidated v2 prototype now applies the color/link rules above:
 
 This pass does not expand the amount of color in the interface. It makes the
 existing color usage systematic.
+
+
+## 32. Mobile 390 and Create state pass
+
+Status:
+
+    VNEXT_V2_MOBILE_390_STRUCTURE = PASS
+    CREATE_FORM_STATE_MODEL = REPRESENTED
+    CREATE_PARSER_FAILURE_RECOVERY = REPRESENTED
+    FINAL_PIXEL_FREEZE = NOT_REACHED
+
+### Result CTA hierarchy
+
+Completed Result keeps one product action, `Создать ещё вариант`, but it is
+visually attached to the result identity block rather than floating at the far
+right of the page header.
+
+This keeps the screen editorial and image-first:
+
+    identity / metadata
+      -> create another variant
+      -> comparison viewer
+      -> feedback
+
+### Mobile 390 transformation
+
+The 390 px layout preserves the desktop hierarchy without shrinking it
+mechanically:
+
+- Dashboard islands stack with compact internal spacing;
+- Recent renders become a single-column media list;
+- Create stacks vehicle and wheel previews and reduces wheel-stage height;
+- summary rows become vertical label / value / action groups;
+- edit forms become one-column and actions become full-width;
+- Fitment previews stack, the technical table becomes grouped parameter blocks
+  and CTA actions become full-width;
+- Result uses a square comparison viewer at 390 px so the before/after control
+  remains usable without creating an excessively short image strip;
+- bottom navigation retains the shared application language and safe-area
+  padding.
+
+### Create form and parser states
+
+Summary-first remains the default state. The prototype now represents:
+
+    idle summary
+    -> editing
+    -> save
+    -> saved confirmation
+
+For wheel product URL:
+
+    edit URL
+      -> parser loading
+      -> success
+         or
+      -> parser failure
+          -> try another URL
+          or
+          -> upload manually
+
+Parser failure is not a Fitment verdict and does not alter the Visual Try-on /
+Fitment separation.
+
+The review harness can switch the URL parser between success and error so both
+states can be inspected without changing runtime code.
+
+### Freeze note
+
+This pass is structural QA for the review prototype. Final browser/pixel QA with
+real photographic assets is still required before explicit VNext freeze.
