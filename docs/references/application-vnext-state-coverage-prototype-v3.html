@@ -270,13 +270,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .processing-status p{margin:5px 0 0;color:var(--muted);font-size:13px}
 .processing-aside{padding:16px;border-top:1px solid var(--line)}
 .processing-aside .media{aspect-ratio:1/1;margin-top:10px}
-.history-list{display:grid;gap:12px}
-.history-card{display:grid;grid-template-columns:240px minmax(0,1fr) auto;gap:18px;align-items:center;padding:12px}
-.history-card .media{aspect-ratio:16/10}
-.history-title{font-size:18px;font-weight:500}
-.history-sub{margin-top:4px;color:var(--muted);font-size:13px}
-.history-state{margin-top:10px}
+.history-list{display:grid;gap:26px}
+.history-group{display:grid;gap:10px}
+.history-date{
+  color:#cfd4d7;font-size:13px;font-weight:500;
+  padding-bottom:8px;border-bottom:1px solid var(--line)
+}
+.history-card{
+  display:grid;grid-template-columns:190px minmax(0,1fr) auto;gap:16px;
+  align-items:center;padding:10px 0;border-bottom:1px solid var(--line)
+}
+.history-card .media{aspect-ratio:16/10;border-radius:8px}
+.history-title{font-size:16px;font-weight:500}
+.history-sub{margin-top:3px;color:var(--muted);font-size:12px}
+.history-state{margin-top:7px}
 .history-actions{display:flex;align-items:center;justify-content:flex-end}
+.state-text{font-size:12px;color:#aeb6bb}
+.state-text.good{color:#9fcfb4}
+.state-text.bad{color:#d89595}
+.state-text.warn{color:#d3b273}
 .state-pill{
   display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border:1px solid var(--line);
   border-radius:999px;color:#aeb6bb;font-size:11px
@@ -284,6 +296,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .state-pill.good{color:#abd8be;border-color:rgba(117,202,160,.25)}
 .state-pill.bad{color:#df9a9a;border-color:rgba(216,121,121,.25)}
 .wallet-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr);gap:18px;align-items:start}
+.wallet-grid.no-payment-aside{grid-template-columns:minmax(0,1fr)}
 .wallet-panel{padding:18px}
 .wallet-balance-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-end}
 .wallet-balance-hero strong{display:block;font-size:42px;font-weight:500;line-height:1}
@@ -300,19 +313,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .payment-state strong{font-weight:500}
 .payment-state p{margin:5px 0 0;color:var(--muted);font-size:12px}
 
-.wallet-history{grid-column:1/-1;padding:18px}
-.wallet-history-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.wallet-history{
+  grid-column:1/-1;margin-top:8px;padding-top:22px;border-top:1px solid var(--line)
+}
+.wallet-history-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:10px}
 .wallet-history-head h3{margin:0;font-size:20px;font-weight:500}
-.payment-history-list{display:grid;border-top:1px solid var(--line)}
+.payment-history-list{display:grid}
 .payment-history-row{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;
-  min-height:72px;padding:12px 0;border-bottom:1px solid var(--line)
+  min-height:58px;padding:10px 0;border-bottom:1px solid var(--line)
 }
-.payment-history-main{display:grid;grid-template-columns:100px 120px minmax(0,1fr);gap:18px;align-items:baseline}
-.payment-history-amount{font-size:16px;font-weight:500}
+.payment-history-main{display:grid;grid-template-columns:92px 110px minmax(0,1fr);gap:16px;align-items:baseline}
+.payment-history-amount{font-size:15px;font-weight:500}
 .payment-history-renders{color:var(--muted);font-size:12px}
-.payment-history-meta{display:flex;gap:16px;color:var(--subtle);font-size:11px}
-.wallet-history-more{margin-top:14px}
+.payment-history-meta{display:flex;gap:14px;color:var(--subtle);font-size:11px}
+.payment-history-status{font-size:12px;text-align:right}
+.payment-history-status.good{color:#9fcfb4}
+.payment-history-status.bad{color:#d89595}
+.payment-history-status.pending{color:#aeb6bb}
+.wallet-history-more{margin-top:12px}
 
 .auth-preview .app{display:block}
 .auth-preview .sidebar,.auth-preview .topbar,.auth-preview .mobile-nav{display:none!important}
@@ -380,7 +399,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .latest-island,.balance-island{padding:14px}
   .latest-meta{align-items:flex-start}
   .recent-grid{grid-template-columns:1fr}
-  .history-card{grid-template-columns:150px minmax(0,1fr);gap:12px}
+  .history-card{grid-template-columns:140px minmax(0,1fr);gap:12px}
   .history-actions{grid-column:2;justify-content:flex-start}
   .package-grid{grid-template-columns:1fr 1fr}
   .payment-history-main{grid-template-columns:90px 110px minmax(0,1fr)}
@@ -727,38 +746,43 @@ history:{
   title:"Мои примерки",
   html:function(){return `
     <section class="state-intro">
-      <p class="eyebrow">История рендеров</p>
-      <h2>Мои примерки</h2>
-      <p>Результаты и текущие статусы из вашей истории</p>
+      <p>Результаты и текущие статусы вашей истории</p>
     </section>
     <div class="history-list">
-      <article class="history-card">
-        <div class="media real-media">${realImg("result","Готовый результат ZEEKR 007")}</div>
-        <div>
-          <div class="history-title">ZEEKR 007</div>
-          <div class="history-sub">X-Trike / сегодня, 14:32</div>
-          <div class="history-state"><span class="state-pill good">Готово</span></div>
-        </div>
-        <div class="history-actions"><button class="btn btn-secondary" data-go="result">Открыть</button></div>
-      </article>
-      <article class="history-card">
-        <div class="media real-media">${realImg("vehicle","Исходное фото автомобиля")}</div>
-        <div>
-          <div class="history-title">Создаём виртуальную примерку</div>
-          <div class="history-sub">ZEEKR 007 / X-Trike</div>
-          <div class="history-state"><span class="state-pill">В обработке</span></div>
-        </div>
-        <div class="history-actions"></div>
-      </article>
-      <article class="history-card">
-        <div class="media real-media">${realImg("vehicle","Исходное фото неудавшейся примерки")}</div>
-        <div>
-          <div class="history-title">Не удалось создать виртуальную примерку</div>
-          <div class="history-sub">Рендеры не списаны</div>
-          <div class="history-state"><span class="state-pill bad">Не удалось</span></div>
-        </div>
-        <div class="history-actions"><button class="btn btn-secondary" data-go="create">Повторить</button></div>
-      </article>
+      <section class="history-group">
+        <div class="history-date">Сегодня</div>
+        <article class="history-card">
+          <div class="media real-media">${realImg("result","Готовый результат ZEEKR 007")}</div>
+          <div>
+            <div class="history-title">ZEEKR 007</div>
+            <div class="history-sub">X-Trike / 14:32</div>
+            <div class="history-state"><span class="state-text good">Готово</span></div>
+          </div>
+          <div class="history-actions"><button class="btn btn-secondary" data-go="result">Открыть</button></div>
+        </article>
+        <article class="history-card">
+          <div class="media real-media">${realImg("vehicle","Исходное фото автомобиля")}</div>
+          <div>
+            <div class="history-title">Создаём виртуальную примерку</div>
+            <div class="history-sub">ZEEKR 007 / X-Trike / 14:28</div>
+            <div class="history-state"><span class="state-text">В обработке</span></div>
+          </div>
+          <div class="history-actions"></div>
+        </article>
+      </section>
+
+      <section class="history-group">
+        <div class="history-date">23 сентября</div>
+        <article class="history-card">
+          <div class="media real-media">${realImg("vehicle","Исходное фото неудавшейся примерки")}</div>
+          <div>
+            <div class="history-title">Не удалось создать виртуальную примерку</div>
+            <div class="history-sub">Рендеры не списаны / 19:41</div>
+            <div class="history-state"><span class="state-text bad">Не удалось</span></div>
+          </div>
+          <div class="history-actions"><button class="btn btn-secondary" data-go="create">Повторить</button></div>
+        </article>
+      </section>
     </div>`;
   }
 },
@@ -767,16 +791,22 @@ wallet:{
   title:"Баланс",
   html:function(){
     const payment=window.__dwPaymentState||"pending";
-    const paymentMarkup=payment==="paid"
-      ? '<span class="state-pill good">Оплачено</span><p>Оплата подтверждена. Баланс обновлён</p>'
-      : payment==="failed"
-        ? '<span class="state-pill bad">Не завершено</span><p>Платеж не завершен</p>'
-        : '<span class="state-pill">В ожидании</span><p>Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд</p>';
+    const showPending=payment==="pending";
+    const paymentAside=showPending ? `
+      <aside class="wallet-panel">
+        <p class="eyebrow">Оплата в обработке</p>
+        <div class="object-name">500 ₽</div>
+        <div class="payment-state">
+          <span class="state-text warn">В ожидании подтверждения</span>
+          <p>Если вы вернулись из Robokassa, обновите статус через несколько секунд</p>
+        </div>
+        <div class="actions" style="margin-top:16px"><button class="btn btn-secondary">Обновить статус</button></div>
+      </aside>` : "";
     return `
     <section class="state-intro">
       <p>1 рендер – 1 генерация виртуальной примерки</p>
     </section>
-    <div class="wallet-grid">
+    <div class="wallet-grid ${showPending ? "" : "no-payment-aside"}">
       <section class="wallet-panel">
         <div class="wallet-balance-hero">
           <div><p class="eyebrow">Доступные рендеры</p><strong>36</strong><div class="object-sub">рендеров</div></div>
@@ -804,14 +834,10 @@ wallet:{
           </div>
         </div>
       </section>
-      <aside class="wallet-panel">
-        <p class="eyebrow">Последняя оплата</p>
-        <div class="object-name">Оплата #1042 / 500 ₽</div>
-        <div class="payment-state">${paymentMarkup}</div>
-        <div class="actions" style="margin-top:16px"><button class="btn btn-secondary">Обновить статус</button></div>
-      </aside>
 
-      <section class="wallet-panel wallet-history">
+      ${paymentAside}
+
+      <section class="wallet-history">
         <div class="wallet-history-head">
           <div>
             <p class="eyebrow">Платежи</p>
@@ -825,7 +851,7 @@ wallet:{
               <span class="payment-history-renders">3 рендера</span>
               <div class="payment-history-meta"><span>08.09.2026, 22:57:35</span><span>#000052</span></div>
             </div>
-            <span class="state-pill bad">Сбой</span>
+            <span class="payment-history-status bad">Сбой</span>
           </div>
           <div class="payment-history-row">
             <div class="payment-history-main">
@@ -833,7 +859,7 @@ wallet:{
               <span class="payment-history-renders">3 рендера</span>
               <div class="payment-history-meta"><span>08.09.2026, 22:13:33</span><span>#000051</span></div>
             </div>
-            <span class="state-pill good">Оплачено</span>
+            <span class="payment-history-status good">Оплачено</span>
           </div>
           <div class="payment-history-row">
             <div class="payment-history-main">
@@ -841,7 +867,7 @@ wallet:{
               <span class="payment-history-renders">3 рендера</span>
               <div class="payment-history-meta"><span>08.09.2026, 22:13:25</span><span>#000050</span></div>
             </div>
-            <span class="state-pill">В ожидании</span>
+            <span class="payment-history-status pending">В ожидании</span>
           </div>
           <div class="payment-history-row">
             <div class="payment-history-main">
@@ -849,7 +875,7 @@ wallet:{
               <span class="payment-history-renders">20 рендеров</span>
               <div class="payment-history-meta"><span>20.08.2026, 00:31:41</span><span>#000045</span></div>
             </div>
-            <span class="state-pill">В ожидании</span>
+            <span class="payment-history-status pending">В ожидании</span>
           </div>
           <div class="payment-history-row">
             <div class="payment-history-main">
@@ -857,7 +883,7 @@ wallet:{
               <span class="payment-history-renders">3 рендера</span>
               <div class="payment-history-meta"><span>20.06.2026, 13:35:58</span><span>#000024</span></div>
             </div>
-            <span class="state-pill good">Оплачено</span>
+            <span class="payment-history-status good">Оплачено</span>
           </div>
         </div>
         <div class="wallet-history-more"><button class="btn btn-secondary">Показать ещё</button></div>
