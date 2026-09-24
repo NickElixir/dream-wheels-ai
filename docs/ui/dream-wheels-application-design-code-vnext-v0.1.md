@@ -524,14 +524,14 @@ The first HTML prototype must resolve these visually rather than through further
 11. focus-ring treatment after lime stops being the default primary action;
 12. exact use of IBM Plex Sans weights.
 
-## 23. Next artifact
+## 23. Interactive HTML prototype
 
-Per docs/ui/ui-development-process.md, the next visual artifact for the current Fitment V2 anchor is:
+The first VNext review artifact is:
 
-    Interactive HTML prototype
-      -> desktop
-      -> 390 px mobile
-      -> visual QA
+`docs/references/pre-render-fitment-v2-vnext-prototype.html`
+
+It implements the working A+C synthesis and provides review states for desktop
+and responsive/mobile behaviour.
 
 The prototype is a review artifact, not runtime implementation.
 
