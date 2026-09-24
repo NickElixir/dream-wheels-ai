@@ -668,5 +668,54 @@ Working Dashboard structure:
 The islands are structural grouping, not decorative SaaS cards.
 
 The Result screen remains more image-dominant than Dashboard / Create /
-Fitment, but comparison remains the existing two-state `Результат / Оригинал`
-viewer. No additional slider is part of VNext v0.1.
+Fitment. Comparison is one direct before/after slider between `Оригинал` and
+`Результат`, with no parallel tabs or third comparison mode.
+
+
+## 28. Preview geometry and result feedback
+
+### Create and Fitment preview geometry
+
+Source image dimensions must not define the application layout.
+
+Desktop Create and Fitment use fixed responsive preview stages:
+
+- the vehicle and wheel columns have explicit relative widths;
+- both preview stages in one pair use the same vertical stage height;
+- source assets render with `object-fit: contain`;
+- wheel artwork remains centered inside its stage rather than stretching;
+- metadata below the vehicle and wheel preview begins on the same horizontal
+  baseline.
+
+This keeps captions, subtitles and change actions aligned even when the
+uploaded car photo and wheel image have different native aspect ratios.
+
+On narrow mobile layouts the objects stack vertically, but the same
+composition-preserving `contain` rule remains.
+
+### Result comparison
+
+Result uses one draggable before/after slider:
+
+    Оригинал |<----> | Результат
+
+It replaces the previous tab switcher. Do not combine tabs, a third compare
+mode and the slider.
+
+### Result feedback
+
+Keep the existing staging feedback vocabulary and interaction:
+
+- `Оценка результата`;
+- `Помогите улучшить следующие примерки`;
+- `👍 Удачный результат`;
+- `👎 Нужна доработка`;
+- for negative feedback:
+  - `Диск отличается`;
+  - `Машина изменилась`;
+  - `Ракурс / масштаб`;
+  - `Качество изображения`;
+  - `Другое`;
+- positive confirmation: `Спасибо за оценку`.
+
+The VNext redesign changes visual treatment, not this feedback model.
