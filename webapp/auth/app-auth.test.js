@@ -6,8 +6,9 @@ import {
 } from "./supabase-client.js";
 import { createFrontendAuthController } from "./app-auth.js";
 
-function fakeSessionController({ sessionPresent = false, accessToken = "opaque-test-token", refreshAccessToken = "refreshed-test-token", onRefresh = null } = {}) {
+function fakeSessionController({ sessionPresent = false, userId = "user-1", accessToken = "opaque-test-token", refreshAccessToken = "refreshed-test-token", onRefresh = null } = {}) {
     let currentAccessToken = accessToken;
+    let currentUserId = sessionPresent ? userId : null;
     let refreshCalls = 0;
     let current = {
         status: sessionPresent ? AUTH_SESSION_STATES.AUTHENTICATED : AUTH_SESSION_STATES.UNAUTHENTICATED,
@@ -27,11 +28,23 @@ function fakeSessionController({ sessionPresent = false, accessToken = "opaque-t
         },
         getRefreshCalls: () => refreshCalls,
         getAuthSessionState: () => ({ ...current }),
+        getCurrentAuthUser: () => currentUserId ? { id: currentUserId, email: "user@example.test" } : null,
+        setCurrentUserId: (nextUserId) => { currentUserId = nextUserId; },
+        emitAuthEvent: (event, nextUserId = currentUserId) => {
+            currentUserId = event === "SIGNED_OUT" ? null : nextUserId;
+            current = {
+                ...current,
+                status: currentUserId ? AUTH_SESSION_STATES.AUTHENTICATED : AUTH_SESSION_STATES.UNAUTHENTICATED,
+                sessionPresent: Boolean(currentUserId),
+            };
+            listener?.(current, event);
+        },
         subscribeToAuthChanges: (next) => {
             listener = next;
             return () => { listener = null; };
         },
         signOut: async () => {
+            currentUserId = null;
             current = { status: AUTH_SESSION_STATES.UNAUTHENTICATED, sessionPresent: false };
             listener?.(current, "SIGNED_OUT");
         },
@@ -181,6 +194,149 @@ test("valid Supabase session is principal-verified and opens the protected API b
     assert.equal(requests[0][0], "/api/backend/auth/me");
     assert.match(requests[0][1].headers.Authorization, /^Bearer /u);
     assert.equal(Object.hasOwn(auth.getState(), "accessToken"), false);
+});
+
+test("refocus SIGNED_IN for the verified user does not re-probe or enter BOOTSTRAPPING", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    const events = [];
+    const requests = [];
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => {
+            requests.push(input);
+            return input === "/api/backend/auth/me" ? okMeResponse() : okBootstrapResponse();
+        },
+    });
+    auth.subscribe((nextState) => events.push(nextState.status));
+    await auth.initialize();
+    events.length = 0;
+    const requestCount = requests.length;
+
+    session.emitAuthEvent("SIGNED_IN", "user-1");
+
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.AUTHENTICATED);
+    assert.equal(auth.getState().principalVerified, true);
+    assert.equal(requests.length, requestCount);
+    assert.deepEqual(events, []);
+});
+
+test("a different signed-in user must pass through a new principal probe", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    const events = [];
+    const requests = [];
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => {
+            requests.push(input);
+            return input === "/api/backend/auth/me" ? okMeResponse() : okBootstrapResponse();
+        },
+    });
+    auth.subscribe((nextState, event) => events.push([nextState.status, event]));
+    await auth.initialize();
+    events.length = 0;
+    const requestCount = requests.length;
+
+    session.emitAuthEvent("SIGNED_IN", "user-2");
+    assert.equal(auth.getState().principalVerified, false);
+    assert.ok(events.some(([status, event]) => status === AUTH_SESSION_STATES.BOOTSTRAPPING
+        && event === "AUTH_IDENTITY_CHANGED"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.AUTHENTICATED);
+    assert.equal(requests.length, requestCount + 2);
+});
+
+test("a direct probe fails closed when the session user changed without an auth event", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    const events = [];
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => input === "/api/backend/auth/me"
+            ? okMeResponse() : okBootstrapResponse(),
+    });
+    auth.subscribe((nextState, event) => events.push([nextState.status, event]));
+    await auth.initialize();
+    events.length = 0;
+
+    session.setCurrentUserId("user-2");
+    await auth.probeCurrentUser();
+
+    assert.ok(events.some(([status, event]) => status === AUTH_SESSION_STATES.BOOTSTRAPPING
+        && event === "AUTH_IDENTITY_CHANGED"));
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.AUTHENTICATED);
+});
+
+test("SIGNED_OUT still closes a previously verified session", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => input === "/api/backend/auth/me"
+            ? okMeResponse() : okBootstrapResponse(),
+    });
+    await auth.initialize();
+
+    session.emitAuthEvent("SIGNED_OUT");
+
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.UNAUTHENTICATED);
+    assert.equal(auth.getState().protectedApiReady, false);
+});
+
+test("an in-flight silent probe cannot reopen the app after SIGNED_OUT", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    let releaseProbe;
+    let meCalls = 0;
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => {
+            if (input !== "/api/backend/auth/me") return okBootstrapResponse();
+            meCalls += 1;
+            if (meCalls === 1) return okMeResponse();
+            return new Promise((resolve) => { releaseProbe = () => resolve(okMeResponse()); });
+        },
+    });
+    await auth.initialize();
+    const pendingProbe = auth.probeCurrentUser();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(typeof releaseProbe, "function");
+
+    session.emitAuthEvent("SIGNED_OUT");
+    releaseProbe();
+    await pendingProbe;
+
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.UNAUTHENTICATED);
+    assert.equal(auth.getState().protectedApiReady, false);
+});
+
+test("re-probing an already verified session stays visible on 200 and gates on 401", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    let rejectProbe = false;
+    const statuses = [];
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => {
+            if (input === "/api/backend/auth/me") {
+                return rejectProbe ? { ok: false, status: 401 } : okMeResponse();
+            }
+            return okBootstrapResponse();
+        },
+    });
+    auth.subscribe((nextState) => statuses.push(nextState.status));
+    await auth.initialize();
+    statuses.length = 0;
+
+    await auth.probeCurrentUser();
+    assert.deepEqual(statuses, [AUTH_SESSION_STATES.AUTHENTICATED]);
+    rejectProbe = true;
+    await auth.probeCurrentUser();
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.SESSION_EXPIRED);
+    assert.equal(auth.getState().protectedApiReady, false);
+    assert.equal(statuses.includes(AUTH_SESSION_STATES.BOOTSTRAPPING), false);
 });
 
 test("a 401 keeps the Supabase session isolated and marks it expired", async () => {

@@ -86,6 +86,8 @@ export function createFrontendAuthController({
     let legacyWebsiteAuthToken = () => null;
     let refreshPromise = null;
     let suppressLegacyFallback = false;
+    let verifiedSupabaseUserId = null;
+    let authRevision = 0;
     const listeners = new Set();
 
     function getState() {
@@ -114,6 +116,8 @@ export function createFrontendAuthController({
     }
 
     function setUnauthenticated(event = null) {
+        authRevision += 1;
+        verifiedSupabaseUserId = null;
         setState({
             status: AUTH_SESSION_STATES.UNAUTHENTICATED,
             authority: null,
@@ -129,6 +133,8 @@ export function createFrontendAuthController({
     }
 
     function setSupabaseExpired(errorCode = "SESSION_EXPIRED", event = "SESSION_EXPIRED") {
+        authRevision += 1;
+        verifiedSupabaseUserId = null;
         setState({
             status: AUTH_SESSION_STATES.SESSION_EXPIRED,
             authority: "supabase",
@@ -145,6 +151,7 @@ export function createFrontendAuthController({
 
     function resolveTelegramAuthority() {
         if (isTelegramMiniApp()) {
+            verifiedSupabaseUserId = null;
             setState({
                 status: AUTH_SESSION_STATES.AUTHENTICATED,
                 authority: "telegram",
@@ -166,6 +173,7 @@ export function createFrontendAuthController({
         if (resolveTelegramAuthority()) return getState();
         const sessionState = normalizedSessionState(sessionController);
         if (!sessionState.sessionPresent) {
+            verifiedSupabaseUserId = null;
             if (hasLegacyWebsiteAuth()) {
                 setState({
                     status: AUTH_SESSION_STATES.AUTHENTICATED,
@@ -185,52 +193,53 @@ export function createFrontendAuthController({
             return getState();
         }
 
-        setState({
-            status: AUTH_SESSION_STATES.BOOTSTRAPPING,
-            authority: "supabase",
-            authChannel: "email_otp",
-            principalVerified: false,
-            protectedApiReady: false,
-            sessionPresent: true,
-            errorCode: null,
-        }, "PROBING_PRINCIPAL");
+        const sessionUserId = sessionController.getCurrentAuthUser?.()?.id || null;
+        const probeRevision = authRevision;
+        const probeStillCurrent = () => authRevision === probeRevision
+            && (sessionController.getCurrentAuthUser?.()?.id || null) === sessionUserId;
+        const wasVerifiedSupabase = state.status === AUTH_SESSION_STATES.AUTHENTICATED
+            && state.authority === "supabase"
+            && state.principalVerified && state.protectedApiReady;
+        const silentlyRecheck = wasVerifiedSupabase
+            && Boolean(sessionUserId && sessionUserId === verifiedSupabaseUserId);
+        if (!silentlyRecheck) {
+            verifiedSupabaseUserId = null;
+            setState({
+                status: AUTH_SESSION_STATES.BOOTSTRAPPING,
+                authority: "supabase",
+                authChannel: "email_otp",
+                principalVerified: false,
+                protectedApiReady: false,
+                sessionPresent: true,
+                errorCode: null,
+            }, wasVerifiedSupabase ? "AUTH_IDENTITY_CHANGED" : "PROBING_PRINCIPAL");
+        }
 
         try {
             const accessToken = await sessionController.getAccessToken();
+            if (!probeStillCurrent()) return getState();
             if (!accessToken) {
-                setState({
-                    status: AUTH_SESSION_STATES.SESSION_EXPIRED,
-                    authority: "supabase",
-                    authChannel: "email_otp",
-                    principalVerified: false,
-                    protectedApiReady: false,
-                    sessionPresent: true,
-                    errorCode: "SESSION_EXPIRED",
-                }, "ME_REJECTED");
+                setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
             const response = await fetchImpl("/api/backend/auth/me", {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
+            if (!probeStillCurrent()) return getState();
             if (response?.status === 401) {
-                setState({
-                    status: AUTH_SESSION_STATES.SESSION_EXPIRED,
-                    authority: "supabase",
-                    authChannel: "email_otp",
-                    principalVerified: false,
-                    protectedApiReady: false,
-                    sessionPresent: true,
-                    errorCode: "SESSION_EXPIRED",
-                }, "ME_REJECTED");
+                setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
             if (!response?.ok) throw new Error("principal_probe_failed");
             const payload = await response.json().catch(() => null);
+            if (!probeStillCurrent()) return getState();
             if (payload?.authenticated !== true || payload.authority !== "supabase") {
-                setState({ status: AUTH_SESSION_STATES.SESSION_EXPIRED, errorCode: "BACKEND_REJECTED" }, "ME_REJECTED");
+                setSupabaseExpired("BACKEND_REJECTED", "ME_REJECTED");
                 return getState();
             }
             const account = await bootstrapSupabaseAccount();
+            if (!probeStillCurrent()) return getState();
+            verifiedSupabaseUserId = sessionUserId;
             setState({
                 status: AUTH_SESSION_STATES.AUTHENTICATED,
                 authority: "supabase",
@@ -244,21 +253,12 @@ export function createFrontendAuthController({
                 account,
             }, "PRINCIPAL_VERIFIED");
         } catch (error) {
+            if (!probeStillCurrent()) return getState();
             if (error?.code === "SESSION_EXPIRED") {
-                setState({
-                    status: AUTH_SESSION_STATES.SESSION_EXPIRED,
-                    authority: "supabase",
-                    authChannel: "email_otp",
-                    principalVerified: false,
-                    protectedApiReady: false,
-                    sessionPresent: true,
-                    errorCode: "SESSION_EXPIRED",
-                    interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
-                    authenticationSource: null,
-                    account: null,
-                }, "BOOTSTRAP_REJECTED");
+                setSupabaseExpired("SESSION_EXPIRED", "BOOTSTRAP_REJECTED");
                 return getState();
             }
+            verifiedSupabaseUserId = null;
             setState({
                 status: AUTH_SESSION_STATES.NETWORK_ERROR,
                 authority: "supabase",
@@ -291,22 +291,35 @@ export function createFrontendAuthController({
                 setUnauthenticated(event);
                 return;
             }
-            if (event === "TOKEN_REFRESHED" && state.authority === "supabase" && state.principalVerified) {
-                setState({
-                    status: AUTH_SESSION_STATES.AUTHENTICATED,
-                    authority: "supabase",
-                    authChannel: "email_otp",
-                    principalVerified: true,
-                    protectedApiReady: true,
-                    sessionPresent: true,
-                    errorCode: null,
-                    interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
-                    authenticationSource: state.authenticationSource || "restored_session",
-                }, event);
+            const eventUserId = sessionController.getCurrentAuthUser?.()?.id || null;
+            const hasVerifiedSupabasePrincipal = state.status === AUTH_SESSION_STATES.AUTHENTICATED
+                && state.authority === "supabase" && state.principalVerified && state.protectedApiReady;
+            if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED")
+                && hasVerifiedSupabasePrincipal && sessionState?.sessionPresent
+                && eventUserId && eventUserId === verifiedSupabaseUserId) {
                 return;
             }
-            if (sessionState?.sessionPresent) void reconcile();
-            else if (!hasLegacyWebsiteAuth()) setUnauthenticated(event);
+            if (hasVerifiedSupabasePrincipal && eventUserId && verifiedSupabaseUserId
+                && eventUserId !== verifiedSupabaseUserId) {
+                authRevision += 1;
+                verifiedSupabaseUserId = null;
+                setState({
+                    status: AUTH_SESSION_STATES.BOOTSTRAPPING,
+                    principalVerified: false,
+                    protectedApiReady: false,
+                    interactionState: AUTH_INTERACTION_STATES.RESTORING,
+                    account: null,
+                }, "AUTH_IDENTITY_CHANGED");
+            }
+            if (sessionState?.sessionPresent) {
+                if (reconciliationPromise && eventUserId && eventUserId !== verifiedSupabaseUserId) {
+                    void reconciliationPromise.then(() => reconcile(), () => reconcile());
+                } else {
+                    void reconcile();
+                }
+            } else if (!hasLegacyWebsiteAuth()) {
+                setUnauthenticated(event);
+            }
         });
     }
 

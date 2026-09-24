@@ -15,6 +15,7 @@ const session = {
     access_token: "access-token-for-test-only",
     refresh_token: "refresh-token-for-test-only",
     expires_at: 1_800_000_000,
+    user: { id: "supabase-user-1", email: "user@example.test" },
 };
 
 function fakeClient({ initialSession = null, refreshResult = {}, otpRequestResult = {}, verifyResult = {} } = {}) {
@@ -88,6 +89,7 @@ test("stored session restores as authenticated with safe metadata only", async (
         lastEvent: "INITIAL_SESSION",
         errorCode: null,
     });
+    assert.deepEqual(controller.getCurrentAuthUser(), { id: "supabase-user-1", email: "user@example.test" });
 });
 
 test("access token is obtained on demand and not stored in state", async () => {
