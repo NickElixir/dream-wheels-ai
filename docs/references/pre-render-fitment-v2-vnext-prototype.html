@@ -156,15 +156,19 @@ button{cursor:pointer}
 .param{color:#aeb5ba;font-size:12px;font-weight:500;letter-spacing:.02em}
 .value{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
 .result{
-  display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500
+  display:inline-grid;place-items:center;
+  width:26px;height:26px;
+  font-size:22px;line-height:1;font-weight:500
 }
-.result::before{
-  content:"";width:7px;height:7px;border-radius:50%;background:var(--pending);flex:0 0 7px
+.result.good{color:var(--good)}
+.result.warn{color:var(--warn)}
+.result.bad{color:var(--bad)}
+.result.pending{color:var(--pending)}
+.sr-only{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
 }
-.result.good{color:#abd8be}.result.good::before{background:var(--good)}
-.result.warn{color:#dabe8c}.result.warn::before{background:var(--warn)}
-.result.bad{color:#e1a0a0}.result.bad::before{background:var(--bad)}
-.result.pending{color:#9aa2a8}.result.pending::before{background:#707980}
 .row-strong td{background:linear-gradient(90deg,rgba(216,121,121,.055),rgba(216,121,121,0))}
 .row-warn td{background:linear-gradient(90deg,rgba(216,173,103,.055),rgba(216,173,103,0))}
 .explainer{
@@ -344,7 +348,7 @@ button{cursor:pointer}
             </svg>
           </div>
           <div class="object-meta">
-            <div><p class="object-label">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+</div></div>
+            <div><p class="object-label">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
             <button class="change">Изменить</button>
           </div>
         </article>
@@ -496,13 +500,14 @@ const scenarios = {
 let current = localStorage.getItem("dw-vnext-fitment-state") || "incompatible";
 
 function renderTable(rows){
+  const icons={good:"✓",warn:"!",bad:"×",pending:"—"};
   let html='<div class="table-wrap"><table class="fit-table"><colgroup><col><col><col><col></colgroup><thead><tr><th>Параметр</th><th>Автомобиль / reference</th><th>Диск</th><th>Результат</th></tr></thead><tbody>';
   rows.forEach(function(r){
     html+='<tr class="'+(r.strong?(r.status==="bad"?"row-strong":"row-warn"):"")+'">';
     html+='<td class="param">'+r.label+'</td>';
     html+='<td class="value">'+r.car+'</td>';
     html+='<td class="value">'+r.wheel+'</td>';
-    html+='<td><span class="result '+r.status+'">'+r.result+'</span></td>';
+    html+='<td><span class="result '+r.status+'" aria-label="'+r.result+'" title="'+r.result+'">'+icons[r.status]+'<span class="sr-only">'+r.result+'</span></span></td>';
     html+='</tr>';
   });
   html+='</tbody></table></div>';
