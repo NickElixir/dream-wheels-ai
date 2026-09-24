@@ -258,8 +258,8 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   .main{padding:18px 18px calc(90px + var(--safe-bottom))}
   .topbar{flex-wrap:wrap;align-items:center}
   .mobile-brand{display:flex;margin:0;order:1}
+  .topbar-meta{display:block;order:1;margin-left:auto}
   .topbar h1{display:block;order:2;width:100%;margin-top:8px;font-size:23px}
-  .topbar-meta{display:none}
   .dashboard-hero,.create-lower,.result-layout,.fit-context{grid-template-columns:1fr}
   .dashboard-side,.create-aside,.result-panel{max-width:none}
   .mobile-nav{
@@ -526,7 +526,7 @@ fitment:{
 },
 result:{
   title:"Результат",
-  meta:"Сегодня, 14:32",
+  meta:"36 рендеров",
   html:function(){return `
     <div class="result-layout">
       <section class="result-viewer">
