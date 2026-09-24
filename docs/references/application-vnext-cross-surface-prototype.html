@@ -144,6 +144,59 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 .create-aside strong{display:block;color:var(--text);font-weight:500;margin-bottom:5px}
 .create-actions{margin-top:22px}
 
+/* Fitment */
+.fit-context{
+  display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,.75fr);
+  gap:16px;padding-bottom:26px;border-bottom:1px solid var(--line)
+}
+.fit-context .vehicle-media{aspect-ratio:16/8.8}
+.fit-context .wheel-media{aspect-ratio:1/1}
+.fit-content{padding-top:30px}
+.fit-verdict{display:flex;align-items:flex-start;gap:14px;max-width:820px}
+.fit-mark{
+  flex:0 0 auto;display:grid;place-items:center;
+  width:34px;height:34px;margin-top:2px;
+  color:var(--bad);font-size:29px;line-height:1;font-weight:500
+}
+.fit-title{
+  margin:0;font-size:clamp(30px,3.5vw,46px);line-height:1.04;
+  font-weight:500;letter-spacing:-.04em
+}
+.fit-copy{margin:13px 0 0;max-width:820px;color:#b5bcc1;font-size:16px}
+.fit-table-wrap{margin-top:30px;border-top:1px solid var(--line-strong)}
+.fit-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.fit-table col:nth-child(1){width:20%}.fit-table col:nth-child(2){width:29%}.fit-table col:nth-child(3){width:22%}.fit-table col:nth-child(4){width:29%}
+.fit-table th{
+  padding:13px 10px 11px;text-align:left;color:var(--subtle);
+  font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;
+  border-bottom:1px solid var(--line)
+}
+.fit-table th:first-child,.fit-table td:first-child{padding-left:0}
+.fit-table th:last-child,.fit-table td:last-child{padding-right:0}
+.fit-table td{padding:15px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.fit-param{color:#aeb5ba;font-size:12px;font-weight:500}
+.fit-value{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.fit-result{font-size:22px;line-height:1;font-weight:500}
+.fit-result.good{color:var(--good)}.fit-result.bad{color:var(--bad)}
+.fit-row-bad td{background:linear-gradient(90deg,rgba(216,121,121,.055),rgba(216,121,121,0))}
+.fit-explainer{
+  margin-top:20px;padding:15px 0;border-bottom:1px solid var(--line);
+  color:#aab2b7;font-size:13px;max-width:760px
+}
+.fit-explainer strong{color:var(--text);font-weight:500}
+.fit-disclaimer{
+  display:flex;align-items:flex-start;gap:10px;max-width:900px;
+  margin-top:20px;padding-top:14px;border-top:1px solid var(--line);
+  color:#929ba1;font-size:12px
+}
+.fit-info{
+  width:18px;height:18px;flex:0 0 18px;border:1px solid #606970;border-radius:50%;
+  display:grid;place-items:center;color:#c5cacf;font-size:11px
+}
+.fit-disclaimer strong{display:block;color:#d5d9dc;font-weight:500;margin-bottom:3px}
+.fit-disclaimer p{margin:0}
+.fit-actions{margin-top:24px}
+
 /* Result */
 .result-layout{
   display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.65fr);
@@ -190,7 +243,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   font-size:10px;text-transform:uppercase;letter-spacing:.13em;font-weight:600
 }
 .review summary::-webkit-details-marker{display:none}
-.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 10px 10px}
+.review-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:0 10px 10px}
 .review button{
   min-height:36px;border-radius:6px;border:1px solid #252b30;
   background:#101418;color:#9ba4aa;padding:0 9px;font-size:11px
@@ -204,7 +257,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   .main{padding:18px 18px calc(90px + var(--safe-bottom))}
   .mobile-brand{display:flex;margin:0}
   .topbar h1{display:none}
-  .dashboard-hero,.create-lower,.result-layout{grid-template-columns:1fr}
+  .dashboard-hero,.create-lower,.result-layout,.fit-context{grid-template-columns:1fr}
   .dashboard-side,.create-aside,.result-panel{max-width:none}
   .mobile-nav{
     position:fixed;left:0;right:0;bottom:0;z-index:15;
@@ -223,6 +276,18 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   .create-pair{grid-template-columns:1fr}
   .source.wheel{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:center}
   .source.wheel .meta-row{padding-top:0}
+  .fit-context .wheel-object{display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center}
+  .fit-context .wheel-object .meta-row{padding-top:0}
+  .fit-table,.fit-table tbody,.fit-table tr,.fit-table td{display:block;width:100%}
+  .fit-table colgroup,.fit-table thead{display:none}
+  .fit-table tr{padding:14px 0;border-bottom:1px solid var(--line)}
+  .fit-table td{border:0;padding:0}
+  .fit-table td.fit-param{margin-bottom:9px;color:#d0d5d8;font-size:13px}
+  .fit-table td:nth-child(2),.fit-table td:nth-child(3){display:grid;grid-template-columns:110px 1fr;gap:10px;padding:3px 0}
+  .fit-table td:nth-child(2)::before{content:"Автомобиль";color:var(--subtle);font-size:11px}
+  .fit-table td:nth-child(3)::before{content:"Диск";color:var(--subtle);font-size:11px}
+  .fit-table td:nth-child(4){padding-top:8px}
+  .fit-row-bad td{background:none}
   .recent-grid{grid-template-columns:1fr}
   .result-panel{padding-top:18px}
   .review{position:static;width:100%;margin-top:30px}
@@ -230,7 +295,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 }
 @media(max-width:390px){
   .main{padding-left:14px;padding-right:14px}
-  .source.wheel{grid-template-columns:104px minmax(0,1fr)}
+  .source.wheel,.fit-context .wheel-object{grid-template-columns:104px minmax(0,1fr)}
   .rating-actions{grid-template-columns:1fr}
   .actions{display:grid;grid-template-columns:1fr}
   .btn{width:100%}
@@ -245,6 +310,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
     <nav class="nav" aria-label="Основная навигация">
       <button data-nav="dashboard">Главная</button>
       <button data-nav="create">Примерить диски</button>
+      <button data-nav="fitment">Совместимость</button>
       <button data-nav="result">Мои примерки</button>
       <button>Баланс</button>
     </nav>
@@ -274,6 +340,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
         <div class="review-grid">
           <button data-screen="dashboard">Dashboard</button>
           <button data-screen="create">Create</button>
+          <button data-screen="fitment">Fitment</button>
           <button data-screen="result">Result</button>
         </div>
       </details>
@@ -325,7 +392,7 @@ dashboard:{
           <h2>Porsche Cayenne</h2>
           <p>E3, 2022, Russia+</p>
           <div class="actions" style="margin-top:16px">
-            <button class="btn btn-primary">Создать примерку</button>
+            <button class="btn btn-primary" data-go="create">Создать примерку</button>
             <button class="btn btn-secondary">Изменить автомобиль</button>
           </div>
         </div>
@@ -343,7 +410,7 @@ dashboard:{
             <span class="status good">Готово</span>
             <span class="object-sub">BBS CI-R, сегодня 14:32</span>
           </div>
-          <div class="actions" style="margin-top:12px"><button class="btn btn-secondary">Открыть последний результат</button></div>
+          <div class="actions" style="margin-top:12px"><button class="btn btn-secondary" data-go="result">Открыть последний результат</button></div>
         </div>
       </aside>
     </div>
@@ -397,8 +464,8 @@ create:{
           <p>PCD, DIA, диаметр, ширина и ET доступны для технической проверки</p>
         </div>
         <div class="actions create-actions">
-          <button class="btn btn-primary">Создать изображение</button>
-          <button class="btn btn-secondary">Проверить совместимость</button>
+          <button class="btn btn-primary" data-go="result">Создать изображение</button>
+          <button class="btn btn-secondary" data-go="fitment">Проверить совместимость</button>
         </div>
       </section>
       <aside class="create-aside">
@@ -406,6 +473,52 @@ create:{
         Визуальная примерка показывает внешний вид выбранного диска на исходной фотографии автомобиля. Техническая проверка оценивает параметры установки отдельно
       </aside>
     </div>`;
+  }
+},
+fitment:{
+  title:"Проверка совместимости",
+  meta:"36 рендеров",
+  html:function(){return `
+    <div class="fit-context">
+      <article>
+        <div class="media vehicle-media">${carSvg(false)}</div>
+        <div class="meta-row">
+          <div><p class="eyebrow">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
+          <button class="btn-text" data-go="create">Изменить</button>
+        </div>
+      </article>
+      <article class="wheel-object">
+        <div class="media wheel-media">${wheelSvg()}</div>
+        <div class="meta-row">
+          <div><p class="eyebrow">Колесный диск</p><div class="object-name">BBS CI-R</div><div class="object-sub">20″ / 9J / ET 58</div></div>
+          <button class="btn-text" data-go="create">Изменить</button>
+        </div>
+      </article>
+    </div>
+    <section class="fit-content">
+      <p class="eyebrow">Техническая проверка</p>
+      <div class="fit-verdict"><span class="fit-mark">×</span><h2 class="fit-title">Обнаружена несовместимость</h2></div>
+      <p class="fit-copy">Вылет выбранного диска находится вне допустимого диапазона</p>
+      <div class="fit-table-wrap">
+        <table class="fit-table">
+          <colgroup><col><col><col><col></colgroup>
+          <thead><tr><th>Параметр</th><th>Для автомобиля</th><th>Диск</th><th>Результат</th></tr></thead>
+          <tbody>
+            <tr><td class="fit-param">PCD</td><td class="fit-value">5×130</td><td class="fit-value">5×130</td><td><span class="fit-result good">✓</span></td></tr>
+            <tr><td class="fit-param">DIA</td><td class="fit-value">71,6 мм</td><td class="fit-value">71,6 мм</td><td><span class="fit-result good">✓</span></td></tr>
+            <tr><td class="fit-param">Диаметр</td><td class="fit-value">20″</td><td class="fit-value">20″</td><td><span class="fit-result good">✓</span></td></tr>
+            <tr><td class="fit-param">Ширина</td><td class="fit-value">9J</td><td class="fit-value">9J</td><td><span class="fit-result good">✓</span></td></tr>
+            <tr class="fit-row-bad"><td class="fit-param">ET</td><td class="fit-value">47–53</td><td class="fit-value">58</td><td><span class="fit-result bad">×</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fit-explainer"><strong>Что это значит</strong><br>ET диска 58 находится вне допустимого диапазона 47–53 для этой конфигурации</div>
+      <aside class="fit-disclaimer"><span class="fit-info">i</span><div><strong>Техническая проверка не ограничивает визуальную примерку</strong><p>Создание изображения остаётся доступным независимо от Fitment. Рендер показывает внешний вид и не подтверждает физическую установку</p></div></aside>
+      <div class="actions fit-actions">
+        <button class="btn btn-primary" data-go="result">Создать изображение</button>
+        <button class="btn btn-secondary" data-go="create">Выбрать другой диск</button>
+      </div>
+    </section>`;
   }
 },
 result:{
@@ -430,7 +543,7 @@ result:{
           <div class="flat-row"><span>Рендер</span><strong>1</strong></div>
         </div>
         <div class="actions">
-          <button class="btn btn-primary">Создать ещё вариант</button>
+          <button class="btn btn-primary" data-go="create">Создать ещё вариант</button>
           <button class="btn btn-secondary">Скачать изображение</button>
         </div>
         <div class="rating">
@@ -456,12 +569,17 @@ function render(){
     b.onclick=function(){setScreen(b.dataset.nav)};
   });
   document.querySelectorAll("[data-mobile]").forEach(function(b){
-    b.classList.toggle("active",b.dataset.mobile===current);
+    const mobileCurrent=current==="fitment"?"create":current;
+    b.classList.toggle("active",b.dataset.mobile===mobileCurrent);
     b.onclick=function(){setScreen(b.dataset.mobile)};
   });
   document.querySelectorAll("[data-screen]").forEach(function(b){
     b.classList.toggle("active",b.dataset.screen===current);
     b.onclick=function(){setScreen(b.dataset.screen)};
+  });
+
+  document.querySelectorAll("[data-go]").forEach(function(b){
+    b.onclick=function(){setScreen(b.dataset.go)};
   });
 
   document.querySelectorAll("[data-segment]").forEach(function(b){
