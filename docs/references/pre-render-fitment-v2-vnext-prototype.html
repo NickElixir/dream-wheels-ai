@@ -57,7 +57,6 @@ button{cursor:pointer}
   font-weight:600;letter-spacing:.16em;font-size:13px;
   margin:0 8px 34px;
 }
-.brand-dot{width:6px;height:6px;border-radius:50%;background:var(--lime)}
 .brand-dim{color:#8d959b}
 .nav-group{display:grid;gap:5px}
 .nav-label{
@@ -71,9 +70,6 @@ button{cursor:pointer}
 }
 .nav-item:hover{background:#0e1215;color:var(--text)}
 .nav-item.active{background:#101418;color:var(--text)}
-.nav-item.active::before{
-  content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;background:var(--lime)
-}
 .account{
   margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--line);
   display:flex;justify-content:space-between;align-items:end;gap:12px;
@@ -289,7 +285,7 @@ button{cursor:pointer}
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><span class="brand-dot"></span><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+    <div class="brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
     <nav class="nav-group" aria-label="Основная навигация">
       <button class="nav-item">Главная</button>
       <button class="nav-item">Примерить диски</button>
@@ -312,7 +308,7 @@ button{cursor:pointer}
     <div class="frame">
       <header class="topbar">
         <div class="desktop-title"><h1>Проверка совместимости</h1></div>
-        <div class="mobile-brand brand"><span class="brand-dot"></span><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+        <div class="mobile-brand brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
         <div class="top-meta"><span class="prototype-tag">VNext prototype</span><span>36 рендеров</span></div>
       </header>
 
