@@ -123,7 +123,7 @@ button{cursor:pointer}
   margin:0 0 10px;color:var(--subtle);font-size:10px;
   letter-spacing:.16em;text-transform:uppercase;font-weight:600
 }
-.verdict-heading{display:flex;align-items:flex-start;gap:14px;max-width:980px}
+.verdict-heading{display:flex;align-items:flex-start;gap:14px;max-width:820px}
 .verdict-mark{
   flex:0 0 auto;display:grid;place-items:center;
   width:34px;height:34px;margin-top:2px;
@@ -458,7 +458,7 @@ const scenarios = {
     copy:"По проверенным параметрам конфликтов не обнаружено",
     rows:baseRows,
     explainer:"",
-    secondary:"Проверить ещё раз"
+    secondary:""
   },
   conditional:{
     label:"С условием",
@@ -490,7 +490,7 @@ const scenarios = {
     markTone:"bad",
     copy:"Вылет выбранного диска находится вне допустимого диапазона",
     rows:baseRows.map(function(r){return r.key==="et"?{key:"et",label:"ET",car:"47–53",wheel:"58",status:"bad",result:"Конфликт",strong:true}:r}),
-    explainer:"Для V2 доверенное значение ET за пределами подтверждённого диапазона считается несовместимым",
+    explainer:"ET диска 58 находится вне допустимого диапазона 47–53 для этой конфигурации",
     secondary:"Выбрать другой диск"
   },
   unknown:{
