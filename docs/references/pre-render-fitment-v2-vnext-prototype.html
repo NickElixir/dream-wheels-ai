@@ -117,21 +117,28 @@ button{cursor:pointer}
   padding:2px 0;font-size:12px;text-decoration:underline;text-underline-offset:4px;
   text-decoration-color:#4b5258
 }
-.content{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:38px;padding-top:30px}
-.primary{min-width:0}
+.content{display:block;padding-top:30px}
+.primary{min-width:0;width:100%}
 .eyebrow{
   margin:0 0 10px;color:var(--subtle);font-size:10px;
   letter-spacing:.16em;text-transform:uppercase;font-weight:600
 }
-.verdict-title{
-  margin:0;font-size:clamp(30px,4.1vw,52px);line-height:.98;
-  font-weight:500;letter-spacing:-.045em
+.verdict-heading{display:flex;align-items:flex-start;gap:14px;max-width:980px}
+.verdict-mark{
+  flex:0 0 auto;display:grid;place-items:center;
+  width:34px;height:34px;margin-top:2px;
+  font-size:29px;line-height:1;font-weight:500
 }
-.verdict-title.good{color:#bde2cb}
-.verdict-title.warn{color:#e2c494}
-.verdict-title.bad{color:#e3a0a0}
-.verdict-title.neutral{color:var(--text)}
-.verdict-copy{margin:14px 0 0;max-width:710px;color:#b5bcc1;font-size:16px;line-height:1.5}
+.verdict-mark.good{color:var(--good)}
+.verdict-mark.warn{color:var(--warn)}
+.verdict-mark.bad{color:var(--bad)}
+.verdict-mark.neutral{color:#aab2b7}
+.verdict-title{
+  margin:0;color:var(--text);
+  font-size:clamp(30px,3.5vw,46px);line-height:1.04;
+  font-weight:500;letter-spacing:-.04em
+}
+.verdict-copy{margin:13px 0 0;max-width:820px;color:#b5bcc1;font-size:16px;line-height:1.5}
 .table-wrap{margin-top:30px;border-top:1px solid var(--line-strong)}
 .fit-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .fit-table col:nth-child(1){width:20%}
@@ -182,13 +189,18 @@ button{cursor:pointer}
 .btn-secondary{background:transparent;color:#d5d9dc;border-color:var(--line-strong)}
 .btn-secondary:hover{background:#101419}
 .btn-text{background:transparent;color:#b6bdc2;padding-left:4px;padding-right:4px}
-.side-note{
-  align-self:start;border-top:1px solid var(--line-strong);padding-top:14px;
-  color:#8f989e;font-size:12px
+.fitment-disclaimer{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:20px;padding:14px 0 0;border-top:1px solid var(--line);
+  color:#929ba1;font-size:12px;max-width:900px
 }
-.side-note strong{display:block;color:#d4d8da;font-weight:500;margin-bottom:6px}
-.side-note p{margin:0;line-height:1.55}
-.side-note p+p{margin-top:10px}
+.fitment-disclaimer-icon{
+  flex:0 0 auto;width:18px;height:18px;border:1px solid #606970;
+  border-radius:50%;display:grid;place-items:center;
+  color:#c5cacf;font-size:11px;margin-top:1px
+}
+.fitment-disclaimer strong{display:block;color:#d5d9dc;font-weight:500;margin-bottom:3px}
+.fitment-disclaimer p{margin:0;line-height:1.5}
 .processing-block{
   margin-top:28px;border-top:1px solid var(--line-strong);padding-top:18px
 }
@@ -208,6 +220,7 @@ button{cursor:pointer}
   background:rgba(12,15,18,.97);border:1px solid #293036;border-radius:10px;
   box-shadow:0 16px 42px rgba(0,0,0,.38);overflow:hidden
 }
+.review:not([open]){width:auto}
 .review summary{
   list-style:none;cursor:pointer;padding:11px 13px;color:#8e979e;
   font-size:10px;text-transform:uppercase;letter-spacing:.13em;font-weight:600
@@ -227,8 +240,7 @@ button{cursor:pointer}
   .main{padding:18px 18px calc(88px + var(--safe-bottom))}
   .mobile-brand{display:flex}
   .desktop-title{display:none}
-  .content{grid-template-columns:1fr}
-  .side-note{max-width:720px}
+  .content{display:block}
   .mobile-nav{
     position:fixed;left:0;right:0;bottom:0;z-index:15;
     display:grid;grid-template-columns:repeat(5,1fr);
@@ -254,7 +266,9 @@ button{cursor:pointer}
   .wheel .media{aspect-ratio:1/1}
   .wheel .object-meta{padding-top:0}
   .content{padding-top:24px;gap:28px}
-  .verdict-title{font-size:36px}
+  .verdict-heading{gap:10px}
+  .verdict-mark{width:28px;height:28px;font-size:24px}
+  .verdict-title{font-size:34px}
   .verdict-copy{font-size:14px}
   .table-wrap{overflow:visible}
   .fit-table,.fit-table tbody,.fit-table tr,.fit-table td{display:block;width:100%}
@@ -309,7 +323,7 @@ button{cursor:pointer}
       <header class="topbar">
         <div class="desktop-title"><h1>Проверка совместимости</h1></div>
         <div class="mobile-brand brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
-        <div class="top-meta"><span class="prototype-tag">VNext prototype</span><span>36 рендеров</span></div>
+
       </header>
 
       <section class="context" aria-label="Текущая пара">
@@ -372,7 +386,7 @@ button{cursor:pointer}
                 <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(324)"/>
               </g>
               <circle cx="250" cy="250" r="38" fill="#0a0d0f" stroke="#777d82" stroke-width="3"/>
-              <circle cx="250" cy="250" r="8" fill="#d8ff37" opacity=".75"/>
+              <circle cx="250" cy="250" r="8" fill="#9ba2a7" opacity=".65"/>
             </svg>
           </div>
           <div class="object-meta">
@@ -385,26 +399,31 @@ button{cursor:pointer}
       <section class="content">
         <div class="primary">
           <p class="eyebrow">Техническая проверка</p>
-          <h2 class="verdict-title" id="verdictTitle"></h2>
+          <div class="verdict-heading">
+            <span class="verdict-mark" id="verdictMark" aria-hidden="true"></span>
+            <h2 class="verdict-title" id="verdictTitle"></h2>
+          </div>
           <p class="verdict-copy" id="verdictCopy"></p>
 
           <div id="tableMount"></div>
           <div id="auxMount"></div>
+
+          <aside class="fitment-disclaimer">
+            <span class="fitment-disclaimer-icon" aria-hidden="true">i</span>
+            <div>
+              <strong>Техническая проверка не ограничивает визуальную примерку</strong>
+              <p>Создание изображения остаётся доступным независимо от Fitment. Рендер показывает внешний вид и не подтверждает физическую установку</p>
+            </div>
+          </aside>
 
           <div class="actions" id="actions">
             <button class="btn btn-primary">Создать изображение</button>
             <button class="btn btn-secondary" id="secondaryAction">Выбрать другой диск</button>
           </div>
         </div>
-
-        <aside class="side-note">
-          <strong>Визуальная примерка независима от Fitment</strong>
-          <p>Технический результат не блокирует создание изображения</p>
-          <p>Рендер показывает внешний вид и не подтверждает физическую установку</p>
-        </aside>
       </section>
 
-      <details class="review" open>
+      <details class="review">
         <summary>Сценарии прототипа</summary>
         <div class="review-grid" id="reviewGrid"></div>
       </details>
@@ -434,6 +453,8 @@ const scenarios = {
     label:"Совместимо",
     title:"Предварительно совместимо",
     tone:"good",
+    mark:"✓",
+    markTone:"good",
     copy:"По проверенным параметрам конфликтов не обнаружено",
     rows:baseRows,
     explainer:"",
@@ -443,6 +464,8 @@ const scenarios = {
     label:"С условием",
     title:"Совместимо при условии",
     tone:"warn",
+    mark:"!",
+    markTone:"warn",
     copy:"Для установки потребуются правильно подобранные центровочные кольца",
     rows:baseRows.map(function(r){return r.key==="dia"?{key:"dia",label:"DIA",car:"71,6 мм",wheel:"74,1 мм",status:"warn",result:"Требуется условие"}:r}),
     explainer:"DIA диска больше диаметра ступицы автомобиля. Для установки требуется центровочное кольцо",
@@ -452,6 +475,8 @@ const scenarios = {
     label:"PCD конфликт",
     title:"Обнаружена несовместимость",
     tone:"bad",
+    mark:"×",
+    markTone:"bad",
     copy:"Разболтовка выбранного диска не соответствует автомобилю",
     rows:baseRows.map(function(r){return r.key==="pcd"?{key:"pcd",label:"PCD",car:"5×130",wheel:"5×112",status:"bad",result:"Конфликт",strong:true}:r}),
     explainer:"Подтверждённый PCD диска отличается от PCD автомобиля",
@@ -461,6 +486,8 @@ const scenarios = {
     label:"ET конфликт",
     title:"Обнаружена несовместимость",
     tone:"bad",
+    mark:"×",
+    markTone:"bad",
     copy:"Вылет выбранного диска находится вне допустимого диапазона",
     rows:baseRows.map(function(r){return r.key==="et"?{key:"et",label:"ET",car:"47–53",wheel:"58",status:"bad",result:"Конфликт",strong:true}:r}),
     explainer:"Для V2 доверенное значение ET за пределами подтверждённого диапазона считается несовместимым",
@@ -470,6 +497,8 @@ const scenarios = {
     label:"Недостаточно данных",
     title:"Недостаточно данных для вывода",
     tone:"neutral",
+    mark:"?",
+    markTone:"neutral",
     copy:"Не хватает подтверждённого значения ET колесного диска",
     rows:baseRows.map(function(r){return r.key==="et"?{key:"et",label:"ET",car:"47–53",wheel:"—",status:"pending",result:"Недостаточно данных",strong:false}:r}),
     explainer:"Укажите ET выбранного диска и запустите техническую проверку повторно",
@@ -479,6 +508,8 @@ const scenarios = {
     label:"Проверяем",
     title:"Проверяем совместимость",
     tone:"neutral",
+    mark:"…",
+    markTone:"neutral",
     copy:"Технический результат появится после завершения проверки",
     processing:true,
     secondary:""
@@ -487,6 +518,8 @@ const scenarios = {
     label:"Сервис недоступен",
     title:"Проверка не выполнена",
     tone:"neutral",
+    mark:"!",
+    markTone:"warn",
     copy:"Сервис технической проверки совместимости временно недоступен",
     failure:true,
     secondary:"Повторить проверку"
@@ -496,8 +529,8 @@ const scenarios = {
 let current = localStorage.getItem("dw-vnext-fitment-state") || "incompatible";
 
 function renderTable(rows){
-  const icons={good:"✓",warn:"!",bad:"×",pending:"—"};
-  let html='<div class="table-wrap"><table class="fit-table"><colgroup><col><col><col><col></colgroup><thead><tr><th>Параметр</th><th>Автомобиль / reference</th><th>Диск</th><th>Результат</th></tr></thead><tbody>';
+  const icons={good:"✓",warn:"!",bad:"×",pending:"?"};
+  let html='<div class="table-wrap"><table class="fit-table"><colgroup><col><col><col><col></colgroup><thead><tr><th>Параметр</th><th>Для автомобиля</th><th>Диск</th><th>Результат</th></tr></thead><tbody>';
   rows.forEach(function(r){
     html+='<tr class="'+(r.strong?(r.status==="bad"?"row-strong":"row-warn"):"")+'">';
     html+='<td class="param">'+r.label+'</td>';
@@ -513,8 +546,11 @@ function renderTable(rows){
 function render(){
   const s=scenarios[current];
   const title=document.getElementById("verdictTitle");
+  const mark=document.getElementById("verdictMark");
   title.textContent=s.title;
-  title.className="verdict-title "+s.tone;
+  title.className="verdict-title";
+  mark.textContent=s.mark||"";
+  mark.className="verdict-mark "+(s.markTone||"neutral");
   document.getElementById("verdictCopy").textContent=s.copy;
 
   const table=document.getElementById("tableMount");
