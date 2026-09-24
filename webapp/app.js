@@ -2708,7 +2708,7 @@ function isApplicationAuthGranted() {
     );
 }
 
-function renderApplicationAuthGate(unlocked = isApplicationAuthGranted()) {
+function renderApplicationAuthGate() {
     if (!state.applicationAuthRequired) return;
     const gate = document.querySelector("[data-application-auth-gate]");
     const title = document.querySelector("[data-application-auth-gate-title]");
@@ -2718,7 +2718,7 @@ function renderApplicationAuthGate(unlocked = isApplicationAuthGranted()) {
     if (!gate) return;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
         || state.frontendAuthState?.interactionState === "restoring";
-    gate.hidden = unlocked;
+    gate.hidden = state.applicationAuthGateReady;
     gate.dataset.restoring = String(restoring);
     gate.setAttribute("aria-busy", String(restoring));
     if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
@@ -2751,7 +2751,7 @@ function syncApplicationAuthWall() {
     const unlocked = authenticated || temporaryRecheck;
     state.applicationAuthGateReady = unlocked;
     setApplicationShellVisible(unlocked);
-    renderApplicationAuthGate(unlocked);
+    renderApplicationAuthGate();
     if (authenticated && !wasUnlocked && state.applicationRoute?.view && state.view !== state.applicationRoute.view) {
         setView(state.applicationRoute.view, { refreshData: false });
     }
