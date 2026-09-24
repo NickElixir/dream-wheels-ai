@@ -1,5 +1,13 @@
 # Dream Wheels AI — VNext full-screen QA audit and pre-freeze recheck
 
+## Closing reconciliation — PASS (25 сентября 2026)
+
+База интеграции — только closing-QA PASS V3 из `docs/design-code-vnext-v0.1`, commit `7d6d66b`. Старый V4 использован исключительно как источник трёх новых экранов и переходов; он не стал базой итогового HTML. В [прототипе](../references/application-vnext-state-coverage-prototype-v3.html) добавлены Support, Photo Guide, Documents, desktop-навигация и mobile `Помощь → Support`; из Support есть явный переход в Documents. Экран `Ещё` не возвращён. В Photo Guide используются существующие фотографии автомобилей `photo-guide-car.jpg` и `photo-guide-car-bad.jpg` из `webapp/assets/`.
+
+Локальный smoke QA: Chrome через Playwright, `1440×1000` и `390×844`, **128 проверок — PASS, 0 ошибок**. Подтверждены загрузка и отображение экранов, desktop/mobile переходы, работа Support → Documents / Photo Guide, действующие ссылки на четыре RU legal-документа, отсутствие ошибок консоли, битых изображений и горизонтального overflow. Сохранены Create с исходными demo-фото автомобиля и диска, прозрачный диск только в Processing, четыре Fitment verdict с доступным render CTA, компактный mobile History, mobile touch targets ≥44 px, Balance packages 2×2 и отсутствие status-dot CSS. Result slider реагирует в обе стороны; слева `РЕЗУЛЬТАТ` соответствует `demo-render-zeekr-xtrike.jpg`, справа `ОРИГИНАЛ` соответствует `demo-vehicle-zeekr.jpg`. На mobile CTA остаётся после slider.
+
+В первом smoke обнаружены и исправлены: прозрачный диск в Create вместо исходного demo asset и запрос отсутствующего favicon. Повторный прогон — PASS. Это QA статического прототипа, не runtime/real-device проверка. `VNEXT_UI_CONTRACT = FROZEN` **не выставлен**; merge/deploy не выполнялись.
+
 Дата: 24 сентября 2026. Scope: PR #196, commit `1b93aa0`, `application-vnext-state-coverage-prototype-v3.html`; `application-vnext-flow-prototype-v2.html` и draft Design Code использованы как reference. Frozen V1 и runtime не изменялись.
 
 ## Closing pre-freeze pass — current result
