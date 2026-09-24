@@ -67,6 +67,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .btn-secondary{background:transparent;color:#d5d9dc;border-color:var(--line-strong)}
 .btn-secondary:hover{background:#101419}
 .btn-text{
+  min-height:44px;display:inline-flex;align-items:center;
   background:transparent;color:#aeb5ba;border:0;padding:0;
   text-decoration:none
 }
@@ -83,12 +84,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .object-name{font-size:18px;font-weight:500}
 .object-sub{margin-top:4px;color:var(--muted);font-size:13px}
 .status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#aeb6bb}
-.status::before{content:"";width:7px;height:7px;border-radius:50%;background:#778087}
-.status.good{color:#abd8be}.status.good::before{background:var(--positive)}
-.status.warn{color:#d7bc88}.status.warn::before{background:var(--warning)}
-.status.bad{color:#df9a9a}.status.bad::before{background:var(--negative)}
-.status.unknown{color:#b1b7bb}.status.unknown::before{background:var(--unknown)}
-.status.pending{color:#9da5aa}.status.pending::before{background:var(--pending)}
+.status.good{color:#abd8be}
+.status.warn{color:#d7bc88}
+.status.bad{color:#df9a9a}
+.status.unknown{color:#b1b7bb}
+.status.pending{color:#9da5aa}
 .island{background:#0c1013;border:1px solid var(--line);border-radius:10px}
 
 /* Dashboard */
@@ -541,7 +541,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .mobile-nav button{font-size:9px}
   .history-card{grid-template-columns:1fr;padding:10px}
   .history-actions{grid-column:auto}
-  .package-grid{grid-template-columns:1fr}
+  .package-grid{grid-template-columns:1fr 1fr}
   .payment-history-row{grid-template-columns:1fr}
   .payment-history-main{grid-template-columns:1fr 1fr;gap:6px 12px}
   .payment-history-meta{grid-column:1/-1;flex-direction:column;gap:2px}
