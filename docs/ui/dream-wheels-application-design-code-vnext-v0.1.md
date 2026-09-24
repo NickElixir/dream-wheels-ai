@@ -555,25 +555,52 @@ The next review artifact is:
 
 `docs/references/application-vnext-cross-surface-prototype.html`
 
-It applies the current VNext language beyond Fitment to three representative
+It now acts as a unified cross-surface flow prototype for four representative
 application surfaces:
 
 - Dashboard / Garage;
 - Create;
+- Fitment;
 - Result.
 
-The purpose is to test whether the same visual system remains coherent when the
-screen moves from technical evidence to task flow and finally to image-first
-result presentation.
+The purpose is to test whether the same visual system remains coherent through
+one connected product flow: Garage / Dashboard -> Create -> Fitment -> Result,
+while Fitment remains optional for Visual Try-on.
 
 The prototype preserves the current product conventions:
 
 - Dashboard keeps balance, primary creation action and latest-result context;
 - Create keeps Vehicle and Wheel as explicit first-class inputs and preserves
   Visual Try-on / Fitment separation;
+- Fitment reuses the accepted pre-render V2 visual language and keeps
+  `Создать изображение` available despite an incompatible verdict;
 - Result uses one viewer with `Результат / Оригинал`, keeps the result
   composition intact, and exposes the approved result actions and rating
   controls.
 
 This artifact is still a review prototype. It does not freeze Dashboard,
 Create, Result, navigation or runtime component APIs.
+
+
+## 25. VNext flow-level validation target
+
+The next review pass is no longer a single-screen Fitment review. The current
+prototype should be evaluated as one connected application language across:
+
+    Dashboard / Garage
+      -> Create
+      -> optional Fitment
+      -> Result
+
+Primary questions for the next visual QA:
+
+- does the shell feel like the same product on all four surfaces;
+- does Dashboard remain automotive rather than becoming a SaaS dashboard;
+- does Create stay task-efficient without losing the premium automotive feel;
+- does Fitment remain precise without dominating the product identity;
+- does Result feel like the emotional payoff while retaining the same control
+  language;
+- does the same system survive the 390 px mobile transformation.
+
+No runtime implementation or application-wide freeze is authorized until this
+cross-surface QA is explicitly accepted.
