@@ -7,9 +7,12 @@ PRE_RENDER / APPLICATION STATUS
     APPLICATION_DESIGN_VNEXT = DRAFT
     APPLICATION_DESIGN_DIRECTION = CONDITIONALLY_ACCEPTED
     VISUAL_SYSTEM_FREEZE = NOT_REACHED
+    VNEXT_UI_CONTRACT = NOT_FROZEN
     RUNTIME_IMPLEMENTATION = NOT_AUTHORIZED
 
 This document captures the current working visual direction for the next Dream Wheels application redesign.
+
+The [reconciled static prototype](../references/application-vnext-state-coverage-prototype-v3.html) has a [closing reconciliation QA PASS](vnext-full-screen-qa-audit.md): 128 checks, 0 errors, no open HIGH/BLOCKER in prototype scope. It is **ready for formal freeze review**, but has not received separate final approval. This does not certify runtime, API, payments or real-device behavior. Earlier review/freeze notes in this working document describe historical milestones and do not supersede the closing QA conclusion.
 
 It does not replace docs/ui-design-code.md, which remains the frozen current application visual contract until a later explicit UI freeze.
 
@@ -609,7 +612,7 @@ After the Fitment prototype validates the VNext system, the same design code is 
 
 ## 24. Cross-surface VNext stress-test prototype
 
-The next review artifact is:
+The current reconciled review artifact is:
 
 `docs/references/application-vnext-cross-surface-prototype.html`
 
@@ -927,15 +930,16 @@ states can be inspected without changing runtime code.
 
 ### Freeze note
 
-This pass is structural QA for the review prototype. Final browser/pixel QA with
-real photographic assets is still required before explicit VNext freeze.
+This note records an earlier structural-QA milestone. Browser review with real
+demo assets was completed in the [closing QA](vnext-full-screen-qa-audit.md);
+explicit VNext freeze still requires separate final approval.
 
 
 ## 33. State coverage prototype v3
 
 The next review artifact is:
 
-`docs/references/application-vnext-state-coverage-prototype-v3.html`
+[Reconciled state coverage prototype v3](../references/application-vnext-state-coverage-prototype-v3.html)
 
 It extends the accepted v2 happy-path composition without changing the current
 runtime.
@@ -1041,9 +1045,10 @@ avoid large destructive error surfaces.
 
 ### Freeze note
 
-State coverage is now broader, but explicit VNext freeze still requires visual
-browser QA at desktop and 390 px with these real assets and the review states
-above.
+This earlier state-coverage milestone is superseded by the [closing QA PASS](vnext-full-screen-qa-audit.md)
+at desktop 1440×1000 and mobile 390×844. Formal VNext freeze still requires a
+separate approval; the static prototype QA does not cover runtime, API,
+payments or real devices.
 
 
 ### Balance title and payment history
