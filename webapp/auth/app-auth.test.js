@@ -29,6 +29,7 @@ function fakeSessionController({ sessionPresent = false, userId = "user-1", acce
         getRefreshCalls: () => refreshCalls,
         getAuthSessionState: () => ({ ...current }),
         getCurrentAuthUser: () => currentUserId ? { id: currentUserId, email: "user@example.test" } : null,
+        setCurrentUserId: (nextUserId) => { currentUserId = nextUserId; },
         emitAuthEvent: (event, nextUserId = currentUserId) => {
             currentUserId = event === "SIGNED_OUT" ? null : nextUserId;
             current = {
@@ -245,6 +246,27 @@ test("a different signed-in user must pass through a new principal probe", async
 
     assert.equal(auth.getState().status, AUTH_SESSION_STATES.AUTHENTICATED);
     assert.equal(requests.length, requestCount + 2);
+});
+
+test("a direct probe fails closed when the session user changed without an auth event", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    const events = [];
+    const auth = createFrontendAuthController({
+        sessionController: session,
+        integrationEnabled: () => true,
+        fetchImpl: async (input) => input === "/api/backend/auth/me"
+            ? okMeResponse() : okBootstrapResponse(),
+    });
+    auth.subscribe((nextState, event) => events.push([nextState.status, event]));
+    await auth.initialize();
+    events.length = 0;
+
+    session.setCurrentUserId("user-2");
+    await auth.probeCurrentUser();
+
+    assert.ok(events.some(([status, event]) => status === AUTH_SESSION_STATES.BOOTSTRAPPING
+        && event === "AUTH_IDENTITY_CHANGED"));
+    assert.equal(auth.getState().status, AUTH_SESSION_STATES.AUTHENTICATED);
 });
 
 test("SIGNED_OUT still closes a previously verified session", async () => {

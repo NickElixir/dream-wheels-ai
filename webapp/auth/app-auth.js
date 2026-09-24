@@ -197,9 +197,10 @@ export function createFrontendAuthController({
         const probeRevision = authRevision;
         const probeStillCurrent = () => authRevision === probeRevision
             && (sessionController.getCurrentAuthUser?.()?.id || null) === sessionUserId;
-        const silentlyRecheck = state.status === AUTH_SESSION_STATES.AUTHENTICATED
+        const wasVerifiedSupabase = state.status === AUTH_SESSION_STATES.AUTHENTICATED
             && state.authority === "supabase"
-            && state.principalVerified && state.protectedApiReady
+            && state.principalVerified && state.protectedApiReady;
+        const silentlyRecheck = wasVerifiedSupabase
             && Boolean(sessionUserId && sessionUserId === verifiedSupabaseUserId);
         if (!silentlyRecheck) {
             verifiedSupabaseUserId = null;
@@ -211,7 +212,7 @@ export function createFrontendAuthController({
                 protectedApiReady: false,
                 sessionPresent: true,
                 errorCode: null,
-            }, "PROBING_PRINCIPAL");
+            }, wasVerifiedSupabase ? "AUTH_IDENTITY_CHANGED" : "PROBING_PRINCIPAL");
         }
 
         try {
