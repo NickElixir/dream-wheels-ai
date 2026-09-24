@@ -11,6 +11,13 @@ const APP_ROUTE_VIEWS = Object.freeze({
     "/app/fitment": "fitment",
 });
 
+const APP_TOP_LEVEL_PATHS = Object.freeze({
+    dashboard: "/app",
+    renders: "/app/history",
+    wallet: "/app/wallet",
+    settings: "/app/settings",
+});
+
 export const APP_ROUTE_QUERY_KEYS = Object.freeze([
     "market",
     "utm_source",
@@ -75,6 +82,13 @@ export function safeApplicationReturnPath(input = globalThis.location, currentOr
     });
     const search = query.toString();
     return `${path}${search ? `?${search}` : ""}`;
+}
+
+export function applicationTopLevelReturnPath(view, input = globalThis.location, currentOrigin) {
+    const path = APP_TOP_LEVEL_PATHS[view];
+    const url = safeApplicationUrl(input, currentOrigin);
+    if (!path || !url) return null;
+    return safeApplicationReturnPath(new URL(`${path}${url.search}`, url.origin), url.origin);
 }
 
 export function applicationRouteContext(input = globalThis.location, currentOrigin) {

@@ -1,5 +1,6 @@
 import {
     applicationRouteContext,
+    applicationTopLevelReturnPath,
     isApplicationRoute,
     safeApplicationReturnPath,
 } from "./app-route.mjs";
@@ -2707,7 +2708,7 @@ function isApplicationAuthGranted() {
     );
 }
 
-function renderApplicationAuthGate() {
+function renderApplicationAuthGate(unlocked = isApplicationAuthGranted()) {
     if (!state.applicationAuthRequired) return;
     const gate = document.querySelector("[data-application-auth-gate]");
     const title = document.querySelector("[data-application-auth-gate-title]");
@@ -2717,8 +2718,7 @@ function renderApplicationAuthGate() {
     if (!gate) return;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
         || state.frontendAuthState?.interactionState === "restoring";
-    const authenticated = isApplicationAuthGranted();
-    gate.hidden = authenticated;
+    gate.hidden = unlocked;
     gate.dataset.restoring = String(restoring);
     gate.setAttribute("aria-busy", String(restoring));
     if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
@@ -2741,11 +2741,18 @@ function setApplicationShellVisible(visible) {
 
 function syncApplicationAuthWall() {
     if (!state.applicationAuthRequired) return;
-    const unlocked = isApplicationAuthGranted();
+    const wasUnlocked = state.applicationAuthGateReady;
+    const authenticated = isApplicationAuthGranted();
+    const temporaryRecheck = wasUnlocked
+        && state.frontendAuthState?.authority === "supabase"
+        && state.frontendAuthState?.sessionPresent === true
+        && ["BOOTSTRAPPING", "REFRESHING"].includes(state.frontendAuthState?.status)
+        && state.frontendAuthEvent !== "AUTH_IDENTITY_CHANGED";
+    const unlocked = authenticated || temporaryRecheck;
     state.applicationAuthGateReady = unlocked;
     setApplicationShellVisible(unlocked);
-    renderApplicationAuthGate();
-    if (unlocked && state.applicationRoute?.view && state.view !== state.applicationRoute.view) {
+    renderApplicationAuthGate(unlocked);
+    if (authenticated && !wasUnlocked && state.applicationRoute?.view && state.view !== state.applicationRoute.view) {
         setView(state.applicationRoute.view, { refreshData: false });
     }
 }
@@ -3216,8 +3223,9 @@ function closeAuthDialog() {
     renderAuthDialog();
 }
 
-function handleFrontendAuthState(nextState) {
+function handleFrontendAuthState(nextState, event = null) {
     state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    state.frontendAuthEvent = event;
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
     state.frontendAuthSavedName = nextState.account?.savedName || state.frontendAuthSavedName || null;
@@ -7946,6 +7954,15 @@ function setView(view, { refreshData = true } = {}) {
             localStorage.setItem(LAST_TOP_LEVEL_VIEW_STORAGE_KEY, view);
         } catch {
             // Navigation remains usable when WebView storage is unavailable.
+        }
+    }
+    if (state.applicationAuthRequired && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
+        const target = applicationTopLevelReturnPath(view, window.location);
+        if (target && window.history?.replaceState) {
+            const current = `${window.location.pathname}${window.location.search}`;
+            if (current !== target) window.history.replaceState(window.history.state, "", target);
+            state.applicationRoute = applicationRouteContext(window.location);
+            state.applicationAuthReturnPath = state.applicationRoute?.returnPath || target;
         }
     }
     if (view !== "fitment") clearFitmentCheckPolling();

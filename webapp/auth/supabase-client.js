@@ -167,7 +167,8 @@ export function createAuthSessionController({ client, telemetry = null }) {
 
     function safeAuthUser(session) {
         const email = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
-        return email ? { email } : null;
+        const id = typeof session?.user?.id === "string" ? session.user.id.trim() : "";
+        return id ? { id, email } : null;
     }
 
     function getState() {

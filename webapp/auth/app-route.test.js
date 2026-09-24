@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
     applicationRouteContext,
     applicationRouteView,
+    applicationTopLevelReturnPath,
     isApplicationRoute,
     safeApplicationReturnPath,
 } from "../app-route.mjs";
@@ -28,6 +29,15 @@ test("post-login return keeps market and supported UTM values only", () => {
         "/app/new?market=ru&utm_source=landing&utm_campaign=summer",
     );
     assert.equal(applicationRouteContext(entry).market, "ru");
+});
+
+test("top-level navigation maps views to canonical paths and preserves only allowed query", () => {
+    const location = new URL("/app?market=ru&utm_source=landing&payment=success&unknown=drop", ORIGIN);
+    assert.equal(applicationTopLevelReturnPath("dashboard", location), "/app?market=ru&utm_source=landing");
+    assert.equal(applicationTopLevelReturnPath("renders", location), "/app/history?market=ru&utm_source=landing");
+    assert.equal(applicationTopLevelReturnPath("wallet", location), "/app/wallet?market=ru&utm_source=landing");
+    assert.equal(applicationTopLevelReturnPath("settings", location), "/app/settings?market=ru&utm_source=landing");
+    assert.equal(applicationTopLevelReturnPath("fitment", location), null);
 });
 
 test("unsafe and non-application return targets are rejected", () => {
