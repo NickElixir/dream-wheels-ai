@@ -719,3 +719,27 @@ Keep the existing staging feedback vocabulary and interaction:
 - positive confirmation: `Спасибо за оценку`.
 
 The VNext redesign changes visual treatment, not this feedback model.
+
+
+## 29. Consolidated flow prototype v2
+
+The current consolidated review artifact is:
+
+`docs/references/application-vnext-flow-prototype-v2.html`
+
+It supersedes the previous cross-surface prototype for the next design review.
+
+Key revisions:
+
+- Dashboard no longer assumes a persistent `Мой автомобиль` object; it focuses
+  on new try-on entry, latest result, balance / render expiry and recent renders;
+- Create removes explanatory/status copy and uses summary-first,
+  form-on-demand editing;
+- wheel source URL is a separate editable source from wheel technical data;
+- vehicle and wheel preview stages keep fixed responsive geometry independent
+  of source aspect ratio;
+- Fitment preserves the accepted VNext composition;
+- Result removes the inspector column and becomes image-first;
+- Result uses one before/after slider, actions below the viewer and the existing
+  staging feedback model;
+- completed Result does not show a redundant `Готово` status row.
