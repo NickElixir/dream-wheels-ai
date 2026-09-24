@@ -61,7 +61,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   padding-bottom:22px;border-bottom:1px solid var(--line)
 }
 .topbar h1{margin:0;font-size:27px;line-height:1.15;font-weight:500;letter-spacing:-.025em}
-.topbar-meta{color:var(--muted);font-size:12px}
+.topbar-meta{display:none;color:var(--muted);font-size:12px}
 .page{padding-top:24px}
 .eyebrow{
   margin:0 0 8px;color:var(--subtle);font-size:10px;
@@ -127,7 +127,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 
 /* Create */
 .create-pair{
-  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.75fr);gap:16px;
   padding-bottom:24px;border-bottom:1px solid var(--line)
 }
 .source .media{aspect-ratio:16/10}
@@ -255,8 +255,10 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
   .main{padding:18px 18px calc(90px + var(--safe-bottom))}
-  .mobile-brand{display:flex;margin:0}
-  .topbar h1{display:none}
+  .topbar{flex-wrap:wrap;align-items:center}
+  .mobile-brand{display:flex;margin:0;order:1}
+  .topbar h1{display:block;order:2;width:100%;margin-top:8px;font-size:23px}
+  .topbar-meta{display:none}
   .dashboard-hero,.create-lower,.result-layout,.fit-context{grid-template-columns:1fr}
   .dashboard-side,.create-aside,.result-panel{max-width:none}
   .mobile-nav{
@@ -330,7 +332,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
       <header class="topbar">
         <h1 id="pageTitle">Главная</h1>
         <div class="mobile-brand brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
-        <div class="topbar-meta" id="topMeta">36 рендеров</div>
+        <div class="topbar-meta" id="topMeta" aria-hidden="true"></div>
       </header>
 
       <section class="page" id="screen"></section>
@@ -433,7 +435,7 @@ create:{
         <p class="eyebrow">Автомобиль</p>
         <div class="media">${carSvg(false)}</div>
         <div class="meta-row">
-          <div><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
+          <div><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ — исходное фото</div></div>
           <button class="btn-text">Изменить</button>
         </div>
       </article>
@@ -469,8 +471,8 @@ create:{
         </div>
       </section>
       <aside class="create-aside">
-        <strong>Visual Try-on и Fitment — разные проверки</strong>
-        Визуальная примерка показывает внешний вид выбранного диска на исходной фотографии автомобиля. Техническая проверка оценивает параметры установки отдельно
+        <strong>Визуальная примерка и техническая проверка — разные процессы</strong>
+        Визуальная примерка показывает внешний вид выбранного диска на исходной фотографии автомобиля. Техническая проверка отдельно оценивает параметры установки
       </aside>
     </div>`;
   }
@@ -483,7 +485,7 @@ fitment:{
       <article>
         <div class="media vehicle-media">${carSvg(false)}</div>
         <div class="meta-row">
-          <div><p class="eyebrow">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
+          <div><p class="eyebrow">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ — исходное фото</div></div>
           <button class="btn-text" data-go="create">Изменить</button>
         </div>
       </article>
@@ -536,7 +538,7 @@ result:{
       <aside class="result-panel">
         <p class="eyebrow">Виртуальная примерка</p>
         <h2>Porsche Cayenne</h2>
-        <div class="object-sub">BBS CI-R, 20″ / 9J / ET 50</div>
+        <div class="object-sub">BBS CI-R<br>20″ / 9J / ET 50</div>
         <div class="result-meta flat-list">
           <div class="flat-row"><span>Статус</span><strong class="status good">Готово</strong></div>
           <div class="flat-row"><span>Создано</span><strong>Сегодня, 14:32</strong></div>
