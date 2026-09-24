@@ -1077,3 +1077,53 @@ Supported visible payment states remain:
 
 The status may use restrained semantic text/border color, but no decorative
 colored dot.
+
+
+## 34. History and Balance refinement
+
+### History
+
+The VNext History screen is an archive, not a dashboard card stack.
+
+Rules:
+
+- keep one page-level `Мои примерки` title only;
+- group entries by date;
+- use compact horizontal archive rows on desktop;
+- reduce preview size relative to the previous card treatment;
+- use plain semantic status text instead of status pills;
+- keep `Открыть` only for completed results;
+- keep `Повторить` only for failed renders;
+- processing entries remain non-terminal and do not expose a result action.
+
+The compact archive treatment should scale to long render histories without
+turning the page into a wall of large cards.
+
+### Balance operational payment card
+
+The right-side payment island is conditional, not permanent.
+
+Show it only when the latest payment still requires user action, for example:
+
+    В ожидании подтверждения
+    [ Обновить статус ]
+
+For `paid` or `failed` review states, do not keep a redundant permanent
+`Последняя оплата` island. Historical outcomes belong in the payment history.
+
+### Payment history
+
+`История пополнений` is always present below the main Balance / top-up area.
+
+It uses a visually light archive table rather than a second heavy card stack.
+Each row keeps:
+
+    amount
+    render count
+    date/time
+    invoice id
+    payment status
+
+Payment status is plain semantic text, not a pill and not a colored dot.
+
+The history remains expandable with `Показать ещё`.
