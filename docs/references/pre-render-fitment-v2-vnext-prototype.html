@@ -238,8 +238,10 @@ button{cursor:pointer}
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
   .main{padding:18px 18px calc(88px + var(--safe-bottom))}
-  .mobile-brand{display:flex}
-  .desktop-title{display:none}
+  .topbar{flex-wrap:wrap;align-items:center}
+  .mobile-brand{display:flex;order:1;margin:0}
+  .desktop-title{display:block;order:2;width:100%}
+  .desktop-title h1{font-size:23px;margin-top:8px}
   .content{display:block}
   .mobile-nav{
     position:fixed;left:0;right:0;bottom:0;z-index:15;
@@ -358,7 +360,7 @@ button{cursor:pointer}
             </svg>
           </div>
           <div class="object-meta">
-            <div><p class="object-label">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ · исходное фото</div></div>
+            <div><p class="object-label">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ — исходное фото</div></div>
             <button class="change">Изменить</button>
           </div>
         </article>
