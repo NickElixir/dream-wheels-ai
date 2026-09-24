@@ -740,6 +740,46 @@ Key revisions:
   of source aspect ratio;
 - Fitment preserves the accepted VNext composition;
 - Result removes the inspector column and becomes image-first;
-- Result uses one before/after slider, actions below the viewer and the existing
-  staging feedback model;
-- completed Result does not show a redundant `Готово` status row.
+- Result uses one before/after slider and the existing staging feedback model;
+- completed Result does not show a redundant `Готово` status row;
+- completed Result exposes one primary product action only:
+  `Создать ещё вариант`; secondary download/share/reuse/check actions are not
+  part of the current v2 composition.
+
+
+## 30. Flow refinement after v2 review
+
+### Dashboard
+
+Dashboard islands use natural content height. Balance must not stretch to match
+Latest Result merely because both occupy one grid row.
+
+### Create edit flow
+
+The summary-first pattern remains the default. Editing is progressive:
+
+    summary
+      -> edit form
+      -> save / parser refresh
+      -> compact confirmation state
+      -> summary
+
+Vehicle and manually edited wheel data expose an inline saved state after
+confirmation.
+
+Changing a wheel product URL is a source refresh, not plain text editing. The
+prototype therefore shows a short parser state before returning to the summary.
+Runtime parser failure/recovery remains governed by the feature state contract.
+
+### Result actions
+
+For the current completed-result composition, keep one product action:
+
+    Создать ещё вариант
+
+Do not create a second action row for download, share, reuse or fitment. If a
+future product contract reintroduces a contextual technical link, use
+`Проверка совместимости` rather than `Открыть проверку`.
+
+Result feedback remains a separate feedback interaction and is not counted as
+a product action.
