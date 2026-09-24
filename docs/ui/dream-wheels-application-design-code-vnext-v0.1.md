@@ -203,7 +203,9 @@ Current role examples:
 `Нужна доработка` in result feedback is warning/amber, not error/red.
 
 Brand lime must never substitute for positive/success. Color is never the only
-status carrier: icon/symbol, label and explanation remain authoritative.
+status carrier: the status label and, where needed, its explanation remain
+authoritative. Do not add decorative colored dots to status pills or rows.
+Icons/symbols are reserved for cases where the symbol itself adds meaning.
 
 ### Action links and external links
 
@@ -1042,3 +1044,36 @@ avoid large destructive error surfaces.
 State coverage is now broader, but explicit VNext freeze still requires visual
 browser QA at desktop and 390 px with these real assets and the review states
 above.
+
+
+### Balance title and payment history
+
+The Balance screen uses one page-level title only. Do not repeat `Баланс` as a
+second section heading immediately below the page header.
+
+Payment history remains part of the product and must not be removed by the
+VNext simplification pass. The VNext Balance composition includes:
+
+    current available renders
+    expiry cohorts
+    top-up package selection
+    receipt email
+    current / latest payment state
+    top-up history
+
+Top-up history preserves the current runtime concepts:
+
+    amount
+    received render count
+    date/time
+    invoice number
+    status
+
+Supported visible payment states remain:
+
+    Оплачено
+    В ожидании
+    Сбой
+
+The status may use restrained semantic text/border color, but no decorative
+colored dot.
