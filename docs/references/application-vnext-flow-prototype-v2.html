@@ -82,8 +82,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 .home-intro h2{margin:0;font-size:30px;font-weight:500;letter-spacing:-.035em}
 .home-intro p{margin:8px 0 0;color:var(--muted)}
-.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.75fr);gap:18px}
-.latest-island,.balance-island{padding:16px}
+.dashboard-grid{
+  display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.75fr);
+  gap:18px;align-items:start
+}
+.latest-island,.balance-island{padding:16px;align-self:start}
 .latest-preview{aspect-ratio:16/9}
 .latest-meta{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-top:12px}
 .latest-meta strong{display:block;font-size:18px;font-weight:500}
@@ -132,6 +135,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   background:#101419;color:var(--text);padding:0 12px
 }
 .edit-actions{display:flex;gap:8px;margin-top:16px}
+.edit-note{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45}
+.inline-state{
+  display:inline-flex;align-items:center;gap:7px;margin-left:10px;
+  color:var(--muted);font-size:11px;font-weight:400
+}
+.inline-state::before{content:"";width:6px;height:6px;border-radius:50%;background:#697279}
+.inline-state.saved{color:#9bcfb1}.inline-state.saved::before{background:var(--good)}
+.inline-state.loading{color:#c8cdd0}
+.inline-state.error{color:#df9a9a}.inline-state.error::before{background:var(--bad)}
 .create-actions{margin-top:24px}
 
 /* Fitment */
@@ -195,13 +207,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 .compare-label.before{left:12px}.compare-label.after{right:12px}
 .compare-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
-.result-actions{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
-  margin-top:12px
-}
-.result-actions .btn{width:100%;padding:0 12px}
 .result-meta-line{margin-top:12px;color:var(--subtle);font-size:12px}
-.rating{margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.rating{margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
 .rating-title{font-weight:500;font-size:17px}
 .rating-sub{margin-top:4px;color:var(--muted);font-size:12px}
 .rating-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
@@ -251,7 +258,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   }
   .mobile-nav button{min-height:46px;border:0;border-radius:7px;background:transparent;color:#737c83;font-size:10px;font-weight:500}
   .mobile-nav button.active{color:var(--text);background:#101418}
-  .result-actions{grid-template-columns:1fr 1fr}
 }
 @media(max-width:680px){
   .page{padding-top:18px}
@@ -277,7 +283,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .fit-table td:nth-child(4){padding-top:8px}
   .fit-row-bad td{background:none}
   .result-head{display:block}
-  .result-actions{grid-template-columns:1fr}
   .rating-actions{grid-template-columns:1fr}
   .review{position:static;width:100%;margin-top:30px}
 }
@@ -432,7 +437,7 @@ create:{
       <div class="summary-list">
         <div class="summary-row">
           <div class="summary-label">Данные автомобиля</div>
-          <div class="summary-value">Porsche Cayenne E3, 2022, 55 TFSI quattro</div>
+          <div class="summary-value">Porsche Cayenne E3, 2022, 55 TFSI quattro <span class="inline-state" data-state="vehicle" hidden></span></div>
           <button class="btn-text" data-edit="vehicle">Изменить данные</button>
         </div>
         <div class="edit-panel" data-panel="vehicle" hidden>
@@ -444,22 +449,23 @@ create:{
             <div class="field"><label>Комплектация</label><input value="55 TFSI quattro"></div>
             <div class="field"><label>Рынок</label><input value="Russia+"></div>
           </div>
-          <div class="edit-actions"><button class="btn btn-primary" data-close="vehicle">Сохранить</button><button class="btn btn-secondary" data-close="vehicle">Отмена</button></div>
+          <div class="edit-actions"><button class="btn btn-primary" data-save="vehicle">Сохранить</button><button class="btn btn-secondary" data-close="vehicle">Отмена</button></div>
         </div>
 
         <div class="summary-row">
           <div class="summary-label">Источник диска</div>
-          <div class="summary-value"><a href="#" onclick="return false">wheel-shop.ru/bbs-ci-r-20</a></div>
+          <div class="summary-value"><a href="#" onclick="return false">wheel-shop.ru/bbs-ci-r-20</a> <span class="inline-state" data-state="source" hidden></span></div>
           <button class="btn-text" data-edit="source">Изменить ссылку</button>
         </div>
         <div class="edit-panel" data-panel="source" hidden>
           <div class="field"><label>Ссылка на товар</label><input value="https://wheel-shop.ru/bbs-ci-r-20"></div>
-          <div class="edit-actions"><button class="btn btn-primary" data-close="source">Обновить данные</button><button class="btn btn-secondary" data-close="source">Отмена</button></div>
+          <div class="edit-note">После изменения ссылки изображение и параметры диска будут получены заново</div>
+          <div class="edit-actions"><button class="btn btn-primary" data-parser-save="source">Обновить данные</button><button class="btn btn-secondary" data-close="source">Отмена</button></div>
         </div>
 
         <div class="summary-row">
           <div class="summary-label">Параметры диска</div>
-          <div class="summary-value">20″ / 9J / 5×130 / ET 50 / DIA 71,6</div>
+          <div class="summary-value">20″ / 9J / 5×130 / ET 50 / DIA 71,6 <span class="inline-state" data-state="wheel" hidden></span></div>
           <button class="btn-text" data-edit="wheel">Изменить данные</button>
         </div>
         <div class="edit-panel" data-panel="wheel" hidden>
@@ -472,7 +478,7 @@ create:{
             <div class="field"><label>ET</label><input value="50"></div>
             <div class="field"><label>DIA</label><input value="71,6"></div>
           </div>
-          <div class="edit-actions"><button class="btn btn-primary" data-close="wheel">Сохранить</button><button class="btn btn-secondary" data-close="wheel">Отмена</button></div>
+          <div class="edit-actions"><button class="btn btn-primary" data-save="wheel">Сохранить</button><button class="btn btn-secondary" data-close="wheel">Отмена</button></div>
         </div>
       </div>
 
@@ -555,13 +561,6 @@ result:{
       <input class="compare-range" id="compareRange" type="range" min="0" max="100" value="50" aria-label="Сравнение оригинала и результата">
     </div>
 
-    <div class="result-actions">
-      <button class="btn btn-secondary">Скачать результат</button>
-      <button class="btn btn-secondary">Поделиться</button>
-      <button class="btn btn-secondary" data-go="fitment">Открыть проверку</button>
-      <button class="btn btn-secondary" data-go="create">Повторить с этими фото</button>
-    </div>
-
     <section class="rating">
       <div class="rating-title">Оценка результата</div>
       <div class="rating-sub">Помогите улучшить следующие примерки</div>
@@ -619,6 +618,37 @@ function render(){
     b.onclick=function(){
       const panel=document.querySelector('[data-panel="'+b.dataset.close+'"]');
       if(panel) panel.hidden=true;
+    };
+  });
+
+  function setInlineState(key,textValue,tone){
+    const state=document.querySelector('[data-state="'+key+'"]');
+    if(!state) return;
+    state.hidden=false;
+    state.textContent=textValue;
+    state.className="inline-state "+(tone||"");
+  }
+
+  document.querySelectorAll("[data-save]").forEach(function(b){
+    b.onclick=function(){
+      const key=b.dataset.save;
+      setInlineState(key,"Сохранено","saved");
+      const panel=document.querySelector('[data-panel="'+key+'"]');
+      if(panel) panel.hidden=true;
+    };
+  });
+
+  document.querySelectorAll("[data-parser-save]").forEach(function(b){
+    b.onclick=function(){
+      const key=b.dataset.parserSave;
+      b.disabled=true;
+      setInlineState(key,"Получаем данные","loading");
+      window.setTimeout(function(){
+        setInlineState(key,"Данные обновлены","saved");
+        const panel=document.querySelector('[data-panel="'+key+'"]');
+        if(panel) panel.hidden=true;
+        b.disabled=false;
+      },650);
     };
   });
 
