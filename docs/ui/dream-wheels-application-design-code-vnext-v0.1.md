@@ -547,3 +547,33 @@ It should implement the working A+C synthesis and expose enough states to test t
 Visual Try-on remains independent from Fitment in every state.
 
 After the Fitment prototype validates the VNext system, the same design code is applied to Dashboard / Garage, Create and Result before an application-wide UI freeze.
+
+
+## 24. Cross-surface VNext stress-test prototype
+
+The next review artifact is:
+
+`docs/references/application-vnext-cross-surface-prototype.html`
+
+It applies the current VNext language beyond Fitment to three representative
+application surfaces:
+
+- Dashboard / Garage;
+- Create;
+- Result.
+
+The purpose is to test whether the same visual system remains coherent when the
+screen moves from technical evidence to task flow and finally to image-first
+result presentation.
+
+The prototype preserves the current product conventions:
+
+- Dashboard keeps balance, primary creation action and latest-result context;
+- Create keeps Vehicle and Wheel as explicit first-class inputs and preserves
+  Visual Try-on / Fitment separation;
+- Result uses one viewer with `Результат / Оригинал`, keeps the result
+  composition intact, and exposes the approved result actions and rating
+  controls.
+
+This artifact is still a review prototype. It does not freeze Dashboard,
+Create, Result, navigation or runtime component APIs.
