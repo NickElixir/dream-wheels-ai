@@ -130,9 +130,26 @@ UI elevation is minimal. Use shadow only where a transient overlay genuinely nee
 
 ## 5. Color roles
 
+### Working VNext tokens
+
+These values are the current HTML-QA tokens. They are working contract values,
+not yet a final application-wide visual freeze.
+
+    canvas             #07090B
+    primary CTA        #F0EFE9
+    primary CTA text   #0C0F11
+
+    brand lime         #D8FF37
+
+    positive           #75CAA0
+    warning            #D8AD67
+    negative           #D87979
+    unknown            #A0A7AC
+    pending            #7D878E
+
 ### Primary action
 
-Working decision: primary product CTA uses white / near-white rather than lime by default.
+Primary product CTA uses white / near-white rather than lime by default.
 
 Example:
 
@@ -142,29 +159,68 @@ The button should feel strong because of contrast, not because of brand-color sa
 
 ### Brand lime
 
-Lime becomes a rare brand accent, not the default fill for every primary action.
+Lime is retained as the Dream Wheels signature accent, but it is not a general
+interaction or status color.
 
 Appropriate use:
 
 - small brand mark;
 - focused micro-accent;
-- rare active/selected brand moment;
-- controlled conversion emphasis where explicitly approved;
-- small supporting indicator.
+- rare explicitly approved brand moment;
+- controlled conversion emphasis when a later contract requires it.
 
-Avoid lime on every primary button, full card borders, selection outlines, large status fields and glow.
+Do not use lime for:
+
+- default primary CTA;
+- selected sidebar navigation;
+- ordinary action links;
+- success / compatible status;
+- warning / expiry;
+- error / incompatibility;
+- full card borders, glow or large status fields.
+
+The default application shell may legitimately contain no visible lime on a
+given screen.
 
 ### Semantic colors
 
-Use separate semantic tones:
+Semantic color communicates state, not decoration:
 
     positive   -> calm green
     warning    -> muted amber
     negative   -> muted red
-    unknown    -> neutral / amber depending context
+    unknown    -> neutral grey
     pending    -> cool neutral grey
 
-Brand lime must not substitute for positive/success. Color is never the only status carrier.
+Current role examples:
+
+    positive   -> compatible, saved, ready, positive feedback
+    warning    -> condition, expiring renders, non-blocking attention
+    negative   -> incompatibility, failed operation, hard conflict
+    unknown    -> insufficient evidence / unresolved result
+    pending    -> parser / check / generation in progress
+
+`Нужна доработка` in result feedback is warning/amber, not error/red.
+
+Brand lime must never substitute for positive/success. Color is never the only
+status carrier: icon/symbol, label and explanation remain authoritative.
+
+### Action links and external links
+
+Action links such as:
+
+    Изменить
+    Изменить данные
+    Изменить ссылку
+    Заменить диск
+
+use muted neutral text with **no persistent underline**.
+
+On hover / keyboard focus they move to near-white and may show an underline.
+The focus ring remains near-white/neutral rather than lime.
+
+A real external URL may use link affordance, but it should still remain
+neutral in color; do not introduce conventional blue links into VNext.
 
 ## 6. Typography
 
@@ -783,3 +839,20 @@ future product contract reintroduces a contextual technical link, use
 
 Result feedback remains a separate feedback interaction and is not counted as
 a product action.
+
+
+## 31. Link and semantic-color QA pass
+
+The consolidated v2 prototype now applies the color/link rules above:
+
+- action links no longer carry a permanent underline;
+- underline appears only as hover/focus affordance;
+- external source URLs remain neutral rather than blue;
+- primary CTA remains near-white;
+- positive / warning / negative / unknown / pending have separate semantic
+  tokens;
+- brand lime is retained in the token set but is intentionally absent from
+  ordinary navigation, CTA and Fitment status treatment.
+
+This pass does not expand the amount of color in the interface. It makes the
+existing color usage systematic.
