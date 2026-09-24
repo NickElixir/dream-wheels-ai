@@ -103,20 +103,39 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 
 /* Dashboard / Garage */
 .dashboard-hero{
-  display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr);
-  gap:20px
+  display:grid;grid-template-columns:minmax(0,1.62fr) minmax(310px,.88fr);
+  gap:18px
 }
+.island{
+  background:#0c1013;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.garage-island{padding:14px}
 .garage-media{aspect-ratio:16/8.5}
-.hero-copy{padding-top:14px}
+.hero-copy{padding:15px 2px 2px}
 .hero-copy h2{margin:0;font-size:30px;font-weight:500;letter-spacing:-.035em}
 .hero-copy p{margin:7px 0 0;color:var(--muted)}
 .dashboard-side{
-  border-top:1px solid var(--line-strong);padding-top:15px;
-  display:grid;align-content:start;gap:19px
+  display:grid;align-content:start;gap:14px
 }
+.balance-island,.latest-island{padding:16px}
 .balance-line{display:flex;justify-content:space-between;align-items:end;gap:16px}
-.balance-line strong{font-size:34px;font-weight:500;font-variant-numeric:tabular-nums}
-.latest-preview{aspect-ratio:16/10}
+.balance-line strong{font-size:30px;font-weight:500;font-variant-numeric:tabular-nums}
+.balance-expiry{
+  margin-top:15px;padding-top:13px;border-top:1px solid var(--line)
+}
+.expiry-row{
+  display:flex;justify-content:space-between;gap:16px;
+  padding:7px 0;font-size:13px
+}
+.expiry-row span{color:#c9ced1}
+.expiry-row strong{color:#d7dcdf;font-weight:500;font-variant-numeric:tabular-nums}
+.expiry-note{
+  margin-top:8px;padding-top:10px;border-top:1px solid var(--line);
+  color:#b7a56e;font-size:12px;line-height:1.45
+}
+.latest-preview{aspect-ratio:16/9}
 .latest-meta{display:grid;gap:5px}
 .latest-meta strong{font-size:17px;font-weight:500}
 .recent{margin-top:30px}
@@ -200,7 +219,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 
 /* Result */
 .result-layout{
-  display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.65fr);
+  display:grid;grid-template-columns:minmax(0,1.78fr) minmax(300px,.58fr);
   gap:22px
 }
 .result-viewer{min-width:0}
@@ -388,7 +407,7 @@ dashboard:{
   meta:"36 рендеров",
   html:function(){return `
     <div class="dashboard-hero">
-      <section>
+      <section class="island garage-island">
         <p class="eyebrow">Мой автомобиль</p>
         <div class="media garage-media">${carSvg(false)}</div>
         <div class="hero-copy">
@@ -401,11 +420,17 @@ dashboard:{
         </div>
       </section>
       <aside class="dashboard-side">
-        <div>
+        <section class="island balance-island">
           <p class="eyebrow">Баланс</p>
           <div class="balance-line"><div><strong>36</strong><div class="object-sub">рендеров</div></div><button class="btn-text">Пополнить баланс</button></div>
-        </div>
-        <div>
+          <div class="balance-expiry">
+            <p class="eyebrow" style="margin-bottom:4px">Срок действия</p>
+            <div class="expiry-row"><span>16 рендеров</span><strong>до 15 октября</strong></div>
+            <div class="expiry-row"><span>20 рендеров</span><strong>до 30 октября</strong></div>
+            <div class="expiry-note">Сначала используются рендеры с ближайшей датой окончания</div>
+          </div>
+        </section>
+        <section class="island latest-island">
           <p class="eyebrow">Последний результат</p>
           <div class="media latest-preview">${carSvg(true)}</div>
           <div class="latest-meta">
@@ -414,7 +439,7 @@ dashboard:{
             <span class="object-sub">BBS CI-R, сегодня 14:32</span>
           </div>
           <div class="actions" style="margin-top:12px"><button class="btn btn-secondary" data-go="result">Открыть последний результат</button></div>
-        </div>
+        </section>
       </aside>
     </div>
     <section class="recent">
