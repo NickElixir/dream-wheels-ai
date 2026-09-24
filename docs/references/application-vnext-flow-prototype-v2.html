@@ -160,6 +160,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .inline-state.saved{color:#9bcfb1}.inline-state.saved::before{background:var(--positive)}
 .inline-state.loading{color:#c8cdd0}
 .inline-state.error{color:#df9a9a}.inline-state.error::before{background:var(--negative)}
+.parser-state{
+  margin-top:12px;padding:12px 13px;border:1px solid var(--line);
+  border-radius:7px;background:#0e1215;font-size:12px;line-height:1.45
+}
+.parser-state strong{display:block;font-weight:500;color:#d8dcdf;margin-bottom:3px}
+.parser-state.loading{color:#b7bec3}
+.parser-state.success{border-color:rgba(117,202,160,.28);color:#9bcfb1;background:rgba(117,202,160,.045)}
+.parser-state.error{border-color:rgba(216,121,121,.32);color:#d9a0a0;background:rgba(216,121,121,.045)}
+.parser-recovery{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.parser-recovery .btn{min-height:38px;padding:0 12px;font-size:12px}
 .create-actions{margin-top:24px}
 
 /* Fitment */
@@ -197,12 +207,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .fit-actions{margin-top:24px}
 
 /* Result */
-.result-head{
-  display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
-  margin-bottom:16px
-}
+.result-head{margin-bottom:16px}
 .result-head h2{margin:0;font-size:24px;font-weight:500;letter-spacing:-.025em}
 .result-head p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.result-primary{margin-top:16px}
 .compare{
   position:relative;overflow:hidden;border-radius:var(--r-lg);
   border:1px solid rgba(255,255,255,.06);background:#101317;
@@ -278,16 +286,23 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(max-width:680px){
   .page{padding-top:18px}
   .home-intro{display:block}
+  .home-intro h2{font-size:26px;line-height:1.12}
   .home-intro .actions{margin-top:16px}
+  .dashboard-grid{gap:12px}
+  .latest-island,.balance-island{padding:14px}
+  .latest-meta{align-items:flex-start}
   .recent-grid{grid-template-columns:1fr}
-  .create-pair{grid-template-columns:1fr;--pair-preview-h:clamp(240px,66vw,340px)}
+  .create-pair{grid-template-columns:1fr;--pair-preview-h:clamp(235px,64vw,320px);gap:22px}
   .source.wheel{display:block}
-  .summary-row{grid-template-columns:1fr auto;gap:8px}
+  .source.wheel .media{height:clamp(210px,58vw,270px)}
+  .summary-row{grid-template-columns:1fr auto;gap:8px;padding:14px 0}
   .summary-label{grid-column:1/-1}
-  .edit-panel{margin-left:0}
+  .summary-value{font-size:14px;line-height:1.5}
+  .edit-panel{margin-left:0;padding:14px}
   .form-grid{grid-template-columns:1fr}
-  .fit-context{--fit-preview-h:clamp(235px,64vw,330px)}
+  .fit-context{--fit-preview-h:clamp(230px,62vw,310px);gap:22px}
   .fit-context .wheel-object{display:block}
+  .fit-context .wheel-object .wheel-media{height:clamp(210px,58vw,270px)}
   .fit-table,.fit-table tbody,.fit-table tr,.fit-table td{display:block;width:100%}
   .fit-table colgroup,.fit-table thead{display:none}
   .fit-table tr{padding:14px 0;border-bottom:1px solid var(--line)}
@@ -298,14 +313,42 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .fit-table td:nth-child(3)::before{content:"Диск";color:var(--subtle);font-size:11px}
   .fit-table td:nth-child(4){padding-top:8px}
   .fit-row-bad td{background:none}
+  .fit-title{font-size:31px}
+  .fit-copy{font-size:14px}
   .result-head{display:block}
+  .result-primary{margin-top:14px}
+  .compare{aspect-ratio:4/3}
   .rating-actions{grid-template-columns:1fr}
+  .parser-recovery{display:grid;grid-template-columns:1fr}
   .review{position:static;width:100%;margin-top:30px}
 }
 @media(max-width:390px){
-  .main{padding-left:14px;padding-right:14px}
+  .main{padding:14px 14px calc(86px + var(--safe-bottom))}
+  .topbar{padding-bottom:16px}
+  .topbar h1{font-size:22px;margin-top:5px}
+  .mobile-brand{font-size:11px;letter-spacing:.14em}
+  .topbar-meta{font-size:11px}
+  .page{padding-top:16px}
+  .home-intro{padding-bottom:20px}
+  .home-intro h2{font-size:24px}
+  .home-intro p{font-size:13px}
   .actions{display:grid;grid-template-columns:1fr}
   .btn{width:100%}
+  .meta-row{gap:10px}
+  .object-name{font-size:17px}
+  .summary-row{grid-template-columns:1fr;gap:5px}
+  .summary-label{grid-column:auto}
+  .summary-row .btn-text{justify-self:start;margin-top:2px}
+  .inline-state{display:flex;margin:5px 0 0}
+  .edit-actions{display:grid;grid-template-columns:1fr}
+  .fit-verdict{gap:8px}
+  .fit-mark{width:28px;height:28px;font-size:25px}
+  .fit-title{font-size:28px}
+  .fit-disclaimer{font-size:11px}
+  .compare{aspect-ratio:1/1}
+  .compare-label{top:8px;font-size:9px}
+  .rating{margin-top:16px}
+  .mobile-nav button{font-size:9px}
 }
 </style>
 </head>
@@ -348,6 +391,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
           <button data-screen="create">Create</button>
           <button data-screen="fitment">Fitment</button>
           <button data-screen="result">Result</button>
+          <button data-review-parser="success">Parser success</button>
+          <button data-review-parser="error">Parser error</button>
         </div>
       </details>
     </div>
@@ -474,8 +519,24 @@ create:{
           <button class="btn-text" data-edit="source">Изменить ссылку</button>
         </div>
         <div class="edit-panel" data-panel="source" hidden>
-          <div class="field"><label>Ссылка на товар</label><input value="https://wheel-shop.ru/bbs-ci-r-20"></div>
+          <div class="field"><label>Ссылка на товар</label><input data-source-url value="https://wheel-shop.ru/bbs-ci-r-20"></div>
           <div class="edit-note">После изменения ссылки изображение и параметры диска будут получены заново</div>
+          <div class="parser-state loading" data-parser-state="loading" hidden aria-live="polite">
+            <strong>Получаем данные по ссылке</strong>
+            Изображение и параметры диска обновятся после завершения обработки
+          </div>
+          <div class="parser-state success" data-parser-state="success" hidden aria-live="polite">
+            <strong>Данные диска обновлены</strong>
+            Проверьте изображение и параметры в сводке
+          </div>
+          <div class="parser-state error" data-parser-state="error" hidden aria-live="polite">
+            <strong>Не удалось получить данные по ссылке</strong>
+            Попробуйте другую ссылку или загрузите изображение диска вручную
+            <div class="parser-recovery">
+              <button class="btn btn-secondary" data-parser-retry>Попробовать другую ссылку</button>
+              <button class="btn btn-secondary" data-manual-wheel>Загрузить вручную</button>
+            </div>
+          </div>
           <div class="edit-actions"><button class="btn btn-primary" data-parser-save="source">Обновить данные</button><button class="btn btn-secondary" data-close="source">Отмена</button></div>
         </div>
 
@@ -563,8 +624,8 @@ result:{
         <p class="eyebrow">Виртуальная примерка</p>
         <h2>Porsche Cayenne</h2>
         <p>BBS CI-R<br>20″ / 9J / ET 50 – сегодня, 14:32</p>
+        <div class="result-primary"><button class="btn btn-primary" data-go="create">Создать ещё вариант</button></div>
       </div>
-      <div class="actions"><button class="btn btn-primary" data-go="create">Создать ещё вариант</button></div>
     </section>
 
     <div class="compare" id="resultCompare">
@@ -654,17 +715,57 @@ function render(){
     };
   });
 
+  let parserReviewMode=window.__dwParserReviewMode||"success";
+  document.querySelectorAll("[data-review-parser]").forEach(function(b){
+    b.classList.toggle("active",b.dataset.reviewParser===parserReviewMode);
+    b.onclick=function(){
+      window.__dwParserReviewMode=b.dataset.reviewParser;
+      parserReviewMode=b.dataset.reviewParser;
+      document.querySelectorAll("[data-review-parser]").forEach(function(x){
+        x.classList.toggle("active",x.dataset.reviewParser===parserReviewMode);
+      });
+      if(current!=="create") setScreen("create");
+    };
+  });
+
+  function showParserState(name){
+    document.querySelectorAll("[data-parser-state]").forEach(function(el){
+      el.hidden=el.dataset.parserState!==name;
+    });
+  }
+
   document.querySelectorAll("[data-parser-save]").forEach(function(b){
     b.onclick=function(){
       const key=b.dataset.parserSave;
       b.disabled=true;
+      showParserState("loading");
       setInlineState(key,"Получаем данные","loading");
       window.setTimeout(function(){
+        if(parserReviewMode==="error"){
+          showParserState("error");
+          setInlineState(key,"Ошибка получения данных","error");
+          b.disabled=false;
+          return;
+        }
+        showParserState("success");
         setInlineState(key,"Данные обновлены","saved");
-        const panel=document.querySelector('[data-panel="'+key+'"]');
-        if(panel) panel.hidden=true;
         b.disabled=false;
       },650);
+    };
+  });
+
+  document.querySelectorAll("[data-parser-retry]").forEach(function(b){
+    b.onclick=function(){
+      showParserState("");
+      const input=document.querySelector("[data-source-url]");
+      if(input){input.focus();input.select()}
+    };
+  });
+  document.querySelectorAll("[data-manual-wheel]").forEach(function(b){
+    b.onclick=function(){
+      showParserState("");
+      setInlineState("source","Фото загружается вручную","loading");
+      window.setTimeout(function(){setInlineState("source","Фото загружено","saved")},500);
     };
   });
 
