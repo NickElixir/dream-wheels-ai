@@ -242,6 +242,18 @@ async def _resolve_wheel_url_for_draft(
         default=0.0,
     )
     rim_values = {key: value for key, value in resolution.values.items() if key in allowed_fields}
+    if not resolution.variants:
+        variant_state = "none"
+        selected_variant_sku = None
+    elif resolution.selection_required:
+        variant_state = "selection_required"
+        selected_variant_sku = None
+    elif resolution.selected_variant_sku is not None:
+        variant_state = "selected"
+        selected_variant_sku = resolution.selected_variant_sku
+    else:
+        variant_state = "none"
+        selected_variant_sku = None
     replacement_rim = identity_service.RimIdentityProposal(
         status="resolved",
         product_url=resolution.requested_url,
@@ -249,6 +261,8 @@ async def _resolve_wheel_url_for_draft(
         source="provider",
         revision=expected_rim_revision + 1,
         source_fingerprint=resolution.source_fingerprint,
+        variant_state=variant_state,
+        selected_variant_sku=selected_variant_sku,
         field_candidates=field_candidates,
         conflicts=[
             {

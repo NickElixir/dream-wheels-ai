@@ -138,6 +138,10 @@ class RimIdentityProposal(BaseModel):
     source_fingerprint: str | None = None
     field_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
     conflicts: list[dict[str, object]] = Field(default_factory=list)
+    # Product-source resolution and exact commercial variant selection are
+    # separate states: a page can resolve while its variants remain ambiguous.
+    variant_state: Literal["none", "selection_required", "selected"] = "none"
+    selected_variant_sku: str | None = None
 
 
 class IdentityResolutionError(BaseModel):

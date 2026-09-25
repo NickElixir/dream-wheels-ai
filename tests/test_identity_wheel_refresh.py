@@ -16,6 +16,7 @@ from src.rim_url_resolver import (
     RimUrlCandidate,
     RimUrlConflict,
     RimUrlError,
+    RimUrlVariant,
 )
 
 client = TestClient(app)
@@ -76,7 +77,7 @@ class _Acquire:
 
 
 class _DraftConn:
-    def __init__(self, *, available=True):
+    def __init__(self, *, available=True, concurrent_proposal=None):
         self.available = available
         self.proposal = _proposal()
         self.rim_asset_id = OLD_RIM_ASSET_ID
@@ -84,6 +85,8 @@ class _DraftConn:
         self.asset_inserts = []
         self.draft_updates = []
         self.other_writes = []
+        self.concurrent_proposal = concurrent_proposal
+        self.fetchrow_calls = 0
 
     def transaction(self):
         return _Transaction()
@@ -94,11 +97,15 @@ class _DraftConn:
         assert "expires_at > CURRENT_TIMESTAMP" in query
         if not self.available:
             return None
+        self.fetchrow_calls += 1
+        proposal = self.proposal
+        if "FOR UPDATE" in query and self.concurrent_proposal is not None:
+            proposal = self.concurrent_proposal
         return {
             "draft_id": DRAFT_ID,
             "car_asset_id": self.car_asset_id,
             "rim_asset_id": self.rim_asset_id,
-            "identity_proposal": copy.deepcopy(self.proposal),
+            "identity_proposal": copy.deepcopy(proposal),
         }
 
     async def fetchval(self, query: str, *args):
@@ -128,14 +135,15 @@ def _png() -> bytes:
     return output.getvalue()
 
 
-def _resolution(url: str):
+def _resolution(url: str, *, variants=(), selection_required=False, selected_sku=None, values=None):
     return type(
         "Resolution",
         (),
         {
             "requested_url": url,
             "final_url": url,
-            "values": {
+            "values": values
+            or {
                 "brand": "BBS",
                 "model": "CH-R",
                 "sku": "CHR-01",
@@ -168,6 +176,9 @@ def _resolution(url: str):
             ),
             "image_urls": ("https://cdn.example.test/rim.png",),
             "source_fingerprint": "f" * 64,
+            "variants": variants,
+            "selection_required": selection_required,
+            "selected_variant_sku": selected_sku,
         },
     )()
 
@@ -283,6 +294,8 @@ def test_wheel_url_refresh_reuses_draft_skips_vehicle_vlm_and_persists_asset(mon
     assert body["rim"]["conflicts"][0]["field"] == "center_bore_mm"
     assert len(body["rim"]["conflicts"][0]["candidates"]) == 2
     assert body["rim"]["field_candidates"]["brand"][0]["source"] == "json_ld"
+    assert body["rim"]["variant_state"] == "none"
+    assert body["rim"]["selected_variant_sku"] is None
     assert uploaded[0]["kind"] == "rim_original"
     assert uploaded[0]["content_type"] == "image/jpeg"
     assert uploaded[0]["data"].startswith(b"\xff\xd8")
@@ -293,6 +306,117 @@ def test_wheel_url_refresh_reuses_draft_skips_vehicle_vlm_and_persists_asset(mon
     assert len(conn.asset_inserts) == 1
     assert resolver_calls == []
     assert not conn.other_writes  # no render snapshots, jobs, or Fitment history touched
+
+
+def test_wheel_url_refresh_preserves_variant_selection_required_without_exact_specs(monkeypatch):
+    _install_auth_and_rate_limit(monkeypatch)
+    conn = _DraftConn()
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: _Pool(conn))
+    _install_successful_image(monkeypatch)
+    withheld = {"brand": "BBS", "model": "CH-R"}
+    variants = (
+        RimUrlVariant("CHR-01", {"sku": "CHR-01", "wheel_diameter_in": 19.0}, ()),
+        RimUrlVariant("CHR-02", {"sku": "CHR-02", "wheel_diameter_in": 20.0}, ()),
+    )
+
+    async def resolve(url, **_kwargs):
+        return _resolution(url, variants=variants, selection_required=True, values=withheld)
+
+    monkeypatch.setattr(identity_api, "resolve_rim_product_url", resolve)
+    response = client.post(
+        "/identity/resolve",
+        data={
+            "draft_id": DRAFT_ID,
+            "rim_product_url": "https://shop.example.test/variants",
+            "init_data": "unused",
+        },
+    )
+
+    assert response.status_code == 200
+    rim = response.json()["rim"]
+    assert rim["status"] == "resolved"  # source parsed; exact commercial choice remains separate
+    assert rim["variant_state"] == "selection_required"
+    assert rim["selected_variant_sku"] is None
+    for field in (
+        "sku",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "pcd_mm",
+        "center_bore_mm",
+        "offset_et_mm",
+    ):
+        assert rim[field] is None
+    assert rim["brand"] == "BBS" and rim["model"] == "CH-R"
+
+
+def test_wheel_url_refresh_marks_resolver_selected_variant(monkeypatch):
+    _install_auth_and_rate_limit(monkeypatch)
+    conn = _DraftConn()
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: _Pool(conn))
+    _install_successful_image(monkeypatch)
+    variants = (RimUrlVariant("CHR-01", {"sku": "CHR-01"}, ()),)
+
+    async def resolve(url, **_kwargs):
+        return _resolution(
+            url,
+            variants=variants,
+            selection_required=False,
+            selected_sku="CHR-01",
+            values={"brand": "BBS", "model": "CH-R", "sku": "CHR-01", "wheel_diameter_in": 19.0},
+        )
+
+    monkeypatch.setattr(identity_api, "resolve_rim_product_url", resolve)
+    response = client.post(
+        "/identity/resolve",
+        data={
+            "draft_id": DRAFT_ID,
+            "rim_product_url": "https://shop.example.test/one",
+            "init_data": "unused",
+        },
+    )
+    assert response.status_code == 200
+    rim = response.json()["rim"]
+    assert rim["variant_state"] == "selected"
+    assert rim["selected_variant_sku"] == "CHR-01"
+    assert rim["sku"] == "CHR-01"
+    assert rim["wheel_diameter_in"] == 19
+
+
+def test_wheel_url_refresh_cleans_uploaded_asset_after_optimistic_conflict(monkeypatch):
+    _install_auth_and_rate_limit(monkeypatch)
+    stale = _proposal()
+    newer = copy.deepcopy(stale)
+    newer["rim"]["revision"] = 4
+    conn = _DraftConn(concurrent_proposal=newer)
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: _Pool(conn))
+    _install_successful_image(monkeypatch)
+    deleted = []
+
+    async def record_delete(asset):
+        deleted.append(asset.id)
+
+    async def resolve(url, **_kwargs):
+        return _resolution(url)
+
+    monkeypatch.setattr(identity_api, "resolve_rim_product_url", resolve)
+    monkeypatch.setattr(identity_api.assets_service, "delete_uploaded_asset", record_delete)
+    response = client.post(
+        "/identity/resolve",
+        data={
+            "draft_id": DRAFT_ID,
+            "rim_product_url": "https://shop.example.test/race",
+            "init_data": "unused",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["error_code"] == "identity_draft_rim_revision_conflict"
+    assert deleted == [NEW_RIM_ASSET_ID]
+    assert conn.rim_asset_id == OLD_RIM_ASSET_ID
+    assert conn.proposal == stale
+    assert conn.asset_inserts == []
+    assert conn.draft_updates == []
+    assert conn.other_writes == []  # no render jobs/snapshots or Fitment history mutation
 
 
 def test_wheel_url_failure_preserves_draft_and_a_different_url_can_retry(monkeypatch):
