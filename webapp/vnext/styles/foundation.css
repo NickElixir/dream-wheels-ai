@@ -88,3 +88,16 @@
   .vnext-support__main, .vnext-support__side { padding: var(--vnext-space-4); }
   .vnext-support__hero-title { font-size: 28px; }
 }
+
+.vnext-button--text {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vnext-text-secondary);
+  padding-inline: 0;
+}
+.vnext-button--text:hover {
+  color: var(--vnext-text);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

@@ -34,9 +34,11 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
   sidebar.append(nav);
 
-  const account = document.createElement("div");
+  const account = document.createElement("button");
+  account.type = "button";
   account.className = "vnext-shell__account";
-  account.textContent = "Dream Wheels AI";
+  account.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
+  account.addEventListener("click", () => navigate?.("settings"));
   sidebar.append(account);
   shell.append(sidebar);
 
@@ -56,13 +58,14 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
 
   const bottom = document.createElement("nav");
   bottom.className = "vnext-shell__bottom-nav";
+  const mobileActiveView = ["support", "photo-guide", "docs"].includes(activeView) ? "support" : activeView;
   bottom.setAttribute("aria-label", "Основная навигация");
   mobileNav.forEach(([labelText, view]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "vnext-shell__bottom-button";
     button.textContent = labelText;
-    if (view === activeView) button.setAttribute("aria-current", "page");
+    if (view === mobileActiveView) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => navigate(view));
     bottom.append(button);
   });

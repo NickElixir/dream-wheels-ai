@@ -1,0 +1,171 @@
+.application-auth-gate,
+[data-auth-dialog],
+[data-logout-dialog] {
+  font-family: var(--vnext-font);
+  color: var(--vnext-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.application-auth-gate {
+  background: var(--vnext-canvas);
+}
+
+.application-auth-gate-card {
+  width: min(480px, calc(100vw - 32px));
+  border: 1px solid var(--vnext-border);
+  border-radius: var(--vnext-radius);
+  background: var(--vnext-surface);
+  box-shadow: none;
+  padding: 32px;
+}
+
+.application-auth-gate-wordmark,
+[data-auth-dialog] .auth-dialog-wordmark,
+[data-logout-dialog] .auth-dialog-wordmark {
+  color: var(--vnext-text);
+  font-size: 13px;
+  font-weight: var(--vnext-weight-semibold);
+  letter-spacing: .15em;
+}
+
+.application-auth-gate-title {
+  margin-top: 24px;
+  color: var(--vnext-text);
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: var(--vnext-weight-medium);
+  letter-spacing: -.035em;
+}
+
+.application-auth-gate-copy {
+  max-width: 390px;
+  color: var(--vnext-text-secondary);
+}
+
+.application-auth-gate-spinner {
+  width: 22px;
+  height: 22px;
+  margin-top: 26px;
+  border: 2px solid var(--vnext-border-strong);
+  border-top-color: var(--vnext-text);
+  border-radius: 50%;
+  animation: vnext-spin 1s linear infinite;
+}
+
+.application-auth-gate .primary-button,
+[data-auth-dialog] .primary-button,
+[data-logout-dialog] .primary-button {
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--vnext-cta);
+  color: var(--vnext-cta-text);
+  font-weight: var(--vnext-weight-medium);
+  box-shadow: none;
+}
+
+[data-auth-dialog],
+[data-logout-dialog] {
+  background: rgba(3, 6, 8, .78);
+  backdrop-filter: blur(10px);
+}
+
+[data-auth-dialog] .auth-dialog,
+[data-logout-dialog] .auth-dialog {
+  width: min(480px, calc(100vw - 32px));
+  border: 1px solid var(--vnext-border);
+  border-radius: var(--vnext-radius);
+  background: var(--vnext-surface);
+  box-shadow: none;
+  padding: 30px;
+}
+
+[data-auth-dialog] .auth-dialog-close,
+[data-logout-dialog] .auth-dialog-close {
+  color: var(--vnext-text-secondary);
+  background: transparent;
+}
+
+[data-auth-dialog] .auth-dialog-header h2,
+[data-logout-dialog] .auth-dialog-header h2 {
+  color: var(--vnext-text);
+  font-size: 29px;
+  line-height: 1.12;
+  font-weight: var(--vnext-weight-medium);
+  letter-spacing: -.035em;
+}
+
+[data-auth-dialog] .auth-dialog-description,
+[data-auth-dialog] .auth-dialog-otp-destination,
+[data-auth-dialog] .auth-dialog-legal,
+[data-auth-dialog] .auth-dialog-resend-row,
+[data-auth-dialog] .auth-dialog-status,
+[data-logout-dialog] .auth-dialog-description {
+  color: var(--vnext-text-secondary);
+}
+
+[data-auth-dialog] .auth-dialog-label {
+  color: var(--vnext-text-secondary);
+  font-size: 12px;
+}
+
+[data-auth-dialog] .auth-dialog-input {
+  min-height: 48px;
+  border: 1px solid var(--vnext-border-strong);
+  border-radius: 8px;
+  background: #0a0d10;
+  color: var(--vnext-text);
+  box-shadow: none;
+}
+
+[data-auth-dialog] .auth-dialog-input:focus {
+  border-color: var(--vnext-focus);
+  outline: 2px solid var(--vnext-focus);
+  outline-offset: 2px;
+}
+
+[data-auth-dialog] .ghost-button,
+[data-auth-dialog] .link-button,
+[data-logout-dialog] .ghost-button {
+  color: var(--vnext-text-secondary);
+}
+
+[data-auth-dialog] .auth-dialog-account-card {
+  border: 1px solid var(--vnext-border);
+  border-radius: 8px;
+  background: #0a0d10;
+}
+
+[data-auth-dialog][data-vnext-auth-step="restoring"] .auth-dialog-header::after {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin-top: 24px;
+  border: 2px solid var(--vnext-border-strong);
+  border-top-color: var(--vnext-text);
+  border-radius: 50%;
+  animation: vnext-spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .application-auth-gate-spinner,
+  [data-auth-dialog][data-vnext-auth-step="restoring"] .auth-dialog-header::after {
+    animation: none;
+    border-top-color: var(--vnext-border-strong);
+  }
+}
+
+@media (max-width: 700px) {
+  .application-auth-gate-card,
+  [data-auth-dialog] .auth-dialog,
+  [data-logout-dialog] .auth-dialog {
+    width: calc(100vw - 24px);
+    padding: 24px 20px;
+  }
+  .application-auth-gate-title,
+  [data-auth-dialog] .auth-dialog-header h2,
+  [data-logout-dialog] .auth-dialog-header h2 {
+    font-size: 27px;
+  }
+}

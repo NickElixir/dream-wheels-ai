@@ -331,6 +331,8 @@ const I18N = {
             appGateTitle: "Войдите, чтобы открыть приложение",
             appGateDescription: "Приложение доступно после подтверждения входа.",
             appGateRestoring: "Проверяем защищённую сессию перед открытием приложения.",
+            sessionExpiredTitle: "Сессия истекла",
+            sessionExpiredDescription: "Войдите снова, чтобы восстановить текущие данные и продолжить. Предыдущее действие не будет запущено автоматически.",
         },
         menu: {
             dashboard: "Главная",
@@ -782,6 +784,8 @@ const I18N = {
             appGateTitle: "Sign in to open the app",
             appGateDescription: "The app is available after you confirm your sign-in.",
             appGateRestoring: "Checking your protected session before opening the app.",
+            sessionExpiredTitle: "Session expired",
+            sessionExpiredDescription: "Sign in again to restore your current data and continue. The previous action will not run automatically.",
         },
         menu: {
             dashboard: "Home",
@@ -2718,12 +2722,25 @@ function renderApplicationAuthGate() {
     if (!gate) return;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
         || state.frontendAuthState?.interactionState === "restoring";
+    const expired = state.frontendAuthState?.status === "SESSION_EXPIRED"
+        || state.frontendAuthState?.errorCode === "SESSION_EXPIRED";
     gate.hidden = state.applicationAuthGateReady;
     gate.dataset.restoring = String(restoring);
+    gate.dataset.vnextAuthState = restoring ? "restoring" : expired ? "expired" : "login";
     gate.setAttribute("aria-busy", String(restoring));
-    if (title) title.textContent = restoring ? t("auth.restoring") : t("auth.appGateTitle");
-    if (copy) copy.textContent = restoring ? t("auth.appGateRestoring") : t("auth.appGateDescription");
-    if (copy) copy.hidden = restoring;
+    if (title) title.textContent = restoring
+        ? t("auth.restoring")
+        : expired
+            ? t("auth.sessionExpiredTitle")
+            : t("auth.appGateTitle");
+    if (copy) {
+        copy.textContent = restoring
+            ? t("auth.appGateRestoring")
+            : expired
+                ? t("auth.sessionExpiredDescription")
+                : t("auth.appGateDescription");
+        copy.hidden = false;
+    }
     if (spinner) spinner.hidden = !restoring;
     if (login) {
         login.hidden = restoring;
@@ -2938,7 +2955,7 @@ function authErrorMessage(code) {
         session_missing: t("auth.providerError"),
         ALREADY_AUTHENTICATED: t("auth.alreadyAuthenticated"),
         AUTHENTICATION_IN_PROGRESS: t("auth.authenticationInProgress"),
-        SESSION_EXPIRED: t("auth.networkError"),
+        SESSION_EXPIRED: t("auth.sessionExpiredTitle"),
     }[code] || t("auth.providerError");
 }
 
@@ -3062,6 +3079,7 @@ function renderAuthDialog() {
     const restoredProvider = document.querySelector("[data-auth-restored-provider]");
     if (!dialog || !emailForm || !otpForm) return;
     dialog.hidden = !state.authDialogOpen;
+    dialog.dataset.vnextAuthStep = state.authDialogStep;
     const isInitialEmailStep = state.authDialogOpen && state.authDialogStep === "email";
     const isChangeEmailStep = state.authDialogOpen && state.authDialogStep === "change-email";
     const isEmailStep = isInitialEmailStep || isChangeEmailStep;
@@ -3080,13 +3098,15 @@ function renderAuthDialog() {
                 : isChangeEmailStep
                     ? t("auth.changeEmailTitle")
                     : t("auth.dialogTitle");
-    if (description) description.hidden = isRestoredStep || isRestoringStep;
+    if (description) description.hidden = isRestoredStep;
     if (descriptionLine1) descriptionLine1.textContent = isOtpStep
         ? t("auth.otpSentTo")
-        : isChangeEmailStep
-            ? t("auth.changeEmailIntro")
-            : t("auth.emailIntro");
-    if (descriptionLine2) descriptionLine2.textContent = isOtpStep
+        : isRestoringStep
+            ? t("auth.appGateRestoring")
+            : isChangeEmailStep
+                ? t("auth.changeEmailIntro")
+                : t("auth.emailIntro");
+    if (descriptionLine2) descriptionLine2.textContent = isOtpStep || isRestoringStep
         ? ""
         : isChangeEmailStep
             ? t("auth.changeEmailSubcopy")
@@ -9176,7 +9196,58 @@ async function refreshProcessingHistoryJobs() {
     renderDashboard();
 }
 
+
+function vnextDashboardJobViewModel(job) {
+    if (!job) return null;
+    const resultUrl = job.status === "completed" && isAssetAvailable(job, "result")
+        ? assetUrlForJob(job, "result")
+        : "";
+    return {
+        jobId: job.job_id || "",
+        status: job.status || "pending",
+        statusLabel: statusLabel(job.status),
+        title: humanRenderTitle(job),
+        subtitle: rimSummaryForJob(job) || "",
+        meta: formatDateTime(job.completed_at || job.created_at),
+        imageUrl: resultUrl || "",
+        canOpen: job.status === "completed",
+    };
+}
+
+function vnextDashboardSnapshot() {
+    const expiry = buildRenderExpiryCohorts().slice(0, 2).map((item) => ({
+        credits: Number(item.credits || 0),
+        creditsLabel: formatRenderCount(Number(item.credits || 0)),
+        meta: item.meta || "",
+        expiresLabel: expiryLabel(item.expiresAt),
+    }));
+    const latest = state.renderHistory[0] || null;
+    const dashboardError = state.walletMessageTone === "error" || state.renderHistoryError
+        ? localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны")
+        : "";
+    return {
+        balance: state.balance,
+        balanceLabel: formatRenderCount(state.balance === null ? 0 : state.balance),
+        expiry,
+        expiryNote: expiry.length ? t("dashboard.expiryPriority") : "",
+        loading: Boolean(state.walletLoading || state.renderHistoryLoading),
+        error: dashboardError,
+        authenticated: isFrontendUserAuthenticated(),
+        partialAuth: isSupabasePartialAuth(),
+        latest: vnextDashboardJobViewModel(latest),
+        recent: state.renderHistory.slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
+    };
+}
+
+function emitVNextDashboardChange() {
+    if (typeof CustomEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent("dreamwheels:dashboardchange", {
+        detail: { viewModel: vnextDashboardSnapshot() },
+    }));
+}
+
 function renderDashboard() {
+    emitVNextDashboardChange();
     const balance = document.querySelector("[data-dashboard-balance]");
     const balanceUnit = document.querySelector("[data-dashboard-balance-unit]");
     const dashboardBalanceAccount = document.querySelector("[data-dashboard-balance-account]");
@@ -9538,6 +9609,16 @@ window.DreamWheelsLegacy = Object.freeze({
         setView(view);
     },
     openExternal,
+    dashboardSnapshot() {
+        return vnextDashboardSnapshot();
+    },
+    openRenderDetail(jobId) {
+        if (jobId) openRenderDetail(jobId, "dashboard");
+    },
+    openAuth() {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    },
 });
 
 function openPaymentUrl(url) {
