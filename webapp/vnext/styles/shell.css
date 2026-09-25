@@ -1,0 +1,27 @@
+body.vnext-support-active { background: var(--vnext-canvas); }
+body.vnext-support-active > .desktop-sidebar, body.vnext-support-active #app > .topbar, body.vnext-support-active > .mobile-bottom-nav, body.vnext-support-active > .more-sheet, body.vnext-support-active > .more-sheet-backdrop { display: none !important; }
+body.vnext-support-active #app { max-width: none; min-height: 100vh; margin: 0; padding: 0; }
+.vnext-shell { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); background: var(--vnext-canvas); }
+.vnext-shell__sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 26px 18px 22px; border-right: 1px solid var(--vnext-border); background: #080a0c; }
+.vnext-shell__brand { margin: 0 8px 34px; color: var(--vnext-text); font-size: 13px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; }
+.vnext-shell__brand span { color: #8d959b; }
+.vnext-shell__nav { display: grid; gap: 5px; }
+.vnext-shell__nav-label { margin: 20px 10px 7px; color: #5f6870; font-size: 10px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; text-transform: uppercase; }
+.vnext-shell__nav-button { min-height: 42px; border: 0; border-radius: 7px; background: transparent; color: #8f979d; padding: 0 12px; text-align: left; font-weight: var(--vnext-weight-medium); }
+.vnext-shell__nav-button:hover, .vnext-shell__nav-button[aria-current="page"] { background: #101418; color: var(--vnext-text); }
+.vnext-shell__account { margin-top: auto; border-top: 1px solid var(--vnext-border); padding: 14px 10px 0; color: var(--vnext-text-secondary); font-size: 12px; }
+.vnext-shell__main { min-width: 0; padding: 28px clamp(22px, 4vw, 58px) 96px; }
+.vnext-shell__frame { width: min(var(--vnext-content-width), 100%); margin: 0 auto; }
+.vnext-shell__topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--vnext-space-4); padding-bottom: 22px; border-bottom: 1px solid var(--vnext-border); }
+.vnext-shell__topbar-title { margin: 0; font-size: 27px; font-weight: var(--vnext-weight-medium); letter-spacing: -.025em; }
+.vnext-shell__bottom-nav { display: none; }
+@media (max-width: 700px) {
+  .vnext-shell { display: block; padding-bottom: calc(72px + var(--vnext-safe-bottom)); }
+  .vnext-shell__sidebar { display: none; }
+  .vnext-shell__main { padding: 18px 16px 24px; }
+  .vnext-shell__topbar { padding-bottom: 16px; }
+  .vnext-shell__topbar-title { font-size: 22px; }
+  .vnext-shell__bottom-nav { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; min-height: calc(64px + var(--vnext-safe-bottom)); padding: 8px 8px calc(8px + var(--vnext-safe-bottom)); border-top: 1px solid var(--vnext-border); background: #080a0c; }
+  .vnext-shell__bottom-button { min-height: 44px; border: 0; border-radius: 7px; background: transparent; color: var(--vnext-text-subtle); padding: 0 4px; font-size: 10px; font-weight: var(--vnext-weight-medium); }
+  .vnext-shell__bottom-button[aria-current="page"] { color: var(--vnext-text); background: #101418; }
+}

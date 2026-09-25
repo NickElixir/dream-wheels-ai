@@ -1,0 +1,36 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+:root {
+  --vnext-canvas: #07090b;
+  --vnext-surface: #0f1317;
+  --vnext-surface-elevated: #13181d;
+  --vnext-text: #f1f3f2;
+  --vnext-text-secondary: #9aa2a8;
+  --vnext-text-subtle: #707980;
+  --vnext-cta: #f0efe9;
+  --vnext-cta-text: #0c0f11;
+  --vnext-positive: #75caa0;
+  --vnext-warning: #d8ad67;
+  --vnext-negative: #d87979;
+  --vnext-unknown: #a0a7ac;
+  --vnext-pending: #7d878e;
+  --vnext-brand-accent: #d8ff37;
+  --vnext-border: rgba(238, 242, 246, .10);
+  --vnext-border-strong: rgba(238, 242, 246, .16);
+  --vnext-focus: #d7dbde;
+  --vnext-radius: 10px;
+  --vnext-radius-media: 12px;
+  --vnext-space-1: 4px;
+  --vnext-space-2: 8px;
+  --vnext-space-3: 12px;
+  --vnext-space-4: 16px;
+  --vnext-space-5: 24px;
+  --vnext-space-6: 32px;
+  --vnext-font: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --vnext-weight-regular: 400;
+  --vnext-weight-medium: 500;
+  --vnext-weight-semibold: 600;
+  --vnext-content-width: 1180px;
+  --vnext-mobile-breakpoint: 700px;
+  --vnext-safe-bottom: env(safe-area-inset-bottom, 0px);
+}

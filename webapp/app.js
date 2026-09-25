@@ -7987,6 +7987,7 @@ function setView(view, { refreshData = true } = {}) {
         }
     }
     refreshButtonsForCurrentView();
+    window.dispatchEvent(new CustomEvent("dreamwheels:viewchange", { detail: { view } }));
     if (!refreshData) return;
     if (view === "dashboard") {
         void loadDashboardData({ silent: true });
@@ -9529,6 +9530,13 @@ function openExternal(url) {
     }
     window.open(url, "_blank", "noopener");
 }
+
+window.DreamWheelsLegacy = Object.freeze({
+    navigate(view) {
+        setView(view);
+    },
+    openExternal,
+});
 
 function openPaymentUrl(url) {
     if (HAS_TG && typeof tg?.openLink === "function") {
