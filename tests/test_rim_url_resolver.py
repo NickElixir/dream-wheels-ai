@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from src.rim_url_extract import extract_rim_document
@@ -6,6 +8,7 @@ from src.rim_url_resolver import (
     RimUrlSecurityError,
     _resolve_document,
     extract_product_page,
+    fetch_public_rim_image,
     validate_product_url,
 )
 
@@ -116,3 +119,22 @@ def test_incomplete_labelled_specification_stays_incomplete() -> None:
     assert resolution.values["wheel_diameter_in"] == 15.0
     assert "wheel_width_j" not in resolution.values
     assert "center_bore_mm" not in resolution.values
+
+
+def test_product_image_is_extracted_from_product_metadata() -> None:
+    document = extract_rim_document(
+        """
+        <meta property="og:image" content="/media/wheel.webp">
+        <script type="application/ld+json">
+          {"@type":"Product","brand":"BBS","model":"CH-R",
+           "image":[{"url":"https://cdn.example.test/chr.png"}]}
+        </script>
+        """
+    )
+
+    assert document.image_urls == ("https://cdn.example.test/chr.png", "/media/wheel.webp")
+
+
+def test_product_image_fetch_rejects_non_public_or_non_https_urls_before_network() -> None:
+    with pytest.raises(RimUrlSecurityError):
+        asyncio.run(fetch_public_rim_image("http://127.0.0.1/wheel.png"))

@@ -146,6 +146,7 @@ class ExtractedPage:
     candidates: tuple[ExtractedCandidate, ...]
     variants: tuple[ExtractedVariant, ...] = ()
     product_group_ids: tuple[str, ...] = ()
+    image_urls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -825,11 +826,13 @@ def _extract_json_ld(data: Any) -> ExtractedPage:
     candidates: list[ExtractedCandidate] = []
     variants: list[ExtractedVariant] = []
     group_ids: set[str] = set()
+    image_urls: list[str] = []
 
     if groups:
         group, _ = min(groups, key=lambda item: len(item[1]))
         group_ids = _group_identifiers(group)
         candidates.extend(_mapping_candidates(group, "json_ld_product_group", 0.98))
+        image_urls.extend(_image_url_values(group.get("image")))
         normalized_group = _mapping_by_normalized_key(group)
         inherited_brand = _scalar_brand(_first_value(normalized_group, _BRAND_KEYS))
         inherited_model = _first_value(normalized_group, _MODEL_KEYS)
@@ -892,8 +895,28 @@ def _extract_json_ld(data: Any) -> ExtractedPage:
         ]
         product, _ = min(eligible or products, key=lambda item: len(item[1]))
         candidates.extend(_mapping_candidates(product, "json_ld", 0.95))
+        image_urls.extend(_image_url_values(product.get("image")))
 
-    return ExtractedPage(tuple(candidates), tuple(variants), tuple(sorted(group_ids)))
+    return ExtractedPage(
+        tuple(candidates),
+        tuple(variants),
+        tuple(sorted(group_ids)),
+        tuple(dict.fromkeys(image_urls)),
+    )
+
+
+def _image_url_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        cleaned = _clean_text(value, max_length=2048)
+        return [cleaned] if cleaned else []
+    if isinstance(value, list):
+        return [url for item in value for url in _image_url_values(item)]
+    if isinstance(value, dict):
+        normalized = _mapping_by_normalized_key(value)
+        return _image_url_values(
+            _first_value(normalized, ("url", "contenturl", "thumbnailurl", "@id"))
+        )
+    return []
 
 
 def _looks_like_product(mapping: dict[str, Any]) -> bool:
@@ -988,11 +1011,18 @@ def _merge_pages(pages: list[ExtractedPage]) -> ExtractedPage:
     candidates: list[ExtractedCandidate] = []
     variants: list[ExtractedVariant] = []
     group_ids: set[str] = set()
+    image_urls: list[str] = []
     for page in pages:
         candidates.extend(page.candidates)
         variants.extend(page.variants)
         group_ids.update(page.product_group_ids)
-    return ExtractedPage(tuple(candidates), tuple(variants), tuple(sorted(group_ids)))
+        image_urls.extend(page.image_urls)
+    return ExtractedPage(
+        tuple(candidates),
+        tuple(variants),
+        tuple(sorted(group_ids)),
+        tuple(dict.fromkeys(image_urls)),
+    )
 
 
 def _extract_json_text(text: str, source: str) -> ExtractedPage:
@@ -1025,6 +1055,21 @@ def extract_rim_document(content: str, *, content_type: str = "text/html") -> Ex
     candidates.extend(_extract_embedded_attribute_properties(parser.root))
 
     meta = dict(parser.meta)
+    image_urls = list(structured.image_urls)
+    image_urls.extend(
+        value
+        for key, value in parser.meta
+        if key in {"og:image", "og:image:url", "twitter:image", "twitter:image:src"}
+    )
+    for node in _walk_nodes(parser.root):
+        if node.attributes.get("itemprop", "").lower() == "image":
+            image_urls.extend(
+                _image_url_values(
+                    node.attributes.get("src")
+                    or node.attributes.get("content")
+                    or node.attributes.get("href")
+                )
+            )
     _add_candidate(
         candidates,
         "brand",
@@ -1069,6 +1114,7 @@ def extract_rim_document(content: str, *, content_type: str = "text/html") -> Ex
         tuple(candidates),
         structured.variants,
         structured.product_group_ids,
+        tuple(dict.fromkeys(image_urls)),
     )
 
 
