@@ -107,7 +107,7 @@ function createBalance(model, { navigate, openAuth } = {}) {
       const row = document.createElement("div");
       row.className = "vnext-dashboard__expiry-row";
       const credits = document.createElement("span");
-      credits.textContent = `${item.credits} ${item.meta || "рендеров"}`;
+      credits.textContent = item.creditsLabel || String(item.credits);
       const date = document.createElement("strong");
       date.textContent = item.expiresLabel;
       row.append(credits, date);
