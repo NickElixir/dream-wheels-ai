@@ -1,6 +1,6 @@
 body.vnext-support-active { background: var(--vnext-canvas); }
 body.vnext-support-active > .desktop-sidebar, body.vnext-support-active #app > .topbar, body.vnext-support-active > .mobile-bottom-nav, body.vnext-support-active > .more-sheet, body.vnext-support-active > .more-sheet-backdrop { display: none !important; }
-body.vnext-support-active #app { max-width: none; min-height: 100vh; margin: 0; padding: 0; }
+body.vnext-support-active #app { width: 100%; max-width: none; min-height: 100vh; margin: 0; padding: 0; }
 .vnext-shell { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); background: var(--vnext-canvas); }
 .vnext-shell__sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 26px 18px 22px; border-right: 1px solid var(--vnext-border); background: #080a0c; }
 .vnext-shell__brand { margin: 0 8px 34px; color: var(--vnext-text); font-size: 13px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; }
