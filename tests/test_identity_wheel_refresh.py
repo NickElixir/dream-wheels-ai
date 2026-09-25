@@ -382,6 +382,39 @@ def test_wheel_url_refresh_marks_resolver_selected_variant(monkeypatch):
     assert rim["wheel_diameter_in"] == 19
 
 
+def test_wheel_url_refresh_marks_single_variant_without_sku_as_selected(monkeypatch):
+    _install_auth_and_rate_limit(monkeypatch)
+    conn = _DraftConn()
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: _Pool(conn))
+    _install_successful_image(monkeypatch)
+    variants = (RimUrlVariant(None, {"wheel_diameter_in": 19.0}, ()),)
+
+    async def resolve(url, **_kwargs):
+        return _resolution(
+            url,
+            variants=variants,
+            selection_required=False,
+            selected_sku=None,
+            values={"brand": "BBS", "model": "CH-R", "wheel_diameter_in": 19.0},
+        )
+
+    monkeypatch.setattr(identity_api, "resolve_rim_product_url", resolve)
+    response = client.post(
+        "/identity/resolve",
+        data={
+            "draft_id": DRAFT_ID,
+            "rim_product_url": "https://shop.example.test/one-no-sku",
+            "init_data": "unused",
+        },
+    )
+
+    assert response.status_code == 200
+    rim = response.json()["rim"]
+    assert rim["variant_state"] == "selected"
+    assert rim["selected_variant_sku"] is None
+    assert rim["wheel_diameter_in"] == 19
+
+
 def test_wheel_url_refresh_cleans_uploaded_asset_after_optimistic_conflict(monkeypatch):
     _install_auth_and_rate_limit(monkeypatch)
     stale = _proposal()

@@ -248,12 +248,9 @@ async def _resolve_wheel_url_for_draft(
     elif resolution.selection_required:
         variant_state = "selection_required"
         selected_variant_sku = None
-    elif resolution.selected_variant_sku is not None:
+    else:
         variant_state = "selected"
         selected_variant_sku = resolution.selected_variant_sku
-    else:
-        variant_state = "none"
-        selected_variant_sku = None
     replacement_rim = identity_service.RimIdentityProposal(
         status="resolved",
         product_url=resolution.requested_url,

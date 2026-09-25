@@ -63,8 +63,9 @@ selection from absent specifications, while exposing selectable choices is
 not part of this prerequisite.
 
 `variant_state` is one of `none`, `selection_required`, or `selected`.
-`selected_variant_sku` is non-null only when the resolver selected a concrete
-variant. `status: "resolved"` means the product source was successfully
+`selected_variant_sku` is populated when available; a resolver-selected variant
+may have no SKU in its source, so `variant_state: "selected"` can coexist with
+`selected_variant_sku: null`. `status: "resolved"` means the product source was successfully
 parsed; it does not imply that the user has selected an exact commercial
 variant. Thus `status: "resolved"` may coexist with
 `variant_state: "selection_required"`.
