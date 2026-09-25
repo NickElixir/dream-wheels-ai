@@ -192,7 +192,8 @@ img { display: block; max-width: 100%; }
 .how-it-works__object-card::after { position: absolute; z-index: 1; bottom: 6%; width: 54%; height: 5%; border-radius: 50%; background: rgba(0,0,0,.28); filter: blur(5px); content: ''; }
 .how-it-works__wheel { position: relative; z-index: 2; width: 100%; height: 100%; max-width: none; object-fit: contain; filter: brightness(1.07) contrast(1.03); }
 .how-it-works__wheel-card-copy { position: absolute; top: calc(50% + (var(--how-it-works-card-size) / 2) + 12px); left: 50%; display: grid; gap: 8px; width: min(100%, var(--how-it-works-card-size)); color: #e7ebe6; font-family: var(--action); text-align: center; transform: translateX(-50%); }
-.how-it-works__wheel-card-copy strong { font-size: clamp(14px, 1.15vw, 18px); font-weight: 500; letter-spacing: -.035em; line-height: 1.05; }
+.how-it-works__wheel-card-copy strong, .how-it-works__vehicle-name { color: #e7ebe6; font-size: clamp(14px, 1.15vw, 18px); font-weight: 500; letter-spacing: -.035em; line-height: 1.05; }
+@media (max-width: 900px) and (orientation: portrait), (max-width: 760px) { .how-it-works__vehicle-name { font-size: 16px; } }
 .how-it-works__wheel-card-copy small { color: rgba(225,231,225,.68); font-size: 9px; font-weight: 500; letter-spacing: .08em; line-height: 1.35; }
 .how-it-works__wheel-details { margin-top: auto; }
 .how-it-works__try-on-stack { position: relative; display: flex; flex: 1; flex-direction: column; width: 100%; }
