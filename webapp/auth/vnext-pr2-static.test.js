@@ -61,7 +61,7 @@ test("Auth/session VNext presentation preserves existing controller hooks and ex
   assert.match(html, /\/vnext\/styles\/auth\.css/);
   assert.match(app, /sessionExpiredTitle: "Сессия истекла"/);
   assert.match(app, /Предыдущее действие не будет запущено автоматически/);
-  assert.match(app, /data\.vnextAuthStep = state\.authDialogStep/);
+  assert.match(app, /dialog\.dataset\.vnextAuthStep = state\.authDialogStep/);
   assert.match(app, /gate\.dataset\.vnextAuthState/);
   assert.match(css, /data-vnext-auth-step="restoring"/);
   assert.match(css, /prefers-reduced-motion: reduce/);

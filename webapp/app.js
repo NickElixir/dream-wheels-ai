@@ -2722,7 +2722,8 @@ function renderApplicationAuthGate() {
     if (!gate) return;
     const restoring = state.frontendAuthState?.status === "BOOTSTRAPPING"
         || state.frontendAuthState?.interactionState === "restoring";
-    const expired = state.frontendAuthState?.errorCode === "SESSION_EXPIRED";
+    const expired = state.frontendAuthState?.status === "SESSION_EXPIRED"
+        || state.frontendAuthState?.errorCode === "SESSION_EXPIRED";
     gate.hidden = state.applicationAuthGateReady;
     gate.dataset.restoring = String(restoring);
     gate.dataset.vnextAuthState = restoring ? "restoring" : expired ? "expired" : "login";
