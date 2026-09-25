@@ -4,26 +4,26 @@
 
 PRE_RENDER / APPLICATION STATUS
 
-    APPLICATION_DESIGN_VNEXT = DRAFT
-    APPLICATION_DESIGN_DIRECTION = CONDITIONALLY_ACCEPTED
-    VISUAL_SYSTEM_FREEZE = NOT_REACHED
-    VNEXT_UI_CONTRACT = NOT_FROZEN
-    RUNTIME_IMPLEMENTATION = NOT_AUTHORIZED
+    APPLICATION_DESIGN_VNEXT = FROZEN
+    APPLICATION_DESIGN_DIRECTION = ACCEPTED
+    VISUAL_SYSTEM_FREEZE = REACHED
+    VNEXT_UI_CONTRACT = FROZEN
+    RUNTIME_IMPLEMENTATION = AUTHORIZED
 
-This document captures the current working visual direction for the next Dream Wheels application redesign.
+This document is the authoritative visual/UI target for implementing Dream Wheels Application VNext. The [reconciled prototype](../references/application-vnext-state-coverage-prototype-v3.html) is its canonical interactive visual reference; the [closing QA report](vnext-full-screen-qa-audit.md) is its canonical static-prototype evidence.
 
-The [reconciled static prototype](../references/application-vnext-state-coverage-prototype-v3.html) has a [closing reconciliation QA PASS](vnext-full-screen-qa-audit.md): 128 checks, 0 errors, no open HIGH/BLOCKER in prototype scope. It is **ready for formal freeze review**, but has not received separate final approval. This does not certify runtime, API, payments or real-device behavior. Earlier review/freeze notes in this working document describe historical milestones and do not supersede the closing QA conclusion.
+Formal UI contract approval follows closing reconciliation QA PASS: 128 checks, 0 errors, no open HIGH/BLOCKER in static-prototype scope, plus a passing closing consistency smoke. `RUNTIME_IMPLEMENTATION = AUTHORIZED` permits implementation against this target; it does **not** certify runtime conformance, API/backend integration, payments, real devices or production readiness. Earlier review/freeze notes in this document are historical snapshots and cannot override this status.
 
-It does not replace docs/ui-design-code.md, which remains the frozen current application visual contract until a later explicit UI freeze.
+The [V1 Design Code](../ui-design-code.md) remains the frozen legacy/current-runtime reference until the application is actually migrated. For **new VNext implementation**, this frozen VNext Design Code and its canonical prototype take precedence over V1 visual conventions. Both are frozen for different implementation generations; neither status implies that the current runtime has already adopted VNext.
 
 It also does not replace feature-level behavioural contracts. Domain/state specifications remain authoritative for behaviour and semantics.
 
-The current direction was selected after comparing two application visual explorations:
+The accepted direction was selected after comparing two application visual explorations:
 
 - A — Fine Engineering
 - C — Bespoke Automotive Atelier
 
-The working synthesis is:
+The frozen synthesis is:
 
 > Bespoke Automotive Atelier in a Fine Engineering interface language
 
@@ -33,6 +33,12 @@ In practical terms:
     AUTOMOTIVE ATMOSPHERE / IMAGERY / MATERIAL FEELING = C
 
 The application must feel like a premium automotive environment without becoming an editorial website, luxury brochure or decorative engineering dashboard.
+
+## Frozen contract scope
+
+The frozen target covers application information hierarchy; visual language; navigation model; desktop/mobile responsive transformations; primary/secondary/tertiary action hierarchy; semantic color roles; IBM Plex Sans; surface/radius language; media presentation; Create summary-first/form-on-demand and parser UI states; Fitment hierarchy and all four verdict presentations; `FITMENT_VERDICT ≠ RENDER_PERMISSION`; Result image-first hierarchy, before/after slider and feedback vocabulary; compact History archive; Balance and payment-state presentation; Auth/session, empty and error states; Support, Photo Guide and Documents; mobile bottom navigation and Help model; no decorative status dots; and rare brand lime with near-white primary CTA.
+
+Implementation may make non-semantic technical adjustments for subpixel rendering, real-content spacing, component/framework details and browser-specific corrections. Such adjustments must not change the frozen hierarchy, semantics, interaction model or visual language. Material design or copy changes require separate review. This freeze does not validate production runtime, frontend/backend integration, parser API, Fitment execution, render provider, auth runtime, Robokassa/payment execution, network failures, Safari iOS, Chrome Android, Telegram WebView, physical safe areas, software keyboard, screen readers or real-device performance; those are subsequent implementation and staging/device QA tasks, not blockers to this UI-contract freeze.
 
 ## 1. Core character
 
@@ -81,14 +87,14 @@ On highly technical screens such as Fitment, technical evidence may temporarily 
 
 Use a cold, near-black graphite canvas close to the published Landing language.
 
-Working visual intent:
+Frozen visual intent:
 
     cold dark graphite
     very low chroma
     no blue/purple AI tint
     no obvious gradient background
 
-Exact color tokens remain open until HTML visual QA.
+Rendered color tokens and their balance are defined by the canonical prototype.
 
 ### Surfaces
 
@@ -114,14 +120,14 @@ Do not simulate literal brushed metal, carbon fibre, glass or leather across ord
 
 VNext should converge away from the current 18–28 px SaaS-card system.
 
-Working application intent:
+Frozen application intent:
 
     default grouped surface: restrained 6–10 px
     special media / large interaction surface: up to about 12 px
     pills: only when the semantic form genuinely requires a pill
     circles: only for circular controls/icons
 
-These are working ranges, not frozen CSS tokens.
+These describe the frozen radius language; exact CSS values and exceptions are defined by the canonical prototype.
 
 ### Borders
 
@@ -133,10 +139,10 @@ UI elevation is minimal. Use shadow only where a transient overlay genuinely nee
 
 ## 5. Color roles
 
-### Working VNext tokens
+### VNext color tokens
 
-These values are the current HTML-QA tokens. They are working contract values,
-not yet a final application-wide visual freeze.
+These values are present in the canonical prototype and belong to the frozen
+visual contract. The prototype remains authoritative for their rendered use.
 
     canvas             #07090B
     primary CTA        #F0EFE9
@@ -233,7 +239,7 @@ neutral in color; do not introduce conventional blue links into VNext.
 
 Use IBM Plex Sans as the primary application voice.
 
-It fits the working synthesis because it can support both precise technical data and restrained editorial automotive presentation.
+It supports the accepted synthesis of precise technical data and restrained editorial automotive presentation.
 
 ### Weights
 
@@ -251,7 +257,7 @@ Large or expressive editorial typography may appear only where the content justi
 
 Do not apply a luxury serif as the default application UI voice.
 
-Inter Tight may be evaluated later for action/display roles, but it is not a required VNext dependency at v0.1.
+Inter Tight is not part of this frozen VNext contract. Any later typeface change requires separate approval.
 
 ## 7. Buttons and actions
 
@@ -505,7 +511,7 @@ Take more from C than on Fitment/Create: larger result image, stronger atmospher
 
 Keep A for action hierarchy, labels, controls, comparison/original switch and metadata structure.
 
-Primary CTA stays near-white unless a later action-specific rule overrides it.
+Primary CTA stays near-white in this frozen contract; a different action-color rule requires separate approval.
 
 ### Pass condition
 
@@ -568,9 +574,9 @@ These rules should survive Dashboard, Create, Fitment and Result:
 - telemetry/CAD visual metaphors;
 - engineering as primary brand identity.
 
-## 22. Open decisions for HTML prototype
+## 22. Historical open decisions for the first HTML prototype — superseded
 
-The first HTML prototype must resolve these visually rather than through further abstract discussion:
+The following questions belonged to the first prototype review. They were resolved in the canonical reconciled prototype and closing QA; they are not open decisions under the frozen contract:
 
 1. exact graphite palette;
 2. exact near-white CTA tone;
@@ -585,18 +591,18 @@ The first HTML prototype must resolve these visually rather than through further
 11. focus-ring treatment after lime stops being the default primary action;
 12. exact use of IBM Plex Sans weights.
 
-## 23. Interactive HTML prototype
+## 23. Historical first interactive HTML prototype — superseded
 
-The first VNext review artifact is:
+The first VNext review artifact was:
 
 `docs/references/pre-render-fitment-v2-vnext-prototype.html`
 
-It implements the working A+C synthesis and provides review states for desktop
+It represented the then-working A+C synthesis and provided review states for desktop
 and responsive/mobile behaviour.
 
 The prototype is a review artifact, not runtime implementation.
 
-It should implement the working A+C synthesis and expose enough states to test the system:
+The review target was to expose enough states to test the system:
 
     compatible
     compatible_with_conditions
@@ -607,16 +613,16 @@ It should implement the working A+C synthesis and expose enough states to test t
 
 Visual Try-on remains independent from Fitment in every state.
 
-After the Fitment prototype validates the VNext system, the same design code is applied to Dashboard / Garage, Create and Result before an application-wide UI freeze.
+The later cross-surface and state-coverage passes applied the same design code to Dashboard / Garage, Create and Result; the [canonical prototype](../references/application-vnext-state-coverage-prototype-v3.html) supersedes this first artifact.
 
 
-## 24. Cross-surface VNext stress-test prototype
+## 24. Historical cross-surface VNext stress-test prototype — superseded
 
-The current reconciled review artifact is:
+The cross-surface review artifact at that stage was:
 
 `docs/references/application-vnext-cross-surface-prototype.html`
 
-It now acts as a unified cross-surface flow prototype for four representative
+It served as a unified cross-surface flow prototype for four representative
 application surfaces:
 
 - Dashboard / Garage;
@@ -624,11 +630,11 @@ application surfaces:
 - Fitment;
 - Result.
 
-The purpose is to test whether the same visual system remains coherent through
+Its purpose was to test whether the same visual system remained coherent through
 one connected product flow: Garage / Dashboard -> Create -> Fitment -> Result,
 while Fitment remains optional for Visual Try-on.
 
-The prototype preserves the current product conventions:
+That prototype preserved the product conventions:
 
 - Dashboard keeps balance, primary creation action and latest-result context;
 - Create keeps Vehicle and Wheel as explicit first-class inputs and preserves
@@ -639,21 +645,22 @@ The prototype preserves the current product conventions:
   composition intact, and exposes the approved result actions and rating
   controls.
 
-This artifact is still a review prototype. It does not freeze Dashboard,
-Create, Result, navigation or runtime component APIs.
+At that historical stage this artifact did not freeze Dashboard, Create, Result,
+navigation or runtime component APIs. The present frozen UI authority is defined
+at the top of this document; runtime component APIs remain outside its scope.
 
 
-## 25. VNext flow-level validation target
+## 25. Historical VNext flow-level validation target — superseded
 
-The next review pass is no longer a single-screen Fitment review. The current
-prototype should be evaluated as one connected application language across:
+The next review pass at that stage expanded beyond a single-screen Fitment
+review and evaluated one connected application language across:
 
     Dashboard / Garage
       -> Create
       -> optional Fitment
       -> Result
 
-Primary questions for the next visual QA:
+The questions for that visual QA were:
 
 - does the shell feel like the same product on all four surfaces;
 - does Dashboard remain automotive rather than becoming a SaaS dashboard;
@@ -663,13 +670,13 @@ Primary questions for the next visual QA:
   language;
 - does the same system survive the 390 px mobile transformation.
 
-No runtime implementation or application-wide freeze is authorized until this
-cross-surface QA is explicitly accepted.
+This gate was subsequently satisfied by the closing QA and formal approval
+recorded above. It does not constitute runtime QA.
 
 
-## 26. Cross-surface QA pass 1
+## 26. Historical cross-surface QA pass 1 — superseded
 
-Status:
+Status at pass 1 (not the current frozen status):
 
     CROSS_SURFACE_QA_PASS_1 = COMPLETE
     DESKTOP_STRUCTURE = PASS
@@ -702,7 +709,8 @@ Corrections made during the pass:
 No surface-specific visual exception was required to keep the A+C hybrid
 coherent across the four tested surfaces.
 
-Remaining before explicit VNext freeze:
+Items that remained after pass 1, subsequently resolved for the static UI
+contract by the canonical prototype and closing QA:
 
 - final photographic assets rather than schematic prototype media;
 - exact token freeze for graphite, semantic colours, focus treatment and radii;
@@ -719,7 +727,7 @@ The Dashboard is an explicit exception to the general “avoid card everywhere�
 rule because it combines several independent product objects rather than one
 linear task.
 
-Working Dashboard structure:
+Accepted Dashboard structure:
 
     Current Vehicle island
     + Balance / render-expiry island
@@ -863,9 +871,9 @@ This pass does not expand the amount of color in the interface. It makes the
 existing color usage systematic.
 
 
-## 32. Mobile 390 and Create state pass
+## 32. Historical Mobile 390 and Create state pass — superseded
 
-Status:
+Status at this intermediate pass (not the current frozen status):
 
     VNEXT_V2_MOBILE_390_STRUCTURE = PASS
     CREATE_FORM_STATE_MODEL = REPRESENTED
@@ -931,13 +939,13 @@ states can be inspected without changing runtime code.
 ### Freeze note
 
 This note records an earlier structural-QA milestone. Browser review with real
-demo assets was completed in the [closing QA](vnext-full-screen-qa-audit.md);
-explicit VNext freeze still requires separate final approval.
+demo assets and formal UI-contract approval are recorded in the [closing QA](vnext-full-screen-qa-audit.md)
+and the frozen status at the top of this document.
 
 
 ## 33. State coverage prototype v3
 
-The next review artifact is:
+The canonical frozen interactive reference is:
 
 [Reconciled state coverage prototype v3](../references/application-vnext-state-coverage-prototype-v3.html)
 
@@ -1045,10 +1053,9 @@ avoid large destructive error surfaces.
 
 ### Freeze note
 
-This earlier state-coverage milestone is superseded by the [closing QA PASS](vnext-full-screen-qa-audit.md)
-at desktop 1440×1000 and mobile 390×844. Formal VNext freeze still requires a
-separate approval; the static prototype QA does not cover runtime, API,
-payments or real devices.
+This earlier state-coverage milestone was superseded by the [closing QA PASS](vnext-full-screen-qa-audit.md)
+at desktop 1440×1000 and mobile 390×844 and by formal UI-contract approval.
+The static prototype QA does not cover runtime, API, payments or real devices.
 
 
 ### Balance title and payment history
