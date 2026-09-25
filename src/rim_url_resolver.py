@@ -71,6 +71,16 @@ class RimUrlResolution:
     selection_required: bool = False
     selected_variant_sku: str | None = None
     source_fingerprint: str | None = None
+    image_urls: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class RimProductImage:
+    data: bytes
+    content_type: str
+
+
+MAX_PRODUCT_IMAGE_BYTES = 12 * 1024 * 1024
 
 
 def normalized_rim_source_identity(url: str) -> str:
@@ -439,6 +449,9 @@ def _resolve_document(
     final_url: str,
     extracted: ExtractedPage,
 ) -> RimUrlResolution:
+    image_urls = tuple(
+        dict.fromkeys(urljoin(final_url, image_url) for image_url in extracted.image_urls)
+    )
     candidates = _to_url_candidates(extracted.candidates)
     values, conflicts = _values_and_conflicts(candidates)
     variants = _build_variants(extracted)
@@ -454,6 +467,7 @@ def _resolve_document(
             False,
             selected.sku,
             rim_source_fingerprint(final_url),
+            image_urls,
         )
     if len(variants) > 1:
         for field_name in (
@@ -489,6 +503,72 @@ def _resolve_document(
         variants=variants,
         selection_required=bool(variants),
         source_fingerprint=rim_source_fingerprint(final_url),
+        image_urls=image_urls,
+    )
+
+
+async def fetch_public_rim_image(
+    url: str,
+    *,
+    policy: PublicHttpsPolicy | None = None,
+    limits: FetchLimits | None = None,
+) -> RimProductImage:
+    """Fetch a product image under the resolver's public-HTTPS/redirect policy."""
+    limits = limits or FetchLimits()
+    policy = policy or PublicHttpsPolicy()
+    current_url = validate_product_url(url, policy)
+    timeout = aiohttp.ClientTimeout(total=limits.total_timeout_seconds)
+    connector = aiohttp.TCPConnector(resolver=_PublicResolver(policy), use_dns_cache=False)
+    try:
+        async with aiohttp.ClientSession(
+            connector=connector, timeout=timeout, trust_env=False
+        ) as session:
+            for redirect_count in range(limits.max_redirects + 1):
+                async with session.get(current_url, allow_redirects=False, proxy=None) as response:
+                    if response.status in {301, 302, 303, 307, 308}:
+                        if redirect_count >= limits.max_redirects or not response.headers.get(
+                            "Location"
+                        ):
+                            raise RimUrlError(
+                                "Product image redirect failed",
+                                reason_code="rim_source_image_redirect_failed",
+                            )
+                        current_url = validate_product_url(
+                            urljoin(current_url, response.headers["Location"]), policy
+                        )
+                        continue
+                    if response.status != 200:
+                        raise RimUrlError(
+                            "Product image is not available",
+                            reason_code="rim_source_image_unavailable",
+                        )
+                    content_type = response.content_type.lower().split(";", 1)[0].strip()
+                    if content_type not in {"image/jpeg", "image/png", "image/webp"}:
+                        raise RimUrlError(
+                            "Product image has an unsupported media type",
+                            reason_code="rim_source_image_unsupported_media_type",
+                        )
+                    if (
+                        response.content_length
+                        and response.content_length > MAX_PRODUCT_IMAGE_BYTES
+                    ):
+                        raise RimUrlError(
+                            "Product image is too large",
+                            reason_code="rim_source_image_too_large",
+                        )
+                    data = await response.content.read(MAX_PRODUCT_IMAGE_BYTES + 1)
+                    if not data or len(data) > MAX_PRODUCT_IMAGE_BYTES:
+                        raise RimUrlError(
+                            "Product image is empty or too large",
+                            reason_code="rim_source_image_too_large",
+                        )
+                    return RimProductImage(data=data, content_type=content_type)
+    except (aiohttp.ClientError, TimeoutError) as exc:
+        raise RimUrlError(
+            "Product image fetch failed", reason_code="rim_source_image_fetch_failed"
+        ) from exc
+    raise RimUrlError(
+        "Product image redirect failed", reason_code="rim_source_image_redirect_failed"
     )
 
 

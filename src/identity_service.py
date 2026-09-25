@@ -134,6 +134,10 @@ class RimIdentityProposal(BaseModel):
     offset_et_mm: float | None = None
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     source: IdentitySource = "unknown"
+    revision: int = Field(default=1, ge=1)
+    source_fingerprint: str | None = None
+    field_candidates: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
+    conflicts: list[dict[str, object]] = Field(default_factory=list)
 
 
 class IdentityResolutionError(BaseModel):
@@ -147,6 +151,7 @@ class IdentityProposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     vehicle: VehicleIdentityResolution
+    confirmed_vehicle: VehicleCandidate | None = None
     rim: RimIdentityProposal = Field(default_factory=RimIdentityProposal)
     resolver: str = "vehicle_identity_resolver_v1"
     error: IdentityResolutionError | None = None
@@ -403,15 +408,34 @@ def field_candidates_from_identity_proposal(
         "center_bore_mm",
         "offset_et_mm",
     ):
-        _append_field_candidate(
-            rim_candidates,
-            field_name,
-            getattr(proposal.rim, field_name),
-            source=proposal.rim.source,
-            confidence=proposal.rim.confidence,
-            resolver=proposal.resolver,
-            captured_at=captured_at,
-        )
+        source_candidates = proposal.rim.field_candidates.get(field_name, [])
+        if source_candidates:
+            for candidate in source_candidates:
+                value = candidate.get("value")
+                if value is None:
+                    continue
+                normalized_candidate = {
+                    "value": value,
+                    "source": str(candidate.get("source") or proposal.rim.source),
+                    "confidence": float(candidate.get("confidence") or proposal.rim.confidence),
+                    "resolver": str(candidate.get("resolver") or proposal.resolver),
+                    "origin": "render_input_draft",
+                    "captured_at": captured_at,
+                }
+                for key in ("raw_value", "raw_label", "source_url"):
+                    if candidate.get(key) is not None:
+                        normalized_candidate[key] = candidate[key]
+                rim_candidates.setdefault(field_name, []).append(normalized_candidate)
+        else:
+            _append_field_candidate(
+                rim_candidates,
+                field_name,
+                getattr(proposal.rim, field_name),
+                source=proposal.rim.source,
+                confidence=proposal.rim.confidence,
+                resolver=proposal.resolver,
+                captured_at=captured_at,
+            )
 
     return vehicle_candidates, rim_candidates
 

@@ -1,8 +1,10 @@
 """Sprint 2 assisted identity API."""
 
+import json
 import logging
 from datetime import UTC, datetime
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, ValidationError
@@ -10,6 +12,10 @@ from pydantic import BaseModel, ValidationError
 from src import assets_service, db, identity_service, storage
 from src.auth_principal import preflight_auth_credentials, require_auth_principal
 from src.config import (
+    RIM_URL_RESOLVER_ENABLED,
+    RIM_URL_RESOLVER_MAX_BODY_BYTES,
+    RIM_URL_RESOLVER_MAX_REDIRECTS,
+    RIM_URL_RESOLVER_TIMEOUT_SEC,
     VEHICLE_IDENTITY_ENABLED,
     VEHICLE_IDENTITY_MAX_IMAGE_EDGE,
     VEHICLE_IDENTITY_MAX_PIXELS,
@@ -27,6 +33,13 @@ from src.identity.schemas import (
 from src.identity.service import get_vehicle_identity_resolver
 from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES
 from src.rate_limit import enforce_rate_limit
+from src.rim_url_resolver import (
+    FetchLimits,
+    PublicHttpsPolicy,
+    RimUrlError,
+    fetch_public_rim_image,
+    resolve_rim_product_url,
+)
 from src.vision.image_normalization import ImageNormalizationError, normalize_image
 
 logger = logging.getLogger(__name__)
@@ -42,6 +55,7 @@ class IdentityResolveResponse(BaseModel):
     car_asset_id: str
     rim_asset_id: str
     vehicle: VehicleIdentityResolution
+    confirmed_vehicle: identity_service.VehicleCandidate | None = None
     rim: identity_service.RimIdentityProposal
     pcd_display: str | None = None
     resolver: str
@@ -66,6 +80,268 @@ async def _read_identity_upload(upload: UploadFile, label: str) -> bytes:
     return data
 
 
+def _wheel_refresh_error(
+    status_code: int,
+    error_code: str,
+    *,
+    retryable: bool = False,
+) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        detail={"error_code": error_code, "retryable": retryable, "manual_fallback": True},
+    )
+
+
+async def _resolve_wheel_url_for_draft(
+    *,
+    draft_id: str,
+    product_url: str,
+    owner_user_id: int,
+    selected_vehicle: str | None,
+    vehicle_user_confirmed: bool,
+) -> IdentityResolveResponse:
+    if not RIM_URL_RESOLVER_ENABLED:
+        raise _wheel_refresh_error(503, "rim_source_resolver_disabled", retryable=True)
+    try:
+        UUID(draft_id)
+    except ValueError as exc:
+        raise _wheel_refresh_error(404, "identity_draft_unavailable") from exc
+
+    try:
+        identity_service.RimIdentityProposal(product_url=product_url)
+    except ValidationError as exc:
+        raise _wheel_refresh_error(422, "invalid_rim_product_url") from exc
+
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        draft = await conn.fetchrow(
+            """
+            SELECT id::text AS draft_id,
+                   car_asset_id::text AS car_asset_id,
+                   rim_asset_id::text AS rim_asset_id,
+                   identity_proposal
+            FROM render_input_drafts
+            WHERE id = $1::uuid
+              AND owner_user_id = $2
+              AND status = 'resolved'
+              AND expires_at > CURRENT_TIMESTAMP
+            """,
+            draft_id,
+            owner_user_id,
+        )
+    if not draft:
+        raise _wheel_refresh_error(404, "identity_draft_unavailable")
+    proposal = identity_service.parse_identity_proposal(draft["identity_proposal"])
+    if proposal is None or not draft.get("car_asset_id") or not draft.get("rim_asset_id"):
+        raise _wheel_refresh_error(409, "identity_draft_unavailable")
+    expected_rim_revision = proposal.rim.revision
+    confirmed_vehicle = proposal.confirmed_vehicle
+    if selected_vehicle is not None:
+        if not vehicle_user_confirmed:
+            raise _wheel_refresh_error(422, "vehicle_confirmation_required")
+        try:
+            confirmed_vehicle = identity_service.VehicleCandidate.model_validate(
+                json.loads(selected_vehicle)
+            )
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            raise _wheel_refresh_error(422, "invalid_confirmed_vehicle") from exc
+        if (
+            proposal.confirmed_vehicle is not None
+            and proposal.confirmed_vehicle != confirmed_vehicle
+        ):
+            raise _wheel_refresh_error(409, "identity_draft_vehicle_conflict")
+
+    limits = FetchLimits(
+        max_redirects=RIM_URL_RESOLVER_MAX_REDIRECTS,
+        max_body_bytes=RIM_URL_RESOLVER_MAX_BODY_BYTES,
+        total_timeout_seconds=RIM_URL_RESOLVER_TIMEOUT_SEC,
+    )
+    try:
+        resolution = await resolve_rim_product_url(
+            product_url,
+            policy=PublicHttpsPolicy(),
+            limits=limits,
+        )
+    except RimUrlError as exc:
+        logger.warning("identity_wheel_source_failed reason_code=%s", exc.reason_code)
+        status_code = 503 if exc.reason_code.endswith("fetch_failed") else 422
+        raise _wheel_refresh_error(
+            status_code,
+            exc.reason_code,
+            retryable=status_code == 503,
+        ) from exc
+
+    if not resolution.image_urls:
+        raise _wheel_refresh_error(422, "rim_source_image_unavailable")
+
+    resolved_image = None
+    image_error = "rim_source_image_unavailable"
+    for image_url in resolution.image_urls:
+        try:
+            fetched_image = await fetch_public_rim_image(
+                image_url,
+                policy=PublicHttpsPolicy(),
+                limits=limits,
+            )
+            normalized_image = normalize_image(
+                fetched_image.data,
+                max_image_edge=VEHICLE_IDENTITY_MAX_IMAGE_EDGE,
+                max_pixels=VEHICLE_IDENTITY_MAX_PIXELS,
+            )
+            resolved_image = normalized_image
+            break
+        except RimUrlError as exc:
+            image_error = exc.reason_code
+        except ImageNormalizationError as exc:
+            image_error = exc.code
+    if resolved_image is None:
+        retryable = image_error.endswith(("fetch_failed", "redirect_failed"))
+        raise _wheel_refresh_error(503 if retryable else 422, image_error, retryable=retryable)
+
+    try:
+        rim_asset = await assets_service.upload_render_asset(
+            owner_user_id=owner_user_id,
+            render_input_draft_id=draft_id,
+            kind="rim_original",
+            data=resolved_image.bytes,
+            content_type=resolved_image.content_type,
+        )
+    except storage.StorageError as exc:
+        logger.exception("identity_wheel_asset_upload_failed draft_id=%s", draft_id)
+        raise _wheel_refresh_error(502, "rim_source_asset_upload_failed", retryable=True) from exc
+
+    allowed_fields = {
+        "brand",
+        "model",
+        "sku",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "bolt_count",
+        "pcd_mm",
+        "center_bore_mm",
+        "offset_et_mm",
+    }
+    field_candidates: dict[str, list[dict[str, object]]] = {}
+    for candidate in resolution.candidates:
+        if candidate.field not in allowed_fields:
+            continue
+        field_candidates.setdefault(candidate.field, []).append(
+            {
+                "value": candidate.value,
+                "source": candidate.source,
+                "confidence": candidate.confidence,
+                "resolver": "rim_url_resolver_v1",
+            }
+        )
+    confidence = max(
+        (
+            candidate.confidence
+            for candidate in resolution.candidates
+            if candidate.field in resolution.values
+        ),
+        default=0.0,
+    )
+    rim_values = {key: value for key, value in resolution.values.items() if key in allowed_fields}
+    replacement_rim = identity_service.RimIdentityProposal(
+        status="resolved",
+        product_url=resolution.requested_url,
+        confidence=confidence,
+        source="provider",
+        revision=expected_rim_revision + 1,
+        source_fingerprint=resolution.source_fingerprint,
+        field_candidates=field_candidates,
+        conflicts=[
+            {
+                "field": conflict.field,
+                "candidates": [
+                    {
+                        "value": candidate.value,
+                        "source": candidate.source,
+                        "confidence": candidate.confidence,
+                    }
+                    for candidate in conflict.candidates
+                ],
+            }
+            for conflict in resolution.conflicts
+        ],
+        **rim_values,
+    )
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                current = await conn.fetchrow(
+                    """
+                    SELECT id::text AS draft_id,
+                           car_asset_id::text AS car_asset_id,
+                           rim_asset_id::text AS rim_asset_id,
+                           identity_proposal
+                    FROM render_input_drafts
+                    WHERE id = $1::uuid
+                      AND owner_user_id = $2
+                      AND status = 'resolved'
+                      AND expires_at > CURRENT_TIMESTAMP
+                    FOR UPDATE
+                    """,
+                    draft_id,
+                    owner_user_id,
+                )
+                if not current:
+                    raise _wheel_refresh_error(404, "identity_draft_unavailable")
+                current_proposal = identity_service.parse_identity_proposal(
+                    current["identity_proposal"]
+                )
+                if current_proposal is None:
+                    raise _wheel_refresh_error(409, "identity_draft_unavailable")
+                if current_proposal.rim.revision != expected_rim_revision:
+                    raise _wheel_refresh_error(409, "identity_draft_rim_revision_conflict")
+                if (
+                    selected_vehicle is not None
+                    and current_proposal.confirmed_vehicle is not None
+                    and current_proposal.confirmed_vehicle != confirmed_vehicle
+                ):
+                    raise _wheel_refresh_error(409, "identity_draft_vehicle_conflict")
+                proposal_updates = {"rim": replacement_rim}
+                if selected_vehicle is not None:
+                    proposal_updates["confirmed_vehicle"] = confirmed_vehicle
+                current_updated_proposal = current_proposal.model_copy(update=proposal_updates)
+                await assets_service.insert_asset(conn, rim_asset)
+                updated = await conn.fetchval(
+                    """
+                    UPDATE render_input_drafts
+                    SET rim_asset_id = $1::uuid,
+                        identity_proposal = $2::jsonb,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $3::uuid
+                      AND owner_user_id = $4
+                      AND status = 'resolved'
+                      AND expires_at > CURRENT_TIMESTAMP
+                    RETURNING id::text
+                    """,
+                    rim_asset.id,
+                    current_updated_proposal.model_dump_json(),
+                    draft_id,
+                    owner_user_id,
+                )
+                if not updated:
+                    raise _wheel_refresh_error(409, "identity_draft_unavailable")
+    except Exception:
+        try:
+            await assets_service.delete_uploaded_asset(rim_asset)
+        except storage.StorageError:
+            logger.exception("identity_wheel_asset_cleanup_failed draft_id=%s", draft_id)
+        raise
+
+    return IdentityResolveResponse(
+        draft_id=draft_id,
+        car_asset_id=current["car_asset_id"],
+        confirmed_vehicle=confirmed_vehicle,
+        rim_asset_id=rim_asset.id,
+        vehicle=current_proposal.vehicle,
+        rim=replacement_rim,
+        resolver=current_proposal.resolver,
+    )
+
+
 def _normalization_http_error(exc: ImageNormalizationError) -> HTTPException:
     status_code = 413 if exc.code in {"image_pixel_limit_exceeded", "image_too_large"} else 400
     return HTTPException(status_code=status_code, detail={"error_code": exc.code})
@@ -73,14 +349,27 @@ def _normalization_http_error(exc: ImageNormalizationError) -> HTTPException:
 
 @router.post("/resolve", response_model=IdentityResolveResponse)
 async def resolve_identity(
-    car_image: Annotated[UploadFile, File()],
-    wheel_image: Annotated[UploadFile, File()],
+    car_image: Annotated[UploadFile | None, File()] = None,
+    wheel_image: Annotated[UploadFile | None, File()] = None,
     rim_product_url: Annotated[str | None, Form()] = None,
+    draft_id: Annotated[str | None, Form()] = None,
+    vehicle: Annotated[str | None, Form()] = None,
+    vehicle_user_confirmed: Annotated[bool, Form()] = False,
     init_data: Annotated[str, Form()] = "",
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ) -> IdentityResolveResponse:
     """Persist source assets and return a non-canonical vehicle proposal."""
+    if draft_id is None and (car_image is None or wheel_image is None):
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "car_and_wheel_images_required"},
+        )
+    if draft_id is not None and (
+        car_image is not None or wheel_image is not None or not rim_product_url
+    ):
+        raise _wheel_refresh_error(422, "invalid_identity_resolve_mode")
+
     preflight_auth_credentials(
         init_data=init_data,
         telegram_user_id=telegram_user_id,
@@ -104,6 +393,14 @@ async def resolve_identity(
         window_sec=IDENTITY_RATE_WINDOW_SEC,
     )
 
+    if draft_id is not None:
+        return await _resolve_wheel_url_for_draft(
+            draft_id=draft_id,
+            product_url=rim_product_url,
+            owner_user_id=owner_user_id,
+            selected_vehicle=vehicle,
+            vehicle_user_confirmed=vehicle_user_confirmed,
+        )
     try:
         source_rim = identity_service.RimIdentityProposal(product_url=rim_product_url)
     except ValidationError as exc:
