@@ -7,22 +7,22 @@ export function documentsViewModel() {
       {
         title: "Политика конфиденциальности",
         copy: "Как сервис обрабатывает и защищает пользовательские данные.",
-        href: "https://dream-wheels-ai-legal.vercel.app/legal/privacy",
+        href: "https://legal.dreamwheels.pro/legal/privacy",
       },
       {
         title: "Публичная оферта",
         copy: "Условия приобретения и использования рендеров.",
-        href: "https://dream-wheels-ai-legal.vercel.app/legal/offer",
+        href: "https://legal.dreamwheels.pro/legal/offer",
       },
       {
         title: "Условия возврата",
         copy: "Порядок возврата оплаты в предусмотренных случаях.",
-        href: "https://dream-wheels-ai-legal.vercel.app/legal/refund",
+        href: "https://legal.dreamwheels.pro/legal/refund",
       },
       {
         title: "Согласие на обработку персональных данных",
         copy: "Условия обработки данных, необходимых для работы сервиса.",
-        href: "https://dream-wheels-ai-legal.vercel.app/legal/consent",
+        href: "https://legal.dreamwheels.pro/legal/consent",
       },
     ],
   });
