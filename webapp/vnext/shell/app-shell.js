@@ -34,9 +34,11 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
   sidebar.append(nav);
 
-  const account = document.createElement("div");
+  const account = document.createElement("button");
+  account.type = "button";
   account.className = "vnext-shell__account";
-  account.textContent = "Dream Wheels AI";
+  account.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
+  account.addEventListener("click", () => navigate?.("settings"));
   sidebar.append(account);
   shell.append(sidebar);
 

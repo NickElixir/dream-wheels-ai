@@ -3098,13 +3098,15 @@ function renderAuthDialog() {
                 : isChangeEmailStep
                     ? t("auth.changeEmailTitle")
                     : t("auth.dialogTitle");
-    if (description) description.hidden = isRestoredStep || isRestoringStep;
+    if (description) description.hidden = isRestoredStep;
     if (descriptionLine1) descriptionLine1.textContent = isOtpStep
         ? t("auth.otpSentTo")
-        : isChangeEmailStep
-            ? t("auth.changeEmailIntro")
-            : t("auth.emailIntro");
-    if (descriptionLine2) descriptionLine2.textContent = isOtpStep
+        : isRestoringStep
+            ? t("auth.appGateRestoring")
+            : isChangeEmailStep
+                ? t("auth.changeEmailIntro")
+                : t("auth.emailIntro");
+    if (descriptionLine2) descriptionLine2.textContent = isOtpStep || isRestoringStep
         ? ""
         : isChangeEmailStep
             ? t("auth.changeEmailSubcopy")

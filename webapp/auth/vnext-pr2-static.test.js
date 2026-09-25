@@ -13,6 +13,8 @@ test("PR2 registers Dashboard and remaining static surfaces on the VNext shell",
   }
   assert.match(bootstrap, /vnext-surface-active/);
   assert.match(bootstrap, /dreamwheels:dashboardchange/);
+  const shell = read("vnext/shell/app-shell.js");
+  assert.match(shell, /navigate\?\.\("settings"\)/);
   assert.doesNotMatch(bootstrap, /fetch\(/);
 });
 
@@ -63,6 +65,7 @@ test("Auth/session VNext presentation preserves existing controller hooks and ex
   assert.match(app, /Предыдущее действие не будет запущено автоматически/);
   assert.match(app, /dialog\.dataset\.vnextAuthStep = state\.authDialogStep/);
   assert.match(app, /gate\.dataset\.vnextAuthState/);
+  assert.match(app, /isRestoringStep\s*\? t\("auth\.appGateRestoring"\)/);
   assert.match(css, /data-vnext-auth-step="restoring"/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(css, /fonts\.googleapis\.com/);
