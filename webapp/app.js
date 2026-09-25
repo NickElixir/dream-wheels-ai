@@ -9176,7 +9176,57 @@ async function refreshProcessingHistoryJobs() {
     renderDashboard();
 }
 
+
+function vnextDashboardJobViewModel(job) {
+    if (!job) return null;
+    const resultUrl = job.status === "completed" && isAssetAvailable(job, "result")
+        ? assetUrlForJob(job, "result")
+        : "";
+    return {
+        jobId: job.job_id || "",
+        status: job.status || "pending",
+        statusLabel: statusLabel(job.status),
+        title: humanRenderTitle(job),
+        subtitle: rimSummaryForJob(job) || "",
+        meta: formatDateTime(job.completed_at || job.created_at),
+        imageUrl: resultUrl || "",
+        canOpen: job.status === "completed",
+    };
+}
+
+function vnextDashboardSnapshot() {
+    const expiry = buildRenderExpiryCohorts().slice(0, 2).map((item) => ({
+        credits: Number(item.credits || 0),
+        meta: item.meta || "",
+        expiresLabel: expiryLabel(item.expiresAt),
+    }));
+    const latest = state.renderHistory[0] || null;
+    const dashboardError = state.walletMessageTone === "error" || state.renderHistoryError
+        ? localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны")
+        : "";
+    return {
+        balance: state.balance,
+        balanceLabel: formatRenderCount(state.balance === null ? 0 : state.balance),
+        expiry,
+        expiryNote: expiry.length ? t("dashboard.expiryPriority") : "",
+        loading: Boolean(state.walletLoading || state.renderHistoryLoading),
+        error: dashboardError,
+        authenticated: isFrontendUserAuthenticated(),
+        partialAuth: isSupabasePartialAuth(),
+        latest: vnextDashboardJobViewModel(latest),
+        recent: state.renderHistory.slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
+    };
+}
+
+function emitVNextDashboardChange() {
+    if (typeof CustomEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent("dreamwheels:dashboardchange", {
+        detail: { viewModel: vnextDashboardSnapshot() },
+    }));
+}
+
 function renderDashboard() {
+    emitVNextDashboardChange();
     const balance = document.querySelector("[data-dashboard-balance]");
     const balanceUnit = document.querySelector("[data-dashboard-balance-unit]");
     const dashboardBalanceAccount = document.querySelector("[data-dashboard-balance-account]");
@@ -9538,6 +9588,16 @@ window.DreamWheelsLegacy = Object.freeze({
         setView(view);
     },
     openExternal,
+    dashboardSnapshot() {
+        return vnextDashboardSnapshot();
+    },
+    openRenderDetail(jobId) {
+        if (jobId) openRenderDetail(jobId, "dashboard");
+    },
+    openAuth() {
+        if (isAuthIntegrationEnabled()) openAuthDialog();
+        else void loginWithTelegram();
+    },
 });
 
 function openPaymentUrl(url) {
