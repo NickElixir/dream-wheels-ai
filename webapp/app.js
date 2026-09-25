@@ -7987,7 +7987,9 @@ function setView(view, { refreshData = true } = {}) {
         }
     }
     refreshButtonsForCurrentView();
-    window.dispatchEvent(new CustomEvent("dreamwheels:viewchange", { detail: { view } }));
+    if (typeof CustomEvent === "function") {
+        window.dispatchEvent(new CustomEvent("dreamwheels:viewchange", { detail: { view } }));
+    }
     if (!refreshData) return;
     if (view === "dashboard") {
         void loadDashboardData({ silent: true });
