@@ -3,5 +3,10 @@ export function legacyNavigate(view) {
 }
 
 export function legacyOpenExternal(url) {
-  window.DreamWheelsLegacy?.openExternal?.(url) || window.open(url, "_blank", "noopener,noreferrer");
+  const openExternal = window.DreamWheelsLegacy?.openExternal;
+  if (typeof openExternal === "function") {
+    openExternal(url);
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
 }

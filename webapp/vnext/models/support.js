@@ -1,11 +1,37 @@
 export function supportViewModel() {
   return Object.freeze({
     title: "Поддержка",
-    copy: "Поможем с примеркой, оплатой или документами.",
-    channels: [
-      { label: "Telegram", detail: "@dreamwheelsai", href: "https://t.me/dreamwheelsai", external: true },
-      { label: "Email", detail: "venus.mike@yandex.ru", href: "mailto:venus.mike@yandex.ru", external: false },
+    eyebrow: "Помощь",
+    heroTitle: "Разберёмся с проблемой",
+    copy: "Опишите, что произошло. Для вопросов по генерации, оплате, данным автомобиля или диска лучше сразу указать, на каком шаге возникла проблема.",
+    messageLabel: "Сообщение",
+    messagePlaceholder: "Например: не удалось обновить данные диска по ссылке…",
+    supportLabel: "Написать в поддержку",
+    supportEmail: "dreamwheelsai@yandex.ru",
+    supportSubject: "Dream Wheels Support",
+    selfHelpTitle: "Что можно проверить самостоятельно",
+    topics: [
+      {
+        label: "Как подготовить фотографию автомобиля",
+        kind: "navigate",
+        view: "photo-guide",
+      },
+      {
+        label: "Что делать, если ссылка на диск не распозналась",
+        kind: "detail",
+        detail: "Попробуйте другую ссылку. Если источник снова не распознаётся, загрузите фотографию диска вручную.",
+      },
+      {
+        label: "Почему техническая проверка не блокирует примерку",
+        kind: "detail",
+        detail: "Визуальная примерка и техническая проверка совместимости работают независимо. Результат Fitment не управляет разрешением на создание изображения.",
+      },
+      {
+        label: "Оплата и срок действия рендеров",
+        kind: "detail",
+        detail: "Баланс, срок действия рендеров и история пополнений доступны в разделе «Баланс».",
+      },
     ],
-    documentsLabel: "Открыть документы",
+    documentsLabel: "Правовые документы",
   });
 }

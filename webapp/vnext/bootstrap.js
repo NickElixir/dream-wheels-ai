@@ -1,4 +1,4 @@
-import { legacyNavigate, legacyOpenExternal } from "./api/legacy-navigation.js";
+import { legacyNavigate } from "./api/legacy-navigation.js";
 import { supportViewModel } from "./models/support.js";
 import { createAppShell } from "./shell/app-shell.js";
 import { createSupportView } from "./views/support.js";
@@ -15,11 +15,15 @@ function mountSupport() {
   const host = document.querySelector('[data-view="support"]');
   if (!host || mountedRoot === host) return;
   unmountSupport();
-  const content = createSupportView(supportViewModel(), {
+
+  const model = supportViewModel();
+  const content = createSupportView(model, { navigate: legacyNavigate });
+  host.replaceChildren(createAppShell({
+    title: model.title,
+    activeView: "support",
     navigate: legacyNavigate,
-    openExternal: legacyOpenExternal,
-  });
-  host.replaceChildren(createAppShell({ activeView: "support", navigate: legacyNavigate, content }));
+    content,
+  }));
   host.dataset.vnextRoot = "support";
   mountedRoot = host;
   document.body.classList.add("vnext-support-active");

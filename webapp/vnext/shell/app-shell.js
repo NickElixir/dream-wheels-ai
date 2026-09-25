@@ -14,36 +14,46 @@ function navButton([label, view], activeView, navigate) {
   return button;
 }
 
-export function createAppShell({ activeView, navigate, content } = {}) {
+export function createAppShell({ title = "Dream Wheels AI", activeView, navigate, content } = {}) {
   const shell = document.createElement("div");
   shell.className = "vnext-shell";
+
   const sidebar = document.createElement("aside");
   sidebar.className = "vnext-shell__sidebar";
   sidebar.innerHTML = '<div class="vnext-shell__brand">DREAM <span>WHEELS AI</span></div>';
+
   const nav = document.createElement("nav");
   nav.className = "vnext-shell__nav";
+  nav.setAttribute("aria-label", "Основная навигация");
   desktopNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
+
   const label = document.createElement("div");
   label.className = "vnext-shell__nav-label";
   label.textContent = "Помощь";
   nav.append(label);
   helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
   sidebar.append(nav);
+
   const account = document.createElement("div");
   account.className = "vnext-shell__account";
   account.textContent = "Dream Wheels AI";
   sidebar.append(account);
   shell.append(sidebar);
+
   const main = document.createElement("main");
   main.className = "vnext-shell__main";
   const frame = document.createElement("div");
   frame.className = "vnext-shell__frame";
   const topbar = document.createElement("header");
   topbar.className = "vnext-shell__topbar";
-  topbar.innerHTML = '<p class="vnext-shell__topbar-title">Dream Wheels AI</p>';
+  const pageTitle = document.createElement("h1");
+  pageTitle.className = "vnext-shell__topbar-title";
+  pageTitle.textContent = title;
+  topbar.append(pageTitle);
   frame.append(topbar, content);
   main.append(frame);
   shell.append(main);
+
   const bottom = document.createElement("nav");
   bottom.className = "vnext-shell__bottom-nav";
   bottom.setAttribute("aria-label", "Основная навигация");
