@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07090b">
-<title>Dream Wheels – VNext state coverage prototype v3</title>
+<link rel="icon" href="data:,">
+<title>Dream Wheels – VNext reconciled prototype</title>
 <style>
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-cyrillic.woff2") format("woff2");font-style:normal;font-weight:400 600;font-display:swap;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin.woff2") format("woff2");font-style:normal;font-weight:400 600;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
   --bg:#07090b;--surface:#0f1317;--surface-2:#13181d;
   --line:rgba(238,242,246,.10);--line-strong:rgba(238,242,246,.16);
@@ -28,6 +31,7 @@ body{
 button,input,select{font:inherit}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #d7dbde;outline-offset:2px}
+textarea:focus-visible,a:focus-visible{outline:2px solid #d7dbde;outline-offset:2px}
 [hidden]{display:none!important}
 .app{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
 .sidebar{
@@ -39,11 +43,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .brand-dim{color:#8d959b}
 .nav{display:grid;gap:5px}
 .nav-label{margin:20px 10px 7px;color:#5f6870;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
-.nav button{
+.nav button,.nav a{
   min-height:42px;border:0;border-radius:var(--r-sm);background:transparent;
-  color:#8f979d;text-align:left;padding:0 12px;font-weight:500
+  color:#8f979d;text-align:left;padding:0 12px;font-weight:500;text-decoration:none;display:flex;align-items:center
 }
-.nav button:hover{background:#0e1215;color:var(--text)}
+.nav button:hover,.nav a:hover{background:#0e1215;color:var(--text)}
 .nav button.active{background:#101418;color:var(--text)}
 .account{
   margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--line);
@@ -82,13 +86,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .meta-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding-top:11px}
 .object-name{font-size:18px;font-weight:500}
 .object-sub{margin-top:4px;color:var(--muted);font-size:13px}
-.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#aeb6bb}
-.status::before{content:"";width:7px;height:7px;border-radius:50%;background:#778087}
-.status.good{color:#abd8be}.status.good::before{background:var(--positive)}
-.status.warn{color:#d7bc88}.status.warn::before{background:var(--warning)}
-.status.bad{color:#df9a9a}.status.bad::before{background:var(--negative)}
-.status.unknown{color:#b1b7bb}.status.unknown::before{background:var(--unknown)}
-.status.pending{color:#9da5aa}.status.pending::before{background:var(--pending)}
+.status{display:inline-flex;align-items:center;font-size:12px;color:#aeb6bb}
+.status.good{color:#abd8be}.status.warn{color:#d7bc88}.status.bad{color:#df9a9a}
+.status.unknown{color:#b1b7bb}.status.pending{color:#9da5aa}
 .island{background:#0c1013;border:1px solid var(--line);border-radius:10px}
 
 /* Dashboard */
@@ -153,13 +153,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .edit-actions{display:flex;gap:8px;margin-top:16px}
 .edit-note{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45}
 .inline-state{
-  display:inline-flex;align-items:center;gap:7px;margin-left:10px;
+  display:inline-flex;align-items:center;margin-left:10px;
   color:var(--muted);font-size:11px;font-weight:400
 }
-.inline-state::before{content:"";width:6px;height:6px;border-radius:50%;background:#697279}
-.inline-state.saved{color:#9bcfb1}.inline-state.saved::before{background:var(--positive)}
+.inline-state.saved{color:#9bcfb1}
 .inline-state.loading{color:#c8cdd0}
-.inline-state.error{color:#df9a9a}.inline-state.error::before{background:var(--negative)}
+.inline-state.error{color:#df9a9a}
 .parser-state{
   margin-top:12px;padding:12px 13px;border:1px solid var(--line);
   border-radius:7px;background:#0e1215;font-size:12px;line-height:1.45
@@ -184,6 +183,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .fit-content{padding-top:30px}
 .fit-verdict{display:flex;align-items:flex-start;gap:14px;max-width:820px}
 .fit-mark{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;margin-top:2px;color:var(--negative);font-size:29px;line-height:1;font-weight:500}
+.fit-mark.good{color:var(--positive)}.fit-mark.warn{color:var(--warning)}.fit-mark.unknown{color:var(--unknown)}
 .fit-title{margin:0;font-size:clamp(30px,3.5vw,46px);line-height:1.04;font-weight:500;letter-spacing:-.04em}
 .fit-copy{margin:13px 0 0;max-width:820px;color:#b5bcc1;font-size:16px}
 .fit-table-wrap{margin-top:30px;border-top:1px solid var(--line-strong)}
@@ -196,7 +196,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .fit-param{color:#aeb5ba;font-size:12px;font-weight:500}
 .fit-value{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
 .fit-result{font-size:22px;line-height:1;font-weight:500}
-.fit-result.good{color:var(--positive)}.fit-result.bad{color:var(--negative)}
+.fit-result.good{color:var(--positive)}.fit-result.bad{color:var(--negative)}.fit-result.warn{color:var(--warning)}.fit-result.unknown{color:var(--unknown)}
 .fit-row-bad td{background:linear-gradient(90deg,rgba(216,121,121,.055),rgba(216,121,121,0))}
 .fit-explainer{margin-top:20px;padding:15px 0;border-bottom:1px solid var(--line);color:#aab2b7;font-size:13px;max-width:760px}
 .fit-explainer strong{color:var(--text);font-weight:500}
@@ -205,12 +205,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .fit-disclaimer strong{display:block;color:#d5d9dc;font-weight:500;margin-bottom:3px}
 .fit-disclaimer p{margin:0}
 .fit-actions{margin-top:24px}
+.fixture-note{margin:8px 0 0;color:var(--subtle);font-size:11px}
 
 /* Result */
 .result-head{margin-bottom:16px}
 .result-head h2{margin:0;font-size:24px;font-weight:500;letter-spacing:-.025em}
 .result-head p{margin:5px 0 0;color:var(--muted);font-size:13px}
-.result-primary{margin-top:16px}
+.result-primary{margin:16px 0}
 .compare{
   position:relative;overflow:hidden;border-radius:var(--r-lg);
   border:1px solid rgba(255,255,255,.06);background:#101317;
@@ -218,7 +219,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 .compare-layer{position:absolute;inset:0}
 .compare-layer svg,.compare-layer img{display:block;width:100%;height:100%;object-fit:contain}
-.compare-after{clip-path:inset(0 calc(100% - var(--compare)) 0 0)}
+.compare-reveal{clip-path:inset(0 calc(100% - var(--compare)) 0 0)}
 .compare-divider{position:absolute;top:0;bottom:0;left:var(--compare);width:1px;background:rgba(241,243,242,.78);transform:translateX(-.5px);pointer-events:none}
 .compare-handle{
   position:absolute;left:var(--compare);top:50%;transform:translate(-50%,-50%);
@@ -229,7 +230,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   position:absolute;top:12px;padding:5px 8px;border-radius:5px;
   background:rgba(7,9,11,.72);color:#d1d5d8;font-size:10px;letter-spacing:.08em;text-transform:uppercase;pointer-events:none
 }
-.compare-label.before{left:12px}.compare-label.after{right:12px}
+.compare-label.left{left:12px}.compare-label.right{right:12px}
 .compare-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
 .result-meta-line{margin-top:12px;color:var(--subtle);font-size:12px}
 .rating{margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
@@ -237,7 +238,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .rating-sub{margin-top:4px;color:var(--muted);font-size:12px}
 .rating-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .rating-actions button,.feedback-chip{
-  min-height:42px;border-radius:7px;border:1px solid var(--line-strong);
+  min-height:44px;border-radius:7px;border:1px solid var(--line-strong);
   background:transparent;color:#c1c7cb
 }
 .rating-actions button:hover,.feedback-chip:hover{background:#101419}
@@ -270,6 +271,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .processing-status p{margin:5px 0 0;color:var(--muted);font-size:13px}
 .processing-aside{padding:16px;border-top:1px solid var(--line)}
 .processing-aside .media{aspect-ratio:1/1;margin-top:10px}
+.processing-aside .wheel-stage{background:#171c20}
+.processing-aside .wheel-stage img{background:transparent;padding:8%}
+@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
 .history-list{display:grid;gap:26px}
 .history-group{display:grid;gap:10px}
 .history-date{
@@ -357,6 +361,53 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .system-card .actions{margin-top:22px}
 .review-subhead{grid-column:1/-1;margin:8px 2px 0;color:#697279;font-size:9px;text-transform:uppercase;letter-spacing:.13em;font-weight:600}
 
+/* Reconciled auxiliary screens */
+.help-hero{max-width:820px;margin-bottom:28px}
+.help-hero h2{margin:0;font-size:34px;line-height:1.1;font-weight:500;letter-spacing:-.035em}
+.help-hero p{margin:10px 0 0;color:var(--muted);font-size:15px;line-height:1.55}
+.support-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:18px}
+.support-main,.support-side{padding:22px}
+.support-main textarea{display:block;width:100%;min-height:155px;resize:vertical;padding:13px 14px;border:1px solid var(--line-strong);border-radius:8px;background:#101419;color:var(--text);font:inherit}
+.support-main .actions{margin-top:14px}
+.support-main .btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.support-side h3{margin:0 0 12px;font-size:17px;font-weight:500}
+.support-topic{width:100%;min-height:48px;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:transparent;color:#c9ced1;text-align:left;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.support-topic:last-of-type{border-bottom:0}
+.support-topic:hover,.support-topic:focus-visible{color:var(--text)}
+.support-arrow{color:#747e85;font-size:18px}
+.support-detail{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.support-detail h4{margin:0 0 6px;font-size:14px;font-weight:500}
+.support-detail p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+.support-docs{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.support-docs .support-topic{border-bottom:0}
+.guide-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.guide-example{overflow:hidden}
+.guide-visual{position:relative;aspect-ratio:16/10;overflow:hidden;background:#101317}
+.guide-visual img{display:block;width:100%;height:100%;object-fit:cover}
+.guide-example.bad .guide-visual img{transform:scale(1.2)}
+.guide-copy{padding:17px}
+.guide-tone{margin-bottom:7px;font-size:12px;font-weight:500}
+.guide-tone.good{color:var(--positive)}.guide-tone.bad{color:var(--negative)}
+.guide-copy h3{margin:0;font-size:19px;font-weight:500}
+.guide-copy p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.guide-list{margin-top:24px;border-top:1px solid var(--line)}
+.guide-row{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;padding:17px 0;border-bottom:1px solid var(--line)}
+.guide-num{color:#a7afb4;font-variant-numeric:tabular-nums}
+.guide-row h3{margin:0;font-size:16px;font-weight:500}
+.guide-row p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.docs-intro{max-width:780px;margin-bottom:24px}
+.docs-intro p:last-child{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
+.docs-list{max-width:900px}
+.doc-row{width:100%;min-height:76px;padding:16px 0;border-bottom:1px solid var(--line);color:var(--text);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;text-align:left;text-decoration:none}
+.doc-row:first-child{border-top:1px solid var(--line)}
+.doc-row:hover,.doc-row:focus-visible{background:rgba(255,255,255,.025)}
+.doc-row:hover .doc-open,.doc-row:focus-visible .doc-open{color:var(--text)}
+.doc-row h3{margin:0;font-size:17px;font-weight:500}
+.doc-row p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.doc-open{color:var(--subtle);font-size:12px;white-space:nowrap}
+@media(max-width:980px){.support-grid,.guide-layout{grid-template-columns:1fr}}
+@media(max-width:680px){.help-hero h2{font-size:27px}.support-main,.support-side,.guide-copy{padding:16px}.doc-row{grid-template-columns:1fr}.doc-open{margin-top:-6px}}
+
 /* Review harness */
 .review{
   position:fixed;right:16px;bottom:16px;z-index:20;
@@ -383,12 +434,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .dashboard-grid,.fit-context,.processing-layout,.wallet-grid{grid-template-columns:1fr}
   .mobile-nav{
     position:fixed;left:0;right:0;bottom:0;z-index:15;
-    display:grid;grid-template-columns:repeat(5,1fr);
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
     border-top:1px solid var(--line);padding:7px 6px calc(7px + var(--safe-bottom));
     background:rgba(8,10,12,.96);backdrop-filter:blur(14px)
   }
   .mobile-nav button{min-height:46px;border:0;border-radius:7px;background:transparent;color:#737c83;font-size:10px;font-weight:500}
   .mobile-nav button.active{color:var(--text);background:#101418}
+  .btn-text{min-height:44px;display:inline-flex;align-items:center;padding:8px 0}
+  .feedback-chip,.parser-recovery .btn{min-height:44px}
 }
 @media(max-width:680px){
   .page{padding-top:18px}
@@ -428,6 +481,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .fit-copy{font-size:14px}
   .result-head{display:block}
   .result-primary{margin-top:14px}
+  .result-layout{display:flex;flex-direction:column}
+  .result-head{display:contents}
+  .result-primary{order:2;margin:16px 0 0}
+  .compare{order:1}
+  .result-meta-line{order:3}
+  .rating{order:4}
   .compare{aspect-ratio:4/3}
   .rating-actions{grid-template-columns:1fr}
   .parser-recovery{display:grid;grid-template-columns:1fr}
@@ -460,9 +519,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   .compare-label{top:8px;font-size:9px}
   .rating{margin-top:16px}
   .mobile-nav button{font-size:9px}
-  .history-card{grid-template-columns:1fr;padding:10px}
-  .history-actions{grid-column:auto}
-  .package-grid{grid-template-columns:1fr}
+  .history-card{grid-template-columns:92px minmax(0,1fr);gap:12px;padding:10px 0;align-items:start}
+  .history-card .media{aspect-ratio:1/1}
+  .history-title{font-size:14px;line-height:1.25}
+  .history-sub{font-size:11px}
+  .history-state{margin-top:4px}
+  .history-actions{grid-column:2;margin-top:-3px;justify-content:flex-start}
+  .history-actions .btn{width:auto;min-height:44px}
+  .package-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .package-card{min-height:104px;padding:12px}
   .payment-history-row{grid-template-columns:1fr}
   .payment-history-main{grid-template-columns:1fr 1fr;gap:6px 12px}
   .payment-history-meta{grid-column:1/-1;flex-direction:column;gap:2px}
@@ -484,8 +549,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     </nav>
     <div class="nav-label">Помощь</div>
     <nav class="nav">
-      <button>Поддержка</button>
-      <button>Документы</button>
+      <button data-nav="support">Поддержка</button>
+      <button data-nav="guide">Как подготовить фото</button>
+      <button data-nav="docs">Документы</button>
     </nav>
     <div class="account">
       <div><small>Профиль</small><strong>Nikolai</strong></div>
@@ -504,7 +570,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
       <section class="page" id="screen"></section>
 
       <details class="review">
-        <summary>Экраны VNext v2</summary>
+        <summary>Экраны VNext — reconciliation</summary>
         <div class="review-grid">
           <button data-screen="dashboard">Dashboard</button>
           <button data-screen="create">Create</button>
@@ -515,6 +581,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
           <button data-screen="wallet">Balance</button>
           <button data-screen="auth">Auth</button>
           <button data-screen="system">Empty / error</button>
+          <div class="review-subhead">Help</div>
+          <button data-screen="support">Support</button>
+          <button data-screen="guide">Photo Guide</button>
+          <button data-screen="docs">Documents</button>
+          <div class="review-subhead">Fitment verdict</div>
+          <button data-fitment-fixture="compatible">Compatible</button>
+          <button data-fitment-fixture="conditional">Conditional</button>
+          <button data-fitment-fixture="unknown">Unknown</button>
+          <button data-fitment-fixture="incompatible">Incompatible</button>
           <div class="review-subhead">Create parser</div>
           <button data-review-parser="success">Parser success</button>
           <button data-review-parser="error">Parser error</button>
@@ -542,7 +617,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   <button data-mobile="create">Создать</button>
   <button data-mobile="history">Мои</button>
   <button data-mobile="wallet">Баланс</button>
-  <button>Ещё</button>
+  <button data-mobile="support">Помощь</button>
 </nav>
 
 <script>
@@ -566,12 +641,25 @@ function wheelSvg(){
 const REAL_ASSETS={
   vehicle:"../../webapp/assets/demo-vehicle-zeekr.jpg",
   wheel:"../../webapp/assets/demo-rim-xtrike.png",
+  wheelTransparent:"assets/demo-rim-xtrike-transparent.png",
   result:"../../webapp/assets/demo-render-zeekr-xtrike.jpg"
 };
 function realImg(kind,alt){
   const src=REAL_ASSETS[kind];
   return '<img src="'+src+'" alt="'+alt+'">';
 }
+function safeText(value){return String(value||"").replace(/[&<>"']/g,function(char){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]})}
+const createState={brand:"ZEEKR",model:"007",year:"2024",market:"Russia+",wheelBrand:"X-Trike",wheelModel:"",diameter:"20",width:"9J",pcd:"5×112",et:"",dia:"",source:"https://example.com/x-trike"};
+function createVehicleSummary(){return [createState.brand,createState.model].filter(Boolean).join(" ")+", "+[createState.year,createState.market].filter(Boolean).join(", ")}
+function createWheelSummary(){return [createState.diameter?createState.diameter+"″":"",createState.width,createState.pcd,createState.et?"ET "+createState.et:"",createState.dia?"DIA "+createState.dia:""].filter(Boolean).join(" / ")}
+function createField(name,label){return '<div class="field"><label>'+label+'</label><input data-create-field="'+name+'" value="'+safeText(createState[name])+'"></div>'}
+const fitmentFixtures={
+  incompatible:{mark:"×",tone:"bad",title:"Обнаружена несовместимость",copy:"Подтверждённое несовпадение крепёжной схемы PCD",reason:"PCD автомобиля и диска различаются. Без адаптеров и переделки крепления такой диск не устанавливается",rows:[["PCD","подтверждено","не совпадает","×","bad"],["DIA","подтверждено","совпадает","✓","good"],["Диаметр","подтверждено","совпадает","✓","good"],["Ширина","подтверждено","совпадает","✓","good"],["ET","есть данные","есть данные","✓","good"]]},
+  compatible:{mark:"✓",tone:"good",title:"Предварительно совместимо",copy:"Проверенные параметры соответствуют конфигурации автомобиля",reason:"Критические параметры подтверждены для этого review-сценария. Итог не заменяет проверку при установке",rows:[["PCD","подтверждено","совпадает","✓","good"],["DIA","подтверждено","совпадает","✓","good"],["Диаметр","подтверждено","совпадает","✓","good"],["Ширина","подтверждено","совпадает","✓","good"],["ET","подтверждено","в диапазоне","✓","good"]]},
+  conditional:{mark:"!",tone:"warn",title:"Подходит при условии",copy:"Для установки требуется корректное центровочное кольцо",reason:"Посадочное отверстие диска больше ступицы. Нужен подтверждённый размер центровочного кольца; без него установка не подтверждена",rows:[["PCD","подтверждено","совпадает","✓","good"],["DIA","ступица подтверждена","отверстие больше","!","warn"],["Диаметр","подтверждено","совпадает","✓","good"],["Ширина","подтверждено","совпадает","✓","good"],["ET","подтверждено","в диапазоне","✓","good"]]},
+  unknown:{mark:"?",tone:"unknown",title:"Недостаточно данных",copy:"Не хватает подтверждённого значения ET для технического вывода",reason:"ET выбранного диска не подтверждён. Уточните параметр у производителя или продавца; визуальную примерку можно продолжить",rows:[["PCD","подтверждено","совпадает","✓","good"],["DIA","подтверждено","совпадает","✓","good"],["Диаметр","подтверждено","совпадает","✓","good"],["Ширина","подтверждено","совпадает","✓","good"],["ET","есть профиль","нет данных","?","unknown"]]}
+};
+function fitmentRows(rows){return rows.map(function(row){return '<tr class="'+(row[4]==="bad"?"fit-row-bad":"")+'"><td class="fit-param">'+safeText(row[0])+'</td><td class="fit-value">'+safeText(row[1])+'</td><td class="fit-value">'+safeText(row[2])+'</td><td><span class="fit-result '+row[4]+'">'+row[3]+'</span></td></tr>'}).join("")}
 
 const screens={
 dashboard:{
@@ -598,7 +686,7 @@ dashboard:{
 
       <section class="island balance-island">
         <p class="eyebrow">Баланс</p>
-        <div class="balance-line"><div><strong>36</strong><div class="object-sub">рендеров</div></div><button class="btn-text">Пополнить баланс</button></div>
+        <div class="balance-line"><div><strong>36</strong><div class="object-sub">рендеров</div></div><button class="btn-text" data-go="wallet">Пополнить баланс</button></div>
         <div class="balance-expiry">
           <p class="eyebrow" style="margin-bottom:4px">Срок действия</p>
           <div class="expiry-row"><span>16 рендеров</span><strong>до 15 октября</strong></div>
@@ -625,19 +713,19 @@ create:{
     <div class="create-pair">
       <article class="source">
         <p class="eyebrow">Автомобиль</p>
-        <div class="media">${carSvg(false)}</div>
+        <div class="media real-media">${realImg("vehicle","Исходное фото ZEEKR 007")}</div>
         <div class="meta-row">
-          <div><div class="object-name">Porsche Cayenne</div></div>
-          <button class="btn-text">Заменить автомобиль</button>
+          <div><div class="object-name">${safeText(createState.brand+" "+createState.model)}</div></div>
+          <button class="btn-text" data-edit="vehicle">Изменить данные</button>
         </div>
       </article>
 
       <article class="source wheel">
         <p class="eyebrow">Колесный диск</p>
-        <div class="media">${wheelSvg()}</div>
+        <div class="media real-media">${realImg("wheel","Выбранный диск X-Trike")}</div>
         <div class="meta-row">
-          <div><div class="object-name">BBS CI-R</div></div>
-          <button class="btn-text">Заменить диск</button>
+          <div><div class="object-name">${safeText([createState.wheelBrand,createState.wheelModel].filter(Boolean).join(" "))}</div></div>
+          <button class="btn-text" data-edit="wheel">Изменить данные</button>
         </div>
       </article>
     </div>
@@ -646,36 +734,34 @@ create:{
       <div class="summary-list">
         <div class="summary-row">
           <div class="summary-label">Данные автомобиля</div>
-          <div class="summary-value">Porsche Cayenne E3, 2022, 55 TFSI quattro <span class="inline-state" data-state="vehicle" hidden></span></div>
+          <div class="summary-value"><span data-summary="vehicle">${safeText(createVehicleSummary())}</span> <span class="inline-state" data-state="vehicle" hidden></span></div>
           <button class="btn-text" data-edit="vehicle">Изменить данные</button>
         </div>
         <div class="edit-panel" data-panel="vehicle" hidden>
           <div class="form-grid">
-            <div class="field"><label>Марка</label><input value="Porsche"></div>
-            <div class="field"><label>Модель</label><input value="Cayenne"></div>
-            <div class="field"><label>Поколение</label><input value="E3"></div>
-            <div class="field"><label>Год</label><input value="2022"></div>
-            <div class="field"><label>Комплектация</label><input value="55 TFSI quattro"></div>
-            <div class="field"><label>Рынок</label><input value="Russia+"></div>
+            ${createField("brand","Марка")}
+            ${createField("model","Модель")}
+            ${createField("year","Год")}
+            ${createField("market","Рынок")}
           </div>
           <div class="edit-actions"><button class="btn btn-primary" data-save="vehicle">Сохранить</button><button class="btn btn-secondary" data-close="vehicle">Отмена</button></div>
         </div>
 
         <div class="summary-row">
           <div class="summary-label">Источник диска</div>
-          <div class="summary-value"><a href="#" onclick="return false">wheel-shop.ru/bbs-ci-r-20</a> <span class="inline-state" data-state="source" hidden></span></div>
+          <div class="summary-value"><span data-summary="source">${safeText(createState.source)}</span> <span class="inline-state" data-state="source" hidden></span></div>
           <button class="btn-text" data-edit="source">Изменить ссылку</button>
         </div>
         <div class="edit-panel" data-panel="source" hidden>
-          <div class="field"><label>Ссылка на товар</label><input data-source-url value="https://wheel-shop.ru/bbs-ci-r-20"></div>
-          <div class="edit-note">После изменения ссылки изображение и параметры диска будут получены заново</div>
+          <div class="field"><label>Ссылка на товар</label><input data-source-url value="${safeText(createState.source)}"></div>
+          <div class="edit-note">Review-fixture: ссылка сохраняется в сводке; реальный парсер и данные товара здесь не подключены</div>
           <div class="parser-state loading" data-parser-state="loading" hidden aria-live="polite">
             <strong>Получаем данные по ссылке</strong>
-            Изображение и параметры диска обновятся после завершения обработки
+            Проверяем демонстрационный сценарий обработки ссылки
           </div>
           <div class="parser-state success" data-parser-state="success" hidden aria-live="polite">
-            <strong>Данные диска обновлены</strong>
-            Проверьте изображение и параметры в сводке
+            <strong>Ссылка сохранена</strong>
+            Сводка источника обновлена. Изображение и параметры остаются демо-данными выбранного диска
           </div>
           <div class="parser-state error" data-parser-state="error" hidden aria-live="polite">
             <strong>Не удалось получить данные по ссылке</strong>
@@ -690,18 +776,18 @@ create:{
 
         <div class="summary-row">
           <div class="summary-label">Параметры диска</div>
-          <div class="summary-value">20″ / 9J / 5×130 / ET 50 / DIA 71,6 <span class="inline-state" data-state="wheel" hidden></span></div>
+          <div class="summary-value"><span data-summary="wheel">${safeText(createWheelSummary())}</span> <span class="inline-state" data-state="wheel" hidden></span></div>
           <button class="btn-text" data-edit="wheel">Изменить данные</button>
         </div>
         <div class="edit-panel" data-panel="wheel" hidden>
           <div class="form-grid">
-            <div class="field"><label>Бренд</label><input value="BBS"></div>
-            <div class="field"><label>Модель</label><input value="CI-R"></div>
-            <div class="field"><label>Диаметр</label><input value="20"></div>
-            <div class="field"><label>Ширина</label><input value="9J"></div>
-            <div class="field"><label>PCD</label><input value="5×130"></div>
-            <div class="field"><label>ET</label><input value="50"></div>
-            <div class="field"><label>DIA</label><input value="71,6"></div>
+            ${createField("wheelBrand","Бренд")}
+            ${createField("wheelModel","Модель")}
+            ${createField("diameter","Диаметр")}
+            ${createField("width","Ширина")}
+            ${createField("pcd","PCD")}
+            ${createField("et","ET")}
+            ${createField("dia","DIA")}
           </div>
           <div class="edit-actions"><button class="btn btn-primary" data-save="wheel">Сохранить</button><button class="btn btn-secondary" data-close="wheel">Отмена</button></div>
         </div>
@@ -735,7 +821,7 @@ processing:{
         <p class="eyebrow">Выбрано</p>
         <div class="object-name">ZEEKR 007</div>
         <div class="object-sub">X-Trike / 20″ / 9J / 5×112</div>
-        <div class="media real-media">${realImg("wheel","Колесный диск X-Trike")}</div>
+        <div class="media real-media wheel-stage">${realImg("wheelTransparent","Колесный диск X-Trike")}</div>
         <div class="actions" style="margin-top:14px"><button class="btn btn-secondary" data-go="history">Мои примерки</button></div>
       </aside>
     </div>`;
@@ -952,7 +1038,7 @@ system:{
         <p class="eyebrow">Генерация</p>
         <h2>Генерация временно недоступна</h2>
         <p>Рендер не будет списан</p>
-        <div class="actions"><button class="btn btn-primary" data-go="create">Повторить</button><button class="btn btn-secondary">Поддержка</button></div>
+        <div class="actions"><button class="btn btn-primary" data-go="create">Повторить</button><button class="btn btn-secondary" data-go="support">Поддержка</button></div>
       </section></div>`;
     if(mode==="balance_error") return `
       <div class="system-wrap"><section class="system-card">
@@ -972,21 +1058,89 @@ system:{
   }
 },
 
+support:{
+  title:"Поддержка",
+  html:function(){return `
+    <section class="help-hero">
+      <p class="eyebrow">Помощь</p>
+      <h2>Разберёмся с проблемой</h2>
+      <p>Опишите, что произошло. Для вопросов по генерации, оплате, данным автомобиля или диска лучше сразу указать, на каком шаге возникла проблема.</p>
+    </section>
+    <div class="support-grid">
+      <section class="island support-main">
+        <div class="field"><label for="supportMessage">Сообщение</label><textarea id="supportMessage" placeholder="Например: не удалось обновить данные диска по ссылке…"></textarea></div>
+        <div class="actions"><a class="btn btn-primary" id="supportEmail" href="mailto:dreamwheelsai@yandex.ru?subject=Dream%20Wheels%20Support">Написать в поддержку</a></div>
+      </section>
+      <aside class="island support-side">
+        <h3>Что можно проверить самостоятельно</h3>
+        <button class="support-topic" data-go="guide"><span>Как подготовить фотографию автомобиля</span><span class="support-arrow">›</span></button>
+        <button class="support-topic" data-help="parser"><span>Что делать, если ссылка на диск не распозналась</span><span class="support-arrow">›</span></button>
+        <button class="support-topic" data-help="fitment"><span>Почему техническая проверка не блокирует примерку</span><span class="support-arrow">›</span></button>
+        <button class="support-topic" data-help="balance"><span>Оплата и срок действия рендеров</span><span class="support-arrow">›</span></button>
+        <div class="support-docs"><button class="support-topic" data-go="docs"><span>Правовые документы</span><span class="support-arrow">›</span></button></div>
+      </aside>
+    </div>`;
+  }
+},
+
+guide:{
+  title:"Как подготовить фото",
+  html:function(){return `
+    <section class="help-hero">
+      <p class="eyebrow">Визуальная примерка</p>
+      <h2>Фото должно хорошо показывать автомобиль и колёса</h2>
+      <p>Чем понятнее исходный кадр, тем проще сохранить форму автомобиля, перспективу и естественное положение нового диска.</p>
+    </section>
+    <div class="guide-layout">
+      <article class="island guide-example">
+        <div class="guide-visual"><img src="assets/photo-guide-good-redacted.jpg" alt="Серебристый автомобиль полностью в кадре, оба колеса видны, номера размыты" loading="lazy"></div>
+        <div class="guide-copy"><div class="guide-tone good">Подходит для примерки</div><h3>Автомобиль виден целиком</h3><p>Колёса хорошо различимы, перспектива понятна, кузов не перекрыт другими объектами.</p></div>
+      </article>
+      <article class="island guide-example bad">
+        <div class="guide-visual"><img src="assets/photo-guide-bad-redacted.jpg" alt="Серый автомобиль снят слишком близко, края кузова обрезаны, номер размыт" loading="lazy"></div>
+        <div class="guide-copy"><div class="guide-tone bad">Лучше выбрать другой кадр</div><h3>Часть машины не попала в кадр</h3><p>Когда кузов или колесо обрезаны, результат примерки может быть менее точным.</p></div>
+      </article>
+    </div>
+    <div class="guide-list">
+      <div class="guide-row"><div class="guide-num">01</div><div><h3>Покажите автомобиль целиком</h3><p>Не обрезайте переднюю и заднюю часть кузова. Оставьте немного пространства вокруг машины.</p></div></div>
+      <div class="guide-row"><div class="guide-num">02</div><div><h3>Колёса должны быть видны</h3><p>Избегайте кадров, где колёса закрыты бордюром, травой, людьми или другими автомобилями.</p></div></div>
+      <div class="guide-row"><div class="guide-num">03</div><div><h3>Используйте резкий исходник</h3><p>Не используйте скриншоты низкого качества и изображения с сильным motion blur.</p></div></div>
+      <div class="guide-row"><div class="guide-num">04</div><div><h3>Не меняйте фото перед загрузкой</h3><p>Сильные фильтры, искусственное размытие и деформация перспективы мешают сохранить реалистичный результат.</p></div></div>
+    </div>`;
+  }
+},
+
+docs:{
+  title:"Документы",
+  html:function(){return `
+    <section class="docs-intro">
+      <p class="eyebrow">Правовая информация</p>
+      <p>Здесь собраны документы, которые относятся к использованию сервиса, оплате и обработке персональных данных.</p>
+    </section>
+    <section class="docs-list">
+      <a class="doc-row" href="https://legal.dreamwheels.pro/legal/privacy" target="_blank" rel="noopener noreferrer"><div><h3>Политика конфиденциальности</h3><p>Как сервис обрабатывает и защищает пользовательские данные.</p></div><span class="doc-open">Открыть</span></a>
+      <a class="doc-row" href="https://legal.dreamwheels.pro/legal/offer" target="_blank" rel="noopener noreferrer"><div><h3>Публичная оферта</h3><p>Условия приобретения и использования рендеров.</p></div><span class="doc-open">Открыть</span></a>
+      <a class="doc-row" href="https://legal.dreamwheels.pro/legal/refund" target="_blank" rel="noopener noreferrer"><div><h3>Условия возврата</h3><p>Порядок возврата оплаты в предусмотренных случаях.</p></div><span class="doc-open">Открыть</span></a>
+      <a class="doc-row" href="https://legal.dreamwheels.pro/legal/consent" target="_blank" rel="noopener noreferrer"><div><h3>Согласие на обработку персональных данных</h3><p>Условия обработки данных, необходимых для работы сервиса.</p></div><span class="doc-open">Открыть</span></a>
+    </section>`;
+  }
+},
+
 fitment:{
   title:"Проверка совместимости",
-  html:function(){return `
+  html:function(){const fixture=fitmentFixtures[window.__dwFitmentFixture||"incompatible"];return `
     <div class="fit-context">
       <article>
         <div class="media vehicle-media">${carSvg(false)}</div>
         <div class="meta-row">
-          <div><p class="eyebrow">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ – исходное фото</div></div>
+          <div><p class="eyebrow">Автомобиль</p><div class="object-name">Демо-автомобиль</div><div class="object-sub">Review-fixture — не данные реального автомобиля</div></div>
           <button class="btn-text" data-go="create">Изменить</button>
         </div>
       </article>
       <article class="wheel-object">
         <div class="media wheel-media">${wheelSvg()}</div>
         <div class="meta-row">
-          <div><p class="eyebrow">Колесный диск</p><div class="object-name">BBS CI-R</div><div class="object-sub">20″ / 9J / ET 58</div></div>
+          <div><p class="eyebrow">Колесный диск</p><div class="object-name">Демо-диск</div><div class="object-sub">Review-fixture — значения иллюстративны</div></div>
           <button class="btn-text" data-go="create">Изменить</button>
         </div>
       </article>
@@ -994,24 +1148,19 @@ fitment:{
 
     <section class="fit-content">
       <p class="eyebrow">Техническая проверка</p>
-      <div class="fit-verdict"><span class="fit-mark">×</span><h2 class="fit-title">Обнаружена несовместимость</h2></div>
-      <p class="fit-copy">Вылет выбранного диска находится вне допустимого диапазона</p>
+      <div class="fit-verdict"><span class="fit-mark ${fixture.tone}">${fixture.mark}</span><h2 class="fit-title">${fixture.title}</h2></div>
+      <p class="fit-copy">${fixture.copy}</p>
+      <p class="fixture-note">Демонстрационный сценарий для проверки интерфейса; не технический расчёт для показанного изображения</p>
 
       <div class="fit-table-wrap">
         <table class="fit-table">
           <colgroup><col><col><col><col></colgroup>
           <thead><tr><th>Параметр</th><th>Для автомобиля</th><th>Диск</th><th>Результат</th></tr></thead>
-          <tbody>
-            <tr><td class="fit-param">PCD</td><td class="fit-value">5×130</td><td class="fit-value">5×130</td><td><span class="fit-result good">✓</span></td></tr>
-            <tr><td class="fit-param">DIA</td><td class="fit-value">71,6 мм</td><td class="fit-value">71,6 мм</td><td><span class="fit-result good">✓</span></td></tr>
-            <tr><td class="fit-param">Диаметр</td><td class="fit-value">20″</td><td class="fit-value">20″</td><td><span class="fit-result good">✓</span></td></tr>
-            <tr><td class="fit-param">Ширина</td><td class="fit-value">9J</td><td class="fit-value">9J</td><td><span class="fit-result good">✓</span></td></tr>
-            <tr class="fit-row-bad"><td class="fit-param">ET</td><td class="fit-value">47–53</td><td class="fit-value">58</td><td><span class="fit-result bad">×</span></td></tr>
-          </tbody>
+          <tbody>${fitmentRows(fixture.rows)}</tbody>
         </table>
       </div>
 
-      <div class="fit-explainer"><strong>Что это значит</strong><br>ET диска 58 находится вне допустимого диапазона 47–53 для этой конфигурации</div>
+      <div class="fit-explainer"><strong>Что это значит</strong><br>${fixture.reason}</div>
       <aside class="fit-disclaimer"><span class="fit-info">i</span><div><strong>Техническая проверка не ограничивает визуальную примерку</strong><p>Создание изображения остаётся доступным независимо от Fitment. Рендер показывает внешний вид и не подтверждает физическую установку</p></div></aside>
       <div class="actions fit-actions">
         <button class="btn btn-primary" data-go="result">Создать изображение</button>
@@ -1024,23 +1173,24 @@ fitment:{
 result:{
   title:"Результат",
   html:function(){return `
+    <div class="result-layout">
     <section class="result-head">
       <div>
         <p class="eyebrow">Виртуальная примерка</p>
         <h2>ZEEKR 007</h2>
         <p>X-Trike<br>20″ / 9J / 5×112 – сегодня, 14:32</p>
-        <div class="result-primary"><button class="btn btn-primary" data-go="create">Создать ещё вариант</button></div>
       </div>
     </section>
+    <div class="result-primary"><button class="btn btn-primary" data-go="create">Создать ещё вариант</button></div>
 
     <div class="compare" id="resultCompare">
-      <div class="compare-layer compare-before real-media">${realImg("vehicle","Исходное фото ZEEKR 007")}</div>
-      <div class="compare-layer compare-after real-media">${realImg("result","Результат примерки ZEEKR 007")}</div>
-      <span class="compare-label before">Оригинал</span>
-      <span class="compare-label after">Результат</span>
+      <div class="compare-layer compare-base real-media">${realImg("vehicle","Исходное фото ZEEKR 007")}</div>
+      <div class="compare-layer compare-reveal real-media">${realImg("result","Результат примерки ZEEKR 007")}</div>
+      <span class="compare-label left">Результат</span>
+      <span class="compare-label right">Оригинал</span>
       <div class="compare-divider"></div>
       <div class="compare-handle" aria-hidden="true">↔</div>
-      <input class="compare-range" id="compareRange" type="range" min="0" max="100" value="50" aria-label="Сравнение оригинала и результата">
+      <input class="compare-range" id="compareRange" type="range" min="0" max="100" value="50" aria-label="Сравнение результата и оригинала">
     </div>
 
     <section class="rating">
@@ -1061,7 +1211,7 @@ result:{
         </div>
       </div>
       <div class="feedback-thanks" id="feedbackThanks" hidden>Спасибо за оценку</div>
-    </section>`;
+    </section></div>`;
   }
 }
 };
@@ -1079,7 +1229,7 @@ function render(){
     b.onclick=function(){setScreen(b.dataset.nav)};
   });
   document.querySelectorAll("[data-mobile]").forEach(function(b){
-    const mobileCurrent=current==="fitment"?"create":(current==="result"||current==="processing"?"history":current);
+    const mobileCurrent=current==="fitment"?"create":(current==="result"||current==="processing"?"history":(current==="guide"||current==="docs"?"support":current));
     b.classList.toggle("active",b.dataset.mobile===mobileCurrent);
     b.onclick=function(){setScreen(b.dataset.mobile)};
   });
@@ -1102,9 +1252,34 @@ function render(){
     b.classList.toggle("active",b.dataset.systemState===active);
     b.onclick=function(){window.__dwSystemState=b.dataset.systemState;setScreen("system")};
   });
+  document.querySelectorAll("[data-fitment-fixture]").forEach(function(b){
+    const active=window.__dwFitmentFixture||"incompatible";
+    b.classList.toggle("active",b.dataset.fitmentFixture===active);
+    b.onclick=function(){window.__dwFitmentFixture=b.dataset.fitmentFixture;setScreen("fitment")};
+  });
   document.querySelectorAll("[data-go]").forEach(function(b){
     b.onclick=function(){setScreen(b.dataset.go)};
   });
+  document.querySelectorAll("[data-help]").forEach(function(b){
+    b.onclick=function(){
+      const content={
+        parser:["Если ссылка на диск не распозналась","Попробуйте другую ссылку на товар или загрузите изображение диска вручную."],
+        fitment:["Почему проверка не блокирует примерку","Визуальная примерка и техническая проверка решают разные задачи. Технический результат не запрещает создать изображение, если визуальные данные уже готовы."],
+        balance:["Оплата и срок действия рендеров","На Балансе показываются доступные рендеры и сроки действия отдельных пакетов. Сначала используются рендеры с ближайшей датой окончания."]
+      }[b.dataset.help];
+      const side=b.closest(".support-side");
+      let detail=side&&side.querySelector(".support-detail");
+      if(side&&!detail){detail=document.createElement("div");detail.className="support-detail";side.appendChild(detail)}
+      if(detail&&content) detail.innerHTML="<h4>"+content[0]+"</h4><p>"+content[1]+"</p>";
+    };
+  });
+  const supportMessage=document.getElementById("supportMessage");
+  const supportEmail=document.getElementById("supportEmail");
+  if(supportMessage&&supportEmail){
+    supportMessage.addEventListener("input",function(){
+      supportEmail.href="mailto:dreamwheelsai@yandex.ru?subject=Dream%20Wheels%20Support&body="+encodeURIComponent(supportMessage.value);
+    });
+  }
   document.querySelectorAll("[data-auth-state-inline]").forEach(function(b){
     b.onclick=function(){window.__dwAuthState=b.dataset.authStateInline;render()};
   });
@@ -1113,6 +1288,7 @@ function render(){
     b.onclick=function(){
       const key=b.dataset.edit;
       document.querySelectorAll("[data-panel]").forEach(function(p){p.hidden=p.dataset.panel!==key});
+      if(key==="vehicle"||key==="wheel") document.querySelectorAll('[data-panel="'+key+'"] [data-create-field]').forEach(function(input){input.value=createState[input.dataset.createField]});
     };
   });
   document.querySelectorAll("[data-close]").forEach(function(b){
@@ -1133,8 +1309,13 @@ function render(){
   document.querySelectorAll("[data-save]").forEach(function(b){
     b.onclick=function(){
       const key=b.dataset.save;
-      setInlineState(key,"Сохранено","saved");
       const panel=document.querySelector('[data-panel="'+key+'"]');
+      if(panel) panel.querySelectorAll("[data-create-field]").forEach(function(input){createState[input.dataset.createField]=input.value.trim()});
+      const summary=document.querySelector('[data-summary="'+key+'"]');
+      if(summary) summary.textContent=key==="vehicle"?createVehicleSummary():createWheelSummary();
+      if(key==="vehicle") document.querySelector(".source:not(.wheel) .object-name").textContent=[createState.brand,createState.model].filter(Boolean).join(" ");
+      if(key==="wheel") document.querySelector(".source.wheel .object-name").textContent=[createState.wheelBrand,createState.wheelModel].filter(Boolean).join(" ");
+      setInlineState(key,"Сохранено","saved");
       if(panel) panel.hidden=true;
     };
   });
@@ -1161,6 +1342,9 @@ function render(){
   document.querySelectorAll("[data-parser-save]").forEach(function(b){
     b.onclick=function(){
       const key=b.dataset.parserSave;
+      const input=document.querySelector("[data-source-url]");
+      const nextUrl=input?input.value.trim():"";
+      try{if(!/^https?:$/.test(new URL(nextUrl).protocol)) throw new Error("Invalid scheme")}catch(error){showParserState("error");setInlineState(key,"Проверьте ссылку","error");return}
       b.disabled=true;
       showParserState("loading");
       setInlineState(key,"Получаем данные","loading");
@@ -1171,8 +1355,11 @@ function render(){
           b.disabled=false;
           return;
         }
+        createState.source=nextUrl;
+        const summary=document.querySelector('[data-summary="source"]');
+        if(summary) summary.textContent=createState.source;
         showParserState("success");
-        setInlineState(key,"Данные обновлены","saved");
+        setInlineState(key,"Ссылка сохранена","saved");
         b.disabled=false;
       },650);
     };
