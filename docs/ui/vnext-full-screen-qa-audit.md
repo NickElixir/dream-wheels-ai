@@ -1,4 +1,14 @@
-# Dream Wheels AI — VNext full-screen QA audit and pre-freeze recheck
+# Dream Wheels AI — VNext full-screen QA audit and formal UI freeze
+
+## Formal freeze — COMPLETE (25 сентября 2026)
+
+**FROZEN / FORMAL FREEZE COMPLETE.** Freeze commit: `7f35d55416bb2688c50b84c4b62e116dc0cc14ec` (`docs(vnext): freeze application UI contract`). The [Design Code VNext](dream-wheels-application-design-code-vnext-v0.1.md) is the authoritative visual/UI target for new VNext implementation; the [reconciled HTML](../references/application-vnext-state-coverage-prototype-v3.html) is the canonical interactive visual reference. The frozen V1 Design Code remains the legacy/current-runtime reference until migration.
+
+The formal approval covers the static UI/design contract only. Its evidence is the closing reconciliation **PASS: 128 checks, 0 errors**, at desktop `1440×1000` and mobile `390×844`, with no open HIGH/BLOCKER in prototype scope, followed by closing consistency smoke PASS. The frozen HTML is the current branch artifact at source commit `1f90851`: relative to `472c21b`, it contains only the user-requested removal of one parser-help sentence; no layout or visual change was made for freeze. Historical BLOCKED/HIGH assessments below remain explicitly superseded.
+
+Post-freeze documentation smoke on `1440×1000` and `390×844` also passed: the prototype loads without console errors, broken images or horizontal overflow; nine main screens, four Fitment verdicts, Create/Processing assets, Documents labels, Result slider and Help navigation remain intact. The full 128-check suite was not repeated because the canonical HTML was not changed for formal freeze.
+
+This freeze does **not** certify production runtime, frontend/backend integration, parser API, Fitment backend execution, render provider, auth runtime, Robokassa/payment runtime, network failure handling, Safari iOS, Chrome Android, Telegram WebView, physical safe areas, software keyboard, screen readers or real-device performance. Those require subsequent implementation, staging and device QA; they are not blockers to this static UI-contract freeze. No merge or deploy was performed.
 
 ## Closing reconciliation — PASS (25 сентября 2026)
 
@@ -8,13 +18,13 @@
 
 Локальный smoke QA: Chrome через Playwright, `1440×1000` и `390×844`, **128 проверок — PASS, 0 ошибок**. Подтверждены загрузка и отображение экранов, desktop/mobile переходы, работа Support → Documents / Photo Guide, действующие ссылки на четыре RU legal-документа, отсутствие ошибок консоли, битых изображений и горизонтального overflow. Сохранены Create с исходными demo-фото автомобиля и диска, прозрачный диск только в Processing, четыре Fitment verdict с доступным render CTA, компактный mobile History, mobile touch targets ≥44 px, Balance packages 2×2 и отсутствие status-dot CSS. Result slider реагирует в обе стороны; слева `РЕЗУЛЬТАТ` соответствует `demo-render-zeekr-xtrike.jpg`, справа `ОРИГИНАЛ` соответствует `demo-vehicle-zeekr.jpg`. На mobile CTA остаётся после slider.
 
-В первом smoke обнаружены и исправлены: прозрачный диск в Create вместо исходного demo asset и запрос отсутствующего favicon. Повторный прогон — PASS. **Текущий вывод: READY FOR FORMAL FREEZE; открытых HIGH/BLOCKER для статического прототипа нет.** Это QA статического прототипа, **не проверка runtime, API, платежей или реальных устройств**. `VNEXT_UI_CONTRACT = FROZEN` **не выставлен**: требуется отдельное финальное approval. Merge/deploy не выполнялись.
+В первом smoke обнаружены и исправлены: прозрачный диск в Create вместо исходного demo asset и запрос отсутствующего favicon. Повторный прогон — PASS. На момент этого closing reconciliation результат был **READY FOR FORMAL FREEZE; открытых HIGH/BLOCKER для статического прототипа не осталось**. Последующее формальное approval и действующий статус записаны в разделе Formal freeze выше. Это QA статического прототипа, **не проверка runtime, API, платежей или реальных устройств**. Merge/deploy не выполнялись.
 
 Исторический scope первоначального pre-freeze прохода: 24 сентября 2026, PR #196, commit `1b93aa0`. Его выводы ниже сохранены как superseded baseline, а не как текущий статус. Frozen V1 и runtime не изменялись.
 
-## Closing pre-freeze pass — current result
+## Closing pre-freeze pass — historical QA evidence
 
-**Итог повторного QA прототипа: PASS; открытых HIGH/BLOCKER из исходного аудита не осталось.** Это не устанавливает `VNEXT_UI_CONTRACT = FROZEN` автоматически: нужен отдельный review/approval, а runtime и реальные устройства в этот прогон не входили. Повторена прежняя матрица 14 основных экранов и 5 review-state сценариев на 1440×1000 и 390×844, плюс Dashboard/стресс-геометрия на 1680×1000. Все 38 full-page captures обновлены после правок; отдельные четыре Fitment fixture сняты на каждой ширине.
+**Итог повторного QA прототипа: PASS; открытых HIGH/BLOCKER из исходного аудита не осталось.** Сам этот проход ещё не устанавливал formal freeze; отдельное approval отражено в разделе Formal freeze выше. Runtime и реальные устройства в этот прогон не входили. Повторена прежняя матрица 14 основных экранов и 5 review-state сценариев на 1440×1000 и 390×844, плюс Dashboard/стресс-геометрия на 1680×1000. Все 38 full-page captures обновлены после правок; отдельные четыре Fitment fixture сняты на каждой ширине.
 
 | Pre-freeze item | Проверка | Результат |
 |---|---|---|
