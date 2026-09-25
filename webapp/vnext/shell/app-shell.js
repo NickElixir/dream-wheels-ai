@@ -58,13 +58,14 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
 
   const bottom = document.createElement("nav");
   bottom.className = "vnext-shell__bottom-nav";
+  const mobileActiveView = ["support", "photo-guide", "docs"].includes(activeView) ? "support" : activeView;
   bottom.setAttribute("aria-label", "Основная навигация");
   mobileNav.forEach(([labelText, view]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "vnext-shell__bottom-button";
     button.textContent = labelText;
-    if (view === activeView) button.setAttribute("aria-current", "page");
+    if (view === mobileActiveView) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => navigate(view));
     bottom.append(button);
   });

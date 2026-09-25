@@ -15,6 +15,7 @@ test("PR2 registers Dashboard and remaining static surfaces on the VNext shell",
   assert.match(bootstrap, /dreamwheels:dashboardchange/);
   const shell = read("vnext/shell/app-shell.js");
   assert.match(shell, /navigate\?\.\("settings"\)/);
+  assert.match(shell, /\["support", "photo-guide", "docs"\]\.includes\(activeView\)/);
   assert.doesNotMatch(bootstrap, /fetch\(/);
 });
 
