@@ -1,19 +1,32 @@
+import { legacyCreateActions, legacyCreateSnapshot } from "./api/legacy-create.js";
 import { legacyDashboardSnapshot, legacyOpenAuth, legacyOpenRenderDetail } from "./api/legacy-dashboard.js";
 import { legacyNavigate, legacyOpenExternal } from "./api/legacy-navigation.js";
 import { documentsViewModel } from "./models/documents.js";
 import { photoGuideViewModel } from "./models/photo-guide.js";
 import { supportViewModel } from "./models/support.js";
 import { createAppShell } from "./shell/app-shell.js";
+import { createCreateView } from "./views/create.js";
 import { createDashboardView } from "./views/dashboard.js";
 import { createDocumentsView } from "./views/documents.js";
 import { createPhotoGuideView } from "./views/photo-guide.js";
 import { createSupportView } from "./views/support.js";
 
-const migratedViews = new Set(["dashboard", "support", "photo-guide", "docs"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs"]);
 let mountedRoot = null;
 let mountedView = "";
+let createSurface = null;
+
+function createSurfaceDescriptor() {
+  if (!createSurface) {
+    createSurface = createCreateView(legacyCreateSnapshot(), legacyCreateActions());
+  } else {
+    createSurface.update(legacyCreateSnapshot());
+  }
+  return { title: "Примерить диски", content: createSurface.element };
+}
 
 function surfaceDescriptor(view) {
+  if (view === "create") return createSurfaceDescriptor();
   if (view === "dashboard") {
     return {
       title: "Главная",
@@ -76,6 +89,9 @@ function applyView(view) {
 window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view));
 window.addEventListener("dreamwheels:dashboardchange", () => {
   if (mountedView === "dashboard") mountSurface("dashboard", { force: true });
+});
+window.addEventListener("dreamwheels:createchange", () => {
+  if (createSurface) createSurface.update(legacyCreateSnapshot());
 });
 document.addEventListener("DOMContentLoaded", () => {
   for (const view of migratedViews) {
