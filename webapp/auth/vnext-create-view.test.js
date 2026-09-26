@@ -52,6 +52,25 @@ globalThis.document = {
 };
 const { createCreateView, refreshCreateView } = await import("../vnext/views/create.js");
 
+test("URL resolution states expose explicit recovery and honest variant readiness", () => {
+  const snapshot = { bothReady: true, consentAccepted: true, draftId: "draft", selectedVehicle: { make: "Audi", model: "Q8" }, sourceEditing: true, proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } };
+  const loading = createCreateView({ ...snapshot, rimSourceResolving: true });
+  assert.match(loading.allText, /Получаем данные по ссылке/);
+  assert.equal(loading.find((node) => node.textContent === "Создать изображение").disabled, true);
+  const error = createCreateView({ ...snapshot, rimSourceError: { title: "Не удалось получить данные по ссылке", body: "Попробуйте другую ссылку или загрузите изображение диска вручную", retryable: true, manualFallback: true } });
+  assert.match(error.allText, /Попробовать другую ссылку/);
+  assert.match(error.allText, /Загрузить вручную/);
+  assert.equal(error.find((node) => node.textContent === "Создать изображение").disabled, false, "operational error preserves previous usable wheel");
+  const success = createCreateView({ ...snapshot, sourceEditing: false, rimSourceStatus: "success" });
+  assert.match(success.allText, /Ссылка сохранена/);
+  assert.match(success.allText, /ET 0/);
+  for (const variant of ["none", "selected", "selection_required"]) {
+    const view = createCreateView({ ...snapshot, sourceEditing: false, proposal: { vehicle: {}, rim: { variant_state: variant } } });
+    assert.equal(view.find((node) => node.textContent === "Создать изображение").disabled, variant === "selection_required");
+    if (variant === "selection_required") assert.match(view.allText, /Требуется выбрать точный вариант диска/);
+  }
+});
+
 test("Create renders fixed empty/upload stages and replaces either asset through the legacy picker callback", () => {
   const picked = [];
   const view = createCreateView({}, { pickFile: (kind) => picked.push(kind) });

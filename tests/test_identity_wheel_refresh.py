@@ -444,12 +444,70 @@ def test_wheel_url_refresh_cleans_uploaded_asset_after_optimistic_conflict(monke
 
     assert response.status_code == 409
     assert response.json()["detail"]["error_code"] == "identity_draft_rim_revision_conflict"
+    current = response.json()["detail"]["current_draft"]
+    assert current["draft_id"] == DRAFT_ID
+    assert current["rim_asset_id"] == OLD_RIM_ASSET_ID
+    assert current["rim"]["revision"] == 4
+    assert current["vehicle"]["primary"]["model"] == "RX"
     assert deleted == [NEW_RIM_ASSET_ID]
     assert conn.rim_asset_id == OLD_RIM_ASSET_ID
     assert conn.proposal == stale
     assert conn.asset_inserts == []
     assert conn.draft_updates == []
     assert conn.other_writes == []  # no render jobs/snapshots or Fitment history mutation
+
+
+@pytest.mark.parametrize("available", [True, False])
+def test_current_private_rim_asset_requires_owned_usable_draft(monkeypatch, available):
+    _install_auth_and_rate_limit(monkeypatch)
+
+    class AssetConn:
+        async def fetchrow(self, query, *args):
+            assert args == (DRAFT_ID, 77, OLD_RIM_ASSET_ID)
+            for predicate in (
+                "draft.owner_user_id = $2",
+                "assets.owner_user_id = draft.owner_user_id",
+                "assets.render_input_draft_id = draft.id",
+                "assets.kind = 'rim_original'",
+                "draft.status = 'resolved'",
+                "draft.expires_at > CURRENT_TIMESTAMP",
+                "draft.rim_asset_id = $3::uuid",
+            ):
+                assert predicate in query
+            return (
+                {"bucket": "raw", "storage_key": "private/rim.png", "content_type": "image/png"}
+                if available
+                else None
+            )
+
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: _Pool(AssetConn()))
+    downloads = []
+
+    async def download(**kwargs):
+        downloads.append(kwargs)
+        return _png()
+
+    monkeypatch.setattr(identity_api.storage, "download_bytes", download)
+    response = client.get(f"/identity/drafts/{DRAFT_ID}/assets/{OLD_RIM_ASSET_ID}?init_data=unused")
+    if available:
+        assert response.status_code == 200
+        assert response.content == _png()
+        assert response.headers["content-type"] == "image/png"
+        assert response.headers["cache-control"] == "private, no-store"
+        assert downloads == [{"bucket": "raw", "path": "private/rim.png"}]
+    else:
+        assert response.status_code == 404
+        assert response.json()["detail"]["error_code"] == "identity_draft_unavailable"
+        assert downloads == []
+
+
+def test_private_rim_asset_rejects_missing_credentials_before_database(monkeypatch):
+    def forbidden_pool():
+        raise AssertionError("anonymous asset access must not query storage or database")
+
+    monkeypatch.setattr(identity_api.db, "get_pool", forbidden_pool)
+    response = client.get(f"/identity/drafts/{DRAFT_ID}/assets/{OLD_RIM_ASSET_ID}")
+    assert response.status_code in (401, 403)
 
 
 def test_wheel_url_failure_preserves_draft_and_a_different_url_can_retry(monkeypatch):

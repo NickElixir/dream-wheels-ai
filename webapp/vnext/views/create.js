@@ -98,6 +98,7 @@ function vehiclePanel(snapshot, callbacks) {
   const title = document.createElement("h2");
   title.textContent = "Автомобиль";
   const edit = createTextAction({ label: "Изменить данные", onClick: () => callbacks.setVehicleEditing?.(!snapshot.vehicleEditing) });
+  edit.disabled = Boolean(snapshot.rimSourceResolving || snapshot.submitting);
   head.append(title, edit);
   panel.append(head);
 
@@ -163,6 +164,7 @@ function wheelSummary(snapshot, callbacks) {
     label: snapshot.sourceEditing ? "Закрыть" : (snapshot.rimProductUrl ? "Изменить ссылку" : "Добавить ссылку"),
     onClick: () => callbacks.setSourceEditing?.(!snapshot.sourceEditing),
   });
+  sourceAction.disabled = Boolean(snapshot.rimSourceResolving || snapshot.submitting);
   const rows = document.createElement("div");
   rows.className = "vnext-create__summary-list";
   const values = {
@@ -180,6 +182,14 @@ function wheelSummary(snapshot, callbacks) {
   rows.children[0].className += " vnext-create__summary-row--action";
   appendFieldRow(rows, "Параметры диска", wheelFields.map(([key]) => values[key]).filter(Boolean).join(" / "));
   section.append(rows);
+  if (snapshot.rimSourceStatus === "success") section.append(statusLine("Ссылка сохранена", "positive"));
+  if (rim.variant_state === "selection_required") {
+    section.append(statusLine("Требуется выбрать точный вариант диска", "unknown"));
+    section.append(createButton({ label: "Загрузить вручную", variant: "secondary", onClick: callbacks.manualRimRecovery, disabled: snapshot.rimSourceResolving }));
+  }
+  if (rim.conflicts?.length) {
+    section.append(statusLine("Требуют уточнения", "unknown", rim.conflicts.map((conflict) => wheelFields.find(([key]) => key === conflict.field)?.[1] || conflict.field).join(", ")));
+  }
   if (snapshot.sourceEditing) section.append(sourceEditor(snapshot, callbacks));
   return section;
 }
@@ -197,14 +207,32 @@ function sourceEditor(snapshot, callbacks) {
   input.inputMode = "url";
   input.autocomplete = "url";
   input.placeholder = "https://";
-  input.value = snapshot.rimProductUrl || "";
+  input.value = snapshot.rimSourceAttemptUrl || snapshot.rimProductUrl || "";
   field.append(caption, input);
-  const save = createButton({ label: "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value) });
+  const save = createButton({ label: snapshot.draftId ? "Обновить данные" : "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.rimSourceResolving || snapshot.submitting });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     callbacks.saveRimProductUrl?.(input.value);
   });
-  form.append(field, save, createTextAction({ label: "Отмена", onClick: () => callbacks.setSourceEditing?.(false) }));
+  form.append(field);
+  if (snapshot.rimSourceResolving) form.append(statusLine("Получаем данные по ссылке", "pending"));
+  if (snapshot.rimSourceError) {
+    const error = snapshot.rimSourceError;
+    const recovery = document.createElement("div");
+    recovery.className = "vnext-create__source-recovery";
+    recovery.append(statusLine(error.title, "negative", error.body));
+    if (error.auth) recovery.append(createButton({ label: "Войти", variant: "secondary", onClick: callbacks.openAuth }));
+    else if (error.fullResolve) recovery.append(createButton({ label: "Определить автомобиль", variant: "secondary", onClick: callbacks.resolveIdentity }));
+    else {
+      recovery.append(createButton({ label: "Попробовать другую ссылку", variant: "secondary", onClick: () => { input.focus(); input.select(); } }));
+      if (error.retryable) recovery.append(createButton({ label: "Повторить", variant: "secondary", onClick: callbacks.retryRimSource }));
+    }
+    if (error.manualFallback) recovery.append(createButton({ label: "Загрузить вручную", variant: "secondary", onClick: callbacks.manualRimRecovery }));
+    form.append(recovery);
+  }
+  const cancel = createTextAction({ label: "Отмена", onClick: () => callbacks.setSourceEditing?.(false) });
+  cancel.disabled = Boolean(snapshot.rimSourceResolving);
+  form.append(save, cancel);
   return form;
 }
 
@@ -214,7 +242,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 
   const pair = document.createElement("div");
   pair.className = "vnext-create__pair";
-  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting || snapshot.identityResolving), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting || snapshot.identityResolving));
+  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting || snapshot.identityResolving || snapshot.rimSourceResolving), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting || snapshot.identityResolving || snapshot.rimSourceResolving));
   page.append(pair);
 
   if (snapshot.bothReady && !snapshot.consentAccepted) {
@@ -280,7 +308,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
   const actions = document.createElement("div");
   actions.className = "vnext-create__actions";
   const hasIdentity = Boolean(snapshot.draftId && snapshot.selectedVehicle);
-  const canStart = snapshot.bothReady && snapshot.consentAccepted && hasIdentity && !snapshot.submitting && !snapshot.identityResolving && !snapshot.vehicleEditing;
+  const canStart = snapshot.bothReady && snapshot.consentAccepted && hasIdentity && !snapshot.submitting && !snapshot.identityResolving && !snapshot.vehicleEditing && !snapshot.rimSourceResolving && !snapshot.rimAssetPreviewPending && snapshot.proposal?.rim?.variant_state !== "selection_required";
   let primaryAction = null;
   if (snapshot.proposal && !snapshot.identityResolving) {
     primaryAction = createButton({ label: "Создать изображение", onClick: callbacks.createImage, disabled: !canStart });
@@ -288,7 +316,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
   } else if (snapshot.bothReady && snapshot.consentAccepted && !snapshot.identityResolving) {
     actions.append(createButton({ label: "Определить автомобиль", onClick: callbacks.resolveIdentity }));
   }
-  const fitmentReady = Boolean(snapshot.fitmentJobId && snapshot.resultUrl && hasIdentity && !snapshot.submitting);
+  const fitmentReady = Boolean(snapshot.fitmentJobId && snapshot.resultUrl && hasIdentity && !snapshot.submitting && !snapshot.rimSourceResolving && !snapshot.rimAssetPreviewPending);
   actions.append(createButton({ label: "Проверить совместимость", variant: "secondary", onClick: callbacks.checkCompatibility, disabled: !fitmentReady }));
   page.append(actions);
   return page;

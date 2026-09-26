@@ -1366,6 +1366,13 @@ const state = {
     identityProposal: null,
     identityResolving: false,
     identityError: "",
+    rimSourceResolving: false,
+    rimSourceStatus: "idle",
+    rimSourceError: null,
+    rimSourceAttemptUrl: "",
+    rimSourceRequest: 0,
+    rimAssetPreviewPending: false,
+    confirmedCreateVehicle: null,
     selectedVehicleIndex: null,
     manualVehicleMode: false,
     vnextCreateVehicleEditing: false,
@@ -9833,6 +9840,13 @@ function renderPreviewFromFile(kind, fileLike) {
 }
 
 function resetIdentityState() {
+    state.rimSourceRequest += 1;
+    state.rimSourceResolving = false;
+    state.rimSourceStatus = "idle";
+    state.rimSourceError = null;
+    state.rimSourceAttemptUrl = "";
+    state.rimAssetPreviewPending = false;
+    state.confirmedCreateVehicle = null;
     state.identityDraftId = "";
     state.createJobDraftId = "";
     state.identityProposal = null;
@@ -9855,6 +9869,7 @@ function identityVehicles() {
 }
 
 function selectedVehicleCandidate() {
+    if (state.confirmedCreateVehicle && !state.manualVehicleMode) return state.confirmedCreateVehicle;
     const vehicles = identityVehicles();
     if (vehicles.length && !state.manualVehicleMode) {
         return Number.isInteger(state.selectedVehicleIndex) && state.selectedVehicleIndex >= 0
@@ -9876,7 +9891,9 @@ function selectedVehicleCandidate() {
 
 function selectedRimProposal() {
     const productUrl = state.rimProductUrl.trim();
+    if (state.identityProposal?.rim?.status === "resolved" && state.identityProposal.rim.product_url === productUrl) return { ...state.identityProposal.rim };
     return {
+        ...state.identityProposal?.rim,
         product_url: productUrl || null,
         confidence: productUrl ? 1 : 0,
         source: productUrl ? "user_input" : "unknown",
@@ -10058,6 +10075,11 @@ function vnextCreateSnapshot() {
         draftId: state.identityDraftId,
         rimProductUrl: state.rimProductUrl,
         sourceEditing: state.vnextCreateSourceEditing,
+        rimSourceResolving: state.rimSourceResolving,
+        rimSourceStatus: state.rimSourceStatus,
+        rimSourceError: state.rimSourceError,
+        rimSourceAttemptUrl: state.rimSourceAttemptUrl,
+        rimAssetPreviewPending: state.rimAssetPreviewPending,
         submitting: state.submitting,
         renderStatus: document.querySelector("[data-status-text]")?.textContent || "",
         renderError: document.querySelector("[data-error-title]")?.textContent && !document.querySelector("[data-error]")?.hidden
@@ -10079,7 +10101,7 @@ window.dreamwheelsCreateBridge = {
     handleIdentityError() { document.querySelector("[data-identity-error-action]")?.click(); },
     createImage() { return submitJob(); },
     checkCompatibility() {
-        if (state.jobId && state.createJobDraftId === state.identityDraftId && state.resultUrl) {
+        if (!state.rimSourceResolving && !state.rimAssetPreviewPending && state.jobId && state.createJobDraftId === state.identityDraftId && state.resultUrl) {
             void openFitmentView(state.jobId, { originView: "create" });
         }
     },
@@ -10098,6 +10120,7 @@ window.dreamwheelsCreateBridge = {
         if (accepted && state.files.car?.blob && state.files.wheel?.blob && !state.identityProposal) void resolveIdentity();
     },
     chooseVehicle(index) {
+        state.confirmedCreateVehicle = null;
         state.manualVehicleMode = false;
         state.selectedVehicleIndex = Number(index);
         state.vnextCreateVehicleEditing = false;
@@ -10113,11 +10136,9 @@ window.dreamwheelsCreateBridge = {
         state.vnextCreateSourceEditing = Boolean(enabled);
         notifyCreateBridge();
     },
-    saveRimProductUrl(value) {
-        state.rimProductUrl = String(value || "").trim();
-        state.vnextCreateSourceEditing = false;
-        notifyCreateBridge();
-    },
+    saveRimProductUrl(value) { return saveCreateRimSource(value); },
+    retryRimSource() { return retryCreateRimSource(); },
+    manualRimRecovery() { document.querySelector('input[data-input="wheel"]')?.click(); },
     setManualVehicleMode(enabled) {
         state.vnextCreateManualOriginalMode = state.manualVehicleMode;
         const current = selectedVehicleCandidate();
@@ -10145,12 +10166,148 @@ window.dreamwheelsCreateBridge = {
             state.manualVehicleMode = previousMode;
             return;
         }
+        state.confirmedCreateVehicle = null;
         state.vnextCreateVehicleEditing = false;
         renderIdentityFlow();
         notifyCreateBridge();
     },
     surfaceMounted() { hideMainButton(); setBackButton(null); },
 };
+
+function createRimSourceError(code, retryable = false, manualFallback = true) {
+    const stale = code === "identity_draft_rim_revision_conflict";
+    const unavailable = code === "identity_draft_unavailable";
+    const auth = code === "identity_auth_required";
+    return {
+        code, retryable, manualFallback,
+        title: stale ? "Данные диска изменились" : unavailable ? "Черновик недоступен" : auth ? "Войдите снова" : "Не удалось получить данные по ссылке",
+        body: stale ? "Актуальные данные восстановлены. Повторите обновление ссылки." : unavailable ? "Определите автомобиль заново, чтобы продолжить." : auth ? "Восстановите сессию и повторите действие." : "Попробуйте другую ссылку или загрузите изображение диска вручную",
+        fullResolve: unavailable,
+        auth,
+    };
+}
+
+async function loadCreateRimAsset(data, request) {
+    const response = await authenticatedFetch(
+        apiUrl(`/identity/drafts/${encodeURIComponent(data.draft_id)}/assets/${encodeURIComponent(data.rim_asset_id)}`, { includeIdentity: true }),
+        { headers: withAuthHeaders() }
+    );
+    if (!response.ok) throw new Error("rim_source_image_fetch_failed");
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/") || !blob.size) throw new Error("rim_source_image_unavailable");
+    const bytes = await blob.arrayBuffer();
+    if (request !== state.rimSourceRequest) return;
+    const file = { blob, name: [data.rim?.brand, data.rim?.model].filter(Boolean).join(" ") || "Фото колесного диска", size: blob.size, type: blob.type };
+    state.files.wheel = file;
+    state.rimAssetPreviewPending = false;
+    renderPreviewFromFile("wheel", file);
+    void saveDraftFile("wheel", file, bytes);
+}
+
+async function saveCreateRimSource(value) {
+    if (state.rimSourceResolving || state.identityResolving || state.submitting || state.vnextCreateVehicleEditing) return;
+    const url = String(value || "").trim();
+    if (!state.identityDraftId || !state.identityProposal) {
+        state.rimProductUrl = url;
+        state.vnextCreateSourceEditing = false;
+        notifyCreateBridge();
+        return;
+    }
+    state.rimSourceAttemptUrl = url;
+    state.rimSourceError = null;
+    state.vnextCreateSourceEditing = true;
+    try {
+        if (new URL(url).protocol !== "https:") throw new Error();
+    } catch {
+        state.rimSourceStatus = "error";
+        state.rimSourceError = createRimSourceError("invalid_rim_product_url");
+        notifyCreateBridge();
+        return;
+    }
+    const request = ++state.rimSourceRequest;
+    const draftId = state.identityDraftId;
+    const vehicle = selectedVehicleCandidate();
+    state.rimSourceResolving = true;
+    state.rimSourceStatus = "loading";
+    notifyCreateBridge();
+    const body = new FormData();
+    body.append("draft_id", draftId);
+    body.append("rim_product_url", url);
+    if (vehicle) {
+        body.append("vehicle", JSON.stringify(vehicle));
+        body.append("vehicle_user_confirmed", "true");
+    }
+    const identity = getIdentityPayload({ includeTelegramUserId: true });
+    if (identity.init_data) body.append("init_data", identity.init_data);
+    if (identity.telegram_user_id != null) body.append("telegram_user_id", String(identity.telegram_user_id));
+    try {
+        const response = await authenticatedFetch(apiUrl("/identity/resolve"), { method: "POST", headers: withAuthHeaders(), body });
+        const data = await response.json().catch(() => ({}));
+        if (request !== state.rimSourceRequest || draftId !== state.identityDraftId) return;
+        if (!response.ok) {
+            const detail = data.detail || {};
+            const code = response.status === 401 || response.status === 403 ? "identity_auth_required" : detail.error_code || "rim_source_fetch_failed";
+            if (code === "identity_draft_unavailable") {
+                state.confirmedCreateVehicle = vehicle;
+                state.identityDraftId = "";
+                state.createJobDraftId = "";
+            }
+            if (code === "identity_draft_rim_revision_conflict" && detail.current_draft?.draft_id === draftId) {
+                state.identityProposal = { ...state.identityProposal, rim: detail.current_draft.rim, rimAssetId: detail.current_draft.rim_asset_id };
+                state.rimProductUrl = detail.current_draft.rim?.product_url || "";
+                state.createJobDraftId = "";
+                state.rimAssetPreviewPending = true;
+                await loadCreateRimAsset(detail.current_draft, request);
+            }
+            state.rimSourceError = createRimSourceError(code, Boolean(detail.retryable), detail.manual_fallback !== false);
+            state.rimSourceStatus = "error";
+            return;
+        }
+        if (data.draft_id !== draftId || !data.rim_asset_id || !data.rim) throw new Error("rim_source_invalid_response");
+        state.identityProposal = { ...state.identityProposal, rim: data.rim, rimAssetId: data.rim_asset_id, confirmed_vehicle: data.confirmed_vehicle || state.identityProposal.confirmed_vehicle };
+        state.rimProductUrl = data.rim.product_url || url;
+        state.createJobDraftId = "";
+        state.rimAssetPreviewPending = true;
+        await loadCreateRimAsset(data, request);
+        if (request !== state.rimSourceRequest) return;
+        state.rimSourceStatus = "success";
+        state.vnextCreateSourceEditing = false;
+    } catch (error) {
+        if (request !== state.rimSourceRequest) return;
+        state.rimSourceStatus = "error";
+        state.rimSourceError = createRimSourceError(error?.message || "rim_source_fetch_failed", true);
+    } finally {
+        if (request === state.rimSourceRequest) {
+            state.rimSourceResolving = false;
+            notifyCreateBridge();
+        }
+    }
+}
+
+async function retryCreateRimSource() {
+    if (!state.rimAssetPreviewPending) return saveCreateRimSource(state.rimSourceAttemptUrl);
+    if (state.rimSourceResolving || state.submitting) return;
+    const request = ++state.rimSourceRequest;
+    state.rimSourceResolving = true;
+    state.rimSourceStatus = "loading";
+    notifyCreateBridge();
+    try {
+        await loadCreateRimAsset({ draft_id: state.identityDraftId, rim_asset_id: state.identityProposal.rimAssetId, rim: state.identityProposal.rim }, request);
+        if (request !== state.rimSourceRequest) return;
+        state.rimSourceStatus = "success";
+        state.rimSourceError = null;
+        state.vnextCreateSourceEditing = false;
+    } catch {
+        if (request !== state.rimSourceRequest) return;
+        state.rimSourceStatus = "error";
+        state.rimSourceError = createRimSourceError("rim_source_image_fetch_failed", true);
+    } finally {
+        if (request === state.rimSourceRequest) {
+            state.rimSourceResolving = false;
+            notifyCreateBridge();
+        }
+    }
+}
 
 function showCreateScreen(name) {
     state.createScreen = name;
@@ -10486,7 +10643,7 @@ function makeIdempotencyKey() {
 }
 
 async function resolveIdentity() {
-    if (state.identityResolving || state.submitting) return;
+    if (state.identityResolving || state.rimSourceResolving || state.submitting) return;
     if (!state.photoConsentAccepted) {
         renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
         refreshButtonsForCurrentView();
@@ -10504,6 +10661,11 @@ async function resolveIdentity() {
 
     state.identityResolving = true;
     state.identityError = "";
+    state.rimSourceRequest += 1;
+    state.rimSourceError = null;
+    state.rimSourceStatus = "idle";
+    state.rimAssetPreviewPending = false;
+    state.vnextCreateSourceEditing = false;
     state.identityProposal = null;
     state.identityDraftId = "";
     renderIdentityFlow();
@@ -10556,6 +10718,8 @@ async function resolveIdentity() {
         }
         state.identityDraftId = data.draft_id || "";
         state.identityProposal = {
+            carAssetId: data.car_asset_id,
+            rimAssetId: data.rim_asset_id,
             vehicle: data.vehicle,
             rim: data.rim,
             pcdDisplay: data.pcd_display,
@@ -10582,7 +10746,7 @@ async function resolveIdentity() {
 }
 
 async function submitJob() {
-    if (state.submitting) return;
+    if (state.submitting || state.rimSourceResolving || state.rimAssetPreviewPending || state.identityProposal?.rim?.variant_state === "selection_required") return;
     state.submitting = true;
     state.createJobDraftId = "";
     showCreateScreen("result");
@@ -10768,7 +10932,10 @@ function classifyGenerationError(message) {
 function handleFileSelected(kind, file) {
     void trackEvent("upload_started", { asset_kind: kind });
     file.arrayBuffer().then((buffer) => {
+        const preservedVehicle = kind === "wheel" ? selectedVehicleCandidate() : null;
         resetIdentityState();
+        state.confirmedCreateVehicle = preservedVehicle;
+        if (kind === "wheel") state.rimProductUrl = "";
         state.files[kind] = {
             blob: new Blob([buffer], { type: file.type }),
             name: file.name,

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, Response, UploadFile
 from pydantic import BaseModel, ValidationError
 
 from src import assets_service, db, identity_service, storage
@@ -304,7 +304,23 @@ async def _resolve_wheel_url_for_draft(
                 if current_proposal is None:
                     raise _wheel_refresh_error(409, "identity_draft_unavailable")
                 if current_proposal.rim.revision != expected_rim_revision:
-                    raise _wheel_refresh_error(409, "identity_draft_rim_revision_conflict")
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "error_code": "identity_draft_rim_revision_conflict",
+                            "retryable": True,
+                            "manual_fallback": True,
+                            "current_draft": IdentityResolveResponse(
+                                draft_id=draft_id,
+                                car_asset_id=current["car_asset_id"],
+                                rim_asset_id=current["rim_asset_id"],
+                                vehicle=current_proposal.vehicle,
+                                confirmed_vehicle=current_proposal.confirmed_vehicle,
+                                rim=current_proposal.rim,
+                                resolver=current_proposal.resolver,
+                            ).model_dump(mode="json"),
+                        },
+                    )
                 if (
                     selected_vehicle is not None
                     and current_proposal.confirmed_vehicle is not None
@@ -356,6 +372,64 @@ async def _resolve_wheel_url_for_draft(
 def _normalization_http_error(exc: ImageNormalizationError) -> HTTPException:
     status_code = 413 if exc.code in {"image_pixel_limit_exceeded", "image_too_large"} else 400
     return HTTPException(status_code=status_code, detail={"error_code": exc.code})
+
+
+@router.get("/drafts/{draft_id}/assets/{asset_id}")
+async def download_identity_rim_asset(
+    draft_id: UUID,
+    asset_id: UUID,
+    init_data: Annotated[str, Query()] = "",
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> Response:
+    """Read only the current rim asset of an owned, usable identity draft."""
+    preflight_auth_credentials(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="identity asset",
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="identity asset",
+        )
+        row = await conn.fetchrow(
+            """
+            SELECT assets.bucket, assets.storage_key, assets.content_type
+            FROM render_input_drafts AS draft
+            JOIN assets ON assets.id = draft.rim_asset_id
+                       AND assets.owner_user_id = draft.owner_user_id
+                       AND assets.render_input_draft_id = draft.id
+                       AND assets.kind = 'rim_original'
+            WHERE draft.id = $1::uuid
+              AND draft.owner_user_id = $2
+              AND draft.status = 'resolved'
+              AND draft.expires_at > CURRENT_TIMESTAMP
+              AND draft.rim_asset_id = $3::uuid
+            """,
+            str(draft_id),
+            principal.user_id,
+            str(asset_id),
+        )
+    if not row:
+        raise _wheel_refresh_error(404, "identity_draft_unavailable")
+    try:
+        content = await storage.download_bytes(bucket=row["bucket"], path=row["storage_key"])
+    except storage.StorageError as exc:
+        logger.exception(
+            "identity_asset_download_failed draft_id=%s asset_id=%s", draft_id, asset_id
+        )
+        raise _wheel_refresh_error(502, "rim_source_image_fetch_failed", retryable=True) from exc
+    return Response(
+        content=content,
+        media_type=row["content_type"] or "application/octet-stream",
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @router.post("/resolve", response_model=IdentityResolveResponse)
