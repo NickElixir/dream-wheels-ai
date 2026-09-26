@@ -83,6 +83,17 @@ class RimProductImage:
 MAX_PRODUCT_IMAGE_BYTES = 12 * 1024 * 1024
 
 
+async def _read_bounded_body(content: aiohttp.StreamReader, limit: int) -> bytes:
+    # read(n) may return a single transport fragment rather than the full body.
+    body = bytearray()
+    while len(body) <= limit:
+        chunk = await content.read(min(64 * 1024, limit + 1 - len(body)))
+        if not chunk:
+            break
+        body.extend(chunk)
+    return bytes(body)
+
+
 def normalized_rim_source_identity(url: str) -> str:
     """A stable source identity, independent of display-only URL fragments."""
     parsed = urlsplit(url)
@@ -556,7 +567,7 @@ async def fetch_public_rim_image(
                             "Product image is too large",
                             reason_code="rim_source_image_too_large",
                         )
-                    data = await response.content.read(MAX_PRODUCT_IMAGE_BYTES + 1)
+                    data = await _read_bounded_body(response.content, MAX_PRODUCT_IMAGE_BYTES)
                     if not data or len(data) > MAX_PRODUCT_IMAGE_BYTES:
                         raise RimUrlError(
                             "Product image is empty or too large",
@@ -607,7 +618,7 @@ async def resolve_rim_product_url(
                             "Product page is not available as a supported document",
                             reason_code="rim_source_unsupported_document",
                         )
-                    body = await response.content.read(limits.max_body_bytes + 1)
+                    body = await _read_bounded_body(response.content, limits.max_body_bytes)
                     if len(body) > limits.max_body_bytes:
                         raise RimUrlError(
                             "Product page is too large",

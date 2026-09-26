@@ -1,7 +1,12 @@
 import asyncio
+import io
+from types import SimpleNamespace
 
 import pytest
+from aiohttp import StreamReader
+from PIL import Image
 
+from src import rim_url_resolver
 from src.rim_url_extract import extract_rim_document
 from src.rim_url_resolver import (
     PublicHttpsPolicy,
@@ -11,6 +16,87 @@ from src.rim_url_resolver import (
     fetch_public_rim_image,
     validate_product_url,
 )
+from src.vision.image_normalization import normalize_image
+
+
+def _fragmented_stream(data: bytes, split: int) -> StreamReader:
+    loop = asyncio.get_running_loop()
+    reader = StreamReader(SimpleNamespace(_reading_paused=False), 65536, loop=loop)
+    reader.feed_data(data[:split])
+
+    def finish() -> None:
+        reader.feed_data(data[split:])
+        reader.feed_eof()
+
+    loop.call_later(0.001, finish)
+    return reader
+
+
+@pytest.mark.parametrize("media_type", ["image/jpeg", "text/html"])
+def test_fetcher_consumes_fragmented_product_and_image_responses(monkeypatch, media_type) -> None:
+    image_buffer = io.BytesIO()
+    Image.new("RGB", (1000, 1000), "gray").save(image_buffer, format="JPEG")
+    image_bytes = image_buffer.getvalue()
+    html = (
+        "<html>"
+        + " " * 8192
+        + '<script type="application/ld+json">'
+        + '{"@type":"Product","brand":"BBS","model":"CH-R","image":"/wheel.jpg"}'
+        + "</script></html>"
+    ).encode()
+    data = image_bytes if media_type.startswith("image/") else html
+
+    class Response:
+        status = 200
+        headers = None
+        content_type = media_type
+        content_length = None
+        charset = "utf-8"
+
+        async def __aenter__(self):
+            self.content = _fragmented_stream(data, 4096)
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    class Session:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        def get(self, *args, **kwargs):
+            return Response()
+
+    monkeypatch.setattr(rim_url_resolver.aiohttp, "TCPConnector", lambda **kwargs: None)
+    monkeypatch.setattr(rim_url_resolver.aiohttp, "ClientSession", Session)
+
+    async def check() -> None:
+        if media_type.startswith("image/"):
+            result = await fetch_public_rim_image("https://shop.example/wheel.jpg")
+            assert result.data == image_bytes
+            normalized = normalize_image(result.data, max_image_edge=1600, max_pixels=40000000)
+            assert (normalized.width, normalized.height) == (1000, 1000)
+        else:
+            result = await rim_url_resolver.resolve_rim_product_url("https://shop.example/product")
+            assert result.values["model"] == "CH-R"
+            assert result.image_urls == ("https://shop.example/wheel.jpg",)
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("data,limit", [(b"", 8), (b"12345678", 8), (b"123456789abcdef", 8)])
+def test_bounded_reader_preserves_empty_exact_limit_and_oversize_detection(data, limit) -> None:
+    async def check() -> None:
+        result = await rim_url_resolver._read_bounded_body(_fragmented_stream(data, 2), limit)
+        assert result == data[: limit + 1]
+
+    asyncio.run(check())
 
 
 def test_product_url_policy_accepts_any_public_hostname_but_not_unsafe_urls() -> None:
