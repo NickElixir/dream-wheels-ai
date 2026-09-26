@@ -160,3 +160,30 @@ test("Create bridge delegates rendering independently of Fitment and only hands 
   app.bridge.checkCompatibility();
   assert.deepEqual(checked, [["job", "create"]]);
 });
+
+test("completed Create render accepts the staging job result contract and enables Fitment", async () => {
+  const app = runtime();
+  app.state.photoConsentAccepted = true;
+  app.state.identityDraftId = "draft";
+  app.state.identityProposal = { vehicle: { primary: { make: "Audi", model: "Q8" }, alternatives: [] }, rim: {} };
+  app.bridge.chooseVehicle(0);
+  app.state.files.car = { blob: new Blob(["car"]), name: "car.jpg" };
+  app.state.files.wheel = { blob: new Blob(["wheel"]), name: "wheel.jpg" };
+  app.setFetch(async (path) => {
+    if (path === "/jobs/from-assets") return { ok: true, json: async () => ({ job_id: "render-job" }) };
+    assert.equal(path, "/jobs/render-job");
+    return {
+      ok: true,
+      json: async () => ({
+        status: "completed",
+        output_image_url: "https://assets.example/result.png",
+        assets: { result: { url: "https://assets.example/result.png" } },
+      }),
+    };
+  });
+
+  await app.bridge.createImage();
+
+  assert.equal(app.state.resultUrl, "https://assets.example/result.png");
+  assert.equal(app.bridge.snapshot().fitmentJobId, "render-job");
+});
