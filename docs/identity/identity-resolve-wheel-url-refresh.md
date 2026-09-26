@@ -119,6 +119,47 @@ Operational error details include `error_code`, `retryable`, and
 | `rim_source_asset_upload_failed` | Resolved image could not be stored; retry after storage recovers. |
 | `identity_draft_rim_revision_conflict` | A newer wheel update won the race; reload the draft before retrying. |
 
+### Private preview and conflict recovery (PR3B)
+
+The user-approved PR3B addition exposes only the current rim image of an owned,
+resolved, unexpired draft:
+
+```text
+GET /identity/drafts/{draft_id}/assets/{asset_id}
+Authorization: Bearer <existing session token>
+```
+
+Telegram credentials use the existing `init_data` query authentication path.
+An unsigned browser-supplied `telegram_user_id` is not authority outside the
+existing explicitly enabled development fallback. The query checks ownership
+of both draft and asset, their association, the `rim_original` kind, and that
+the requested asset is the draft's current `rim_asset_id`. Missing, foreign,
+expired or superseded assets return `identity_draft_unavailable`; storage
+failure returns `rim_source_image_fetch_failed` (502, retryable).
+
+Success returns image bytes with the stored content type and
+`Cache-Control: private, no-store`. No storage credentials, public bucket, or
+external image hotlink is exposed. Create fetches these bytes with its existing
+authenticated fetch, replaces its wheel blob preview, and preserves local
+IndexedDB file recovery. If this download fails after resolution committed,
+explicit retry fetches the same current asset without re-running the parser.
+
+An optimistic revision conflict now adds `detail.current_draft`, using the
+existing `IdentityResolveResponse` shape, to the existing 409 error. Create
+restores only current rim/asset state, preserves local confirmed vehicle and
+original recognition, invalidates its current render association, and requires
+explicit user action to retry the URL. This is additive: existing full-resolve
+request and response contracts are unchanged.
+
+Create sends `draft_id` + `rim_product_url` and, when selected, `vehicle` JSON +
+`vehicle_user_confirmed=true`, with existing authentication. No vehicle or wheel
+file is submitted in this mode, and no render or Fitment action is started.
+`variant_state=selection_required` is displayed without fabricated variant
+choices or specs; manual wheel upload remains available. Selecting a manual
+wheel preserves the car file and confirmed vehicle, then delegates to the
+existing full identity flow. `none` and `selected` retain existing Create
+readiness. Previous render snapshots/history remain immutable.
+
 ### Staging prerequisite
 
 Live product URL resolution requires the backend environment setting:

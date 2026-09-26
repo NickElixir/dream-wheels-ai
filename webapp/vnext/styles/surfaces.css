@@ -42,7 +42,10 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-create__stage:focus-visible, .vnext-create__vehicle-option:focus-visible { outline: 2px solid var(--vnext-text-secondary); outline-offset: 3px; }
 .vnext-create__object-heading .vnext-text-action { min-height: 44px; }
 .vnext-create__source-section { display: grid; gap: var(--vnext-space-2); max-width: 760px; }
-.vnext-create__source-form { display: flex; align-items: end; gap: var(--vnext-space-3); max-width: 760px; padding-top: var(--vnext-space-3); }
+.vnext-create__source-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--vnext-space-3); max-width: 760px; padding-top: var(--vnext-space-3); }
+.vnext-create__source-form > .vnext-create__status, .vnext-create__source-recovery { flex-basis: 100%; min-width: 0; }
+.vnext-create__source-recovery { display: flex; flex-wrap: wrap; gap: var(--vnext-space-2); }
+.vnext-create__source-recovery > .vnext-create__status { width: 100%; overflow-wrap: anywhere; }
 .vnext-create__source-form .vnext-field { flex: 1; min-width: 0; }
 .vnext-create__source-form input { width: 100%; height: 44px; border: 1px solid var(--vnext-border-strong); border-radius: 7px; background: #0a0d10; color: var(--vnext-text); padding: 0 11px; }
 .vnext-create__consent { display: flex; align-items: flex-start; gap: 10px; max-width: 860px; color: var(--vnext-text-secondary); font-size: 13px; }

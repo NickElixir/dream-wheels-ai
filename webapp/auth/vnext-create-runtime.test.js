@@ -45,6 +45,168 @@ globalThis.api = { state, bridge: window.dreamwheelsCreateBridge, resolveIdentit
   return { ...context.api, revoked };
 }
 
+function resolvedRuntime() {
+  const app = runtime();
+  app.state.identityDraftId = "draft";
+  app.state.identityProposal = { vehicle: { primary: { make: "Audi", model: "Q8" }, alternatives: [] }, rim: { revision: 1 }, rimAssetId: "old-rim" };
+  app.bridge.chooseVehicle(0);
+  app.state.files.car = { blob: new Blob(["car"]), name: "car.jpg" };
+  app.state.files.wheel = { blob: new Blob(["old wheel"]), name: "wheel.jpg" };
+  app.state.previewUrls = { car: "blob:car", wheel: "blob:old-wheel" };
+  app.state.jobId = "old-job";
+  app.state.createJobDraftId = "draft";
+  app.state.resultUrl = "/old-result.jpg";
+  return app;
+}
+
+const refreshed = (url, rim = {}) => ({ draft_id: "draft", rim_asset_id: "new-rim", rim: { status: "resolved", revision: 2, product_url: url, brand: "BBS", offset_et_mm: 0, variant_state: "none", ...rim } });
+const imageResponse = () => ({ ok: true, blob: async () => new Blob(["parsed image"], { type: "image/png" }) });
+
+test("wheel URL refresh sends only draft and URL, preserves corrected vehicle, loads private image and invalidates current render", async () => {
+  const app = resolvedRuntime();
+  app.bridge.setManualVehicleMode(true);
+  app.bridge.saveManualVehicle({ make: "Audi", model: "Q7", year: "2022" });
+  const originalVehicle = app.state.identityProposal.vehicle;
+  const carFile = app.state.files.car;
+  const requests = [];
+  app.setFetch(async (path, options) => {
+    requests.push(path);
+    assert.equal(options.headers.Authorization, "Bearer test-token");
+    if (path !== "/identity/resolve") return imageResponse();
+    assert.equal(options.body.get("draft_id"), "draft");
+    assert.equal(options.body.get("rim_product_url"), "https://shop.example/new");
+    assert.equal(options.body.has("car_image"), false);
+    assert.equal(options.body.has("wheel_image"), false);
+    assert.equal(JSON.parse(options.body.get("vehicle")).model, "Q7");
+    assert.equal(options.body.get("vehicle_user_confirmed"), "true");
+    return { ok: true, json: async () => refreshed("https://shop.example/new") };
+  });
+  await app.bridge.saveRimProductUrl("https://shop.example/new");
+  assert.deepEqual(requests, ["/identity/resolve", "/identity/drafts/draft/assets/new-rim"]);
+  assert.equal(app.state.identityProposal.vehicle, originalVehicle);
+  assert.equal(app.state.files.car, carFile);
+  assert.equal(app.bridge.snapshot().selectedVehicle.model, "Q7");
+  assert.equal(app.state.rimSourceStatus, "success");
+  assert.equal(app.state.rimSourceResolving, false);
+  assert.equal(app.state.rimAssetPreviewPending, false);
+  assert.equal(app.state.identityProposal.rim.offset_et_mm, 0);
+  assert.equal(app.state.identityProposal.rim.center_bore_mm, undefined);
+  assert.equal(app.state.previewUrls.car, "blob:car");
+  assert.deepEqual(app.revoked, ["blob:old-wheel"]);
+  assert.equal(app.bridge.snapshot().fitmentJobId, "");
+  assert.equal(app.state.resultUrl, "/old-result.jpg", "previous result remains immutable");
+});
+
+test("provider failure keeps previous wheel and draft usable; another URL retries explicitly", async () => {
+  const app = resolvedRuntime();
+  const oldRim = app.state.identityProposal.rim;
+  const oldWheel = app.state.files.wheel;
+  let calls = 0;
+  app.setFetch(async (path) => {
+    if (path !== "/identity/resolve") return imageResponse();
+    calls++;
+    return calls === 1
+      ? { ok: false, status: 502, json: async () => ({ detail: { error_code: "rim_source_fetch_failed", retryable: true, manual_fallback: true } }) }
+      : { ok: true, json: async () => refreshed("https://shop.example/retry") };
+  });
+  await app.bridge.saveRimProductUrl("https://shop.example/fails");
+  assert.equal(app.state.identityProposal.rim, oldRim);
+  assert.equal(app.state.files.wheel, oldWheel);
+  assert.equal(app.bridge.snapshot().fitmentJobId, "old-job");
+  assert.equal(app.state.rimSourceError.manualFallback, true);
+  assert.equal(app.state.rimSourceResolving, false);
+  assert.equal(calls, 1);
+  await app.bridge.saveRimProductUrl("https://shop.example/retry");
+  assert.equal(calls, 2);
+  assert.equal(app.state.rimSourceStatus, "success");
+});
+
+test("image download retry never re-runs a committed URL resolution", async () => {
+  const app = resolvedRuntime();
+  let resolves = 0;
+  let downloads = 0;
+  app.setFetch(async (path) => {
+    if (path === "/identity/resolve") {
+      resolves++;
+      return { ok: true, json: async () => refreshed("https://shop.example/new") };
+    }
+    downloads++;
+    return downloads === 1 ? { ok: false } : imageResponse();
+  });
+  await app.bridge.saveRimProductUrl("https://shop.example/new");
+  assert.equal(app.state.rimAssetPreviewPending, true);
+  assert.equal(app.state.rimSourceStatus, "error");
+  await app.bridge.retryRimSource();
+  assert.equal(resolves, 1);
+  assert.equal(downloads, 2);
+  assert.equal(app.state.rimAssetPreviewPending, false);
+});
+
+test("revision conflict restores server rim without silently retrying or overwriting vehicle", async () => {
+  const app = resolvedRuntime();
+  const vehicle = app.state.identityProposal.vehicle;
+  let resolves = 0;
+  app.setFetch(async (path) => {
+    if (path !== "/identity/resolve") return imageResponse();
+    resolves++;
+    return { ok: false, status: 409, json: async () => ({ detail: { error_code: "identity_draft_rim_revision_conflict", retryable: true, current_draft: refreshed("https://shop.example/current", { revision: 3 }) } }) };
+  });
+  await app.bridge.saveRimProductUrl("https://shop.example/race");
+  assert.equal(resolves, 1);
+  assert.equal(app.state.identityProposal.rim.revision, 3);
+  assert.equal(app.state.rimProductUrl, "https://shop.example/current");
+  assert.equal(app.state.identityProposal.vehicle, vehicle);
+  assert.equal(app.state.rimSourceError.code, "identity_draft_rim_revision_conflict");
+  assert.equal(app.bridge.snapshot().fitmentJobId, "");
+});
+
+test("unavailable draft and expired auth surface recovery; URL flow never starts render", async () => {
+  for (const [status, code] of [[404, "identity_draft_unavailable"], [401, "identity_auth_required"]]) {
+    const app = resolvedRuntime();
+    app.setFetch(async () => ({ ok: false, status, json: async () => ({ detail: { error_code: code } }) }));
+    await app.bridge.saveRimProductUrl("https://shop.example/new");
+    assert.equal(app.state.rimSourceError.code, code);
+    assert.equal(app.state.rimSourceResolving, false);
+    assert.equal(app.state.files.car.name, "car.jpg");
+    if (status === 404) assert.equal(app.state.identityDraftId, "");
+    else assert.equal(app.state.rimSourceError.auth, true);
+  }
+});
+
+test("manual wheel fallback preserves car and selected correction; replacing car resets correction", async () => {
+  for (const kind of ["wheel", "car"]) {
+    const app = resolvedRuntime();
+    app.bridge.setManualVehicleMode(true);
+    app.bridge.saveManualVehicle({ make: "Audi", model: "Q7", year: "2022" });
+    const car = app.state.files.car;
+    app.handleFileSelected(kind, { name: "manual.png", size: 3, type: "image/png", arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer });
+    await Promise.resolve();
+    await Promise.resolve();
+    if (kind === "wheel") {
+      assert.equal(app.state.files.car, car);
+      assert.equal(app.bridge.snapshot().selectedVehicle.model, "Q7");
+      assert.equal(app.state.rimProductUrl, "");
+    } else assert.equal(app.bridge.snapshot().selectedVehicle, null);
+  }
+});
+
+test("duplicate clicks and obsolete URL responses never replace a newly selected manual wheel", async () => {
+  const app = resolvedRuntime();
+  let finish;
+  let calls = 0;
+  app.setFetch(() => { calls++; return new Promise((resolve) => { finish = resolve; }); });
+  const pending = app.bridge.saveRimProductUrl("https://shop.example/slow");
+  await app.bridge.saveRimProductUrl("https://shop.example/duplicate");
+  assert.equal(calls, 1);
+  app.handleFileSelected("wheel", { name: "manual.png", size: 3, type: "image/png", arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer });
+  await Promise.resolve();
+  finish({ ok: true, json: async () => refreshed("https://shop.example/slow") });
+  await pending;
+  assert.equal(app.state.files.wheel.name, "manual.png");
+  assert.equal(app.state.identityDraftId, "");
+  assert.equal(app.state.rimSourceStatus, "idle");
+});
+
 test("full identity sends both files and auth, releases loading after failure, and retries the same flow", async () => {
   const app = runtime();
   app.state.photoConsentAccepted = true;

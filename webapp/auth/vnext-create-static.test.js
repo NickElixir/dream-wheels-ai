@@ -14,7 +14,7 @@ test("VNext Create is mounted as a presentation-only surface over legacy runtime
   assert.match(bootstrap, /dreamwheelsCreateBridge\?\.snapshot\(\)/);
   assert.match(app, /createImage\(\)\s*\{\s*return submitJob\(\)/);
   assert.match(app, /handleGenerationError\(\)/);
-  assert.match(app, /checkCompatibility\(\)[\s\S]{0,140}openFitmentView\(state\.jobId, \{ originView: "create" \}\)/);
+  assert.match(app, /checkCompatibility\(\)[\s\S]{0,280}openFitmentView\(state\.jobId, \{ originView: "create" \}\)/);
   assert.match(app, /formData\.append\("car_image", state\.files\.car\.blob/);
   assert.match(app, /formData\.append\("wheel_image", state\.files\.wheel\.blob/);
   assert.match(app, /if \(state\.rimProductUrl\.trim\(\)\) formData\.append\("rim_product_url"/);
@@ -37,5 +37,6 @@ test("Create view source covers upload, consent, full identity, retry and both e
   assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.vnext-create__pair, \.vnext-create__summary\s*\{\s*grid-template-columns:\s*1fr/);
   assert.match(view, /https:\/\/legal\.dreamwheels\.pro\/legal\/privacy/);
   assert.match(view, /https:\/\/legal\.dreamwheels\.pro\/legal\/consent/);
-  assert.doesNotMatch(view, /parser loading|parser error|wheel-only|variant_state/i);
+  assert.match(view, /variant_state === "selection_required"/);
+  assert.match(view, /Получаем данные по ссылке/);
 });

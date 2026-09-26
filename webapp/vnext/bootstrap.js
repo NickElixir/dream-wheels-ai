@@ -17,6 +17,7 @@ let mountedCreateContent = null;
 
 function createCallbacks() {
   return {
+    openAuth: legacyOpenAuth,
     pickFile: (kind) => window.dreamwheelsCreateBridge?.pickFile(kind),
     clearFile: (kind) => window.dreamwheelsCreateBridge?.clearFile(kind),
     resolveIdentity: () => window.dreamwheelsCreateBridge?.resolveIdentity(),
@@ -30,6 +31,8 @@ function createCallbacks() {
     cancelVehicleEditing: () => window.dreamwheelsCreateBridge?.cancelVehicleEditing(),
     setSourceEditing: (enabled) => window.dreamwheelsCreateBridge?.setSourceEditing(enabled),
     saveRimProductUrl: (value) => window.dreamwheelsCreateBridge?.saveRimProductUrl(value),
+    retryRimSource: () => window.dreamwheelsCreateBridge?.retryRimSource(),
+    manualRimRecovery: () => window.dreamwheelsCreateBridge?.manualRimRecovery(),
     saveManualVehicle: (values) => window.dreamwheelsCreateBridge?.saveManualVehicle(values),
     setManualVehicleMode: (enabled) => window.dreamwheelsCreateBridge?.setManualVehicleMode(enabled),
     retryIdentity: () => window.dreamwheelsCreateBridge?.resolveIdentity(),
