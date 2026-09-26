@@ -79,6 +79,7 @@ function mountSurface(view, { force = false } = {}) {
   mountedRoot = host;
   mountedView = view;
   document.body.classList.add("vnext-surface-active");
+  if (view === "create") window.DreamWheelsLegacy?.syncCreateChrome?.();
 }
 
 function applyView(view) {
