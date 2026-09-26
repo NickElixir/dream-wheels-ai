@@ -1369,6 +1369,15 @@ const state = {
     manualVehicleMode: false,
     manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
     rimProductUrl: "",
+    resolvedRimPreviewUrl: "",
+    createParserStatus: "idle",
+    createParserError: "",
+    createGenerationError: "",
+    manualRim: {
+        brand: "", model: "", sku: "", wheel_diameter_in: "", wheel_width_j: "",
+        bolt_count: "", pcd_mm: "", center_bore_mm: "", offset_et_mm: "",
+    },
+    manualRimEdited: false,
     jobId: null,
     resultUrl: null,
     resultDownloadUrl: null,
@@ -9612,6 +9621,44 @@ window.DreamWheelsLegacy = Object.freeze({
     dashboardSnapshot() {
         return vnextDashboardSnapshot();
     },
+    createSnapshot() {
+        return vnextCreateSnapshot();
+    },
+    selectCreateFile(kind, file) {
+        if (kind === "car" || kind === "wheel") handleFileSelected(kind, file);
+    },
+    clearCreateFile(kind) {
+        if (kind === "car" || kind === "wheel") clearSelectedFile(kind);
+    },
+    setCreatePhotoConsent(accepted) {
+        persistPhotoConsent(Boolean(accepted));
+        renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+        renderIdentityFlow();
+        if (accepted && state.files.car?.blob && state.files.wheel?.blob && !state.identityProposal) {
+            void resolveIdentity();
+        }
+    },
+    resolveCreateIdentity() {
+        return resolveIdentity();
+    },
+    refreshCreateWheelUrl(productUrl) {
+        return refreshCreateWheelFromUrl(productUrl);
+    },
+    saveCreateVehicle(fields) {
+        saveCreateVehicle(fields);
+    },
+    saveCreateWheel(fields) {
+        saveCreateWheel(fields);
+    },
+    createImage() {
+        return submitJob();
+    },
+    checkCreateCompatibility() {
+        return undefined;
+    },
+    syncCreateChrome() {
+        refreshButtonsForCurrentView();
+    },
     openRenderDetail(jobId) {
         if (jobId) openRenderDetail(jobId, "dashboard");
     },
@@ -9811,20 +9858,33 @@ function syncPreviewGeometry(kind) {
     media.style.setProperty("--preview-aspect-ratio", `${img.naturalWidth} / ${img.naturalHeight}`);
 }
 
+function revokeResolvedRimPreviewUrl() {
+    if (!state.resolvedRimPreviewUrl) return;
+    URL.revokeObjectURL(state.resolvedRimPreviewUrl);
+    state.resolvedRimPreviewUrl = "";
+}
+
 function renderPreviewFromFile(kind, fileLike) {
     revokePreviewUrl(kind);
+    if (!fileLike?.blob) return;
+    const objectUrl = URL.createObjectURL(fileLike.blob);
+    state.previewUrls[kind] = objectUrl;
+    if (kind === "wheel") revokeResolvedRimPreviewUrl();
+
     const img = document.querySelector(`[data-preview-img="${kind}"]`);
     const preview = document.querySelector(`[data-preview="${kind}"]`);
     const zone = document.querySelector(`[data-upload-zone="${kind}"]`);
-    if (!img || !preview || !zone || !fileLike?.blob) return;
-    const objectUrl = URL.createObjectURL(fileLike.blob);
-    state.previewUrls[kind] = objectUrl;
+    if (!img || !preview || !zone) {
+        emitVNextCreateChange();
+        return;
+    }
     resetPreviewGeometry(kind);
     img.onload = () => syncPreviewGeometry(kind);
     img.src = objectUrl;
     preview.hidden = false;
     zone.hidden = true;
     if (img.complete) syncPreviewGeometry(kind);
+    emitVNextCreateChange();
 }
 
 function resetIdentityState() {
@@ -9835,6 +9895,15 @@ function resetIdentityState() {
     state.selectedVehicleIndex = null;
     state.manualVehicleMode = false;
     state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
+    state.manualRim = {
+        brand: "", model: "", sku: "", wheel_diameter_in: "", wheel_width_j: "",
+        bolt_count: "", pcd_mm: "", center_bore_mm: "", offset_et_mm: "",
+    };
+    state.manualRimEdited = false;
+    state.createParserStatus = "idle";
+    state.createParserError = "";
+    state.createGenerationError = "";
+    revokeResolvedRimPreviewUrl();
     renderIdentityFlow();
 }
 
@@ -9865,13 +9934,208 @@ function selectedVehicleCandidate() {
     };
 }
 
+function nullableCreateNumber(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const normalized = String(value).replace(",", ".");
+    const numeric = Number(normalized);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
 function selectedRimProposal() {
     const productUrl = state.rimProductUrl.trim();
+    const proposal = state.identityProposal?.rim || {};
+    const manual = state.manualRimEdited ? state.manualRim : {};
+    const value = (field) => Object.hasOwn(manual, field)
+        ? (manual[field] === "" ? null : manual[field])
+        : (proposal[field] ?? null);
     return {
-        product_url: productUrl || null,
-        confidence: productUrl ? 1 : 0,
-        source: productUrl ? "user_input" : "unknown",
+        brand: value("brand"),
+        model: value("model"),
+        sku: value("sku"),
+        product_url: productUrl || proposal.product_url || null,
+        wheel_diameter_in: nullableCreateNumber(value("wheel_diameter_in")),
+        wheel_width_j: nullableCreateNumber(value("wheel_width_j")),
+        bolt_count: nullableCreateNumber(value("bolt_count")),
+        pcd_mm: nullableCreateNumber(value("pcd_mm")),
+        center_bore_mm: nullableCreateNumber(value("center_bore_mm")),
+        offset_et_mm: nullableCreateNumber(value("offset_et_mm")),
+        confidence: state.manualRimEdited ? 1 : Number(proposal.confidence || (productUrl ? 1 : 0)),
+        source: state.manualRimEdited ? "user_input" : (proposal.source || (productUrl ? "user_input" : "unknown")),
+        variant_state: proposal.variant_state || "none",
+        selected_variant_sku: proposal.selected_variant_sku ?? null,
     };
+}
+
+function emitVNextCreateChange() {
+    if (typeof CustomEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent("dreamwheels:createchange"));
+}
+
+function vnextCreateSnapshot() {
+    const vehicle = selectedVehicleCandidate() || state.identityProposal?.confirmedVehicle || identityVehicles()[0] || null;
+    const rim = selectedRimProposal();
+    const hasProposal = Boolean(state.identityProposal && !state.identityResolving);
+    const visualReady = Boolean(state.files.car?.blob && state.files.wheel?.blob);
+    return {
+        draftId: state.identityDraftId,
+        consentAccepted: state.photoConsentAccepted,
+        hasCarFile: Boolean(state.files.car?.blob),
+        hasWheelFile: Boolean(state.files.wheel?.blob),
+        carFileName: state.files.car?.name || "",
+        wheelFileName: state.resolvedRimPreviewUrl && state.rimProductUrl
+            ? "Изображение из ссылки"
+            : (state.files.wheel?.name || ""),
+        vehiclePreviewUrl: state.previewUrls.car || "",
+        wheelPreviewUrl: state.resolvedRimPreviewUrl || state.previewUrls.wheel || "",
+        identityResolving: state.identityResolving,
+        identityError: state.createGenerationError || state.identityError,
+        parserStatus: state.createParserStatus,
+        parserError: state.createParserError,
+        submitting: state.submitting,
+        hasProposal,
+        vehicle,
+        rim,
+        sourceUrl: state.rimProductUrl || rim.product_url || "",
+        canCreate: Boolean(
+            visualReady
+            && state.photoConsentAccepted
+            && state.identityDraftId
+            && vehicle
+            && !state.identityResolving
+            && !state.submitting
+        ),
+        canCheckFitment: false,
+        fitmentUnavailableReason: "",
+    };
+}
+
+function saveCreateVehicle(fields = {}) {
+    state.manualVehicle = {
+        make: String(fields.make || "").trim(),
+        model: String(fields.model || "").trim(),
+        year: String(fields.year || "").trim(),
+        year_start: "",
+        year_end: "",
+    };
+    state.manualVehicleMode = true;
+    state.identityError = "";
+    renderIdentityFlow();
+}
+
+function saveCreateWheel(fields = {}) {
+    state.manualRim = {
+        brand: String(fields.brand || "").trim(),
+        model: String(fields.model || "").trim(),
+        sku: String(fields.sku || "").trim(),
+        wheel_diameter_in: String(fields.wheel_diameter_in || "").trim(),
+        wheel_width_j: String(fields.wheel_width_j || "").trim(),
+        bolt_count: String(fields.bolt_count || "").trim(),
+        pcd_mm: String(fields.pcd_mm || "").trim(),
+        center_bore_mm: String(fields.center_bore_mm || "").trim(),
+        offset_et_mm: String(fields.offset_et_mm || "").trim(),
+    };
+    state.manualRimEdited = true;
+    renderIdentityFlow();
+}
+
+async function loadResolvedRimPreview(draftId) {
+    if (!draftId) return;
+    const endpoint = apiUrl(
+        `/identity/drafts/${encodeURIComponent(draftId)}/assets/rim_original/download`,
+        { includeIdentity: true }
+    );
+    const response = await authenticatedFetch(endpoint, { headers: withAuthHeaders() });
+    if (!response.ok) throw new Error(await parseApiError(response));
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    revokeResolvedRimPreviewUrl();
+    state.resolvedRimPreviewUrl = objectUrl;
+}
+
+async function refreshCreateWheelFromUrl(productUrl) {
+    if (state.createParserStatus === "loading" || state.identityResolving || state.submitting) return;
+    const normalizedUrl = String(productUrl || "").trim();
+    if (!state.identityDraftId || !normalizedUrl) {
+        state.createParserStatus = "error";
+        state.createParserError = state.identityDraftId
+            ? "Укажите ссылку на товар."
+            : "Сначала добавьте фотографии и дождитесь определения автомобиля.";
+        renderIdentityFlow();
+        return;
+    }
+
+    state.createParserStatus = "loading";
+    state.createParserError = "";
+    state.createGenerationError = "";
+    renderIdentityFlow();
+
+    const formData = new FormData();
+    formData.append("draft_id", state.identityDraftId);
+    formData.append("rim_product_url", normalizedUrl);
+
+    const correctedVehicle = state.manualVehicleMode
+        ? selectedVehicleCandidate()
+        : (state.identityProposal?.confirmedVehicle || null);
+    if (correctedVehicle) {
+        formData.append("vehicle", JSON.stringify(correctedVehicle));
+        formData.append("vehicle_user_confirmed", "true");
+    }
+
+    const identity = getIdentityPayload({ includeTelegramUserId: true });
+    if (identity.init_data) formData.append("init_data", identity.init_data);
+    if (identity.telegram_user_id != null) {
+        formData.append("telegram_user_id", String(identity.telegram_user_id));
+    }
+
+    try {
+        const response = await authenticatedFetch(apiUrl("/identity/resolve"), {
+            method: "POST",
+            headers: withAuthHeaders(),
+            body: formData,
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                clearWebsiteAuthSession();
+                throw new Error("identity_auth_required");
+            }
+            const detail = payload.detail;
+            const message = typeof detail === "object"
+                ? (detail.error_code || detail.message || JSON.stringify(detail))
+                : (detail || `HTTP ${response.status}`);
+            throw new Error(message);
+        }
+
+        state.identityDraftId = payload.draft_id || state.identityDraftId;
+        state.identityProposal = {
+            vehicle: payload.vehicle || state.identityProposal?.vehicle,
+            confirmedVehicle: payload.confirmed_vehicle ?? state.identityProposal?.confirmedVehicle ?? null,
+            rim: payload.rim || state.identityProposal?.rim,
+            pcdDisplay: payload.pcd_display,
+            resolver: payload.resolver || state.identityProposal?.resolver,
+        };
+        state.rimProductUrl = normalizedUrl;
+        state.manualRimEdited = false;
+        state.manualRim = {
+            brand: "", model: "", sku: "", wheel_diameter_in: "", wheel_width_j: "",
+            bolt_count: "", pcd_mm: "", center_bore_mm: "", offset_et_mm: "",
+        };
+        state.createParserStatus = "success";
+        state.createParserError = "";
+        try {
+            await loadResolvedRimPreview(state.identityDraftId);
+        } catch (previewError) {
+            console.error("[DW] resolved wheel preview failed", previewError);
+        }
+        haptic("success");
+    } catch (error) {
+        console.error("[DW] wheel-only identity refresh failed", error);
+        state.createParserStatus = "error";
+        state.createParserError = error?.message || t("errors.requestFailed");
+        haptic("warning");
+    } finally {
+        renderIdentityFlow();
+    }
 }
 
 function formatVehicle(candidate) {
@@ -9918,6 +10182,7 @@ function confidenceLabel(confidence) {
 
 function renderIdentityFlow() {
     const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
+    emitVNextCreateChange();
 
     const flow = document.querySelector("[data-identity-flow]");
     const loading = document.querySelector("[data-identity-loading]");
@@ -10022,6 +10287,7 @@ function renderIdentityFlow() {
 
 function showCreateScreen(name) {
     state.createScreen = name;
+    emitVNextCreateChange();
     document.querySelectorAll("[data-create-screen]").forEach((el) => {
         el.hidden = el.dataset.createScreen !== name;
     });
@@ -10124,6 +10390,12 @@ function refreshButtonsForCurrentView() {
 
     if (state.createScreen === "upload") {
         const ready = Boolean(state.files.car?.blob && state.files.wheel?.blob);
+        if (document.body.classList.contains("vnext-surface-active")) {
+            renderPhotoConsent(ready);
+            hideMainButton();
+            setBackButton(null);
+            return;
+        }
         const hasProposal = Boolean(state.identityProposal);
         const selectedVehicle = selectedVehicleCandidate();
         renderPhotoConsent(ready);
@@ -10165,6 +10437,10 @@ function resetFlow() {
     state.submitting = false;
     state.files = { car: null, wheel: null };
     state.rimProductUrl = "";
+    state.createParserStatus = "idle";
+    state.createParserError = "";
+    state.createGenerationError = "";
+    revokeResolvedRimPreviewUrl();
     resetIdentityState();
     revokePreviewUrl("car");
     revokePreviewUrl("wheel");
@@ -10417,12 +10693,17 @@ async function resolveIdentity() {
         state.identityDraftId = data.draft_id || "";
         state.identityProposal = {
             vehicle: data.vehicle,
+            confirmedVehicle: data.confirmed_vehicle ?? null,
             rim: data.rim,
             pcdDisplay: data.pcd_display,
             resolver: data.resolver,
         };
-        state.selectedVehicleIndex = null;
+        state.selectedVehicleIndex = data.vehicle?.primary ? 0 : null;
         state.manualVehicleMode = false;
+        state.manualRimEdited = false;
+        state.createParserStatus = "idle";
+        state.createParserError = "";
+        state.createGenerationError = "";
         haptic("success");
         requestAnimationFrame(() => {
             document.querySelector("[data-identity-confirmations]")?.scrollIntoView({
@@ -10442,6 +10723,7 @@ async function resolveIdentity() {
 
 async function submitJob() {
     if (state.submitting) return;
+    state.createGenerationError = "";
     state.submitting = true;
     showCreateScreen("result");
     haptic("light");
@@ -10463,6 +10745,8 @@ async function submitJob() {
         if (resultBlock) resultBlock.hidden = true;
         if (errorBlock) errorBlock.hidden = false;
         const errorState = classifyGenerationError(message);
+        state.createGenerationError = errorState.copy || errorState.title;
+        emitVNextCreateChange();
         if (errorText) errorText.textContent = errorState.title;
         if (errorTitle) errorTitle.textContent = errorState.title;
         if (errorCopy) errorCopy.textContent = errorState.copy;
@@ -10497,7 +10781,7 @@ async function submitJob() {
         vehicle: selectedVehicle,
         vehicle_user_confirmed: true,
         rim,
-        rim_user_confirmed: false,
+        rim_user_confirmed: state.manualRimEdited,
     };
     if (identity.init_data) payload.init_data = identity.init_data;
     if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
@@ -10635,6 +10919,10 @@ function handleFileSelected(kind, file) {
         if (state.files.car?.blob && state.files.wheel?.blob && state.photoConsentAccepted) {
             void resolveIdentity();
         }
+    }).catch((error) => {
+        console.error("[DW] create file read failed", error);
+        state.identityError = t("errors.requestFailed");
+        renderIdentityFlow();
     });
     haptic("light");
 }
