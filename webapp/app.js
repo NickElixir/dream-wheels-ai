@@ -1362,11 +1362,15 @@ const state = {
     files: { car: null, wheel: null },
     previewUrls: { car: "", wheel: "" },
     identityDraftId: "",
+    createJobDraftId: "",
     identityProposal: null,
     identityResolving: false,
     identityError: "",
     selectedVehicleIndex: null,
     manualVehicleMode: false,
+    vnextCreateVehicleEditing: false,
+    vnextCreateManualOriginalMode: false,
+    vnextCreateSourceEditing: false,
     manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
     rimProductUrl: "",
     jobId: null,
@@ -9813,12 +9817,13 @@ function syncPreviewGeometry(kind) {
 
 function renderPreviewFromFile(kind, fileLike) {
     revokePreviewUrl(kind);
+    if (!fileLike?.blob) return;
+    const objectUrl = URL.createObjectURL(fileLike.blob);
+    state.previewUrls[kind] = objectUrl;
     const img = document.querySelector(`[data-preview-img="${kind}"]`);
     const preview = document.querySelector(`[data-preview="${kind}"]`);
     const zone = document.querySelector(`[data-upload-zone="${kind}"]`);
-    if (!img || !preview || !zone || !fileLike?.blob) return;
-    const objectUrl = URL.createObjectURL(fileLike.blob);
-    state.previewUrls[kind] = objectUrl;
+    if (!img || !preview || !zone) return;
     resetPreviewGeometry(kind);
     img.onload = () => syncPreviewGeometry(kind);
     img.src = objectUrl;
@@ -9829,11 +9834,15 @@ function renderPreviewFromFile(kind, fileLike) {
 
 function resetIdentityState() {
     state.identityDraftId = "";
+    state.createJobDraftId = "";
     state.identityProposal = null;
     state.identityResolving = false;
     state.identityError = "";
     state.selectedVehicleIndex = null;
     state.manualVehicleMode = false;
+    state.vnextCreateVehicleEditing = false;
+    state.vnextCreateManualOriginalMode = false;
+    state.vnextCreateSourceEditing = false;
     state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
     renderIdentityFlow();
 }
@@ -10020,6 +10029,129 @@ function renderIdentityFlow() {
     refreshButtonsForCurrentView();
 }
 
+function notifyCreateBridge() {
+    if (typeof CustomEvent === "function") {
+        window.dispatchEvent(new CustomEvent("dreamwheels:createchange"));
+    }
+}
+
+function vnextCreateSnapshot() {
+    const vehicle = selectedVehicleCandidate();
+    const error = state.identityError ? classifyIdentityError(state.identityError) : null;
+    return {
+        files: Object.fromEntries(["car", "wheel"].map((kind) => [kind, state.files[kind]?.blob ? {
+            name: state.files[kind].name || "Фото загружено",
+            size: state.files[kind].size || state.files[kind].blob.size || 0,
+            previewUrl: state.previewUrls[kind] || "",
+        } : null])),
+        bothReady: Boolean(state.files.car?.blob && state.files.wheel?.blob),
+        createScreen: state.createScreen,
+        consentAccepted: state.photoConsentAccepted,
+        identityResolving: state.identityResolving,
+        identityError: error,
+        proposal: state.identityProposal,
+        selectedVehicleIndex: state.selectedVehicleIndex,
+        selectedVehicle: vehicle,
+        manualVehicleMode: state.manualVehicleMode,
+        vehicleEditing: state.vnextCreateVehicleEditing,
+        manualVehicle: { ...state.manualVehicle },
+        draftId: state.identityDraftId,
+        rimProductUrl: state.rimProductUrl,
+        sourceEditing: state.vnextCreateSourceEditing,
+        submitting: state.submitting,
+        renderStatus: document.querySelector("[data-status-text]")?.textContent || "",
+        renderError: document.querySelector("[data-error-title]")?.textContent && !document.querySelector("[data-error]")?.hidden
+            ? document.querySelector("[data-error-title]").textContent
+            : "",
+        renderErrorAction: document.querySelector("[data-error-action]")?.dataset.generationErrorAction || "retry",
+        renderErrorActionLabel: document.querySelector("[data-error-action]")?.textContent || "Повторить",
+        jobId: state.jobId,
+        resultUrl: state.resultUrl,
+        fitmentJobId: state.createJobDraftId === state.identityDraftId ? state.jobId : "",
+    };
+}
+
+window.dreamwheelsCreateBridge = {
+    snapshot: vnextCreateSnapshot,
+    pickFile(kind) { document.querySelector(`input[data-input="${kind}"]`)?.click(); },
+    clearFile(kind) { clearSelectedFile(kind); notifyCreateBridge(); },
+    resolveIdentity() { return resolveIdentity(); },
+    handleIdentityError() { document.querySelector("[data-identity-error-action]")?.click(); },
+    createImage() { return submitJob(); },
+    checkCompatibility() {
+        if (state.jobId && state.createJobDraftId === state.identityDraftId && state.resultUrl) {
+            void openFitmentView(state.jobId, { originView: "create" });
+        }
+    },
+    handleGenerationError() {
+        const action = document.querySelector("[data-error-action]")?.dataset.generationErrorAction;
+        if (action === "wallet") setView("wallet");
+        else if (action === "car" || action === "wheel") document.querySelector(`input[data-input="${action}"]`)?.click();
+        else if (action === "refresh-job") void refreshExistingJobStatus();
+        else void submitJob();
+    },
+    setConsent(accepted) {
+        persistPhotoConsent(accepted);
+        renderPhotoConsent(Boolean(state.files.car?.blob && state.files.wheel?.blob));
+        refreshButtonsForCurrentView();
+        notifyCreateBridge();
+        if (accepted && state.files.car?.blob && state.files.wheel?.blob && !state.identityProposal) void resolveIdentity();
+    },
+    chooseVehicle(index) {
+        state.manualVehicleMode = false;
+        state.selectedVehicleIndex = Number(index);
+        state.vnextCreateVehicleEditing = false;
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
+    setVehicleEditing(enabled) {
+        if (enabled) state.vnextCreateManualOriginalMode = state.manualVehicleMode;
+        state.vnextCreateVehicleEditing = Boolean(enabled);
+        notifyCreateBridge();
+    },
+    setSourceEditing(enabled) {
+        state.vnextCreateSourceEditing = Boolean(enabled);
+        notifyCreateBridge();
+    },
+    saveRimProductUrl(value) {
+        state.rimProductUrl = String(value || "").trim();
+        state.vnextCreateSourceEditing = false;
+        notifyCreateBridge();
+    },
+    setManualVehicleMode(enabled) {
+        state.vnextCreateManualOriginalMode = state.manualVehicleMode;
+        const current = selectedVehicleCandidate();
+        if (enabled && current) {
+            for (const key of Object.keys(state.manualVehicle)) state.manualVehicle[key] = String(current[key] ?? "");
+        }
+        state.manualVehicleMode = Boolean(enabled);
+        state.vnextCreateVehicleEditing = Boolean(enabled);
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
+    cancelVehicleEditing() {
+        state.manualVehicleMode = state.vnextCreateManualOriginalMode;
+        state.vnextCreateVehicleEditing = false;
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
+    saveManualVehicle(values) {
+        const previous = state.manualVehicle;
+        const previousMode = state.manualVehicleMode;
+        state.manualVehicle = Object.fromEntries(Object.keys(previous).map((key) => [key, String(values[key] || "").trim()]));
+        state.manualVehicleMode = true;
+        if (!selectedVehicleCandidate()) {
+            state.manualVehicle = previous;
+            state.manualVehicleMode = previousMode;
+            return;
+        }
+        state.vnextCreateVehicleEditing = false;
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
+    surfaceMounted() { hideMainButton(); setBackButton(null); },
+};
+
 function showCreateScreen(name) {
     state.createScreen = name;
     document.querySelectorAll("[data-create-screen]").forEach((el) => {
@@ -10027,6 +10159,7 @@ function showCreateScreen(name) {
     });
     document.querySelector("[data-step-indicator]")?.replaceChildren(document.createTextNode(name === "result" ? t("steps.result") : t("steps.upload")));
     refreshButtonsForCurrentView();
+    notifyCreateBridge();
 }
 
 let mainButtonHandler = null;
@@ -10119,6 +10252,12 @@ function refreshButtonsForCurrentView() {
     if (state.view !== "create") {
         hideMainButton();
         setBackButton(null);
+        return;
+    }
+
+    if (document.querySelector('[data-vnext-create-root]:not([hidden])')) {
+        setBackButton(null);
+        hideMainButton();
         return;
     }
 
@@ -10368,6 +10507,7 @@ async function resolveIdentity() {
     state.identityProposal = null;
     state.identityDraftId = "";
     renderIdentityFlow();
+    notifyCreateBridge();
     haptic("light");
 
     const formData = new FormData();
@@ -10437,13 +10577,16 @@ async function resolveIdentity() {
     } finally {
         state.identityResolving = false;
         renderIdentityFlow();
+        notifyCreateBridge();
     }
 }
 
 async function submitJob() {
     if (state.submitting) return;
     state.submitting = true;
+    state.createJobDraftId = "";
     showCreateScreen("result");
+    notifyCreateBridge();
     haptic("light");
 
     const statusBlock = document.querySelector("[data-status]");
@@ -10472,6 +10615,7 @@ async function submitJob() {
         }
         if (errorSupport) errorSupport.hidden = !errorState.showSupport;
         refreshButtonsForCurrentView();
+        notifyCreateBridge();
         haptic("error");
         if (state.jobId) void loadRenderHistory({ silent: true });
     }
@@ -10522,6 +10666,7 @@ async function submitJob() {
     }
 
     if (statusText) statusText.textContent = "Примеряем диски";
+    notifyCreateBridge();
 
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
@@ -10540,6 +10685,7 @@ async function submitJob() {
         if (statusData.status === "completed") {
             state.submitting = false;
             state.resultUrl = statusData.result_url || "";
+            state.createJobDraftId = state.identityDraftId;
             state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
                 includeIdentity: true,
             });
@@ -10548,6 +10694,7 @@ async function submitJob() {
             if (resultBlock) resultBlock.hidden = true;
             void loadRenderHistory({ silent: true }).then(() => openRenderDetail(state.jobId, "create"));
             haptic("success");
+            notifyCreateBridge();
             return;
         }
 
@@ -10570,6 +10717,7 @@ async function submitJob() {
     }
     refreshButtonsForCurrentView();
     void loadRenderHistory({ silent: true });
+    notifyCreateBridge();
 }
 
 async function refreshExistingJobStatus() {
@@ -10632,6 +10780,7 @@ function handleFileSelected(kind, file) {
         renderPreviewFromFile(kind, state.files[kind]);
         renderIdentityFlow();
         refreshButtonsForCurrentView();
+        notifyCreateBridge();
         if (state.files.car?.blob && state.files.wheel?.blob && state.photoConsentAccepted) {
             void resolveIdentity();
         }
@@ -10652,6 +10801,7 @@ function clearSelectedFile(kind) {
     document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
     renderIdentityFlow();
     refreshButtonsForCurrentView();
+    notifyCreateBridge();
 }
 
 function bindEvents() {
