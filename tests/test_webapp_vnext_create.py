@@ -8,7 +8,7 @@ def test_vnext_create_is_migrated_without_full_remount_updates() -> None:
     assert '"create"' in bootstrap
     assert 'window.addEventListener("dreamwheels:createchange"' in bootstrap
     assert "createSurface.update(legacyCreateSnapshot())" in bootstrap
-    assert "mountSurface("create", { force: true })" not in bootstrap
+    assert 'mountSurface("create", { force: true })' not in bootstrap
     assert "Примерить диски" in bootstrap
     assert "Создать изображение" in view
     assert "Проверить совместимость" in view
@@ -52,8 +52,8 @@ def test_create_uses_resolved_rim_data_and_manual_edits_for_render_snapshot() ->
     ):
         assert field in selected
 
-    assert 'variant_state: proposal.variant_state || "none"' in selected
-    assert "selected_variant_sku" in selected
+    assert "variant_state" not in selected
+    assert "selected_variant_sku" not in selected
     assert "rim_user_confirmed: state.manualRimEdited" in app_js
 
 
@@ -74,7 +74,6 @@ def test_parser_variant_state_is_presented_without_fabricating_values() -> None:
 
     assert 'model.rim?.variant_state === "selection_required"' in view
     assert "точные параметры не выбраны" in view
-    assert "selected_variant_sku" not in view or "selected_variant_sku" in view
     assert "Параметры не указаны" in view
 
 
