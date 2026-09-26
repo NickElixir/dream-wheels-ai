@@ -9961,8 +9961,6 @@ function selectedRimProposal() {
         offset_et_mm: nullableCreateNumber(value("offset_et_mm")),
         confidence: state.manualRimEdited ? 1 : Number(proposal.confidence || (productUrl ? 1 : 0)),
         source: state.manualRimEdited ? "user_input" : (proposal.source || (productUrl ? "user_input" : "unknown")),
-        variant_state: proposal.variant_state || "none",
-        selected_variant_sku: proposal.selected_variant_sku ?? null,
     };
 }
 
@@ -9973,7 +9971,13 @@ function emitVNextCreateChange() {
 
 function vnextCreateSnapshot() {
     const vehicle = selectedVehicleCandidate() || state.identityProposal?.confirmedVehicle || identityVehicles()[0] || null;
-    const rim = selectedRimProposal();
+    const renderRim = selectedRimProposal();
+    const proposalRim = state.identityProposal?.rim || {};
+    const rim = {
+        ...renderRim,
+        variant_state: proposalRim.variant_state || "none",
+        selected_variant_sku: proposalRim.selected_variant_sku ?? null,
+    };
     const hasProposal = Boolean(state.identityProposal && !state.identityResolving);
     const visualReady = Boolean(state.files.car?.blob && state.files.wheel?.blob);
     return {
