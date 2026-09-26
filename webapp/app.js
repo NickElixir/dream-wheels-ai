@@ -1369,6 +1369,7 @@ const state = {
     selectedVehicleIndex: null,
     manualVehicleMode: false,
     vnextCreateVehicleEditing: false,
+    vnextCreateManualOriginalMode: false,
     vnextCreateSourceEditing: false,
     manualVehicle: { make: "", model: "", year: "", year_start: "", year_end: "" },
     rimProductUrl: "",
@@ -9840,6 +9841,7 @@ function resetIdentityState() {
     state.selectedVehicleIndex = null;
     state.manualVehicleMode = false;
     state.vnextCreateVehicleEditing = false;
+    state.vnextCreateManualOriginalMode = false;
     state.vnextCreateSourceEditing = false;
     state.manualVehicle = { make: "", model: "", year: "", year_start: "", year_end: "" };
     renderIdentityFlow();
@@ -10043,6 +10045,7 @@ function vnextCreateSnapshot() {
             previewUrl: state.previewUrls[kind] || "",
         } : null])),
         bothReady: Boolean(state.files.car?.blob && state.files.wheel?.blob),
+        createScreen: state.createScreen,
         consentAccepted: state.photoConsentAccepted,
         identityResolving: state.identityResolving,
         identityError: error,
@@ -10073,6 +10076,7 @@ window.dreamwheelsCreateBridge = {
     pickFile(kind) { document.querySelector(`input[data-input="${kind}"]`)?.click(); },
     clearFile(kind) { clearSelectedFile(kind); notifyCreateBridge(); },
     resolveIdentity() { return resolveIdentity(); },
+    handleIdentityError() { document.querySelector("[data-identity-error-action]")?.click(); },
     createImage() { return submitJob(); },
     checkCompatibility() {
         if (state.jobId && state.createJobDraftId === state.identityDraftId && state.resultUrl) {
@@ -10096,10 +10100,12 @@ window.dreamwheelsCreateBridge = {
     chooseVehicle(index) {
         state.manualVehicleMode = false;
         state.selectedVehicleIndex = Number(index);
+        state.vnextCreateVehicleEditing = false;
         renderIdentityFlow();
         notifyCreateBridge();
     },
     setVehicleEditing(enabled) {
+        if (enabled) state.vnextCreateManualOriginalMode = state.manualVehicleMode;
         state.vnextCreateVehicleEditing = Boolean(enabled);
         notifyCreateBridge();
     },
@@ -10113,11 +10119,36 @@ window.dreamwheelsCreateBridge = {
         notifyCreateBridge();
     },
     setManualVehicleMode(enabled) {
+        state.vnextCreateManualOriginalMode = state.manualVehicleMode;
+        const current = selectedVehicleCandidate();
+        if (enabled && current) {
+            for (const key of Object.keys(state.manualVehicle)) state.manualVehicle[key] = String(current[key] ?? "");
+        }
         state.manualVehicleMode = Boolean(enabled);
+        state.vnextCreateVehicleEditing = Boolean(enabled);
         renderIdentityFlow();
         notifyCreateBridge();
     },
-    updateManualVehicle(field, value) { state.manualVehicle[field] = value; },
+    cancelVehicleEditing() {
+        state.manualVehicleMode = state.vnextCreateManualOriginalMode;
+        state.vnextCreateVehicleEditing = false;
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
+    saveManualVehicle(values) {
+        const previous = state.manualVehicle;
+        const previousMode = state.manualVehicleMode;
+        state.manualVehicle = Object.fromEntries(Object.keys(previous).map((key) => [key, String(values[key] || "").trim()]));
+        state.manualVehicleMode = true;
+        if (!selectedVehicleCandidate()) {
+            state.manualVehicle = previous;
+            state.manualVehicleMode = previousMode;
+            return;
+        }
+        state.vnextCreateVehicleEditing = false;
+        renderIdentityFlow();
+        notifyCreateBridge();
+    },
     surfaceMounted() { hideMainButton(); setBackButton(null); },
 };
 
@@ -10553,6 +10584,7 @@ async function resolveIdentity() {
 async function submitJob() {
     if (state.submitting) return;
     state.submitting = true;
+    state.createJobDraftId = "";
     showCreateScreen("result");
     notifyCreateBridge();
     haptic("light");
@@ -10627,7 +10659,6 @@ async function submitJob() {
             throw new Error(detail);
         }
         state.jobId = data.job_id;
-        state.createJobDraftId = state.identityDraftId;
         void trackEvent("render_started", { job_id: state.jobId });
     } catch (error) {
         showError(error.message);
@@ -10654,6 +10685,7 @@ async function submitJob() {
         if (statusData.status === "completed") {
             state.submitting = false;
             state.resultUrl = statusData.result_url || "";
+            state.createJobDraftId = state.identityDraftId;
             state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
                 includeIdentity: true,
             });

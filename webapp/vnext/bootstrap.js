@@ -5,7 +5,7 @@ import { photoGuideViewModel } from "./models/photo-guide.js";
 import { supportViewModel } from "./models/support.js";
 import { createAppShell } from "./shell/app-shell.js";
 import { createDashboardView } from "./views/dashboard.js";
-import { createCreateView } from "./views/create.js";
+import { createCreateView, refreshCreateView } from "./views/create.js";
 import { createDocumentsView } from "./views/documents.js";
 import { createPhotoGuideView } from "./views/photo-guide.js";
 import { createSupportView } from "./views/support.js";
@@ -23,12 +23,14 @@ function createCallbacks() {
     createImage: () => window.dreamwheelsCreateBridge?.createImage(),
     checkCompatibility: () => window.dreamwheelsCreateBridge?.checkCompatibility(),
     handleGenerationError: () => window.dreamwheelsCreateBridge?.handleGenerationError(),
+    handleIdentityError: () => window.dreamwheelsCreateBridge?.handleIdentityError(),
     setConsent: (checked) => window.dreamwheelsCreateBridge?.setConsent(checked),
     chooseVehicle: (index) => window.dreamwheelsCreateBridge?.chooseVehicle(index),
     setVehicleEditing: (enabled) => window.dreamwheelsCreateBridge?.setVehicleEditing(enabled),
+    cancelVehicleEditing: () => window.dreamwheelsCreateBridge?.cancelVehicleEditing(),
     setSourceEditing: (enabled) => window.dreamwheelsCreateBridge?.setSourceEditing(enabled),
     saveRimProductUrl: (value) => window.dreamwheelsCreateBridge?.saveRimProductUrl(value),
-    updateManualVehicle: (field, value) => window.dreamwheelsCreateBridge?.updateManualVehicle(field, value),
+    saveManualVehicle: (values) => window.dreamwheelsCreateBridge?.saveManualVehicle(values),
     setManualVehicleMode: (enabled) => window.dreamwheelsCreateBridge?.setManualVehicleMode(enabled),
     retryIdentity: () => window.dreamwheelsCreateBridge?.resolveIdentity(),
   };
@@ -37,7 +39,7 @@ function createCallbacks() {
 function renderCreate() {
   const bridge = window.dreamwheelsCreateBridge;
   if (!mountedCreateContent || !bridge) return;
-  mountedCreateContent.replaceChildren(createCreateView(bridge.snapshot(), createCallbacks()));
+  mountedCreateContent = refreshCreateView(mountedCreateContent, bridge.snapshot(), createCallbacks());
 }
 
 function surfaceDescriptor(view) {
@@ -77,7 +79,10 @@ function unmountSurface() {
   if (mountedRoot) {
     if (mountedView === "create") {
       mountedRoot.querySelector(":scope > [data-vnext-create-root]")?.remove();
-      [...mountedRoot.children].forEach((child) => { child.hidden = false; });
+      const screen = window.dreamwheelsCreateBridge?.snapshot().createScreen;
+      [...mountedRoot.children].forEach((child) => {
+        if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
+      });
     } else {
       mountedRoot.replaceChildren();
       delete mountedRoot.dataset.vnextRoot;

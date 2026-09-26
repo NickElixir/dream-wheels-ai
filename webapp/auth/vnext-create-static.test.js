@@ -33,6 +33,7 @@ test("Create view source covers upload, consent, full identity, retry and both e
   }
   assert.match(css, /\.vnext-create__pair\s*\{[^}]*grid-template-columns/);
   assert.match(css, /\.vnext-create__stage img[^}]*object-fit:\s*contain/);
+  assert.match(css, /\[data-view="create"\] > :not\(\[data-vnext-create-root\]\)[^}]*display: none !important/);
   assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.vnext-create__pair, \.vnext-create__summary\s*\{\s*grid-template-columns:\s*1fr/);
   assert.match(view, /https:\/\/legal\.dreamwheels\.pro\/legal\/privacy/);
   assert.match(view, /https:\/\/legal\.dreamwheels\.pro\/legal\/consent/);

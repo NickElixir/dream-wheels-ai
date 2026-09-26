@@ -7,8 +7,9 @@
   text-transform: uppercase;
 }
 
+body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) { display: none !important; }
 .vnext-create { display: grid; gap: var(--vnext-space-5); padding-top: var(--vnext-space-5); }
-.vnext-create__pair { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(18px, 3vw, 36px); align-items: start; }
+.vnext-create__pair { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 16px; align-items: start; padding-bottom: 24px; border-bottom: 1px solid var(--vnext-border); }
 .vnext-create__object { min-width: 0; }
 .vnext-create__object-heading, .vnext-create__section-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--vnext-space-3); }
 .vnext-create__object-heading .vnext-eyebrow { margin: 0; }
@@ -19,13 +20,15 @@
 .vnext-create__empty-copy { font-size: 14px; }
 .vnext-create__object-foot { display: flex; justify-content: space-between; gap: var(--vnext-space-3); margin-top: 10px; color: var(--vnext-text-secondary); font-size: 13px; }
 .vnext-create__object-foot span:last-child { color: var(--vnext-text-subtle); white-space: nowrap; }
-.vnext-create__summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 4vw, 48px); padding-top: var(--vnext-space-2); }
+.vnext-create__object-foot span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.vnext-create__summary { display: grid; grid-template-columns: 1fr; gap: 0; padding-top: var(--vnext-space-2); }
 .vnext-create__summary-section { min-width: 0; }
 .vnext-create__section-heading { min-height: 40px; border-bottom: 1px solid var(--vnext-border); }
 .vnext-create__section-heading h2 { margin: 0; font-size: 17px; font-weight: var(--vnext-weight-medium); }
 .vnext-create__summary-list { border-bottom: 1px solid var(--vnext-border); }
-.vnext-create__summary-row { display: grid; grid-template-columns: minmax(84px, .38fr) minmax(0, 1fr); gap: var(--vnext-space-3); padding: 11px 0; border-bottom: 1px solid var(--vnext-border); }
+.vnext-create__summary-row { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: var(--vnext-space-3); padding: 11px 0; border-bottom: 1px solid var(--vnext-border); }
 .vnext-create__summary-row:last-child { border-bottom: 0; }
+.vnext-create__summary-row--action { grid-template-columns: 170px minmax(0, 1fr) auto; align-items: center; }
 .vnext-create__summary-label { color: var(--vnext-text-subtle); font-size: 13px; }
 .vnext-create__summary-value { min-width: 0; overflow-wrap: anywhere; font-weight: var(--vnext-weight-medium); }
 .vnext-create__vehicle-options { display: grid; border-bottom: 1px solid var(--vnext-border); }
@@ -35,6 +38,9 @@
 .vnext-create__vehicle-option span { color: var(--vnext-text-subtle); font-size: 12px; }
 .vnext-create__manual-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vnext-space-3); padding: var(--vnext-space-3) 0; }
 .vnext-create__manual-grid input { min-width: 0; height: 42px; border: 1px solid var(--vnext-border-strong); border-radius: 7px; background: #0a0d10; color: var(--vnext-text); padding: 0 10px; }
+.vnext-create__manual-grid label { min-width: 0; }
+.vnext-create__stage:focus-visible, .vnext-create__vehicle-option:focus-visible { outline: 2px solid var(--vnext-text-secondary); outline-offset: 3px; }
+.vnext-create__object-heading .vnext-text-action { min-height: 44px; }
 .vnext-create__source-section { display: grid; gap: var(--vnext-space-2); max-width: 760px; }
 .vnext-create__source-form { display: flex; align-items: end; gap: var(--vnext-space-3); max-width: 760px; padding-top: var(--vnext-space-3); }
 .vnext-create__source-form .vnext-field { flex: 1; min-width: 0; }
@@ -136,6 +142,7 @@
 }
 
 @media (max-width: 420px) {
+  .vnext-create__summary-row { grid-template-columns: 1fr; gap: 5px; }
   .vnext-create__manual-grid { grid-template-columns: 1fr; }
   .vnext-create__object-foot { font-size: 12px; }
   .vnext-dashboard__recent-grid { grid-template-columns: 1fr; }

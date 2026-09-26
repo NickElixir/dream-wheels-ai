@@ -16,6 +16,21 @@ class ElementStub {
   }
   append(...items) { this.children.push(...items); }
   appendChild(item) { this.children.push(item); return item; }
+  replaceChildren(...items) { this.children = items; }
+  replaceWith(item) { this.replacement = item; }
+  contains(item) { return this === item || this.children.some((child) => child.contains?.(item)); }
+  querySelectorAll(selector) {
+    const result = [];
+    const visit = (node) => {
+      if (node.tagName === "input" && (selector === "input" || node.name)) result.push(node);
+      node.children.forEach(visit);
+    };
+    visit(this);
+    return result;
+  }
+  dispatchEvent(event) { this.listeners[event.type]?.(event); }
+  focus() { document.activeElement = this; }
+  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   setAttribute(key, value) { this.attributes[key] = value; }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   get childElementCount() { return this.children.length; }
@@ -35,7 +50,7 @@ globalThis.document = {
   createTextNode: (text) => Object.assign(new ElementStub("#text"), { textContent: text }),
   querySelector: () => null,
 };
-const { createCreateView } = await import("../vnext/views/create.js");
+const { createCreateView, refreshCreateView } = await import("../vnext/views/create.js");
 
 test("Create renders fixed empty/upload stages and replaces either asset through the legacy picker callback", () => {
   const picked = [];
@@ -47,7 +62,64 @@ test("Create renders fixed empty/upload stages and replaces either asset through
   (function visit(node) { if (node.className?.includes("vnext-create__stage")) stages.push(node); node.children.forEach(visit); })(view);
   assert.equal(stages.length, 2);
   stages[0].listeners.click();
-  assert.deepEqual(picked, ["car"]);
+  stages[1].listeners.click();
+  assert.deepEqual(picked, ["car", "wheel"]);
+});
+
+test("wheel source action works after full identity success and zero ET remains available", () => {
+  let editing = null;
+  const view = createCreateView({ proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } }, { setSourceEditing: (value) => { editing = value; } });
+  view.find((node) => node.tagName === "button" && node.textContent === "Добавить ссылку").listeners.click();
+  assert.equal(editing, true);
+  assert.match(view.allText, /ET 0/);
+});
+
+test("manual vehicle correction saves explicitly and returns to summary", () => {
+  let saved;
+  const snapshot = { proposal: { vehicle: { primary: null }, rim: {} }, manualVehicle: {} };
+  const view = createCreateView(snapshot, { saveManualVehicle: (values) => { saved = values; } });
+  const save = view.find((node) => node.textContent === "Сохранить");
+  assert.equal(save.disabled, true);
+  const fields = view.querySelectorAll("input");
+  fields.find((input) => input.name === "make").value = "Audi";
+  const model = fields.find((input) => input.name === "model");
+  model.value = "Q8";
+  model.listeners.input();
+  assert.equal(save.disabled, false);
+  save.listeners.click();
+  assert.equal(saved.make, "Audi");
+  assert.equal(saved.model, "Q8");
+  const summary = createCreateView({ ...snapshot, manualVehicleMode: true, selectedVehicle: saved });
+  assert.match(summary.allText, /Данные автомобиляAudi Q8/);
+  assert.equal(summary.querySelectorAll("input").length, 0);
+});
+
+test("async refresh preserves unsaved source/form values, focus and cursor without nesting Create", () => {
+  const snapshot = { bothReady: true, sourceEditing: true, proposal: { vehicle: { primary: null }, rim: {} } };
+  const current = createCreateView(snapshot);
+  const make = current.querySelectorAll("input").find((input) => input.name === "make");
+  make.value = "Unsaved vehicle";
+  make.setSelectionRange(4, 4);
+  make.focus();
+  const source = current.querySelectorAll("input").find((input) => input.name === "rim_product_url");
+  source.value = "https://example.com/unsaved";
+  const next = refreshCreateView(current, snapshot, {});
+  assert.equal(document.activeElement.value, "Unsaved vehicle");
+  assert.equal(document.activeElement.selectionStart, 4);
+  assert.equal(next.querySelectorAll("input").find((input) => input.name === "rim_product_url").value, "https://example.com/unsaved");
+  assert.equal(next.children.some((node) => node.className === "vnext-create"), false);
+  document.activeElement = null;
+});
+
+test("Create Image remains enabled for every Fitment verdict and execution failure", () => {
+  for (const verdict of ["compatible", "compatible_with_conditions", "unknown", "incompatible", "failure"]) {
+    let rendered = 0;
+    const view = createCreateView({ bothReady: true, consentAccepted: true, draftId: "draft", selectedVehicle: { make: "Audi", model: "Q8" }, proposal: { vehicle: {}, rim: {} }, fitmentVerdict: verdict }, { createImage: () => rendered++ });
+    const create = view.find((node) => node.tagName === "button" && node.textContent === "Создать изображение");
+    assert.equal(create.disabled, false, verdict);
+    create.listeners.click();
+    assert.equal(rendered, 1);
+  }
 });
 
 test("Create renders uploaded media and keeps consent and identity resolution explicit", () => {
