@@ -9900,6 +9900,18 @@ function selectedRimProposal() {
     };
 }
 
+function renderRimProposal() {
+    const rim = selectedRimProposal();
+    // Render accepts RimProposal, not the richer editable RimIdentityProposal.
+    const fields = [
+        "brand", "model", "sku", "product_url", "wheel_diameter_in",
+        "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm",
+        "offset_et_mm", "confidence", "source",
+    ];
+    return Object.fromEntries(fields.filter((field) => rim[field] !== undefined)
+        .map((field) => [field, rim[field]]));
+}
+
 function formatVehicle(candidate) {
     if (!candidate) return "—";
     const year = candidate.year ?? (
@@ -10791,7 +10803,7 @@ async function submitJob() {
     if (statusSub) statusSub.textContent = "Это обычно занимает 1–2 минуты";
 
     const selectedVehicle = selectedVehicleCandidate();
-    const rim = selectedRimProposal();
+    const rim = renderRimProposal();
     if (!state.identityDraftId || !selectedVehicle) {
         showError(t("errors.missingIdentity"));
         return;
