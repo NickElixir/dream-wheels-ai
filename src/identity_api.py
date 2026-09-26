@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, Response, UploadFile
 from pydantic import BaseModel, ValidationError
 
 from src import assets_service, db, identity_service, storage
@@ -59,6 +59,77 @@ class IdentityResolveResponse(BaseModel):
     rim: identity_service.RimIdentityProposal
     pcd_display: str | None = None
     resolver: str
+
+
+@router.get("/drafts/{draft_id}/assets/{kind}/download")
+async def download_identity_draft_asset(
+    draft_id: str,
+    kind: str,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    """Proxy the current private source asset for an owned, active identity draft."""
+    if kind not in {"car_original", "rim_original"}:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    try:
+        UUID(draft_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Identity draft not found") from exc
+
+    preflight_auth_credentials(
+        init_data=init_data or "",
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="identity draft asset",
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data or "",
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="identity draft asset",
+        )
+        asset_column = "car_asset_id" if kind == "car_original" else "rim_asset_id"
+        row = await conn.fetchrow(
+            f"""
+            SELECT asset.bucket, asset.storage_key, asset.content_type
+            FROM render_input_drafts AS draft
+            JOIN assets AS asset
+              ON asset.id = draft.{asset_column}
+             AND asset.owner_user_id = draft.owner_user_id
+             AND asset.render_input_draft_id = draft.id
+            WHERE draft.id = $1::uuid
+              AND draft.owner_user_id = $2
+              AND draft.status = 'resolved'
+              AND draft.expires_at > CURRENT_TIMESTAMP
+              AND asset.kind = $3
+            """,
+            draft_id,
+            principal.user_id,
+            kind,
+        )
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    try:
+        content = await storage.download_bytes(bucket=row["bucket"], path=row["storage_key"])
+    except storage.StorageError as exc:
+        logger.exception(
+            "identity_draft_asset_download_failed draft_id=%s user_id=%s kind=%s",
+            draft_id,
+            principal.user_id,
+            kind,
+        )
+        raise HTTPException(status_code=502, detail="Asset fetch failed") from exc
+
+    return Response(
+        content=content,
+        media_type=row["content_type"] or "application/octet-stream",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 async def _read_identity_upload(upload: UploadFile, label: str) -> bytes:
