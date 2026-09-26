@@ -62,6 +62,66 @@ function resolvedRuntime() {
 const refreshed = (url, rim = {}) => ({ draft_id: "draft", rim_asset_id: "new-rim", rim: { status: "resolved", revision: 2, product_url: url, brand: "BBS", offset_et_mm: 0, variant_state: "none", ...rim } });
 const imageResponse = () => ({ ok: true, blob: async () => new Blob(["parsed image"], { type: "image/png" }) });
 
+test("render payload projects the backend RimProposal contract without mutating identity metadata", async () => {
+  const backend = fs.readFileSync(new URL("../../src/identity_service.py", import.meta.url), "utf8");
+  const schema = backend.split("class RimProposal(BaseModel):")[1].split("    @field_validator")[0];
+  const allowed = [...schema.matchAll(/^    (\w+): /gm)].map((match) => match[1]).sort();
+  for (const mode of ["full", "resolved-url", "failed-url"]) {
+    const app = resolvedRuntime();
+    const productUrl = "https://shop.example/wheel";
+    const rim = {
+      status: mode === "resolved-url" ? "resolved" : "manual_required",
+      revision: 2, source_fingerprint: "fingerprint", field_candidates: { brand: [] },
+      conflicts: [], variant_state: "selected", selected_variant_sku: "example-sku",
+      brand: "BBS", model: null, sku: null, product_url: mode === "resolved-url" ? productUrl : null,
+      wheel_diameter_in: 18, wheel_width_j: 8, bolt_count: 5, pcd_mm: 112,
+      center_bore_mm: null, offset_et_mm: 0, confidence: 0.85, source: "product_page",
+    };
+    app.state.identityProposal.rim = rim;
+    app.state.rimProductUrl = mode === "full" ? "" : productUrl;
+    app.state.rimSourceStatus = mode === "failed-url" ? "error" : "success";
+    const before = JSON.stringify(rim);
+    let creates = 0;
+    let payload;
+    app.setFetch(async (path, options) => {
+      if (path === "/jobs/from-assets") {
+        payload = JSON.parse(options.body);
+        creates++;
+        return { ok: true, json: async () => ({ job_id: "new-job" }) };
+      }
+      return { ok: true, json: async () => ({ status: "failed", error: "test stops before generation" }) };
+    });
+    await app.submitJob();
+    assert.equal(creates, 1);
+    assert.deepEqual(Object.keys(payload.rim).sort(), allowed);
+    assert.equal(payload.rim.offset_et_mm, 0);
+    assert.equal(payload.rim.center_bore_mm, null);
+    assert.equal(payload.rim.model, null);
+    assert.equal(payload.rim.brand, "BBS");
+    assert.equal(payload.rim.confidence, mode === "resolved-url" ? 0.85 : mode === "full" ? 0 : 1);
+    assert.equal(payload.rim.source, mode === "resolved-url" ? "product_page" : mode === "full" ? "unknown" : "user_input");
+    assert.equal(payload.vehicle.model, "Q8");
+    assert.equal(payload.vehicle_user_confirmed, true);
+    assert.equal(payload.rim_user_confirmed, false);
+    assert.ok(payload.idempotency_key);
+    assert.equal(JSON.stringify(rim), before);
+    assert.equal(app.state.identityProposal.rim, rim);
+  }
+});
+
+test("render projection leaves unavailable wheel specs absent", async () => {
+  const app = resolvedRuntime();
+  app.setFetch(async (path, options) => {
+    if (path === "/jobs/from-assets") {
+      assert.deepEqual(JSON.parse(options.body).rim, { product_url: null, confidence: 0, source: "unknown" });
+      return { ok: true, json: async () => ({ job_id: "new-job" }) };
+    }
+    return { ok: true, json: async () => ({ status: "failed", error: "test stops before generation" }) };
+  });
+  await app.submitJob();
+  assert.equal(app.state.jobId, "new-job");
+});
+
 test("wheel URL refresh sends only draft and URL, preserves corrected vehicle, loads private image and invalidates current render", async () => {
   const app = resolvedRuntime();
   app.bridge.setManualVehicleMode(true);
