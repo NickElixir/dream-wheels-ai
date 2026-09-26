@@ -72,12 +72,13 @@ test("Auth/session VNext presentation preserves existing controller hooks and ex
   assert.doesNotMatch(css, /fonts\.googleapis\.com/);
 });
 
-test("PR2 leaves Create, Fitment, History and Balance out of the migrated surface registry", () => {
+test("VNext migration keeps Fitment, History and Balance outside the migrated surface registry", () => {
   const bootstrap = read("vnext/bootstrap.js");
   const registryMatch = bootstrap.match(/new Set\(\[([^\]]+)\]\)/s);
   assert.ok(registryMatch, "migrated surface registry not found");
   const registry = registryMatch[1];
-  for (const legacyView of ["create", "fitment", "renders", "wallet", "render-detail"]) {
+  assert.ok(registry.includes('"create"'), "PR3 Create must be migrated");
+  for (const legacyView of ["fitment", "renders", "wallet", "render-detail"]) {
     assert.ok(!registry.includes(`"${legacyView}"`), `legacy feature migrated too early: ${legacyView}`);
   }
 });
