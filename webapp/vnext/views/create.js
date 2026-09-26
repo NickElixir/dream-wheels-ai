@@ -1,5 +1,3 @@
-import { createButton, createTextAction } from "../ui/primitives.js";
-
 const LEGAL_PRIVACY = "https://legal.dreamwheels.pro/legal/privacy";
 const LEGAL_CONSENT = "https://legal.dreamwheels.pro/legal/consent";
 
@@ -320,8 +318,18 @@ export function createCreateView(initialModel = {}, callbacks = {}) {
   root.querySelector("[data-create-privacy]").addEventListener("click", () => callbacks.openExternal?.(LEGAL_PRIVACY));
   root.querySelector("[data-create-legal-consent]").addEventListener("click", () => callbacks.openExternal?.(LEGAL_CONSENT));
 
-  sourceInput.addEventListener("input", () => { sourceDirty = true; });
-  root.querySelector("[data-create-refresh-source]").addEventListener("click", () => {
+  const refreshSourceButton = root.querySelector("[data-create-refresh-source]");
+  function syncRefreshSourceButton() {
+    refreshSourceButton.disabled = !model.draftId
+      || model.parserStatus === "loading"
+      || !sourceInput.value.trim();
+  }
+
+  sourceInput.addEventListener("input", () => {
+    sourceDirty = true;
+    syncRefreshSourceButton();
+  });
+  refreshSourceButton.addEventListener("click", () => {
     const value = sourceInput.value.trim();
     if (!value) return;
     callbacks.refreshWheelUrl?.(value);
@@ -445,8 +453,7 @@ export function createCreateView(initialModel = {}, callbacks = {}) {
       setValueUnlessEditing(sourceInput, model.sourceUrl || "");
     }
 
-    const refreshSource = root.querySelector("[data-create-refresh-source]");
-    refreshSource.disabled = !model.draftId || model.parserStatus === "loading" || !sourceInput.value.trim();
+    syncRefreshSourceButton();
 
     const createImage = root.querySelector("[data-create-image]");
     createImage.disabled = !model.canCreate || model.submitting;
