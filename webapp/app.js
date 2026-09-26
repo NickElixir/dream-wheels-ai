@@ -10684,7 +10684,7 @@ async function submitJob() {
 
         if (statusData.status === "completed") {
             state.submitting = false;
-            state.resultUrl = statusData.result_url || "";
+            state.resultUrl = statusData.result_url || statusData.output_image_url || statusData.assets?.result?.url || "";
             state.createJobDraftId = state.identityDraftId;
             state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
                 includeIdentity: true,
