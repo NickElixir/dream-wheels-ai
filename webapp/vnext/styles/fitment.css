@@ -27,6 +27,7 @@
 .vnext-fitment__variant-summary > .vnext-button { grid-column: 1 / -1; justify-self: start; min-height: 42px; }
 .vnext-fitment__stage { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; background: #101418; color: var(--vnext-text-secondary); }
 .vnext-fitment__stage--wheel { aspect-ratio: 1 / 1; background: #171c20; }
+.vnext-fitment__object--editing .vnext-fitment__stage { aspect-ratio: 16 / 9; }
 .vnext-fitment__stage img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
 .vnext-fitment__stage--vehicle img { object-fit: cover; }
 .vnext-fitment__section-heading { display: flex; align-items: center; min-height: 48px; border-bottom: 1px solid var(--vnext-border); }
@@ -119,6 +120,7 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__pcd > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .vnext-fitment__pair { gap: 24px; }
   .vnext-fitment__stage--vehicle { aspect-ratio: 4 / 3; }
+  .vnext-fitment__object--editing .vnext-fitment__stage { aspect-ratio: 16 / 9; }
   .vnext-fitment__stage--wheel { aspect-ratio: 1 / 1; }
   .vnext-fitment__actions, .vnext-fitment__source-actions { align-items: stretch; flex-direction: column; }
   .vnext-fitment__source-actions p { flex: 0 1 auto; width: 100%; min-width: 0; }

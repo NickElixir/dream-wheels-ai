@@ -191,6 +191,17 @@ test("Fitment candidate suggestions stay beside their field and editors are hidd
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
+test("the active object editor avoids repeating summary parameters and uses a compact preview", () => {
+  const vehicleEditor = fitmentMarkup({ overview: {}, vehicleEditing: true, vehicleSpecs: ["2025", "EU"], vehicleSummaryRows: [["Год", "2025"]] });
+  assert.doesNotMatch(vehicleEditor, /<dt>Год<\/dt>/);
+  assert.match(vehicleEditor, /vnext-fitment__object--editing/);
+  const wheelEditor = fitmentMarkup({ overview: {}, rimEditing: true, rimSpecs: "20 inch", rimSummaryRows: [["ET", "40 мм"]], rim: { offset_et_mm: 40 } });
+  assert.doesNotMatch(wheelEditor, /<dt>ET<\/dt>/);
+  assert.doesNotMatch(wheelEditor, /20 inch/);
+  assert.match(wheelEditor, /data-fitment-field="rim\.offset_et_mm"/);
+  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment__object--editing \.vnext-fitment__stage \{ aspect-ratio: 16 \/ 9; \}/);
+});
+
 test("Fitment parser states stay in wheel context and preserve the existing field actions", () => {
   const base = { overview: {}, rimEditing: true, rim: { brand: "BBS", wheel_diameter_in: 19 }, vehicleForm: { make: "Audi" } };
   const idle = fitmentMarkup({ ...base, resolver: { open: true, url: "", loading: false } });

@@ -188,16 +188,16 @@ export function fitmentMarkup(model = {}) {
     ${authNotice}
     ${model.message ? `<p class="vnext-fitment__notice" role="status">${esc(model.message)}</p>` : ""}
     <div class="vnext-fitment__pair">
-      <section class="vnext-fitment__object" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
+      <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
         <div class="vnext-fitment__object-meta"><h2 id="fitment-vehicle-title">${esc(model.vehicleTitle || "Данные автомобиля не заполнены")}</h2>
-        ${(model.vehicleSpecs || []).length ? `<dl class="vnext-fitment__summary-list">${model.vehicleSummaryRows?.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("") || `<div><dt>Основные данные</dt><dd>${model.vehicleSpecs.map(esc).join(" — ")}</dd></div>`}</dl>` : ""}
+        ${(model.vehicleSpecs || []).length && !model.vehicleEditing ? `<dl class="vnext-fitment__summary-list">${model.vehicleSummaryRows?.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("") || `<div><dt>Основные данные</dt><dd>${model.vehicleSpecs.map(esc).join(" — ")}</dd></div>`}</dl>` : ""}
         ${model.vehicleVariantName ? `<div class="vnext-fitment__variant-summary"><span>Комплектация</span><strong>${esc(model.vehicleVariantName)}</strong>${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}</div>` : ""}
         </div>
         <div class="vnext-fitment__object-status">${esc(vehicleStatus)}</div>${vehicleError}${vehicleActions}
       </section>
-      <section class="vnext-fitment__object" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
+      <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
         <div class="vnext-fitment__object-meta"><h2 id="fitment-rim-title">${esc(model.rimTitle || "Параметры не заполнены")}</h2>
-        ${model.rimSummaryRows?.length ? `<dl class="vnext-fitment__summary-list">${model.rimSummaryRows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>` : model.rimSpecs ? `<p>${esc(model.rimSpecs)}</p>` : ""}
+        ${model.rimSummaryRows?.length && !model.rimEditing ? `<dl class="vnext-fitment__summary-list">${model.rimSummaryRows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>` : !model.rimEditing && model.rimSpecs ? `<p>${esc(model.rimSpecs)}</p>` : ""}
         </div>
         <div class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${esc(rimStatus)}</div><p class="vnext-fitment__provenance">${esc(model.rimProvenance || "")}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${wheelActions}
       </section>
