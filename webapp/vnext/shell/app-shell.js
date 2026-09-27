@@ -1,5 +1,5 @@
 const desktopNav = [
-  ["Главная", "dashboard"], ["Примерить диски", "create"], ["Совместимость", "fitment"], ["Мои примерки", "renders"], ["Баланс", "wallet"],
+  ["Главная", "dashboard"], ["Примерить диски", "create"], ["Мои примерки", "renders"], ["Баланс", "wallet"],
 ];
 const helpNav = [["Поддержка", "support"], ["Как подготовить фото", "photo-guide"], ["Документы", "docs"]];
 const mobileNav = [["Главная", "dashboard"], ["Создать", "create"], ["Мои", "renders"], ["Баланс", "wallet"], ["Помощь", "support"]];
