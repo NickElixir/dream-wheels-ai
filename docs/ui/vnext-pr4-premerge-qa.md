@@ -1,5 +1,30 @@
 # PR4 — VNext Processing / Result / History / Feedback
 
+## Final sync status — 2026-09-27
+
+```yaml
+PR: 206
+PR_CODE_HEAD: 150e25e727e0a4d661ffe1ab1438003adce4a8fe
+BASE: 2ed4df7f827eaa06a09203b9912be32274e13e61
+RESULT_LAYOUT: approximately 73/27 media/context
+RESULT_ORDER: original left / result right
+GENERATION_ERROR_LAYOUT: approximately 62/38 media/context
+HISTORY: 16px row inset / 88px mobile thumbnail
+WHEEL_LABEL: Колесный диск
+CREATE_DASHBOARD_AUDIT: no change
+CI_RUNS: 36312683921, 36312681918 — PASS
+STAGING_AUTHENTICATED_SMOKE: NOT RUN
+PR4_RENDER_RESULT_HISTORY: NOT READY
+PRODUCTION_TOUCHED: NO
+PR5_STARTED: NO
+```
+
+Latest confirmed test totals for this code HEAD are 127 webapp tests (27 render tests), 52 Node tests, and 573 Python tests with 5 skipped; build, Ruff, compile, syntax, and diff checks passed. No code changed after those checks. The current PR-head CI runs above both passed.
+
+The staging frontend currently serves base `2ed4df7f827eaa06a09203b9912be32274e13e61`, verified from `/version.json` and the latest Vercel staging deployment. The existing workflow deploys a feature ref only as an intentional preview; its canonical staging deployment job runs only on a push to `staging`. Therefore the authenticated smoke below remains outstanding. A preview is not accepted as staging evidence, and no branch merge or deployment was performed.
+
+This section is the authoritative current status. Earlier browser measurements in this report are historical QA snapshots; the final approved layout values are the ones listed above.
+
 Base: `origin/staging`, `2ed4df7f827eaa06a09203b9912be32274e13e61` (includes #203, #204, #205; re-fetched before commit).
 Branch: `feature/vnext-render-result-history`. Final commit/check identity is recorded in the PR and handoff, not self-referenced in this committed report.
 
@@ -21,12 +46,12 @@ Backend, API payloads, DB, auth/session, credits/refunds, payments, Fitment pres
 
 ## Automated verification
 
-- `npm --prefix webapp test`: **126 passed**, including 27 new render tests.
+- `npm --prefix webapp test`: **127 passed**, including 27 new render tests.
 - Gateway, vehicle catalogue, Fitment transitions and webapp boot Node suites: **52 passed**.
 - `pytest -q`: **573 passed, 5 skipped**, 13 existing deprecation warnings.
 - `npm --prefix webapp run build`: pass; generated auth bundles unchanged.
 - `ruff check .`, `ruff format --check .`, Python compile, JS syntax and `git diff --check`: pass.
-- CI must be checked on the final pushed HEAD; see the PR checks and final handoff.
+- CI on the final code HEAD `150e25e727e0a4d661ffe1ab1438003adce4a8fe`: **PASS**, runs `36312683921` and `36312681918`.
 
 Focused coverage includes all three result adapters (`result_url`, `output_image_url`, `assets.result.url`), actual queued→processing→completed polling, failed flow, navigation-away completion, stale Create/detail responses, immutable history snapshots/missing specs, current-vs-historical Fitment handoff, feedback positive/negative/reason/busy/retry/server state, protected originals/results, isolated thumbnail failure/retry, historical download, missing-history download guard and download auth/404/network failures. All existing Create PR3A/PR3B suites remain green.
 
@@ -92,6 +117,6 @@ Semantic regression coverage was added for Result roles and duplicate-title remo
 
 ## Final gate still outstanding
 
-`STAGING_AUTHENTICATED_SMOKE = BLOCKED` for **this PR4 UI**, because this branch is not deployed to the authorized staging frontend; preview Telegram auth has the already documented origin constraint. The existing staging deployment cannot prove these new screens. No merge or staging/production deployment was performed to bypass this boundary.
+`STAGING_AUTHENTICATED_SMOKE = NOT RUN` for **this PR4 UI**, because this branch is not deployed to the authorized staging frontend; preview Telegram auth has the already documented origin constraint. The existing staging deployment cannot prove these new screens. The existing workflow has no manual feature-ref-to-staging path: workflow dispatch creates preview deployments, while the canonical staging job only runs on pushes to `staging`. No merge or staging/production deployment was performed to bypass this boundary.
 
 Required next verification on a deployment of the reviewed PR4 HEAD: authenticated real generation→Processing→Result, protected download, feedback persistence after reopening, correct current/historical IDs, and Result→existing Fitment. Until that is recorded, **`PR4_RENDER_RESULT_HISTORY = NOT READY`**; local/harness passes must not be presented as a real authenticated staging PASS.
