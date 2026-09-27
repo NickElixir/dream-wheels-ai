@@ -25,6 +25,10 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     fitmentNextAction: () => "complete_vehicle_details",
     demoVehicleTitle: vehicle => `${vehicle.make} ${vehicle.model}`,
     fitmentMarketLabel: value => value || "",
+    fitmentPresentationText: value => String(value ?? ""),
+    fitmentCatalogueFieldState: (kind, value) => ({ state: value ? "selected" : "loaded_unselected", message: "" }),
+    fitmentFieldLabel: path => path,
+    fitmentSectionForAction: () => "vehicle",
     fitmentCatalogueItems: kind => kind === "makes" ? [{ value: "zeekr", label: "Zeekr" }] : [],
     fitmentOptionValue: item => item.value,
     fitmentCatalogueOptionLabel: item => item.label,
@@ -114,7 +118,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   const resolver = fitmentMarkup({
     overview: {},
     rimEditing: true,
-    resolver: { url: "https://shop.example.test/wheel", status: "Не удалось определить параметры", loading: false },
+    resolver: { url: "https://shop.example.test/wheel", status: "Не удалось определить параметры", statusTone: "error", loading: false, open: true },
   });
   assert.match(resolver, /Источник колесного диска/);
   assert.match(resolver, /Повторить/);
@@ -123,14 +127,17 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   const variants = fitmentMarkup({
     overview: {},
     nextAction: "select_vehicle_variant",
-    vehicleEditing: true,
+    vehicleEditing: false,
     vehicleVariantPickerOpen: true,
     vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
     selectedVehicleVariant: 0,
   });
   assert.match(variants, /2\.0 AWD/);
   assert.match(variants, /Подтвердить комплектацию/);
-  assert.match(variants, /Сохранить автомобиль/);
+  assert.doesNotMatch(variants, /data-fitment-field="vehicle\.make"/);
+  const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
+  assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
+  assert.doesNotMatch(manualRecovery, /Подтвердить комплектацию/);
 });
 
 test("an incompatible Fitment result still offers the existing independent render action", () => {
@@ -184,6 +191,37 @@ test("Fitment candidate suggestions stay beside their field and editors are hidd
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
+test("Fitment parser states stay in wheel context and preserve the existing field actions", () => {
+  const base = { overview: {}, rimEditing: true, rim: { brand: "BBS", wheel_diameter_in: 19 }, vehicleForm: { make: "Audi" } };
+  const idle = fitmentMarkup({ ...base, resolver: { open: true, url: "", loading: false } });
+  assert.match(idle, /data-fitment-source-url/);
+  assert.match(idle, /Определить параметры/);
+
+  const loading = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: true, statusTone: "neutral" } });
+  assert.match(loading, /Определяем параметры колесного диска/);
+  assert.match(loading, /value="BBS"/);
+  assert.match(loading, /data-fitment-source-url/);
+
+  const success = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: false, status: "Параметры найдены — проверьте значения", statusTone: "success" } });
+  assert.match(success, /Параметры найдены — проверьте значения/);
+
+  const variants = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ brand: "BBS", model: "CI-R", sku: "A1" }] } });
+  assert.match(variants, /Найдено несколько вариантов/);
+  assert.match(variants, /BBS — CI-R — A1/);
+  assert.match(variants, /data-fitment-action="rim-variant"/);
+
+  const conflict = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", conflicts: [{ field: "offset_et_mm", current: 40, suggested: 45 }] } });
+  assert.match(conflict, /Сейчас: 40 — Найдено: 45/);
+  assert.match(conflict, /data-fitment-action="conflict-use"/);
+  assert.match(conflict, /data-fitment-action="conflict-keep"/);
+
+  const failure = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", status: "Сайт недоступен", statusTone: "error" } });
+  assert.match(failure, /Сайт недоступен/);
+  assert.match(failure, /data-fitment-action="resolve-rim"/);
+  assert.match(failure, /Заполнить вручную/);
+  assert.match(failure, /value="19"/);
+});
+
 test("completed Fitment shows verdict before conditions and technical comparison", () => {
   const markup = fitmentMarkup({
     overview: {}, executionStatus: "completed", resultCopy: "Короткое объяснение",
@@ -226,8 +264,8 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
   const submit = app.slice(app.indexOf("async function submitJob("), app.indexOf("function ", app.indexOf("async function submitJob(") + 1));
   assert.doesNotMatch(submit, /fitmentVerdict|fitmentCheck|fitmentOverview/);
   const css = read("vnext/styles/fitment.css");
-  assert.match(css, /@media\(max-width:900px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:minmax\(0,1fr\)/);
-  assert.match(css, /@media\(max-width:700px\)/);
+  assert.match(css, /@media\s*\(max-width:\s*1024px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css, /@media\s*\(max-width:\s*700px\)/);
   const html = read("index.html");
   assert.match(html, /vnext\/styles\/fitment\.css/);
 });
@@ -270,6 +308,9 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentCheckForPresentation: () => null,
     demoVehicleTitle: (value) => [value?.make, value?.model].filter(Boolean).join(" "),
     fitmentMarketLabel: (value) => value || "",
+    fitmentPresentationText: (value) => String(value ?? ""),
+    fitmentCatalogueFieldState: (kind, value) => ({ state: value ? "selected" : "loaded_unselected", message: "" }),
+    fitmentFieldLabel: (path) => path,
     fitmentCatalogueItems: () => [], fitmentOptionValue: (value) => value.value,
     fitmentCatalogueOptionLabel: (value) => value.label, fitmentPreviewAsset: () => "",
     demoRimTitle: () => "", fitmentRimTechnicalSummary: () => "", fitmentRimProvenance: () => "",
@@ -302,7 +343,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     assert.ok(!(snapshot.vehicleEditing && snapshot.rimEditing), `${action}: editors must be mutually exclusive`);
     const markup = fitmentMarkup(snapshot);
     assert.equal((markup.match(/class="vnext-fitment__editor"/g) || []).length > 0, expectedVehicleEditor || expectedRimEditor, `${action}: editor presentation`);
-    assert.equal(markup.includes("Источник колесного диска"), expectedRimEditor, `${action}: wheel source editor visibility`);
+    assert.equal(markup.includes('data-fitment-action="toggle-source"'), expectedRimEditor, `${action}: wheel source disclosure visibility`);
     if (action === "select_vehicle_variant") assert.match(markup, /Выберите комплектацию автомобиля/);
   }
   context.setFitmentEditor("vehicle");
@@ -400,7 +441,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
   assert.deepEqual([wheelActive.state.fitmentActiveSection, wheelActive.state.fitmentActiveStep], ["rim", 2]);
   assert.equal(wheelActive.state.fitmentSourceStatusTone, "error");
   assert.equal(wheelActive.state.fitmentSourceOpen, true);
-  const recoveryMarkup = fitmentMarkup({ overview: {}, rimEditing: true, resolver: { url: wheelActive.state.fitmentForm.rim.product_url, status: wheelActive.state.fitmentSourceStatus, loading: false } });
+  const recoveryMarkup = fitmentMarkup({ overview: {}, rimEditing: true, resolver: { url: wheelActive.state.fitmentForm.rim.product_url, status: wheelActive.state.fitmentSourceStatus, statusTone: "error", loading: false, open: true } });
   assert.match(recoveryMarkup, /Повторить/);
   assert.match(recoveryMarkup, /Заполнить вручную/);
   assert.equal(wheelActive.state.fitmentForm.rim.wheel_diameter_in, "19");
@@ -414,13 +455,13 @@ test("rim status comes from server-owned per-axle state, not next_action", () =>
   });
   assert.match(emptyWhileVehicleIsIncomplete, /Параметры не заполнены/);
   assert.doesNotMatch(emptyWhileVehicleIsIncomplete, /Параметры подтверждены/);
-  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "partial" }), /Нужно уточнить параметры/);
-  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "complete_unconfirmed" }), /Параметры требуют подтверждения/);
+  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "partial" }), /Не хватает параметров/);
+  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "complete_unconfirmed" }), /Проверьте и подтвердите параметры/);
   assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "confirmed_ready" }), /Параметры подтверждены/);
   const staggered = fitmentMarkup({
     overview: {}, setupMode: "staggered", frontRimSetupState: "confirmed_ready", rearRimSetupState: "empty",
   });
-  assert.match(staggered, /Передняя ось: Параметры подтверждены · Задняя ось: Параметры не заполнены/);
+  assert.match(staggered, /Передняя ось: Параметры подтверждены — Задняя ось: Параметры не заполнены/);
 });
 
 test("staggered Fitment does not project front rim candidates into rear axle fields", () => {
@@ -435,7 +476,7 @@ test("staggered Fitment does not project front rim candidates into rear axle fie
 
 test("Fitment candidate controls meet the mobile tap target and saved progression uses the returned next_action", () => {
   const css = read("vnext/styles/fitment.css");
-  assert.match(css, /\.vnext-fitment__suggestions \.vnext-button \{ min-height:42px/);
+  assert.match(css, /\.vnext-fitment__suggestions \.vnext-button \{ min-height:\s*42px/);
   const app = read("app.js");
   const saveStart = app.indexOf("async function saveFitment(");
   const save = app.slice(saveStart, app.indexOf("async function fetchRenderHistory(", saveStart));
