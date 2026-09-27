@@ -3,7 +3,7 @@ import { legacyNavigate, legacyOpenExternal } from "./api/legacy-navigation.js";
 import { documentsViewModel } from "./models/documents.js";
 import { photoGuideViewModel } from "./models/photo-guide.js";
 import { supportViewModel } from "./models/support.js";
-import { createAppShell } from "./shell/app-shell.js";
+import { createAppShell, updateAppShellAuth } from "./shell/app-shell.js";
 import { createDashboardView } from "./views/dashboard.js";
 import { createCreateView, refreshCreateView } from "./views/create.js";
 import { createDocumentsView } from "./views/documents.js";
@@ -14,6 +14,7 @@ import { createRenderView, refreshRenderView } from "./views/render.js";
 const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail"]);
 let mountedRoot = null;
 let mountedView = "";
+let mountedShell = null;
 let mountedCreateContent = null;
 let mountedRenderContent = null;
 let legacyHiddenStates = [];
@@ -138,6 +139,7 @@ function unmountSurface() {
   }
   mountedRoot = null;
   mountedView = "";
+  mountedShell = null;
   mountedCreateContent = null;
   mountedRenderContent = null;
   legacyHiddenStates = [];
@@ -166,12 +168,15 @@ function mountSurface(view, { force = false } = {}) {
     }
     [...host.children].filter((child) => child !== createRoot).forEach((child) => { child.hidden = true; });
     createRoot.hidden = false;
-    createRoot.replaceChildren(createAppShell({
+    mountedShell = createAppShell({
       title: descriptor.title,
       activeView: view === "render-detail" || renderKind(view) === "processing" ? "renders" : view,
       navigate: legacyNavigate,
       content: descriptor.content,
-    }));
+      authenticated: legacyDashboardSnapshot().authenticated,
+      openAuth: legacyOpenAuth,
+    });
+    createRoot.replaceChildren(mountedShell);
     createRoot.dataset.vnextRoot = view;
     mountedRoot = host;
     mountedCreateContent = createRoot.querySelector(".vnext-shell__frame > .vnext-create");
@@ -183,12 +188,15 @@ function mountSurface(view, { force = false } = {}) {
     return;
   }
 
-  host.replaceChildren(createAppShell({
+  mountedShell = createAppShell({
     title: descriptor.title,
     activeView: view,
     navigate: legacyNavigate,
     content: descriptor.content,
-  }));
+    authenticated: legacyDashboardSnapshot().authenticated,
+    openAuth: legacyOpenAuth,
+  });
+  host.replaceChildren(mountedShell);
   host.dataset.vnextRoot = view;
   mountedRoot = host;
   mountedView = view;
@@ -202,6 +210,7 @@ function applyView(view) {
 
 window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view));
 window.addEventListener("dreamwheels:dashboardchange", () => {
+  updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated);
   if (mountedView === "dashboard") mountSurface("dashboard", { force: true });
 });
 window.addEventListener("dreamwheels:createchange", renderCreate);
