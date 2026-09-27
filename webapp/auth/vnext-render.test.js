@@ -66,6 +66,39 @@ test("comparison reveals original on the left and result on the right, with matc
   assert.match(css, /\.vnext-compare-reveal\s*\{[^}]*clip-path:inset\(0 calc\(100% - var\(--compare\)\) 0 0\)/);
 });
 
+test("desktop Result groups comparison with compact available context and actions", () => {
+  const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
+  assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
+  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
+  assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
+  assert.match(markup, /Создать ещё вариант[\s\S]*?Проверить совместимость[\s\S]*?Скачать изображение[\s\S]*?К моим примеркам/);
+  const sparse = resultMarkup({ jobId: "B", status: "completed", resultUrl: "/result", originalUrl: "/original" });
+  assert.doesNotMatch(sparse, /<h3>(?:Автомобиль|Диск|Создано)<\/h3>|—/);
+});
+
+test("Generation Error uses available car/wheel context and preserves its existing primary action", () => {
+  const markup = processingMarkup({ carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
+  assert.match(markup, /vnext-generation-error/);
+  assert.match(markup, /Фото автомобиля[\s\S]*?Фото колесного диска/);
+  assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="generation-retry"[^>]*>Повторить/);
+  assert.match(markup, /data-render-action="support"/);
+  assert.doesNotMatch(markup, /vnext-system-card|vnext-system-mark|provider[_ -]?(?:error|failure)/i);
+  const noMedia = processingMarkup({ error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
+  assert.match(noMedia, /vnext-generation-error--empty/);
+  assert.doesNotMatch(noMedia, /vnext-render-media/);
+  const bootstrap = fs.readFileSync(new URL("../vnext/bootstrap.js", import.meta.url), "utf8");
+  assert.match(bootstrap, /model\.error \? "Виртуальная примерка"/);
+  assert.match(bootstrap, /if \(heading && heading\.textContent !== title\) heading\.textContent = title/);
+});
+
+test("History rows share inset and thumbnail grid at mobile widths", () => {
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-history-row\s*\{[^}]*padding:16px/);
+  assert.match(css, /@media\(max-width:390px\)/);
+  assert.match(css, /\.vnext-history-row\s*\{[^}]*grid-template-columns:88px minmax\(0,1fr\); gap:14px; align-items:start; padding:16px/);
+  assert.match(css, /\.vnext-history-actions\s*\{[^}]*grid-column:2/);
+});
+
 for (const result of [{ result_url: "/result" }, { output_image_url: "/result" }, { assets: { result: { url: "/result" } } }]) test(`existing polling transitions queued → processing → Result (${Object.keys(result)[0]})`, async () => {
   const app = runtime(); app.ready();
   const observed = []; const calls = []; let poll = 0; let opened;

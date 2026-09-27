@@ -21,7 +21,7 @@ Backend, API payloads, DB, auth/session, credits/refunds, payments, Fitment pres
 
 ## Automated verification
 
-- `npm --prefix webapp test`: **123 passed**, including 24 new render tests.
+- `npm --prefix webapp test`: **126 passed**, including 27 new render tests.
 - Gateway, vehicle catalogue, Fitment transitions and webapp boot Node suites: **52 passed**.
 - `pytest -q`: **573 passed, 5 skipped**, 13 existing deprecation warnings.
 - `npm --prefix webapp run build`: pass; generated auth bundles unchanged.
@@ -53,12 +53,18 @@ Read canonical HTML and inspected frozen desktop evidence with `view_image`, the
 | --- | --- | --- |
 | Typography/canvas | IBM Plex Sans, cold graphite, 24px Result identity and restrained radii | Matched computed font and screenshots |
 | Processing composition | 1.4fr/.6fr pair, 16:10 car stage, selected wheel and real status | Matched; corrected aside border/container during QA |
-| Result composition | Image-led 16:9 desktop, square 390px comparison, near-white primary CTA | Matched; restored mobile image-before-primary order |
-| History | Compact 190px desktop/92px mobile thumbnails, chronological date groups, calm status rows | Matched; corrected row borders/container during QA |
+| Result composition | Image-led 16:9 desktop, square 390px comparison, near-white primary CTA | Explicit product-review decision: compact 73/27 comparison/context grid on desktop, available metadata/actions beside the comparison and full-width feedback below |
+| History | Compact 190px desktop/88px mobile thumbnails, chronological date groups, calm status rows | Explicit product-review decision: history rows use 16px internal inset at all sizes; same thumbnail and action columns for every status |
 | Feedback semantics | Green positive, amber negative, supported reason chips | Matched; image/slider/focus retained during refresh |
-| System states | Centered restrained empty/error container, existing generation classification | Matched structure; no unsupported refund promise |
+| System states | Centered restrained empty/error container, existing generation classification | Explicit product-review decision: Generation Error is an inline state with available car/wheel context, existing classified action, and no modal-like card or decorative alert mark |
 
 Intentional adaptations required by the task: real queued wording; secondary download/Fitment/history utilities; actual available metadata/dates and runtime error copy; supported backend reason labels; unchanged existing shell/account content. Actual uploaded wheel backgrounds are preserved rather than fabricating a transparent wheel asset. Subsequent explicit user approval overrides the comparison side ordering: **original left / result right**, including both images and matching labels. The original is now the clipped reveal layer and the result the base layer; slider position still defines the dividing line. Other frozen-design authority is unchanged.
+
+## Final UI polish review
+
+User-approved changes to the frozen reference are intentional product decisions: Result desktop uses an approximately 73/27 media/context composition; Generation Error is contextual to the current vehicle/wheel with the existing classified action and support route; History rows use a 16px inset and 88px mobile thumbnail; the comparison remains **Original left / Result right**. No render lifecycle, asset, Fitment or History behavior changed.
+
+Local Chrome presentation QA on the final polish source: **1440×1000** and **390×844**. Desktop Result comparison measured 785px next to a 290px context column with a 30px gap (about 73% of the available grid width after the gap); feedback begins below the complete grid. The 390px History view has 16px row padding, an 88px thumbnail, and consistent image/action columns across completed, processing and failed states. Generation Error shows available car and wheel photos, its existing primary action and tertiary Support link. At both widths there is no horizontal overflow. On mobile, Result actions and feedback are reachable by scrolling and finish above the fixed bottom navigation. Console has no relevant warnings/errors. Screenshots are retained outside Git in `/tmp/dw-pr4-qa.V93XPE/polish-*`.
 
 ## Final gate still outstanding
 

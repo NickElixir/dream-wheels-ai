@@ -37,7 +37,13 @@ function refreshMountedRender() {
   if (!mountedRoot) return;
   const kind = renderKind(mountedView);
   if (kind && mountedRenderContent?.renderKind === kind) {
-    refreshRenderView(mountedRenderContent, window.dreamwheelsRenderBridge?.snapshot(mountedView === "create" && kind === "result" ? "current-result" : kind) || {}, renderCallbacks);
+    const model = window.dreamwheelsRenderBridge?.snapshot(mountedView === "create" && kind === "result" ? "current-result" : kind) || {};
+    if (kind === "processing") {
+      const title = model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку";
+      const heading = mountedRoot.querySelector(".vnext-shell__topbar-title");
+      if (heading && heading.textContent !== title) heading.textContent = title;
+    }
+    refreshRenderView(mountedRenderContent, model, renderCallbacks);
   } else if (mountedView === "create") {
     if (kind || mountedRenderContent) mountSurface("create", { force: true });
   }
@@ -76,10 +82,13 @@ function renderCreate() {
 
 function surfaceDescriptor(view) {
   const kind = renderKind(view);
-  if (kind) return {
-    title: kind === "history" ? "Мои примерки" : kind === "result" ? "Результат" : "Создаём виртуальную примерку",
-    content: createRenderView(kind, window.dreamwheelsRenderBridge?.snapshot(view === "create" && kind === "result" ? "current-result" : kind) || {}, renderCallbacks),
-  };
+  if (kind) {
+    const model = window.dreamwheelsRenderBridge?.snapshot(view === "create" && kind === "result" ? "current-result" : kind) || {};
+    return {
+      title: kind === "history" ? "Мои примерки" : kind === "result" ? "Результат" : model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку",
+      content: createRenderView(kind, model, renderCallbacks),
+    };
+  }
   if (view === "dashboard") {
     return {
       title: "Главная",
