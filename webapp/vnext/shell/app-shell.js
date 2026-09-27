@@ -14,7 +14,7 @@ function navButton([label, view], activeView, navigate) {
   return button;
 }
 
-export function createAppShell({ title = "Dream Wheels AI", activeView, navigate, content } = {}) {
+export function createAppShell({ title = "Dream Wheels AI", activeView, navigate, content, authenticated = false, openAuth } = {}) {
   const shell = document.createElement("div");
   shell.className = "vnext-shell";
 
@@ -34,11 +34,23 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
   sidebar.append(nav);
 
-  const account = document.createElement("button");
-  account.type = "button";
+  const account = document.createElement("section");
   account.className = "vnext-shell__account";
-  account.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
-  account.addEventListener("click", () => navigate?.("settings"));
+  account.setAttribute("aria-label", "Аккаунт");
+  const accountLabel = document.createElement("span");
+  accountLabel.className = "vnext-shell__account-label";
+  accountLabel.textContent = "Аккаунт";
+  const profileButton = document.createElement("button");
+  profileButton.type = "button";
+  profileButton.className = "vnext-shell__account-action";
+  profileButton.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
+  profileButton.addEventListener("click", () => navigate?.("settings"));
+  const desktopLoginButton = document.createElement("button");
+  desktopLoginButton.type = "button";
+  desktopLoginButton.className = "vnext-shell__login vnext-shell__login--sidebar";
+  desktopLoginButton.textContent = "Войти";
+  desktopLoginButton.addEventListener("click", () => openAuth?.());
+  account.append(accountLabel, profileButton, desktopLoginButton);
   sidebar.append(account);
   shell.append(sidebar);
 
@@ -51,7 +63,12 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   const pageTitle = document.createElement("h1");
   pageTitle.className = "vnext-shell__topbar-title";
   pageTitle.textContent = title;
-  topbar.append(pageTitle);
+  const mobileLoginButton = document.createElement("button");
+  mobileLoginButton.type = "button";
+  mobileLoginButton.className = "vnext-shell__login vnext-shell__login--topbar";
+  mobileLoginButton.textContent = "Войти";
+  mobileLoginButton.addEventListener("click", () => openAuth?.());
+  topbar.append(pageTitle, mobileLoginButton);
   frame.append(topbar, content);
   main.append(frame);
   shell.append(main);
@@ -70,5 +87,20 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
     bottom.append(button);
   });
   shell.append(bottom);
+  updateAppShellAuth(shell, authenticated);
   return shell;
+}
+
+export function updateAppShellAuth(shell, authenticated) {
+  if (!shell) return;
+  const isAuthenticated = Boolean(authenticated);
+  const accountLabel = shell.querySelector(".vnext-shell__account-label");
+  const profileButton = shell.querySelector(".vnext-shell__account-action");
+  const desktopLoginButton = shell.querySelector(".vnext-shell__login--sidebar");
+  const mobileLoginButton = shell.querySelector(".vnext-shell__login--topbar");
+  if (accountLabel) accountLabel.hidden = isAuthenticated;
+  if (profileButton) profileButton.hidden = !isAuthenticated;
+  if (desktopLoginButton) desktopLoginButton.hidden = isAuthenticated;
+  if (mobileLoginButton) mobileLoginButton.hidden = isAuthenticated;
+  shell.dataset.authenticated = String(isAuthenticated);
 }

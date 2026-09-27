@@ -77,3 +77,20 @@ test("VNext shell retains desktop and safe-area mobile layout foundations", () =
   assert.match(foundation, /prefers-reduced-motion: reduce/);
   assert.match(foundation, /vnext-support__grid/);
 });
+
+test("Global login entry points reuse authoritative legacy auth state across VNext surfaces", () => {
+  const shell = read("vnext/shell/app-shell.js");
+  const bootstrap = read("vnext/bootstrap.js");
+  const adapter = read("vnext/api/legacy-dashboard.js");
+  const css = read("vnext/styles/shell.css");
+  assert.match(shell, /openAuth\?\.\(\)/);
+  assert.match(shell, /vnext-shell__login--sidebar/);
+  assert.match(shell, /vnext-shell__login--topbar/);
+  assert.match(shell, /export function updateAppShellAuth/);
+  assert.match(bootstrap, /authenticated: legacyDashboardSnapshot\(\)\.authenticated/);
+  assert.match(bootstrap, /updateAppShellAuth\(mountedShell, legacyDashboardSnapshot\(\)\.authenticated\)/);
+  assert.match(bootstrap, /dreamwheels:dashboardchange/);
+  assert.match(adapter, /window\.DreamWheelsLegacy\?\.openAuth\?\.\(\)/);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*vnext-shell__login--topbar/);
+  assert.match(css, /:focus-visible[\s\S]*outline: 2px solid var\(--vnext-focus\)/);
+});
