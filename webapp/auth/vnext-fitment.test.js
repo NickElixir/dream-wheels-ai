@@ -1,9 +1,70 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 import { fitmentMarkup } from "../vnext/views/fitment.js";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+
+test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
+  const app = read("app.js");
+  const snapshot = app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField("));
+  const setter = app.slice(app.indexOf("function setVnextFitmentField("), app.indexOf("window.dreamwheelsFitmentBridge ="));
+  const saved = { make: "Zeekr", model: "001", year: "2023", body: "saved body" };
+  const state = {
+    fitmentOverview: { vehicle: saved },
+    fitmentForm: { vehicle: { ...saved }, rim: {} },
+    fitmentSourceAppliedFields: [],
+  };
+  const context = {
+    state,
+    fitmentCheckForPresentation: () => null,
+    fitmentUiState: () => ({ nextAction: "complete_vehicle_details", rim: {}, form: { dirty: true } }),
+    fitmentContextJob: () => null,
+    fitmentNextAction: () => "complete_vehicle_details",
+    demoVehicleTitle: vehicle => `${vehicle.make} ${vehicle.model}`,
+    fitmentMarketLabel: value => value || "",
+    fitmentCatalogueItems: kind => kind === "makes" ? [{ value: "zeekr", label: "Zeekr" }] : [],
+    fitmentOptionValue: item => item.value,
+    fitmentCatalogueOptionLabel: item => item.label,
+    fitmentPreviewAsset: () => "",
+    demoRimTitle: () => "",
+    fitmentRimTechnicalSummary: () => "",
+    fitmentRimProvenance: () => "",
+    rememberFitmentVehicleCatalogueChain() {},
+    beginFitmentCatalogueContextChange: () => 1,
+    resetFitmentCatalogue() {},
+    revalidateFitmentCatalogueChain: async () => {},
+    markVehicleFieldEdited() {},
+    markFitmentDirty() {},
+    validateFitmentForm() {},
+    renderFitment() {},
+    setDeepValue: (object, path, value) => {
+      const [section, field] = path.split(".");
+      object[section][field] = value;
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(`${snapshot}\n${setter}`, context);
+  context.setVnextFitmentField("vehicle.make", "zeekr");
+  context.setVnextFitmentField("vehicle.body", "edited body");
+  context.setVnextFitmentField("vehicle.modification", "AWD");
+  const model = context.vnextFitmentSnapshot();
+  assert.equal(model.vehicleForm.make, "zeekr");
+  assert.equal(model.vehicleForm.body, "edited body");
+  assert.equal(model.vehicleForm.modification, "AWD");
+  assert.equal(model.vehicleTitle, "Zeekr 001");
+  assert.equal(saved.body, "saved body");
+  const markup = fitmentMarkup(model);
+  assert.match(markup, /option value="zeekr" selected/);
+  assert.match(markup, /data-fitment-field="vehicle.body" value="edited body"/);
+  assert.match(markup, /data-fitment-field="vehicle.modification" value="AWD"/);
+
+  state.fitmentForm.vehicle.body = "";
+  assert.match(fitmentMarkup(context.vnextFitmentSnapshot()), /data-fitment-field="vehicle.body" value=""/);
+  state.fitmentForm.vehicle = null;
+  assert.equal(context.vnextFitmentSnapshot().vehicleForm, saved);
+});
 
 test("Fitment view renders exactly the four API verdicts and keeps execution failure separate", () => {
   const cases = [

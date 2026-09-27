@@ -10147,6 +10147,7 @@ function vnextFitmentSnapshot() {
         canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !state.fitmentChecking),
         retryAvailable,
         vehicle,
+        vehicleForm: state.fitmentForm?.vehicle || vehicle,
         vehicleTitle: demoVehicleTitle(vehicle),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
         vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
