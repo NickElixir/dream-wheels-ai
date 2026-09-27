@@ -89,23 +89,33 @@ test("Result actions keep the primary and Fitment CTAs, expose tertiary download
 });
 
 test("Generation Error uses available car/wheel context and preserves its existing primary action", () => {
-  const markup = processingMarkup({ carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
-  assert.match(markup, /vnext-generation-error/);
-  assert.match(markup, /Фото автомобиля[\s\S]*?Фото колесного диска/);
+  const markup = processingMarkup({ title: "ZEEKR 007", rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
+  assert.match(markup, /vnext-generation-error[^>]*role="status"/);
+  assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
+  assert.match(markup, /Фото автомобиля[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?vnext-generation-wheel-thumb[\s\S]*?Фото выбранного колесного диска[\s\S]*?X-Trike X-132[\s\S]*?20″ \/ 9J \/ 5×112 \/ ET 0/);
+  assert.match(markup, /Генерация[\s\S]*?Не удалось создать виртуальную примерку[\s\S]*?Попробуйте ещё раз\. Если ошибка повторится, обратитесь в поддержку\./);
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="generation-retry"[^>]*>Повторить/);
   assert.match(markup, /data-render-action="support"/);
   assert.doesNotMatch(markup, /vnext-system-card|vnext-system-mark|provider[_ -]?(?:error|failure)/i);
-  const noMedia = processingMarkup({ error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
-  assert.match(noMedia, /vnext-generation-error--empty/);
-  assert.doesNotMatch(noMedia, /vnext-render-media/);
+  const missingCar = processingMarkup({ title: "ZEEKR 007", error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
+  assert.match(missingCar, /vnext-generation-error--no-car/);
+  assert.match(missingCar, /vnext-generation-error--no-car[\s\S]*?ZEEKR 007/);
+  assert.doesNotMatch(missingCar, /<img|vnext-generation-wheel-thumb/);
+  const missingWheel = processingMarkup({ title: "ZEEKR 007", carUrl: "/car.jpg", error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
+  assert.doesNotMatch(missingWheel, /<h3>Диск<\/h3>|vnext-generation-wheel-thumb/);
+  const noContext = processingMarkup({ error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
+  assert.match(noContext, /vnext-generation-error--no-car/);
+  assert.doesNotMatch(noContext, /<img|vnext-generation-wheel-thumb/);
   const bootstrap = fs.readFileSync(new URL("../vnext/bootstrap.js", import.meta.url), "utf8");
   assert.match(bootstrap, /model\.error \? "Виртуальная примерка"/);
   assert.match(bootstrap, /if \(heading && heading\.textContent !== title\) heading\.textContent = title/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
-  assert.match(css, /\.vnext-generation-error\s*\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
-  assert.match(css, /\.vnext-generation-context\s*\{[^}]*width:min\(720px,100%\)/);
-  assert.match(css, /\.vnext-generation-copy\s*\{[^}]*margin-top:24px/);
-  assert.match(css, /\.vnext-generation-copy\s*\{ margin-top:0; \}/);
+  assert.match(css, /\.vnext-generation-error\s*\{[^}]*grid-template-columns:minmax\(0,1\.6fr\) minmax\(300px,1fr\)/);
+  assert.match(css, /\.vnext-generation-error--no-car\s*\{[^}]*grid-template-columns:minmax\(0,680px\)/);
+  assert.match(css, /\.vnext-generation-media:empty\s*\{ display:none; \}/);
+  assert.match(css, /\.vnext-generation-wheel-thumb\s*\{[^}]*width:80px/);
+  assert.match(css, /@media\(max-width:680px\)\s*\{[\s\S]*?\.vnext-generation-error, \.vnext-generation-error--no-car\s*\{ grid-template-columns:minmax\(0,1fr\)/);
+  assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
 });
 
 test("History rows share inset and thumbnail grid at mobile widths", () => {
