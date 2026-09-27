@@ -10,18 +10,26 @@ import { createDocumentsView } from "./views/documents.js";
 import { createPhotoGuideView } from "./views/photo-guide.js";
 import { createSupportView } from "./views/support.js";
 import { createRenderView, refreshRenderView } from "./views/render.js";
+import { createFitmentView, refreshFitmentView } from "./views/fitment.js";
 
-const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment"]);
 let mountedRoot = null;
 let mountedView = "";
 let mountedShell = null;
 let mountedCreateContent = null;
 let mountedRenderContent = null;
+let mountedFitmentContent = null;
 let legacyHiddenStates = [];
 
 const renderCallbacks = {
   action: (...args) => window.dreamwheelsRenderBridge?.action(...args),
   assetError: (...args) => window.dreamwheelsRenderBridge?.assetError(...args),
+};
+
+const fitmentCallbacks = {
+  action: (...args) => window.dreamwheelsFitmentBridge?.action(...args),
+  setField: (...args) => window.dreamwheelsFitmentBridge?.setField(...args),
+  setSourceUrl: (...args) => window.dreamwheelsFitmentBridge?.setSourceUrl(...args),
 };
 
 function renderKind(view) {
@@ -81,6 +89,11 @@ function renderCreate() {
   mountedCreateContent = refreshCreateView(mountedCreateContent, bridge.snapshot(), createCallbacks());
 }
 
+function refreshMountedFitment() {
+  if (mountedView !== "fitment" || !mountedFitmentContent) return;
+  mountedFitmentContent = refreshFitmentView(mountedFitmentContent, window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks);
+}
+
 function surfaceDescriptor(view) {
   const kind = renderKind(view);
   if (kind) {
@@ -118,6 +131,10 @@ function surfaceDescriptor(view) {
     const model = documentsViewModel();
     return { title: model.title, content: createDocumentsView(model, { openExternal: legacyOpenExternal }) };
   }
+  if (view === "fitment") return {
+    title: "Совместимость",
+    content: createFitmentView(window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks),
+  };
   return null;
 }
 
@@ -130,7 +147,7 @@ function unmountSurface() {
       [...mountedRoot.children].forEach((child) => {
         if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
       });
-    } else if (["renders", "render-detail"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
+    } else if (["renders", "render-detail", "fitment"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
     else {
       mountedRoot.replaceChildren();
       delete mountedRoot.dataset.vnextRoot;
@@ -142,6 +159,7 @@ function unmountSurface() {
   mountedShell = null;
   mountedCreateContent = null;
   mountedRenderContent = null;
+  mountedFitmentContent = null;
   legacyHiddenStates = [];
 }
 
@@ -150,6 +168,7 @@ function mountSurface(view, { force = false } = {}) {
   if (!host) return;
   if (!force && mountedRoot === host && mountedView === view) {
     if (view === "create") renderCreate();
+    else if (view === "fitment") refreshMountedFitment();
     else refreshMountedRender();
     return;
   }
@@ -157,7 +176,7 @@ function mountSurface(view, { force = false } = {}) {
   if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
 
-  if (view === "create" || view === "renders" || view === "render-detail") {
+  if (["create", "renders", "render-detail", "fitment"].includes(view)) {
     let createRoot = host.querySelector(view === "create" ? ":scope > [data-vnext-create-root]" : ":scope > [data-vnext-surface-root]");
     if (!createRoot) {
       createRoot = document.createElement("div");
@@ -181,10 +200,12 @@ function mountSurface(view, { force = false } = {}) {
     mountedRoot = host;
     mountedCreateContent = createRoot.querySelector(".vnext-shell__frame > .vnext-create");
     mountedRenderContent = createRoot.querySelector(".vnext-shell__frame > .vnext-render");
+    mountedFitmentContent = createRoot.querySelector(".vnext-shell__frame > .vnext-fitment");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
     if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
-    else window.dreamwheelsRenderBridge?.prepareAssets();
+    else if (view === "fitment") window.dreamwheelsFitmentBridge?.surfaceMounted();
+    else if (["renders", "render-detail"].includes(view)) window.dreamwheelsRenderBridge?.prepareAssets();
     return;
   }
 
@@ -215,6 +236,7 @@ window.addEventListener("dreamwheels:dashboardchange", () => {
 });
 window.addEventListener("dreamwheels:createchange", renderCreate);
 window.addEventListener("dreamwheels:renderchange", refreshMountedRender);
+window.addEventListener("dreamwheels:fitmentchange", refreshMountedFitment);
 document.addEventListener("DOMContentLoaded", () => {
   for (const view of migratedViews) {
     const host = document.querySelector(`[data-view="${view}"]`);

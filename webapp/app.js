@@ -1603,7 +1603,8 @@ function fitmentVehicleSpecs(vehicle) {
 }
 
 function fitmentMarketLabel(value, regionItems = null) {
-    const marketValue = fitmentPresentationText(value);
+    const marketValue = fitmentPresentationText(value) || "";
+    if (!marketValue) return "";
     const normalized = marketValue.toLocaleLowerCase();
     const canonical = FITMENT_MARKET_VALUE_ALIASES[normalized] || normalized;
     const catalogueItem = (regionItems || (typeof state !== "undefined" ? fitmentCatalogueItems("regions") : []))
@@ -4009,6 +4010,8 @@ function fitmentFieldLabel(path) {
         "vehicle.year": locale === "ru" ? "год" : "year",
         vehicle_identity: locale === "ru" ? "данные автомобиля" : "vehicle details",
         pcd: locale === "ru" ? "разболтовка колесного диска" : "wheel bolt pattern",
+        pcd_mm: "PCD",
+        wheel_size: locale === "ru" ? "размер колесного диска" : "wheel size",
         center_bore: locale === "ru" ? "ступичное отверстие" : "center bore",
         offset_et: locale === "ru" ? "вылет колесного диска" : "wheel offset",
         diameter_width: locale === "ru" ? "размер колесного диска" : "wheel size",
@@ -6194,6 +6197,10 @@ function renderFitmentV2Result(check, ui, active) {
 }
 
 function renderFitment() {
+    if (state.view === "fitment" && document.querySelector("[data-vnext-fitment-root]")) {
+        notifyFitmentBridge();
+        return;
+    }
     const loading = document.querySelector("[data-fitment-loading]");
     const error = document.querySelector("[data-fitment-error]");
     const errorText = document.querySelector("[data-fitment-error-text]");
@@ -10089,6 +10096,205 @@ function notifyRenderBridge() {
         });
     }
 }
+
+function notifyFitmentBridge() {
+    if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:fitmentchange"));
+}
+
+function vnextFitmentSnapshot() {
+    const overview = state.fitmentOverview;
+    const check = fitmentCheckForPresentation();
+    const ui = fitmentUiState(overview, check);
+    const vehicle = overview?.vehicle || {};
+    const rim = state.fitmentForm?.rim || fitmentEffectiveRim(overview);
+    const job = fitmentContextJob();
+    const marketItems = [...(state.fitmentMarketResolution?.items || [])];
+    if (vehicle.market && !marketItems.some((item) => fitmentOptionValue(item) === String(vehicle.market))) {
+        marketItems.unshift({ value: vehicle.market, label: fitmentMarketLabel(vehicle.market) });
+    }
+    const mapOptions = (items, kind) => (items || []).map((item) => ({
+        value: fitmentOptionValue(item),
+        label: fitmentCatalogueOptionLabel(item, kind),
+    }));
+    const retryAvailable = check?.execution_status === "failed"
+        ? check.retry_mode !== "not_applicable" && fitmentNextAction(overview) === "run_standard_check"
+        : fitmentNextAction(overview) === "run_standard_check";
+    const failedExecution = check?.execution_status === "failed";
+    const fieldEvidence = check && !failedExecution ? fitmentResultFieldItems(check).map((item) => ({
+        name: (item.field ? fitmentFieldLabel(item.field) : item.label || item.code || "Параметр").replace(/^./u, (first) => first.toLocaleUpperCase()),
+        label: fitmentResultFieldCopy(item, check),
+        resultLabel: fitmentResultFieldCopy(item, check),
+        vehicleValue: item.vehicle_value ?? item.vehicle ?? null,
+        rimValue: item.rim_value ?? item.rim ?? null,
+    })) : [];
+    return {
+        jobId: state.fitmentJobId,
+        overview,
+        loading: state.fitmentLoading,
+        saving: state.fitmentSaving,
+        checking: state.fitmentChecking,
+        error: state.fitmentError ? localizeErrorMessage(state.fitmentError) : "",
+        executionError: check?.execution_status === "failed" ? fitmentResultCopy(check) : "",
+        message: state.fitmentMessage || "",
+        executionStatus: check?.execution_status || "idle",
+        nextAction: fitmentNextAction(overview),
+        check,
+        resultCopy: check ? fitmentResultCopy(check) : "",
+        blockingIssues: (failedExecution ? [] : check?.blocking_issues || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
+        conditions: (failedExecution ? [] : check?.conditions || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
+        fieldEvidence,
+        currentness: check ? { isCurrent: check.is_current !== false, stale: check.is_current === false } : null,
+        canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !state.fitmentChecking),
+        retryAvailable,
+        vehicle,
+        vehicleTitle: demoVehicleTitle(vehicle),
+        vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
+        vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
+        vehicleEditing: Boolean(state.fitmentVehicleEditing || ui.nextAction === "complete_vehicle_details"),
+        vehicleVariantAction: ui.nextAction === "select_vehicle_variant",
+        canReselectVehicleVariant: overview?.modification_state === "confirmed" && Boolean(fitmentSelectedVehicleVariant(overview)),
+        vehicleVariantPickerOpen: Boolean(state.fitmentModificationPickerOpen),
+        vehicleVariantMode: state.fitmentModificationLookupMode,
+        vehicleCandidates: Object.entries(overview?.vehicle_candidates || {}).flatMap(([field, items]) => (Array.isArray(items) ? items : []).filter((item) => item?.value != null && item.value !== "").map((item) => ({ field, value: fitmentPresentationText(item.value) }))),
+        vehicleVariantsLoading: state.fitmentVehicleVariantsLoading,
+        vehicleVariants: (state.fitmentVehicleVariants || []).map((variant, index) => ({
+            label: fitmentVariantDisplayName(variant, index),
+            technical: fitmentVariantTechnicalSeries(variant, fitmentVariantDisplayName(variant, index)),
+        })),
+        selectedVehicleVariant: state.fitmentSelectedVehicleVariantIndex,
+        catalogue: {
+            makes: mapOptions(fitmentCatalogueItems("makes"), "makes"),
+            models: mapOptions(fitmentCatalogueItems("models"), "models"),
+            years: mapOptions(fitmentCatalogueItems("years"), "years"),
+            markets: mapOptions(marketItems, "regions"),
+        },
+        rim,
+        rimTitle: demoRimTitle(rim),
+        rimSpecs: fitmentRimTechnicalSummary(rim),
+        setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
+        rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
+        rimEditing: Boolean(state.fitmentRimEditing || ui.rim.setupState !== "confirmed_ready" || ui.form.dirty),
+        rimPreview: fitmentPreviewAsset(job, "rim"),
+        rimProvenance: fitmentRimProvenance(ui),
+        rimCandidates: Object.entries(overview?.rim_candidates || {}).flatMap(([field, items]) => (Array.isArray(items) ? items : []).filter((item) => item?.value != null && item.value !== "").map((item) => ({ field, value: fitmentPresentationText(item.value) }))),
+        resolver: {
+            url: state.fitmentForm?.rim?.product_url || "",
+            loading: Boolean(state.fitmentSourceResolving),
+            status: state.fitmentSourceStatus || "",
+            variants: (state.fitmentSourceVariants || []).map((variant) => ({ brand: variant.brand, model: variant.model, sku: variant.sku })),
+            conflicts: state.fitmentSourceConflicts || [],
+        },
+    };
+}
+
+function setVnextFitmentField(path, value) {
+    const nextValue = ["rim.bolt_count", "rim.pcd_mm", "rim.wheel_diameter_in", "rim.wheel_width_j", "rim.center_bore_mm", "rim.offset_et_mm", "rear_rim.bolt_count", "rear_rim.pcd_mm", "rear_rim.wheel_diameter_in", "rear_rim.wheel_width_j", "rear_rim.center_bore_mm", "rear_rim.offset_et_mm"].includes(path)
+        ? (value === "" ? "" : Number(value))
+        : value;
+    if (path === "vehicle.make") {
+        rememberFitmentVehicleCatalogueChain();
+        state.fitmentCatalogueParentChange = { makeChanged: nextValue !== state.fitmentForm.vehicle.make, modelChanged: false };
+        state.fitmentForm.vehicle.make = nextValue;
+        const contextVersion = beginFitmentCatalogueContextChange();
+        resetFitmentCatalogue("models", { status: nextValue ? "loading" : "idle" });
+        resetFitmentCatalogue("years", { status: nextValue ? "loading" : "idle" });
+        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+        if (nextValue) void revalidateFitmentCatalogueChain(contextVersion);
+        else { state.fitmentForm.vehicle.model = ""; state.fitmentForm.vehicle.year = ""; }
+    } else if (path === "vehicle.model") {
+        rememberFitmentVehicleCatalogueChain();
+        state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: nextValue !== state.fitmentForm.vehicle.model };
+        state.fitmentForm.vehicle.model = nextValue;
+        const contextVersion = beginFitmentCatalogueContextChange();
+        resetFitmentCatalogue("years", { status: nextValue ? "loading" : "idle" });
+        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+        if (nextValue && state.fitmentForm.vehicle.make) void revalidateFitmentCatalogueChain(contextVersion);
+        else if (!nextValue) state.fitmentForm.vehicle.year = "";
+    } else if (path === "vehicle.year") {
+        state.fitmentForm.vehicle.year = nextValue;
+        state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+        const contextVersion = beginFitmentCatalogueContextChange();
+        state.fitmentMarketResolution = { status: nextValue ? "loading" : "idle", resolution: "", resolved_market: null, items: [] };
+        if (nextValue && state.fitmentForm.vehicle.make && state.fitmentForm.vehicle.model) void revalidateFitmentCatalogueChain(contextVersion);
+    } else if (path === "vehicle.market") {
+        state.fitmentForm.vehicle.market = nextValue;
+        state.fitmentMarketResolution = { ...state.fitmentMarketResolution, status: nextValue ? "selected" : "selection_required" };
+        rememberFitmentVehicleCatalogueChain();
+    } else {
+        setDeepValue(state.fitmentForm, path, nextValue);
+    }
+    if (path.startsWith("rim.") || path.startsWith("rear_rim.")) {
+        const fieldName = path.replace(/^(?:rim|rear_rim)\./, "");
+        state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
+        markRimFieldEdited(path);
+    }
+    markVehicleFieldEdited(path);
+    markFitmentDirty();
+    validateFitmentForm();
+    renderFitment();
+}
+
+window.dreamwheelsFitmentBridge = {
+    snapshot: vnextFitmentSnapshot,
+    surfaceMounted() {
+        const job = fitmentContextJob();
+        if (job) {
+            void ensureFitmentPreviewAsset(job, "vehicle");
+            void ensureFitmentPreviewAsset(job, "rim");
+        }
+    },
+    setField: setVnextFitmentField,
+    setSourceUrl(value) { state.fitmentForm.rim.product_url = value; markFitmentDirty(); notifyFitmentBridge(); },
+    action(action, value = "") {
+        if (action === "back") closeFitmentView();
+        else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
+        else if (action === "edit-vehicle") { state.fitmentVehicleEditing = true; setFitmentActiveSection("vehicle"); }
+        else if (action === "edit-rim") { state.fitmentRimEditing = true; setFitmentActiveSection("rim"); }
+        else if (action === "save") void saveFitment();
+        else if (action === "check") void runFitmentCheck();
+        else if (action === "recovery") navigateFitmentRecovery(value);
+        else if (action === "resolve-rim") void resolveFitmentRimSource();
+        else if (action === "rim-variant") selectFitmentRimVariant(Number(value));
+        else if (action === "conflict-keep") resolveFitmentParserConflict(value);
+        else if (action === "conflict-use") {
+            const [fieldName, ...suggested] = value.split("|");
+            resolveFitmentParserConflict(fieldName, suggested.join("|"));
+        } else if (action === "manual-rim") {
+            clearFitmentTransientMessage();
+            clearFitmentResolverFeedback({ close: true });
+            state.fitmentRimEditing = true;
+            state.fitmentActiveSection = "rim";
+            state.fitmentActiveStep = 2;
+            renderFitment();
+        } else if (action === "candidate") {
+            const [path, ...candidateValue] = value.split("|");
+            setVnextFitmentField(path, candidateValue.join("|"));
+        } else if (action === "reselect-vehicle") toggleFitmentModificationPicker();
+        else if (action === "load-vehicle-variants") {
+            toggleFitmentModificationPicker();
+        } else if (action === "vehicle-variant") {
+            state.fitmentSelectedVehicleVariantIndex = Number(value);
+            renderFitment();
+        } else if (action === "confirm-vehicle-variant") {
+            const variant = state.fitmentVehicleVariants[state.fitmentSelectedVehicleVariantIndex];
+            if (!variant) return;
+            if (state.fitmentModificationLookupMode === "reselect") void replaceFitmentVehicleVariant(variant);
+            else void applyFitmentVehicleVariant(variant).then(() => {
+                state.fitmentVehicleVariants = [];
+                state.fitmentSelectedVehicleVariantIndex = null;
+                state.fitmentModificationPickerOpen = false;
+                state.fitmentModificationLookupMode = "initial";
+                state.fitmentMessage = locale === "ru" ? "Комплектация выбрана" : "Vehicle version selected";
+                state.fitmentMessageTone = "success";
+                renderFitment();
+            }).catch((error) => {
+                state.fitmentError = error?.message || t("errors.requestFailed");
+                renderFitment();
+            });
+        } else if (action === "create-image") setView("create");
+        notifyFitmentBridge();
+    },
+};
 
 let renderAssetPreparationPending = false;
 
