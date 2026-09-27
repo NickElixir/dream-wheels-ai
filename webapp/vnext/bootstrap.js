@@ -9,11 +9,39 @@ import { createCreateView, refreshCreateView } from "./views/create.js";
 import { createDocumentsView } from "./views/documents.js";
 import { createPhotoGuideView } from "./views/photo-guide.js";
 import { createSupportView } from "./views/support.js";
+import { createRenderView, refreshRenderView } from "./views/render.js";
 
-const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail"]);
 let mountedRoot = null;
 let mountedView = "";
 let mountedCreateContent = null;
+let mountedRenderContent = null;
+let legacyHiddenStates = [];
+
+const renderCallbacks = {
+  action: (...args) => window.dreamwheelsRenderBridge?.action(...args),
+  assetError: (...args) => window.dreamwheelsRenderBridge?.assetError(...args),
+};
+
+function renderKind(view) {
+  if (view === "renders") return "history";
+  if (view === "render-detail") return "result";
+  if (view === "create") {
+    const create = window.dreamwheelsCreateBridge?.snapshot();
+    if (create?.createScreen === "result") return create.resultUrl && !create.submitting && !create.renderError ? "result" : "processing";
+  }
+  return "";
+}
+
+function refreshMountedRender() {
+  if (!mountedRoot) return;
+  const kind = renderKind(mountedView);
+  if (kind && mountedRenderContent?.renderKind === kind) {
+    refreshRenderView(mountedRenderContent, window.dreamwheelsRenderBridge?.snapshot(mountedView === "create" && kind === "result" ? "current-result" : kind) || {}, renderCallbacks);
+  } else if (mountedView === "create") {
+    if (kind || mountedRenderContent) mountSurface("create", { force: true });
+  }
+}
 
 function createCallbacks() {
   return {
@@ -40,12 +68,18 @@ function createCallbacks() {
 }
 
 function renderCreate() {
+  if (renderKind(mountedView) || mountedRenderContent) { refreshMountedRender(); return; }
   const bridge = window.dreamwheelsCreateBridge;
   if (!mountedCreateContent || !bridge) return;
   mountedCreateContent = refreshCreateView(mountedCreateContent, bridge.snapshot(), createCallbacks());
 }
 
 function surfaceDescriptor(view) {
+  const kind = renderKind(view);
+  if (kind) return {
+    title: kind === "history" ? "Мои примерки" : kind === "result" ? "Результат" : "Создаём виртуальную примерку",
+    content: createRenderView(kind, window.dreamwheelsRenderBridge?.snapshot(view === "create" && kind === "result" ? "current-result" : kind) || {}, renderCallbacks),
+  };
   if (view === "dashboard") {
     return {
       title: "Главная",
@@ -86,47 +120,57 @@ function unmountSurface() {
       [...mountedRoot.children].forEach((child) => {
         if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
       });
-    } else {
+    } else if (["renders", "render-detail"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
+    else {
       mountedRoot.replaceChildren();
       delete mountedRoot.dataset.vnextRoot;
     }
+    for (const [child, hidden] of legacyHiddenStates) child.hidden = hidden;
   }
   mountedRoot = null;
   mountedView = "";
   mountedCreateContent = null;
+  mountedRenderContent = null;
+  legacyHiddenStates = [];
 }
 
 function mountSurface(view, { force = false } = {}) {
-  const descriptor = surfaceDescriptor(view);
   const host = document.querySelector(`[data-view="${view}"]`);
-  if (!descriptor || !host) return;
+  if (!host) return;
   if (!force && mountedRoot === host && mountedView === view) {
     if (view === "create") renderCreate();
+    else refreshMountedRender();
     return;
   }
+  const descriptor = surfaceDescriptor(view);
+  if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
 
-  if (view === "create") {
-    let createRoot = host.querySelector(":scope > [data-vnext-create-root]");
+  if (view === "create" || view === "renders" || view === "render-detail") {
+    let createRoot = host.querySelector(view === "create" ? ":scope > [data-vnext-create-root]" : ":scope > [data-vnext-surface-root]");
     if (!createRoot) {
       createRoot = document.createElement("div");
-      createRoot.dataset.vnextCreateRoot = "";
+      if (view === "create") createRoot.dataset.vnextCreateRoot = "";
+      else createRoot.dataset.vnextSurfaceRoot = "";
+      legacyHiddenStates = [...host.children].map((child) => [child, child.hidden]);
       host.prepend(createRoot);
     }
     [...host.children].filter((child) => child !== createRoot).forEach((child) => { child.hidden = true; });
     createRoot.hidden = false;
     createRoot.replaceChildren(createAppShell({
       title: descriptor.title,
-      activeView: view,
+      activeView: view === "render-detail" || renderKind(view) === "processing" ? "renders" : view,
       navigate: legacyNavigate,
       content: descriptor.content,
     }));
     createRoot.dataset.vnextRoot = view;
     mountedRoot = host;
     mountedCreateContent = createRoot.querySelector(".vnext-shell__frame > .vnext-create");
+    mountedRenderContent = createRoot.querySelector(".vnext-shell__frame > .vnext-render");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
-    window.dreamwheelsCreateBridge?.surfaceMounted();
+    if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
+    else window.dreamwheelsRenderBridge?.prepareAssets();
     return;
   }
 
@@ -152,6 +196,7 @@ window.addEventListener("dreamwheels:dashboardchange", () => {
   if (mountedView === "dashboard") mountSurface("dashboard", { force: true });
 });
 window.addEventListener("dreamwheels:createchange", renderCreate);
+window.addEventListener("dreamwheels:renderchange", refreshMountedRender);
 document.addEventListener("DOMContentLoaded", () => {
   for (const view of migratedViews) {
     const host = document.querySelector(`[data-view="${view}"]`);
