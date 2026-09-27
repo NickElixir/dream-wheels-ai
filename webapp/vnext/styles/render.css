@@ -65,14 +65,14 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-system-card h2 { margin:0; font-size:28px; font-weight:500; letter-spacing:-.03em; }
 .vnext-system-card p { margin:8px 0 22px; }
 .vnext-system-mark { color:var(--vnext-warning); font-size:26px; margin-bottom:12px; }
-.vnext-generation-error { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr); gap:32px; align-items:center; min-height:48vh; }
+.vnext-generation-error { display:grid; grid-template-columns:minmax(0,1fr); gap:0; align-items:start; min-height:0; }
 .vnext-generation-error--empty { grid-template-columns:minmax(0,680px); min-height:0; }
-.vnext-generation-context { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,.34fr); gap:14px; align-items:start; min-width:0; }
+.vnext-generation-context { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,.34fr); gap:14px; align-items:start; width:min(720px,100%); min-width:0; }
 .vnext-generation-context:empty { display:none; }
 .vnext-generation-context > .vnext-render-media { aspect-ratio:16/10; height:auto; }
 .vnext-generation-context > .vnext-render-media:only-child { grid-column:1/-1; }
 .vnext-generation-context > .vnext-render-media:nth-child(2) { aspect-ratio:1; }
-.vnext-generation-copy { max-width:440px; }
+.vnext-generation-copy { max-width:720px; margin-top:24px; }
 .vnext-generation-copy h2 { margin:0; font-size:clamp(26px,3.2vw,36px); line-height:1.12; font-weight:500; letter-spacing:-.035em; }
 .vnext-generation-copy > p:not(.vnext-eyebrow) { margin:12px 0 0; }
 .vnext-generation-copy .vnext-render-actions { display:grid; grid-template-columns:1fr; justify-items:start; margin-top:24px; }
@@ -93,8 +93,9 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
   .vnext-history-actions { grid-column:2; justify-content:flex-start; }
   .vnext-compare { aspect-ratio:4/3; }
   .vnext-system-card { padding:22px 18px; }
-  .vnext-generation-error { grid-template-columns:minmax(0,1fr); gap:20px; min-height:0; }
+  .vnext-generation-error { gap:20px; }
   .vnext-generation-context { grid-template-columns:minmax(0,1fr) 88px; gap:12px; }
+  .vnext-generation-copy { margin-top:0; }
   .vnext-generation-copy h2 { font-size:28px; }
   .vnext-generation-copy .vnext-render-actions { justify-items:stretch; }
   .vnext-generation-copy .vnext-render-actions .vnext-button--primary { width:100%; }

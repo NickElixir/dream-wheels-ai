@@ -89,6 +89,11 @@ test("Generation Error uses available car/wheel context and preserves its existi
   const bootstrap = fs.readFileSync(new URL("../vnext/bootstrap.js", import.meta.url), "utf8");
   assert.match(bootstrap, /model\.error \? "Виртуальная примерка"/);
   assert.match(bootstrap, /if \(heading && heading\.textContent !== title\) heading\.textContent = title/);
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-generation-error\s*\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css, /\.vnext-generation-context\s*\{[^}]*width:min\(720px,100%\)/);
+  assert.match(css, /\.vnext-generation-copy\s*\{[^}]*margin-top:24px/);
+  assert.match(css, /\.vnext-generation-copy\s*\{ margin-top:0; \}/);
 });
 
 test("History rows share inset and thumbnail grid at mobile widths", () => {
