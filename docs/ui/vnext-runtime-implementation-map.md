@@ -1,7 +1,7 @@
 # Dream Wheels AI — VNext runtime implementation map
 
-**Audit date:** 2026-09-25  
-**Scope:** documentation only; no runtime code was changed.  
+**Audit date:** 2026-09-25
+**Scope:** documentation only; no runtime code was changed.
 **Runtime implementation target:** `staging` at `29415ac318cda1f45a5981d082a220575e9ff66b`.
 
 ## Decision and authority
@@ -9,6 +9,17 @@
 `staging` is the implementation baseline.  It contains `origin/main` (`75b0490`) plus the current application runtime: Auth V1.1/account linking, wallet polish and payment-return routing, confirmed-vehicle Fitment state machine, renderer/provider work, and the latest dashboard fixes.  `origin/main` must not be used as the implementation source without first merging/rebasing those changes.  The local checkout has no local `main` branch; comparisons in this document mean `origin/main..staging`.
 
 The requested VNext design authority is frozen, and this map treats it as immutable. The exact frozen Design Code, canonical HTML, closing QA report, required reference assets and QA evidence were synchronized from `docs/vnext-final-reconciliation` at `b7a12c6b7fe8550bd48d242282b655a78e32e39f` onto the current staging-based docs sync branch in commit `c3a992401bfd5b6fb7cdcbeae5a5ea6cb5a75c46`. Formal freeze provenance is `7f35d55416bb2688c50b84c4b62e116dc0cc14ec` -> `b7a12c6b7fe8550bd48d242282b655a78e32e39f`. These artifacts are immutable implementation authority; do not rebuild or reinterpret them.
+
+The scoped implementation-authority hierarchy is:
+
+```text
+explicit approved PR/design decision
+→ docs/ui/dream-wheels-application-design-code-vnext-amendment-2026-09-27.md
+→ frozen VNext v0.1 Design Code + canonical prototype
+→ legacy visual conventions
+```
+
+The amendment is authoritative only for its fifteen enumerated rules; it does not rewrite the frozen v0.1 artifact or change any unlisted VNext provision. Domain contracts and server-owned state continue to govern behavior and semantics.
 
 Non-negotiable boundary:
 
