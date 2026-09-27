@@ -77,10 +77,21 @@ test("Result actions keep the primary and Fitment CTAs, expose tertiary download
   assert.doesNotMatch(markup, /К моим примеркам|Скачать изображение/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="liked"[^>]*>Удачный результат/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="disliked"[^>]*>Нужна доработка/);
+  assert.match(markup, /class="vnext-result-value">ZEEKR 007/);
+  assert.match(markup, /class="vnext-result-value">X-Trike/);
+  assert.match(markup, /class="vnext-result-detail">20″ \/ 9J \/ 5×112/);
+  assert.match(markup, /class="vnext-result-value vnext-result-value--date">25 сентября, 14:32/);
+  assert.doesNotMatch(markup, /class="vnext-result-aside"><p class="vnext-eyebrow">Виртуальная примерка/);
   assert.doesNotMatch(markup, /👍|👎/);
   const sparse = resultMarkup({ jobId: "B", status: "completed", resultUrl: "/result", originalUrl: "/original" });
   assert.doesNotMatch(sparse, /<h3>(?:Автомобиль|Диск|Создано)<\/h3>|—/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  const tokens = fs.readFileSync(new URL("../vnext/styles/tokens.css", import.meta.url), "utf8");
+  assert.match(tokens, /--vnext-text-value:\s*#[0-9a-f]{6}/i);
+  assert.match(css, /\.vnext-render p\.vnext-result-value\s*\{[^}]*color:var\(--vnext-text-value\)/);
+  assert.match(css, /\.vnext-result-detail\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
+  assert.match(css, /\.vnext-result-meta h3\s*\{[^}]*color:var\(--vnext-text-subtle\)/);
+  assert.match(css, /\.vnext-result-actions \.vnext-button--tertiary:hover[^{]*\{ color:var\(--vnext-text\)/);
   assert.match(css, /\.vnext-result-layout\s*\{[^}]*76fr[^}]*24fr[^}]*gap:24px/);
   assert.match(css, /\.vnext-rating\s*\{[^}]*width:min\(650px,100%\)/);
   assert.match(css, /\.vnext-rating-actions \.vnext-button\s*\{[^}]*min-height:40px/);
@@ -93,6 +104,9 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.match(markup, /vnext-generation-error[^>]*role="status"/);
   assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
   assert.match(markup, /Фото автомобиля[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?vnext-generation-wheel-thumb[\s\S]*?Фото выбранного колесного диска[\s\S]*?X-Trike X-132[\s\S]*?20″ \/ 9J \/ 5×112 \/ ET 0/);
+  assert.match(markup, /class="vnext-generation-value">ZEEKR 007/);
+  assert.match(markup, /class="vnext-generation-value">X-Trike X-132/);
+  assert.match(markup, /class="vnext-generation-specs">20″ \/ 9J \/ 5×112 \/ ET 0/);
   assert.match(markup, /Генерация[\s\S]*?Не удалось создать виртуальную примерку[\s\S]*?Попробуйте ещё раз\. Если ошибка повторится, обратитесь в поддержку\./);
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="generation-retry"[^>]*>Повторить/);
   assert.match(markup, /data-render-action="support"/);
@@ -110,6 +124,8 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.match(bootstrap, /model\.error \? "Виртуальная примерка"/);
   assert.match(bootstrap, /if \(heading && heading\.textContent !== title\) heading\.textContent = title/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-render p\.vnext-generation-value\s*\{[^}]*color:var\(--vnext-text-value\)/);
+  assert.match(css, /\.vnext-generation-specs\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
   assert.match(css, /\.vnext-generation-error\s*\{[^}]*grid-template-columns:minmax\(0,1\.6fr\) minmax\(300px,1fr\)/);
   assert.match(css, /\.vnext-generation-error--no-car\s*\{[^}]*grid-template-columns:minmax\(0,680px\)/);
   assert.match(css, /\.vnext-generation-media:empty\s*\{ display:none; \}/);
@@ -119,11 +135,28 @@ test("Generation Error uses available car/wheel context and preserves its existi
 });
 
 test("History rows share inset and thumbnail grid at mobile widths", () => {
+  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", dateLabel: "25 сентября", createdLabel: "25 сентября, 14:32", statusLabel: "Готово" }] });
+  assert.match(markup, /<h3>ZEEKR 007<\/h3>[\s\S]*?<p>X-Trike \/ 20″ \/ 9J \/ 5×112 \/ 25 сентября, 14:32<\/p>[\s\S]*?<span class="vnext-status vnext-status--positive">Готово<\/span>/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-history-row h3\s*\{[^}]*color:var\(--vnext-text-value\)/);
+  assert.match(css, /\.vnext-history-date\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
   assert.match(css, /\.vnext-history-row\s*\{[^}]*padding:16px/);
   assert.match(css, /@media\(max-width:390px\)/);
   assert.match(css, /\.vnext-history-row\s*\{[^}]*grid-template-columns:88px minmax\(0,1fr\); gap:14px; align-items:start; padding:16px/);
   assert.match(css, /\.vnext-history-actions\s*\{[^}]*grid-column:2/);
+});
+
+test("Processing preserves status hierarchy while separating selected wheel identity from specs", () => {
+  const markup = processingMarkup({ status: "processing", title: "ZEEKR 007", rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg" });
+  assert.match(markup, /<h2>Создаём виртуальную примерку<\/h2>/);
+  assert.match(markup, /<strong>Создаём примерку\.\.\.<\/strong>/);
+  assert.match(markup, /class="vnext-render-object">ZEEKR 007/);
+  assert.match(markup, /class="vnext-processing-wheel-name">X-Trike X-132/);
+  assert.match(markup, /class="vnext-processing-wheel-specs">20″ \/ 9J \/ 5×112 \/ ET 0/);
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-render-object\s*\{[^}]*color:var\(--vnext-text-value\)/);
+  assert.match(css, /\.vnext-processing-aside p\.vnext-processing-wheel-name\s*\{[^}]*color:var\(--vnext-text-value\)/);
+  assert.match(css, /\.vnext-processing-aside p\.vnext-processing-wheel-specs\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
 });
 
 for (const result of [{ result_url: "/result" }, { output_image_url: "/result" }, { assets: { result: { url: "/result" } } }]) test(`existing polling transitions queued → processing → Result (${Object.keys(result)[0]})`, async () => {
