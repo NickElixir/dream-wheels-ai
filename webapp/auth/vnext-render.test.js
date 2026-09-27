@@ -106,6 +106,22 @@ test("comparison reveals original on the left and result on the right, with matc
   assert.match(css, /\.vnext-compare-reveal\s*\{[^}]*clip-path:inset\(0 calc\(100% - var\(--compare\)\) 0 0\)/);
 });
 
+test("Result keeps its desktop grid and stacks comparison before a bounded aside on tablet", () => {
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  const tablet = css.match(/@media\(max-width:1024px\)\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const mobile = css.match(/@media\(max-width:680px\)\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const narrowMobile = css.match(/@media\(max-width:390px\)\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+
+  assert.match(css, /\.vnext-result-layout\s*\{ display:grid; grid-template-columns:minmax\(0,76fr\) minmax\(250px,24fr\); gap:24px;/);
+  assert.match(tablet, /\.vnext-result-layout\s*\{ display:flex; flex-direction:column; gap:20px; \}/);
+  assert.match(tablet, /\.vnext-result-layout > \.vnext-compare\s*\{ width:100%; \}/);
+  assert.match(tablet, /\.vnext-result-aside\s*\{ width:100%; max-width:680px; \}/);
+  assert.match(css, /\.vnext-compare\s*\{[^}]*aspect-ratio:16\/9/);
+  assert.match(mobile, /\.vnext-result-layout\s*\{ display:flex; flex-direction:column; gap:18px; \}/);
+  assert.match(mobile, /\.vnext-compare\s*\{ aspect-ratio:4\/3; \}/);
+  assert.match(narrowMobile, /\.vnext-compare\s*\{ aspect-ratio:1; \}/);
+});
+
 test("Result actions keep the primary and Fitment CTAs, expose tertiary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
