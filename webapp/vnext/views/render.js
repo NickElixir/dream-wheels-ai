@@ -45,8 +45,8 @@ export function historyMarkup(model) {
 
 // Reconcile in place: feedback/polling updates keep the same image, slider,
 // focus and scroll. Delegated handlers are attached exactly once to the root.
-function patchNode(current, next) {
-  if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName) { current.replaceWith(next); return; }
+export function patchNode(current, next) {
+  if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName) { current.replaceWith(next.cloneNode(true)); return; }
   if (current.nodeType === 3) { if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue; return; }
   for (const attribute of [...current.attributes]) if (!next.hasAttribute(attribute.name) && !(attribute.name === "style" && current.hasAttribute("data-compare"))) current.removeAttribute(attribute.name);
   for (const attribute of [...next.attributes]) {
