@@ -35,8 +35,9 @@ test("Dashboard consumes a read-only legacy view model and keeps domain actions 
 test("Dashboard headline preserves the copy and renders in the requested three lines", () => {
   const view = read("vnext/views/dashboard.js");
   const css = read("vnext/styles/surfaces.css");
-  assert.match(view, /title\.setAttribute\("aria-label", "Посмотрите выбранные диски на своей машине"\)/);
-  assert.match(view, /\["Посмотрите выбранные", "диски на своей", "машине"\]/);
+  assert.match(view, /title\.setAttribute\("aria-label", "Примерьте новые диски на своём автомобиле"\)/);
+  assert.match(view, /\["Примерьте", "новые диски", "на своём автомобиле"\]/);
+  assert.doesNotMatch(view, /Загрузите автомобиль и выберите конкретный колесный диск/);
   assert.match(css, /\.vnext-dashboard__intro h2 span \{ display: block; \}/);
 });
 
