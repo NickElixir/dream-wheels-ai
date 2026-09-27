@@ -7416,9 +7416,6 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
-        setFitmentEditor("rim");
-        state.fitmentActiveSection = "rim";
-        state.fitmentActiveStep = 2;
     } finally {
         window.clearTimeout(requestTimeout);
         if (state.fitmentSourceController === controller) state.fitmentSourceController = null;

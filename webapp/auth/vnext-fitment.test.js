@@ -311,6 +311,102 @@ test("runtime Fitment initialization follows next_action and never opens both ob
   assert.deepEqual([state.fitmentVehicleEditing, state.fitmentRimEditing], [false, true]);
 });
 
+test("deferred wheel-source failures preserve the active editor, navigation, and unsaved values", async () => {
+  const app = read("app.js");
+  const resolver = app.slice(app.indexOf("async function resolveFitmentRimSource("), app.indexOf("async function loadFitmentVehicleVariants(", app.indexOf("async function resolveFitmentRimSource(")));
+  const navigation = app.slice(app.indexOf("function setFitmentEditor("), app.indexOf("function setFitmentEditorsForNextAction("));
+  const section = app.slice(app.indexOf("function fitmentSectionToStep("), app.indexOf("function navigateFitmentRecovery("));
+  const bridge = app.slice(app.indexOf("window.dreamwheelsFitmentBridge = {"), app.indexOf("\n};\n\nlet renderAssetPreparationPending"));
+
+  function createRuntime() {
+    let rejectRequest;
+    let resolveRequest;
+    const pendingResponse = new Promise((resolve, reject) => {
+      resolveRequest = resolve;
+      rejectRequest = reject;
+    });
+    const state = {
+      fitmentJobId: "job-1", fitmentForm: { vehicle: { make: "Zeekr", model: "001", year: "2025", body: "user-edited body" }, rim: { brand: "BBS", product_url: "https://shop.example.test/rim", wheel_diameter_in: "19" } },
+      fitmentOverview: { next_action: { kind: "complete_vehicle_details" } },
+      fitmentVehicleEditing: false, fitmentRimEditing: false, fitmentActiveSection: "rim", fitmentActiveStep: 2,
+      fitmentSourceResolving: false, fitmentSourceOpen: false, fitmentSourceAppliedFields: [], fitmentSourceDetected: false,
+      fitmentSourceVariants: [], fitmentSourceStatus: "", fitmentSourceStatusTone: "neutral", fitmentSourceController: null,
+      fitmentMessage: "", fitmentMessageTone: "neutral", fitmentSourceConflicts: [], fitmentSourceIdentity: {},
+    };
+    const context = {
+      state, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
+      window: { setTimeout: () => 1, clearTimeout() {} }, AbortController,
+      shouldUseDemoFitment: () => false,
+      normalizeFitmentText: value => value.trim(),
+      clearFitmentTransientMessage() { state.fitmentMessage = ""; },
+      apiUrl: value => value,
+      withAuthHeaders: value => value,
+      authenticatedFetch: () => pendingResponse,
+      fitmentSourceErrorMessage: () => "URL resolver unavailable",
+      parseApiError: async () => "URL resolver unavailable",
+      showFitmentAuthRequired() {},
+      renderFitment() {}, scrollFitmentTo() {},
+      persistFitmentNavigationContext() {}, ensureRequiredFitmentVariantLookup() {},
+      notifyFitmentBridge() {},
+      fitmentSectionToStep: value => value === "vehicle" ? 1 : value === "rim" ? 2 : 3,
+      vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {},
+    };
+    vm.createContext(context);
+    vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}\n};`, context);
+    return { context, state, rejectRequest, resolveRequest: (...args) => resolveRequest(...args), reject: error => rejectRequest(error) };
+  }
+
+  async function begin(runtime, options = {}) {
+    const request = runtime.context.resolveFitmentRimSource(options);
+    await Promise.resolve();
+    assert.equal(runtime.state.fitmentSourceResolving, true, "request must remain pending while context changes");
+    return { request };
+  }
+
+  const automatic = createRuntime();
+  automatic.context.setFitmentEditor("vehicle");
+  automatic.state.fitmentActiveSection = "vehicle";
+  automatic.state.fitmentActiveStep = 1;
+  const { request: autoRequest } = await begin(automatic, { automatic: true });
+  automatic.reject(new Error("provider failed"));
+  await autoRequest;
+  assert.deepEqual([automatic.state.fitmentVehicleEditing, automatic.state.fitmentRimEditing], [true, false]);
+  assert.deepEqual([automatic.state.fitmentActiveSection, automatic.state.fitmentActiveStep], ["vehicle", 1]);
+  assert.equal(automatic.state.fitmentSourceStatus, "URL resolver unavailable");
+  assert.equal(automatic.state.fitmentForm.vehicle.body, "user-edited body");
+  assert.equal(automatic.state.fitmentForm.rim.brand, "BBS");
+
+  const lateManual = createRuntime();
+  lateManual.context.setFitmentEditor("rim");
+  lateManual.state.fitmentActiveSection = "rim";
+  lateManual.state.fitmentActiveStep = 2;
+  const { request: manualRequest } = await begin(lateManual);
+  lateManual.context.window.dreamwheelsFitmentBridge.action("edit-vehicle");
+  lateManual.reject(new Error("provider failed"));
+  await manualRequest;
+  assert.deepEqual([lateManual.state.fitmentVehicleEditing, lateManual.state.fitmentRimEditing], [true, false]);
+  assert.deepEqual([lateManual.state.fitmentActiveSection, lateManual.state.fitmentActiveStep], ["vehicle", 1]);
+  assert.equal(lateManual.state.fitmentForm.vehicle.body, "user-edited body");
+  assert.equal(lateManual.state.fitmentForm.rim.brand, "BBS");
+
+  const wheelActive = createRuntime();
+  wheelActive.context.setFitmentEditor("rim");
+  wheelActive.state.fitmentActiveSection = "rim";
+  wheelActive.state.fitmentActiveStep = 2;
+  const { request: wheelRequest } = await begin(wheelActive);
+  wheelActive.reject(new Error("provider failed"));
+  await wheelRequest;
+  assert.deepEqual([wheelActive.state.fitmentVehicleEditing, wheelActive.state.fitmentRimEditing], [false, true]);
+  assert.deepEqual([wheelActive.state.fitmentActiveSection, wheelActive.state.fitmentActiveStep], ["rim", 2]);
+  assert.equal(wheelActive.state.fitmentSourceStatusTone, "error");
+  assert.equal(wheelActive.state.fitmentSourceOpen, true);
+  const recoveryMarkup = fitmentMarkup({ overview: {}, rimEditing: true, resolver: { url: wheelActive.state.fitmentForm.rim.product_url, status: wheelActive.state.fitmentSourceStatus, loading: false } });
+  assert.match(recoveryMarkup, /Повторить/);
+  assert.match(recoveryMarkup, /Заполнить вручную/);
+  assert.equal(wheelActive.state.fitmentForm.rim.wheel_diameter_in, "19");
+  assert.equal(wheelActive.state.fitmentForm.vehicle.body, "user-edited body");
+});
+
 test("rim status comes from server-owned per-axle state, not next_action", () => {
   const emptyWhileVehicleIsIncomplete = fitmentMarkup({
     overview: { rim_setup_state: "empty" }, nextAction: "complete_vehicle_details",
