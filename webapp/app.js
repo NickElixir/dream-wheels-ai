@@ -1387,6 +1387,9 @@ const state = {
     downloading: false,
     sharing: false,
     submitting: false,
+    renderStatus: "",
+    downloadNoticeByJob: {},
+    feedbackRetryByJob: {},
     renderHistory: [],
     renderHistoryLoading: false,
     renderHistoryError: "",
@@ -8529,7 +8532,7 @@ function renderExpiryRows(items) {
 function resultUrlForJob(job) {
     const guestUrl = guestRenderAssetUrl(job, "result");
     if (guestUrl) return guestUrl;
-    return job?.assets?.result?.url || job?.result_url || "";
+    return job?.result_url || job?.output_image_url || job?.assets?.result?.url || "";
 }
 
 function canUseIdentityAssetUrls() {
@@ -8597,7 +8600,7 @@ function markAssetBlobLoading(jobId, kind, value) {
 }
 
 async function ensureAssetBlobUrl(job, kind) {
-    if (!job?.job_id || kind !== "original") return "";
+    if (!job?.job_id || !["original", "result"].includes(kind)) return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
     if (!hasFrontendAuth()) return "";
@@ -8611,7 +8614,8 @@ async function ensureAssetBlobUrl(job, kind) {
     renderDashboard();
 
     try {
-        const response = job.assets?.car_original?.download_url?.startsWith("/")
+        const assetKey = kind === "original" ? "car_original" : "result";
+        const response = job.assets?.[assetKey]?.download_url?.startsWith("/")
             ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
             : await fetch(sourceUrl);
         if (!response.ok) throw new Error(await parseApiError(response));
@@ -8622,6 +8626,10 @@ async function ensureAssetBlobUrl(job, kind) {
         state.renderAssetBlobUrlsByJob[job.job_id] = {
             ...(state.renderAssetBlobUrlsByJob[job.job_id] || {}),
             [kind]: objectUrl,
+        };
+        state.renderAssetErrorsByJob[job.job_id] = {
+            ...(state.renderAssetErrorsByJob[job.job_id] || {}),
+            [assetErrorKey(kind)]: false,
         };
     } catch (error) {
         state.renderAssetErrorsByJob[job.job_id] = {
@@ -8650,7 +8658,7 @@ function assetUrlForJob(job, kind) {
     if (kind === "original") {
         return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.car_original);
     }
-    return resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
+    return assetBlobUrlForJob(job, kind) || resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
 }
 
 function isAssetAvailable(job, kind) {
@@ -8849,6 +8857,7 @@ function setAssetLoadError(jobId, kind, hasError) {
         ...(state.renderAssetErrorsByJob[jobId] || {}),
         [kind]: hasError,
     };
+    notifyRenderBridge();
     if (state.expandedJobId === jobId || state.view === "renders") {
         renderRenders();
         renderDashboard();
@@ -8861,6 +8870,7 @@ async function submitHistoryFeedback(jobId, sentiment, reason = undefined) {
     if (!job) return;
 
     const currentFeedback = feedbackRecordForJob(job);
+    state.feedbackRetryByJob[jobId] = { sentiment, reason };
     const deleting = reason === undefined && currentFeedback?.sentiment === sentiment;
     if (isGuestRenderJob(job)) {
         if (deleting) {
@@ -9000,6 +9010,7 @@ function renderHistoryCard(job) {
 }
 
 function renderRenderDetail() {
+    notifyRenderBridge();
     const container = document.querySelector("[data-render-detail]");
     if (!container) return;
     const job = state.renderHistory.find((item) => item.job_id === state.renderDetailJobId);
@@ -9056,10 +9067,12 @@ async function loadRenderDetailJob(jobId) {
         if (existingIndex >= 0) state.renderHistory[existingIndex] = { ...state.renderHistory[existingIndex], ...job };
         else state.renderHistory.unshift(job);
     } catch (error) {
-        state.renderDetailError = localizeErrorMessage(error?.message || t("errors.requestFailed"));
+        if (state.renderDetailJobId === jobId) state.renderDetailError = localizeErrorMessage(error?.message || t("errors.requestFailed"));
     } finally {
-        state.renderDetailLoading = false;
-        if (state.view === "render-detail" && state.renderDetailJobId === jobId) renderRenderDetail();
+        if (state.renderDetailJobId === jobId) {
+            state.renderDetailLoading = false;
+            if (state.view === "render-detail") renderRenderDetail();
+        }
     }
 }
 
@@ -9102,6 +9115,7 @@ async function repeatRenderWithSavedPhotos(jobId) {
 }
 
 function renderRenders() {
+    notifyRenderBridge();
     const container = document.querySelector("[data-render-history]");
     if (!container) return;
     if (state.renderHistoryLoading) {
@@ -10062,7 +10076,120 @@ function notifyCreateBridge() {
     if (typeof CustomEvent === "function") {
         window.dispatchEvent(new CustomEvent("dreamwheels:createchange"));
     }
+    notifyRenderBridge();
 }
+
+function notifyRenderBridge() {
+    if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:renderchange"));
+    if (!renderAssetPreparationPending && (["renders", "render-detail"].includes(state.view) || state.view === "create" && state.renderStatus === "completed")) {
+        renderAssetPreparationPending = true;
+        void Promise.resolve().then(() => {
+            renderAssetPreparationPending = false;
+            prepareVnextRenderAssets();
+        });
+    }
+}
+
+let renderAssetPreparationPending = false;
+
+function vnextRimSpecs(rim = {}) {
+    return [rim.wheel_diameter_in != null ? `${rim.wheel_diameter_in}″` : "", rim.wheel_width_j != null ? `${rim.wheel_width_j}J` : "", rim.bolt_count && rim.pcd_mm ? `${rim.bolt_count}×${rim.pcd_mm}` : "", rim.offset_et_mm != null ? `ET ${rim.offset_et_mm}` : "", rim.center_bore_mm != null ? `DIA ${rim.center_bore_mm}` : ""].filter(Boolean).join(" / ");
+}
+
+function vnextRenderJob(job) {
+    const rim = job?.render_input_snapshot?.rim || {};
+    const specs = vnextRimSpecs(rim);
+    return {
+        jobId: job?.job_id || "", status: job?.status || "queued", title: [job?.render_input_snapshot?.vehicle?.make, job?.render_input_snapshot?.vehicle?.model].filter(Boolean).join(" ") || humanRenderTitle(job),
+        rimName: [rim.brand, rim.model].filter(Boolean).join(" "), specs,
+        createdLabel: formatDateTime(job?.created_at), dateLabel: formatShortDate(job?.created_at),
+        statusLabel: statusLabel(job?.status), resultUrl: assetUrlForJob(job, "result"),
+        originalUrl: assetUrlForJob(job, "original"),
+        originalFailed: hasAssetLoadError(job, "original"), resultFailed: hasAssetLoadError(job, "result"),
+        originalLoading: hasAssetSource(job, "original") && !assetUrlForJob(job, "original") && !hasAssetLoadError(job, "original"),
+        resultLoading: hasAssetSource(job, "result") && !assetUrlForJob(job, "result") && !hasAssetLoadError(job, "result"),
+        canFitment: fitmentAvailable(job), canDownload: hasAssetSource(job, "result"),
+        downloading: state.downloading, downloadNotice: state.downloadNoticeByJob[job?.job_id] || "",
+        feedback: { sentiment: feedbackSentimentForJob(job), reason: feedbackReasonForJob(job), busy: Boolean(state.feedbackBusyByJob[job?.job_id]), error: state.feedbackErrorByJob[job?.job_id] ? localizeErrorMessage(state.feedbackErrorByJob[job.job_id]) : "", notice: state.feedbackNoticeByJob[job?.job_id] || "" },
+        reasons: FEEDBACK_REASONS,
+    };
+}
+
+function vnextRenderSnapshot(surface) {
+    if (surface === "history") return {
+        loading: state.renderHistoryLoading, error: state.renderHistoryError,
+        rows: state.renderHistory.slice(0, state.renderHistoryVisibleCount).map((job) => {
+            const model = vnextRenderJob(job);
+            return { ...model, thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
+        }), hasMore: state.renderHistory.length > state.renderHistoryVisibleCount,
+    };
+    if (surface === "processing") {
+        const create = vnextCreateSnapshot();
+        return {
+            status: state.renderStatus || "queued", title: create.selectedVehicle ? formatVehicle(create.selectedVehicle) : "",
+            rimName: [create.proposal?.rim?.brand, create.proposal?.rim?.model].filter(Boolean).join(" "),
+            specs: vnextRimSpecs(create.proposal?.rim),
+            carUrl: create.files.car?.previewUrl || "", wheelUrl: create.files.wheel?.previewUrl || "",
+            error: create.renderError ? {
+                ...classifyGenerationError(create.renderError), title: create.renderError,
+                copy: document.querySelector("[data-error-copy]")?.textContent || "",
+                actionLabel: create.renderErrorActionLabel,
+                showSupport: !document.querySelector("[data-error-support]")?.hidden,
+            } : null,
+        };
+    }
+    const selectedJobId = surface === "current-result" ? state.jobId : state.renderDetailJobId;
+    const job = state.renderHistory.find((item) => item.job_id === selectedJobId);
+    return job ? vnextRenderJob(job) : { loading: state.renderDetailLoading, error: state.renderDetailError };
+}
+
+function prepareVnextRenderAssets() {
+    const jobs = state.view === "render-detail"
+        ? state.renderHistory.filter((job) => job.job_id === state.renderDetailJobId)
+        : state.view === "renders" ? state.renderHistory.slice(0, state.renderHistoryVisibleCount)
+        : state.view === "create" && state.renderStatus === "completed" ? state.renderHistory.filter((job) => job.job_id === state.jobId) : [];
+    for (const job of jobs) {
+        const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result"] : [job.status === "completed" ? "result" : "original"];
+        for (const kind of kinds) if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
+    }
+    scheduleRenderHistoryPolling();
+}
+
+window.dreamwheelsRenderBridge = {
+    snapshot: vnextRenderSnapshot,
+    prepareAssets: prepareVnextRenderAssets,
+    assetError(jobId, kind) { setAssetLoadError(jobId, assetErrorKey(kind), true); },
+    action(action, jobId, value) {
+        if (action === "history") setView("renders");
+        else if (action === "history-retry") void loadRenderHistory();
+        else if (action === "open") openRenderDetail(jobId, "renders");
+        else if (action === "more") { state.renderHistoryVisibleCount += 6; renderRenders(); }
+        else if (action === "create") openBlankTryOn();
+        else if (action === "retry-create") { showCreateScreen("upload"); setView("create"); }
+        else if (action === "repeat") void repeatRenderWithSavedPhotos(jobId);
+        else if (action === "fitment") void openFitmentView(jobId, { originView: "render-detail" });
+        else if (action === "download") void downloadResult({ jobId });
+        else if (action === "feedback") void submitHistoryFeedback(jobId, value);
+        else if (action === "reason") void submitHistoryFeedback(jobId, "disliked", value);
+        else if (action === "feedback-retry") {
+            const pending = state.feedbackRetryByJob[jobId];
+            if (pending) void submitHistoryFeedback(jobId, pending.sentiment, pending.reason);
+        } else if (action === "asset-retry") {
+            const job = state.renderHistory.find((item) => item.job_id === jobId);
+            for (const kind of ["original", "result"]) {
+                if (!job || !hasAssetLoadError(job, kind) || !assetDownloadUrlForJob(job, kind)) continue;
+                const previous = assetBlobUrlForJob(job, kind);
+                if (previous) URL.revokeObjectURL(previous);
+                if (state.renderAssetBlobUrlsByJob[jobId]) delete state.renderAssetBlobUrlsByJob[jobId][kind];
+                void ensureAssetBlobUrl(job, kind);
+            }
+            state.renderAssetErrorsByJob[jobId] = {};
+            notifyRenderBridge();
+            prepareVnextRenderAssets();
+        } else if (action === "generation-retry") window.dreamwheelsCreateBridge.handleGenerationError();
+        else if (action === "support") setView("support");
+    },
+};
 
 function vnextCreateSnapshot() {
     const vehicle = selectedVehicleCandidate();
@@ -10528,21 +10655,31 @@ function requestTelegramDownload(url, fileName) {
     });
 }
 
-async function downloadResult() {
-    if (!state.resultDownloadUrl || state.downloading) return;
+async function downloadResult({ jobId = "" } = {}) {
+    const job = jobId ? state.renderHistory.find((item) => item.job_id === jobId) : null;
+    if (jobId && !job) {
+        state.downloadNoticeByJob[jobId] = "Примерка недоступна. Обновите историю и повторите попытку.";
+        notifyRenderBridge();
+        return;
+    }
+    const downloadUrl = job ? (isGuestRenderJob(job) ? downloadUrlForJob(job) : apiUrl(`/jobs/${jobId}/download`, { includeIdentity: true })) : state.resultDownloadUrl;
+    const fileName = jobId ? `dream-wheels-${jobId}.jpg` : state.resultFileName || "dream-wheels-result.jpg";
+    if (!downloadUrl || state.downloading) return;
     state.downloading = true;
+    if (jobId) state.downloadNoticeByJob[jobId] = "";
+    notifyRenderBridge();
     setDownloadButtonState({ disabled: true, text: t("actions.requestingDownload") });
     try {
         if (isWebsiteAuthMode() || isSupabaseFrontendAuth()) {
-            const response = state.resultDownloadUrl.startsWith("/")
-                ? await authenticatedFetch(state.resultDownloadUrl, { headers: withAuthHeaders() })
-                : await fetch(state.resultDownloadUrl);
+            const response = (job && !isGuestRenderJob(job)) || (!job && (isWebsiteAuthMode() || isSupabaseFrontendAuth()))
+                ? await authenticatedFetch(downloadUrl, { headers: withAuthHeaders() })
+                : await fetch(downloadUrl);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = objectUrl;
-            link.download = state.resultFileName || "dream-wheels-result.jpg";
+            link.download = fileName;
             link.rel = "noopener";
             document.body.appendChild(link);
             link.click();
@@ -10552,8 +10689,8 @@ async function downloadResult() {
             haptic("success");
         } else if (SUPPORTS_DOWNLOAD_FILE) {
             const accepted = await requestTelegramDownload(
-                state.resultDownloadUrl,
-                state.resultFileName || "dream-wheels-result.jpg"
+                downloadUrl,
+                fileName
             );
             if (!accepted) {
                 setDownloadButtonState({ text: t("actions.downloadCanceled") });
@@ -10564,8 +10701,8 @@ async function downloadResult() {
             }
         } else {
             const link = document.createElement("a");
-            link.href = state.resultDownloadUrl;
-            link.download = state.resultFileName || "dream-wheels-result.jpg";
+            link.href = downloadUrl;
+            link.download = fileName;
             link.rel = "noopener";
             document.body.appendChild(link);
             link.click();
@@ -10578,11 +10715,16 @@ async function downloadResult() {
         setDownloadButtonState({ disabled: false, text: t("actions.downloadFailed") });
         haptic("warning");
         state.downloading = false;
+        if (jobId) state.downloadNoticeByJob[jobId] = "Не удалось скачать изображение. Повторите попытку.";
+        notifyRenderBridge();
         return;
     }
+    if (jobId) state.downloadNoticeByJob[jobId] = "Загрузка изображения начата";
+    notifyRenderBridge();
     setTimeout(() => {
         state.downloading = false;
         setDownloadButtonState();
+        notifyRenderBridge();
     }, 1400);
 }
 
@@ -10760,6 +10902,7 @@ async function resolveIdentity() {
 async function submitJob() {
     if (state.submitting || state.rimSourceResolving || state.rimAssetPreviewPending || state.identityProposal?.rim?.variant_state === "selection_required") return;
     state.submitting = true;
+    state.renderStatus = "queued";
     state.createJobDraftId = "";
     showCreateScreen("result");
     notifyCreateBridge();
@@ -10809,6 +10952,7 @@ async function submitJob() {
         return;
     }
 
+    const renderDraftId = state.identityDraftId;
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     const idempotencyKey = makeIdempotencyKey();
     const payload = {
@@ -10834,9 +10978,14 @@ async function submitJob() {
                 : (data.detail || `HTTP ${resp.status}`);
             throw new Error(detail);
         }
+        // Reset/replacement can occur while this request is in flight. The
+        // server job continues, but must not take over a newer Create context.
+        if (state.identityDraftId !== renderDraftId) return;
         state.jobId = data.job_id;
+        state.renderStatus = data.status || "queued";
         void trackEvent("render_started", { job_id: state.jobId });
     } catch (error) {
+        if (state.identityDraftId !== renderDraftId) return;
         showError(error.message);
         return;
     }
@@ -10844,22 +10993,26 @@ async function submitJob() {
     if (statusText) statusText.textContent = "Примеряем диски";
     notifyCreateBridge();
 
+    const renderJobId = state.jobId;
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
         await sleep(POLL_INTERVAL_MS);
+        if (state.jobId !== renderJobId || state.identityDraftId !== renderDraftId) return;
         let statusData;
         try {
             const response = await authenticatedFetch(
-                apiUrl(`/jobs/${state.jobId}`, { includeIdentity: true }),
+                apiUrl(`/jobs/${renderJobId}`, { includeIdentity: true }),
                 { headers: withAuthHeaders() }
             );
             statusData = await response.json();
         } catch {
             continue;
         }
+        if (state.jobId !== renderJobId || state.identityDraftId !== renderDraftId) return;
 
         if (statusData.status === "completed") {
             state.submitting = false;
+            state.renderStatus = "completed";
             state.resultUrl = statusData.result_url || statusData.output_image_url || statusData.assets?.result?.url || "";
             state.createJobDraftId = state.identityDraftId;
             state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
@@ -10868,16 +11021,21 @@ async function submitJob() {
             state.resultFileName = `dream-wheels-${state.jobId}.jpg`;
             if (statusBlock) statusBlock.hidden = true;
             if (resultBlock) resultBlock.hidden = true;
-            void loadRenderHistory({ silent: true }).then(() => openRenderDetail(state.jobId, "create"));
+            void loadRenderHistory({ silent: true }).then(() => {
+                if (state.jobId === renderJobId && state.view === "create") openRenderDetail(renderJobId, "create");
+            });
             haptic("success");
             notifyCreateBridge();
             return;
         }
 
         if (statusData.status === "failed") {
-            showError(statusData.error || t("errors.generationFailed"));
+            state.renderStatus = "failed";
+            showError(statusData.error_message || statusData.error || statusData.error_code || t("errors.generationFailed"));
             return;
         }
+        state.renderStatus = statusData.status || state.renderStatus;
+        notifyCreateBridge();
     }
 
     state.submitting = false;
