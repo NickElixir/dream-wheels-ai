@@ -10151,7 +10151,9 @@ function vnextFitmentSnapshot() {
         vehicleTitle: demoVehicleTitle(vehicle),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
         vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
-        vehicleEditing: Boolean(state.fitmentVehicleEditing || ui.nextAction === "complete_vehicle_details"),
+        vehicleEditing: Boolean(state.fitmentVehicleEditing),
+        vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : "Данные автомобиля",
+        vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
         vehicleVariantAction: ui.nextAction === "select_vehicle_variant",
         canReselectVehicleVariant: overview?.modification_state === "confirmed" && Boolean(fitmentSelectedVehicleVariant(overview)),
         vehicleVariantPickerOpen: Boolean(state.fitmentModificationPickerOpen),
@@ -10174,7 +10176,7 @@ function vnextFitmentSnapshot() {
         rimSpecs: fitmentRimTechnicalSummary(rim),
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
-        rimEditing: Boolean(state.fitmentRimEditing || ui.rim.setupState !== "confirmed_ready" || ui.form.dirty),
+        rimEditing: Boolean(state.fitmentRimEditing),
         rimPreview: fitmentPreviewAsset(job, "rim"),
         rimProvenance: fitmentRimProvenance(ui),
         rimCandidates: Object.entries(overview?.rim_candidates || {}).flatMap(([field, items]) => (Array.isArray(items) ? items : []).filter((item) => item?.value != null && item.value !== "").map((item) => ({ field, value: fitmentPresentationText(item.value) }))),
@@ -10251,6 +10253,11 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "edit-vehicle") { state.fitmentVehicleEditing = true; setFitmentActiveSection("vehicle"); }
         else if (action === "edit-rim") { state.fitmentRimEditing = true; setFitmentActiveSection("rim"); }
+        else if (action === "manual-vehicle") {
+            state.fitmentVehicleEditing = true;
+            setFitmentActiveSection("vehicle", { scroll: true });
+            requestAnimationFrame(() => document.querySelector('[data-fitment-field="vehicle.make"]')?.focus());
+        }
         else if (action === "save") void saveFitment();
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);

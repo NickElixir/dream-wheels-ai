@@ -91,3 +91,13 @@ test("shell auth presentation updates from snapshot without rebuilding actions a
     assert.equal(desktopLogin.listeners.click.length + mobileLogin.listeners.click.length, eventListenersBefore);
   });
 });
+
+test("Fitment is contextual and is not exposed as a global desktop destination", () => {
+  withDocument(() => {
+    const navigated = [];
+    const shell = createAppShell({ navigate: (view) => navigated.push(view), content: new TestElement("section") });
+    const labels = shell.querySelectorAll(".vnext-shell__nav-button").map((button) => button.textContent);
+    assert.equal(labels.includes("Совместимость"), false);
+    assert.deepEqual(navigated, []);
+  });
+});

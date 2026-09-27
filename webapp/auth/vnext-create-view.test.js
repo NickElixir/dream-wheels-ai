@@ -88,9 +88,45 @@ test("Create renders fixed empty/upload stages and replaces either asset through
 test("wheel source action works after full identity success and zero ET remains available", () => {
   let editing = null;
   const view = createCreateView({ proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } }, { setSourceEditing: (value) => { editing = value; } });
-  view.find((node) => node.tagName === "button" && node.textContent === "Добавить ссылку").listeners.click();
+  view.find((node) => node.tagName === "button" && node.textContent === "Добавить ссылку на товар").listeners.click();
   assert.equal(editing, true);
   assert.match(view.allText, /ET 0/);
+  const wheel = view.find((node) => node.className === "vnext-create__object vnext-create__object--wheel");
+  assert.ok(wheel, "wheel URL action is owned by the wheel object");
+  assert.match(wheel.allText, /Добавить ссылку на товар/);
+  assert.doesNotMatch(wheel.allText, /Данные-кандидаты/);
+});
+
+test("Create hides filesystem metadata and exposes a spinner for blocking identity recognition", () => {
+  const loading = createCreateView({
+    files: { car: { name: "private-car-photo.png", size: 2242880, previewUrl: "blob:car" }, wheel: { name: "race-wheel.png", size: 1024, previewUrl: "blob:wheel" } },
+    identityResolving: true,
+  });
+  assert.doesNotMatch(loading.allText, /private-car-photo\.png|race-wheel\.png|2\.2\s?МБ|1\.0\s?КБ|2242880/);
+  assert.match(loading.allText, /Определяем автомобиль/);
+  assert.ok((function count(node) { return (node.className === "vnext-spinner" ? 1 : 0) + node.children.reduce((sum, child) => sum + count(child), 0); })(loading) > 0);
+});
+
+test("required Create vehicle choice stays open even when a provisional vehicle is already present", () => {
+  const view = createCreateView({
+    proposal: { vehicle: { primary: { make: "Li Auto", model: "L9", year: 2024 }, alternatives: [{ make: "Li Auto", model: "L9 Max", year: 2024 }] }, rim: {} },
+    selectedVehicle: { make: "Li Auto", model: "L9", year: 2024 }, selectedVehicleIndex: null,
+  });
+  assert.match(view.allText, /Выберите комплектацию автомобиля/);
+  assert.match(view.allText, /L9 Max/);
+  assert.doesNotMatch(view.allText, /Скрыть варианты/);
+  assert.doesNotMatch(view.allText, /Изменить данные/);
+  assert.match(view.allText, /Не мой автомобиль — указать вручную/);
+});
+
+test("confirmed Create vehicle summary retains status and explicit edit action", () => {
+  const view = createCreateView({
+    proposal: { vehicle: { primary: { make: "Li Auto", model: "L9", year: 2024 } }, rim: {} },
+    selectedVehicle: { make: "Li Auto", model: "L9", year: 2024 }, selectedVehicleIndex: 0,
+  });
+  assert.match(view.allText, /Автомобиль подтверждён/);
+  assert.match(view.allText, /Li Auto L9 2024/);
+  assert.match(view.allText, /Изменить данные/);
 });
 
 test("manual vehicle correction saves explicitly and returns to summary", () => {

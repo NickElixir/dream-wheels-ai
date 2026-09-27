@@ -14,6 +14,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   const state = {
     fitmentOverview: { vehicle: saved },
     fitmentForm: { vehicle: { ...saved }, rim: {} },
+    fitmentVehicleEditing: true,
     fitmentSourceAppliedFields: [],
   };
   const context = {
@@ -121,6 +122,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
 
   const variants = fitmentMarkup({
     overview: {},
+    nextAction: "select_vehicle_variant",
     vehicleEditing: true,
     vehicleVariantPickerOpen: true,
     vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
@@ -135,6 +137,62 @@ test("an incompatible Fitment result still offers the existing independent rende
   const markup = fitmentMarkup({ overview: {}, executionStatus: "completed", canRunCheck: false, check: { execution_status: "completed", verdict: "incompatible" } });
   assert.match(markup, /Не подходит/);
   assert.match(markup, /data-fitment-action="create-image"/);
+});
+
+test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
+  for (const [nextAction, label] of [
+    ["complete_vehicle_details", "Нужно уточнить данные автомобиля"],
+    ["select_vehicle_variant", "Выберите комплектацию автомобиля"],
+    ["complete_rim_specs", "Уточните параметры колесного диска"],
+    ["run_standard_check", "Данные готовы к проверке"],
+  ]) {
+    assert.match(fitmentMarkup({ overview: {}, nextAction }), new RegExp(label));
+  }
+  const unknownAction = fitmentMarkup({ overview: {}, nextAction: "unrecognized_server_action" });
+  assert.match(unknownAction, /Техническая проверка ещё не готова/);
+  assert.doesNotMatch(unknownAction, /Данные готовы к проверке/);
+
+  const variantRequired = fitmentMarkup({
+    overview: {}, nextAction: "select_vehicle_variant", vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
+    vehicleVariantPickerOpen: false, selectedVehicleVariant: 0,
+  });
+  assert.match(variantRequired, /2\.0 AWD/);
+  assert.match(variantRequired, /Подтвердить комплектацию/);
+  assert.doesNotMatch(variantRequired, /Скрыть комплектации/);
+  assert.doesNotMatch(variantRequired, /data-fitment-field="vehicle\.make"/);
+  assert.match(variantRequired, /Не мой автомобиль — указать вручную/);
+
+  const confirmed = fitmentMarkup({
+    overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
+    vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
+  });
+  assert.match(confirmed, /Комплектация/);
+  assert.match(confirmed, /L9 Max AWD/);
+  assert.match(confirmed, /Изменить комплектацию/);
+  assert.doesNotMatch(confirmed, /L9 Pro AWD/);
+  assert.doesNotMatch(confirmed, /data-fitment-field="vehicle\.make"/);
+});
+
+test("Fitment candidate suggestions stay beside their field and editors are hidden until requested", () => {
+  const markup = fitmentMarkup({
+    overview: {}, nextAction: "complete_vehicle_details", vehicleEditing: true,
+    vehicleForm: { make: "", model: "" }, vehicleCandidates: [{ field: "make", value: "Zeekr" }],
+    rimEditing: false, rim: { brand: "BBS" },
+  });
+  assert.match(markup, /data-fitment-field="vehicle\.make"[^]*?data-fitment-action="candidate" data-value="vehicle\.make\|Zeekr"/);
+  assert.doesNotMatch(markup, /data-fitment-field="rim\.brand"/);
+  assert.match(markup, /data-fitment-action="create-image"/);
+});
+
+test("completed Fitment shows verdict before conditions and technical comparison", () => {
+  const markup = fitmentMarkup({
+    overview: {}, executionStatus: "completed", resultCopy: "Короткое объяснение",
+    check: { execution_status: "completed", verdict: "compatible_with_conditions" },
+    conditions: [{ label: "Условие установки" }],
+    fieldEvidence: [{ name: "ET", vehicleValue: "40", rimValue: "45", resultLabel: "Проверьте" }],
+  });
+  assert.ok(markup.indexOf("Подходит с условиями") < markup.indexOf("Условия и пояснения"));
+  assert.ok(markup.indexOf("Условия и пояснения") < markup.indexOf("Сравнение параметров"));
 });
 
 test("Fitment presentation is a callback-only view with no API, polling, verdict, or revision logic", () => {

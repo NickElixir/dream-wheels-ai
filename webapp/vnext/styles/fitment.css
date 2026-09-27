@@ -4,6 +4,25 @@
 .vnext-fitment__topline .vnext-eyebrow { margin:0; overflow-wrap:anywhere; }
 .vnext-fitment__pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:32px; align-items:start; min-width:0; }
 .vnext-fitment__pair > section { min-width:0; }
+.vnext-fitment__object { display:grid; align-content:start; }
+.vnext-fitment__object-status { margin-top:12px; padding:10px 0; border-top:1px solid var(--vnext-border); border-bottom:1px solid var(--vnext-border); color:var(--vnext-text-secondary); font-size:13px; }
+.vnext-fitment__variant-summary { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:5px 12px; margin-top:12px; padding:12px 0; border-top:1px solid var(--vnext-border); }
+.vnext-fitment__variant-summary > span { grid-column:1; color:var(--vnext-fitment-muted); font-size:12px; }
+.vnext-fitment__variant-summary > strong { grid-column:1; font-weight:var(--vnext-weight-medium); }
+.vnext-fitment__variant-summary > .vnext-button { grid-column:2; grid-row:1 / span 2; }
+.vnext-fitment__variant-list { display:grid; gap:8px; margin-top:14px; }
+.vnext-fitment__variant-list[role="radiogroup"]::before { content:"Выберите комплектацию автомобиля"; margin-bottom:3px; font-size:15px; font-weight:var(--vnext-weight-medium); }
+.vnext-fitment__choice { display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:10px 12px; border:1px solid var(--vnext-border-strong); border-radius:8px; background:#0d1114; color:var(--vnext-text); text-align:left; }
+.vnext-fitment__choice[aria-checked="true"] { border-color:#69737a; background:#151a1e; }
+.vnext-fitment__choice-marker { color:var(--vnext-text-secondary); }
+.vnext-fitment__choice-copy { display:grid; gap:3px; }
+.vnext-fitment__choice-copy strong { font-weight:var(--vnext-weight-medium); }
+.vnext-fitment__choice-copy small { color:var(--vnext-text-secondary); }
+.vnext-fitment__field-wrap { display:grid; gap:7px; min-width:0; }
+.vnext-fitment__suggestions { display:flex; flex-wrap:wrap; gap:6px; }
+.vnext-fitment__suggestions .vnext-button { min-height:34px; padding:5px 10px; font-size:12px; }
+.vnext-fitment__loading { display:flex; align-items:center; gap:10px; color:var(--vnext-text-secondary); }
+.vnext-fitment__loading .vnext-spinner { flex:0 0 20px; }
 .vnext-fitment__pair h2 { margin:0 0 12px; font-size:24px; line-height:1.2; font-weight:var(--vnext-weight-medium); letter-spacing:-.025em; }
 .vnext-fitment__stage { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:8px; background:#101418; color:var(--vnext-text-secondary); }
 .vnext-fitment__stage img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
