@@ -21,7 +21,7 @@ Backend, API payloads, DB, auth/session, credits/refunds, payments, Fitment pres
 
 ## Automated verification
 
-- `npm --prefix webapp test`: **122 passed**, including 23 new render tests.
+- `npm --prefix webapp test`: **123 passed**, including 24 new render tests.
 - Gateway, vehicle catalogue, Fitment transitions and webapp boot Node suites: **52 passed**.
 - `pytest -q`: **573 passed, 5 skipped**, 13 existing deprecation warnings.
 - `npm --prefix webapp run build`: pass; generated auth bundles unchanged.
@@ -58,7 +58,7 @@ Read canonical HTML and inspected frozen desktop evidence with `view_image`, the
 | Feedback semantics | Green positive, amber negative, supported reason chips | Matched; image/slider/focus retained during refresh |
 | System states | Centered restrained empty/error container, existing generation classification | Matched structure; no unsupported refund promise |
 
-Intentional adaptations required by the task: real queued wording; secondary download/Fitment/history utilities; actual available metadata/dates and runtime error copy; supported backend reason labels; unchanged existing shell/account content. Actual uploaded wheel backgrounds are preserved rather than fabricating a transparent wheel asset. Canonical HTML defines result-left/original-right labels; older cached evidence contains the earlier label ordering. The canonical interactive reference wins. No redesign of frozen authority was made.
+Intentional adaptations required by the task: real queued wording; secondary download/Fitment/history utilities; actual available metadata/dates and runtime error copy; supported backend reason labels; unchanged existing shell/account content. Actual uploaded wheel backgrounds are preserved rather than fabricating a transparent wheel asset. Subsequent explicit user approval overrides the comparison side ordering: **original left / result right**, including both images and matching labels. The original is now the clipped reveal layer and the result the base layer; slider position still defines the dividing line. Other frozen-design authority is unchanged.
 
 ## Final gate still outstanding
 

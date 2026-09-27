@@ -56,6 +56,16 @@ test("all three result URL contracts remain supported", () => {
   for (const response of [{ result_url: "/a" }, { output_image_url: "/a" }, { assets: { result: { url: "/a" } } }]) assert.equal(app.resultUrlForJob(response), "/a");
 });
 
+test("comparison reveals original on the left and result on the right, with matching labels", () => {
+  const markup = resultMarkup({jobId: "A", status: "completed", originalUrl: "/original", resultUrl: "/result"});
+  assert.match(markup, /class="vnext-compare-layer">[\s\S]*?src="\/result"[^>]*data-render-image="result"/);
+  assert.match(markup, /class="vnext-compare-layer vnext-compare-reveal">[\s\S]*?src="\/original"[^>]*data-render-image="original"/);
+  assert.match(markup, /class="vnext-compare-label left">Оригинал<\/span>/);
+  assert.match(markup, /class="vnext-compare-label right">Результат<\/span>/);
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-compare-reveal\s*\{[^}]*clip-path:inset\(0 calc\(100% - var\(--compare\)\) 0 0\)/);
+});
+
 for (const result of [{ result_url: "/result" }, { output_image_url: "/result" }, { assets: { result: { url: "/result" } } }]) test(`existing polling transitions queued → processing → Result (${Object.keys(result)[0]})`, async () => {
   const app = runtime(); app.ready();
   const observed = []; const calls = []; let poll = 0; let opened;
