@@ -147,7 +147,7 @@ function vehiclePanel(snapshot, callbacks) {
     const decision = document.createElement("div");
     decision.className = "vnext-create__decision";
     const decisionTitle = document.createElement("h3");
-    decisionTitle.textContent = "Мы определили автомобиль";
+    decisionTitle.textContent = choices.length > 1 ? "Мы нашли несколько вариантов." : "Мы определили автомобиль";
     decision.append(decisionTitle);
     const identifiedVehicle = document.createElement("strong");
     identifiedVehicle.className = "vnext-create__identified-vehicle";
@@ -161,8 +161,11 @@ function vehiclePanel(snapshot, callbacks) {
     }
     if (requiresChoice) {
       const chooseTitle = document.createElement("h3");
-      chooseTitle.textContent = "Выберите комплектацию автомобиля";
+      chooseTitle.textContent = choices.length > 1 ? "Выберите ваш автомобиль." : "Подтвердите автомобиль";
       decision.append(chooseTitle);
+      const continueCopy = document.createElement("span");
+      continueCopy.textContent = "Это нужно, чтобы продолжить.";
+      decision.append(continueCopy);
     }
     panel.append(decision);
     const selectedIndex = snapshot.selectedVehicleIndex;
@@ -177,12 +180,16 @@ function vehiclePanel(snapshot, callbacks) {
       if (index === selectedIndex) button.setAttribute("aria-pressed", "true");
       button.setAttribute("role", "radio");
       button.setAttribute("aria-checked", String(index === selectedIndex));
+      const marker = document.createElement("span");
+      marker.className = "vnext-create__vehicle-option-marker";
+      marker.setAttribute("aria-hidden", "true");
+      marker.textContent = index === selectedIndex ? "●" : "○";
       const name = document.createElement("strong");
       name.textContent = [candidate.make, candidate.model, candidate.year || (candidate.year_start && candidate.year_end ? `${candidate.year_start}–${candidate.year_end}` : "")].filter(Boolean).join(" ");
       const meta = document.createElement("span");
       const confidence = Number(candidate.confidence);
       meta.textContent = [candidate.source === "user_input" ? "Указано вручную" : (Number.isFinite(confidence) && confidence > 0 ? `Уверенность ${Math.round(confidence * 100)}%` : "Предложение по фото")].join("");
-      button.append(name, meta);
+      button.append(marker, name, meta);
       button.addEventListener("click", () => callbacks.chooseVehicle?.(index));
       list.append(button);
     });

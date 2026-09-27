@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 
 class ElementStub {
@@ -51,6 +52,14 @@ globalThis.document = {
   querySelector: () => null,
 };
 const { createCreateView, refreshCreateView } = await import("../vnext/views/create.js");
+function nodesWithRole(root, role) {
+  const nodes = [];
+  (function visit(node) {
+    if (node.attributes?.role === role) nodes.push(node);
+    node.children.forEach(visit);
+  })(root);
+  return nodes;
+}
 
 test("URL resolution states expose explicit recovery and honest variant readiness", () => {
   const snapshot = { bothReady: true, consentAccepted: true, draftId: "draft", selectedVehicle: { make: "Audi", model: "Q8" }, sourceEditing: true, proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } };
@@ -112,11 +121,36 @@ test("required Create vehicle choice stays open even when a provisional vehicle 
     proposal: { vehicle: { primary: { make: "Li Auto", model: "L9", year: 2024 }, alternatives: [{ make: "Li Auto", model: "L9 Max", year: 2024 }] }, rim: {} },
     selectedVehicle: { make: "Li Auto", model: "L9", year: 2024 }, selectedVehicleIndex: null,
   });
-  assert.match(view.allText, /Выберите комплектацию автомобиля/);
+  assert.match(view.allText, /Мы нашли несколько вариантов\./);
+  assert.match(view.allText, /Выберите ваш автомобиль\./);
+  assert.match(view.allText, /Это нужно, чтобы продолжить\./);
   assert.match(view.allText, /L9 Max/);
   assert.doesNotMatch(view.allText, /Скрыть варианты/);
   assert.doesNotMatch(view.allText, /Изменить данные/);
   assert.match(view.allText, /Не мой автомобиль — указать вручную/);
+  const choices = nodesWithRole(view, "radio");
+  assert.deepEqual(choices.map((choice) => choice.attributes["aria-checked"]), ["false", "false"]);
+  assert.deepEqual(choices.map((choice) => choice.children[0].textContent), ["○", "○"]);
+  assert.deepEqual(choices.map((choice) => choice.attributes.role), ["radio", "radio"]);
+});
+
+test("Create selected recognized vehicle uses restrained radio marker and does not claim trim selection", () => {
+  const view = createCreateView({
+    proposal: { vehicle: { primary: { make: "Audi", model: "Q8", year: 2024 }, alternatives: [] }, rim: {} },
+    selectedVehicle: null, selectedVehicleIndex: null,
+  });
+  assert.match(view.allText, /Подтвердите автомобиль/);
+  assert.match(view.allText, /Это нужно, чтобы продолжить\./);
+  assert.doesNotMatch(view.allText, /комплектац|модификац|trim/i);
+  const selected = createCreateView({
+    vehicleEditing: true, selectedVehicle: { make: "Audi", model: "Q8", year: 2024 }, selectedVehicleIndex: 0,
+    proposal: { vehicle: { primary: { make: "Audi", model: "Q8", year: 2024 }, alternatives: [{ make: "Audi", model: "Q8 e-tron", year: 2024 }] }, rim: {} },
+  });
+  const choice = nodesWithRole(selected, "radio")[0];
+  assert.equal(choice.attributes["aria-checked"], "true");
+  assert.equal(choice.children[0].textContent, "●");
+  const css = fs.readFileSync(new URL("../vnext/styles/surfaces.css", import.meta.url), "utf8");
+  assert.doesNotMatch(css, /vehicle-option:last-child\s*\{[^}]*border-bottom:\s*0/);
 });
 
 test("confirmed Create vehicle summary retains status and explicit edit action", () => {

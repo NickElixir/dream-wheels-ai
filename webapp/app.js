@@ -4340,6 +4340,16 @@ function fitmentNextAction(overview = state.fitmentOverview) {
     return FITMENT_NEXT_ACTION_KINDS.has(kind) ? kind : "";
 }
 
+function setFitmentEditor(section) {
+    state.fitmentVehicleEditing = section === "vehicle";
+    state.fitmentRimEditing = section === "rim";
+}
+
+function setFitmentEditorsForNextAction(overview) {
+    const action = fitmentNextAction(overview);
+    setFitmentEditor(action === "complete_vehicle_details" ? "vehicle" : action === "complete_rim_specs" ? "rim" : "");
+}
+
 // One server-owned action drives section routing, workspace semantics and
 // recovery copy.  Keeping this mapping together prevents a stale Result,
 // Vehicle workspace and navigator from contradicting one another.
@@ -4441,11 +4451,13 @@ function setFitmentActiveSection(section, { scroll = false } = {}) {
 
 function navigateFitmentRecovery(action) {
     if (action === "run_standard_check") {
+        setFitmentEditor("");
         void runFitmentCheck();
         return;
     }
-    if (action === "complete_vehicle_details") state.fitmentVehicleEditing = true;
-    if (action === "complete_rim_specs") state.fitmentRimEditing = true;
+    if (action === "complete_vehicle_details") setFitmentEditor("vehicle");
+    if (action === "complete_rim_specs") setFitmentEditor("rim");
+    if (action === "select_vehicle_variant") setFitmentEditor("");
     if (["complete_vehicle_details", "select_vehicle_variant"].includes(action)) {
         setFitmentActiveSection("vehicle", { scroll: true });
     } else if (action === "complete_rim_specs") {
@@ -4989,8 +5001,7 @@ function updateDemoFitmentState(overview) {
     state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
     state.fitmentVehicleDirty = false;
     state.fitmentVehicleMarketEdited = false;
-    state.fitmentVehicleEditing = overview.vehicle_state === "empty";
-    state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
+    setFitmentEditorsForNextAction(overview);
 }
 
 function createDemoFitmentCheck(overview) {
@@ -7155,8 +7166,7 @@ async function loadFitmentOverview(
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleMarketEdited = false;
-        state.fitmentVehicleEditing = overview.vehicle_state === "empty";
-        state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
+        setFitmentEditorsForNextAction(overview);
         state.fitmentActiveSection = sectionToPreserve
             ? sectionToPreserve
             : fitmentSectionForAction(overview);
@@ -7202,8 +7212,7 @@ function openFitmentView(
     state.fitmentCheckHistory = [];
     state.fitmentActiveSection = "";
     state.fitmentActiveStep = 0;
-    state.fitmentVehicleEditing = false;
-    state.fitmentRimEditing = false;
+    setFitmentEditor("");
     state.fitmentForm = createEmptyFitmentForm();
     state.fitmentVehicleDirty = false;
     state.fitmentVehicleMarketEdited = false;
@@ -7407,7 +7416,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     } catch (error) {
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
-        state.fitmentRimEditing = true;
+        setFitmentEditor("rim");
         state.fitmentActiveSection = "rim";
         state.fitmentActiveStep = 2;
     } finally {
@@ -7721,6 +7730,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
     if (fitmentNextAction(overview) !== "run_standard_check" || state.fitmentChecking) return;
+    setFitmentEditor("");
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         runDemoFitmentCheck();
         return;
@@ -7878,9 +7888,8 @@ async function saveFitment(event) {
         clearFitmentResolverFeedback({ close: true });
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleMarketEdited = false;
-        state.fitmentVehicleEditing = overview.vehicle_state !== "confirmed_ready";
-        state.fitmentRimEditing = overview.rim_setup_state !== "confirmed_ready";
         await refreshFitmentCheckCurrentness();
+        setFitmentEditorsForNextAction(overview);
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
         if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
@@ -10179,6 +10188,8 @@ function vnextFitmentSnapshot() {
         rimEditing: Boolean(state.fitmentRimEditing),
         rimPreview: fitmentPreviewAsset(job, "rim"),
         rimProvenance: fitmentRimProvenance(ui),
+        frontRimSetupState: overview?.front_rim?.rim_setup_state ?? overview?.rim_setup_state ?? null,
+        rearRimSetupState: overview?.rear_rim?.rim_setup_state ?? null,
         rimCandidates: Object.entries(overview?.rim_candidates || {}).flatMap(([field, items]) => (Array.isArray(items) ? items : []).filter((item) => item?.value != null && item.value !== "").map((item) => ({ field, value: fitmentPresentationText(item.value) }))),
         resolver: {
             url: state.fitmentForm?.rim?.product_url || "",
@@ -10251,10 +10262,10 @@ window.dreamwheelsFitmentBridge = {
     action(action, value = "") {
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
-        else if (action === "edit-vehicle") { state.fitmentVehicleEditing = true; setFitmentActiveSection("vehicle"); }
-        else if (action === "edit-rim") { state.fitmentRimEditing = true; setFitmentActiveSection("rim"); }
+        else if (action === "edit-vehicle") { setFitmentEditor("vehicle"); setFitmentActiveSection("vehicle"); }
+        else if (action === "edit-rim") { setFitmentEditor("rim"); setFitmentActiveSection("rim"); }
         else if (action === "manual-vehicle") {
-            state.fitmentVehicleEditing = true;
+            setFitmentEditor("vehicle");
             setFitmentActiveSection("vehicle", { scroll: true });
             requestAnimationFrame(() => document.querySelector('[data-fitment-field="vehicle.make"]')?.focus());
         }
@@ -10270,7 +10281,7 @@ window.dreamwheelsFitmentBridge = {
         } else if (action === "manual-rim") {
             clearFitmentTransientMessage();
             clearFitmentResolverFeedback({ close: true });
-            state.fitmentRimEditing = true;
+            setFitmentEditor("rim");
             state.fitmentActiveSection = "rim";
             state.fitmentActiveStep = 2;
             renderFitment();
@@ -11649,7 +11660,7 @@ function bindEvents() {
     document.querySelector("[data-fitment-source-manual]")?.addEventListener("click", () => {
         clearFitmentTransientMessage();
         clearFitmentResolverFeedback({ close: true });
-        state.fitmentRimEditing = true;
+        setFitmentEditor("rim");
         state.fitmentActiveSection = "rim";
         state.fitmentActiveStep = 2;
         renderFitment();
@@ -11664,7 +11675,7 @@ function bindEvents() {
         void loadFitmentVehicleVariants();
     });
     document.querySelector("[data-fitment-variants-edit]")?.addEventListener("click", () => {
-        state.fitmentVehicleEditing = true;
+        setFitmentEditor("vehicle");
         setFitmentActiveSection("vehicle", { scroll: true });
     });
     document.querySelector("[data-fitment-check]")?.addEventListener("click", () => {
@@ -11898,7 +11909,7 @@ function bindEvents() {
                 return;
             }
             if (["vehicle", "rim"].includes(action)) {
-                if (action === "rim") state.fitmentRimEditing = true;
+                if (action === "rim") setFitmentEditor("rim");
                 setFitmentActiveSection(action, { scroll: true });
             }
             return;
@@ -11921,13 +11932,13 @@ function bindEvents() {
             clearFitmentTransientMessage();
             const section = fitmentEdit.dataset.fitmentEdit;
             if (section === "vehicle") {
-                state.fitmentVehicleEditing = true;
+                setFitmentEditor("vehicle");
                 state.fitmentModificationPickerOpen = false;
                 state.fitmentVehicleVariants = [];
                 state.fitmentLookup = { status: "idle", outcome: "" };
                 state.fitmentModificationLookupMode = "initial";
             }
-            if (section === "rim") state.fitmentRimEditing = true;
+            if (section === "rim") setFitmentEditor("rim");
             setFitmentActiveSection(section);
             return;
         }

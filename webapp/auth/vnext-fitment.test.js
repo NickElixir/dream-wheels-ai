@@ -231,3 +231,120 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
   const html = read("index.html");
   assert.match(html, /vnext\/styles\/fitment\.css/);
 });
+
+test("runtime Fitment initialization follows next_action and never opens both object editors", async () => {
+  const app = read("app.js");
+  const source = [
+    app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
+    app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),
+    app.slice(app.indexOf("async function loadFitmentOverview("), app.indexOf("function openFitmentView(")),
+    app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField(")),
+  ].join("\n");
+  const state = {
+    fitmentJobId: "demo-job", fitmentOverview: null, fitmentForm: null, fitmentFormState: {},
+    fitmentCheck: null, fitmentCheckHistory: [], fitmentVehicleEditing: false, fitmentRimEditing: false,
+    fitmentVehicleDirty: false, fitmentVehicleMarketEdited: false, fitmentSourceAppliedFields: [],
+    fitmentSourceIdentity: {}, fitmentSourceStatus: "", fitmentSourceResolving: false,
+    fitmentSourceStatusTone: "neutral", fitmentSourceDetected: false, fitmentSourceVariants: [],
+    fitmentSourceConflicts: [], fitmentModificationPickerOpen: false, fitmentVehicleVariantsLoading: false,
+    fitmentVehicleVariants: [], fitmentSelectedVehicleVariantIndex: null, fitmentModificationLookupMode: "initial",
+    fitmentCatalogue: {}, fitmentCheckHistoryLoading: false, fitmentLoading: false, fitmentError: "",
+    fitmentMessage: "", fitmentActiveSection: "", fitmentSourceAutoResolvedForJob: "",
+  };
+  let overview = null;
+  const context = {
+    state,
+    FITMENT_NEXT_ACTION_KINDS: new Set(["complete_vehicle_details", "select_vehicle_variant", "complete_rim_specs", "run_standard_check"]),
+    URLSearchParams,
+    window: { location: { search: "" } },
+    shouldUseDemoFitment: () => true,
+    loadDemoFitmentOverview: () => overview,
+    validateFitmentOverview: () => true,
+    fitmentFormFromOverview: (value) => ({ vehicle: value.vehicle || {}, rim: value.rim || {}, rear_rim: value.rear_rim || {}, setup_mode: value.setup_mode || "uniform" }),
+    fitmentSourceIdentityFromOverview: () => ({}),
+    cloneFitmentForm: (value) => structuredClone(value),
+    fitmentSectionForAction: (value) => ({ complete_vehicle_details: "vehicle", select_vehicle_variant: "vehicle", complete_rim_specs: "rim", run_standard_check: "result" }[value.next_action.kind]),
+    fitmentSectionToStep: (value) => ({ vehicle: 1, rim: 2, result: 3 }[value]),
+    fitmentContextJob: () => null,
+    fitmentUiState: (value) => ({ nextAction: value?.next_action?.kind, rim: { setupState: value?.rim_setup_state, setupMode: value?.setup_mode, front: value?.front_rim, rear: value?.rear_rim } }),
+    fitmentCheckForPresentation: () => null,
+    demoVehicleTitle: (value) => [value?.make, value?.model].filter(Boolean).join(" "),
+    fitmentMarketLabel: (value) => value || "",
+    fitmentCatalogueItems: () => [], fitmentOptionValue: (value) => value.value,
+    fitmentCatalogueOptionLabel: (value) => value.label, fitmentPreviewAsset: () => "",
+    demoRimTitle: () => "", fitmentRimTechnicalSummary: () => "", fitmentRimProvenance: () => "",
+    fitmentEffectiveRim: (value) => value.rim || {}, fitmentNextAction: (value) => value?.next_action?.kind,
+    beginFitmentCatalogueContextChange() {}, renderFitment() {}, loadFitmentVehicleCatalogue() {},
+    persistDemoFitmentOverview() {},
+    ensureRequiredFitmentVariantLookup() {}, fitmentCheckIsPending: () => false,
+    restoreFitmentTransientDraft: () => "none", applyDemoResultFixture() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+
+  const makeOverview = (nextAction, rimSetupState = "empty") => ({
+    vehicle_state: "empty", rim_setup_state: rimSetupState, setup_mode: "uniform",
+    next_action: { kind: nextAction }, vehicle: { make: "Audi", model: "Q8" }, rim: {},
+    vehicle_candidates: {}, rim_candidates: {}, vehicle_field_states: {}, rim_field_states: {},
+  });
+
+  for (const [action, expectedVehicleEditor, expectedRimEditor] of [
+    ["complete_vehicle_details", true, false],
+    ["select_vehicle_variant", false, false],
+    ["complete_rim_specs", false, true],
+    ["run_standard_check", false, false],
+  ]) {
+    overview = makeOverview(action);
+    await context.loadFitmentOverview("demo-job");
+    const snapshot = context.vnextFitmentSnapshot();
+    assert.equal(state.fitmentVehicleEditing, expectedVehicleEditor, `${action}: vehicle editor flag`);
+    assert.equal(state.fitmentRimEditing, expectedRimEditor, `${action}: rim editor flag`);
+    assert.ok(!(snapshot.vehicleEditing && snapshot.rimEditing), `${action}: editors must be mutually exclusive`);
+    const markup = fitmentMarkup(snapshot);
+    assert.equal((markup.match(/class="vnext-fitment__editor"/g) || []).length > 0, expectedVehicleEditor || expectedRimEditor, `${action}: editor presentation`);
+    assert.equal(markup.includes("Источник колесного диска"), expectedRimEditor, `${action}: wheel source editor visibility`);
+    if (action === "select_vehicle_variant") assert.match(markup, /Выберите комплектацию автомобиля/);
+  }
+  context.setFitmentEditor("vehicle");
+  assert.deepEqual([state.fitmentVehicleEditing, state.fitmentRimEditing], [true, false]);
+  context.setFitmentEditor("rim");
+  assert.deepEqual([state.fitmentVehicleEditing, state.fitmentRimEditing], [false, true]);
+});
+
+test("rim status comes from server-owned per-axle state, not next_action", () => {
+  const emptyWhileVehicleIsIncomplete = fitmentMarkup({
+    overview: { rim_setup_state: "empty" }, nextAction: "complete_vehicle_details",
+    frontRimSetupState: "empty", vehicleEditing: true, rimEditing: false,
+  });
+  assert.match(emptyWhileVehicleIsIncomplete, /Параметры не заполнены/);
+  assert.doesNotMatch(emptyWhileVehicleIsIncomplete, /Параметры подтверждены/);
+  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "partial" }), /Нужно уточнить параметры/);
+  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "complete_unconfirmed" }), /Параметры требуют подтверждения/);
+  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "confirmed_ready" }), /Параметры подтверждены/);
+  const staggered = fitmentMarkup({
+    overview: {}, setupMode: "staggered", frontRimSetupState: "confirmed_ready", rearRimSetupState: "empty",
+  });
+  assert.match(staggered, /Передняя ось: Параметры подтверждены · Задняя ось: Параметры не заполнены/);
+});
+
+test("staggered Fitment does not project front rim candidates into rear axle fields", () => {
+  const markup = fitmentMarkup({
+    overview: {}, setupMode: "staggered", rimEditing: true,
+    rim: { offset_et_mm: 42 }, rearRim: { offset_et_mm: 55 },
+    rimCandidates: [{ field: "offset_et_mm", value: 35 }],
+  });
+  assert.match(markup, /data-fitment-field="rim\.offset_et_mm"[^]*?data-fitment-action="candidate" data-value="rim\.offset_et_mm\|35"/);
+  assert.doesNotMatch(markup, /data-value="rear_rim\.offset_et_mm\|35"/);
+});
+
+test("Fitment candidate controls meet the mobile tap target and saved progression uses the returned next_action", () => {
+  const css = read("vnext/styles/fitment.css");
+  assert.match(css, /\.vnext-fitment__suggestions \.vnext-button \{ min-height:42px/);
+  const app = read("app.js");
+  const saveStart = app.indexOf("async function saveFitment(");
+  const save = app.slice(saveStart, app.indexOf("async function fetchRenderHistory(", saveStart));
+  assert.ok(save.indexOf("const overview = await response.json()") < save.indexOf("setFitmentEditorsForNextAction(overview)"));
+  assert.ok(save.indexOf("await refreshFitmentCheckCurrentness()") < save.indexOf("setFitmentEditorsForNextAction(overview)"));
+  const catchBlock = save.slice(save.indexOf("} catch (error) {"), save.indexOf("} finally {"));
+  assert.doesNotMatch(catchBlock, /setFitmentEditor/);
+});

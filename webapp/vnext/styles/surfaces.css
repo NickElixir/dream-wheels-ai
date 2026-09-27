@@ -40,10 +40,10 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-create__summary-value { min-width: 0; overflow-wrap: anywhere; font-weight: var(--vnext-weight-medium); }
 .vnext-create__vehicle-options { display: grid; gap: 8px; }
 .vnext-create__vehicle-option { min-height: 58px; display: flex; justify-content: space-between; align-items: center; gap: var(--vnext-space-3); border: 1px solid var(--vnext-border-strong); border-radius: 8px; background: #0d1114; color: var(--vnext-text); padding: 10px 12px; text-align: left; }
-.vnext-create__vehicle-option:last-child { border-bottom: 0; }
+.vnext-create__vehicle-option-marker { flex: 0 0 18px; color: var(--vnext-text-secondary); font-size: 16px; line-height: 1; text-align: center; }
 .vnext-create__vehicle-option[aria-checked="true"] { border-color: #69737a; background: #151a1e; }
 .vnext-create__vehicle-option[aria-checked="true"] strong { color: var(--vnext-text); }
-.vnext-create__vehicle-option span { color: var(--vnext-text-subtle); font-size: 12px; }
+.vnext-create__vehicle-option > span:not(.vnext-create__vehicle-option-marker) { color: var(--vnext-text-subtle); font-size: 12px; }
 .vnext-create__manual-recovery { margin-top: 10px; }
 .vnext-create__manual-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--vnext-space-3); padding: var(--vnext-space-3) 0; }
 .vnext-create__manual-grid input { min-width: 0; height: 42px; border: 1px solid var(--vnext-border-strong); border-radius: 7px; background: #0a0d10; color: var(--vnext-text); padding: 0 10px; }

@@ -21,9 +21,9 @@ function loadingStatus(label) {
 }
 
 function fieldWithCandidates(model, label, path, value, options = {}) {
-  const kind = path.startsWith("vehicle.") ? "vehicleCandidates" : "rimCandidates";
+  const kind = path.startsWith("vehicle.") ? "vehicleCandidates" : path.startsWith("rim.") ? "rimCandidates" : "";
   const fieldName = path.replace(/^(vehicle|rim|rear_rim)\./, "");
-  const candidates = (model[kind] || []).filter((candidate) => candidate.field === fieldName);
+  const candidates = kind ? (model[kind] || []).filter((candidate) => candidate.field === fieldName) : [];
   const suggestions = candidates.length ? `<div class="vnext-fitment__suggestions" role="group" aria-label="Предложенные варианты ${esc(label.toLocaleLowerCase())}">${candidates.map((candidate) => button(String(candidate.value), "candidate", { value: `${path}|${candidate.value}` })).join("")}</div>` : "";
   return `<div class="vnext-fitment__field-wrap">${field(label, path, value, options)}${suggestions}</div>`;
 }
@@ -76,6 +76,15 @@ function preview(url, alt) {
   return `<div class="vnext-fitment__stage">${url ? `<img src="${esc(url)}" alt="${esc(alt)}" loading="lazy">` : `<span>Фото недоступно</span>`}</div>`;
 }
 
+function rimSetupLabel(state) {
+  return ({
+    empty: "Параметры не заполнены",
+    partial: "Нужно уточнить параметры",
+    complete_unconfirmed: "Параметры требуют подтверждения",
+    confirmed_ready: "Параметры подтверждены",
+  })[state] || "Состояние параметров неизвестно";
+}
+
 export function fitmentMarkup(model = {}) {
   if (model.loading && !model.overview) return `<section class="vnext-fitment">${loadingStatus("Загружаем совместимость")}</section>`;
   if (model.error && !model.overview) return `<section class="vnext-fitment" role="alert"><h2>Не удалось загрузить совместимость</h2><p>${esc(model.error)}</p>${button("Повторить", "reload", { primary: true })}</section>`;
@@ -93,7 +102,9 @@ export function fitmentMarkup(model = {}) {
   const variantChoices = (variantRequired || model.vehicleVariantPickerOpen) ? `<div class="vnext-fitment__variant-list" role="radiogroup" aria-label="Комплектация автомобиля">${vehicleChoices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" role="radio" aria-checked="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-marker" aria-hidden="true">${index === model.selectedVehicleVariant ? "●" : "○"}</span><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || `Вариант ${index + 1}`)}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span></button>`).join("")}${model.vehicleVariantsLoading ? loadingStatus("Подбираем комплектации автомобиля") : ""}${model.selectedVehicleVariant != null ? button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true }) : ""}</div>` : "";
   const vehicleVariantSummary = model.vehicleVariantName ? `<div class="vnext-fitment__variant-summary"><span>Комплектация</span><strong>${esc(model.vehicleVariantName)}</strong>${button(model.vehicleVariantPickerOpen ? "Закрыть варианты" : "Изменить комплектацию", "reselect-vehicle")}</div>` : "";
   const vehicleStatus = vehicleNeedsDetails ? "Нужно уточнить данные" : variantRequired ? "Выберите комплектацию автомобиля" : model.vehicleStatus || "Данные подтверждены";
-  const rimStatus = rimNeedsDetails ? "Нужно уточнить параметры" : "Параметры подтверждены";
+  const rimStatus = model.setupMode === "staggered"
+    ? `Передняя ось: ${rimSetupLabel(model.frontRimSetupState)} · Задняя ось: ${rimSetupLabel(model.rearRimSetupState)}`
+    : rimSetupLabel(model.frontRimSetupState || model.overview?.rim_setup_state);
   const vehicleFields = model.vehicleEditing ? `<section class="vnext-fitment__editor"><div class="vnext-fitment__section-heading"><h2>Данные автомобиля</h2></div><div class="vnext-fitment__fields">
     ${fieldWithCandidates(model, "Марка", "vehicle.make", vehicle.make, { options: model.catalogue?.makes })}
     ${fieldWithCandidates(model, "Модель", "vehicle.model", vehicle.model, { options: model.catalogue?.models })}
@@ -145,7 +156,7 @@ export function fitmentMarkup(model = {}) {
         <div class="vnext-fitment__object-meta"><h2>${esc(model.rimTitle || "Параметры не заполнены")}</h2>
         <p>${esc(model.rimSpecs || "")}</p>
         </div>
-        <div class="vnext-fitment__object-status" data-next-action="${esc(rimNeedsDetails ? "complete_rim_specs" : "confirmed")}">${esc(rimStatus)}</div>
+        <div class="vnext-fitment__object-status" data-next-action="${esc(rimNeedsDetails ? "complete_rim_specs" : "confirmed")}" data-rim-setup-state="${esc(model.frontRimSetupState || model.overview?.rim_setup_state || "unknown")}">${esc(rimStatus)}</div>
         <p class="vnext-fitment__provenance">${esc(model.rimProvenance || "")}</p>
         ${rimActions}
       </section>
