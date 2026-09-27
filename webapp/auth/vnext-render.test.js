@@ -66,14 +66,26 @@ test("comparison reveals original on the left and result on the right, with matc
   assert.match(css, /\.vnext-compare-reveal\s*\{[^}]*clip-path:inset\(0 calc\(100% - var\(--compare\)\) 0 0\)/);
 });
 
-test("desktop Result groups comparison with compact available context and actions", () => {
+test("Result actions keep the primary and Fitment CTAs, expose tertiary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
   assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
-  assert.match(markup, /Создать ещё вариант[\s\S]*?Проверить совместимость[\s\S]*?Скачать изображение[\s\S]*?К моим примеркам/);
+  assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
+  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*>Проверить совместимость/);
+  assert.match(markup, /class="vnext-button vnext-button--tertiary[^>]*data-render-action="download"[^>]*><svg[^>]*aria-hidden="true"[^>]*><path[\s\S]*?Скачать результат/);
+  assert.doesNotMatch(markup, /К моим примеркам|Скачать изображение/);
+  assert.match(markup, /data-render-action="feedback"[^>]*data-value="liked"[^>]*>Удачный результат/);
+  assert.match(markup, /data-render-action="feedback"[^>]*data-value="disliked"[^>]*>Нужна доработка/);
+  assert.doesNotMatch(markup, /👍|👎/);
   const sparse = resultMarkup({ jobId: "B", status: "completed", resultUrl: "/result", originalUrl: "/original" });
   assert.doesNotMatch(sparse, /<h3>(?:Автомобиль|Диск|Создано)<\/h3>|—/);
+  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
+  assert.match(css, /\.vnext-result-layout\s*\{[^}]*76fr[^}]*24fr[^}]*gap:24px/);
+  assert.match(css, /\.vnext-rating\s*\{[^}]*width:min\(650px,100%\)/);
+  assert.match(css, /\.vnext-rating-actions \.vnext-button\s*\{[^}]*min-height:40px/);
+  assert.match(css, /\.vnext-compare-handle\s*\{[^}]*width:32px; height:32px/);
+  assert.match(css, /\.vnext-shell__main:has\(\.vnext-render--result\)\s*\{ padding-inline:32px; \}/);
 });
 
 test("Generation Error uses available car/wheel context and preserves its existing primary action", () => {
