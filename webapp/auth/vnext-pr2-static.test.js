@@ -32,6 +32,14 @@ test("Dashboard consumes a read-only legacy view model and keeps domain actions 
   assert.match(app, /openRenderDetail\(jobId, "dashboard"\)/);
 });
 
+test("Dashboard headline preserves the copy and renders in the requested three lines", () => {
+  const view = read("vnext/views/dashboard.js");
+  const css = read("vnext/styles/surfaces.css");
+  assert.match(view, /title\.setAttribute\("aria-label", "Посмотрите выбранные диски на своей машине"\)/);
+  assert.match(view, /\["Посмотрите выбранные", "диски на своей", "машине"\]/);
+  assert.match(css, /\.vnext-dashboard__intro h2 span \{ display: block; \}/);
+});
+
 test("Photo Guide uses real frozen reference photography and approved preparation rules", () => {
   const model = read("vnext/models/photo-guide.js");
   for (const asset of [
