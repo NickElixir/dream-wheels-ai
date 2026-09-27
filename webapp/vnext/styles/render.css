@@ -99,6 +99,11 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-generation-actions .vnext-button--text { min-height:38px; }
 @media(min-width:1350px) { .vnext-shell__main:has(.vnext-render--result) { padding-inline:32px; } }
 @media(max-width:980px) { .vnext-processing-layout { grid-template-columns:1fr; } }
+@media(max-width:1024px) {
+  .vnext-result-layout { display:flex; flex-direction:column; gap:20px; }
+  .vnext-result-layout > .vnext-compare { width:100%; }
+  .vnext-result-aside { width:100%; max-width:680px; }
+}
 @media(max-width:680px) {
   .vnext-render { padding-top:18px; }
   .vnext-result-layout { display:flex; flex-direction:column; gap:18px; }
