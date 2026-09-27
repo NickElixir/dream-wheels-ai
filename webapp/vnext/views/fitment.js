@@ -58,7 +58,7 @@ function preview(url, alt) {
 export function fitmentMarkup(model = {}) {
   if (model.loading && !model.overview) return `<section class="vnext-fitment" role="status"><p>Загружаем совместимость…</p></section>`;
   if (model.error && !model.overview) return `<section class="vnext-fitment" role="alert"><h2>Не удалось загрузить совместимость</h2><p>${esc(model.error)}</p>${button("Повторить", "reload", { primary: true })}</section>`;
-  const vehicle = model.vehicle || {};
+  const vehicle = model.vehicleForm || model.vehicle || {};
   const rim = model.rim || {};
   let contextualAction = "";
   if (model.retryAvailable) contextualAction = button(model.executionStatus === "failed" ? "Повторить проверку" : "Проверить ещё раз", "check", { disabled: model.checking });
