@@ -2,7 +2,37 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
-import { historyMarkup, processingMarkup, resultMarkup } from "../vnext/views/render.js";
+import { historyMarkup, patchNode, processingMarkup, resultMarkup } from "../vnext/views/render.js";
+
+class TestElement {
+  constructor(name, children = []) {
+    this.nodeType = 1;
+    this.nodeName = name;
+    this.childNodes = children;
+    this.attributes = [];
+    this.parentNode = null;
+    for (const child of children) child.parentNode = this;
+  }
+
+  get lastChild() { return this.childNodes.at(-1) || null; }
+  hasAttribute() { return false; }
+  getAttribute() { return null; }
+  removeAttribute() {}
+  setAttribute() {}
+  matches() { return false; }
+  append(child) { child.parentNode = this; this.childNodes.push(child); }
+  remove() {
+    const index = this.parentNode?.childNodes.indexOf(this) ?? -1;
+    if (index >= 0) this.parentNode.childNodes.splice(index, 1);
+    this.parentNode = null;
+  }
+  replaceWith(replacement) {
+    const index = this.parentNode.childNodes.indexOf(this);
+    replacement.parentNode = this.parentNode;
+    this.parentNode.childNodes.splice(index, 1, replacement);
+  }
+  cloneNode(deep) { return new TestElement(this.nodeName, deep ? this.childNodes.map(child => child.cloneNode(true)) : []); }
+}
 
 const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8").replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, "");
 function runtime() {
@@ -50,6 +80,16 @@ globalThis.api = {state, bridge: window.dreamwheelsRenderBridge, resultUrlForJob
   return context.api;
 }
 const job = (id, status = "completed") => ({ job_id: id, status, created_at: "2026-09-25T12:00:00Z", result_url: `/result-${id}.jpg`, fitment_available: true, render_input_snapshot: { vehicle: { make: "Zeekr", model: id }, rim: { brand: "RZ", model: "XL6002", offset_et_mm: 0 } }, assets: { car_original: { download_url: `/jobs/${id}/assets/car_original/download` }, result: { download_url: `/jobs/${id}/download` } } });
+
+test("render reconciliation preserves later siblings when replacing a node", () => {
+  const current = new TestElement("SECTION", [new TestElement("DIV"), new TestElement("BUTTON")]);
+  const next = new TestElement("SECTION", [new TestElement("P"), new TestElement("BUTTON"), new TestElement("FOOTER")]);
+
+  patchNode(current, next);
+
+  assert.deepEqual(current.childNodes.map(child => child.nodeName), ["P", "BUTTON", "FOOTER"]);
+  assert.deepEqual(next.childNodes.map(child => child.nodeName), ["P", "BUTTON", "FOOTER"]);
+});
 
 test("all three result URL contracts remain supported", () => {
   const app = runtime();
