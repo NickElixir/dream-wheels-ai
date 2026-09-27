@@ -180,15 +180,13 @@ export function createDashboardView(model, callbacks = {}) {
   eyebrow.className = "vnext-eyebrow";
   eyebrow.textContent = "Новая примерка";
   const title = document.createElement("h2");
-  title.setAttribute("aria-label", "Посмотрите выбранные диски на своей машине");
-  ["Посмотрите выбранные", "диски на своей", "машине"].forEach((line) => {
+  title.setAttribute("aria-label", "Примерьте новые диски на своём автомобиле");
+  ["Примерьте", "новые диски", "на своём автомобиле"].forEach((line) => {
     const lineElement = document.createElement("span");
     lineElement.textContent = line;
     title.append(lineElement);
   });
-  const copy = document.createElement("p");
-  copy.textContent = "Загрузите автомобиль и выберите конкретный колесный диск";
-  introCopy.append(eyebrow, title, copy);
+  introCopy.append(eyebrow, title);
   intro.append(introCopy, createButton({ label: "Создать примерку", onClick: () => callbacks.navigate?.("create") }));
   page.append(intro);
 
