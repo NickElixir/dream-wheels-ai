@@ -74,7 +74,7 @@ Generation Error redesign is an explicit approved PR4 product decision: desktop 
 
 ## Typography hierarchy consistency pass
 
-The typography hierarchy now has four semantic levels: primary (`--vnext-text`, near-white), important entity/date values (`--vnext-text-value`, light neutral `#dde0de`), supporting/spec text (`--vnext-text-secondary`, `#9aa2a8`) and labels/tertiary metadata (`--vnext-text-subtle`, `#707980`). The value token is additive; existing primary/secondary/subtle and semantic status tokens were not recolored. New uses are scoped to `render.css` render/history/error selectors, so Create, Dashboard, Auth/static pages, shell navigation and other foundation surfaces do not inherit the new value color.
+The typography hierarchy now has four semantic levels: primary (`--vnext-text`, near-white), important entity/date values (`--vnext-text-value`, light neutral `#dde0de`), supporting/spec text (`--vnext-text-secondary`, `#9aa2a8`) and labels/tertiary metadata (`--vnext-text-subtle`, `#707980`). The value token is additive; existing primary/secondary/subtle and semantic status tokens were not recolored. New uses are scoped to `render.css` render/history/error selectors, so Create, Dashboard, Auth/static pages, shell navigation and other foundation surfaces do not inherit the new value color. The wheel metadata heading is labeled “Колесный диск” (rendered uppercase as “КОЛЕСНЫЙ ДИСК”) on both Result and Generation Error to distinguish it from the car heading.
 
 | Screen | Outcome | Browser evidence at 1440×1000 / 390×844 |
 | --- | --- | --- |
