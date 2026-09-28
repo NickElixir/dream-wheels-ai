@@ -10122,6 +10122,56 @@ function vnextFitmentSnapshot() {
         value: fitmentOptionValue(item),
         label: fitmentCatalogueOptionLabel(item, kind),
     }));
+    const catalogueState = (kind, value) => {
+        const fieldState = fitmentCatalogueFieldState(kind, value);
+        return { ...fieldState, status: fieldState.state };
+    };
+    const marketResolution = state.fitmentMarketResolution || {};
+    const marketStatus = marketResolution.status === "resolved_single" || marketResolution.status === "selected"
+        ? "selected"
+        : marketResolution.status === "selection_required"
+            ? "resolved_multiple"
+            : marketResolution.status;
+    const marketState = {
+        status: marketStatus || "idle_parent_missing",
+        message: marketStatus === "loading" ? "Загружаем рынки…"
+            : marketStatus === "failed" ? "Не удалось загрузить рынки"
+                : marketStatus === "no_data" ? "Нет доступных рынков"
+                    : marketStatus === "resolved_multiple" ? "Выберите рынок автомобиля"
+                        : !state.fitmentForm?.vehicle?.year ? "Сначала выберите год автомобиля" : "",
+    };
+    const vehicleSummaryRows = [
+        ["Год", vehicle.year],
+        ["Рынок", vehicle.market ? fitmentMarketLabel(vehicle.market) : ""],
+        ["Кузов", fitmentPresentationText(vehicle.body)],
+        ["Поколение", fitmentPresentationText(vehicle.generation)],
+        ["Модификация", fitmentPresentationText(vehicle.modification)],
+    ].filter(([, value]) => value);
+    const summaryRim = overview?.front_rim?.rim || overview?.rim || {};
+    const summaryRearRim = overview?.rear_rim?.rim || summaryRim;
+    const rimRowsFor = (value) => [
+        ["Артикул", value.sku],
+        ["Диаметр", value.wheel_diameter_in != null ? `${value.wheel_diameter_in}″` : ""],
+        ["Ширина", value.wheel_width_j != null ? `${value.wheel_width_j}J` : ""],
+        ["PCD", value.bolt_count != null && value.pcd_mm != null ? `${value.bolt_count}×${value.pcd_mm}` : value.pcd_mm != null ? `${value.pcd_mm} мм` : value.bolt_count != null ? `${value.bolt_count} отверстия` : ""],
+        ["DIA", value.center_bore_mm != null ? `${value.center_bore_mm} мм` : ""],
+        ["ET", value.offset_et_mm != null ? `${value.offset_et_mm} мм` : ""],
+    ].filter(([, value]) => value);
+    const rimSummaryRows = state.fitmentOverview?.setup_mode === "staggered"
+        ? [...rimRowsFor(summaryRim).map(([label, value]) => [`Передняя ось: ${label}`, value]), ...rimRowsFor(summaryRearRim).map(([label, value]) => [`Задняя ось: ${label}`, value])]
+        : rimRowsFor(summaryRim);
+    const invalidFields = new Set(state.fitmentFormState?.invalidFields || []);
+    const missingFields = new Set(state.fitmentFormState?.missingFields || []);
+    const fieldErrors = {};
+    for (const path of new Set([...invalidFields, ...missingFields])) {
+        if (path === "vehicle.make") fieldErrors[path] = missingFields.has(path) ? "Выберите марку автомобиля" : "Выберите значение из каталога";
+        else if (path === "vehicle.model") fieldErrors[path] = missingFields.has(path) ? "Выберите модель автомобиля" : "Выберите значение из каталога";
+        else if (path === "vehicle.year") fieldErrors[path] = missingFields.has(path) ? "Выберите год автомобиля" : "Выберите значение из каталога";
+        else if (path === "vehicle.market") fieldErrors[path] = missingFields.has(path) ? "Выберите рынок автомобиля" : "Выберите доступный рынок";
+        else fieldErrors[path] = `Заполните поле «${fitmentFieldLabel(path)}»`;
+    }
+    const runtimeError = state.fitmentError ? localizeErrorMessage(state.fitmentError) : "";
+    const errorSection = state.fitmentActiveSection || fitmentSectionForAction(overview);
     const retryAvailable = check?.execution_status === "failed"
         ? check.retry_mode !== "not_applicable" && fitmentNextAction(overview) === "run_standard_check"
         : fitmentNextAction(overview) === "run_standard_check";
@@ -10140,6 +10190,10 @@ function vnextFitmentSnapshot() {
         saving: state.fitmentSaving,
         checking: state.fitmentChecking,
         error: state.fitmentError ? localizeErrorMessage(state.fitmentError) : "",
+        authRequired: Boolean(state.fitmentAuthRequired),
+        vehicleError: !state.fitmentAuthRequired && errorSection === "vehicle" ? runtimeError : "",
+        rimError: !state.fitmentAuthRequired && errorSection === "rim" ? runtimeError : "",
+        checkError: !state.fitmentAuthRequired && errorSection === "result" ? runtimeError : "",
         executionError: check?.execution_status === "failed" ? fitmentResultCopy(check) : "",
         message: state.fitmentMessage || "",
         executionStatus: check?.execution_status || "idle",
@@ -10156,8 +10210,10 @@ function vnextFitmentSnapshot() {
         vehicleForm: state.fitmentForm?.vehicle || vehicle,
         vehicleTitle: demoVehicleTitle(vehicle),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
+        vehicleSummaryRows,
         vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
+        manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
         vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : "Данные автомобиля",
         vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
         vehicleVariantAction: ui.nextAction === "select_vehicle_variant",
@@ -10171,15 +10227,23 @@ function vnextFitmentSnapshot() {
             technical: fitmentVariantTechnicalSeries(variant, fitmentVariantDisplayName(variant, index)),
         })),
         selectedVehicleVariant: state.fitmentSelectedVehicleVariantIndex,
+        vehicleLookup: state.fitmentLookup || { status: "idle", outcome: "" },
         catalogue: {
             makes: mapOptions(fitmentCatalogueItems("makes"), "makes"),
             models: mapOptions(fitmentCatalogueItems("models"), "models"),
             years: mapOptions(fitmentCatalogueItems("years"), "years"),
             markets: mapOptions(marketItems, "regions"),
+            states: {
+                makes: catalogueState("makes", state.fitmentForm?.vehicle?.make),
+                models: catalogueState("models", state.fitmentForm?.vehicle?.model),
+                years: catalogueState("years", state.fitmentForm?.vehicle?.year),
+                markets: marketState,
+            },
         },
         rim,
         rimTitle: demoRimTitle(rim),
         rimSpecs: fitmentRimTechnicalSummary(rim),
+        rimSummaryRows,
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),
@@ -10192,6 +10256,8 @@ function vnextFitmentSnapshot() {
             url: state.fitmentForm?.rim?.product_url || "",
             loading: Boolean(state.fitmentSourceResolving),
             status: state.fitmentSourceStatus || "",
+            statusTone: state.fitmentSourceStatusTone || "neutral",
+            open: Boolean(state.fitmentSourceOpen),
             variants: (state.fitmentSourceVariants || []).map((variant) => ({ brand: variant.brand, model: variant.model, sku: variant.sku })),
             conflicts: state.fitmentSourceConflicts || [],
         },
@@ -10259,12 +10325,20 @@ window.dreamwheelsFitmentBridge = {
     action(action, value = "") {
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
+        else if (action === "login") openAuthDialog();
+        else if (action === "retry-catalogue") retryFitmentCatalogue(value);
+        else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }
         else if (action === "edit-vehicle") { setFitmentEditor("vehicle"); setFitmentActiveSection("vehicle"); }
         else if (action === "edit-rim") { setFitmentEditor("rim"); setFitmentActiveSection("rim"); }
         else if (action === "manual-vehicle") {
             setFitmentEditor("vehicle");
             setFitmentActiveSection("vehicle", { scroll: true });
             requestAnimationFrame(() => document.querySelector('[data-fitment-field="vehicle.make"]')?.focus());
+        }
+        else if (action === "show-variants") {
+            setFitmentEditor("");
+            setFitmentActiveSection("vehicle", { scroll: true });
+            ensureRequiredFitmentVariantLookup();
         }
         else if (action === "save") void saveFitment();
         else if (action === "check") void runFitmentCheck();
