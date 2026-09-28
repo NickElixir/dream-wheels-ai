@@ -9536,7 +9536,7 @@ function paymentReturnContext() {
     }
     return {
         client_channel: "web",
-        return_to: safeApplicationReturnPath(window.location) || "/app",
+        return_to: applicationTopLevelReturnPath("wallet", window.location) || "/app/wallet",
     };
 }
 
@@ -9604,11 +9604,11 @@ function handlePaymentReturn() {
     state.paymentReturnState = paymentState || "";
     if (paymentState === "success") {
         setWalletMessage(t("wallet.paymentSuccess"), "neutral");
-        if (!state.applicationAuthRequired) setView("wallet");
+        setView("wallet", { refreshData: !state.applicationAuthRequired });
     } else if (paymentState === "fail") {
         void trackEvent("payment_failed", { return_channel: "browser" });
         setWalletMessage(t("wallet.paymentFail"), "warning");
-        if (!state.applicationAuthRequired) setView("wallet");
+        setView("wallet", { refreshData: !state.applicationAuthRequired });
     }
 }
 
