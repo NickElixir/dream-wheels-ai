@@ -9,6 +9,8 @@
 - `Domain Scan` и `Codebase Scan` работают параллельно и не изменяют файлы.
 - Только `Implementation` вносит изменения.
 - `Validation` получает готовый diff и независимо проверяет его.
+- Для user-visible UI/UX PR implementation agent создаёт свежего independent UI reviewer subagent по [vnext-independent-ui-reviewer.md](vnext-independent-ui-reviewer.md); reviewer не меняет код и возвращает findings Coordinator/Architect.
+- Для high-risk migration/payments/auth/credits/Fitment/destructive-cleanup или спорного UX можно добавить отдельный независимый ChatGPT reviewer chat поверх subagent review.
 - `Release Docs` подключается только при изменении API, env, migration, Render/Vercel или rollout.
 
 ## Быстрый запуск
@@ -20,7 +22,9 @@
 5. Передай результаты обоих чатов coordinator-у.
 6. Создай `DW-30 Implementation - <task>` с финальным task packet от coordinator-а.
 7. После патча создай `DW-40 Validation - <task>` и передай ему diff/ветку.
-8. Верни findings coordinator-у. При необходимости он сформирует fix task или release/docs task.
+8. Если PR user-visible, запусти свежего `DW-45 Independent UI Reviewer` по [ui-reviewer.md](prompts/ui-reviewer.md), передав approved spec, exact PR/HEAD, `UI_CHANGE_MANIFEST`, tests/CI и exact-HEAD browser evidence или явное ограничение.
+9. Верни findings Validation/UI Reviewer coordinator-у. Не превращай reviewer suggestions в код автоматически: Coordinator/Architect сначала классифицирует blockers, polish, новые design proposals и deferred issues.
+10. При необходимости Coordinator сформирует fix task или release/docs task.
 
 Для небольшой задачи используй сокращённый flow:
 
@@ -92,6 +96,8 @@ flowchart TD
 - [codebase-scan.md](prompts/codebase-scan.md) - call flow, файлы, тесты и change surface.
 - [implementation.md](prompts/implementation.md) - scoped patch и проверки.
 - [validation.md](prompts/validation.md) - независимый findings-first review.
+- [ui-reviewer.md](prompts/ui-reviewer.md) - fresh independent UI/UX + migration-contract review для user-visible PR.
+- [vnext-independent-ui-reviewer.md](vnext-independent-ui-reviewer.md) - постоянный reviewer contract, verdict rules и handoff к Architect/Coordinator.
 - [release-docs.md](prompts/release-docs.md) - env, migrations, deploy и документация.
 
 ## Имена чатов
@@ -102,6 +108,7 @@ DW-10 Domain Scan - <short-task>
 DW-20 Codebase Scan - <short-task>
 DW-30 Implementation - <short-task>
 DW-40 Validation - <short-task>
+DW-45 Independent UI Reviewer - <short-task>
 DW-50 Release Docs - <short-task>
 ```
 
@@ -112,6 +119,9 @@ DW-50 Release Docs - <short-task>
 - Cloud tasks не должны применять production migrations или изменять live services.
 - В каждом task packet указывай branch/base, scope, relevant files, verification commands и точный repo-path `docs/agent-skills/<name>/SKILL.md`.
 - Coordinator должен проверить противоречия между результатами до начала implementation.
+- UI reviewer всегда стартует свежим; не пытайся сохранять временный subagent между PR.
+- UI reviewer не редактирует код и не мержит PR. Findings сначала возвращаются Coordinator/Architect.
+- Для browser-only PASS нужны exact-HEAD evidence; иначе пункт помечается `NOT_VERIFIED`.
 
 ## Worktrees And Symlinks
 
