@@ -8235,6 +8235,7 @@ function vnextWalletSnapshot() {
             amount: selected.amount,
             amountLabel: formatRub(selected.amount),
             creditsLabel: formatRenderCount(selected.credits),
+            durationLabel: t("wallet.packageDuration"),
         } : null,
         receiptEmail: state.email,
         emailError: state.walletEmailError,
@@ -8270,7 +8271,6 @@ window.dreamwheelsWalletBridge = {
     snapshot: vnextWalletSnapshot,
     selectPackage: setSelectedAmount,
     setReceiptEmail(value) {
-        syncReceiptEmailForAuth();
         state.email = value.trim();
         state.receiptEmailTouched = true;
         state.walletEmailError = state.email && !validFrontendEmail(state.email)
@@ -9468,13 +9468,10 @@ async function requestCabinet({ silent = false } = {}) {
             expiresAt: item.expires_at || "",
         }));
         syncReceiptEmailForAuth();
-        const pendingMessage = getPendingWalletMessage(getLastInvoice());
         if (state.paymentReturnState === "success") {
             setWalletMessage(getLastInvoice()?.status === "paid" ? "" : t("wallet.paymentSuccess"), "neutral");
         } else if (state.paymentReturnState === "fail") {
             setWalletMessage(t("wallet.paymentFail"), "warning");
-        } else if (pendingMessage) {
-            setWalletMessage(pendingMessage, "warning");
         } else {
             setWalletMessage("");
         }

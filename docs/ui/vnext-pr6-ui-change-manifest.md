@@ -49,6 +49,10 @@ All listed top-level views are in the VNext registry. The replaced Wallet markup
 
 The pre-merge browser pass covers loading, normal balance/expiry, selected package, invalid email, pending, paid, failed, empty history, cabinet error, and expired-session presentation at 1440×1000, 1024×768, 768×844, and 390×844. It is a local presentation fixture using the actual VNext shell and Wallet modules, not an authenticated staging payment test. The latter remains post-merge and must not initiate a real payment without a confirmed sandbox environment.
 
+## Independent review correction
+
+The first exact-HEAD review found three presentation gaps. The selected-package summary now retains the runtime's 30-day validity label; ordinary pending guidance appears only in its conditional island; and initial cabinet loading no longer displays an empty-history claim before history loads. The payment API and state ownership did not change.
+
 ## Known issue
 
 `FITMENT-POST-PR6-01` is recorded in [post-migration known issues](vnext-post-migration-known-issues.md). PR6 does not edit Fitment progression.

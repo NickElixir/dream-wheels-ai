@@ -42,7 +42,7 @@ export function createWalletView(model = {}, callbacks = {}) {
             <p id="vnext-wallet-email-hint">Чек будет отправлен на этот адрес.</p>
             <p id="vnext-wallet-email-error" class="vnext-wallet__field-error" data-wallet-email-error hidden role="alert">Введите корректный email</p>
           </div>
-          <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>Выберите пакет</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-email hidden></span></div>
+          <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>Выберите пакет</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-duration hidden></span><span data-wallet-selection-email hidden></span></div>
           <button type="button" class="vnext-button vnext-button--primary vnext-wallet__pay" data-wallet-action="pay" disabled>Перейти к оплате</button>
           <p class="vnext-wallet__provider">Оплата через Robokassa</p>
           <p class="vnext-wallet__legal">Продолжая, вы принимаете <a href="${legalOrigin}/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link>оферту</a> и <a href="${legalOrigin}/legal/refund" target="_blank" rel="noopener noreferrer" data-external-link>условия возврата</a>. <a href="${legalOrigin}/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link>Обработка персональных данных</a>.</p>
@@ -122,9 +122,10 @@ export function refreshWalletView(root, model = {}) {
   setText("[data-wallet-email-error]", model.emailError);
   const selection = model.selectedPackage;
   setHidden("[data-wallet-selection-title]", Boolean(selection));
-  for (const selector of ["[data-wallet-selection-amount]", "[data-wallet-selection-credits]", "[data-wallet-selection-email]"]) setHidden(selector, !selection);
+  for (const selector of ["[data-wallet-selection-amount]", "[data-wallet-selection-credits]", "[data-wallet-selection-duration]", "[data-wallet-selection-email]"]) setHidden(selector, !selection);
   setText("[data-wallet-selection-amount]", selection?.amountLabel);
   setText("[data-wallet-selection-credits]", selection?.creditsLabel);
+  setText("[data-wallet-selection-duration]", selection?.durationLabel);
   setText("[data-wallet-selection-email]", selection ? model.receiptEmail || "—" : "");
   const pay = one('[data-wallet-action="pay"]');
   pay.disabled = !authenticated || !selection || !model.validEmail || Boolean(model.interactionBusy);
@@ -140,7 +141,7 @@ export function refreshWalletView(root, model = {}) {
   setHidden("[data-wallet-refresh-spinner]", !model.loading);
   setText("[data-wallet-refresh-label]", model.loading ? "Обновляем статус…" : "Обновить статус");
 
-  const historyMarkup = historyRows(model.paymentHistory || []);
+  const historyMarkup = initialLoading ? "" : historyRows(model.paymentHistory || []);
   if (one("[data-wallet-history]").innerHTML !== historyMarkup) one("[data-wallet-history]").innerHTML = historyMarkup;
   setHidden('[data-wallet-action="more"]', !model.hasMoreHistory);
   return root;

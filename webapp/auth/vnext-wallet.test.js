@@ -47,7 +47,7 @@ globalThis.calls = [];
 globalThis.redirects = [];
 globalThis.api = {
   state, bridge: window.dreamwheelsWalletBridge, loadCabinet, createPayment,
-  handlePaymentReturn, paymentReturnContext, schedulePendingInvoiceRefresh,
+  handlePaymentReturn, paymentReturnContext, schedulePendingInvoiceRefresh, clearPendingRefreshTimer,
   setFetch: (fetcher) => { authenticatedFetch = fetcher; },
 };`, context);
   return { ...context.api, calls: context.calls, redirects: context.redirects, location };
@@ -69,6 +69,8 @@ test("Wallet projects cabinet balance, FIFO expiry, starter grant and runtime pr
   assert.deepEqual(Array.from(model.topUpPackages, (item) => [item.amount, item.creditsLabel]), [
     [100, "3 рендера"], [200, "7 рендеров"], [500, "20 рендеров"], [1000, "45 рендеров"],
   ]);
+  app.bridge.selectPackage(500);
+  assert.equal(app.bridge.snapshot().selectedPackage.durationLabel, "30 дней");
 });
 
 test("Wallet keeps pending operational state separate from paid and failed history, and expands history", () => {
@@ -130,6 +132,21 @@ test("Cancelled and expired invoices retain the existing failed mapping without 
   assert.deepEqual(Array.from(model.paymentHistory, (item) => item.tone), ["warning", "warning"]);
 });
 
+test("Cabinet pending guidance appears only in the pending island", async () => {
+  const app = runtime();
+  app.setFetch(async () => ({ ok: true, json: async () => ({
+    balance: 25, credit_packages: [], payments: [{
+      invoice_id: 9, amount: 500, credits_granted: 20, status: "pending",
+      created_at: new Date().toISOString(),
+    }],
+  }) }));
+  await app.loadCabinet();
+  const model = app.bridge.snapshot();
+  assert.equal(model.message, "");
+  assert.match(model.latestPendingPayment.message, /Оплата создана/);
+  app.clearPendingRefreshTimer();
+});
+
 test("Successful return waits for cabinet confirmation and failed return does not discard history", async () => {
   const app = runtime({ search: "?payment=success" });
   app.state.payments = [{ invoiceId: 4, amount: 100, credits: 3, status: "pending", createdAtMs: Date.now() }];
@@ -149,6 +166,7 @@ test("Wallet presentation contains no network, timer, balance calculation or pro
   for (const forbidden of [/\bfetch\s*\(/u, /\bsetTimeout\s*\(/u, /\bpayment_url\b/u, /\bcredits\s*\+/u, /\bbalance\s*\+/u]) {
     assert.doesNotMatch(viewSource, forbidden);
   }
+  assert.match(viewSource, /initialLoading \? "" : historyRows/u);
 });
 
 test("Cabinet error retains the last known balance and auth loss hides old account data", async () => {
