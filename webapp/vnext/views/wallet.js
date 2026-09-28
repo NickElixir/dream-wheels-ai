@@ -141,7 +141,7 @@ export function refreshWalletView(root, model = {}) {
   setHidden("[data-wallet-refresh-spinner]", !model.loading);
   setText("[data-wallet-refresh-label]", model.loading ? "Обновляем статус…" : "Обновить статус");
 
-  const historyMarkup = initialLoading ? "" : historyRows(model.paymentHistory || []);
+  const historyMarkup = initialLoading || !authenticated ? "" : historyRows(model.paymentHistory || []);
   if (one("[data-wallet-history]").innerHTML !== historyMarkup) one("[data-wallet-history]").innerHTML = historyMarkup;
   setHidden('[data-wallet-action="more"]', !model.hasMoreHistory);
   return root;

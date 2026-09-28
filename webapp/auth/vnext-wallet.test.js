@@ -166,7 +166,7 @@ test("Wallet presentation contains no network, timer, balance calculation or pro
   for (const forbidden of [/\bfetch\s*\(/u, /\bsetTimeout\s*\(/u, /\bpayment_url\b/u, /\bcredits\s*\+/u, /\bbalance\s*\+/u]) {
     assert.doesNotMatch(viewSource, forbidden);
   }
-  assert.match(viewSource, /initialLoading \? "" : historyRows/u);
+  assert.match(viewSource, /initialLoading \|\| !authenticated \? "" : historyRows/u);
 });
 
 test("Cabinet error retains the last known balance and auth loss hides old account data", async () => {

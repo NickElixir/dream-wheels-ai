@@ -51,7 +51,7 @@ The pre-merge browser pass covers loading, normal balance/expiry, selected packa
 
 ## Independent review correction
 
-The first exact-HEAD review found three presentation gaps. The selected-package summary now retains the runtime's 30-day validity label; ordinary pending guidance appears only in its conditional island; and initial cabinet loading no longer displays an empty-history claim before history loads. The payment API and state ownership did not change.
+The first exact-HEAD review found three presentation gaps. The selected-package summary now retains the runtime's 30-day validity label; ordinary pending guidance appears only in its conditional island; and initial cabinet loading no longer displays an empty-history claim before history loads. Follow-up review also identified the same misleading claim after session expiry; history stays quiet until authentication returns. The payment API and state ownership did not change.
 
 ## Known issue
 
