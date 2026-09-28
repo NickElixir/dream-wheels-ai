@@ -2,17 +2,25 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import {
+  applicationRouteContext,
+  applicationTopLevelReturnPath,
+  isApplicationRoute,
+  safeApplicationReturnPath,
+} from "../app-route.mjs";
 
 const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8")
   .replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, "");
 
-function runtime({ telegram = false, pathname = "/app/wallet", search = "" } = {}) {
+function runtime({ telegram = false, pathname = "/app/wallet", search = "", applicationRoute = false } = {}) {
   const calls = [];
   const redirects = [];
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const location = { pathname, search, href: "https://example.test/app/wallet" };
+  const location = new URL(`${pathname}${search}`, "https://example.test");
   const context = {
     URL, URLSearchParams, Blob, FormData, console,
+    applicationRouteContext, applicationTopLevelReturnPath, isApplicationRoute, safeApplicationReturnPath,
+    applicationRoute,
     document: {
       documentElement: { dataset: {} }, body: { classList: { add() {}, remove() {} }, appendChild() {} },
       addEventListener() {}, querySelector: () => null, querySelectorAll: () => [],
@@ -21,15 +29,13 @@ function runtime({ telegram = false, pathname = "/app/wallet", search = "" } = {
     window: {
       Telegram: telegram ? { WebApp: { expand() {}, platform: "ios" } } : {}, location,
       dispatchEvent() {}, scrollTo() {}, setTimeout, clearTimeout,
+      history: { replaceState(_state, _title, path) { location.href = new URL(path, location.origin).href; } },
     },
     localStorage: storage, sessionStorage: storage,
     navigator: { language: "ru-RU", userAgent: "test" },
     setTimeout, clearTimeout,
   };
   vm.runInNewContext(`
-const applicationRouteContext = () => null;
-const isApplicationRoute = () => false;
-const safeApplicationReturnPath = () => "/app/wallet";
 ${source}
 renderDashboard = () => {};
 trackEvent = async () => {};
@@ -50,7 +56,9 @@ globalThis.api = {
   handlePaymentReturn, paymentReturnContext, schedulePendingInvoiceRefresh, clearPendingRefreshTimer,
   resetApplicationSessionState: clearApplicationSessionState,
   setFetch: (fetcher) => { authenticatedFetch = fetcher; },
-};`, context);
+};
+state.applicationAuthRequired = globalThis.applicationRoute;
+`, context);
   return { ...context.api, calls: context.calls, redirects: context.redirects, location };
 }
 
@@ -112,6 +120,22 @@ test("Wallet preserves receipt email after validation and sends unchanged web pa
   assert.equal(app.state.balance, 25, "cabinet response remains the balance authority");
 });
 
+test("Web payment always returns to Wallet, even when the current application route differs", async () => {
+  for (const [pathname, search, expected] of [
+    ["/app/wallet", "", "/app/wallet"],
+    ["/app", "", "/app/wallet"],
+    ["/app/wallet", "?market=ru&utm_source=x&payment=success", "/app/wallet?market=ru&utm_source=x"],
+  ]) {
+    const app = runtime({ pathname, search, applicationRoute: true });
+    assert.deepEqual({ ...app.paymentReturnContext() }, { client_channel: "web", return_to: expected });
+    app.bridge.selectPackage(100);
+    app.bridge.setReceiptEmail("nikolai@example.test");
+    await app.bridge.createPayment();
+    const request = app.calls.find((call) => call.url === "/payments/topups");
+    assert.equal(JSON.parse(request.options.body).return_to, expected);
+  }
+});
+
 test("Telegram payment return keeps /t/ and a redirect result does not mark an invoice paid", () => {
   const app = runtime({ telegram: true, pathname: "/t/", search: "?payment=success" });
   assert.deepEqual({ ...app.paymentReturnContext() }, { client_channel: "telegram", return_to: "/t/" });
@@ -119,6 +143,58 @@ test("Telegram payment return keeps /t/ and a redirect result does not mark an i
   app.handlePaymentReturn();
   assert.equal(app.state.payments[0].status, "pending");
   assert.match(app.state.walletMessage, /Проверяем оплату/);
+});
+
+test("Legacy website success and fail returns select Wallet without an early cabinet request", () => {
+  for (const paymentState of ["success", "fail"]) {
+    const app = runtime({ pathname: "/app", search: `?payment=${paymentState}&invoice_id=53`, applicationRoute: true });
+    app.state.balance = 25;
+    app.state.payments = [{ invoiceId: 53, amount: 100, credits: 3, status: "pending", createdAtMs: Date.now() }];
+    app.handlePaymentReturn();
+    assert.equal(app.state.view, "wallet");
+    assert.equal(app.location.pathname, "/app/wallet");
+    assert.equal(app.location.search, "");
+    assert.equal(app.state.paymentReturnState, paymentState);
+    assert.equal(app.state.balance, 25);
+    assert.equal(app.state.payments[0].status, "pending");
+    assert.equal(app.calls.length, 0, "return handler must wait for normal auth/bootstrap cabinet loading");
+    if (paymentState === "fail") assert.match(app.state.walletMessage, /Платеж не завершен/);
+    else assert.match(app.state.walletMessage, /Проверяем оплату/);
+  }
+});
+
+test("Website success return keeps pending until the cabinet confirms payment", async () => {
+  const app = runtime({ pathname: "/app", search: "?payment=success", applicationRoute: true });
+  app.state.balance = 25;
+  app.handlePaymentReturn();
+  app.setFetch(async () => ({ ok: true, json: async () => ({
+    balance: 25, credit_packages: [], payments: [{
+      invoice_id: 53, amount: 100, credits_granted: 3, status: "pending",
+      created_at: new Date().toISOString(),
+    }],
+  }) }));
+  await app.loadCabinet();
+  assert.equal(app.state.balance, 25);
+  assert.equal(app.state.payments[0].status, "pending");
+  assert.ok(app.bridge.snapshot().latestPendingPayment);
+  app.clearPendingRefreshTimer();
+});
+
+test("Website success return takes paid status and new balance only from cabinet", async () => {
+  const app = runtime({ pathname: "/app", search: "?payment=success", applicationRoute: true });
+  app.state.balance = 25;
+  app.handlePaymentReturn();
+  assert.equal(app.state.balance, 25);
+  app.setFetch(async () => ({ ok: true, json: async () => ({
+    balance: 28, credit_packages: [], payments: [{
+      invoice_id: 53, amount: 100, credits_granted: 3, status: "paid",
+      created_at: new Date().toISOString(),
+    }],
+  }) }));
+  await app.loadCabinet();
+  assert.equal(app.state.balance, 28);
+  assert.equal(app.state.payments[0].status, "paid");
+  assert.equal(app.bridge.snapshot().latestPendingPayment, null);
 });
 
 test("Cancelled and expired invoices retain the existing failed mapping without a pending island", () => {
