@@ -48,6 +48,7 @@ globalThis.redirects = [];
 globalThis.api = {
   state, bridge: window.dreamwheelsWalletBridge, loadCabinet, createPayment,
   handlePaymentReturn, paymentReturnContext, schedulePendingInvoiceRefresh, clearPendingRefreshTimer,
+  resetApplicationSessionState: clearApplicationSessionState,
   setFetch: (fetcher) => { authenticatedFetch = fetcher; },
 };`, context);
   return { ...context.api, calls: context.calls, redirects: context.redirects, location };
@@ -143,6 +144,7 @@ test("Cabinet pending guidance appears only in the pending island", async () => 
   await app.loadCabinet();
   const model = app.bridge.snapshot();
   assert.equal(model.message, "");
+  assert.equal(model.cabinetLoaded, true);
   assert.match(model.latestPendingPayment.message, /Оплата создана/);
   app.clearPendingRefreshTimer();
 });
@@ -166,7 +168,72 @@ test("Wallet presentation contains no network, timer, balance calculation or pro
   for (const forbidden of [/\bfetch\s*\(/u, /\bsetTimeout\s*\(/u, /\bpayment_url\b/u, /\bcredits\s*\+/u, /\bbalance\s*\+/u]) {
     assert.doesNotMatch(viewSource, forbidden);
   }
-  assert.match(viewSource, /initialLoading \|\| !authenticated \? "" : historyRows/u);
+  assert.match(viewSource, /!authenticated \|\| !model\.cabinetLoaded \? "" : historyRows/u);
+});
+
+test("Initial cabinet loading and failure do not claim that payment history is empty", async () => {
+  const app = runtime();
+  assert.equal(app.bridge.snapshot().cabinetLoaded, false);
+
+  let resolveRequest;
+  app.setFetch(() => new Promise((resolve) => { resolveRequest = resolve; }));
+  const pending = app.loadCabinet();
+  assert.equal(app.bridge.snapshot().cabinetLoaded, false);
+  assert.equal(app.bridge.snapshot().cabinetError, "");
+  resolveRequest({ ok: false, status: 503, statusText: "Service Unavailable", json: async () => ({ detail: "Cabinet unavailable" }) });
+  await pending;
+
+  const failed = app.bridge.snapshot();
+  assert.equal(failed.cabinetLoaded, false);
+  assert.match(failed.cabinetError, /Cabinet unavailable/u);
+  assert.deepEqual(Array.from(failed.paymentHistory), []);
+});
+
+test("Successful empty cabinet establishes authoritative empty history", async () => {
+  const app = runtime();
+  app.setFetch(async () => ({ ok: true, json: async () => ({ balance: 25, payments: [], credit_packages: [] }) }));
+  await app.loadCabinet();
+  assert.equal(app.bridge.snapshot().cabinetLoaded, true);
+  assert.deepEqual(Array.from(app.bridge.snapshot().paymentHistory), []);
+  app.clearPendingRefreshTimer();
+});
+
+test("Refresh failure preserves loaded payment history and its loaded provenance", async () => {
+  const app = runtime();
+  const payment = {
+    invoice_id: 71, amount: 500, credits_granted: 20, status: "paid",
+    created_at: "2026-09-27T18:00:00Z", paid_at: "2026-09-27T18:01:00Z",
+  };
+  app.setFetch(async () => ({ ok: true, json: async () => ({ balance: 25, payments: [payment], credit_packages: [] }) }));
+  await app.loadCabinet();
+  const historyBefore = Array.from(app.bridge.snapshot().paymentHistory, (item) => ({ ...item }));
+  assert.equal(app.bridge.snapshot().cabinetLoaded, true);
+
+  app.setFetch(async () => ({ ok: false, status: 503 }));
+  await app.loadCabinet();
+  const afterFailure = app.bridge.snapshot();
+  assert.equal(afterFailure.cabinetLoaded, true);
+  assert.ok(afterFailure.cabinetError);
+  assert.deepEqual(Array.from(afterFailure.paymentHistory, (item) => ({ ...item })), historyBefore);
+  app.clearPendingRefreshTimer();
+});
+
+test("A later refresh error retains a previously authoritative empty-history state", async () => {
+  const app = runtime();
+  app.setFetch(async () => ({ ok: true, json: async () => ({ balance: 25, payments: [], credit_packages: [] }) }));
+  await app.loadCabinet();
+  app.setFetch(async () => ({ ok: false, status: 503 }));
+  await app.loadCabinet();
+  assert.equal(app.bridge.snapshot().cabinetLoaded, true);
+  assert.deepEqual(Array.from(app.bridge.snapshot().paymentHistory), []);
+  app.clearPendingRefreshTimer();
+});
+
+test("Full application session reset clears cabinet loaded provenance", () => {
+  const app = runtime();
+  app.state.walletCabinetLoaded = true;
+  app.resetApplicationSessionState();
+  assert.equal(app.state.walletCabinetLoaded, false);
 });
 
 test("Cabinet error retains the last known balance and auth loss hides old account data", async () => {

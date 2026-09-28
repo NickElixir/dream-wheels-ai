@@ -53,6 +53,8 @@ The pre-merge browser pass covers loading, normal balance/expiry, selected packa
 
 The first exact-HEAD review found three presentation gaps. The selected-package summary now retains the runtime's 30-day validity label; ordinary pending guidance appears only in its conditional island; and initial cabinet loading no longer displays an empty-history claim before history loads. Follow-up review also identified the same misleading claim after session expiry; history stays quiet until authentication returns. The payment API and state ownership did not change.
 
+The corrective pass now tracks whether an authoritative `/payments/cabinet` response has ever been applied in the current application session. Empty-history copy is shown only after that point; an initial cabinet failure keeps history quiet, while a later refresh failure preserves the last known history and its provenance. No new UX pattern or payment behavior was added.
+
 ## Known issue
 
 `FITMENT-POST-PR6-01` is recorded in [post-migration known issues](vnext-post-migration-known-issues.md). PR6 does not edit Fitment progression.

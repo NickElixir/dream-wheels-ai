@@ -1354,6 +1354,7 @@ const state = {
     walletMessage: "",
     walletMessageTone: "neutral",
     walletCabinetError: "",
+    walletCabinetLoaded: false,
     paymentReturnState: "",
     pendingRefreshTimer: null,
     createScreen: "upload",
@@ -2860,6 +2861,7 @@ function clearApplicationSessionState() {
     state.walletEmailError = "";
     state.balance = null;
     state.payments = [];
+    state.walletCabinetLoaded = false;
     state.starterGrant = null;
     state.renderHistory = [];
     state.renderHistoryError = "";
@@ -8219,6 +8221,7 @@ function vnextWalletSnapshot() {
     return {
         loading: state.walletLoading,
         cabinetError: state.walletCabinetError,
+        cabinetLoaded: state.walletCabinetLoaded,
         authenticated,
         balance: authenticated ? state.balance : null,
         balanceUnit: !authenticated || state.balance === null ? "" : formatRenderCount(state.balance).replace(/^\d+\s+/, ""),
@@ -9467,6 +9470,7 @@ async function requestCabinet({ silent = false } = {}) {
             remainingCredits: Number(item.remaining_credits || 0),
             expiresAt: item.expires_at || "",
         }));
+        state.walletCabinetLoaded = true;
         syncReceiptEmailForAuth();
         if (state.paymentReturnState === "success") {
             setWalletMessage(getLastInvoice()?.status === "paid" ? "" : t("wallet.paymentSuccess"), "neutral");
