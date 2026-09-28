@@ -5,6 +5,8 @@ ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+WALLET_VIEW = (ROOT / "webapp" / "vnext" / "views" / "wallet.js").read_text(encoding="utf-8")
+WALLET_CSS = (ROOT / "webapp" / "vnext" / "styles" / "wallet.css").read_text(encoding="utf-8")
 JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
 VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
 VERSION_JSON = json.loads((ROOT / "webapp" / "version.json").read_text(encoding="utf-8"))
@@ -196,7 +198,7 @@ def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert 'class="topup-icon"' not in INDEX_HTML
     for icon in ("⚡", "🏁", "💎", "👑"):
         assert icon not in INDEX_HTML
-    assert "Robokassa" in INDEX_HTML
+    assert "Robokassa" in WALLET_VIEW
 
 
 def test_payment_creation_sends_channel_aware_return_context() -> None:
@@ -579,30 +581,22 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert "Срок действия" in INDEX_HTML
     assert "Сначала спишутся рендеры с ближайшим сроком действия" in APP_JS
     assert "data-dashboard-expiry" in INDEX_HTML
-    assert "data-wallet-expiry-list" in INDEX_HTML
+    assert 'data-view="wallet"' in INDEX_HTML
+    assert "data-wallet-expiry-rows" in WALLET_VIEW
 
 
 def test_wallet_payment_summaries_use_layout_without_punctuation_separators() -> None:
-    assert "payment-card-top" in INDEX_HTML
-    assert "data-last-invoice-amount" in INDEX_HTML
-    assert "data-last-invoice-renders" in INDEX_HTML
-    assert "data-last-invoice-date" in INDEX_HTML
-    assert "data-last-invoice-number-meta" in INDEX_HTML
-    assert "data-last-invoice-details" not in INDEX_HTML
-    assert "latest-payment-details" not in INDEX_HTML
-    assert "data-last-invoice-state" not in INDEX_HTML
-    assert "data-topup-summary-values" in INDEX_HTML
-    assert 'data-i18n="wallet.creditsTitle">Ваши рендеры' in INDEX_HTML
-    assert "Ваши credits" not in INDEX_HTML
-    assert "payment-history-renders" in APP_JS
-    assert "payment-history-meta" in APP_JS
-    assert "packageDuration:" in APP_JS
-    assert "0 ₽ — +0 рендеров" not in INDEX_HTML
-    assert "— +${formatRenderCount(lastInvoice.credits)}" not in APP_JS
-    assert "— +${formatRenderCount(item.credits)}" not in APP_JS
-    assert 'formatTemplate("wallet.packageSummary"' not in APP_JS
-    assert "invoiceState:" not in APP_JS
-    assert "formatPaymentStatus(lastInvoice.status)" in APP_JS
+    assert "data-wallet-selection-amount" in WALLET_VIEW
+    assert "data-wallet-selection-credits" in WALLET_VIEW
+    assert "data-wallet-selection-email" in WALLET_VIEW
+    assert "data-wallet-pending-amount" in WALLET_VIEW
+    assert "data-wallet-pending-credits" in WALLET_VIEW
+    assert "vnext-wallet__history-main" in WALLET_VIEW
+    assert "vnext-wallet__history-status" in WALLET_VIEW
+    assert " · " not in WALLET_VIEW
+    assert "data-last-invoice-amount" not in INDEX_HTML
+    assert "data-topup-summary-values" not in INDEX_HTML
+    assert "wallet.paymentSuccess" in APP_JS
     assert (
         "telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username"
         in APP_JS
@@ -667,10 +661,9 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
     )
     assert "walletHistoryPage" in APP_JS
     assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
-    assert "data-wallet-history-pager" in INDEX_HTML
-    assert "data-wallet-history-prev" in INDEX_HTML
-    assert "data-wallet-history-next" in INDEX_HTML
-    assert "wallet-history-stack" in STYLE_CSS
+    assert 'data-wallet-action="more"' in WALLET_VIEW
+    assert "data-wallet-history-pager" not in INDEX_HTML
+    assert "vnext-wallet__history-row" in WALLET_CSS
 
 
 def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> None:

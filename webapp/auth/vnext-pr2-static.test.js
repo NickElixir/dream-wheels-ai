@@ -81,7 +81,7 @@ test("Auth/session VNext presentation preserves existing controller hooks and ex
   assert.doesNotMatch(css, /fonts\.googleapis\.com/);
 });
 
-test("PR5 migrates Fitment while leaving Balance presentation legacy", () => {
+test("PR6 completes the main VNext surface registry", () => {
   const bootstrap = read("vnext/bootstrap.js");
   const registryMatch = bootstrap.match(/new Set\(\[([^\]]+)\]\)/s);
   assert.ok(registryMatch, "migrated surface registry not found");
@@ -89,7 +89,5 @@ test("PR5 migrates Fitment while leaving Balance presentation legacy", () => {
   assert.ok(registry.includes('"create"'), "Create migration missing from VNext registry");
   for (const migratedView of ["renders", "render-detail"]) assert.ok(registry.includes(`"${migratedView}"`));
   assert.ok(registry.includes('"fitment"'), "Fitment migration missing from VNext registry");
-  for (const legacyView of ["wallet"]) {
-    assert.ok(!registry.includes(`"${legacyView}"`), `legacy feature migrated too early: ${legacyView}`);
-  }
+  assert.ok(registry.includes('"wallet"'), "Balance must use VNext presentation");
 });

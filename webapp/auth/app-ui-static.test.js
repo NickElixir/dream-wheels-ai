@@ -80,62 +80,20 @@ test("restore gate keeps the session gate independent from cabinet data", () => 
     assert.doesNotMatch(app.slice(start, end), /applicationDataReady/);
 });
 
-test("wallet polish separates credits from payment history and keeps checkout explicit", () => {
-    assert.match(html, /data-wallet-topup/);
-    assert.match(html, /data-i18n="wallet\.creditsTitle">Ваши рендеры/);
-    assert.doesNotMatch(html, /Ваши credits/);
-    assert.match(html, /data-i18n="wallet\.topUpHistory">История пополнений/);
-    assert.match(html, /data-i18n="wallet\.emailHint">Чек будет отправлен на этот email/);
-    assert.match(html, /data-i18n="wallet\.privacyDetails">Подробнее — в Политике обработки персональных данных/);
-    assert.match(html, /data-pay-button disabled data-i18n="wallet\.choosePackage">Выберите пакет/);
-    assert.doesNotMatch(html, /class="topup-icon"/);
-    assert.doesNotMatch(html, /data-topup-amount="(?:100|200|500|1000)"[\s\S]{0,220}[⚡🏁💎👑]/u);
-    assert.match(app, /selectedAmount: null/);
-    assert.match(app, /receiptEmailTouched: false/);
-    assert.match(app, /function syncReceiptEmailForAuth\(\)/);
-    assert.match(app, /receiptEmailDefault\(\)/);
-    assert.doesNotMatch(app, /const rememberedEmail = state\.payments/);
-    assert.match(app, /state\.receiptEmailTouched = true/);
-    assert.match(app, /paySelected: "Оплатить \{amount\}"/);
-    assert.match(app, /const topUpPackage = getTopUpPackage\(state\.selectedAmount\)/);
-});
-
-test("wallet payment summaries use layout elements instead of punctuation separators", () => {
-    assert.match(html, /payment-card-top/);
-    assert.match(html, /data-last-invoice-amount/);
-    assert.match(html, /data-last-invoice-renders/);
-    assert.match(html, /data-last-invoice-date/);
-    assert.match(html, /data-last-invoice-number-meta/);
-    assert.doesNotMatch(html, /data-last-invoice-state/);
-    assert.match(html, /data-topup-summary-values/);
-    assert.match(app, /payment-history-renders/);
-    assert.match(app, /payment-history-meta/);
-    assert.match(app, /packageDuration:/);
-    assert.doesNotMatch(`${html}\n${app}`, /0 ₽ — \+0 рендеров/);
-    assert.doesNotMatch(app, /— \+\$\{formatRenderCount\(lastInvoice\.credits\)\}/);
-    assert.doesNotMatch(app, /— \+\$\{formatRenderCount\(item\.credits\)\}/);
-    assert.doesNotMatch(app, /formatTemplate\("wallet\.packageSummary"/);
-    assert.doesNotMatch(app, /data-last-invoice-date[^\n]*—/);
-    assert.doesNotMatch(app, /data-last-invoice-number-meta[^\n]*·/);
-    assert.doesNotMatch(`${html}\n${app}`, /invoiceState/);
-    assert.match(app, /formatPaymentStatus\(lastInvoice\.status\)/);
-    assert.match(app, /telegramUser\?\.id \|\| state\.websiteAuth\?\.telegramUserId \|\| state\.websiteAuth\?\.username/);
-    assert.doesNotMatch(`${html}\n${app}`, /\b\+\$\{formatRenderCount/);
-});
-
-test("wallet spacing and payment statuses keep their visual alignment", () => {
-    assert.match(css, /\.wizard-panel\s*\{[\s\S]*?gap: 14px;[\s\S]*?padding: 20px 24px;/);
-    assert.match(css, /\.topup-wizard\s*\{[\s\S]*?gap: 12px;/);
-    assert.match(css, /\.payment-card-top\s*\{[\s\S]*?align-items: center;/);
-    assert.match(css, /\.payment-card-top \.status-pill,\s*\.payment-history-item \.status-pill\s*\{[\s\S]*?align-self: center;/);
-});
-
-test("latest payment card keeps its status and removes the details action", () => {
-    assert.match(css, /\.last-invoice-panel \.payment-card\s*\{[\s\S]*?position: relative;[\s\S]*?padding-right: 190px;/);
-    assert.match(css, /\.last-invoice-panel \.payment-card-top \.status-pill\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 50%;[\s\S]*?transform: translateY\(-50%\);/);
-    assert.doesNotMatch(html, /data-last-invoice-details|latest-payment-details|data-last-invoice-status-detail/);
-    assert.doesNotMatch(app, /data-last-invoice-(email|credits|amount-copy|number-copy|status-detail)/);
-    assert.doesNotMatch(css, /latest-payment-details/);
+test("VNext Wallet owns the visible Balance surface while runtime retains payment actions", () => {
+    const view = fs.readFileSync(path.join(webappRoot, "vnext/views/wallet.js"), "utf8");
+    const walletCss = fs.readFileSync(path.join(webappRoot, "vnext/styles/wallet.css"), "utf8");
+    assert.match(html, /data-view="wallet" hidden><\/section>/);
+    assert.match(html, /vnext\/styles\/wallet\.css/);
+    assert.match(view, /История пополнений/);
+    assert.match(view, /Email для чека/);
+    assert.match(view, /legal\.dreamwheels\.pro/);
+    assert.match(view, /data-wallet-pending/);
+    assert.match(walletCss, /\.vnext-wallet__history-row/);
+    assert.doesNotMatch(view, /fetch\(|setTimeout\(|payment_url|pricing_version|balance\s*[+\-]=/);
+    assert.match(app, /window\.dreamwheelsWalletBridge =/);
+    assert.match(app, /function paymentReturnContext\(\)/);
+    assert.match(app, /function schedulePendingInvoiceRefresh\(\)/);
 });
 
 test("vehicle proposals require explicit confirmation and preserve provenance", () => {
