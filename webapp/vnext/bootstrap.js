@@ -11,14 +11,16 @@ import { createPhotoGuideView } from "./views/photo-guide.js";
 import { createSupportView } from "./views/support.js";
 import { createRenderView, refreshRenderView } from "./views/render.js";
 import { createFitmentView, refreshFitmentView } from "./views/fitment.js";
+import { createWalletView, refreshWalletView } from "./views/wallet.js";
 
-const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet"]);
 let mountedRoot = null;
 let mountedView = "";
 let mountedShell = null;
 let mountedCreateContent = null;
 let mountedRenderContent = null;
 let mountedFitmentContent = null;
+let mountedWalletContent = null;
 let legacyHiddenStates = [];
 
 const renderCallbacks = {
@@ -30,6 +32,15 @@ const fitmentCallbacks = {
   action: (...args) => window.dreamwheelsFitmentBridge?.action(...args),
   setField: (...args) => window.dreamwheelsFitmentBridge?.setField(...args),
   setSourceUrl: (...args) => window.dreamwheelsFitmentBridge?.setSourceUrl(...args),
+};
+
+const walletCallbacks = {
+  selectPackage: (...args) => window.dreamwheelsWalletBridge?.selectPackage(...args),
+  setReceiptEmail: (...args) => window.dreamwheelsWalletBridge?.setReceiptEmail(...args),
+  createPayment: () => window.dreamwheelsWalletBridge?.createPayment(),
+  refreshPayment: () => window.dreamwheelsWalletBridge?.refreshPayment(),
+  showMoreHistory: () => window.dreamwheelsWalletBridge?.showMoreHistory(),
+  login: legacyOpenAuth,
 };
 
 function renderKind(view) {
@@ -94,6 +105,11 @@ function refreshMountedFitment() {
   mountedFitmentContent = refreshFitmentView(mountedFitmentContent, window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks);
 }
 
+function refreshMountedWallet() {
+  if (mountedView !== "wallet" || !mountedWalletContent) return;
+  refreshWalletView(mountedWalletContent, window.dreamwheelsWalletBridge?.snapshot() || {});
+}
+
 function surfaceDescriptor(view) {
   const kind = renderKind(view);
   if (kind) {
@@ -135,6 +151,10 @@ function surfaceDescriptor(view) {
     title: "Совместимость",
     content: createFitmentView(window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks),
   };
+  if (view === "wallet") return {
+    title: "Баланс",
+    content: createWalletView(window.dreamwheelsWalletBridge?.snapshot() || {}, walletCallbacks),
+  };
   return null;
 }
 
@@ -147,7 +167,7 @@ function unmountSurface() {
       [...mountedRoot.children].forEach((child) => {
         if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
       });
-    } else if (["renders", "render-detail", "fitment"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
+    } else if (["renders", "render-detail", "fitment", "wallet"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
     else {
       mountedRoot.replaceChildren();
       delete mountedRoot.dataset.vnextRoot;
@@ -160,6 +180,7 @@ function unmountSurface() {
   mountedCreateContent = null;
   mountedRenderContent = null;
   mountedFitmentContent = null;
+  mountedWalletContent = null;
   legacyHiddenStates = [];
 }
 
@@ -169,6 +190,7 @@ function mountSurface(view, { force = false } = {}) {
   if (!force && mountedRoot === host && mountedView === view) {
     if (view === "create") renderCreate();
     else if (view === "fitment") refreshMountedFitment();
+    else if (view === "wallet") refreshMountedWallet();
     else refreshMountedRender();
     return;
   }
@@ -176,7 +198,7 @@ function mountSurface(view, { force = false } = {}) {
   if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
 
-  if (["create", "renders", "render-detail", "fitment"].includes(view)) {
+  if (["create", "renders", "render-detail", "fitment", "wallet"].includes(view)) {
     let createRoot = host.querySelector(view === "create" ? ":scope > [data-vnext-create-root]" : ":scope > [data-vnext-surface-root]");
     if (!createRoot) {
       createRoot = document.createElement("div");
@@ -201,6 +223,7 @@ function mountSurface(view, { force = false } = {}) {
     mountedCreateContent = createRoot.querySelector(".vnext-shell__frame > .vnext-create");
     mountedRenderContent = createRoot.querySelector(".vnext-shell__frame > .vnext-render");
     mountedFitmentContent = createRoot.querySelector(".vnext-shell__frame > .vnext-fitment");
+    mountedWalletContent = createRoot.querySelector(".vnext-shell__frame > .vnext-wallet");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
     if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
@@ -237,6 +260,7 @@ window.addEventListener("dreamwheels:dashboardchange", () => {
 window.addEventListener("dreamwheels:createchange", renderCreate);
 window.addEventListener("dreamwheels:renderchange", refreshMountedRender);
 window.addEventListener("dreamwheels:fitmentchange", refreshMountedFitment);
+window.addEventListener("dreamwheels:walletchange", refreshMountedWallet);
 document.addEventListener("DOMContentLoaded", () => {
   for (const view of migratedViews) {
     const host = document.querySelector(`[data-view="${view}"]`);

@@ -641,7 +641,7 @@ const I18N = {
             refreshInvoice: "Обновить статус",
             refreshingInvoice: "Обновляем статус оплаты...",
             openingPayment: "Открываем Robokassa...",
-            paymentSuccess: "Оплата подтверждена. Обновляем баланс",
+            paymentSuccess: "Проверяем оплату. Обновляем баланс",
             paymentFail: "Платеж не завершен",
             pendingFresh: "Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд",
             pendingStale: "Подтверждение оплаты ещё не получено. Обновите статус позже",
@@ -1095,7 +1095,7 @@ const I18N = {
             refreshInvoice: "Refresh invoice",
             refreshingInvoice: "Refreshing invoice status...",
             openingPayment: "Opening Robokassa...",
-            paymentSuccess: "Payment confirmed. Refreshing balance",
+            paymentSuccess: "Checking payment. Refreshing balance",
             paymentFail: "Payment was not completed",
             pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds",
             pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later",
@@ -1337,9 +1337,7 @@ const state = {
     view: "dashboard",
     menuOpen: false,
     moreOpen: false,
-    paymentStep: 1,
     selectedAmount: null,
-    topUpMode: "package",
     email: "",
     receiptEmailTouched: false,
     receiptEmailAuthKey: null,
@@ -1348,13 +1346,15 @@ const state = {
     payments: [],
     starterGrant: null,
     creditPackages: [],
-    walletHistoryOpen: true,
     walletHistoryPage: 0,
     walletBusy: false,
+    walletPaymentBusy: false,
     walletLoading: false,
     walletLoadingMessage: "",
     walletMessage: "",
     walletMessageTone: "neutral",
+    walletCabinetError: "",
+    walletCabinetLoaded: false,
     paymentReturnState: "",
     pendingRefreshTimer: null,
     createScreen: "upload",
@@ -2861,6 +2861,7 @@ function clearApplicationSessionState() {
     state.walletEmailError = "";
     state.balance = null;
     state.payments = [];
+    state.walletCabinetLoaded = false;
     state.starterGrant = null;
     state.renderHistory = [];
     state.renderHistoryError = "";
@@ -8104,82 +8105,27 @@ function rerenderActiveView() {
     }
 }
 
-function setPaymentStep(step) {
-    state.paymentStep = Math.max(1, Math.min(3, step));
-    document.querySelectorAll("[data-step]").forEach((el) => {
-        el.hidden = Number(el.dataset.step) !== state.paymentStep;
-    });
-    document.querySelectorAll("[data-step-tab]").forEach((tab) => {
-        tab.classList.toggle("active", Number(tab.dataset.stepTab) === state.paymentStep);
-    });
-    renderConfirmation();
-}
-
 function setSelectedAmount(amount) {
     state.selectedAmount = amount === null || amount === undefined || amount === ""
         ? null
         : normalizeTopUpAmount(amount);
-    document.querySelectorAll("[data-topup-amount]").forEach((btn) => {
-        const selected = Number(btn.dataset.topupAmount) === state.selectedAmount;
-        btn.dataset.selected = String(selected);
-        btn.setAttribute("aria-pressed", String(selected));
-    });
     renderConfirmation();
 }
 
 function setWalletBusy(busy) {
     state.walletBusy = busy;
-    document.querySelector("[data-pay-button]")?.toggleAttribute("disabled", busy);
-    document.querySelector("[data-reset-wizard]")?.toggleAttribute("disabled", busy);
-    document.querySelector("[data-refresh-invoice]")?.toggleAttribute("disabled", busy);
-    document.querySelector("[data-topup-email]")?.toggleAttribute("disabled", busy);
-    document.querySelectorAll("[data-topup-amount]").forEach((button) => {
-        button.toggleAttribute("disabled", busy);
-    });
     renderConfirmation();
 }
 
-function syncWalletStatusIsland(selector, textSelector, message, tone = "neutral", visible = false) {
-    const island = document.querySelector(selector);
-    if (!island) return;
-    island.dataset.visible = String(Boolean(visible && message));
-    island.className = `wallet-status-island ${tone ? `tone-${tone}` : ""}`.trim();
-    island.setAttribute("aria-hidden", String(!(visible && message)));
-    const text = document.querySelector(textSelector);
-    if (text) text.textContent = visible && message ? message : "";
-}
-
 function renderWalletStatus() {
-    syncWalletStatusIsland("[data-wallet-loading]", "[data-wallet-loading-text]", state.walletLoadingMessage, "loading", state.walletLoading);
-    syncWalletStatusIsland("[data-wallet-feedback]", "[data-wallet-feedback-text]", state.walletMessage, state.walletMessageTone, Boolean(state.walletMessage));
-    const authNotice = document.querySelector("[data-wallet-auth-notice]");
-    if (authNotice) {
-        const visible = !isFrontendUserAuthenticated() || isSupabasePartialAuth();
-        authNotice.hidden = !visible;
-        authNotice.dataset.visible = String(visible);
-        authNotice.setAttribute("aria-hidden", String(!visible));
-        const text = document.querySelector("[data-wallet-auth-notice-text]");
-        if (text) text.textContent = isSupabasePartialAuth()
-            ? t("auth.partialAccess")
-            : t("wallet.authRequired");
-    }
+    notifyWalletBridge();
 }
 
 function focusWalletAuthNotice() {
-    const notice = document.querySelector("[data-wallet-auth-notice]");
+    const notice = document.querySelector(".vnext-wallet__auth");
     if (!notice || notice.hidden) return;
     notice.scrollIntoView({ behavior: "smooth", block: "center" });
-    notice.classList.remove("wallet-auth-attention");
-    window.requestAnimationFrame(() => notice.classList.add("wallet-auth-attention"));
-    window.setTimeout(() => notice.classList.remove("wallet-auth-attention"), 1100);
-}
-
-function syncPaymentHistoryDetailsAction() {
-    const details = document.querySelector("[data-wallet-history-details]");
-    const action = document.querySelector("[data-wallet-history-toggle]");
-    if (!details || !action) return;
-    state.walletHistoryOpen = details.open;
-    action.textContent = details.open ? t("wallet.closeHistory") : t("wallet.openHistory");
+    notice.querySelector("button")?.focus();
 }
 
 function setWalletLoading(visible, message = t("wallet.loading")) {
@@ -8206,13 +8152,12 @@ function getVisibleHistoryItems() {
     const items = getHistoryItems();
     const totalPages = Math.max(1, Math.ceil(items.length / PAYMENT_HISTORY_PAGE_SIZE));
     state.walletHistoryPage = Math.min(Math.max(state.walletHistoryPage, 0), totalPages - 1);
-    const startIndex = state.walletHistoryPage * PAYMENT_HISTORY_PAGE_SIZE;
     return {
         items,
-        visibleItems: items.slice(startIndex, startIndex + PAYMENT_HISTORY_PAGE_SIZE),
+        visibleItems: items.slice(0, (state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE),
         totalPages,
-        from: items.length ? startIndex + 1 : 0,
-        to: Math.min(startIndex + PAYMENT_HISTORY_PAGE_SIZE, items.length),
+        from: items.length ? 1 : 0,
+        to: Math.min((state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE, items.length),
     };
 }
 
@@ -8263,176 +8208,104 @@ function schedulePendingInvoiceRefresh() {
     }, PAYMENT_PENDING_AUTO_REFRESH_DELAY_MS);
 }
 
+function vnextWalletSnapshot() {
+    const authenticated = hasFrontendAuth() && !isSupabasePartialAuth();
+    const expiryCohorts = buildRenderExpiryCohorts().map((item) => ({
+        creditsLabel: formatRenderCount(item.credits),
+        expiresLabel: expiryLabel(item.expiresAt),
+        meta: item.meta,
+    }));
+    const selected = getTopUpPackage(state.selectedAmount);
+    const history = getVisibleHistoryItems();
+    const latest = getLastInvoice();
+    return {
+        loading: state.walletLoading,
+        cabinetError: state.walletCabinetError,
+        cabinetLoaded: state.walletCabinetLoaded,
+        authenticated,
+        balance: authenticated ? state.balance : null,
+        balanceUnit: !authenticated || state.balance === null ? "" : formatRenderCount(state.balance).replace(/^\d+\s+/, ""),
+        creditPackages: state.creditPackages,
+        starterGrant: state.starterGrant,
+        expiryCohorts: authenticated ? expiryCohorts : [],
+        expiryNote: authenticated && expiryCohorts.length ? t("dashboard.expiryPriority") : "",
+        topUpPackages: TOPUP_PACKAGES.map((item) => ({
+            amount: item.amount,
+            amountLabel: formatRub(item.amount),
+            creditsLabel: formatRenderCount(item.credits),
+        })),
+        selectedPackage: selected ? {
+            amount: selected.amount,
+            amountLabel: formatRub(selected.amount),
+            creditsLabel: formatRenderCount(selected.credits),
+            durationLabel: t("wallet.packageDuration"),
+        } : null,
+        receiptEmail: state.email,
+        emailError: state.walletEmailError,
+        validEmail: validFrontendEmail(state.email),
+        paymentBusy: state.walletPaymentBusy,
+        interactionBusy: state.walletBusy,
+        latestPendingPayment: authenticated && latest?.status === "pending" ? {
+            amountLabel: formatRub(latest.amount),
+            creditsLabel: formatRenderCount(latest.credits),
+            message: getPendingWalletMessage(latest),
+        } : null,
+        paymentHistory: (authenticated ? history.visibleItems : []).map((item) => ({
+            amountLabel: formatRub(item.amount),
+            creditsLabel: formatRenderCount(item.credits),
+            dateLabel: item.createdAt,
+            invoiceId: String(item.invoiceId).padStart(6, "0"),
+            statusLabel: formatPaymentStatus(item.status),
+            tone: statusTone(item.status),
+        })),
+        hasMoreHistory: authenticated && history.to < history.items.length,
+        paymentReturnMessage: state.paymentReturnState ? state.walletMessage : "",
+        message: state.walletMessage,
+        messageTone: state.walletMessageTone,
+    };
+}
+
+function notifyWalletBridge() {
+    if (typeof CustomEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent("dreamwheels:walletchange"));
+}
+
+window.dreamwheelsWalletBridge = {
+    snapshot: vnextWalletSnapshot,
+    selectPackage: setSelectedAmount,
+    setReceiptEmail(value) {
+        state.email = value.trim();
+        state.receiptEmailTouched = true;
+        state.walletEmailError = state.email && !validFrontendEmail(state.email)
+            ? t("wallet.invalidEmail") : "";
+        syncEmailInput();
+        renderConfirmation();
+    },
+    createPayment: () => createPayment(),
+    refreshPayment: () => {
+        setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
+        return loadCabinet();
+    },
+    showMoreHistory() {
+        state.walletHistoryPage += 1;
+        renderWallet();
+    },
+    login: openAuthDialog,
+};
+
 function renderWallet() {
     syncReceiptEmailForAuth();
-    const balanceValue = document.querySelector("[data-balance-value]");
-    const balanceUnit = document.querySelector("[data-balance-unit]");
-    const lastInvoiceTitle = document.querySelector("[data-last-invoice-title]");
-    const lastInvoice = getLastInvoice();
-    const emptyBlock = document.querySelector("[data-last-invoice-empty]");
-    const cardBlock = document.querySelector("[data-last-invoice-card]");
-    const history = document.querySelector("[data-payment-history-list]");
-    const expiryList = document.querySelector("[data-wallet-expiry-list]");
-    const expiryNote = document.querySelector("[data-wallet-expiry-note]");
-    const historyHint = document.querySelector("[data-wallet-history-hint]");
-    const historyPager = document.querySelector("[data-wallet-history-pager]");
-    const historyPageLabel = document.querySelector("[data-wallet-history-page-label]");
-    const historyPrev = document.querySelector("[data-wallet-history-prev]");
-    const historyNext = document.querySelector("[data-wallet-history-next]");
-    const statusPill = document.querySelector("[data-last-invoice-status]");
-    const refreshButton = document.querySelector("[data-refresh-invoice]");
-
-    if (balanceValue) balanceValue.textContent = String(state.balance ?? "0");
-    if (balanceUnit) balanceUnit.textContent = formatRenderCount(state.balance ?? 0).replace(/^\d+\s+/, "");
-
-    if (!lastInvoice) {
-        if (emptyBlock) emptyBlock.hidden = false;
-        if (cardBlock) cardBlock.hidden = true;
-        if (lastInvoiceTitle) {
-            lastInvoiceTitle.hidden = false;
-            lastInvoiceTitle.textContent = t("wallet.noPaymentsTitle");
-        }
-        if (refreshButton) refreshButton.hidden = true;
-    } else {
-        if (emptyBlock) emptyBlock.hidden = true;
-        if (cardBlock) cardBlock.hidden = false;
-        if (lastInvoiceTitle) lastInvoiceTitle.hidden = true;
-        if (cardBlock) cardBlock.dataset.status = lastInvoice.status;
-        if (statusPill) {
-            statusPill.textContent = formatPaymentStatus(lastInvoice.status);
-            statusPill.className = `status-pill ${statusTone(lastInvoice.status)}`;
-        }
-        document.querySelector("[data-last-invoice-amount]")?.replaceChildren(document.createTextNode(formatRub(lastInvoice.amount)));
-        document.querySelector("[data-last-invoice-renders]")?.replaceChildren(document.createTextNode(formatRenderCount(lastInvoice.credits)));
-        document.querySelector("[data-last-invoice-date]")?.replaceChildren(document.createTextNode(lastInvoice.createdAt));
-        document.querySelector("[data-last-invoice-number-meta]")?.replaceChildren(document.createTextNode(`#${String(lastInvoice.invoiceId).padStart(6, "0")}`));
-        if (refreshButton) refreshButton.hidden = lastInvoice.status !== "pending";
-    }
-
-    if (!history) return;
-    const expiryItems = buildRenderExpiryCohorts();
-    document.querySelector("[data-wallet-expiry-section]")?.toggleAttribute("hidden", expiryItems.length === 0);
-    if (expiryList) {
-        expiryList.innerHTML = expiryItems.length ? renderExpiryRows(expiryItems) : "";
-    }
-    if (expiryNote) {
-        const firstCohort = expiryItems[0] || null;
-        expiryNote.hidden = !firstCohort;
-        expiryNote.textContent = firstCohort
-            ? (
-                locale === "ru"
-                    ? `Сначала будут использованы ${formatRenderCount(firstCohort.credits)} со сроком ${expiryLabel(firstCohort.expiresAt)}.`
-                    : `${firstCohort.credits} renders expiring ${expiryLabel(firstCohort.expiresAt)} will be used first.`
-            )
-            : "";
-    }
-
-    const historyState = getVisibleHistoryItems();
-    if (historyHint) historyHint.textContent = t("wallet.topUpHistoryHint");
-    if (!historyState.items.length) {
-        history.innerHTML = `<div class="history-empty"><span class="history-empty-icon" aria-hidden="true">🧾</span><span>${t("wallet.emptyHistory")}</span></div>`;
-    } else {
-        history.innerHTML = historyState.visibleItems
-            .map((item) => {
-                return `
-                        <div class="history-item payment-history-item">
-                        <div class="payment-history-main">
-                            <strong class="payment-history-amount">${formatRub(item.amount)}</strong>
-                            <span class="payment-history-renders">${formatRenderCount(item.credits)}</span>
-                            <div class="meta payment-history-meta">
-                                <span>${item.createdAt}</span>
-                                <span>#${String(item.invoiceId).padStart(6, "0")}</span>
-                            </div>
-                        </div>
-                        <span class="status-pill ${statusTone(item.status)}">${formatPaymentStatus(item.status)}</span>
-                    </div>
-                `;
-            })
-            .join("");
-    }
-    if (historyPager && historyPageLabel && historyPrev && historyNext) {
-        const hasMultiplePages = historyState.totalPages > 1;
-        historyPager.hidden = !hasMultiplePages;
-        historyPageLabel.textContent = formatTemplate("wallet.pageRange", {
-            from: historyState.from,
-            to: historyState.to,
-            total: historyState.items.length,
-        });
-        historyPrev.disabled = state.walletHistoryPage === 0;
-        historyNext.disabled = state.walletHistoryPage >= historyState.totalPages - 1;
-    }
-
-    document.querySelectorAll("[data-topup-amount]").forEach((button) => {
-        const amount = normalizeTopUpAmount(button.dataset.topupAmount);
-        const credits = Number(button.dataset.topupCredits || creditsForAmount(amount));
-        const name = button.querySelector(".package-name");
-        const meta = button.querySelector("[data-topup-meta]");
-        if (name) name.textContent = formatRub(amount);
-        if (meta) meta.textContent = topUpMeta(credits);
-        button.dataset.selected = String(amount === state.selectedAmount);
-    });
-
-    renderWalletStatus();
-    syncPaymentHistoryDetailsAction();
+    notifyWalletBridge();
 }
 
 function renderConfirmation() {
-    const topUpPackage = getTopUpPackage(state.selectedAmount);
-    const credits = topUpPackage?.credits || 0;
-    const summaryTitle = document.querySelector("[data-topup-summary-title]");
-    const summaryMeta = document.querySelector("[data-topup-summary-meta]");
-    const summaryValues = document.querySelector("[data-topup-summary-values]");
-    const summaryAmount = document.querySelector("[data-topup-summary-amount]");
-    const summaryCredits = document.querySelector("[data-topup-summary-credits]");
-    const summaryDuration = document.querySelector("[data-topup-summary-duration]");
-    const summaryReceipt = document.querySelector("[data-topup-summary-receipt]");
-    const resetButton = document.querySelector("[data-reset-wizard]");
-    if (summaryTitle) summaryTitle.textContent = topUpPackage ? t("wallet.summaryPackageTitle") : t("wallet.summaryEmptyTitle");
-    if (summaryMeta) {
-        summaryMeta.hidden = Boolean(topUpPackage);
-        summaryMeta.textContent = t("wallet.summaryEmptyMeta");
-    }
-    if (summaryValues) {
-        summaryValues.hidden = !topUpPackage;
-    }
-    if (topUpPackage) {
-        if (summaryAmount) summaryAmount.textContent = formatRub(topUpPackage.amount);
-        if (summaryCredits) summaryCredits.textContent = formatRenderCount(credits);
-        if (summaryDuration) summaryDuration.textContent = t("wallet.packageDuration");
-    }
-    if (summaryReceipt) {
-        summaryReceipt.hidden = !topUpPackage;
-        summaryReceipt.textContent = topUpPackage
-            ? formatTemplate("wallet.receiptSummary", { email: state.email || "—" })
-            : "";
-    }
-    if (resetButton) resetButton.hidden = !topUpPackage;
-    const payButton = document.querySelector("[data-pay-button]");
-    if (payButton) {
-        const validEmail = validFrontendEmail(state.email);
-        payButton.textContent = state.walletBusy
-            ? t("wallet.openingPayment")
-            : !topUpPackage
-                ? t("wallet.choosePackage")
-                : !validEmail
-                    ? t("wallet.enterEmail")
-                    : formatTemplate("wallet.paySelected", { amount: formatRub(topUpPackage.amount) });
-        payButton.disabled = Boolean(state.walletBusy || !topUpPackage || !validEmail);
-    }
+    notifyWalletBridge();
 }
 
 function syncEmailInput() {
-    const emailInput = document.querySelector("[data-topup-email]");
-    if (emailInput && emailInput.value !== state.email) {
-        emailInput.value = state.email;
-    }
-    if (emailInput) emailInput.toggleAttribute("aria-invalid", Boolean(state.walletEmailError));
-    const emailError = document.querySelector("[data-topup-email-error]");
-    if (emailError) {
-        emailError.hidden = !state.walletEmailError;
-        emailError.textContent = state.walletEmailError;
-    }
+    notifyWalletBridge();
 }
+
 
 function escapeHtml(value) {
     const div = document.createElement("div");
@@ -8528,18 +8401,6 @@ function buildRenderExpiryCohorts() {
             meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : "Пакет примерок"),
         }))
         .sort((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt));
-}
-
-function renderExpiryRows(items) {
-    return items.map((item) => `
-        <div class="wallet-expiry-row">
-            <div>
-                <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
-                <div class="meta">${escapeHtml(item.meta)}</div>
-            </div>
-            <div class="wallet-expiry-date">${escapeHtml(expiryLabel(item.expiresAt))}</div>
-        </div>
-    `).join("");
 }
 
 function resultUrlForJob(job) {
@@ -9556,6 +9417,7 @@ async function requestCabinet({ silent = false } = {}) {
     }
 
     clearPendingRefreshTimer();
+    state.walletCabinetError = "";
     setWalletBusy(true);
     if (!silent) {
         setWalletLoading(true);
@@ -9568,6 +9430,7 @@ async function requestCabinet({ silent = false } = {}) {
         });
         if (!response.ok) {
             const detail = await parseApiError(response);
+            state.walletCabinetError = detail;
             if (response.status === 403) {
                 setWalletMessage(t("wallet.fallbackDisabled"), "error");
             } else {
@@ -9578,6 +9441,7 @@ async function requestCabinet({ silent = false } = {}) {
             return;
         }
         const cabinet = await response.json();
+        state.walletCabinetError = "";
         state.balance = cabinet.balance ?? 0;
         state.payments = (cabinet.payments || []).map((payment) => ({
             invoiceId: payment.invoice_id,
@@ -9590,7 +9454,6 @@ async function requestCabinet({ silent = false } = {}) {
             paidAtIso: payment.paid_at || "",
             status: payment.status,
         }));
-        state.walletHistoryPage = 0;
         state.starterGrant = cabinet.starter_grant
             ? {
                 credits: Number(cabinet.starter_grant.credits || 0),
@@ -9607,14 +9470,12 @@ async function requestCabinet({ silent = false } = {}) {
             remainingCredits: Number(item.remaining_credits || 0),
             expiresAt: item.expires_at || "",
         }));
+        state.walletCabinetLoaded = true;
         syncReceiptEmailForAuth();
-        const pendingMessage = getPendingWalletMessage(getLastInvoice());
         if (state.paymentReturnState === "success") {
-            setWalletMessage(t("wallet.paymentSuccess"), "success");
+            setWalletMessage(getLastInvoice()?.status === "paid" ? "" : t("wallet.paymentSuccess"), "neutral");
         } else if (state.paymentReturnState === "fail") {
             setWalletMessage(t("wallet.paymentFail"), "warning");
-        } else if (pendingMessage) {
-            setWalletMessage(pendingMessage, "warning");
         } else {
             setWalletMessage("");
         }
@@ -9623,6 +9484,7 @@ async function requestCabinet({ silent = false } = {}) {
         schedulePendingInvoiceRefresh();
         renderDashboard();
     } catch (error) {
+        state.walletCabinetError = error?.message || t("failed");
         setWalletMessage(error?.message || t("failed"), "error");
         renderWallet();
         renderDashboard();
@@ -9700,6 +9562,7 @@ async function createPayment() {
         return;
     }
 
+    state.walletPaymentBusy = true;
     setWalletBusy(true);
     setWalletMessage(t("wallet.openingPayment"));
     void trackEvent("payment_started", { source_screen: "cabinet", amount_rub: topUpPackage.amount });
@@ -9731,6 +9594,7 @@ async function createPayment() {
     } catch (error) {
         setWalletMessage(error?.message || t("failed"), "error");
     } finally {
+        state.walletPaymentBusy = false;
         setWalletBusy(false);
     }
 }
@@ -9739,7 +9603,7 @@ function handlePaymentReturn() {
     const paymentState = new URLSearchParams(window.location.search).get("payment");
     state.paymentReturnState = paymentState || "";
     if (paymentState === "success") {
-        setWalletMessage(t("wallet.paymentSuccess"), "success");
+        setWalletMessage(t("wallet.paymentSuccess"), "neutral");
         if (!state.applicationAuthRequired) setView("wallet");
     } else if (paymentState === "fail") {
         void trackEvent("payment_failed", { return_channel: "browser" });
@@ -11608,54 +11472,6 @@ function bindEvents() {
             }
             openExternal(link.href);
         });
-    });
-
-    document.querySelectorAll("[data-topup-amount]").forEach((button) => {
-        button.addEventListener("click", () => setSelectedAmount(Number(button.dataset.topupAmount)));
-    });
-
-    document.querySelector("[data-topup-email]")?.addEventListener("input", (event) => {
-        state.email = event.target.value.trim();
-        state.receiptEmailTouched = true;
-        state.walletEmailError = state.email && !validFrontendEmail(state.email)
-            ? t("wallet.invalidEmail")
-            : "";
-        syncEmailInput();
-        renderConfirmation();
-    });
-
-    document.querySelector("[data-wallet-topup]")?.addEventListener("click", () => {
-        document.querySelector("[data-topup-amount]")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-
-    document.querySelector("[data-pay-button]")?.addEventListener("click", createPayment);
-    document.querySelector("[data-refresh-invoice]")?.addEventListener("click", () => {
-        setWalletMessage(t("wallet.refreshingInvoice"), "neutral");
-        void loadCabinet();
-    });
-    document.querySelector("[data-wallet-history-details]")?.addEventListener("toggle", (event) => {
-        const details = event.currentTarget;
-        if (!(details instanceof HTMLDetailsElement)) return;
-        state.walletHistoryOpen = details.open;
-        syncPaymentHistoryDetailsAction();
-    });
-    document.querySelector("[data-wallet-history-prev]")?.addEventListener("click", () => {
-        state.walletHistoryPage = Math.max(0, state.walletHistoryPage - 1);
-        renderWallet();
-    });
-    document.querySelector("[data-wallet-history-next]")?.addEventListener("click", () => {
-        state.walletHistoryPage += 1;
-        renderWallet();
-    });
-    document.querySelector("[data-reset-wizard]")?.addEventListener("click", () => {
-        state.paymentStep = 1;
-        setSelectedAmount(null);
-        state.receiptEmailTouched = false;
-        state.walletEmailError = "";
-        syncReceiptEmailForAuth();
-        renderConfirmation();
-        setWalletMessage("");
-        setWalletLoading(false);
     });
 
     document.querySelectorAll("input[data-input]").forEach((input) => {

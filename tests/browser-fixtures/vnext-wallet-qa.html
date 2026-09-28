@@ -1,0 +1,28 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR6 Wallet QA</title>
+<link rel="stylesheet" href="/webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="/webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="/webapp/vnext/styles/shell.css"><link rel="stylesheet" href="/webapp/vnext/styles/wallet.css">
+<style>html,body{margin:0;background:#07090b}</style></head><body><main id="fixture"></main><script type="module">
+import {createAppShell} from "/webapp/vnext/shell/app-shell.js";
+import {createWalletView,refreshWalletView} from "/webapp/vnext/views/wallet.js";
+const scenario=new URLSearchParams(location.search).get("state")||"normal";
+const payment=(status,i=52)=>({amountLabel:"500 ₽",creditsLabel:"20 рендеров",dateLabel:"27 сентября, 21:14",invoiceId:String(i).padStart(6,"0"),statusLabel:({paid:"Оплачено",pending:"В ожидании",failed:"Сбой"})[status],tone:status==="paid"?"success":status==="failed"?"warning":"neutral"});
+const base={authenticated:true,cabinetLoaded:true,balance:25,balanceUnit:"рендеров",expiryCohorts:[],topUpPackages:[{amount:100,amountLabel:"100 ₽",creditsLabel:"3 рендера"},{amount:200,amountLabel:"200 ₽",creditsLabel:"7 рендеров"},{amount:500,amountLabel:"500 ₽",creditsLabel:"20 рендеров"},{amount:1000,amountLabel:"1 000 ₽",creditsLabel:"45 рендеров"}],selectedPackage:null,receiptEmail:"",validEmail:false,emailError:"",paymentBusy:false,interactionBusy:false,latestPendingPayment:null,paymentHistory:[payment("paid"),payment("failed",51)],hasMoreHistory:false,message:""};
+const model={...base};
+model.topUpPackages=base.topUpPackages.map(item=>({...item,durationLabel:"30 дней"}));
+if(scenario==="loading"){model.cabinetLoaded=false;model.balance=null;model.loading=true;model.paymentHistory=[];}
+if(scenario==="expiry"||scenario==="normal"){model.expiryCohorts=[{creditsLabel:"10 рендеров",expiresLabel:"до 12 октября",meta:"Стартовый пакет"},{creditsLabel:"15 рендеров",expiresLabel:"до 21 октября",meta:"Пакет примерок"}];model.expiryNote="Сначала списываются пакеты с ближайшей датой окончания.";}
+if(scenario==="selected"||scenario==="invalid"){model.selectedPackage=model.topUpPackages[2];model.receiptEmail=scenario==="invalid"?"wrong-address":"nikolai@example.com";model.validEmail=scenario!=="invalid";model.emailError=scenario==="invalid"?"Введите корректный email":"";}
+if(scenario==="pending"){model.latestPendingPayment={amountLabel:"500 ₽",creditsLabel:"20 рендеров",message:"Оплата ещё не подтверждена."};model.paymentHistory.unshift(payment("pending",53));}
+if(scenario==="paid"){model.paymentHistory=[payment("paid")];}
+if(scenario==="failed"){model.paymentHistory=[payment("failed")];}
+if(scenario==="empty"){model.paymentHistory=[];}
+if(scenario==="initial-error"){model.cabinetLoaded=false;model.balance=null;model.cabinetError="Ошибка сети";model.paymentHistory=[];}
+if(scenario==="loaded-empty-error"){model.paymentHistory=[];model.cabinetError="Ошибка сети";}
+if(scenario==="loaded-history-error"){model.cabinetError="Ошибка сети";}
+if(scenario==="error"){model.balance=null;model.cabinetLoaded=false;model.cabinetError="Ошибка сети";}
+if(scenario==="auth"){model.authenticated=false;model.balance=null;model.paymentHistory=[];}
+const callbacks={selectPackage(amount){model.selectedPackage=model.topUpPackages.find(item=>item.amount===amount);refreshWalletView(view,model)},setReceiptEmail(value){model.receiptEmail=value;model.validEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);model.emailError=value&&!model.validEmail?"Введите корректный email":"";refreshWalletView(view,model)},showMoreHistory(){model.hasMoreHistory=false;model.paymentHistory.push(payment("paid",50));refreshWalletView(view,model)},refreshPayment(){model.loading=true;refreshWalletView(view,model)},login(){},createPayment(){}};
+const view=createWalletView(model,callbacks);
+document.querySelector("#fixture").dataset.vnextRoot="wallet";
+document.querySelector("#fixture").append(createAppShell({title:"Баланс",activeView:"wallet",navigate(){},content:view,authenticated:true}));
+window.qa={model,view,refresh:()=>refreshWalletView(view,model)};
+</script></body></html>
