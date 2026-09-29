@@ -1,6 +1,6 @@
 # VNext Visual System 2.0 — reference asset manifest
 
-**Captured:** 2026-09-29  
+**Captured:** 2026-09-29
 **Status:** canonical concept references
 
 These references preserve the visual direction discussed before the Release 1 production cutover.
@@ -43,8 +43,8 @@ Approved direction:
 - desktop B3 automotive environment as a future post-production direction;
 - rear-quarter / taillight crop as a preferred future Fitment environment;
 - full hero vehicle as a preferred future Dashboard direction;
-- modification vehicle thumbnails as a future enhancement;
-- repeated provider/reference images across modification rows are acceptable.
+- vehicle-variant thumbnails as a future enhancement, without approving a new user-facing term;
+- repeated provider/reference images across variant rows are acceptable.
 
 ## What is not approved merely because it appears in a reference
 

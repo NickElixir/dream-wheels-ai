@@ -1,7 +1,7 @@
 # Dream Wheels AI — VNext Visual System 2.0, Phase 1
 
-**Date:** 2026-09-29  
-**Status:** APPROVED DIRECTION — implementation pending  
+**Date:** 2026-09-29
+**Status:** APPROVED DIRECTION — implementation pending
 **Scope:** pre-production visual refinement only
 
 ## Purpose
@@ -37,7 +37,7 @@ Phase 1 must **not**:
 - move major blocks into a new desktop composition;
 - introduce a new visual rail;
 - redesign Dashboard, Balance or Fitment layout architecture;
-- add vehicle thumbnails to modification choices;
+- add vehicle thumbnails to exact vehicle variant choices;
 - redesign the logo;
 - add new navigation items;
 - add new product capabilities;
@@ -125,7 +125,7 @@ Do **not** require:
 - bright brand accents;
 - glow.
 
-A package, modification row, navigation item or other selected choice should remain understandable in grayscale.
+A package, vehicle-variant row, navigation item or other selected choice should remain understandable in grayscale.
 
 ---
 
@@ -153,7 +153,7 @@ Examples:
 
 Preferred:
 
-`Модификация подтверждена` — muted green text.
+`Оплачено` — muted green text.
 
 `Уточните параметры колесного диска` — restrained amber text.
 
@@ -161,7 +161,7 @@ Avoid:
 
 `● Оплачено`
 
-`✓ Модификация подтверждена`
+`✓ Оплачено`
 
 `⚠ Уточните параметры`
 
@@ -219,26 +219,22 @@ Rules:
 
 ---
 
-## 7. Copy for required Fitment actions
+## 7. Fitment copy scope
 
-Do not describe the next user action with impersonal `Нужно ...` copy.
+Phase 1 is not a Fitment terminology redesign.
 
-Preferred imperative language:
+Approved copy change for `complete_vehicle_details`:
 
-- `Уточните данные автомобиля`
-- `Выберите модификацию автомобиля`
-- `Уточните параметры колесного диска`
-- `Проверьте совместимость`
-- `Измените данные автомобиля`
-- `Повторите проверку`
+`Нужно уточнить данные автомобиля` → `Уточните данные автомобиля`.
 
-Avoid:
+Preserve existing user-facing terminology for exact vehicle variant selection in Phase 1. Do not replace `комплектация` with `модификация` as part of this visual task.
 
-- `Нужно уточнить данные`
-- `Нужно выбрать комплектацию`
-- `Нужно уточнить параметры`
+Preserve the distinction between state copy and action copy. For `run_standard_check`:
 
-The exact action still follows server-owned Fitment state / `next_action`; this rule changes user-facing wording, not domain ownership.
+- State: `Данные готовы к проверке`.
+- Primary action: `Проверить совместимость`.
+
+Do not convert every Fitment state label into an imperative. The state still follows server-owned `next_action`; other terminology decisions belong to the dedicated `FITMENT-POST-PR6-01` repair/design pass.
 
 ---
 

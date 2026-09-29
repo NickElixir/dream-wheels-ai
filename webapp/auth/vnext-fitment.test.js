@@ -133,12 +133,12 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
     selectedVehicleVariant: 0,
   });
   assert.match(variants, /2\.0 AWD/);
-  assert.match(variants, /Подтвердить модификацию/);
-  assert.match(variants, /aria-label="Варианты модификации автомобиля"/);
+  assert.match(variants, /Подтвердить комплектацию/);
+  assert.match(variants, /aria-label="Варианты комплектации"/);
   assert.doesNotMatch(variants, /data-fitment-field="vehicle\.make"/);
   const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
   assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
-  assert.doesNotMatch(manualRecovery, /Подтвердить модификацию/);
+  assert.doesNotMatch(manualRecovery, /Подтвердить комплектацию/);
 });
 
 test("an incompatible Fitment result still offers the existing independent render action", () => {
@@ -150,23 +150,28 @@ test("an incompatible Fitment result still offers the existing independent rende
 test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
   for (const [nextAction, label] of [
     ["complete_vehicle_details", "Уточните данные автомобиля"],
-    ["select_vehicle_variant", "Выберите модификацию автомобиля"],
+    ["select_vehicle_variant", "Выберите комплектацию автомобиля"],
     ["complete_rim_specs", "Уточните параметры колесного диска"],
-    ["run_standard_check", "Проверьте совместимость"],
+    ["run_standard_check", "Данные готовы к проверке"],
   ]) {
     assert.match(fitmentMarkup({ overview: {}, nextAction }), new RegExp(label));
   }
   const unknownAction = fitmentMarkup({ overview: {}, nextAction: "unrecognized_server_action" });
   assert.match(unknownAction, /Техническая проверка ещё не готова/);
-  assert.doesNotMatch(unknownAction, /Проверьте совместимость/);
+  assert.doesNotMatch(unknownAction, /Данные готовы к проверке/);
+
+  const ready = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", canRunCheck: true });
+  assert.match(ready, /<p class="vnext-eyebrow">Техническая проверка<\/p><h2>Данные готовы к проверке<\/h2>/);
+  assert.match(ready, /data-fitment-action="check"[^>]*>Проверить совместимость<\/button>/);
+  assert.doesNotMatch(ready, /<h2>Проверить совместимость<\/h2>/);
 
   const variantRequired = fitmentMarkup({
     overview: {}, nextAction: "select_vehicle_variant", vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
     vehicleVariantPickerOpen: false, selectedVehicleVariant: 0,
   });
   assert.match(variantRequired, /2\.0 AWD/);
-  assert.match(variantRequired, /Подтвердить модификацию/);
-  assert.doesNotMatch(variantRequired, /Скрыть модификации/);
+  assert.match(variantRequired, /Подтвердить комплектацию/);
+  assert.doesNotMatch(variantRequired, /Скрыть комплектации/);
   assert.doesNotMatch(variantRequired, /data-fitment-field="vehicle\.make"/);
   assert.match(variantRequired, /Не мой автомобиль — указать вручную/);
 
@@ -174,28 +179,26 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
     vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
   });
-  assert.match(confirmed, /<span>Модификация<\/span>/);
+  assert.match(confirmed, /<span>Комплектация<\/span>/);
   assert.match(confirmed, /L9 Max AWD/);
-  assert.match(confirmed, /Изменить модификацию/);
+  assert.match(confirmed, /Изменить комплектацию/);
   assert.doesNotMatch(confirmed, /L9 Pro AWD/);
   assert.doesNotMatch(confirmed, /data-fitment-field="vehicle\.make"/);
 });
 
-test("Fitment presents vehicle variants consistently as modifications", () => {
+test("Fitment preserves existing vehicle trim terminology", () => {
   const base = { overview: {}, nextAction: "select_vehicle_variant" };
   const loading = fitmentMarkup({ ...base, vehicleVariantsLoading: true });
-  assert.match(loading, /Загружаем модификации автомобиля/);
-  assert.match(loading, /aria-label="Варианты модификации автомобиля"/);
+  assert.match(loading, /Загружаем комплектации автомобиля/);
+  assert.match(loading, /aria-label="Варианты комплектации"/);
 
   const failure = fitmentMarkup({ ...base, vehicleLookup: { status: "failed" } });
-  assert.match(failure, /Не удалось загрузить модификации автомобиля\./);
+  assert.match(failure, /Не удалось загрузить комплектации\./);
   const noMatch = fitmentMarkup({ ...base, vehicleLookup: { status: "no_match" } });
-  assert.match(noMatch, /Модификации не найдены\./);
+  assert.match(noMatch, /Комплектации не найдены\./);
 
   const editing = fitmentMarkup({ ...base, vehicleEditing: true, manualVehicleEditing: true });
-  assert.match(editing, /Вернуться к выбору модификации/);
-
-  assert.doesNotMatch(read("vnext/views/fitment.js"), /комплектац/i);
+  assert.match(editing, /Вернуться к выбору комплектации/);
 });
 
 test("Fitment candidate suggestions stay beside their field and editors are hidden until requested", () => {
@@ -373,7 +376,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     const markup = fitmentMarkup(snapshot);
     assert.equal((markup.match(/class="vnext-fitment__editor"/g) || []).length > 0, expectedVehicleEditor || expectedRimEditor, `${action}: editor presentation`);
     assert.equal(markup.includes('data-fitment-action="toggle-source"'), expectedRimEditor, `${action}: wheel source disclosure visibility`);
-    if (action === "select_vehicle_variant") assert.match(markup, /Выберите модификацию автомобиля/);
+    if (action === "select_vehicle_variant") assert.match(markup, /Выберите комплектацию автомобиля/);
   }
   context.setFitmentEditor("vehicle");
   assert.deepEqual([state.fitmentVehicleEditing, state.fitmentRimEditing], [true, false]);
