@@ -78,6 +78,28 @@ test("VNext shell retains desktop and safe-area mobile layout foundations", () =
   assert.match(foundation, /vnext-support__grid/);
 });
 
+test("Phase 1 graphite roles and selected states remain neutral across VNext surfaces", () => {
+  const tokens = read("vnext/styles/tokens.css");
+  const shell = read("vnext/styles/shell.css");
+  const surfaces = read("vnext/styles/surfaces.css");
+  const fitment = read("vnext/styles/fitment.css");
+  const wallet = read("vnext/styles/wallet.css");
+  const render = read("vnext/styles/render.css");
+  for (const role of ["canvas", "surface", "surface-elevated", "surface-selected", "border", "border-strong", "border-selected", "text", "text-secondary", "text-subtle", "cta", "cta-text"]) {
+    assert.match(tokens, new RegExp(`--vnext-${role}:\\s*#[0-9a-f]{6}`, "i"));
+  }
+  assert.match(shell, /nav-button\[aria-current="page"\]\s*\{[^}]*var\(--vnext-surface-selected\)/);
+  assert.match(surfaces, /vehicle-option\[aria-checked="true"\]\s*\{[^}]*var\(--vnext-surface-selected\)/);
+  assert.match(fitment, /choice\[aria-pressed="true"\]\s*\{[^}]*var\(--vnext-surface-selected\)/);
+  assert.match(wallet, /package\[aria-pressed="true"\]\s*\{[^}]*var\(--vnext-surface-selected\)/);
+  for (const css of [surfaces, fitment, wallet]) assert.match(css, /\[aria-(?:checked|pressed)="true"\]\s*\{[^}]*var\(--vnext-border-selected\)/);
+  for (const selector of ["is-selected-good", "is-selected-warning", "is-selected-neutral"]) {
+    assert.match(render, new RegExp(`\\.${selector}\\s*\\{[^}]*var\\(--vnext-border-selected\\)`));
+  }
+  assert.doesNotMatch(read("vnext/views/fitment.js"), /vnext-fitment__choice-marker|[●○]/);
+  assert.doesNotMatch(read("vnext/views/create.js"), /vnext-create__vehicle-option-marker|[●○]/);
+});
+
 test("Global login entry points reuse authoritative legacy auth state across VNext surfaces", () => {
   const shell = read("vnext/shell/app-shell.js");
   const bootstrap = read("vnext/bootstrap.js");

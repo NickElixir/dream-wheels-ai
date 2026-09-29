@@ -1,7 +1,7 @@
 # Dream Wheels AI — Fitment Flow Contract v2
 
-**Date:** 2026-09-29  
-**Status:** APPROVED FLOW DIRECTION — implementation pending  
+**Date:** 2026-09-29
+**Status:** APPROVED FLOW DIRECTION — implementation pending
 **Goal:** repair `FITMENT-POST-PR6-01` after Visual System 2.0 Phase 1
 
 ## Purpose
@@ -36,7 +36,7 @@ Load Fitment
   ↓
 Уточните данные автомобиля
   ↓
-Выберите модификацию автомобиля
+Выберите комплектацию автомобиля
   ↓
 Уточните параметры колесного диска
   ↓
@@ -135,7 +135,7 @@ or the approved manual vehicle recovery affordance.
 
 ---
 
-## State 2 — Exact modification required
+## State 2 — Exact vehicle variant required
 
 ### Server intent
 
@@ -143,15 +143,15 @@ or the approved manual vehicle recovery affordance.
 
 ### User instruction
 
-`Выберите модификацию автомобиля`
+`Выберите комплектацию автомобиля`
 
 This is a technical Fitment choice. It must remain distinct from Create/VLM identity candidates.
 
-Recognition identifies only vehicle identity such as make/model/year. It does not claim exact generation/modification/trim.
+Recognition identifies only vehicle identity such as make/model/year. It does not claim the exact vehicle variant.
 
 ### Variant loading
 
-`Подбираем модификации`
+`Загружаем комплектации автомобиля`
 
 The already confirmed base vehicle remains visible.
 
@@ -180,7 +180,7 @@ Required choices stay visible until the user selects one.
 
 ### Primary action
 
-`Подтвердить модификацию`
+`Подтвердить комплектацию`
 
 Use the existing explicit variant-apply runtime and its revision boundary.
 
@@ -188,7 +188,7 @@ Use the existing explicit variant-apply runtime and its revision boundary.
 
 If the backend/provider returns a single authoritative variant and the existing runtime auto-confirms it, do not force the user to select one row from a one-item list.
 
-Show the confirmed modification and progress according to the new overview.
+Show the confirmed exact vehicle variant and progress according to the new overview.
 
 ### No match
 
@@ -196,7 +196,7 @@ This is not an operational error.
 
 Show:
 
-`Не удалось подобрать модификацию`
+`Комплектации не найдены.`
 
 Recovery:
 
@@ -211,7 +211,7 @@ Operational failure is distinct from no match.
 
 Show:
 
-`Не удалось загрузить варианты автомобиля`
+`Не удалось загрузить комплектации.`
 
 Actions:
 
@@ -220,7 +220,7 @@ Actions:
 
 ### Reselection
 
-A confirmed modification may be explicitly changed using the existing reselection runtime.
+A confirmed exact vehicle variant may be explicitly changed using the existing reselection runtime.
 
 Do not clear the current confirmed selection merely because the picker was opened.
 
@@ -240,7 +240,7 @@ Do not use `Нужно уточнить параметры`.
 
 ### Vehicle summary
 
-Vehicle / exact modification remains confirmed and compact.
+The vehicle / exact vehicle variant remains confirmed and compact.
 
 ### Active wheel workspace
 
@@ -311,15 +311,15 @@ Front candidates/values must never leak into rear fields.
 
 `next_action.kind = run_standard_check`
 
-### User instruction
+### State copy
 
-`Проверьте совместимость`
+`Данные готовы к проверке`
 
 ### Presentation
 
 Show compact confirmed summaries:
 
-- exact vehicle modification;
+- exact vehicle variant;
 - current wheel parameters.
 
 Main state:
@@ -421,31 +421,22 @@ Invariant:
 
 # User-facing copy rule
 
-Required next steps use direct imperative copy.
+Preserve existing user-facing terminology for exact vehicle selection in this repair contract: `комплектация автомобиля`. Use neutral `exact vehicle variant` for runtime architecture. Phase 1 does not approve changing the user-facing term to `модификация`.
 
-Approved direction:
-
-- `Уточните данные автомобиля`
-- `Выберите модификацию автомобиля`
-- `Уточните параметры колесного диска`
-- `Проверьте совместимость`
-- `Измените данные автомобиля`
-- `Повторите проверку`
-
-Avoid generic `Нужно ...` labels.
+The approved vehicle-details state is `Уточните данные автомобиля`; the existing wheel-details state is `Уточните параметры колесного диска`. Keep state copy distinct from action copy: `run_standard_check` shows `Данные готовы к проверке`, while its primary action remains `Проверить совместимость`. Do not convert every state label into an imperative.
 
 ---
 
-# Image previews in modification selection
+# Image previews in exact vehicle variant selection
 
-Vehicle imagery for modification rows is **not required for the pre-production Fitment repair**.
+Vehicle imagery for variant rows is **not required for the pre-production Fitment repair**.
 
 It is a deferred visual enhancement.
 
 When implemented later:
 
 - provider generation/reference images may be shown with variant choices;
-- repeated images across multiple modifications are acceptable;
+- repeated images across multiple variants are acceptable;
 - the image is presentation metadata only;
 - the image must not become an identity key, selection key or Fitment evidence.
 
@@ -459,7 +450,7 @@ The Fitment repair is complete only when authenticated staging demonstrates:
 recognized / existing vehicle
 → base details
 → save
-→ exact modification lookup
+→ exact vehicle variant lookup
 → required multiple-choice selection when applicable
 → explicit confirmation
 → wheel parameters
@@ -473,7 +464,7 @@ Also verify:
 - single-variant automatic confirmation;
 - no-match recovery;
 - lookup failure/retry;
-- modification reselection;
+- exact vehicle variant reselection;
 - resolver success/failure/conflict;
 - stale check;
 - execution failure;

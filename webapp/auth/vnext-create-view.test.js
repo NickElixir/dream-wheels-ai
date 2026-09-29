@@ -130,11 +130,11 @@ test("required Create vehicle choice stays open even when a provisional vehicle 
   assert.match(view.allText, /Не мой автомобиль — указать вручную/);
   const choices = nodesWithRole(view, "radio");
   assert.deepEqual(choices.map((choice) => choice.attributes["aria-checked"]), ["false", "false"]);
-  assert.deepEqual(choices.map((choice) => choice.children[0].textContent), ["○", "○"]);
+  assert.deepEqual(choices.map((choice) => choice.children[0].textContent), ["Li Auto L9 2024", "Li Auto L9 Max 2024"]);
   assert.deepEqual(choices.map((choice) => choice.attributes.role), ["radio", "radio"]);
 });
 
-test("Create selected recognized vehicle uses restrained radio marker and does not claim trim selection", () => {
+test("Create selected recognized vehicle uses an accessible radio row without decorative marker", () => {
   const view = createCreateView({
     proposal: { vehicle: { primary: { make: "Audi", model: "Q8", year: 2024 }, alternatives: [] }, rim: {} },
     selectedVehicle: null, selectedVehicleIndex: null,
@@ -148,7 +148,8 @@ test("Create selected recognized vehicle uses restrained radio marker and does n
   });
   const choice = nodesWithRole(selected, "radio")[0];
   assert.equal(choice.attributes["aria-checked"], "true");
-  assert.equal(choice.children[0].textContent, "●");
+  assert.equal(choice.children[0].textContent, "Audi Q8 2024");
+  assert.doesNotMatch(choice.allText, /[●○]/);
   const css = fs.readFileSync(new URL("../vnext/styles/surfaces.css", import.meta.url), "utf8");
   assert.doesNotMatch(css, /vehicle-option:last-child\s*\{[^}]*border-bottom:\s*0/);
 });

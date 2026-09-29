@@ -1,6 +1,6 @@
 # Dream Wheels AI — VNext Visual System 2.0 deferred reference plan
 
-**Date:** 2026-09-29  
+**Date:** 2026-09-29
 **Status:** RECORDED — intentionally deferred until after the first production release
 
 ## Why this exists
@@ -181,13 +181,13 @@ Long-term Fitment layouts should continue to follow the state contract in:
 
 ---
 
-# 6. Modification vehicle thumbnails
+# 6. Vehicle-variant thumbnails
 
 A future Fitment enhancement may expose vehicle reference imagery from the vehicle-data provider through the Dream Wheels adapter/API.
 
 Rules already decided:
 
-- repeated generation/reference images across several modification rows are acceptable;
+- repeated generation/reference images across several variant rows are acceptable;
 - do not hide images merely because multiple variants share the same photo;
 - images are presentation metadata only;
 - image URL/reference must not become a canonical identity key;
@@ -257,11 +257,11 @@ Prefer:
 
 Example:
 
-`Модификация подтверждена`
+`Оплачено`
 
 not:
 
-`✓ Модификация подтверждена`
+`✓ Оплачено`
 
 Example:
 

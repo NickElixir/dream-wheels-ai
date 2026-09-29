@@ -134,6 +134,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   });
   assert.match(variants, /2\.0 AWD/);
   assert.match(variants, /Подтвердить комплектацию/);
+  assert.match(variants, /aria-label="Варианты комплектации"/);
   assert.doesNotMatch(variants, /data-fitment-field="vehicle\.make"/);
   const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
   assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
@@ -146,9 +147,56 @@ test("an incompatible Fitment result still offers the existing independent rende
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
+test("Fitment action hierarchy keeps Create Image secondary until a current check completes", () => {
+  const buttonClass = (markup, action) => markup.match(new RegExp(`<button[^>]*class="([^"]+)"[^>]*data-fitment-action="${action}"`))?.[1] || "";
+  const primaryCount = (markup) => (markup.match(/vnext-button--primary/g) || []).length;
+  const unfinished = [
+    ["complete_vehicle_details", { vehicleEditing: true, vehicleForm: { make: "Zeekr" } }, "save"],
+    ["select_vehicle_variant", { selectedVehicleVariant: 0, vehicleVariants: [{ label: "Long Range" }] }, "confirm-vehicle-variant"],
+    ["complete_rim_specs", { rimEditing: true, rim: { wheel_diameter_in: 18 } }, "save"],
+    ["run_standard_check", { canRunCheck: true }, "check"],
+  ];
+  for (const [nextAction, model, primaryAction] of unfinished) {
+    const markup = fitmentMarkup({ overview: {}, nextAction, ...model });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", nextAction);
+    assert.equal(buttonClass(markup, primaryAction), "vnext-button vnext-button--primary", nextAction);
+  }
+
+  const ready = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", canRunCheck: true });
+  assert.equal(buttonClass(ready, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(ready, "create-image"), "vnext-button vnext-button--secondary");
+  assert.equal(primaryCount(ready), 1);
+
+  for (const verdict of ["compatible", "compatible_with_conditions", "incompatible", "unknown"]) {
+    const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus: "completed", check: { execution_status: "completed", verdict, is_current: true } });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--primary", verdict);
+    assert.equal(buttonClass(markup, "edit-rim"), "vnext-button vnext-button--secondary", verdict);
+    assert.equal(primaryCount(markup), 1, verdict);
+  }
+
+  const stale = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
+  assert.equal(buttonClass(stale, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(stale, "create-image"), "vnext-button vnext-button--secondary");
+
+  const failed = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "failed", check: { execution_status: "failed" } });
+  assert.equal(buttonClass(failed, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(failed, "create-image"), "vnext-button vnext-button--secondary");
+
+  for (const executionStatus of ["queued", "processing"]) {
+    const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", executionStatus);
+  }
+
+  const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
+  assert.equal(buttonClass(editingCompleted, "save"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(editingCompleted, "create-image"), "vnext-button vnext-button--secondary");
+  assert.equal(primaryCount(editingCompleted), 1);
+  assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 0);
+});
+
 test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
   for (const [nextAction, label] of [
-    ["complete_vehicle_details", "Нужно уточнить данные автомобиля"],
+    ["complete_vehicle_details", "Уточните данные автомобиля"],
     ["select_vehicle_variant", "Выберите комплектацию автомобиля"],
     ["complete_rim_specs", "Уточните параметры колесного диска"],
     ["run_standard_check", "Данные готовы к проверке"],
@@ -158,6 +206,11 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
   const unknownAction = fitmentMarkup({ overview: {}, nextAction: "unrecognized_server_action" });
   assert.match(unknownAction, /Техническая проверка ещё не готова/);
   assert.doesNotMatch(unknownAction, /Данные готовы к проверке/);
+
+  const ready = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", canRunCheck: true });
+  assert.match(ready, /<p class="vnext-eyebrow">Техническая проверка<\/p><h2>Данные готовы к проверке<\/h2>/);
+  assert.match(ready, /data-fitment-action="check"[^>]*>Проверить совместимость<\/button>/);
+  assert.doesNotMatch(ready, /<h2>Проверить совместимость<\/h2>/);
 
   const variantRequired = fitmentMarkup({
     overview: {}, nextAction: "select_vehicle_variant", vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
@@ -173,11 +226,26 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
     vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
   });
-  assert.match(confirmed, /Комплектация/);
+  assert.match(confirmed, /<span>Комплектация<\/span>/);
   assert.match(confirmed, /L9 Max AWD/);
   assert.match(confirmed, /Изменить комплектацию/);
   assert.doesNotMatch(confirmed, /L9 Pro AWD/);
   assert.doesNotMatch(confirmed, /data-fitment-field="vehicle\.make"/);
+});
+
+test("Fitment preserves existing vehicle trim terminology", () => {
+  const base = { overview: {}, nextAction: "select_vehicle_variant" };
+  const loading = fitmentMarkup({ ...base, vehicleVariantsLoading: true });
+  assert.match(loading, /Загружаем комплектации автомобиля/);
+  assert.match(loading, /aria-label="Варианты комплектации"/);
+
+  const failure = fitmentMarkup({ ...base, vehicleLookup: { status: "failed" } });
+  assert.match(failure, /Не удалось загрузить комплектации\./);
+  const noMatch = fitmentMarkup({ ...base, vehicleLookup: { status: "no_match" } });
+  assert.match(noMatch, /Комплектации не найдены\./);
+
+  const editing = fitmentMarkup({ ...base, vehicleEditing: true, manualVehicleEditing: true });
+  assert.match(editing, /Вернуться к выбору комплектации/);
 });
 
 test("Fitment candidate suggestions stay beside their field and editors are hidden until requested", () => {
@@ -199,7 +267,7 @@ test("the active object editor avoids repeating summary parameters and uses a co
   assert.doesNotMatch(wheelEditor, /<dt>ET<\/dt>/);
   assert.doesNotMatch(wheelEditor, /20 inch/);
   assert.match(wheelEditor, /data-fitment-field="rim\.offset_et_mm"/);
-  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment__object--editing \.vnext-fitment__stage \{ aspect-ratio: 16 \/ 9; \}/);
+  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment:has\(\.vnext-fitment__object--editing\) \.vnext-fitment__stage \{ height: 160px; \}/);
 });
 
 test("Fitment parser states stay in wheel context and preserve the existing field actions", () => {
@@ -275,7 +343,7 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
   const submit = app.slice(app.indexOf("async function submitJob("), app.indexOf("function ", app.indexOf("async function submitJob(") + 1));
   assert.doesNotMatch(submit, /fitmentVerdict|fitmentCheck|fitmentOverview/);
   const css = read("vnext/styles/fitment.css");
-  assert.match(css, /@media\s*\(max-width:\s*1024px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css, /@media\s*\(max-width:\s*900px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   assert.match(css, /@media\s*\(max-width:\s*700px\)/);
   const html = read("index.html");
   assert.match(html, /vnext\/styles\/fitment\.css/);

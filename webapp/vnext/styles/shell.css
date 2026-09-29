@@ -7,13 +7,14 @@ body.vnext-surface-active > .more-sheet-backdrop { display: none !important; }
 body.vnext-surface-active #app { width: 100%; max-width: none; min-height: 100vh; margin: 0; padding: 0; }
 
 .vnext-shell { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); background: var(--vnext-canvas); }
-.vnext-shell__sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 26px 18px 22px; border-right: 1px solid var(--vnext-border); background: #080a0c; }
+.vnext-shell__sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 26px 18px 22px; border-right: 1px solid var(--vnext-border); background: var(--vnext-canvas); }
 .vnext-shell__brand { margin: 0 8px 34px; color: var(--vnext-text); font-size: 13px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; }
-.vnext-shell__brand span { color: #8d959b; }
+.vnext-shell__brand span { color: var(--vnext-text-subtle); }
 .vnext-shell__nav { display: grid; gap: 5px; }
-.vnext-shell__nav-label { margin: 20px 10px 7px; color: #5f6870; font-size: 10px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; text-transform: uppercase; }
-.vnext-shell__nav-button { min-height: 42px; border: 0; border-radius: 7px; background: transparent; color: #8f979d; padding: 0 12px; text-align: left; font-weight: var(--vnext-weight-medium); }
-.vnext-shell__nav-button:hover, .vnext-shell__nav-button[aria-current="page"] { background: #101418; color: var(--vnext-text); }
+.vnext-shell__nav-label { margin: 20px 10px 7px; color: var(--vnext-text-subtle); font-size: 10px; font-weight: var(--vnext-weight-semibold); letter-spacing: .16em; text-transform: uppercase; }
+.vnext-shell__nav-button { min-height: 42px; border: 0; border-radius: 7px; background: transparent; color: var(--vnext-text-secondary); padding: 0 12px; text-align: left; font-weight: var(--vnext-weight-medium); }
+.vnext-shell__nav-button:hover { background: var(--vnext-surface-elevated); color: var(--vnext-text); }
+.vnext-shell__nav-button[aria-current="page"] { background: var(--vnext-surface-selected); color: var(--vnext-text); }
 .vnext-shell__account {
   margin-top: auto;
   display: grid;
@@ -27,11 +28,11 @@ body.vnext-surface-active #app { width: 100%; max-width: none; min-height: 100vh
 }
 .vnext-shell__account-label { padding: 0 10px; font-weight: var(--vnext-weight-medium); }
 .vnext-shell__account-action { display: grid; gap: 2px; width: 100%; min-height: 44px; border: 0; border-radius: 7px; background: transparent; padding: 7px 10px; color: var(--vnext-text-secondary); text-align: left; font-size: 12px; }
-.vnext-shell__account-action:hover { color: var(--vnext-text); background: #101418; }
+.vnext-shell__account-action:hover { color: var(--vnext-text); background: var(--vnext-surface-elevated); }
 .vnext-shell__account-action span { font-weight: var(--vnext-weight-medium); }
 .vnext-shell__account-action small { color: var(--vnext-text-subtle); font-size: 10px; }
 .vnext-shell__login { min-height: 44px; border: 1px solid var(--vnext-border-strong); border-radius: 7px; background: transparent; color: var(--vnext-text); padding: 0 14px; font: inherit; font-weight: var(--vnext-weight-medium); cursor: pointer; }
-.vnext-shell__login:hover { border-color: var(--vnext-text-subtle); background: #101418; }
+.vnext-shell__login:hover { border-color: var(--vnext-text-subtle); background: var(--vnext-surface-elevated); }
 .vnext-shell__login:focus-visible,
 .vnext-shell__account-action:focus-visible,
 .vnext-shell__nav-button:focus-visible,
@@ -51,7 +52,7 @@ body.vnext-surface-active #app { width: 100%; max-width: none; min-height: 100vh
   .vnext-shell__topbar { padding-bottom: 16px; }
   .vnext-shell__topbar-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: 22px; }
   .vnext-shell__login--topbar { display: inline-flex; align-items: center; justify-content: center; }
-  .vnext-shell__bottom-nav { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; min-height: calc(64px + var(--vnext-safe-bottom)); padding: 8px 8px calc(8px + var(--vnext-safe-bottom)); border-top: 1px solid var(--vnext-border); background: #080a0c; }
+  .vnext-shell__bottom-nav { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; min-height: calc(64px + var(--vnext-safe-bottom)); padding: 8px 8px calc(8px + var(--vnext-safe-bottom)); border-top: 1px solid var(--vnext-border); background: var(--vnext-canvas); }
   .vnext-shell__bottom-button { min-height: 44px; border: 0; border-radius: 7px; background: transparent; color: var(--vnext-text-subtle); padding: 0 4px; font-size: 10px; font-weight: var(--vnext-weight-medium); }
-  .vnext-shell__bottom-button[aria-current="page"] { color: var(--vnext-text); background: #101418; }
+  .vnext-shell__bottom-button[aria-current="page"] { color: var(--vnext-text); background: var(--vnext-surface-selected); }
 }

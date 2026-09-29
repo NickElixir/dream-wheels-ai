@@ -67,7 +67,6 @@
 [data-auth-dialog],
 [data-logout-dialog] {
   background: rgba(3, 6, 8, .78);
-  backdrop-filter: blur(10px);
 }
 
 [data-auth-dialog] .auth-dialog,
@@ -113,7 +112,7 @@
   min-height: 48px;
   border: 1px solid var(--vnext-border-strong);
   border-radius: 8px;
-  background: #0a0d10;
+  background: var(--vnext-surface-elevated);
   color: var(--vnext-text);
   box-shadow: none;
 }
@@ -133,7 +132,7 @@
 [data-auth-dialog] .auth-dialog-account-card {
   border: 1px solid var(--vnext-border);
   border-radius: 8px;
-  background: #0a0d10;
+  background: var(--vnext-surface-elevated);
 }
 
 [data-auth-dialog][data-vnext-auth-step="restoring"] .auth-dialog-header::after {
