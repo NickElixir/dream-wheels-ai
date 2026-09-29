@@ -53,9 +53,10 @@
 .vnext-fitment__editor > .vnext-button, .vnext-fitment__variant-step > .vnext-button { justify-self: start; }
 .vnext-fitment__variant-list { display: grid; gap: 8px; }
 .vnext-fitment__choice { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 10px 12px; border: 1px solid var(--vnext-border); border-radius: 8px; background: var(--vnext-surface-elevated); color: var(--vnext-text); text-align: left; }
-.vnext-fitment__choice[aria-pressed="true"] { border-color: var(--vnext-border-strong); background: var(--vnext-surface-selected); }
+.vnext-fitment__choice[aria-pressed="true"] { border-color: var(--vnext-border-selected); background: var(--vnext-surface-selected); }
 .vnext-fitment__choice-copy { display: grid; gap: 3px; }
 .vnext-fitment__choice-copy strong { font-weight: var(--vnext-weight-medium); }
+.vnext-fitment__choice[aria-pressed="true"] .vnext-fitment__choice-copy strong { font-weight: var(--vnext-weight-semibold); }
 .vnext-fitment__choice-copy small { color: var(--vnext-text-secondary); }
 .vnext-fitment__pcd { display: grid; gap: 8px; }
 .vnext-fitment__pcd h4, .vnext-fitment__axle > h4 { margin: 0; font-size: 15px; font-weight: var(--vnext-weight-medium); }
