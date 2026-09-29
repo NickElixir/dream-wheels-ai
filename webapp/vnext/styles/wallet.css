@@ -19,14 +19,15 @@
 .vnext-wallet__topup { padding-top: 30px; }
 .vnext-wallet__topup h2, .vnext-wallet__history h2 { margin: 0 0 18px; font-size: 22px; font-weight: var(--vnext-weight-medium); letter-spacing: -.02em; }
 .vnext-wallet__packages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.vnext-wallet__package { min-width: 0; min-height: 80px; display: grid; align-content: center; gap: 5px; border: 1px solid var(--vnext-border-strong); border-radius: 9px; background: var(--vnext-surface); color: var(--vnext-text); padding: 12px 14px; text-align: left; }
-.vnext-wallet__package:hover, .vnext-wallet__package[aria-pressed="true"] { border-color: #899197; background: var(--vnext-surface-elevated); }
+.vnext-wallet__package { min-width: 0; min-height: 80px; display: grid; align-content: center; gap: 5px; border: 1px solid var(--vnext-border); border-radius: 9px; background: var(--vnext-surface-elevated); color: var(--vnext-text); padding: 12px 14px; text-align: left; }
+.vnext-wallet__package:hover { border-color: var(--vnext-border-strong); }
+.vnext-wallet__package[aria-pressed="true"] { border-color: var(--vnext-border-strong); background: var(--vnext-surface-selected); }
 .vnext-wallet__package:disabled { cursor: not-allowed; opacity: .55; }
 .vnext-wallet__package strong { font-size: 19px; font-weight: var(--vnext-weight-medium); white-space: nowrap; }
 .vnext-wallet__package span { color: var(--vnext-text-secondary); font-size: 13px; }
 .vnext-wallet__field { display: grid; gap: 8px; margin-top: 26px; }
 .vnext-wallet__field label { font-size: 14px; font-weight: var(--vnext-weight-medium); }
-.vnext-wallet__field input { width: min(100%, 440px); min-height: 46px; border: 1px solid var(--vnext-border-strong); border-radius: 8px; background: #0a0d10; color: var(--vnext-text); padding: 0 14px; }
+.vnext-wallet__field input { width: min(100%, 440px); min-height: 46px; border: 1px solid var(--vnext-border-strong); border-radius: 8px; background: var(--vnext-surface-elevated); color: var(--vnext-text); padding: 0 14px; }
 .vnext-wallet__field input::placeholder { color: var(--vnext-text-subtle); }
 .vnext-wallet__field input[aria-invalid="true"] { border-color: var(--vnext-negative); }
 .vnext-wallet__field p { margin: 0; color: var(--vnext-text-subtle); font-size: 13px; }

@@ -10,10 +10,10 @@ const verdictLabels = {
 };
 
 const nextActionCopy = {
-  complete_vehicle_details: "Нужно уточнить данные автомобиля",
-  select_vehicle_variant: "Выберите комплектацию автомобиля",
+  complete_vehicle_details: "Уточните данные автомобиля",
+  select_vehicle_variant: "Выберите модификацию автомобиля",
   complete_rim_specs: "Уточните параметры колесного диска",
-  run_standard_check: "Данные готовы к проверке",
+  run_standard_check: "Проверьте совместимость",
 };
 
 function loadingStatus(label) {
@@ -141,9 +141,9 @@ function variantChooser(model) {
   const choices = model.vehicleVariants || [];
   const status = model.vehicleLookup?.status;
   const loading = model.vehicleVariantsLoading || status === "loading";
-  const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-marker" aria-hidden="true">${index === model.selectedVehicleVariant ? "●" : "○"}</span><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || `Вариант ${index + 1}`)}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span></button>`).join("");
+  const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || `Вариант ${index + 1}`)}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span></button>`).join("");
   const message = status === "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">Не удалось загрузить комплектации.</p>${button("Повторить", "load-vehicle-variants")}` : status === "no_match" ? `<p class="vnext-fitment__notice" role="status">Комплектации не найдены.</p>` : "";
-  return `<section class="vnext-fitment__variant-step" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-variant-title">Выберите комплектацию</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="Варианты комплектации">${choicesMarkup}${loading ? loadingStatus("Загружаем комплектации автомобиля") : ""}${message}${model.selectedVehicleVariant != null && choices[model.selectedVehicleVariant] ? button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true }) : ""}</div></section>`;
+  return `<section class="vnext-fitment__variant-step" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-variant-title">Выберите модификацию автомобиля</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="Варианты комплектации">${choicesMarkup}${loading ? loadingStatus("Загружаем комплектации автомобиля") : ""}${message}${model.selectedVehicleVariant != null && choices[model.selectedVehicleVariant] ? button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true }) : ""}</div></section>`;
 }
 
 function wheelEditor(model, rim) {
@@ -172,7 +172,7 @@ export function fitmentMarkup(model = {}) {
   const rimStatus = model.setupMode === "staggered"
     ? `Передняя ось: ${rimSetupLabel(rimSetupState)} — Задняя ось: ${rimSetupLabel(model.rearRimSetupState)}`
     : rimSetupLabel(rimSetupState);
-  const vehicleStatus = vehicleNeedsDetails ? "Нужно уточнить данные" : variantRequired ? "Выберите комплектацию" : model.vehicleStatus || "Данные автомобиля";
+  const vehicleStatus = vehicleNeedsDetails ? "Уточните данные автомобиля" : variantRequired ? "Выберите модификацию автомобиля" : model.vehicleStatus || "Данные автомобиля";
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const vehicleActions = `<div class="vnext-fitment__actions">${!model.vehicleEditing && !variantRequired ? button("Изменить автомобиль", "edit-vehicle") : ""}${!model.vehicleEditing && variantRequired ? button("Не мой автомобиль — указать вручную", "manual-vehicle") : ""}</div>`;
   const wheelActions = !model.rimEditing && !rimNeedsDetails ? button("Изменить параметры", "edit-rim") : "";

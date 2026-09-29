@@ -148,16 +148,16 @@ test("an incompatible Fitment result still offers the existing independent rende
 
 test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
   for (const [nextAction, label] of [
-    ["complete_vehicle_details", "Нужно уточнить данные автомобиля"],
-    ["select_vehicle_variant", "Выберите комплектацию автомобиля"],
+    ["complete_vehicle_details", "Уточните данные автомобиля"],
+    ["select_vehicle_variant", "Выберите модификацию автомобиля"],
     ["complete_rim_specs", "Уточните параметры колесного диска"],
-    ["run_standard_check", "Данные готовы к проверке"],
+    ["run_standard_check", "Проверьте совместимость"],
   ]) {
     assert.match(fitmentMarkup({ overview: {}, nextAction }), new RegExp(label));
   }
   const unknownAction = fitmentMarkup({ overview: {}, nextAction: "unrecognized_server_action" });
   assert.match(unknownAction, /Техническая проверка ещё не готова/);
-  assert.doesNotMatch(unknownAction, /Данные готовы к проверке/);
+  assert.doesNotMatch(unknownAction, /Проверьте совместимость/);
 
   const variantRequired = fitmentMarkup({
     overview: {}, nextAction: "select_vehicle_variant", vehicleVariants: [{ label: "2.0 AWD", technical: "2025" }],
@@ -355,7 +355,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     const markup = fitmentMarkup(snapshot);
     assert.equal((markup.match(/class="vnext-fitment__editor"/g) || []).length > 0, expectedVehicleEditor || expectedRimEditor, `${action}: editor presentation`);
     assert.equal(markup.includes('data-fitment-action="toggle-source"'), expectedRimEditor, `${action}: wheel source disclosure visibility`);
-    if (action === "select_vehicle_variant") assert.match(markup, /Выберите комплектацию автомобиля/);
+    if (action === "select_vehicle_variant") assert.match(markup, /Выберите модификацию автомобиля/);
   }
   context.setFitmentEditor("vehicle");
   assert.deepEqual([state.fitmentVehicleEditing, state.fitmentRimEditing], [true, false]);
