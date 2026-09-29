@@ -53,13 +53,13 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-rating > p { margin:4px 0 0; font-size:12px; }
 .vnext-rating-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .vnext-rating-actions .vnext-button { min-height:40px; padding-inline:14px; font-size:13px; }
-.vnext-rating .is-selected-good { border-color:var(--vnext-border-strong); background:var(--vnext-surface-selected); color:var(--vnext-positive); }
-.vnext-rating .is-selected-warning { border-color:var(--vnext-border-strong); background:var(--vnext-surface-selected); color:var(--vnext-warning); }
+.vnext-rating .is-selected-good { border-color:var(--vnext-border-selected); background:var(--vnext-surface-selected); color:var(--vnext-positive); font-weight:var(--vnext-weight-semibold); }
+.vnext-rating .is-selected-warning { border-color:var(--vnext-border-selected); background:var(--vnext-surface-selected); color:var(--vnext-warning); font-weight:var(--vnext-weight-semibold); }
 .vnext-feedback-reasons { margin-top:14px; }
 .vnext-feedback-reasons p { font-size:12px; }
 .vnext-feedback-chips { display:flex; flex-wrap:wrap; gap:7px; }
 .vnext-feedback-chips .vnext-button { min-height:44px; padding:0 11px; font-size:12px; }
-.vnext-feedback-chips .is-selected-neutral { border-color:var(--vnext-border-strong); background:var(--vnext-surface-selected); }
+.vnext-feedback-chips .is-selected-neutral { border-color:var(--vnext-border-selected); background:var(--vnext-surface-selected); font-weight:var(--vnext-weight-semibold); }
 .vnext-rating .vnext-feedback-notice { color:var(--vnext-positive); margin-top:12px; }
 .vnext-feedback-error { color:var(--vnext-negative); font-size:13px; margin-top:12px; }
 .vnext-history-list { display:grid; gap:10px; }

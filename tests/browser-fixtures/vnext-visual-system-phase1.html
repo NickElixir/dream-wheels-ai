@@ -26,6 +26,7 @@
 
   const params = new URLSearchParams(location.search);
   const view = params.get("view") || "dashboard";
+  const feedback = params.get("feedback") || "liked";
   const vehicle = "/webapp/assets/demo-vehicle-zeekr.jpg";
   const wheel = "/webapp/assets/demo-rim-xtrike.png";
   const result = "/webapp/assets/demo-render-zeekr-xtrike.jpg";
@@ -33,7 +34,7 @@
   const models = {
     dashboard: () => createDashboardView({ authenticated: true, balance: 28, balanceLabel: "28 рендеров", expiry: [], latest: dashboardJob, recent: [dashboardJob] }),
     create: () => createCreateView({ files: { car: { previewUrl: vehicle }, wheel: { previewUrl: wheel } }, bothReady: true, consentAccepted: true, draftId: "qa", selectedVehicle: { make: "Zeekr", model: "001", year: 2025 }, selectedVehicleIndex: 0, vehicleEditing: true, proposal: { vehicle: { primary: { make: "Zeekr", model: "001", year: 2025 }, alternatives: [{ make: "Zeekr", model: "001 Performance", year: 2025 }] }, rim: { brand: "Xtrike", model: "R18", wheel_diameter_in: 18, wheel_width_j: 8, pcd: "5x112" } } }),
-    result: () => createRenderView("result", { jobId: "qa", status: "completed", originalUrl: vehicle, resultUrl: result, title: "Zeekr 001", rimName: "Xtrike R18", specs: "18 × 8J · 5×112", createdLabel: "Сегодня, 12:30", canFitment: true, canDownload: true, feedback: { sentiment: "liked" } }),
+    result: () => createRenderView("result", { jobId: "qa", status: "completed", originalUrl: vehicle, resultUrl: result, title: "Zeekr 001", rimName: "Xtrike R18", specs: "18 × 8J · 5×112", createdLabel: "Сегодня, 12:30", canFitment: true, canDownload: true, feedback: { sentiment: feedback, reason: feedback === "disliked" ? "wheel" : "" }, reasons: [{ code: "wheel", label: "Диск" }, { code: "perspective", label: "Перспектива" }] }),
     renders: () => createRenderView("history", { rows: [{ jobId: "qa", dateLabel: "Сегодня", thumbnailUrl: result, title: "Zeekr 001", rimName: "Xtrike R18", createdLabel: "12:30", status: "completed", statusLabel: "Готово" }] }),
     wallet: () => createWalletView({ authenticated: true, cabinetLoaded: true, balance: 28, balanceUnit: "рендеров", expiryCohorts: [], topUpPackages: [{ amount: 100, amountLabel: "100 ₽", creditsLabel: "3 рендера" }, { amount: 200, amountLabel: "200 ₽", creditsLabel: "7 рендеров" }, { amount: 500, amountLabel: "500 ₽", creditsLabel: "20 рендеров" }, { amount: 1000, amountLabel: "1 000 ₽", creditsLabel: "45 рендеров" }], selectedPackage: { amount: 100, amountLabel: "100 ₽", creditsLabel: "3 рендера" }, receiptEmail: "qa@example.com", validEmail: true, paymentHistory: [{ amountLabel: "100 ₽", creditsLabel: "3 рендера", dateLabel: "Сегодня", invoiceId: "000053", statusLabel: "Оплачено", tone: "success" }] }),
     fitment: () => createFitmentView({ overview: {}, vehicleTitle: "Zeekr 001", vehiclePreview: vehicle, rimTitle: "Xtrike R18", rimPreview: wheel, nextAction: "select_vehicle_variant", vehicleVariants: [{ label: "Zeekr 001 Long Range", technical: "2025" }, { label: "Zeekr 001 Performance", technical: "2025" }], selectedVehicleVariant: 0, vehicleVariantPickerOpen: true, canRunCheck: false }),
