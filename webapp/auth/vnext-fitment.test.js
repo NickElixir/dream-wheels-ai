@@ -147,6 +147,44 @@ test("an incompatible Fitment result still offers the existing independent rende
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
+test("Fitment footer gives only the current task primary weight without gating render", () => {
+  const footer = (model) => fitmentMarkup({ overview: {}, ...model }).match(/<footer class="vnext-fitment__footer">([^]*?)<\/footer>/)?.[1] || "";
+  const ready = footer({ nextAction: "run_standard_check", canRunCheck: true, retryAvailable: true });
+  assert.match(ready, /vnext-button--primary" data-fitment-action="check"[^>]*>Проверить совместимость/);
+  assert.match(ready, /vnext-button--secondary" data-fitment-action="create-image"/);
+  assert.equal((ready.match(/vnext-button--primary/g) || []).length, 1);
+
+  const completed = footer({ nextAction: "run_standard_check", canRunCheck: true, retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible_with_conditions", is_current: true } });
+  assert.match(completed, /vnext-button--primary" data-fitment-action="create-image"/);
+  assert.match(completed, /vnext-button--secondary" data-fitment-action="edit-rim"[^>]*>Изменить параметры/);
+  assert.doesNotMatch(completed, /data-fitment-action="check"/);
+  assert.equal((completed.match(/vnext-button--primary/g) || []).length, 1);
+
+  const stale = footer({ nextAction: "run_standard_check", retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
+  assert.match(stale, /vnext-button--primary" data-fitment-action="check"[^>]*>Проверить ещё раз/);
+  assert.match(stale, /vnext-button--secondary" data-fitment-action="create-image"/);
+
+  const failed = footer({ nextAction: "run_standard_check", retryAvailable: true, executionStatus: "failed", check: { execution_status: "failed" } });
+  assert.match(failed, /vnext-button--primary" data-fitment-action="check"[^>]*>Повторить проверку/);
+  assert.match(failed, /vnext-button--secondary" data-fitment-action="create-image"/);
+
+  const variant = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", selectedVehicleVariant: 0, vehicleVariants: [{ label: "Long Range" }] });
+  assert.match(variant, /vnext-button--primary" data-fitment-action="confirm-vehicle-variant"/);
+  assert.match(variant, /vnext-button--secondary" data-fitment-action="create-image"/);
+  assert.equal((variant.match(/vnext-button--primary/g) || []).length, 1);
+
+  const editing = fitmentMarkup({ overview: {}, nextAction: "complete_rim_specs", rimEditing: true });
+  assert.match(editing, /vnext-button--primary" data-fitment-action="save"/);
+  assert.match(editing, /vnext-button--secondary" data-fitment-action="create-image"/);
+  assert.equal((editing.match(/vnext-button--primary/g) || []).length, 1);
+
+  const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
+  assert.match(editingCompleted, /vnext-button--primary" data-fitment-action="save"/);
+  assert.match(editingCompleted, /vnext-button--secondary" data-fitment-action="create-image"/);
+  assert.equal((editingCompleted.match(/vnext-button--primary/g) || []).length, 1);
+  assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 0);
+});
+
 test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
   for (const [nextAction, label] of [
     ["complete_vehicle_details", "Уточните данные автомобиля"],
@@ -220,7 +258,7 @@ test("the active object editor avoids repeating summary parameters and uses a co
   assert.doesNotMatch(wheelEditor, /<dt>ET<\/dt>/);
   assert.doesNotMatch(wheelEditor, /20 inch/);
   assert.match(wheelEditor, /data-fitment-field="rim\.offset_et_mm"/);
-  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment__object--editing \.vnext-fitment__stage \{ aspect-ratio: 16 \/ 9; \}/);
+  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment:has\(\.vnext-fitment__object--editing\) \.vnext-fitment__stage \{ height: 160px; \}/);
 });
 
 test("Fitment parser states stay in wheel context and preserve the existing field actions", () => {
@@ -296,7 +334,7 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
   const submit = app.slice(app.indexOf("async function submitJob("), app.indexOf("function ", app.indexOf("async function submitJob(") + 1));
   assert.doesNotMatch(submit, /fitmentVerdict|fitmentCheck|fitmentOverview/);
   const css = read("vnext/styles/fitment.css");
-  assert.match(css, /@media\s*\(max-width:\s*1024px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css, /@media\s*\(max-width:\s*900px\)\s*\{\s*\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   assert.match(css, /@media\s*\(max-width:\s*700px\)/);
   const html = read("index.html");
   assert.match(html, /vnext\/styles\/fitment\.css/);

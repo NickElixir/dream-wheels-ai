@@ -32,13 +32,43 @@
   const wheel = "/webapp/assets/demo-rim-xtrike.png";
   const result = "/webapp/assets/demo-render-zeekr-xtrike.jpg";
   const dashboardJob = { jobId: "qa", title: "Zeekr 001", subtitle: "Сегодня, 12:30", status: "completed", canOpen: true, imageUrl: result };
+  const fitmentModel = () => {
+    const editingVehicle = fitmentState === "complete_vehicle_details";
+    const editingRim = fitmentState === "complete_rim_specs";
+    const completed = fitmentState === "compatible_with_conditions";
+    const stale = fitmentState === "stale";
+    const failed = fitmentState === "failed";
+    return {
+      overview: { rim_setup_state: "confirmed_ready" },
+      vehicleTitle: "Zeekr 001", vehiclePreview: vehicle,
+      vehicleSpecs: ["2025", "Long Range"],
+      vehicleSummaryRows: [["Год", "2025"], ["Модификация", "Long Range"]],
+      vehicleForm: { make: "Zeekr", model: "001", year: 2025, market: "RU", body: "Лифтбек", generation: "I", modification: "Long Range" },
+      rimTitle: "Xtrike R18", rimPreview: wheel, rimSpecs: "18 × 8J · 5×112",
+      rimSummaryRows: [["Диаметр", "18 дюймов"], ["Ширина", "8J"], ["PCD", "5×112"]],
+      rim: { brand: "Xtrike", model: "R18", sku: "XR-18", wheel_diameter_in: 18, wheel_width_j: 8, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35 },
+      frontRimSetupState: "confirmed_ready", setupMode: "uniform",
+      nextAction: completed || stale || failed ? "run_standard_check" : fitmentState,
+      vehicleEditing: editingVehicle, rimEditing: editingRim,
+      vehicleVariants: [{ label: "Zeekr 001 Long Range", technical: "2025" }, { label: "Zeekr 001 Performance", technical: "2025" }],
+      selectedVehicleVariant: 0, vehicleVariantPickerOpen: fitmentState === "select_vehicle_variant",
+      canRunCheck: fitmentState === "run_standard_check" || completed || stale || failed,
+      retryAvailable: stale || failed,
+      check: completed || stale ? { execution_status: "completed", verdict: completed ? "compatible_with_conditions" : "compatible", is_current: !stale } : failed ? { execution_status: "failed" } : null,
+      executionStatus: completed || stale ? "completed" : failed ? "failed" : "",
+      executionError: failed ? "Проверка временно недоступна." : "",
+      resultCopy: completed ? "Требуется проверить параметры крепления." : "",
+      conditions: completed ? [{ label: "Проверьте допустимость крепления для выбранной модификации." }] : [],
+      fieldEvidence: completed ? [{ name: "PCD", vehicleValue: "5×112", rimValue: "5×112", resultLabel: "Совпадает" }] : [],
+    };
+  };
   const models = {
     dashboard: () => createDashboardView({ authenticated: true, balance: 28, balanceLabel: "28 рендеров", expiry: [], latest: dashboardJob, recent: [dashboardJob] }),
     create: () => createCreateView({ files: { car: { previewUrl: vehicle }, wheel: { previewUrl: wheel } }, bothReady: true, consentAccepted: true, draftId: "qa", selectedVehicle: { make: "Zeekr", model: "001", year: 2025 }, selectedVehicleIndex: 0, vehicleEditing: true, proposal: { vehicle: { primary: { make: "Zeekr", model: "001", year: 2025 }, alternatives: [{ make: "Zeekr", model: "001 Performance", year: 2025 }] }, rim: { brand: "Xtrike", model: "R18", wheel_diameter_in: 18, wheel_width_j: 8, pcd: "5x112" } } }),
     result: () => createRenderView("result", { jobId: "qa", status: "completed", originalUrl: vehicle, resultUrl: result, title: "Zeekr 001", rimName: "Xtrike R18", specs: "18 × 8J · 5×112", createdLabel: "Сегодня, 12:30", canFitment: true, canDownload: true, feedback: { sentiment: feedback, reason: feedback === "disliked" ? "wheel" : "" }, reasons: [{ code: "wheel", label: "Диск" }, { code: "perspective", label: "Перспектива" }] }),
     renders: () => createRenderView("history", { rows: [{ jobId: "qa", dateLabel: "Сегодня", thumbnailUrl: result, title: "Zeekr 001", rimName: "Xtrike R18", createdLabel: "12:30", status: "completed", statusLabel: "Готово" }] }),
     wallet: () => createWalletView({ authenticated: true, cabinetLoaded: true, balance: 28, balanceUnit: "рендеров", expiryCohorts: [], topUpPackages: [{ amount: 100, amountLabel: "100 ₽", creditsLabel: "3 рендера" }, { amount: 200, amountLabel: "200 ₽", creditsLabel: "7 рендеров" }, { amount: 500, amountLabel: "500 ₽", creditsLabel: "20 рендеров" }, { amount: 1000, amountLabel: "1 000 ₽", creditsLabel: "45 рендеров" }], selectedPackage: { amount: 100, amountLabel: "100 ₽", creditsLabel: "3 рендера" }, receiptEmail: "qa@example.com", validEmail: true, paymentHistory: [{ amountLabel: "100 ₽", creditsLabel: "3 рендера", dateLabel: "Сегодня", invoiceId: "000053", statusLabel: "Оплачено", tone: "success" }] }),
-    fitment: () => createFitmentView({ overview: {}, vehicleTitle: "Zeekr 001", vehiclePreview: vehicle, rimTitle: "Xtrike R18", rimPreview: wheel, nextAction: fitmentState === "run_standard_check" ? "run_standard_check" : "select_vehicle_variant", vehicleVariants: [{ label: "Zeekr 001 Long Range", technical: "2025" }, { label: "Zeekr 001 Performance", technical: "2025" }], selectedVehicleVariant: 0, vehicleVariantPickerOpen: fitmentState !== "run_standard_check", canRunCheck: fitmentState === "run_standard_check" }),
+    fitment: () => createFitmentView(fitmentModel()),
   };
   const titles = { dashboard: "Главная", create: "Примерить диски", result: "Результат", renders: "Мои примерки", wallet: "Баланс", fitment: "Совместимость" };
   const host = document.querySelector("#fixture");

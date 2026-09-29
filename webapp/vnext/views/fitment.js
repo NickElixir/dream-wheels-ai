@@ -175,12 +175,17 @@ export function fitmentMarkup(model = {}) {
   const vehicleStatus = vehicleNeedsDetails ? "Уточните данные автомобиля" : variantRequired ? "Выберите комплектацию автомобиля" : model.vehicleStatus || "Данные автомобиля";
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const vehicleActions = `<div class="vnext-fitment__actions">${!model.vehicleEditing && !variantRequired ? button("Изменить автомобиль", "edit-vehicle") : ""}${!model.vehicleEditing && variantRequired ? button("Не мой автомобиль — указать вручную", "manual-vehicle") : ""}</div>`;
-  const wheelActions = !model.rimEditing && !rimNeedsDetails ? button("Изменить параметры", "edit-rim") : "";
-  const contextualAction = model.retryAvailable
+  const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
+  const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
+  const activeEditor = variantRequired && !model.manualVehicleEditing || model.vehicleEditing || model.rimEditing;
+  const wheelActions = !model.rimEditing && !rimNeedsDetails && !completedCurrent ? button("Изменить параметры", "edit-rim") : "";
+  const contextualAction = !activeEditor && retryState && model.retryAvailable
     ? button(model.executionStatus === "failed" ? "Повторить проверку" : "Проверить ещё раз", "check", { primary: true, disabled: model.checking })
-    : model.canRunCheck
+    : !activeEditor && !completedCurrent && !["queued", "processing", "failed"].includes(model.executionStatus) && model.canRunCheck
       ? button("Проверить совместимость", "check", { primary: true, disabled: model.checking })
       : "";
+  const renderAction = button("Создать изображение", "create-image", { primary: !contextualAction && !activeEditor });
+  const footerActions = contextualAction ? `${contextualAction}${renderAction}` : `${renderAction}${completedCurrent && !activeEditor ? button("Изменить параметры", "edit-rim") : ""}`;
   const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
   const checkError = model.checkError && model.executionStatus !== "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
   return `<section class="vnext-fitment">
@@ -209,7 +214,7 @@ export function fitmentMarkup(model = {}) {
     ${checkError}
     ${evidence(model)}
     ${comparisonTable(model)}
-    <footer class="vnext-fitment__footer">${button("Создать изображение", "create-image", { primary: true })}${contextualAction}</footer>
+    <footer class="vnext-fitment__footer">${footerActions}</footer>
   </section>`;
 }
 
