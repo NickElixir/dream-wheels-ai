@@ -6,6 +6,7 @@
 - Applied a near-white primary action, neutral secondary actions, and restrained success/warning/error text colors.
 - Clarified selected navigation, vehicle/modification choices, Wallet packages and Result feedback without relying on color or decorative markers.
 - Changed required Fitment action copy to direct imperatives while preserving server-owned `next_action` mapping.
+- Standardized user-facing Fitment variant labels, loading/error/empty copy, and accessible name on «модификация»; runtime variant identifiers and behavior remain unchanged.
 
 ## NEW_USER_VISIBLE_ELEMENTS
 
@@ -24,6 +25,7 @@ NONE. Selection, navigation, form handling, payment, render and Fitment actions 
 - Color, typography, selected state, semantic text and CTA treatment: `docs/ui/vnext-visual-system-2.0-phase1.md` §§1–5.
 - Navigation treatment: same document §6.
 - Fitment imperative action copy: same document §7.
+- Fitment variant terminology: approved PR #221 corrective request; presentation copy only.
 - Preserved layout, information architecture and mobile behavior: same document §§8–10.
 
 ## UNSPECIFIED_DESIGN_DECISIONS
