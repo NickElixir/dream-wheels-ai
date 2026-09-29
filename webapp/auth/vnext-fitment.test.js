@@ -147,41 +147,50 @@ test("an incompatible Fitment result still offers the existing independent rende
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
-test("Fitment footer gives only the current task primary weight without gating render", () => {
-  const footer = (model) => fitmentMarkup({ overview: {}, ...model }).match(/<footer class="vnext-fitment__footer">([^]*?)<\/footer>/)?.[1] || "";
-  const ready = footer({ nextAction: "run_standard_check", canRunCheck: true, retryAvailable: true });
-  assert.match(ready, /vnext-button--primary" data-fitment-action="check"[^>]*>Проверить совместимость/);
-  assert.match(ready, /vnext-button--secondary" data-fitment-action="create-image"/);
-  assert.equal((ready.match(/vnext-button--primary/g) || []).length, 1);
+test("Fitment action hierarchy keeps Create Image secondary until a current check completes", () => {
+  const buttonClass = (markup, action) => markup.match(new RegExp(`<button[^>]*class="([^"]+)"[^>]*data-fitment-action="${action}"`))?.[1] || "";
+  const primaryCount = (markup) => (markup.match(/vnext-button--primary/g) || []).length;
+  const unfinished = [
+    ["complete_vehicle_details", { vehicleEditing: true, vehicleForm: { make: "Zeekr" } }, "save"],
+    ["select_vehicle_variant", { selectedVehicleVariant: 0, vehicleVariants: [{ label: "Long Range" }] }, "confirm-vehicle-variant"],
+    ["complete_rim_specs", { rimEditing: true, rim: { wheel_diameter_in: 18 } }, "save"],
+    ["run_standard_check", { canRunCheck: true }, "check"],
+  ];
+  for (const [nextAction, model, primaryAction] of unfinished) {
+    const markup = fitmentMarkup({ overview: {}, nextAction, ...model });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", nextAction);
+    assert.equal(buttonClass(markup, primaryAction), "vnext-button vnext-button--primary", nextAction);
+  }
 
-  const completed = footer({ nextAction: "run_standard_check", canRunCheck: true, retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible_with_conditions", is_current: true } });
-  assert.match(completed, /vnext-button--primary" data-fitment-action="create-image"/);
-  assert.match(completed, /vnext-button--secondary" data-fitment-action="edit-rim"[^>]*>Изменить параметры/);
-  assert.doesNotMatch(completed, /data-fitment-action="check"/);
-  assert.equal((completed.match(/vnext-button--primary/g) || []).length, 1);
+  const ready = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", canRunCheck: true });
+  assert.equal(buttonClass(ready, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(ready, "create-image"), "vnext-button vnext-button--secondary");
+  assert.equal(primaryCount(ready), 1);
 
-  const stale = footer({ nextAction: "run_standard_check", retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
-  assert.match(stale, /vnext-button--primary" data-fitment-action="check"[^>]*>Проверить ещё раз/);
-  assert.match(stale, /vnext-button--secondary" data-fitment-action="create-image"/);
+  for (const verdict of ["compatible", "compatible_with_conditions", "incompatible", "unknown"]) {
+    const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus: "completed", check: { execution_status: "completed", verdict, is_current: true } });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--primary", verdict);
+    assert.equal(buttonClass(markup, "edit-rim"), "vnext-button vnext-button--secondary", verdict);
+    assert.equal(primaryCount(markup), 1, verdict);
+  }
 
-  const failed = footer({ nextAction: "run_standard_check", retryAvailable: true, executionStatus: "failed", check: { execution_status: "failed" } });
-  assert.match(failed, /vnext-button--primary" data-fitment-action="check"[^>]*>Повторить проверку/);
-  assert.match(failed, /vnext-button--secondary" data-fitment-action="create-image"/);
+  const stale = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
+  assert.equal(buttonClass(stale, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(stale, "create-image"), "vnext-button vnext-button--secondary");
 
-  const variant = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", selectedVehicleVariant: 0, vehicleVariants: [{ label: "Long Range" }] });
-  assert.match(variant, /vnext-button--primary" data-fitment-action="confirm-vehicle-variant"/);
-  assert.match(variant, /vnext-button--secondary" data-fitment-action="create-image"/);
-  assert.equal((variant.match(/vnext-button--primary/g) || []).length, 1);
+  const failed = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "failed", check: { execution_status: "failed" } });
+  assert.equal(buttonClass(failed, "check"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(failed, "create-image"), "vnext-button vnext-button--secondary");
 
-  const editing = fitmentMarkup({ overview: {}, nextAction: "complete_rim_specs", rimEditing: true });
-  assert.match(editing, /vnext-button--primary" data-fitment-action="save"/);
-  assert.match(editing, /vnext-button--secondary" data-fitment-action="create-image"/);
-  assert.equal((editing.match(/vnext-button--primary/g) || []).length, 1);
+  for (const executionStatus of ["queued", "processing"]) {
+    const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus });
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", executionStatus);
+  }
 
   const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
-  assert.match(editingCompleted, /vnext-button--primary" data-fitment-action="save"/);
-  assert.match(editingCompleted, /vnext-button--secondary" data-fitment-action="create-image"/);
-  assert.equal((editingCompleted.match(/vnext-button--primary/g) || []).length, 1);
+  assert.equal(buttonClass(editingCompleted, "save"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(editingCompleted, "create-image"), "vnext-button vnext-button--secondary");
+  assert.equal(primaryCount(editingCompleted), 1);
   assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 0);
 });
 

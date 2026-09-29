@@ -184,7 +184,8 @@ export function fitmentMarkup(model = {}) {
     : !activeEditor && !completedCurrent && !["queued", "processing", "failed"].includes(model.executionStatus) && model.canRunCheck
       ? button("Проверить совместимость", "check", { primary: true, disabled: model.checking })
       : "";
-  const renderAction = button("Создать изображение", "create-image", { primary: !contextualAction && !activeEditor });
+  const createImageIsPrimary = completedCurrent && !activeEditor;
+  const renderAction = button("Создать изображение", "create-image", { primary: createImageIsPrimary });
   const footerActions = contextualAction ? `${contextualAction}${renderAction}` : `${renderAction}${completedCurrent && !activeEditor ? button("Изменить параметры", "edit-rim") : ""}`;
   const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
   const checkError = model.checkError && model.executionStatus !== "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
