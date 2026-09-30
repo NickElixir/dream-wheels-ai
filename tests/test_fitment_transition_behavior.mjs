@@ -521,12 +521,36 @@ test("STALE_REVISION_DRAFT_NOT_APPLIED", () => {
     const currentOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
     currentOverview.vehicle_revision = 2;
     resetToAuthoritativeVehicle(api, currentOverview);
-    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "conflict");
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "replaced");
 
     assert.equal(api.state.fitmentForm.vehicle.model, currentOverview.vehicle.model);
-    assert.equal(api.state.fitmentRestoreConflict.vehicleConflict, true);
+    assert.equal(api.state.fitmentRestoreConflict, null);
     assert.equal(api.state.fitmentVehicleDirty, false);
+    assert.equal(api.fitmentFormIsDirty(), false);
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "none");
     assert.equal(workspaceMode(api), "summary");
+});
+
+test("STALE_RIM_REVISION_DRAFT_IS_REPLACED_BY_CANONICAL_VALUES", () => {
+    const { api } = navigationApi();
+    const oldOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    oldOverview.rim_revision = 1;
+    oldOverview.front_rim.rim_revision = 1;
+    seed(api, oldOverview, "rim");
+    api.state.fitmentForm.rim.offset_et_mm = 42;
+    api.persistFitmentTransientDraft("navigation");
+
+    const currentOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    currentOverview.rim_revision = 2;
+    currentOverview.front_rim.rim_revision = 2;
+    currentOverview.front_rim.rim.offset_et_mm = 38;
+    currentOverview.rim.offset_et_mm = 38;
+    resetToAuthoritativeVehicle(api, currentOverview);
+
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "replaced");
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 38);
+    assert.equal(api.state.fitmentRestoreConflict, null);
+    assert.equal(api.fitmentFormIsDirty(), false);
 });
 
 test("SAVE_SINGLE_CONFIRM_RELOAD_IS_SUMMARY", async () => {
