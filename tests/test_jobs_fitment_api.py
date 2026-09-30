@@ -777,7 +777,11 @@ def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatc
 
 
 def test_parallel_readiness_next_action_matrix():
-    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    confirmed_meta = {
+        "source": "user_confirmed",
+        "confidence": 1.0,
+        "is_user_confirmed": True,
+    }
     vehicle_ready = _confirmed_vehicle_row(
         vehicle_provider_mappings=_confirmed_modification_mapping(),
     )
