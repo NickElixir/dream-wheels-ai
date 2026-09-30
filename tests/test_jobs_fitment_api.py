@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -714,6 +715,128 @@ def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
     assert (
         jobs_api._fitment_next_action_from_row(missing_vehicle).kind == "complete_vehicle_details"
     )
+
+
+def test_confirming_only_wheel_preserves_unconfirmed_vehicle_and_revision(monkeypatch):
+    row = _fitment_row(rim_center_bore_mm=None, rim_offset_et_mm=None)
+    before = deepcopy(row)
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            writes.append(query)
+            if "UPDATE rim_specs" in query:
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rim_{field}"] = value
+                row["rim_field_provenance"] = json.loads(args[10])
+                row["rim_revision"] += 1
+            elif "UPDATE vehicle_identities" in query:
+                raise AssertionError("Wheel confirmation must not write the vehicle")
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    path = f"/jobs/{row['job_id']}/fitment"
+    initial = client.get(path).json()
+    assert initial["vehicle_state"] == "unconfirmed"
+    assert initial["rim_setup_state"] == "partial"
+    response = client.patch(
+        path,
+        json={
+            "rim": {
+                field: (
+                    66.6
+                    if field == "center_bore_mm"
+                    else 35
+                    if field == "offset_et_mm"
+                    else float(before[f"rim_{field}"])
+                )
+                for field in jobs_api._RIM_CRITICAL_FIELDS
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert response.status_code == 200
+    # New manual values are entered first; confirming the saved values is a
+    # separate existing PATCH, not a new confirmation API.
+    entered = response.json()
+    assert entered["rim_setup_state"] == "complete_unconfirmed"
+    response = client.patch(
+        path,
+        json={
+            "rim": {field: float(row[f"rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 2,
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["rim_setup_state"] == "confirmed_ready"
+    assert result["vehicle_state"] == "unconfirmed"
+    assert result["next_action"]["kind"] == "complete_vehicle_details"
+    assert result["vehicle"] == initial["vehicle"]
+    assert result["vehicle_revision"] == initial["vehicle_revision"]
+    assert {k: v for k, v in row.items() if k.startswith("vehicle_")} == {
+        k: v for k, v in before.items() if k.startswith("vehicle_")
+    }
+    assert any("UPDATE rim_specs" in query for query in writes)
+
+
+def test_confirmed_vehicle_partial_wheel_requires_rim_specs(monkeypatch):
+    class Conn:
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row(
+                vehicle_provider_mappings=_confirmed_modification_mapping(),
+                rim_center_bore_mm=None,
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["vehicle_state"] == "confirmed_ready"
+    assert result["rim_setup_state"] == "partial"
+    assert result["next_action"]["kind"] == "complete_rim_specs"
+
+
+def test_both_confirmed_branches_allow_standard_check(monkeypatch):
+    class Conn:
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row(
+                vehicle_provider_mappings=_confirmed_modification_mapping(),
+                rim_field_provenance={
+                    field: {"source": "user_confirmed", "is_user_confirmed": True}
+                    for field in jobs_api._RIM_CRITICAL_FIELDS
+                },
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["vehicle_state"] == result["rim_setup_state"] == "confirmed_ready"
+    assert result["next_action"]["kind"] == "run_standard_check"
 
 
 def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatch):

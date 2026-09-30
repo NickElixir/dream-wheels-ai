@@ -1,5 +1,26 @@
 # Standard Fitment V1 — Runtime Mapping Audit
 
+## Technical/UX freeze amendment — 2026-09-30
+
+This amendment overrides the historical `PARTIAL_RIMSPEC_STANDARD_CHECK = ENABLED`
+checkpoint below and any stale-draft manual recovery guidance.
+
+| Contract | Current implementation/reference |
+| --- | --- |
+| Make → Model → Year → conditional Market → Save | Existing `/jobs/{job_id}/fitment/vehicle-catalogue/{makes,models,years,markets}` and `PATCH /jobs/{job_id}/fitment`; provider Body/Generation/Modification only in exact variant context |
+| Saved identity before exact lookup/confirmation | `src/jobs_api.py`: `find_fitment_vehicle_variants`, `apply_fitment_vehicle_variant`; existing single-candidate path unchanged |
+| Independent readiness, one workflow pointer | `_vehicle_state_from_row`, `_rim_setup_state_from_states`, `_fitment_next_action_from_row`: every effective wheel must be `confirmed_ready` before `run_standard_check` |
+| Direct API admission follows the same prerequisite | `src/fitment_checks_api.py:create_check`: missing/unconfirmed mandatory wheel evidence → HTTP 409 `complete_rim_specs`, before insertion/queueing; verdict engine and historical check reads unchanged |
+| Revision-safe browser restoration | `webapp/app.js:restoreFitmentTransientDraft`: compare full `fitmentRevisionBaseline`; mismatch → discard both branches, apply fresh overview, write clean stored baseline; no conflict recovery payload |
+| Matching baseline | Existing automatic restoration and bounded session storage remain |
+
+Regression evidence: `tests/test_jobs_fitment_api.py` covers wheel-only
+confirmation without vehicle mutation, partial wheel routing, and both-ready
+routing. `tests/test_fitment_checks_api.py` rejects missing/unconfirmed mandatory
+fields at direct API entry. `tests/test_fitment_transition_behavior.mjs` executes
+production restoration for vehicle/wheel revision changes and matching baselines.
+No schema/new endpoint, recognition, resolver, render permission or credit change.
+
 ## Checkpoint and authority
 
 ```text

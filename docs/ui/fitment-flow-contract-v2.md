@@ -19,6 +19,41 @@ This is not a new Fitment architecture. The repair should reuse the existing veh
 
 The server remains the source of truth.
 
+## Technical/UX freeze — 2026-09-30
+
+This amendment supersedes earlier partial-check and stale-draft recovery rules.
+
+- Manual vehicle entry: Make → Model → Year → Market only when the existing
+  backend returns `selection_required` → explicit save → existing exact vehicle
+  variant lookup → select and confirm the provider variant → canonical vehicle.
+  Body, Generation and Modification are provider variant context, not free
+  inputs before variant selection. Existing deterministic single-candidate
+  confirmation remains supported; no new API is introduced.
+- Matching browser revision baselines restore automatically. Any mismatch
+  discards **both** draft branches, uses the fresh authoritative overview and
+  replaces the stored baseline with clean server values. No conflict modal or
+  manual stale-wheel recovery is offered. Branch-aware restoration is deferred.
+- Vehicle and Wheel readiness are independent. `next_action` remains the sole
+  server-authoritative workflow pointer; clients do not infer it from form values.
+  An unconfirmed vehicle with a confirmed wheel still requires
+  `complete_vehicle_details`. A confirmed vehicle with its exact variant and a
+  partial/unconfirmed wheel requires `complete_rim_specs`. Both confirmed-ready
+  branches permit `run_standard_check`.
+- Mandatory wheel fields: bolt count, PCD, diameter, width, ET and DIA. All must
+  be saved and confirmed for every effective axle before a new Standard Check.
+  Missing optional load/fastener data does not become a new prerequisite.
+  Existing verdict evaluation and historical results are unchanged; `unknown`
+  remains possible for insufficient provider evidence even with complete inputs.
+- Creating a visual image remains independent of technical readiness/verdict.
+
+### Architecture Notes
+
+Vehicle and Wheel are independent readiness domains, not a second client state
+machine. Browser drafts are a convenience and never override newer canonical
+revisions. Exact variant identity remains provider-owned after base vehicle save.
+The approved scope extension changes only check admission and draft restoration;
+it does not change rendering, verdict rules, recognition or resolver integrations.
+
 ## Product invariant
 
 Visual Try-On and Technical Fitment are separate systems.

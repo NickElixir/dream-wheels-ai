@@ -37,6 +37,7 @@ def test_stale_revision_keeps_fresh_canonical_values() -> None:
     assert "state.fitmentVehicleDirty = false;" in restore
     assert "state.fitmentVehicleMarketEdited = false;" in restore
     assert 'return "replaced";' in restore
+    assert "persistFitmentTransientDraft(reason || draft.reason);" in restore
 
 
 def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:

@@ -2,6 +2,7 @@ import hashlib
 import json
 from asyncio import run
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src import fitment_checks_api
@@ -223,6 +224,44 @@ def _post(key="test-key", *, render_job_id=None):
     )
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "bolt_count",
+        "pcd_mm",
+        "center_bore_mm",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "offset_et_mm",
+    ],
+)
+@pytest.mark.parametrize("condition", ["missing", "unconfirmed"])
+def test_standard_check_requires_all_mandatory_wheel_fields(monkeypatch, field, condition):
+    row = _row()
+    if condition == "missing":
+        row[field] = None
+    else:
+        row["rim_field_provenance"][field] = {"source": "user_input", "is_user_confirmed": False}
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=row)
+    response = _post()
+    assert response.status_code == 409
+    assert response.json()["detail"] == {"code": "complete_rim_specs"}
+    assert conn.inserted == []
+
+
+def test_standard_check_requires_confirmed_rear_for_staggered_setup(monkeypatch):
+    row = _row()
+    row["is_staggered"] = True
+    row["rear_rim_offset_et_mm"] = None
+    conn = FakeConn()
+    _patch_auth_and_inputs(monkeypatch, conn, loaded_row=row)
+    response = _post()
+    assert response.status_code == 409
+    assert response.json()["detail"] == {"code": "complete_rim_specs"}
+    assert not conn.inserted
+
+
 def test_create_check_rejects_unimplemented_extended_mode(monkeypatch):
     conn = FakeConn()
     _patch_auth_and_inputs(monkeypatch, conn)
@@ -354,7 +393,7 @@ def test_create_check_returns_unknown_for_et_outside_reference(monkeypatch):
     assert [issue["code"] for issue in body["blocking_issues"]] == ["et_outside_reference_range"]
 
 
-def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
+def test_legacy_string_provenance_stays_readable_but_requires_explicit_confirmation(monkeypatch):
     legacy_row = _row()
     legacy_row["rim_field_provenance"] = "user_confirmed"
     legacy_row["provider_mappings"] = json.dumps(_row()["provider_mappings"])
@@ -363,8 +402,10 @@ def test_create_check_accepts_legacy_string_rim_provenance(monkeypatch):
 
     response = _post()
 
-    assert response.status_code == 200
-    snapshot = json.loads(conn.inserted[0][8])
+    assert response.status_code == 409
+    assert response.json()["detail"] == {"code": "complete_rim_specs"}
+    assert not conn.inserted
+    _, _, snapshot = fitment_checks_api._snapshot(legacy_row)
     assert snapshot["rim_setup"]["front"]["bolt_count"]["source"] == "user_confirmed"
     assert snapshot["vehicle"]["provider_mappings"] == _row()["provider_mappings"]
 

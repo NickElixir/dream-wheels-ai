@@ -1953,8 +1953,10 @@ function fitmentRevisionBaseline(overview = state.fitmentOverview) {
         vehicleIdentityId: overview?.vehicle_identity_id || null,
         vehicleRevision: overview?.vehicle_revision ?? null,
         modificationState: overview?.modification_state || "none",
+        selectedModification: overview?.selected_modification || null,
         rimSetupId: overview?.rim_setup_id || null,
         rimSetupRevision: overview?.rim_setup_revision ?? null,
+        rimRevision: overview?.rim_revision ?? null,
         frontRimRevision: overview?.front_rim?.rim_spec_revision
             ?? overview?.front_rim?.rim_revision
             ?? overview?.rim_revision
@@ -2142,6 +2144,7 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         };
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleMarketEdited = false;
+        persistFitmentTransientDraft(reason || draft.reason);
         return "replaced";
     }
     const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;

@@ -1,5 +1,31 @@
 # Standard Fitment UI State Specification V2 — Frozen Contract
 
+## Technical/UX freeze amendment — 2026-09-30
+
+This approved amendment takes precedence over earlier partial-check and draft
+conflict recovery descriptions.
+
+Manual catalogue chain is Make → Model → Year → conditional Market (only when
+backend requires selection) → explicit save → existing provider exact variant
+lookup/selection/confirmation. Body, Generation and Modification are variant
+context, not separate free fields before lookup. Existing single-match provider
+confirmation remains unchanged.
+
+Vehicle and Wheel readiness are independent. Saving/confirming only Wheel cannot
+confirm or increment the canonical Vehicle revision. The UI consumes the server
+`next_action`, never derives a substitute from local drafts. With vehicle and
+exact variant ready, any missing/unconfirmed mandatory wheel field requires
+`complete_rim_specs`; only all effective wheels confirmed-ready permit
+`run_standard_check`. Mandatory fields are bolt count, PCD, diameter, width,
+ET and DIA. Rendering stays available independently of this prerequisite.
+
+Browser restoration compares the complete server baseline. Equal baselines
+restore automatically. A mismatch discards the whole obsolete draft, renders
+the fresh server state, and writes a clean current baseline. No modal, stale
+wheel recovery action, or automatic mutation is allowed. Branch-aware recovery
+is not implemented. Provider errors, historical verdicts and verdict evaluation
+semantics remain unchanged.
+
 ## Status and authority
 
 ```text
