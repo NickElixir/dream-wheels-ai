@@ -144,10 +144,11 @@ Primary chain:
 - Марка
 - Модель
 - Год
-- Рынок — только если backend требует выбор
+- Версия для рынка — only when the provider resolves more than one market for the selected make/model/year.
 
-Body, Generation and Modification belong to the subsequent exact provider
-variant selection; do not add separate free inputs for them here.
+If Wheel Size resolves exactly one market, the client accepts that provider-backed value without showing a permanent Market field. If more than one market is returned, the user selects one from the returned catalogue options.
+
+`Кузов`, `Поколение` and `Модификация` are not free-form base identity fields. They belong to the exact provider-backed vehicle variant selected in State 2. Manual recovery uses the same catalogue chain and must not create arbitrary identity values while provider options are available.
 
 ### Primary action
 
@@ -163,11 +164,15 @@ save vehicle details
 
 The client must not infer the next step independently.
 
-### Recovery
+### Manual recovery
 
-`Не мой автомобиль — указать вручную`
+`Указать вручную` opens the same provider-backed chain:
 
-or the approved manual vehicle recovery affordance.
+```text
+Марка → Модель → Год → при необходимости Версия для рынка
+```
+
+The selected base identity is saved before exact-variant lookup so that the lookup is bound to the returned `vehicle_revision`. Manual recovery does not bypass the exact-variant confirmation step.
 
 ---
 
@@ -222,9 +227,9 @@ Use the existing explicit variant-apply runtime and its revision boundary.
 
 ### Single variant
 
-If the backend/provider returns a single authoritative variant and the existing runtime auto-confirms it, do not force the user to select one row from a one-item list.
+If the backend/provider returns a single authoritative variant, preselect that row visually but still require the explicit user action `Подтвердить комплектацию`.
 
-Show the confirmed exact vehicle variant and progress according to the new overview.
+A provider lookup alone does not make the variant canonical. The confirmed exact vehicle changes only after the explicit apply/confirmation boundary.
 
 ### No match
 
@@ -291,6 +296,12 @@ Core technical fields may include:
 - DIA / centre bore;
 - front/rear axle data when staggered.
 
+ET-specific numeric precision, Wheel Size catalogue sourcing, recommendation/manual fallback behavior and the completed live catalogue audit are defined in:
+
+- `docs/fitment/et-selection-contract-and-evidence.md`
+
+That document supersedes integer-only and fixed-`0.1 mm` ET UI assumptions. Do not round fractional ET values.
+
 Do not expose backend/parser candidate collections as a standalone section.
 
 ### Product URL resolver
@@ -337,7 +348,17 @@ Do not expose provider/raw parser payloads.
 
 When `setup_mode = staggered`, front and rear remain independent axle specs.
 
-Front candidates/values must never leak into rear fields.
+Approved transition behavior:
+
+- `uniform → staggered`: initialize Rear from the current Front draft. The copied Rear values are a starting draft, not a separate confirmation.
+- While staggered, Front and Rear use the same allowed controls/options and may diverge independently.
+- `staggered → uniform`: Front is the base axle; apply the current Front draft to both axles for the uniform draft.
+- Do not immediately destroy the previous Rear draft when switching back to uniform. Preserve it locally until the user saves. If the user switches back to staggered before save, restore that previous Rear draft.
+- After `Сохранить параметры` in uniform mode, the authoritative saved setup is uniform; the prior unsaved Rear divergence no longer defines canonical state.
+- This mode switch is a local-draft operation. It must not change authoritative server state or stale an existing result until the final wheel save succeeds.
+- A lightweight inline hint may explain that the Front values will be applied to both axles; do not require a modal choice.
+
+Front candidates/values must never leak into rear fields outside these explicit draft-copy transitions.
 
 ---
 

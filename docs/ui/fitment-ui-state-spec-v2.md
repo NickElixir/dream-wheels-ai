@@ -115,6 +115,8 @@ the server response directly.
 | `complete_rim_specs` | `Сохранить параметры` | Save the rim editor state explicitly; do not start Standard Check automatically |
 | `run_standard_check` | `Проверить совместимость` | Separate explicit user action; create the check from the persisted snapshot |
 
+`vehicle_state` and `rim_setup_state` are independent authoritative branch states. The UI may prepare Vehicle and Wheel in either order. `next_action` remains one server-owned progression hint for Standard Fitment and must not be treated as proof that the other branch is empty or unavailable. `run_standard_check` is returned only when the exact Vehicle variant and all required Wheel parameters are `confirmed_ready`.
+
 ### Vehicle
 
 - Proposal state says `Автомобиль определён по фотографии`
@@ -127,10 +129,12 @@ the server response directly.
 
 ### Modification
 
-- One candidate may be auto-confirmed only by the backend rule for an exact
-  single result
+- A single exact provider candidate is visually preselected, but the user still
+  confirms it with `Подтвердить комплектацию`
 - Multiple candidates are explicit selectable cards, never a probability
   ranking
+- Body, generation and modification are exact-variant catalogue metadata, not
+  free-form base Vehicle fields
 - A confirmed modification is bound to the saved Vehicle revision
 
 ### Rim
@@ -172,7 +176,15 @@ storage:
 Draft restoration is UI convenience only. It must not mutate authoritative
 VehicleIdentity, RimSpec, RimSetup, modification, provenance or check state.
 Runtime persistence and restoration must be keyed to the Fitment context and
-current revision, with no automatic replay after session restoration.
+the exact Vehicle, RimSpec and RimSetup revision baseline.
+
+If the stored baseline still matches the current server revisions, restore the
+draft automatically. If any authoritative revision changed, discard the stale
+draft and keep the freshly loaded canonical server values. Do not rebase or
+overlay stale form values onto the newer server state and do not offer an
+"apply old draft" recovery action. The next browser draft write uses the new
+revision baseline. No authoritative action is replayed automatically after
+session restoration.
 
 ## Verdict and rendering presentation
 

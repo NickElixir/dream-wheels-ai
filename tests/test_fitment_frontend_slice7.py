@@ -18,22 +18,25 @@ def test_transient_fitment_draft_is_bounded_session_scoped_and_safe() -> None:
 def test_restore_compares_authoritative_revisions_before_merging() -> None:
     assert "function fitmentRevisionBaseline(" in APP_JS
     assert "function fitmentDraftMatchesOverview(" in APP_JS
-    assert "function fitmentDraftVehicleMatchesOverview(" in APP_JS
+    assert "frontRimRevision" in APP_JS
+    assert "rearRimRevision" in APP_JS
     assert "frontSourceFingerprint" in APP_JS
     assert "rearSourceFingerprint" in APP_JS
     assert "if (!fitmentDraftMatchesOverview(draft, overview))" in APP_JS
-    assert "state.fitmentRestoreConflict" in APP_JS
-    assert 'return "discarded";' in APP_JS
-    assert "data-fitment-restore-conflict-apply" in INDEX_HTML
+    assert 'return "replaced";' in APP_JS
+    assert "fitmentRestoreConflict" not in APP_JS
+    assert "data-fitment-restore-conflict" not in INDEX_HTML
 
 
-def test_stale_conflict_discards_entire_draft_and_replaces_baseline() -> None:
+def test_stale_revision_keeps_fresh_canonical_values() -> None:
     restore = APP_JS.split("function restoreFitmentTransientDraft(")[1].split(
-        "const authoritativeVehicle ="
+        "function guestRenderAssetUrl("
     )[0]
     assert "state.fitmentForm = fitmentFormFromOverview(overview);" in restore
-    assert "state.fitmentRestoreConflict = null;" in restore
-    assert "baseline: cloneFitmentForm(state.fitmentForm)" in restore
+    assert 'status: "clean"' in restore
+    assert "state.fitmentVehicleDirty = false;" in restore
+    assert "state.fitmentVehicleMarketEdited = false;" in restore
+    assert 'return "replaced";' in restore
     assert "persistFitmentTransientDraft(reason || draft.reason);" in restore
 
 

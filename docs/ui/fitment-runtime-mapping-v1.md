@@ -275,25 +275,24 @@ and the change-event log is append-only. That is the durable foundation for
 the frozen flow. It can store partial values because all fields are optional
 in `FitmentRimUpdate`.
 
-The overview contradicts the frozen behavior: `_fitment_readiness_from_row()`
-requires every PCD/DIA/diameter/width/ET field before `next_action` can be
-`run_standard_check`, even though the check engine can safely produce an
-`unknown` for missing/unconfirmed critical evidence. The frontend repeats the
-same rule in `fitmentDraftMissingFields()` and hides the verdict card whenever
-`readiness.ready` is false.
+The frozen VNext contract requires the Wheel branch to reach
+`confirmed_ready` before the server returns `next_action=run_standard_check`.
+A persisted `partial` or `complete_unconfirmed` RimSpec remains editable and
+returns `complete_rim_specs`; the UI must not promote it to check-ready with a
+client-side heuristic.
 
 Required frozen sequence:
 
 ```text
 local draft → explicit save → persisted partial or complete_unconfirmed
-→ explicit confirmation where the UI requires it → confirmed_ready
+→ explicit field confirmation → confirmed_ready
 → user-requested Standard Check from persisted snapshot only
 ```
 
-No Standard Check is to use an unsaved draft. A valid persisted partial
-RimSpec may receive `next_action=run_standard_check`; its returned technical
-verdict is allowed to be `unknown` rather than being blocked by a frontend
-heuristic.
+No Standard Check is to use an unsaved or unconfirmed Wheel draft. The check
+engine may still represent missing evidence as `unknown` for historical or
+direct API snapshots, but the standard interactive VNext path gates the explicit
+Check action on confirmed Vehicle and Wheel branch states.
 
 ## Standard Check, verdict and field-result mapping
 
