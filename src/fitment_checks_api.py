@@ -494,6 +494,21 @@ async def create_check(
                 status_code=409,
                 detail="A confirmed Wheel-Size vehicle variant is required before this check",
             )
+        required_rim_fields = (
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+        )
+        rims = (setup.front, setup.rear) if setup.is_staggered else (setup.front,)
+        if any(
+            getattr(rim, name).value is None or not getattr(rim, name).is_user_confirmed
+            for rim in rims
+            for name in required_rim_fields
+        ):
+            raise HTTPException(status_code=409, detail={"code": "complete_rim_specs"})
         input_hash = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
         existing = await conn.fetchrow(
             "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",

@@ -1954,8 +1954,12 @@ function fitmentRevisionBaseline(overview = state.fitmentOverview) {
         vehicleIdentityId: overview?.vehicle_identity_id || null,
         vehicleRevision: overview?.vehicle_revision ?? null,
         modificationState: overview?.modification_state || "none",
+        selectedModification: overview?.selected_modification || null,
         rimSetupId: overview?.rim_setup_id || null,
         rimSetupRevision: overview?.rim_setup_revision ?? null,
+        rimRevision: overview?.rim_revision ?? null,
+        frontRimRevision: overview?.front_rim?.rim_spec_revision ?? null,
+        rearRimRevision: overview?.rear_rim?.rim_spec_revision ?? null,
         setupMode: overview?.setup_mode || "uniform",
         frontSourceFingerprint: overview?.front_rim?.source_fingerprint || null,
         frontSelectedVariantSku: overview?.front_rim?.selected_variant_sku || null,
@@ -2140,13 +2144,19 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     if (!draft) return "none";
     discardFitmentTransientDraft();
     if (!fitmentDraftMatchesOverview(draft, overview)) {
-        state.fitmentRestoreConflict = {
-            form: fitmentSafeConflictDraft(draft.form, overview),
-            activeStep: draft.activeStep,
-            activeSection: draft.activeSection,
-            vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview),
+        // A revision conflict invalidates the entire browser draft, not just
+        // its vehicle branch. Never offer stale wheel values for recovery.
+        state.fitmentRestoreConflict = null;
+        state.fitmentForm = fitmentFormFromOverview(overview);
+        state.fitmentFormState = {
+            status: "clean", validation: "valid",
+            baseline: cloneFitmentForm(state.fitmentForm),
+            missingFields: [], invalidFields: [],
         };
-        return "conflict";
+        state.fitmentVehicleDirty = false;
+        state.fitmentVehicleMarketEdited = false;
+        persistFitmentTransientDraft(reason || draft.reason);
+        return "discarded";
     }
     const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
     const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);

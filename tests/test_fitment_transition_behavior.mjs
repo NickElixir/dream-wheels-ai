@@ -521,13 +521,35 @@ test("STALE_REVISION_DRAFT_NOT_APPLIED", () => {
     const currentOverview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
     currentOverview.vehicle_revision = 2;
     resetToAuthoritativeVehicle(api, currentOverview);
-    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "conflict");
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "discarded");
 
     assert.equal(api.state.fitmentForm.vehicle.model, currentOverview.vehicle.model);
-    assert.equal(api.state.fitmentRestoreConflict.vehicleConflict, true);
+    assert.equal(api.state.fitmentRestoreConflict, null);
     assert.equal(api.state.fitmentVehicleDirty, false);
     assert.equal(workspaceMode(api), "summary");
 });
+
+for (const revision of ["vehicle_revision", "rim_setup_revision", "rim_revision"]) {
+    test(`revision change ${revision} discards both branches and replaces stored baseline`, () => {
+        const { api } = navigationApi();
+        const old = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+        old[revision] = 1;
+        seed(api, old);
+        api.state.fitmentForm.vehicle.model = "OBSOLETE";
+        api.state.fitmentForm.rim.offset_et_mm = 99;
+        api.persistFitmentTransientDraft("navigation");
+        const fresh = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+        fresh[revision] = 2;
+        resetToAuthoritativeVehicle(api, fresh);
+        assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: fresh }), "discarded");
+        assert.equal(api.state.fitmentForm.vehicle.model, fresh.vehicle.model);
+        assert.notEqual(api.state.fitmentForm.rim.offset_et_mm, 99);
+        assert.equal(api.state.fitmentRestoreConflict, null);
+        assert.equal(api.fitmentFormIsDirty(), false);
+        assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: fresh }), "restored");
+        assert.notEqual(api.state.fitmentForm.rim.offset_et_mm, 99);
+    });
+}
 
 test("SAVE_SINGLE_CONFIRM_RELOAD_IS_SUMMARY", async () => {
     let api;

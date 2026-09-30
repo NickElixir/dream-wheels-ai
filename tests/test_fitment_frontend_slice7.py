@@ -23,17 +23,18 @@ def test_restore_compares_authoritative_revisions_before_merging() -> None:
     assert "rearSourceFingerprint" in APP_JS
     assert "if (!fitmentDraftMatchesOverview(draft, overview))" in APP_JS
     assert "state.fitmentRestoreConflict" in APP_JS
-    assert "vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview)" in APP_JS
+    assert 'return "discarded";' in APP_JS
     assert "data-fitment-restore-conflict-apply" in INDEX_HTML
 
 
-def test_stale_conflict_keeps_server_modification_and_drops_stale_sku() -> None:
-    safe_conflict = APP_JS.split("function fitmentSafeConflictDraft(")[1].split(
-        "function fitmentDraftPayload("
+def test_stale_conflict_discards_entire_draft_and_replaces_baseline() -> None:
+    restore = APP_JS.split("function restoreFitmentTransientDraft(")[1].split(
+        "const authoritativeVehicle ="
     )[0]
-    assert "const authoritative = fitmentFormFromOverview(overview);" in safe_conflict
-    assert "safe.vehicle = authoritative.vehicle;" in safe_conflict
-    assert 'safe.rim.sku = ""' in safe_conflict
+    assert "state.fitmentForm = fitmentFormFromOverview(overview);" in restore
+    assert "state.fitmentRestoreConflict = null;" in restore
+    assert "baseline: cloneFitmentForm(state.fitmentForm)" in restore
+    assert "persistFitmentTransientDraft(reason || draft.reason);" in restore
 
 
 def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
