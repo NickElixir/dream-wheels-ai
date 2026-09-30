@@ -1956,6 +1956,14 @@ function fitmentRevisionBaseline(overview = state.fitmentOverview) {
         modificationState: overview?.modification_state || "none",
         rimSetupId: overview?.rim_setup_id || null,
         rimSetupRevision: overview?.rim_setup_revision ?? null,
+        frontRimRevision: overview?.front_rim?.rim_spec_revision
+            ?? overview?.front_rim?.rim_revision
+            ?? overview?.rim_revision
+            ?? null,
+        rearRimRevision: overview?.rear_rim?.rim_spec_revision
+            ?? overview?.rear_rim?.rim_revision
+            ?? overview?.rim_revision
+            ?? null,
         setupMode: overview?.setup_mode || "uniform",
         frontSourceFingerprint: overview?.front_rim?.source_fingerprint || null,
         frontSelectedVariantSku: overview?.front_rim?.selected_variant_sku || null,
