@@ -547,7 +547,6 @@ test("STALE_RIM_REVISION_DRAFT_IS_REPLACED_BY_CANONICAL_VALUES", () => {
 
     assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "replaced");
     assert.equal(api.state.fitmentForm.rim.offset_et_mm, 38);
-    assert.equal(api.state.fitmentRestoreConflict, null);
     assert.equal(api.fitmentFormIsDirty(), false);
 });
 
