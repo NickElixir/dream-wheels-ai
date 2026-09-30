@@ -180,7 +180,7 @@ function navigationApi({ routes = {} } = {}) {
             deriveVehicleWorkspaceMode, fitmentVehicleWorkspaceMode,
             persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
             rebaseFitmentTransientVehicleDraft,
-            fitmentDraftMatchesOverview, fitmentDraftVehicleMatchesOverview,
+            fitmentDraftMatchesOverview,
             openFitmentView,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection,
@@ -316,7 +316,6 @@ function resetToAuthoritativeVehicle(api, overview) {
     };
     api.state.fitmentVehicleDirty = false;
     api.state.fitmentVehicleEditing = false;
-    api.state.fitmentRestoreConflict = null;
 }
 
 test("SAVE_VEHICLE_PRESERVES_SECTION", async () => {
@@ -524,7 +523,6 @@ test("STALE_REVISION_DRAFT_NOT_APPLIED", () => {
     assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "replaced");
 
     assert.equal(api.state.fitmentForm.vehicle.model, currentOverview.vehicle.model);
-    assert.equal(api.state.fitmentRestoreConflict, null);
     assert.equal(api.state.fitmentVehicleDirty, false);
     assert.equal(api.fitmentFormIsDirty(), false);
     assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: currentOverview }), "none");
