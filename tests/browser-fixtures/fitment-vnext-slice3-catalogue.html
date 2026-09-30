@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fitment VNext Vehicle catalogue QA</title>
+  <link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/shell.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+  <style>
+    body { margin: 0; background: var(--vnext-canvas); color: var(--vnext-text); font-family: "IBM Plex Sans", sans-serif; }
+    .qa-wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 100px; }
+    .qa-controls { display: flex; gap: 8px; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <main class="qa-wrap">
+    <div class="qa-controls"><button id="single">Single market</button><button id="multiple">Choose market</button><button id="failed">Provider failure</button><button id="empty">No data</button></div>
+    <div id="fitment"></div>
+  </main>
+  <script type="module">
+    import { fitmentMarkup } from "../../webapp/vnext/views/fitment.js";
+    const root = document.getElementById("fitment");
+    const state = {
+      overview: { vehicle_state: "unconfirmed", rim_setup_state: "empty" },
+      nextAction: "complete_vehicle_details", vehicleEditing: true,
+      vehicleForm: { make: "zeekr", model: "001", year: "2023", market: "CN" },
+      catalogue: {
+        makes: [{ value: "zeekr", label: "Zeekr" }],
+        models: [{ value: "001", label: "001" }],
+        years: [{ value: "2023", label: "2023" }],
+        markets: [{ value: "CN", label: "Китай" }, { value: "EU", label: "Европа" }],
+        states: { makes: { status: "selected" }, models: { status: "selected" }, years: { status: "selected" }, markets: { status: "selected", resolution: "single" } },
+      },
+    };
+    function render() { root.innerHTML = fitmentMarkup(state); }
+    const setMarket = (status, resolution, message = "") => {
+      state.catalogue.states.markets = { status, resolution, message };
+      render();
+    };
+    document.getElementById("single").onclick = () => setMarket("selected", "single");
+    document.getElementById("multiple").onclick = () => setMarket("selection_required", "selection_required");
+    document.getElementById("failed").onclick = () => setMarket("failed", "", "Не удалось загрузить рынки");
+    document.getElementById("empty").onclick = () => setMarket("no_data", "no_data", "Нет доступных рынков");
+    render();
+  </script>
+</body>
+</html>

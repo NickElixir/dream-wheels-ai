@@ -9997,6 +9997,7 @@ function vnextFitmentSnapshot() {
             : marketResolution.status;
     const marketState = {
         status: marketStatus || "idle_parent_missing",
+        resolution: marketResolution.resolution || "",
         message: marketStatus === "loading" ? "Загружаем рынки…"
             : marketStatus === "failed" ? "Не удалось загрузить рынки"
                 : marketStatus === "no_data" ? "Нет доступных рынков"
