@@ -185,7 +185,7 @@ function navigationApi({ routes = {} } = {}) {
             fitmentDraftMatchesOverview,
             openFitmentView,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
-            replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection,
+            replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -877,4 +877,41 @@ test("WHEEL_ONLY_SAVE works while Vehicle is unconfirmed and keeps its revision"
     assert.equal(requestBody.rim.offset_et_mm, 35.25);
     assert.equal(api.state.fitmentOverview.vehicle_revision, 2);
     assert.equal(api.state.fitmentOverview.next_action.kind, "complete_vehicle_details");
+});
+
+test("Wheel save preserves an unsaved Vehicle draft with a new server baseline", async () => {
+    let api;
+    let saved;
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => response(200, saved),
+    } }));
+    const initial = overviewFor(api, "complete_vehicle_details");
+    seed(api, initial, "rim");
+    api.state.fitmentRimEditing = true;
+    api.state.fitmentForm.vehicle.model = "Draft Model";
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentForm.rim.offset_et_mm = 35.25;
+    saved = { ...initial, rim_revision: (initial.rim_revision || 1) + 1 };
+    await api.saveFitment();
+
+    assert.equal(api.state.fitmentForm.vehicle.model, "Draft Model");
+    assert.equal(api.state.fitmentVehicleDirty, true);
+    assert.equal(api.state.fitmentFormState.baseline.vehicle.model, initial.vehicle.model);
+    assert.equal(api.state.fitmentOverview.vehicle_revision, initial.vehicle_revision);
+    assert.equal(api.state.fitmentOverview.next_action.kind, "complete_vehicle_details");
+    api.state.fitmentForm = api.fitmentFormFromOverview(saved);
+    api.state.fitmentFormState.baseline = api.cloneFitmentForm(api.state.fitmentForm);
+    api.state.fitmentVehicleDirty = false;
+    assert.equal(api.restoreFitmentTransientDraft({ reason: "navigation", overview: saved }), "restored");
+    assert.equal(api.state.fitmentForm.vehicle.model, "Draft Model");
+});
+
+test("demo Wheel save keeps Vehicle progression authoritative", () => {
+    const { api } = navigationApi();
+    seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
+    const before = api.state.fitmentOverview.vehicle_revision;
+    const saved = api.demoServerTransition("save_rim", { rim: { offset_et_mm: 35.25 } });
+    assert.equal(saved.vehicle_revision, before);
+    assert.equal(saved.next_action.kind, "complete_vehicle_details");
+    assert.equal(saved.rim_revision, api.state.fitmentOverview.rim_revision + 1);
 });

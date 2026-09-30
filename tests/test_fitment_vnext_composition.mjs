@@ -32,3 +32,18 @@ test("VNext composition keeps independent source cards and a full-width editor b
   assert.equal((markup.match(/data-fitment-action="create-image"/g) || []).length, 1);
   assert.match(markup, /data-fitment-action="check"[^>]*disabled/);
 });
+
+test("a Wheel editor remains the only editor when the server requests a Vehicle variant", () => {
+  const markup = context.fitmentMarkup({
+    overview: { vehicle_state: "confirmed_incomplete", rim_setup_state: "partial" },
+    nextAction: "select_vehicle_variant", activeSection: "rim",
+    rimEditing: true, vehicleEditing: false,
+    vehicleVariants: [{ label: "2.0 AWD" }],
+    rim: { offset_et_mm: 35.25 },
+  });
+  assert.match(markup, /data-fitment-field="rim\.offset_et_mm"/);
+  assert.doesNotMatch(markup, /class="vnext-fitment__variant-step"/);
+  assert.match(markup, /Выберите комплектацию автомобиля/);
+  assert.match(markup, /data-fitment-action="edit-vehicle"/);
+  assert.match(markup, /data-fitment-action="check"[^>]*disabled/);
+});

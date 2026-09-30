@@ -137,7 +137,7 @@ function vehicleEditor(model, vehicle) {
 }
 
 function variantChooser(model) {
-  if (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing) return "";
+  if (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing || model.rimEditing) return "";
   const choices = model.vehicleVariants || [];
   const status = model.vehicleLookup?.status;
   const loading = model.vehicleVariantsLoading || status === "loading";
@@ -160,8 +160,7 @@ export function fitmentMarkup(model = {}) {
   if (model.loading && !model.overview) return `<section class="vnext-fitment">${loadingStatus("Загружаем совместимость")}</section>`;
   if (model.error && !model.overview) return `<section class="vnext-fitment" role="alert"><h2>Не удалось загрузить совместимость</h2><p>${esc(model.error)}</p>${button("Повторить", "reload", { primary: true })}</section>`;
   if (model.vehicleEditing && model.rimEditing) {
-    const vehicleOwnsNextAction = ["complete_vehicle_details", "select_vehicle_variant"].includes(model.nextAction);
-    model = { ...model, vehicleEditing: vehicleOwnsNextAction, rimEditing: !vehicleOwnsNextAction };
+    model = { ...model, vehicleEditing: model.activeSection !== "rim", rimEditing: model.activeSection === "rim" };
   }
   const vehicle = model.vehicleForm || model.vehicle || {};
   const rim = model.rim || {};
