@@ -718,11 +718,7 @@ def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
 
 def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatch):
     execute_calls: list[tuple[str, tuple]] = []
-    confirmed_meta = {
-        "source": "user_confirmed",
-        "confidence": 1.0,
-        "is_user_confirmed": True,
-    }
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
     rows = [
         _fitment_row(),
         _fitment_row(
@@ -770,9 +766,7 @@ def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatc
     assert body["next_action"]["kind"] == "complete_vehicle_details"
     assert body["vehicle_revision"] == 1
     assert body["rim_revision"] == 2
-    assert all(
-        "UPDATE vehicle_identities" not in query for query, _args in execute_calls
-    )
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
     assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
 
 
@@ -793,18 +787,13 @@ def test_parallel_readiness_next_action_matrix():
         for field in jobs_api._RIM_CRITICAL_FIELDS
         if field != "center_bore_mm"
     }
-    assert (
-        jobs_api._fitment_next_action_from_row(wheel_partial).kind
-        == "complete_rim_specs"
-    )
+    assert jobs_api._fitment_next_action_from_row(wheel_partial).kind == "complete_rim_specs"
 
     wheel_ready = dict(vehicle_ready)
     wheel_ready["rim_field_provenance"] = {
         field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
     }
-    assert (
-        jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
-    )
+    assert jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
 
 
 def test_fitment_save_allows_clearing_optional_fields(monkeypatch):
