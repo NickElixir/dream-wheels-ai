@@ -802,7 +802,9 @@ def test_parallel_readiness_next_action_matrix():
     wheel_ready["rim_field_provenance"] = {
         field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
     }
-    assert jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
+    assert (
+        jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
+    )
 
 
 def test_fitment_save_allows_clearing_optional_fields(monkeypatch):
