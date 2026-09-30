@@ -171,11 +171,13 @@ function navigationApi({ routes = {} } = {}) {
         loadFitmentCheckHistory = async () => {};
         loadRenderHistory = async () => {};
         refreshFitmentCheckCurrentness = async () => {};
+        globalThis.__realValidateFitmentForm = validateFitmentForm;
         validateFitmentForm = () => [];
         globalThis.__fitmentFormIsDirty = fitmentFormIsDirty;
         fitmentFormIsDirty = () => false;
         globalThis.__navigationApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
+            useRealValidation() { validateFitmentForm = globalThis.__realValidateFitmentForm; },
             fitmentEffectiveRim, fitmentRimSpecs, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
             deriveVehicleWorkspaceMode, fitmentVehicleWorkspaceMode,
             persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
@@ -843,4 +845,36 @@ test("RIM_ONLY_SAVE_BOUNDARY sends the real PATCH without Vehicle", async () => 
     assert.equal(Object.hasOwn(requestBody, "vehicle"), false);
     assert.equal(requestBody.rim.bolt_count, 5);
     assert.equal(requestBody.rim.pcd_mm, 112);
+});
+
+test("WHEEL_ONLY_SAVE works while Vehicle is unconfirmed and keeps its revision", async () => {
+    let api;
+    let requestBody;
+    const initial = overviewFor({ buildDefaultDemoFitmentOverview: () => ({
+        job_id: "behavior-job", vehicle: {}, vehicle_state: "unconfirmed",
+        vehicle_revision: 2, rim_revision: 1, rim_setup_revision: 1,
+        rim: {}, front_rim: { rim: {} }, setup_mode: "uniform",
+        next_action: { kind: "complete_vehicle_details" },
+    }) }, "complete_vehicle_details");
+    const saved = { ...initial, rim_revision: 2, rim_setup_revision: 2, rim_setup_state: "confirmed_ready" };
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": (options) => {
+            requestBody = JSON.parse(options.body);
+            return response(200, saved);
+        },
+    } }));
+    seed(api, initial, "rim");
+    api.useRealValidation();
+    api.state.fitmentRimEditing = true;
+    Object.assign(api.state.fitmentForm.rim, {
+        bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18,
+        wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35.25,
+    });
+    await api.saveFitment();
+
+    assert.ok(requestBody, "Wheel save must send PATCH while Vehicle is incomplete");
+    assert.equal(Object.hasOwn(requestBody, "vehicle"), false);
+    assert.equal(requestBody.rim.offset_et_mm, 35.25);
+    assert.equal(api.state.fitmentOverview.vehicle_revision, 2);
+    assert.equal(api.state.fitmentOverview.next_action.kind, "complete_vehicle_details");
 });

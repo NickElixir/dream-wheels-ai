@@ -7796,8 +7796,9 @@ async function saveFitment(event) {
     event?.preventDefault?.();
     if (!state.fitmentJobId || state.fitmentSaving) return;
     const savedFromSection = state.fitmentActiveSection;
-    const missing = validateFitmentForm();
-    if (missing.length || state.fitmentFormState.invalidFields?.length) {
+    const savingVehicle = savedFromSection === "vehicle";
+    const missing = savingVehicle ? validateFitmentForm() : [];
+    if (savingVehicle && (missing.length || state.fitmentFormState.invalidFields?.length)) {
         state.fitmentFormState.status = "dirty";
         state.fitmentError = "";
         renderFitment();
@@ -7815,11 +7816,8 @@ async function saveFitment(event) {
     try {
         if (shouldUseDemoFitment(state.fitmentJobId)) {
             const action = fitmentNextAction(state.fitmentOverview);
-            const transition = action === "complete_vehicle_details"
-                ? "confirm_vehicle"
-                : action === "complete_rim_specs" || (state.fitmentActiveSection === "rim" && (state.fitmentRimEditing || state.fitmentFormState.dirty))
-                    ? "save_rim"
-                    : "";
+            const transition = savedFromSection === "rim" ? "save_rim"
+                : action === "complete_vehicle_details" ? "confirm_vehicle" : "";
             const overview = demoServerTransition(transition, fitmentPayload());
             updateDemoFitmentState(overview);
             clearFitmentResolverFeedback({ close: true });
@@ -7840,7 +7838,7 @@ async function saveFitment(event) {
                 method: "PATCH",
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify(fitmentPayload({
-                    includeVehicle: state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired(),
+                    includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()),
                 })),
             }
         );
