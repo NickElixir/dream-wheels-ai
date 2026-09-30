@@ -18,22 +18,25 @@ def test_transient_fitment_draft_is_bounded_session_scoped_and_safe() -> None:
 def test_restore_compares_authoritative_revisions_before_merging() -> None:
     assert "function fitmentRevisionBaseline(" in APP_JS
     assert "function fitmentDraftMatchesOverview(" in APP_JS
-    assert "function fitmentDraftVehicleMatchesOverview(" in APP_JS
+    assert "frontRimRevision" in APP_JS
+    assert "rearRimRevision" in APP_JS
     assert "frontSourceFingerprint" in APP_JS
     assert "rearSourceFingerprint" in APP_JS
     assert "if (!fitmentDraftMatchesOverview(draft, overview))" in APP_JS
-    assert "state.fitmentRestoreConflict" in APP_JS
-    assert "vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview)" in APP_JS
-    assert "data-fitment-restore-conflict-apply" in INDEX_HTML
+    assert 'return "replaced";' in APP_JS
+    assert "fitmentRestoreConflict" not in APP_JS
+    assert "data-fitment-restore-conflict" not in INDEX_HTML
 
 
-def test_stale_conflict_keeps_server_modification_and_drops_stale_sku() -> None:
-    safe_conflict = APP_JS.split("function fitmentSafeConflictDraft(")[1].split(
-        "function fitmentDraftPayload("
+def test_stale_revision_keeps_fresh_canonical_values() -> None:
+    restore = APP_JS.split("function restoreFitmentTransientDraft(")[1].split(
+        "function guestRenderAssetUrl("
     )[0]
-    assert "const authoritative = fitmentFormFromOverview(overview);" in safe_conflict
-    assert "safe.vehicle = authoritative.vehicle;" in safe_conflict
-    assert 'safe.rim.sku = ""' in safe_conflict
+    assert "state.fitmentForm = fitmentFormFromOverview(overview);" in restore
+    assert 'status: "clean"' in restore
+    assert "state.fitmentVehicleDirty = false;" in restore
+    assert "state.fitmentVehicleMarketEdited = false;" in restore
+    assert 'return "replaced";' in restore
 
 
 def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:

@@ -716,6 +716,86 @@ def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
     )
 
 
+def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    rows = [
+        _fitment_row(),
+        _fitment_row(
+            rim_field_provenance={
+                field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
+            },
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "rim": {
+                "bolt_count": 5,
+                "pcd_mm": 112,
+                "center_bore_mm": 66.6,
+                "wheel_diameter_in": 18,
+                "wheel_width_j": 8,
+                "offset_et_mm": 35,
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_state"] == "unconfirmed"
+    assert body["rim_setup_state"] == "confirmed_ready"
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 2
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
+    assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
+
+
+def test_parallel_readiness_next_action_matrix():
+    confirmed_meta = {
+        "source": "user_confirmed",
+        "confidence": 1.0,
+        "is_user_confirmed": True,
+    }
+    vehicle_ready = _confirmed_vehicle_row(
+        vehicle_provider_mappings=_confirmed_modification_mapping(),
+    )
+
+    wheel_partial = dict(vehicle_ready)
+    wheel_partial["rim_center_bore_mm"] = None
+    wheel_partial["rim_field_provenance"] = {
+        field: dict(confirmed_meta)
+        for field in jobs_api._RIM_CRITICAL_FIELDS
+        if field != "center_bore_mm"
+    }
+    assert jobs_api._fitment_next_action_from_row(wheel_partial).kind == "complete_rim_specs"
+
+    wheel_ready = dict(vehicle_ready)
+    wheel_ready["rim_field_provenance"] = {
+        field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
+    }
+    assert jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
+
+
 def test_fitment_save_allows_clearing_optional_fields(monkeypatch):
     execute_calls: list[tuple[str, tuple]] = []
     rows = [

@@ -1460,7 +1460,6 @@ const state = {
     fitmentCatalogueDraftMemory: null,
     fitmentCheckPollTimer: null,
     fitmentCheckPollToken: 0,
-    fitmentRestoreConflict: null,
     fitmentRestoreSection: "",
     fitmentContextByJob: {},
     fitmentContextLoadingByJob: {},
@@ -1956,6 +1955,14 @@ function fitmentRevisionBaseline(overview = state.fitmentOverview) {
         modificationState: overview?.modification_state || "none",
         rimSetupId: overview?.rim_setup_id || null,
         rimSetupRevision: overview?.rim_setup_revision ?? null,
+        frontRimRevision: overview?.front_rim?.rim_spec_revision
+            ?? overview?.front_rim?.rim_revision
+            ?? overview?.rim_revision
+            ?? null,
+        rearRimRevision: overview?.rear_rim?.rim_spec_revision
+            ?? overview?.rear_rim?.rim_revision
+            ?? overview?.rim_revision
+            ?? null,
         setupMode: overview?.setup_mode || "uniform",
         frontSourceFingerprint: overview?.front_rim?.source_fingerprint || null,
         frontSelectedVariantSku: overview?.front_rim?.selected_variant_sku || null,
@@ -1967,13 +1974,6 @@ function fitmentRevisionBaseline(overview = state.fitmentOverview) {
 function fitmentDraftMatchesOverview(draft, overview = state.fitmentOverview) {
     if (!draft?.baseline || !overview) return false;
     return JSON.stringify(draft.baseline) === JSON.stringify(fitmentRevisionBaseline(overview));
-}
-
-function fitmentDraftVehicleMatchesOverview(draft, overview = state.fitmentOverview) {
-    if (!draft?.baseline || !overview) return false;
-    const current = fitmentRevisionBaseline(overview);
-    return ["jobId", "vehicleIdentityId", "vehicleRevision", "modificationState"]
-        .every((key) => draft.baseline[key] === current[key]);
 }
 
 function fitmentComparableVehicle(vehicle = {}) {
@@ -1991,17 +1991,6 @@ function fitmentComparableVehicle(vehicle = {}) {
 
 function fitmentVehicleValuesEquivalent(left, right) {
     return JSON.stringify(fitmentComparableVehicle(left)) === JSON.stringify(fitmentComparableVehicle(right));
-}
-
-function fitmentSafeConflictDraft(form, overview = state.fitmentOverview) {
-    const safe = cloneFitmentForm(form);
-    // The server-owned vehicle selection remains authoritative even when a
-    // transient draft was created against an older RimSpec revision/source.
-    const authoritative = fitmentFormFromOverview(overview);
-    safe.vehicle = authoritative.vehicle;
-    // A stale resolver SKU must never be revived from storage.
-    safe.rim.sku = "";
-    return safe;
 }
 
 function fitmentDraftPayload(reason) {
@@ -2140,13 +2129,20 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     if (!draft) return "none";
     discardFitmentTransientDraft();
     if (!fitmentDraftMatchesOverview(draft, overview)) {
-        state.fitmentRestoreConflict = {
-            form: fitmentSafeConflictDraft(draft.form, overview),
-            activeStep: draft.activeStep,
-            activeSection: draft.activeSection,
-            vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview),
+        // A draft is valid only for the exact server revision it was created from.
+        // If the authoritative context changed, discard the stale draft and keep
+        // the freshly loaded canonical values instead of rebasing old input onto it.
+        state.fitmentForm = fitmentFormFromOverview(overview);
+        state.fitmentFormState = {
+            status: "clean",
+            validation: "valid",
+            baseline: cloneFitmentForm(state.fitmentForm),
+            missingFields: [],
+            invalidFields: [],
         };
-        return "conflict";
+        state.fitmentVehicleDirty = false;
+        state.fitmentVehicleMarketEdited = false;
+        return "replaced";
     }
     const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
     const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
@@ -2175,21 +2171,6 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     state.fitmentRimManualFields = Array.isArray(draft.source?.manualFields) ? draft.source.manualFields : [];
     state.fitmentSourceConflicts = Array.isArray(draft.source?.conflicts) ? draft.source.conflicts : [];
     return "restored";
-}
-
-function applyFitmentRestoreConflict() {
-    if (!state.fitmentRestoreConflict) return;
-    state.fitmentForm = cloneFitmentForm(state.fitmentRestoreConflict.form);
-    state.fitmentActiveStep = Number.isInteger(state.fitmentRestoreConflict.activeStep)
-        ? state.fitmentRestoreConflict.activeStep
-        : state.fitmentActiveStep;
-    if (["vehicle", "rim", "result"].includes(state.fitmentRestoreConflict.activeSection)) {
-        state.fitmentActiveSection = state.fitmentRestoreConflict.activeSection;
-    }
-    state.fitmentFormState.status = "dirty";
-    state.fitmentFormState.validation = "valid";
-    state.fitmentVehicleMarketEdited = false;
-    state.fitmentRestoreConflict = null;
 }
 
 function guestRenderAssetUrl(job, kind) {
@@ -5318,8 +5299,6 @@ function renderFitmentLegacy() {
     const authRequired = document.querySelector("[data-fitment-auth-required]");
     const authRequiredText = document.querySelector("[data-fitment-auth-required-text]");
     const authLoginLabel = document.querySelector("[data-fitment-auth-login-label]");
-    const restoreConflict = document.querySelector("[data-fitment-restore-conflict]");
-    const restoreConflictText = document.querySelector("[data-fitment-restore-conflict-text]");
     const basicsCard = document.querySelector(".fitment-basics-card");
     const vehicleSection = document.querySelector('[data-fitment-section="vehicle"]');
     const rimSection = document.querySelector('[data-fitment-section="rim"]');
@@ -5352,12 +5331,6 @@ function renderFitmentLegacy() {
     }
     if (authLoginLabel) {
         authLoginLabel.textContent = locale === "ru" ? "Войти через Telegram" : "Sign in with Telegram";
-    }
-    if (restoreConflict) restoreConflict.hidden = !state.fitmentRestoreConflict;
-    if (restoreConflictText) {
-        restoreConflictText.textContent = locale === "ru"
-            ? "Данные на сервере изменились. Черновик не применён автоматически."
-            : "Server details changed. The draft was not applied automatically.";
     }
     if (message) {
         message.dataset.visible = String(Boolean(state.fitmentMessage));
@@ -6255,8 +6228,6 @@ function renderFitment() {
     if (authRequiredText) authRequiredText.textContent = locale === "ru"
         ? "Сессия истекла. Войдите через Telegram, чтобы продолжить"
         : "Your session has expired. Sign in with Telegram to continue";
-    const restoreConflict = document.querySelector("[data-fitment-restore-conflict]");
-    if (restoreConflict) restoreConflict.hidden = !state.fitmentRestoreConflict;
     if (!overview) {
         if (shell) shell.hidden = true;
         return;
@@ -7239,7 +7210,6 @@ function openFitmentView(
     state.fitmentSourceConflicts = [];
     state.fitmentSourceIdentity = { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" };
     state.fitmentRimManualFields = [];
-    state.fitmentRestoreConflict = null;
     state.fitmentSourceAutoResolvedForJob = "";
     state.fitmentVehicleVariants = [];
     state.fitmentVehicleVariantsLoading = false;
@@ -11577,14 +11547,6 @@ function bindEvents() {
     });
     document.querySelector("[data-fitment-auth-login]")?.addEventListener("click", () => {
         void resumeFitmentAfterLogin();
-    });
-    document.querySelector("[data-fitment-restore-conflict-apply]")?.addEventListener("click", () => {
-        applyFitmentRestoreConflict();
-        state.fitmentMessage = locale === "ru"
-            ? "Сохранённые значения открыты как несохранённый черновик. Проверьте их перед сохранением."
-            : "Saved values are open as an unsaved draft. Review them before saving.";
-        state.fitmentMessageTone = "warning";
-        renderFitment();
     });
     document.querySelector("[data-fitment-form]")?.addEventListener("submit", (event) => {
         void saveFitment(event);
