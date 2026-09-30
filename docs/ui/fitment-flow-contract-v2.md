@@ -255,6 +255,12 @@ Core technical fields may include:
 - DIA / centre bore;
 - front/rear axle data when staggered.
 
+ET-specific numeric precision, Wheel Size catalogue sourcing, recommendation/manual fallback behavior and the completed live catalogue audit are defined in:
+
+- `docs/fitment/et-selection-contract-and-evidence.md`
+
+That document supersedes integer-only and fixed-`0.1 mm` ET UI assumptions. Do not round fractional ET values.
+
 Do not expose backend/parser candidate collections as a standalone section.
 
 ### Product URL resolver
@@ -301,7 +307,17 @@ Do not expose provider/raw parser payloads.
 
 When `setup_mode = staggered`, front and rear remain independent axle specs.
 
-Front candidates/values must never leak into rear fields.
+Approved transition behavior:
+
+- `uniform → staggered`: initialize Rear from the current Front draft. The copied Rear values are a starting draft, not a separate confirmation.
+- While staggered, Front and Rear use the same allowed controls/options and may diverge independently.
+- `staggered → uniform`: Front is the base axle; apply the current Front draft to both axles for the uniform draft.
+- Do not immediately destroy the previous Rear draft when switching back to uniform. Preserve it locally until the user saves. If the user switches back to staggered before save, restore that previous Rear draft.
+- After `Сохранить параметры` in uniform mode, the authoritative saved setup is uniform; the prior unsaved Rear divergence no longer defines canonical state.
+- This mode switch is a local-draft operation. It must not change authoritative server state or stale an existing result until the final wheel save succeeds.
+- A lightweight inline hint may explain that the Front values will be applied to both axles; do not require a modal choice.
+
+Front candidates/values must never leak into rear fields outside these explicit draft-copy transitions.
 
 ---
 
