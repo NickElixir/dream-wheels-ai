@@ -1,7 +1,7 @@
 # Dream Wheels AI — ET selection contract and evidence
 
 **Date:** 2026-09-30  
-**Status:** APPROVED UX / DATA DIRECTION — live catalogue audited; manual precision decision pending
+**Status:** APPROVED UX / DATA DIRECTION — live catalogue audited; precision behavior approved
 **Scope:** Technical Fitment wheel parameter `ET` / `offset_et_mm`
 
 ## Decision
@@ -11,10 +11,10 @@ Dream Wheels AI must treat ET as a decimal numeric value, not as an integer-only
 Approved behavior:
 
 - ET is stored without rounding as a numeric value in millimetres.
-- Manual entry supports decimal values with a practical input step of `0.1 mm`.
+- Manual entry supports arbitrary decimal precision required by valid values; do not impose a fixed `0.1 mm` step.
 - Defensive validation range is `-150…+150 mm`.
 - The preferred UX is selection from known/recommended ET values rather than forcing free-form numeric entry.
-- A searchable combobox should expose known ET values sourced from Wheel Size API through the Dream Wheels backend.
+- A searchable combobox should expose known ET values sourced from Wheel Size API through the Dream Wheels backend. The unfiltered catalogue currently contains 310 values and is small enough to remain the complete searchable fallback universe.
 - The combobox must retain a manual fallback such as `Другое значение`, because a commercial aftermarket wheel may contain a real ET that is absent from the current Wheel Size option catalogue.
 - Resolver-detected ET values, including fractional values, may be presented directly as system proposals and require the same explicit user confirmation as the other wheel fields.
 - ET must never be rounded to an integer during resolver normalization, draft persistence, save, Fitment execution, or result rendering.
@@ -129,7 +129,7 @@ ET, мм
 Contract:
 
 - numeric decimal input;
-- input step: `0.1 mm`;
+- no fixed decimal step; for an HTML numeric fallback use permissive input semantics such as `step="any"` plus explicit validation;
 - defensive range: `-150…+150 mm`;
 - Russian UI uses decimal comma for display;
 - transport/storage may use normal JSON decimal notation;
@@ -151,9 +151,11 @@ Do not make ET dependent on the user completing Diameter, Width, PCD and DIA fir
 Preferred behavior:
 
 - Dream Wheels backend fetches/normalizes known ET values from Wheel Size;
-- frontend receives the option set from Dream Wheels;
-- ET can be selected independently;
-- already selected wheel characteristics may later be used as optional filtering if that materially improves the list, but this is not required for the base UX.
+- frontend can search the complete current catalogue (310 values in the 2026-09-30 audit);
+- ET remains selectable independently and must not be blocked until Diameter / Width / PCD / DIA are filled;
+- when Diameter, Width, PCD and/or vehicle region are already known, use the supported Wheel Size filters to produce a smaller contextual recommendation set while retaining access to the global searchable catalogue;
+- manual `Другое значение` remains available for real commercial/aftermarket ET values outside the recommendation catalogue;
+- do not use the API row `total` field for popularity ranking until its business semantics are explicitly verified.
 
 The exact cache policy must respect the Wheel Size API plan and Terms of Usage. Do not assume that every API endpoint may be persistently mirrored.
 
@@ -250,10 +252,10 @@ Use the existing Dream Wheels Wheel Size API configuration/credentials. Do not p
 
 ET implementation is correct only if:
 
-- ET37.5 / ET31.5 / ET48.1-style values survive end-to-end without rounding;
+- values with one, two and three decimal places (for example ET37.5, ET6.35 and ET33.275) survive end-to-end without rounding;
 - resolver proposals can contain decimals;
 - recommended values are selectable;
-- manual decimal fallback exists;
+- manual decimal fallback exists and does not enforce a fixed 0.1 mm step;
 - saved canonical ET preserves precision;
 - staggered front/rear ET values preserve precision independently;
 - conflict UI compares exact values;
@@ -313,7 +315,7 @@ The [official OpenAPI operation](https://api.wheel-size.com/v2/openapi.json) lis
 
 A global catalogue is small enough (310 options) to support ET selection independently of other wheel fields, as the current UX contract requires. Contextual filtering can later prioritize relevant recommendations when vehicle or rim characteristics are known. The API catalogue remains a recommendation source, not a whitelist for aftermarket ET. Any backend cache policy must still be checked against the active Wheel Size plan and [Terms of Usage](https://developer.wheel-size.com/api-tos).
 
-**Precision finding:** `35` of the `310` distinct values are not multiples of `0.1 mm`; examples include `-6.35`, `33.275`, `40.475`, and `130.81`. The maximum observed precision is three decimal places. A strict `0.1 mm` step or one-decimal rounding would reject or alter valid catalogue values. Before implementing manual entry, reconcile the earlier practical `0.1 mm` step with exact-value preservation; a permissive decimal input (for example `step="any"` with explicit range validation) would cover the observed values.
+**Precision finding:** `35` of the `310` distinct values are not multiples of `0.1 mm`; examples include `-6.35`, `33.275`, `40.475`, and `130.81`. The maximum observed precision is three decimal places. Therefore the earlier `0.1 mm` step is superseded: manual entry must accept the required decimal precision without rounding (for example `step="any"` with explicit `-150…+150 mm` range validation).
 
 ### Machine-readable summary
 
