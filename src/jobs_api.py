@@ -1712,11 +1712,9 @@ def _fitment_next_action_from_row(row) -> FitmentNextActionResponse:
         return FitmentNextActionResponse(kind="select_vehicle_variant")
     front_state = _rim_setup_state_from_states(_rim_field_states_from_row(row, "front_rim"))
     rear_state = _rim_setup_state_from_states(_rim_field_states_from_row(row, "rear_rim"))
-    if front_state == "empty" or (bool(row.get("is_staggered")) and rear_state == "empty"):
+    if front_state != "confirmed_ready":
         return FitmentNextActionResponse(kind="complete_rim_specs")
-    if front_state == "complete_unconfirmed" or (
-        bool(row.get("is_staggered")) and rear_state == "complete_unconfirmed"
-    ):
+    if bool(row.get("is_staggered")) and rear_state != "confirmed_ready":
         return FitmentNextActionResponse(kind="complete_rim_specs")
     return FitmentNextActionResponse(kind="run_standard_check")
 
