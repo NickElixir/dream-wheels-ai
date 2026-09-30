@@ -2140,13 +2140,21 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     if (!draft) return "none";
     discardFitmentTransientDraft();
     if (!fitmentDraftMatchesOverview(draft, overview)) {
-        state.fitmentRestoreConflict = {
-            form: fitmentSafeConflictDraft(draft.form, overview),
-            activeStep: draft.activeStep,
-            activeSection: draft.activeSection,
-            vehicleConflict: !fitmentDraftVehicleMatchesOverview(draft, overview),
+        // A draft is valid only for the exact server revision it was created from.
+        // If the authoritative context changed, discard the stale draft and keep
+        // the freshly loaded canonical values instead of rebasing old input onto it.
+        state.fitmentRestoreConflict = null;
+        state.fitmentForm = fitmentFormFromOverview(overview);
+        state.fitmentFormState = {
+            status: "clean",
+            validation: "valid",
+            baseline: cloneFitmentForm(state.fitmentForm),
+            missingFields: [],
+            invalidFields: [],
         };
-        return "conflict";
+        state.fitmentVehicleDirty = false;
+        state.fitmentVehicleMarketEdited = false;
+        return "replaced";
     }
     const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
     const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
