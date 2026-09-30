@@ -41,6 +41,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     resetFitmentCatalogue() {},
     revalidateFitmentCatalogueChain: async () => {},
     markVehicleFieldEdited() {},
+    markRimFieldEdited() {},
     markFitmentDirty() {},
     validateFitmentForm() {},
     renderFitment() {},
@@ -65,10 +66,25 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   assert.doesNotMatch(markup, /data-fitment-field="vehicle.body"/);
   assert.doesNotMatch(markup, /data-fitment-field="vehicle.modification"/);
 
+  context.setVnextFitmentField("rim.offset_et_mm", "35,125");
+  assert.equal(state.fitmentForm.rim.offset_et_mm, "35,125");
+
   state.fitmentForm.vehicle.body = "";
   assert.doesNotMatch(fitmentMarkup(context.vnextFitmentSnapshot()), /data-fitment-field="vehicle.body"/);
   state.fitmentForm.vehicle = null;
   assert.equal(context.vnextFitmentSnapshot().vehicleForm, saved);
+});
+
+test("Wheel decimal controls preserve comma input until exact numeric serialization", () => {
+  const markup = fitmentMarkup({ overview: {}, rimEditing: true, rim: { offset_et_mm: "35,125" } });
+  assert.match(markup, /type="text" inputmode="decimal" data-fitment-field="rim\.offset_et_mm" value="35,125"/);
+  const app = read("app.js");
+  const normalizer = app.slice(app.indexOf("function normalizeFitmentNumber("), app.indexOf("function formatFitmentNumber("));
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(`${normalizer}\nthis.normalize = normalizeFitmentNumber`, context);
+  assert.equal(context.normalize("35,125"), 35.125);
+  assert.equal(context.normalize("35.125"), 35.125);
 });
 
 test("manual Vehicle catalogue shows Market only when the provider requires a choice", () => {
@@ -311,10 +327,15 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   const success = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: false, status: "Параметры найдены — проверьте значения", statusTone: "success" } });
   assert.match(success, /Параметры найдены — проверьте значения/);
 
-  const variants = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ brand: "BBS", model: "CI-R", sku: "A1" }] } });
-  assert.match(variants, /Найдено несколько вариантов/);
-  assert.match(variants, /BBS — CI-R — A1/);
+  const variants = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ brand: "BBS", model: "CI-R", sku: "A1", values: { wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.25 } }] } });
+  assert.match(variants, /Выберите вариант диска/);
+  assert.match(variants, /BBS CI-R/);
+  assert.match(variants, /SKU: A1/);
+  assert.match(variants, /19″[^]*?8.5J[^]*?5×112[^]*?66.6 мм[^]*?35.25 мм/);
+  assert.match(variants, /Выбрать/);
   assert.match(variants, /data-fitment-action="rim-variant"/);
+  const missingSpecs = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ sku: "A2", values: {} }] } });
+  assert.equal((missingSpecs.match(/Не определено/g) || []).length, 5);
 
   const conflict = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", conflicts: [{ field: "offset_et_mm", current: 40, suggested: 45 }] } });
   assert.match(conflict, /Сейчас: 40 — Найдено: 45/);

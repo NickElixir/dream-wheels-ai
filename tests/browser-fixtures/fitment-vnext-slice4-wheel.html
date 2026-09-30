@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fitment VNext Wheel QA</title>
+  <link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/shell.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+  <style>
+    body { margin: 0; background: var(--vnext-canvas); color: var(--vnext-text); font-family: "IBM Plex Sans", sans-serif; }
+    .qa-wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 100px; }
+  </style>
+</head>
+<body>
+  <main class="qa-wrap"><div id="fitment"></div></main>
+  <script type="module">
+    import { fitmentMarkup } from "../../webapp/vnext/views/fitment.js";
+    document.getElementById("fitment").innerHTML = fitmentMarkup({
+      overview: { vehicle_state: "unconfirmed", rim_setup_state: "partial" },
+      nextAction: "complete_vehicle_details", rimEditing: true,
+      rim: { brand: "BBS", model: "CI-R", offset_et_mm: "35,125" },
+      frontRimSetupState: "partial", setupMode: "uniform",
+      resolver: {
+        open: true, url: "https://shop.example.test/wheel",
+        variants: [
+          { sku: "A1", brand: "BBS", model: "CI-R", values: { wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.125 } },
+          { sku: "A2", brand: "BBS", model: "CI-R", values: { wheel_diameter_in: 20, bolt_count: 5, pcd_mm: 112 } },
+        ],
+      },
+    });
+  </script>
+</body>
+</html>
