@@ -255,6 +255,12 @@ Core technical fields may include:
 - DIA / centre bore;
 - front/rear axle data when staggered.
 
+ET-specific numeric precision, Wheel Size catalogue sourcing, recommendation/manual fallback behavior, evidence and the pending live catalogue-cardinality audit are defined in:
+
+- `docs/fitment/et-selection-contract-and-evidence.md`
+
+That document supersedes any integer-only ET UI assumption. Do not round fractional ET values.
+
 Do not expose backend/parser candidate collections as a standalone section.
 
 ### Product URL resolver
