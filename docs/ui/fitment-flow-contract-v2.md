@@ -109,9 +109,11 @@ Primary chain:
 - Марка
 - Модель
 - Год
-- Рынок
+- Версия для рынка — only when the provider resolves more than one market for the selected make/model/year.
 
-Additional fields may remain available when supported by the current runtime, but must not be presented as mandatory unless the server/runtime actually requires them.
+If Wheel Size resolves exactly one market, the client accepts that provider-backed value without showing a permanent Market field. If more than one market is returned, the user selects one from the returned catalogue options.
+
+`Кузов`, `Поколение` and `Модификация` are not free-form base identity fields. They belong to the exact provider-backed vehicle variant selected in State 2. Manual recovery uses the same catalogue chain and must not create arbitrary identity values while provider options are available.
 
 ### Primary action
 
@@ -127,11 +129,15 @@ save vehicle details
 
 The client must not infer the next step independently.
 
-### Recovery
+### Manual recovery
 
-`Не мой автомобиль — указать вручную`
+`Указать вручную` opens the same provider-backed chain:
 
-or the approved manual vehicle recovery affordance.
+```text
+Марка → Модель → Год → при необходимости Версия для рынка
+```
+
+The selected base identity is saved before exact-variant lookup so that the lookup is bound to the returned `vehicle_revision`. Manual recovery does not bypass the exact-variant confirmation step.
 
 ---
 
@@ -186,9 +192,9 @@ Use the existing explicit variant-apply runtime and its revision boundary.
 
 ### Single variant
 
-If the backend/provider returns a single authoritative variant and the existing runtime auto-confirms it, do not force the user to select one row from a one-item list.
+If the backend/provider returns a single authoritative variant, preselect that row visually but still require the explicit user action `Подтвердить комплектацию`.
 
-Show the confirmed exact vehicle variant and progress according to the new overview.
+A provider lookup alone does not make the variant canonical. The confirmed exact vehicle changes only after the explicit apply/confirmation boundary.
 
 ### No match
 
