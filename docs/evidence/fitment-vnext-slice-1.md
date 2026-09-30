@@ -14,6 +14,7 @@ Base: `staging` after PR #225. Implementation dependency: Slice 0 PR #226.
 
 - `node --test tests/test_fitment_vnext_composition.mjs`: passed.
 - Existing Fitment frontend contract tests: 63 passed.
+- `npm test` in `webapp/`: 175 passed after updating legacy layout assertions to the frozen v13 composition.
 - Browser fixture: `tests/browser-fixtures/fitment-vnext-slice1.html`, using the production VNext view module and CSS.
 - Chromium layout checks at 1440, 1024, 768, and 390 target widths: no page horizontal overflow; two cards at desktop widths, stacked at narrow widths. Wheel editor opens through branch selection; result is above Standard Fitment; Create Image appears once; no browser console errors.
 - The browser fixture uses synthetic data. Authenticated staging E2E remains unverified without a disposable Fitment context.

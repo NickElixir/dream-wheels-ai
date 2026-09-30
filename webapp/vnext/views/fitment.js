@@ -193,7 +193,7 @@ export function fitmentMarkup(model = {}) {
         ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title" class="vnext-fitment__visually-hidden">Автомобиль</h2>'}
         <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle")}</div>
         <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: true, disabled: true })}</div>
-        <p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>${model.vehicleVariantName ? `<p class="vnext-fitment__object-detail">${esc(model.vehicleVariantName)}</p>` : ""}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${vehicleError}
+        <p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>${model.vehicleVariantName ? `<p class="vnext-fitment__object-detail"><span>Комплектация</span> ${esc(model.vehicleVariantName)}</p>` : ""}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
         ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
@@ -203,7 +203,7 @@ export function fitmentMarkup(model = {}) {
       </section>
     </div>
     <div class="vnext-fitment__active-editor">${variantChooser(model)}${vehicleEditor(model, vehicle)}${wheelEditor(model, rim)}</div>
-    ${model.check ? verdict(model) : ""}
+    ${model.check || ["queued", "processing", "failed"].includes(model.executionStatus) ? verdict(model) : ""}
     ${checkError}
     ${evidence(model)}
     ${comparisonTable(model)}
