@@ -53,6 +53,15 @@ class CheckCreateRequest(BaseModel):
     mode: Literal["standard", "detailed"] = "standard"
 
 
+class CheckFieldResult(BaseModel):
+    field: Literal["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm", "offset_et_mm"]
+    axle: Literal["front", "rear"]
+    vehicle_value: str | None = None
+    rim_value: str | None = None
+    status: Literal["pass", "conditional", "fail", "unknown"] = "unknown"
+    code: str | None = None
+
+
 class CheckResponse(BaseModel):
     id: str
     mode: Literal["standard"] = "standard"
@@ -65,6 +74,7 @@ class CheckResponse(BaseModel):
     advisories: list[dict] = Field(default_factory=list)
     diagnostics: list[dict] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
+    field_results: list[CheckFieldResult] = Field(default_factory=list)
     versions: dict = Field(default_factory=dict)
     error: dict | None = None
     is_current: bool = False
@@ -803,6 +813,101 @@ async def execute_fitment_check(check_id: str) -> None:
         )
 
 
+def _comparison_fields(row: dict, rules: list[dict]) -> list[CheckFieldResult]:
+    """Present saved evidence only; do not evaluate or read current canonical data."""
+    if row.get("execution_status") != "completed":
+        return []
+    snapshot = _json_object(row.get("input_snapshot"), field_name="comparison input_snapshot")
+    evaluation = _json_object(
+        row.get("evaluation_snapshot"), field_name="comparison evaluation_snapshot"
+    )
+    setup = snapshot.get("rim_setup") or {}
+    profile = evaluation.get("normalized_profile") or {}
+    if not isinstance(setup, dict) or not isinstance(profile, dict):
+        return []
+
+    def number(value: object) -> str | None:
+        if not isinstance(value, int | float):
+            return None
+        text = str(value)
+        return text.removesuffix(".0")
+
+    def pattern(count: object, pcd: object) -> str | None:
+        left, right = number(count), number(pcd)
+        return f"{left}×{right}" if left and right else None
+
+    fields = (
+        ("wheel_diameter_in", "size_offset", "rim_diameter"),
+        ("wheel_width_j", "size_offset", "rim_width"),
+        ("pcd", "bolt_pattern", ""),
+        ("center_bore_mm", "center_bore", ""),
+        ("offset_et_mm", "size_offset", ""),
+    )
+    output = []
+    for axle in ("front", "rear"):
+        rim = setup.get(axle) or (setup.get("front") if setup.get("rear") is None else {}) or {}
+        if not isinstance(rim, dict):
+            rim = {}
+        values = {
+            name: value.get("value") if isinstance(value, dict) else value
+            for name, value in rim.items()
+        }
+        allowed = [item for item in profile.get("allowed_wheels", []) if item.get("axle") == axle]
+        for field, rule_name, reference_name in fields:
+            rule = next(
+                (
+                    item
+                    for item in rules
+                    if item.get("rule") == rule_name and item.get("axle") == axle
+                ),
+                {},
+            )
+            status = {
+                "compatible": "pass",
+                "compatible_with_conditions": "conditional",
+                "incompatible": "fail",
+            }.get(rule.get("status"), "unknown")
+            rim_value = (
+                pattern(values.get("bolt_count"), values.get("pcd_mm"))
+                if field == "pcd"
+                else number(values.get(field))
+            )
+            if field == "pcd":
+                vehicle_value = pattern(profile.get("bolt_count"), profile.get("pcd_mm"))
+            elif reference_name:
+                choices = list(dict.fromkeys(number(item.get(reference_name)) for item in allowed))
+                vehicle_value = " / ".join(value for value in choices if value) or None
+            elif field == "offset_et_mm":
+                refs = [
+                    item
+                    for item in profile.get("offset_references", [])
+                    if item.get("axle") == axle
+                    and item.get("rim_diameter_in") == values.get("wheel_diameter_in")
+                    and item.get("rim_width_j") == values.get("wheel_width_j")
+                ]
+                ref = next(
+                    (item for item in refs if item.get("evidence_class") == "stock"),
+                    refs[0] if refs else {},
+                )
+                lower, upper = number(ref.get("et_min_mm")), number(ref.get("et_max_mm"))
+                vehicle_value = (
+                    (lower if lower == upper else f"{lower}–{upper}") if lower and upper else None
+                )
+            else:
+                vehicle_value = number(profile.get(field))
+            output.append(
+                CheckFieldResult(
+                    field=field,
+                    axle=axle,
+                    vehicle_value=vehicle_value,
+                    rim_value=rim_value,
+                    status=status,
+                    code=rule.get("reason_code"),
+                )
+            )
+    return output
+
+
 def _response(row, *, is_current: bool | None = None) -> CheckResponse:
     result = _json_object(row["result"], field_name="fitment check result")
     error = _json_object(row["error"], field_name="fitment check error") or None
@@ -834,6 +939,7 @@ def _response(row, *, is_current: bool | None = None) -> CheckResponse:
         advisories=result.get("advisories") or [],
         diagnostics=result.get("diagnostics") or [],
         missing_fields=result.get("missing_fields") or [],
+        field_results=_comparison_fields(row, rules),
         versions={
             "provider": "wheel_size",
             "engine": row["engine_version"],

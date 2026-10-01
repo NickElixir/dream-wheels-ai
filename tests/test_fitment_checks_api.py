@@ -124,6 +124,8 @@ class FakeConn:
                 # asyncpg can return JSONB columns as strings; tests must use
                 # the production representation rather than convenient dicts.
                 "result": args[9],
+                "input_snapshot": args[8],
+                "evaluation_snapshot": args[15],
                 "error": args[10],
                 "input_hash": args[5],
                 "engine_version": args[12],
@@ -606,3 +608,82 @@ def test_currentness_lazily_recomputes_when_only_rules_version_changed(monkeypat
     assert refreshed["verdict"] == "compatible"
     assert json.loads(refreshed["result"])["blocking_issues"] == []
     assert json.loads(refreshed["input_snapshot"])["context_identity"]["rules_version"] == "v3"
+
+
+def test_comparison_uses_saved_axles_rules_and_exact_decimals():
+    row = {
+        "execution_status": "completed",
+        "input_snapshot": json.dumps(
+            {
+                "rim_setup": {
+                    "front": {
+                        "offset_et_mm": {"value": 33.275},
+                        "wheel_diameter_in": {"value": 18},
+                        "wheel_width_j": {"value": 8},
+                        "bolt_count": {"value": 5},
+                        "pcd_mm": {"value": 112},
+                    },
+                    "rear": {
+                        "offset_et_mm": {"value": 42.125},
+                        "wheel_diameter_in": {"value": 20},
+                        "wheel_width_j": {"value": 9},
+                    },
+                }
+            }
+        ),
+        "evaluation_snapshot": {
+            "normalized_profile": {
+                "bolt_count": 5,
+                "pcd_mm": 112,
+                "center_bore_mm": 66.6,
+                "allowed_wheels": [
+                    {"axle": "front", "rim_diameter": 18, "rim_width": 8},
+                    {"axle": "rear", "rim_diameter": 20, "rim_width": 9},
+                ],
+                "offset_references": [
+                    {
+                        "axle": "front",
+                        "rim_diameter_in": 18,
+                        "rim_width_j": 8,
+                        "et_min_mm": 33.275,
+                        "et_max_mm": 33.275,
+                    }
+                ],
+            }
+        },
+    }
+    rules = [
+        {
+            "rule": "size_offset",
+            "axle": "front",
+            "status": "compatible",
+            "reason_code": "matches_approved_fitment",
+        }
+    ]
+    fields = fitment_checks_api._comparison_fields(row, rules)
+    assert [item.field for item in fields[:5]] == [
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "pcd",
+        "center_bore_mm",
+        "offset_et_mm",
+    ]
+    assert fields[4].rim_value == fields[4].vehicle_value == "33.275"
+    assert fields[9].rim_value == "42.125"
+    assert fields[9].vehicle_value is None
+    assert fields[9].status == "unknown"
+    assert fields[2].rim_value == fields[2].vehicle_value == "5×112"
+    assert fields[0].status == "pass"
+    row["is_current"] = False
+    assert fitment_checks_api._comparison_fields(row, rules) == fields
+    row["execution_status"] = "failed"
+    assert fitment_checks_api._comparison_fields(row, rules) == []
+
+
+def test_completed_legacy_check_has_neutral_missing_comparison_evidence():
+    fields = fitment_checks_api._comparison_fields({"execution_status": "completed"}, [])
+    assert len(fields) == 10
+    assert all(
+        item.status == "unknown" and item.vehicle_value is None and item.rim_value is None
+        for item in fields
+    )
