@@ -1,0 +1,120 @@
+{
+  "cases": [
+    {
+      "name": "runtime-et-unresolved",
+      "chipLabels": [
+        {
+          "label": "Текущее значение ET: 35,125",
+          "pressed": "false"
+        },
+        {
+          "label": "Значение ET из карточки товара: 33,275",
+          "pressed": "false"
+        }
+      ],
+      "documentHeight": 1737,
+      "focus": null,
+      "height": 1000,
+      "overflow": false,
+      "progress": "Выберите значение перед сохранением.",
+      "save": false,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Требуется выбрать значение",
+      "width": 1440,
+      "saveVisible": true
+    },
+    {
+      "name": "runtime-ready-open-et-use",
+      "chipLabels": [],
+      "documentHeight": 1684,
+      "focus": "rim.offset_et_mm",
+      "height": 1000,
+      "overflow": false,
+      "progress": "Все параметры подтверждены",
+      "save": true,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Готово к сохранению",
+      "width": 1440,
+      "saveVisible": true
+    },
+    {
+      "name": "runtime-unsaved-closed",
+      "chipLabels": [],
+      "documentHeight": 1000,
+      "focus": null,
+      "height": 1000,
+      "overflow": false,
+      "save": null,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Есть несохранённые изменения",
+      "width": 1440,
+      "saveVisible": false
+    },
+    {
+      "name": "runtime-et-unresolved",
+      "chipLabels": [
+        {
+          "label": "Текущее значение ET: 35,125",
+          "pressed": "false"
+        },
+        {
+          "label": "Значение ET из карточки товара: 33,275",
+          "pressed": "false"
+        }
+      ],
+      "documentHeight": 844,
+      "focus": "rim.offset_et_mm",
+      "height": 844,
+      "overflow": false,
+      "progress": "Выберите значение перед сохранением.",
+      "save": false,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Требуется выбрать значение",
+      "width": 390,
+      "saveVisible": true
+    },
+    {
+      "name": "runtime-et-keep-focus",
+      "chipLabels": [],
+      "documentHeight": 844,
+      "focus": "rim.offset_et_mm",
+      "height": 844,
+      "overflow": false,
+      "progress": "Все параметры подтверждены",
+      "save": true,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Готово к сохранению",
+      "width": 390,
+      "saveVisible": true
+    },
+    {
+      "name": "runtime-dia-use-keyboard",
+      "chipLabels": [],
+      "documentHeight": 844,
+      "focus": "rim.center_bore_mm",
+      "height": 844,
+      "overflow": false,
+      "progress": "Все параметры подтверждены",
+      "save": true,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Готово к сохранению",
+      "width": 390,
+      "saveVisible": true
+    },
+    {
+      "name": "runtime-unsaved-closed",
+      "chipLabels": [],
+      "documentHeight": 844,
+      "focus": null,
+      "height": 844,
+      "overflow": false,
+      "save": null,
+      "standard": "Автомобиль\n—\nКолесный диск\n—",
+      "status": "Есть несохранённые изменения",
+      "width": 390,
+      "saveVisible": false
+    }
+  ],
+  "canonicalUnchanged": true,
+  "environment": "Real app.js + VNext renderer/shell; controlled local API and test-only state seeding; no staging calls"
+}

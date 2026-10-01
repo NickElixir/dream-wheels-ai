@@ -1,0 +1,117 @@
+[
+  {
+    "file": "1440-all-confirmed.jpg",
+    "bytes": 104217,
+    "sha256": "961cf46dd9b8158dca4516d2bb6a2d52f3056ccdf61ccd6eba36027852e3f08b"
+  },
+  {
+    "file": "1440-both-ready.jpg",
+    "bytes": 82826,
+    "sha256": "e7c4ee0c035742f0421ebf3fd02bb2c80f3d58032862939202f2830808ffa4f6"
+  },
+  {
+    "file": "1440-compatible.jpg",
+    "bytes": 116323,
+    "sha256": "d6bbd57c8a8c84806cd53dd07b8f2da352cf366c033be4f022225c1e84254962"
+  },
+  {
+    "file": "1440-manual-conflict.jpg",
+    "bytes": 109609,
+    "sha256": "717e10e5557818befcccd82e08a3f5dd7a66a24128c6a74ec35b37e5e37b7b5c"
+  },
+  {
+    "file": "1440-multi-sku.jpg",
+    "bytes": 102377,
+    "sha256": "1160efaa9f9d8a0549d6c40b07f6fcee942e1307e00944fefb580ad12805ed35"
+  },
+  {
+    "file": "1440-staggered.jpg",
+    "bytes": 135661,
+    "sha256": "e5b233224c28a2e8868b0e29f2c96307fe2b2bcd6d15ef1904d7152af904b114"
+  },
+  {
+    "file": "1440-vehicle-multi-market.jpg",
+    "bytes": 92263,
+    "sha256": "21a52dddc5758ff9e08728936a888d0d2c5eed3f6418fe2c55d277428d1faf64"
+  },
+  {
+    "file": "390-all-confirmed.jpg",
+    "bytes": 79354,
+    "sha256": "a68df412278646957f41dd45494f0394db2a0b201de642440095e43cdc81a384"
+  },
+  {
+    "file": "390-both-ready.jpg",
+    "bytes": 60947,
+    "sha256": "f5c2fac18b18fcb084eb2f1b1668663b2942f75105eba0267d1a57b7781b82fa"
+  },
+  {
+    "file": "390-compatible.jpg",
+    "bytes": 84657,
+    "sha256": "599d4583fec029db4de07264e38cff603b737fdbb5657e55bb18434165af0875"
+  },
+  {
+    "file": "390-manual-conflict.jpg",
+    "bytes": 80817,
+    "sha256": "3bc8a4bc8c7f5f78ca9d29bdc1c5dca571c24fdb61e6a2ca0831508bf37982df"
+  },
+  {
+    "file": "390-multi-sku.jpg",
+    "bytes": 74885,
+    "sha256": "6f7b2f88b5d296b5c3f7d72c59607a857b9c3d1f0ca930da51327e18024a5ef5"
+  },
+  {
+    "file": "390-staggered.jpg",
+    "bytes": 109747,
+    "sha256": "275384b2f7098c2c34c07fafea5c082d44c4c8f9c8ee54b24bfbba315564459a"
+  },
+  {
+    "file": "390-vehicle-multi-market.jpg",
+    "bytes": 69301,
+    "sha256": "372c18022a3f9f2dc81df0a2fa5084da5a347be19518fe7b9b7f9f0f50b36cc0"
+  },
+  {
+    "file": "768-all-confirmed.jpg",
+    "bytes": 90628,
+    "sha256": "492ed5be12fa1cabb68a12ef9564f9993a651d353f0bc03ecb70c467f224d796"
+  },
+  {
+    "file": "768-both-ready.jpg",
+    "bytes": 68599,
+    "sha256": "6830bf9d78a16d36d5df325cb417ab4e024508d6d7cbe7f6f2a1432341616c69"
+  },
+  {
+    "file": "768-compatible.jpg",
+    "bytes": 103488,
+    "sha256": "528c8bce8db97bd759b102dcc2a53db051c2788750fa8bb82d2426d4bc6b669c"
+  },
+  {
+    "file": "768-manual-conflict.jpg",
+    "bytes": 90389,
+    "sha256": "c4e5a332bd105ce8a84c55aa433a2603eda01ed6c923aa633dd9fef199400b68"
+  },
+  {
+    "file": "768-multi-sku.jpg",
+    "bytes": 87440,
+    "sha256": "a9ac0cf9f064a0159a26ce9fe41ee13e0a6d2451d1f4e6482737d96a26160dfd"
+  },
+  {
+    "file": "768-staggered.jpg",
+    "bytes": 116664,
+    "sha256": "5b09aa73dbf2009aca9eae66aec0b8c41374008a8cb4e602867b4383cc96ef44"
+  },
+  {
+    "file": "768-vehicle-multi-market.jpg",
+    "bytes": 78394,
+    "sha256": "15faf1fcda6930d30bf0a0c6c17c768d2e3520943949a0a87f268f3b8a7a3c9e"
+  },
+  {
+    "file": "qa-locale.json",
+    "bytes": 1043,
+    "sha256": "e3ff48125dbcb730674ecc9457deec0d2246a5a819170006467f255bd5e8826e"
+  },
+  {
+    "file": "qa-metrics.json",
+    "bytes": 8613,
+    "sha256": "753fa6315eb7378921ed3599f2fc20eab5e4c1567857b002811b43728b6fbb78"
+  }
+]

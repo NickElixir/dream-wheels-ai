@@ -1,0 +1,20 @@
+[
+  {
+    "name": "staggered-result-identical",
+    "height": 1615,
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ]
+  },
+  {
+    "name": "staggered-result-different",
+    "height": 1925,
+    "tables": 2,
+    "viewport": [
+      1440,
+      1000
+    ]
+  }
+]
