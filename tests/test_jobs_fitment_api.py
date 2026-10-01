@@ -2183,6 +2183,34 @@ def test_single_auto_confirm_is_idempotent_and_no_match_clears_current_selection
     assert overview["selected_modification"] is None
 
 
+def test_single_variant_opt_in_waits_for_explicit_revision_bound_apply(monkeypatch):
+    variant = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_catalogued_vehicle_row())
+
+    async def lookup(_self, **_kwargs):
+        return [variant]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = f"/jobs/{conn.row['job_id']}/fitment"
+    response = client.post(f"{path}/vehicle-variants?require_confirmation=true")
+    assert response.status_code == 200
+    assert response.json()["outcome"] == "single"
+    assert response.json()["requires_confirmation"] is True
+    assert response.json()["variants"][0]["modification_slug"] == "v6"
+    overview = client.get(path).json()
+    assert overview["modification_state"] == "suggested"
+    assert overview["selected_modification"] is None
+    assert overview["next_action"]["kind"] == "select_vehicle_variant"
+    applied = client.post(
+        f"{path}/vehicle-variants/apply",
+        json={"expected_vehicle_revision": 10, **variant},
+    )
+    assert applied.status_code == 200
+    assert applied.json()["modification_state"] == "confirmed"
+
+
 def test_modification_stale_revision_and_provider_failure_never_resurrect_selection(monkeypatch):
     single = [_provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")]
     old_row = _catalogued_vehicle_row()

@@ -443,6 +443,7 @@ class VehicleVariantsResponse(BaseModel):
     total_count: int
     has_more: bool = False
     current_selection: FitmentSelectedModificationResponse | None = None
+    requires_confirmation: bool = False
 
 
 class VehicleCatalogueOptionResponse(BaseModel):
@@ -3357,6 +3358,7 @@ async def _persist_lookup_outcome(
     expected_vehicle_revision: int,
     outcome: Literal["no_match", "single", "multiple"],
     variants: list[dict[str, str]],
+    require_confirmation: bool = False,
 ) -> None:
     """Persist only the authoritative state implied by an exact current lookup."""
     async with pool.acquire() as conn:
@@ -3375,7 +3377,8 @@ async def _persist_lookup_outcome(
             target_modification = row["vehicle_modification"]
             target_body = row["vehicle_body"]
 
-            if outcome == "single":
+            auto_confirm = outcome == "single" and not require_confirmation
+            if auto_confirm:
                 selected = _canonical_selected_modification(variants[0])
                 if selected is None:
                     raise HTTPException(status_code=422, detail={"code": "candidate_not_current"})
@@ -3392,7 +3395,7 @@ async def _persist_lookup_outcome(
                 target_modification = selected["modification"]
                 target_body = selected["body"] or None
                 event_type = "modification_auto_confirmed"
-            elif outcome == "multiple":
+            elif outcome in {"single", "multiple"}:
                 target_mapping = {
                     **base_mapping,
                     "modification_state": "suggested",
@@ -3439,8 +3442,8 @@ async def _persist_lookup_outcome(
                 vehicle_identity_id=row["vehicle_identity_id"],
                 rim_spec_id=row["front_rim_spec_id"],
                 event_type=event_type,
-                actor_type="system" if outcome == "single" else "user",
-                actor_user_id=user_id if outcome == "multiple" else None,
+                actor_type="system" if auto_confirm else "user",
+                actor_user_id=None if auto_confirm else user_id,
                 vehicle_revision_before=expected_vehicle_revision,
                 vehicle_revision_after=expected_vehicle_revision,
                 rim_revision_before=row["rim_revision"],
@@ -3458,6 +3461,7 @@ async def _persist_lookup_outcome(
 @router.post("/{job_id}/fitment/vehicle-variants", response_model=VehicleVariantsResponse)
 async def find_fitment_vehicle_variants(
     job_id: str,
+    require_confirmation: Annotated[bool, Query()] = False,
     init_data: Annotated[str | None, Query()] = None,
     telegram_user_id: Annotated[int | None, Query()] = None,
     authorization: Annotated[str | None, Header()] = None,
@@ -3497,12 +3501,14 @@ async def find_fitment_vehicle_variants(
         expected_vehicle_revision=int(row["vehicle_revision"]),
         outcome=outcome,
         variants=variants,
+        require_confirmation=require_confirmation,
     )
     return VehicleVariantsResponse(
         outcome=outcome,
         vehicle_revision=int(row["vehicle_revision"]),
         variants=[VehicleVariantResponse(**variant) for variant in variants],
         total_count=count,
+        requires_confirmation=bool(count and (require_confirmation or count > 1)),
     )
 
 

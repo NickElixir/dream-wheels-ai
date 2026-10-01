@@ -459,3 +459,13 @@ instead of authenticated Fitment routes.
   V1 product specification;
 - advanced retry/backoff policy and historical stale-check retention policy;
 - multi-provider arbitration.
+
+### VNext explicit Vehicle variant confirmation (additive)
+
+`POST /jobs/{job_id}/fitment/vehicle-variants?require_confirmation=true`
+keeps any nonempty exact candidate result, including `outcome=single`, in
+`modification_state=suggested` until revision-bound `/vehicle-variants/apply`.
+The response adds `requires_confirmation`; `next_action` stays
+`select_vehicle_variant`. Default calls retain the existing single automatic
+confirmation semantics. Ownership, candidate-currentness and expected Vehicle
+revision checks remain authoritative.
