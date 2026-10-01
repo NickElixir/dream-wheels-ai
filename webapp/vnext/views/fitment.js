@@ -5,7 +5,7 @@ const button = (label, action, { primary = false, disabled = false, value = "" }
 const verdictLabels = {
   compatible: "Подходит",
   compatible_with_conditions: "Подходит с условиями",
-  unknown: "Недостаточно данных",
+  unknown: "Недостаточно данных для проверки",
   incompatible: "Не подходит",
 };
 
@@ -50,22 +50,33 @@ function fieldWithCandidates(model, label, path, value, options = {}) {
   return `<div class="vnext-fitment__field-wrap">${field(label, path, value, options)}${suggestions}${fieldConflict(model, path)}</div>`;
 }
 
-function parameters(model) {
-  return (model.fieldEvidence || []).map((item) => `<div class="vnext-fitment__parameter"><span data-label="Параметр">${esc(item.name)}</span><span data-label="Автомобиль">${item.vehicleValue == null ? "Нет данных" : esc(item.vehicleValue)}</span><span data-label="Колесный диск">${item.rimValue == null ? "Нет данных" : esc(item.rimValue)}</span><span data-label="Результат">${esc(item.resultLabel || "Нет данных")}</span></div>`).join("");
+const comparisonFields = [
+  ["wheel_diameter_in", "Диаметр", "″"], ["wheel_width_j", "Ширина", "J"],
+  ["pcd", "PCD", ""], ["center_bore_mm", "DIA", " мм"], ["offset_et_mm", "ET", " мм"],
+];
+
+function parameters(model, rows) {
+  const informational = model.check?.verdict === "unknown";
+  return comparisonFields.map(([field, name, unit]) => {
+    const item = rows.find(row => row.field === field || row.name === name) || {};
+    const value = raw => raw == null ? "Нет данных" : esc(String(raw).replace(/(?<=\d)\.(?=\d)/g, ",") + unit);
+    const result = informational ? "Не определено" : item.resultLabel || "Нет данных";
+    return `<tr tabindex="0"><th scope="row">${name}</th><td>${value(item.vehicleValue)}</td><td>${value(item.rimValue)}</td><td>${esc(result)}</td></tr>`;
+  }).join("");
 }
 
 function verdict(model) {
   const status = model.executionStatus;
   if (status === "failed") {
     const message = model.executionError || model.resultCopy || model.checkError || model.error;
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Не удалось выполнить проверку</h2>${message ? `<p>${esc(message)}</p>` : ""}${button("Изменить параметры", "edit-rim")}</section>`;
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Не удалось выполнить проверку</h2>${message ? `<p>${esc(message)}</p>` : ""}${model.rimEditing || model.vehicleEditing ? "" : button("Изменить параметры", "edit-rim")}</section>`;
   }
   if (status === "queued" || status === "processing" || model.checking) return `<section class="vnext-fitment__verdict"><p class="vnext-eyebrow">Техническая проверка</p>${loadingStatus("Проверяем совместимость…")}<p>${esc(model.vehicleTitle)} — ${esc(model.rimTitle)}</p>${model.checkError ? button("Обновить статус", "reload") : ""}</section>`;
   const check = model.check;
   if (check?.execution_status === "completed") {
     const stale = check.is_current === false;
     const verdictLabel = verdictLabels[check.verdict] || "";
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>Данные автомобиля или колесного диска изменились.</p>` : ""}${model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>Данные автомобиля или колесного диска изменились.</p>` : ""}${check.verdict === "unknown" ? '<p>В базе недостаточно технических данных, чтобы определить совместимость этого диска с автомобилем.</p>' : model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}${model.rimEditing || model.vehicleEditing ? "" : button("Изменить параметры", "edit-rim")}</section>`;
   }
   const copy = nextActionCopy[model.nextAction] || (model.loading ? "Загружаем данные…" : "Техническая проверка ещё не готова");
   return `<section class="vnext-fitment__verdict"${model.loading ? ' aria-busy="true"' : ""}><p class="vnext-eyebrow">Техническая проверка</p>${model.loading ? loadingStatus(copy) : `<h2>${esc(copy)}</h2>`}${model.checkError ? `<p role="alert">${esc(model.checkError)}</p>` : ""}</section>`;
@@ -96,8 +107,12 @@ function evidence(model) {
 function comparisonTable(model) {
   if (model.executionStatus === "failed" || model.check?.execution_status !== "completed") return "";
   const rows = model.fieldEvidence || [];
-  if (!rows.length) return `<section class="vnext-fitment__comparison"><div class="vnext-fitment__section-heading"><h2>Технические данные</h2></div><p>Нет дополнительных данных</p></section>`;
-  return `<section class="vnext-fitment__comparison"><div class="vnext-fitment__section-heading"><h2>Сравнение параметров</h2></div><div class="vnext-fitment__parameter vnext-fitment__parameter--head"><span>Параметр</span><span>Автомобиль</span><span>Колесный диск</span><span>Результат</span></div><div class="vnext-fitment__parameters">${parameters(model)}</div></section>`;
+  const front = rows.filter(row => row.axle !== "rear");
+  const rear = rows.filter(row => row.axle === "rear");
+  const comparable = items => items.map(({ axle, ...item }) => item);
+  const separateAxles = rear.length && JSON.stringify(comparable(front)) !== JSON.stringify(comparable(rear));
+  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">Параметр</th><th scope="col">Автомобиль</th><th scope="col">Колесный диск</th><th scope="col">Результат</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
+  return `<section class="vnext-fitment__comparison"><div class="vnext-fitment__section-heading"><h2>Сравнение параметров</h2></div>${table(front, separateAxles ? "Передняя ось" : "Параметры колёс")}${separateAxles ? table(rear, "Задняя ось") : ""}</section>`;
 }
 
 function preview(url, alt, { kind = "vehicle" } = {}) {

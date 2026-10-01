@@ -168,6 +168,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         renderFitment = () => { globalThis.__fitmentRenderedWorkspace = state.fitmentActiveSection; };
         loadFitmentVehicleCatalogue = () => {};
         ensureRequiredFitmentVariantLookup = () => {};
+        const realLoadFitmentCheckHistory = loadFitmentCheckHistory;
         loadFitmentCheckHistory = async () => {};
         loadRenderHistory = async () => {};
         refreshFitmentCheckCurrentness = async () => {};
@@ -190,6 +191,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
+            realLoadFitmentCheckHistory,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -347,6 +349,30 @@ test("Standard Check requires server progression and discards a response after n
     assert.equal(api.state.fitmentChecking, false);
     api.state.fitmentCheck = { execution_status: "queued" };
     assert.equal(api.fitmentMutationsLocked(), true, "poll transport failure must not unlock a pending snapshot");
+});
+
+test("history hydrates the current overview summary and ignores a late detail after navigation", async () => {
+    let release;
+    const detail = { id: "saved", execution_status: "completed", verdict: "compatible", field_results: [{ field: "offset_et_mm", rim_value: "33.275" }] };
+    const { api } = navigationApi({ routes: {
+        "GET /api/backend/fitment/checks": response(200, { checks: [{ id: "saved", execution_status: "completed", is_current: true }] }),
+        "GET /api/backend/fitment/checks/saved": () => new Promise(resolve => { release = resolve; }),
+    } });
+    seed(api, overviewFor(api, "run_standard_check"), "result");
+    api.state.fitmentCheck = { id: "saved", execution_status: "completed" };
+    const read = api.realLoadFitmentCheckHistory();
+    while (!release) await new Promise(resolve => setImmediate(resolve));
+    release(response(200, detail));
+    await read;
+    assert.equal(api.state.fitmentCheck.field_results[0].rim_value, "33.275");
+    release = null;
+    const late = api.realLoadFitmentCheckHistory();
+    while (!release) await new Promise(resolve => setImmediate(resolve));
+    api.state.fitmentJobId = "another-job";
+    api.state.fitmentCheck = null;
+    release(response(200, detail));
+    await late;
+    assert.equal(api.state.fitmentCheck, null);
 });
 
 function assertSection(api, section) {
