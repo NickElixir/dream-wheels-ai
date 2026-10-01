@@ -10127,16 +10127,22 @@ function vnextFitmentSnapshot() {
             status: state.fitmentSourceStatus || "",
             statusTone: state.fitmentSourceStatusTone || "neutral",
             open: Boolean(state.fitmentSourceOpen),
-            variants: (state.fitmentSourceVariants || []).map((variant) => ({ brand: variant.brand, model: variant.model, sku: variant.sku })),
+            variants: (state.fitmentSourceVariants || []).map((variant) => ({
+                brand: variant.values?.brand || variant.brand || "",
+                model: variant.values?.model || variant.model || "",
+                sku: variant.sku || "",
+                values: variant.values || {},
+            })),
             conflicts: state.fitmentSourceConflicts || [],
         },
     };
 }
 
 function setVnextFitmentField(path, value) {
-    const nextValue = ["rim.bolt_count", "rim.pcd_mm", "rim.wheel_diameter_in", "rim.wheel_width_j", "rim.center_bore_mm", "rim.offset_et_mm", "rear_rim.bolt_count", "rear_rim.pcd_mm", "rear_rim.wheel_diameter_in", "rear_rim.wheel_width_j", "rear_rim.center_bore_mm", "rear_rim.offset_et_mm"].includes(path)
-        ? (value === "" ? "" : Number(value))
-        : value;
+    // Keep the user's decimal spelling intact while editing. Conversion at the
+    // PATCH boundary accepts comma and dot without turning an intermediate
+    // value such as "35," into NaN (and then JSON null).
+    const nextValue = value;
     if (path === "vehicle.make") {
         rememberFitmentVehicleCatalogueChain();
         state.fitmentCatalogueParentChange = { makeChanged: nextValue !== state.fitmentForm.vehicle.make, modelChanged: false };
