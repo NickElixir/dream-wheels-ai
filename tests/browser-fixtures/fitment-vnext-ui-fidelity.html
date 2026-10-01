@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fitment VNext — bounded fidelity QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+<link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
+<link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+<style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font)}main{max-width:1120px;margin:auto;padding:24px 16px 80px}nav{display:flex;gap:12px;flex-wrap:wrap;color:var(--vnext-text-secondary);margin-bottom:16px}nav select{background:var(--vnext-surface);color:var(--vnext-text);border:1px solid var(--vnext-border);padding:8px;max-width:100%}</style>
+</head><body><main data-vnext-root><nav aria-label="QA controls"><label>Scenario <select id="scenario"></select></label><label>Locale <select id="locale"><option value="ru">RU</option><option value="en">EN</option></select></label></nav><div id="fitment"></div></main>
+<script type="module">
+import {createFitmentView,refreshFitmentView} from "../../webapp/vnext/views/fitment.js";
+const fields=["wheel_diameter_in","wheel_width_j","bolt_count","pcd_mm","center_bore_mm","offset_et_mm"];
+const wheel={brand:"BBS",model:"CI-R",sku:"SKU-A",wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:112,center_bore_mm:66.6,offset_et_mm:35.125};
+const rows=[
+{field:"wheel_diameter_in",vehicleValue:"18 / 20 / 22",rimValue:20,resultLabel:"Подходит",status:"pass"},
+{field:"wheel_width_j",vehicleValue:"8 / 9",rimValue:9,resultLabel:"Подходит",status:"pass"},
+{field:"pcd",vehicleValue:"5×112",rimValue:"5×112",resultLabel:"Совпадает",status:"pass"},
+{field:"center_bore_mm",vehicleValue:66.6,rimValue:66.6,resultLabel:"Совпадает",status:"pass"},
+{field:"offset_et_mm",vehicleValue:"30–45",rimValue:35.125,resultLabel:"Подходит",status:"pass"}];
+const base=()=>({locale:document.querySelector('#locale').value,overview:{vehicle_state:"unconfirmed",rim_setup_state:"partial"},vehicleTitle:"Mercedes-Benz GLC",rimTitle:"BBS CI-R",vehiclePreview:"../../webapp/assets/demo-vehicle-zeekr.jpg",rimPreview:"../../webapp/assets/demo-rim-xtrike.png",vehicleRecognition:{canRecognize:true},vehicleStatus:"Требуется подтверждение",nextAction:"complete_vehicle_details",vehicleForm:{make:"mercedes",model:"glc",year:"2024"},rim:{...wheel},resolver:{url:"https://shop.example.test/bbs-ci-r",canChooseSku:true},catalogue:{makes:[{value:"mercedes",label:"Mercedes-Benz"}],models:[{value:"glc",label:"GLC"}],years:[{value:"2024",label:"2024"}],states:{makes:{status:"selected"},models:{status:"selected"},years:{status:"selected"}}}});
+const scenarios={
+"initial-sources":{},
+"manual-vehicle":{vehicleEditing:true},
+"required-variant":{nextAction:"select_vehicle_variant",vehicleVariantPickerOpen:true,vehicleVariants:[{label:"GLC 200 4MATIC",technical:"X254 / 2024 / EU"},{label:"GLC 300 4MATIC",technical:"X254 / 2024 / EU"}],selectedVehicleVariant:0},
+"multi-sku":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",open:false,chooserOpen:true,selectedSku:"SKU-A",variants:[{brand:"BBS",model:"CI-R",sku:"SKU-A",values:wheel},{brand:"BBS",model:"CI-R",sku:"SKU-B",values:{...wheel,wheel_width_j:8.5,offset_et_mm:33.275,center_bore_mm:null}},{brand:"BBS",model:"CI-R",sku:"SKU-C",values:{...wheel,wheel_width_j:10,offset_et_mm:42.125}}]}},
+"all-proposals":{rimEditing:true,rimPendingProposals:fields,rimSaveReadiness:{ready:false}},
+"partial-acceptance":{rimEditing:true,rimPendingProposals:fields.slice(3),rimSaveReadiness:{ready:false}},
+"all-confirmed":{rimEditing:true,rimPendingProposals:[],rimSaveReadiness:{ready:true}},
+"manual-conflict":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",conflicts:[{field:"offset_et_mm",current:35.125,suggested:33.275}]},rimSaveReadiness:{ready:false,conflicts:["offset_et_mm"]}},
+"uniform":{rimEditing:true,setupMode:"uniform",rimPendingProposals:fields,rimSaveReadiness:{ready:false}},
+"staggered":{rimEditing:true,setupMode:"staggered",rearRim:{...wheel,wheel_width_j:10,offset_et_mm:42.125},rimPendingProposals:fields,rearRimPendingProposals:fields,rimSaveReadiness:{ready:false}},
+"picker-dia":{rimEditing:true,wheelPicker:{path:"rim.center_bore_mm",query:"66,6",mode:"recommended"}},
+"picker-et":{rimEditing:true,wheelPicker:{path:"rim.offset_et_mm",query:"35,125",mode:"recommended"}},
+"both-ready":{overview:{vehicle_state:"confirmed_ready",rim_setup_state:"confirmed_ready"},vehicleStatus:"Комплектация подтверждена",nextAction:"run_standard_check",canRunCheck:true,canonicalVehicleSummary:"Mercedes-Benz GLC 2024 — GLC 200 4MATIC",canonicalWheelSummary:"BBS CI-R — 20″ / 9J / 5×112 / DIA 66,6 / ET 35,125"},
+"compatible":{},"compatible_with_conditions":{},"incompatible":{},"unknown":{},"stale":{},"failed":{},"staggered-result-identical":{},"staggered-result-different":{}
+};
+const select=document.querySelector('#scenario');for(const name of Object.keys(scenarios)){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}
+let model;let root;
+function show(){
+ const name=select.value;model={...base(),...structuredClone(scenarios[name])};
+ if(["compatible","compatible_with_conditions","incompatible","unknown","stale","failed","staggered-result-identical","staggered-result-different"].includes(name)){
+  Object.assign(model,structuredClone(scenarios['both-ready']),{executionStatus:name==="failed"?"failed":"completed",retryAvailable:true,preliminaryWarning:name!=="failed",preliminaryWarningCopy:model.locale==="en"?"Preliminary compatibility check. Based on available technical parameters. Before purchasing, confirm compatibility with the seller or installation center.":"Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",preliminaryDisclaimer:model.locale==="en"?"This preliminary assessment is not an installation guarantee.":"Предварительная оценка не является гарантией установки.",check:{execution_status:name==="failed"?"failed":"completed",verdict:name==="stale"?"compatible_with_conditions":name.startsWith("staggered-result")?"compatible":name,is_current:name!=="stale"},fieldEvidence:structuredClone(rows)});
+  if(name==="compatible_with_conditions"||name==="stale"){model.conditions=[{label:model.locale==="en"?"Centering rings are required for DIA 72.6 → 66.6.":"Для DIA 72,6 → 66,6 потребуются центровочные кольца."}];model.fieldEvidence[3]={...rows[3],rimValue:72.6,resultLabel:"С условием",status:"conditional"};}
+  if(name.startsWith("staggered-result")){model.resultSetupMode="staggered";model.fieldEvidence=[...rows.map(row=>({...row,axle:"front"})),...rows.map(row=>({...row,axle:"rear",rimValue:name.endsWith("different")&&row.field==="offset_et_mm"?42.125:row.rimValue}))];}
+  if(name==="incompatible"){model.blockingIssues=[{label:model.locale==="en"?"The wheel PCD does not match the vehicle PCD.":"PCD колесного диска не совпадает с PCD автомобиля."}];model.fieldEvidence[2]={...rows[2],rimValue:"5×114.3",resultLabel:"Не совпадает",status:"fail"};}
+ }
+ model.canonicalWheelSummary=model.canonicalWheelSummary?.replaceAll(model.locale==="en"?',':'.',model.locale==="en"?'.':',');
+ if(!root){root=createFitmentView(model,{action(action,value){if(action==="accept-rim-proposal"){const field=value.split('.')[1];model.rimPendingProposals=(model.rimPendingProposals||[]).filter(f=>field==="pcd"?!["bolt_count","pcd_mm"].includes(f):f!==field);model.rimSaveReadiness={ready:!model.rimPendingProposals.length};refreshFitmentView(root,model);} }});document.querySelector('#fitment').append(root);}else{root.fitmentPicker=null;refreshFitmentView(root,model);}
+ // A preset dialog uses the same production picker and modal behavior.
+ if(model.wheelPicker){root.fitmentPicker=model.wheelPicker;refreshFitmentView(root,model);root.querySelector('[data-wheel-picker-search]')?.focus();}
+}
+select.addEventListener('change',show);document.querySelector('#locale').addEventListener('change',show);show();
+</script></body></html>

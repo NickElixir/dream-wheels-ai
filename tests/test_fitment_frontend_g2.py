@@ -266,8 +266,8 @@ def test_g2_2_disclosure_renderer_never_exposes_empty_content() -> None:
 
 def test_g2_2_readonly_source_and_technical_rows_are_safe_and_partial() -> None:
     assert "function fitmentRimTechnicalSummary(rim = {})" in APP_JS
-    assert "ET ${formatIdentityNumber(rim.offset_et_mm)}" in APP_JS
-    assert "DIA ${formatIdentityNumber(rim.center_bore_mm)}" in APP_JS
+    assert "ET ${fitmentDisplayValue(rim.offset_et_mm, locale)}" in APP_JS
+    assert "DIA ${fitmentDisplayValue(rim.center_bore_mm, locale)}" in APP_JS
     assert "function fitmentSafeSourceDisplay(source)" in APP_JS
     assert "parsed.search" not in APP_JS
     assert "word-break: break-word" in STYLE_CSS

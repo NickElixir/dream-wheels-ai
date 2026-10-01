@@ -1,3 +1,4 @@
+import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,8 +9,8 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appSource = fs.readFileSync(path.join(root, "webapp", "app.js"), "utf8").replace(
     /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
-    "",
-);
+    `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\n`,
+).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\n\n/u, "");
 
 function storage() {
     const values = new Map();

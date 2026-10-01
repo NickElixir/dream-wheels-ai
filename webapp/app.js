@@ -5,6 +5,8 @@ import {
     safeApplicationReturnPath,
 } from "./app-route.mjs";
 
+import { fitmentDisplayValue } from "./vnext/fitment-display.mjs";
+
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
@@ -1436,6 +1438,10 @@ const state = {
     fitmentSourceAcceptedContexts: {},
     fitmentSourceDetected: false,
     fitmentSourceVariants: [],
+    fitmentSourceVariantOptions: [],
+    fitmentSourceVariantOptionsIdentity: null,
+    fitmentSourceChooserIdentity: null,
+    fitmentSkuChooserOpen: false,
     fitmentSourceConflicts: [],
     fitmentSourceIdentity: { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" },
     fitmentRimManualFields: [],
@@ -4208,6 +4214,10 @@ function fitmentSourceIdentityFromOverview(overview) {
 }
 
 function clearFitmentResolverFeedback({ close = false } = {}) {
+    state.fitmentSourceVariantOptions = [];
+    state.fitmentSourceVariantOptionsIdentity = null;
+    state.fitmentSourceChooserIdentity = null;
+    state.fitmentSkuChooserOpen = false;
     state.fitmentSourceStatus = "";
     state.fitmentSourceStatusTone = "neutral";
     state.fitmentSourceAppliedFields = [];
@@ -4638,10 +4648,50 @@ function ensureRequiredFitmentVariantLookup() {
     void loadFitmentVehicleVariants({ contextKey: key });
 }
 
-function scrollFitmentTo(selector) {
+function focusFitmentWorkspace(section = state.fitmentActiveSection) {
     window.requestAnimationFrame(() => {
-        document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const workspace = document.querySelector(`[data-fitment-workspace="${section}"]`);
+        if (!workspace) return;
+        workspace.scrollIntoView({ behavior: "auto", block: "start" });
+        const target = workspace.querySelector('h2[tabindex], select:not(:disabled), input:not(:disabled)');
+        target?.focus({ preventScroll: true });
     });
+}
+
+function scrollFitmentTo(selector) {
+    if (document.querySelector("[data-vnext-fitment-root]")) {
+        focusFitmentWorkspace();
+        return;
+    }
+    window.requestAnimationFrame(() => {
+        document.querySelector(selector)?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+}
+
+function rememberFitmentWorkspace() {
+    if (state.fitmentWorkspaceReturn) return;
+    state.fitmentWorkspaceReturn = {
+        section: state.fitmentActiveSection,
+        editor: state.fitmentRimEditing ? "rim" : state.fitmentVehicleEditing ? "vehicle" : "",
+    };
+}
+
+function restoreFitmentWorkspace() {
+    const previous = state.fitmentWorkspaceReturn;
+    state.fitmentWorkspaceReturn = null;
+    if (!previous) return;
+    setFitmentEditor(previous.editor);
+    setFitmentActiveSection(previous.section, { scroll: Boolean(previous.editor) });
+}
+
+function reconcileRequiredFitmentWorkspace() {
+    if (fitmentNextAction() !== "select_vehicle_variant" || state.fitmentActiveSection !== "rim" || !state.fitmentRimEditing) return;
+    rememberFitmentWorkspace();
+    setFitmentEditor("");
+    state.fitmentActiveSection = "vehicle";
+    state.fitmentActiveStep = 1;
+    renderFitment();
+    focusFitmentWorkspace("vehicle");
 }
 
 function fitmentNextStep(overview) {
@@ -5827,20 +5877,16 @@ function fitmentRimProvenance(ui) {
 function fitmentRimTechnicalSummary(rim = {}) {
     const main = [
         rim?.wheel_diameter_in !== null && rim?.wheel_diameter_in !== undefined && rim?.wheel_diameter_in !== ""
-            ? `${formatIdentityNumber(rim.wheel_diameter_in)}"`
+            ? `${fitmentDisplayValue(rim.wheel_diameter_in, locale)}″`
             : "",
         rim?.wheel_width_j !== null && rim?.wheel_width_j !== undefined && rim?.wheel_width_j !== ""
-            ? `${formatIdentityNumber(rim.wheel_width_j)}J`
+            ? `${fitmentDisplayValue(rim.wheel_width_j, locale)}J`
             : "",
-        demoPcdDisplay(rim),
+        rim.bolt_count != null && rim.pcd_mm != null ? `${rim.bolt_count}×${fitmentDisplayValue(rim.pcd_mm, locale)}` : "",
     ].filter(Boolean).join(" / ");
     const fit = [
-        rim?.offset_et_mm !== null && rim?.offset_et_mm !== undefined && rim?.offset_et_mm !== ""
-            ? `ET ${formatIdentityNumber(rim.offset_et_mm)}`
-            : "",
-        rim?.center_bore_mm !== null && rim?.center_bore_mm !== undefined && rim?.center_bore_mm !== ""
-            ? `DIA ${formatIdentityNumber(rim.center_bore_mm)}`
-            : "",
+        rim?.center_bore_mm != null && rim?.center_bore_mm !== "" ? `DIA ${fitmentDisplayValue(rim.center_bore_mm, locale)}` : "",
+        rim?.offset_et_mm != null && rim?.offset_et_mm !== "" ? `ET ${fitmentDisplayValue(rim.offset_et_mm, locale)}` : "",
     ].filter(Boolean).join(" / ");
     return [main, fit].filter(Boolean);
 }
@@ -7217,6 +7263,7 @@ async function loadFitmentOverview(
             if (editorToPreserve || restoration === "restored" && state.fitmentFormState.status === "dirty") {
                 setFitmentEditor(editorToPreserve || state.fitmentActiveSection);
             }
+            reconcileRequiredFitmentWorkspace();
             loadFitmentVehicleCatalogue();
             ensureRequiredFitmentVariantLookup();
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -7262,6 +7309,7 @@ async function loadFitmentOverview(
         if (editorToPreserve || restoration === "restored" && state.fitmentFormState.status === "dirty") {
             setFitmentEditor(editorToPreserve || state.fitmentActiveSection);
         }
+        reconcileRequiredFitmentWorkspace();
         loadFitmentVehicleCatalogue();
         ensureRequiredFitmentVariantLookup();
         void loadFitmentCheckHistory(overview);
@@ -7312,6 +7360,9 @@ function openFitmentView(
     state.fitmentOverview = null;
     state.fitmentCheck = null;
     state.fitmentCheckHistory = [];
+    state.fitmentCheckHistoryLoading = false;
+    state.fitmentWorkspaceReturn = null;
+    state.fitmentRimIdentityEditing = false;
     state.fitmentActiveSection = "";
     state.fitmentActiveStep = 0;
     setFitmentEditor("");
@@ -7339,6 +7390,10 @@ function openFitmentView(
     state.fitmentSourceAcceptedContexts = {};
     state.fitmentSourceDetected = false;
     state.fitmentSourceVariants = [];
+    state.fitmentSourceVariantOptions = [];
+    state.fitmentSourceVariantOptionsIdentity = null;
+    state.fitmentSourceChooserIdentity = null;
+    state.fitmentSkuChooserOpen = false;
     state.fitmentSourceConflicts = [];
     state.fitmentSourceIdentity = { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" };
     state.fitmentRimManualFields = [];
@@ -7492,7 +7547,7 @@ function useFitmentRecognitionProposal(index) {
     state.fitmentRecognition = { ...state.fitmentRecognition, status: "applied" };
     const contextVersion = beginFitmentCatalogueContextChange();
     setFitmentEditor("vehicle");
-    setFitmentActiveSection("vehicle");
+    setFitmentActiveSection("vehicle", { scroll: true });
     markFitmentDirty();
     persistFitmentTransientDraft("navigation");
     void revalidateFitmentCatalogueChain(contextVersion, { allowRemembered: false });
@@ -7728,6 +7783,10 @@ function invalidateFitmentRimSourceContext() {
         state.fitmentForm.rim[fieldName] = "";
     }
     state.fitmentSourceIdentity = { ...identity, sourceFingerprint: null, selectedVariantSku: null, variantState: "none", sourceUrl: null };
+    state.fitmentSourceVariantOptions = [];
+    state.fitmentSourceVariantOptionsIdentity = null;
+    state.fitmentSourceChooserIdentity = null;
+    state.fitmentSkuChooserOpen = false;
     state.fitmentSourceProposalContexts = {};
     state.fitmentSourceAcceptedContexts = {};
     state.fitmentSourceAppliedFields = [];
@@ -7748,7 +7807,9 @@ function markVehicleFieldEdited(path) {
 function selectFitmentRimVariant(index) {
     const variant = state.fitmentSourceVariants[index];
     if (!variant) return;
-    const context = { sourceFingerprint: state.fitmentSourceIdentity.sourceFingerprint, selectedVariantSku: variant.sku || null };
+    const context = { ...(state.fitmentSourceChooserIdentity || state.fitmentSourceIdentity), selectedVariantSku: variant.sku || null };
+    state.fitmentSourceChooserIdentity = null;
+    state.fitmentSkuChooserOpen = false;
     const appliedFields = applyRimSourceValues(variant.values, context);
     const manualConflicts = (state.fitmentSourceConflicts || []).filter((conflict) => conflict.origin === "manual");
     state.fitmentSourceAppliedFields = appliedFields;
@@ -7766,6 +7827,7 @@ function selectFitmentRimVariant(index) {
             ? "Вариант выбран — ручные значения сохранены; при необходимости дополните параметры"
             : "Variant selected — manual values were preserved; complete any missing parameters");
     state.fitmentSourceStatusTone = "success";
+    state.fitmentSourceOpen = false;
     renderFitment();
     scrollFitmentTo('[data-fitment-section="rim"]');
 }
@@ -7780,7 +7842,7 @@ function resolveFitmentParserConflict(fieldName, value = undefined) {
     renderFitment();
 }
 
-async function resolveFitmentRimSource({ automatic = false } = {}) {
+async function resolveFitmentRimSource({ automatic = false, chooserOnly = false } = {}) {
     if (fitmentMutationsLocked()) return;
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
@@ -7793,8 +7855,10 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     clearFitmentTransientMessage();
     state.fitmentSourceResolving = true;
     state.fitmentSourceOpen = true;
-    state.fitmentSourceAppliedFields = [];
-    state.fitmentSourceDetected = false;
+    if (!chooserOnly) {
+        state.fitmentSourceAppliedFields = [];
+        state.fitmentSourceDetected = false;
+    }
     state.fitmentSourceVariants = [];
     state.fitmentSourceStatus = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
     state.fitmentSourceStatusTone = "neutral";
@@ -7827,6 +7891,27 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
         if (!isCurrentRequest()) return;
+        state.fitmentSourceVariantOptions = result.variants || [];
+        state.fitmentSourceVariantOptionsIdentity = {
+            sourceFingerprint: result.source_fingerprint || null,
+            sourceUrl: normalizeFitmentText(result.final_url || productUrl),
+        };
+        if (chooserOnly) {
+            state.fitmentSourceVariants = result.variants || [];
+            state.fitmentSourceChooserIdentity = {
+                sourceFingerprint: result.source_fingerprint || null,
+                sourceUrl: normalizeFitmentText(result.final_url || productUrl),
+            };
+            state.fitmentSkuChooserOpen = state.fitmentSourceVariants.length > 0;
+            if (!state.fitmentSkuChooserOpen) {
+                state.fitmentMessage = locale === "ru" ? "Другие SKU не найдены" : "No other SKUs were found";
+                state.fitmentMessageTone = "neutral";
+            }
+            state.fitmentSourceOpen = false;
+            state.fitmentSourceStatus = "";
+            state.fitmentSourceStatusTone = "neutral";
+            return;
+        }
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
         state.fitmentSourceVariants = result.selection_required ? (result.variants || []) : [];
         state.fitmentSourceConflicts = fitmentCanonicalRimConflicts(result.values, result.conflicts);
@@ -7860,8 +7945,9 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
                     : locale === "ru"
                         ? "Параметры найдены — проверьте значения перед сохранением"
                         : "Parameters found — review the values before saving";
-        state.fitmentSourceStatusTone = !resolvedEntries.length ? "error" : result.selection_required || conflictFields.length ? "warning" : "success";
-        state.fitmentSourceOpen = true;
+        state.fitmentSourceStatusTone = result.selection_required && state.fitmentSourceVariants.length
+            ? "neutral" : !resolvedEntries.length ? "error" : conflictFields.length ? "warning" : "success";
+        state.fitmentSourceOpen = false;
     } catch (error) {
         if (!isCurrentRequest()) return;
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
@@ -8045,6 +8131,7 @@ async function replaceFitmentVehicleVariant(variant) {
     if (!overview || !variant || !current || state.fitmentVehicleVariantApplying) return;
     if (fitmentVariantsMatch(current, variant)) {
         state.fitmentModificationPickerOpen = false;
+        restoreFitmentWorkspace();
         renderFitment();
         return;
     }
@@ -8063,6 +8150,7 @@ async function replaceFitmentVehicleVariant(variant) {
             state.fitmentLookup = { status: "idle", outcome: "" };
             state.fitmentActiveSection = "vehicle";
             state.fitmentActiveStep = fitmentSectionToStep("vehicle");
+            restoreFitmentWorkspace();
             return;
         }
         const response = await authenticatedFetch(
@@ -8108,6 +8196,7 @@ async function replaceFitmentVehicleVariant(variant) {
         if (!isCurrentRequest()) return;
         state.fitmentActiveSection = "vehicle";
         state.fitmentActiveStep = fitmentSectionToStep("vehicle");
+        restoreFitmentWorkspace();
     } catch (error) {
         if (!isCurrentRequest()) return;
         state.fitmentLookup = { status: "replace_failed", outcome: "", mode: "reselect" };
@@ -8127,6 +8216,8 @@ function clearFitmentCheckPolling() {
 }
 
 function clearFitmentRuntimeRequests() {
+    state.fitmentCheckHistoryLoading = false;
+    state.fitmentWorkspaceReturn = null;
     state.fitmentOverviewRequestToken += 1;
     state.fitmentVehiclePhotoToken += 1;
     state.fitmentRecognitionToken += 1;
@@ -8411,6 +8502,10 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
             state.fitmentMessageTone = "success";
             state.fitmentActiveSection = savedFromSection;
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
+            if (savingVehicle) {
+                setFitmentEditor("");
+                ensureRequiredFitmentVariantLookup();
+            }
             return;
         }
         const response = await authenticatedFetch(
@@ -8512,6 +8607,9 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
             state.fitmentSaving = false;
             if (state.fitmentFormState.status === "saving") markFitmentDirty();
             renderFitment();
+            if (state.fitmentMessage && state.fitmentMessageTone === "success") {
+                window.requestAnimationFrame(() => document.querySelector("[data-fitment-save-notice]")?.focus());
+            }
         }
     }
 }
@@ -10597,26 +10695,8 @@ function vnextFitmentSnapshot() {
                     : marketStatus === "resolved_multiple" ? "Выберите рынок автомобиля"
                         : !state.fitmentForm?.vehicle?.year ? "Сначала выберите год автомобиля" : "",
     };
-    const vehicleSummaryRows = [
-        ["Год", vehicle.year],
-        ["Рынок", vehicle.market ? fitmentMarketLabel(vehicle.market) : ""],
-        ["Кузов", fitmentPresentationText(vehicle.body)],
-        ["Поколение", fitmentPresentationText(vehicle.generation)],
-        ["Модификация", fitmentPresentationText(vehicle.modification)],
-    ].filter(([, value]) => value);
     const summaryRim = overview?.front_rim?.rim || overview?.rim || {};
     const summaryRearRim = overview?.rear_rim?.rim || summaryRim;
-    const rimRowsFor = (value) => [
-        ["Артикул", value.sku],
-        ["Диаметр", value.wheel_diameter_in != null ? `${value.wheel_diameter_in}″` : ""],
-        ["Ширина", value.wheel_width_j != null ? `${value.wheel_width_j}J` : ""],
-        ["PCD", value.bolt_count != null && value.pcd_mm != null ? `${value.bolt_count}×${value.pcd_mm}` : value.pcd_mm != null ? `${value.pcd_mm} мм` : value.bolt_count != null ? `${value.bolt_count} отверстия` : ""],
-        ["DIA", value.center_bore_mm != null ? `${value.center_bore_mm} мм` : ""],
-        ["ET", value.offset_et_mm != null ? `${value.offset_et_mm} мм` : ""],
-    ].filter(([, value]) => value);
-    const rimSummaryRows = state.fitmentOverview?.setup_mode === "staggered"
-        ? [...rimRowsFor(summaryRim).map(([label, value]) => [`Передняя ось: ${label}`, value]), ...rimRowsFor(summaryRearRim).map(([label, value]) => [`Задняя ось: ${label}`, value])]
-        : rimRowsFor(summaryRim);
     const invalidFields = new Set(state.fitmentFormState?.invalidFields || []);
     const missingFields = new Set(state.fitmentFormState?.missingFields || []);
     const fieldErrors = {};
@@ -10648,6 +10728,7 @@ function vnextFitmentSnapshot() {
         rimValue: item.rim_value ?? item.rim ?? null,
     })) : [];
     return {
+        locale,
         jobId: state.fitmentJobId,
         overview,
         loading: state.fitmentLoading,
@@ -10665,8 +10746,8 @@ function vnextFitmentSnapshot() {
         check,
         resultCopy: check ? fitmentResultCopy(check) : "",
         preliminaryWarning: Boolean(check?.execution_status === "completed" && check?.is_preliminary !== false),
-        preliminaryWarningCopy: t("warnings.fitment"),
-        preliminaryDisclaimer: t("fitment.verdictDisclaimer"),
+        preliminaryWarningCopy: I18N[locale].warnings.fitment,
+        preliminaryDisclaimer: I18N[locale].fitment.verdictDisclaimer,
         blockingIssues: (failedExecution ? [] : check?.blocking_issues || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         conditions: (failedExecution ? [] : check?.conditions || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         fieldEvidence,
@@ -10677,7 +10758,6 @@ function vnextFitmentSnapshot() {
         vehicleForm: state.fitmentForm?.vehicle || vehicle,
         vehicleTitle: [vehicle.make, vehicle.model].filter(Boolean).join(" "),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
-        vehicleSummaryRows,
         vehiclePreview: state.fitmentVehiclePhotoUrl || fitmentPreviewAsset(job, "vehicle"),
         vehicleRecognition: {
             ...(state.fitmentRecognition?.revision !== undefined && state.fitmentRecognition.revision !== overview?.vehicle_revision
@@ -10687,7 +10767,7 @@ function vnextFitmentSnapshot() {
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
         activeSection: state.fitmentActiveSection,
         manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
-        vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : "Данные автомобиля",
+        vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : fitmentNextAction(overview) === "select_vehicle_variant" ? "Выберите комплектацию автомобиля" : "Требуется подтверждение",
         vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
         vehicleVariantAction: ui.nextAction === "select_vehicle_variant",
         canReselectVehicleVariant: overview?.modification_state === "confirmed" && Boolean(fitmentSelectedVehicleVariant(overview)),
@@ -10720,16 +10800,16 @@ function vnextFitmentSnapshot() {
             catch { return ""; }
         })(),
         rimSpecs: fitmentRimTechnicalSummary(rim),
-        rimSummaryRows,
-        canonicalRimSpecs: [
-            ...(overview?.setup_mode === "staggered"
-                ? [`Передняя ось: ${rimRowsFor(summaryRim).map(([label, value]) => `${label} ${value}`).join(" / ")}`,
-                    `Задняя ось: ${rimRowsFor(summaryRearRim).map(([label, value]) => `${label} ${value}`).join(" / ")}`]
-                : [rimRowsFor(summaryRim).map(([label, value]) => `${label} ${value}`).join(" / ")]),
-        ].filter(Boolean),
+        canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
+            ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
+        canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
+            ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), summaryRim.sku ? `SKU ${summaryRim.sku}` : "", overview?.setup_mode === "staggered"
+                ? `Передняя ось: ${fitmentRimTechnicalSummary(summaryRim).join(" / ")} – Задняя ось: ${fitmentRimTechnicalSummary(summaryRearRim).join(" / ")}`
+                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" – ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),
+        rimIdentityEditing: Boolean(state.fitmentRimIdentityEditing),
         rimPreview: fitmentPreviewAsset(job, "rim"),
         rimProvenance: fitmentRimProvenance(ui),
         frontRimSetupState: overview?.front_rim?.rim_setup_state ?? overview?.rim_setup_state ?? null,
@@ -10740,6 +10820,8 @@ function vnextFitmentSnapshot() {
         rimSaveReadiness: rimReadiness,
         rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
+            chooserOpen: Boolean(state.fitmentSkuChooserOpen),
+            selectedSku: state.fitmentSourceIdentity.selectedVariantSku,
             canChooseSku: Boolean(state.fitmentForm?.rim?.product_url && state.fitmentSourceIdentity?.selectedVariantSku),
             url: state.fitmentForm?.rim?.product_url || "",
             loading: Boolean(state.fitmentSourceResolving),
@@ -10750,6 +10832,7 @@ function vnextFitmentSnapshot() {
                 brand: variant.values?.brand || variant.brand || "",
                 model: variant.values?.model || variant.model || "",
                 sku: variant.sku || "",
+                imageUrl: variant.image_url || "",
                 values: variant.values || {},
             })),
             conflicts: state.fitmentSourceConflicts || [],
@@ -10818,7 +10901,8 @@ function setVnextFitmentField(path, value) {
     renderFitment();
 }
 
-async function saveVnextFitment(owner = state.fitmentActiveSection) {
+async function saveVnextFitment(owner) {
+    if (!["vehicle", "rim"].includes(owner)) return;
     if (owner === "rim" && !fitmentRimSaveReadiness().ready) {
         state.fitmentError = locale === "ru"
             ? "Заполните и подтвердите параметры диска, затем сохраните их."
@@ -10851,26 +10935,46 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
         else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }
-        else if (action === "edit-vehicle") { setFitmentEditor("vehicle"); setFitmentActiveSection("vehicle"); }
-        else if (action === "edit-rim") { setFitmentEditor("rim"); setFitmentActiveSection("rim"); }
+        else if (action === "edit-vehicle") { setFitmentEditor("vehicle"); setFitmentActiveSection("vehicle", { scroll: true }); }
+        else if (action === "edit-rim") { if (value === "source") state.fitmentSourceOpen = true; setFitmentEditor("rim"); setFitmentActiveSection("rim", { scroll: true }); }
+        else if (action === "edit-rim-source") { state.fitmentSourceOpen = true; setFitmentEditor("rim"); setFitmentActiveSection("rim", { scroll: true }); }
+        else if (action === "setup-mode") setVnextFitmentField("setup_mode", value);
+        else if (action === "toggle-rim-identity") { state.fitmentRimIdentityEditing = !state.fitmentRimIdentityEditing; renderFitment(); }
+        else if (action === "choose-rim-sku") {
+            if (state.fitmentSourceVariantOptions?.length) {
+                state.fitmentSourceVariants = state.fitmentSourceVariantOptions;
+                state.fitmentSourceChooserIdentity = state.fitmentSourceVariantOptionsIdentity;
+                state.fitmentSkuChooserOpen = true;
+                state.fitmentSourceOpen = false;
+                renderFitment();
+                focusFitmentWorkspace("rim");
+            } else void resolveFitmentRimSource({ chooserOnly: true });
+        }
+        else if (action === "cancel-rim-sku") {
+            state.fitmentSourceVariants = [];
+            state.fitmentSourceChooserIdentity = null;
+            state.fitmentSkuChooserOpen = false;
+            renderFitment();
+            focusFitmentWorkspace("rim");
+        }
         else if (action === "manual-vehicle") {
             setFitmentEditor("vehicle");
             setFitmentActiveSection("vehicle", { scroll: true });
             requestAnimationFrame(() => document.querySelector('[data-fitment-field="vehicle.make"]')?.focus());
         }
         else if (action === "show-variants") {
+            rememberFitmentWorkspace();
             setFitmentEditor("");
             setFitmentActiveSection("vehicle", { scroll: true });
             ensureRequiredFitmentVariantLookup();
         }
         else if (action === "save-vehicle") void saveVnextFitment("vehicle");
         else if (action === "save-rim") void saveVnextFitment("rim");
-        else if (action === "save") void saveVnextFitment();
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);
         else if (action === "resolve-rim") {
             setFitmentEditor("rim");
-            setFitmentActiveSection("rim");
+            setFitmentActiveSection("rim", { scroll: true });
             void resolveFitmentRimSource();
         }
         else if (action === "rim-variant") selectFitmentRimVariant(Number(value));
@@ -10907,21 +11011,39 @@ window.dreamwheelsFitmentBridge = {
             state.fitmentSourceStatusTone = "neutral";
             state.fitmentSourceVariants = [];
             state.fitmentSourceOpen = false;
-            state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, variantState: "none", selectedVariantSku: null };
+            state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, variantState: "none", selectedVariantSku: null, sourceFingerprint: null, sourceUrl: null };
+            for (const field of Object.keys(state.fitmentSourceAcceptedContexts || {})) {
+                if (!state.fitmentRimManualFields.includes(field)) state.fitmentRimManualFields.push(field);
+            }
+            state.fitmentSourceAcceptedContexts = {};
+            state.fitmentSourceProposalContexts = {};
+            state.fitmentSourceVariantOptions = [];
+            state.fitmentSourceVariantOptionsIdentity = null;
+            state.fitmentSourceChooserIdentity = null;
+            state.fitmentSkuChooserOpen = false;
             setFitmentEditor("rim");
             state.fitmentActiveSection = "rim";
             state.fitmentActiveStep = 2;
             renderFitment();
+            focusFitmentWorkspace("rim");
         } else if (action === "candidate") {
             const [path, ...candidateValue] = value.split("|");
             setVnextFitmentField(path, candidateValue.join("|"));
-        } else if (action === "reselect-vehicle") toggleFitmentModificationPicker();
+        } else if (action === "reselect-vehicle") {
+            rememberFitmentWorkspace();
+            setFitmentEditor("");
+            state.fitmentActiveSection = "vehicle";
+            state.fitmentActiveStep = 1;
+            toggleFitmentModificationPicker();
+            focusFitmentWorkspace("vehicle");
+        }
         else if (action === "cancel-vehicle-reselection") {
             state.fitmentModificationPickerOpen = false;
             state.fitmentVehicleVariants = [];
             state.fitmentSelectedVehicleVariantIndex = null;
             state.fitmentLookup = { status: "idle", outcome: "" };
             state.fitmentModificationLookupMode = "initial";
+            restoreFitmentWorkspace();
             renderFitment();
         }
         else if (action === "load-vehicle-variants") {
@@ -10941,6 +11063,7 @@ window.dreamwheelsFitmentBridge = {
                 state.fitmentModificationLookupMode = "initial";
                 state.fitmentMessage = locale === "ru" ? "Комплектация выбрана" : "Vehicle version selected";
                 state.fitmentMessageTone = "success";
+                restoreFitmentWorkspace();
                 renderFitment();
             }).catch((error) => {
                 state.fitmentError = error?.message || t("errors.requestFailed");
@@ -12602,7 +12725,8 @@ function bindEvents() {
         if (confirmVariant) {
             const variant = state.fitmentVehicleVariants[state.fitmentSelectedVehicleVariantIndex];
             if (!variant) return;
-            void applyFitmentVehicleVariant(variant).then(() => {
+            void applyFitmentVehicleVariant(variant).then((result) => {
+                if (!result?.applied) return;
                 state.fitmentVehicleVariants = [];
                 state.fitmentSelectedVehicleVariantIndex = null;
                 state.fitmentModificationPickerOpen = false;

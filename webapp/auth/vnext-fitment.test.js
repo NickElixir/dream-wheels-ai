@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
 import { fitmentMarkup, wheelPickerOptions, wheelPickerManualValue } from "../vnext/views/fitment.js";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -12,7 +13,7 @@ test("picker makes the workspace inert and catalogue labels explicitly name cont
   assert.match(markup, /label for="fitment-field-vehicle-make"/);
   assert.match(markup, /id="fitment-field-vehicle-make"/);
   assert.ok(markup.indexOf('role="dialog"') > markup.indexOf('id="fitment-standard-title"'));
-  const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalRimSpecs: ["18″ / 8J / 5×112 / DIA 66,6 / ET 35,125"], vehicleSpecs: ["2024", "X254"] });
+  const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalWheelSummary: "18″ / 8J / 5×112 / DIA 66,6 / ET 35,125", vehicleSpecs: ["2024", "X254"] });
   assert.match(wheel, /Выбрать другой SKU/);
   assert.match(wheel, /DIA 66,6 \/ ET 35,125/);
   assert.doesNotMatch(wheel, /SKU[^<]*▾|·/);
@@ -94,6 +95,8 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   };
   const context = {
     state,
+    locale: "ru", fitmentDisplayValue,
+    I18N: { ru: { warnings: { fitment: "Предварительная проверка совместимости." }, fitment: { verdictDisclaimer: "Предварительная оценка не является гарантией установки." } } },
     t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
     fitmentCheckForPresentation: () => null,
@@ -157,7 +160,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
 test("Wheel decimal controls preserve comma input until exact numeric serialization", () => {
   const markup = fitmentMarkup({ overview: {}, rimEditing: true, rim: { offset_et_mm: "35,125" } });
   assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
-  assert.match(markup, />35,125<\/button>/);
+  assert.match(markup, />ET 35,125<\/button>/);
   const app = read("app.js");
   const normalizer = app.slice(app.indexOf("function normalizeFitmentNumber("), app.indexOf("function formatFitmentNumber("));
   const context = {};
@@ -229,7 +232,7 @@ test("Fitment comparison keeps all five rows with explicit missing evidence", ()
     check: { execution_status: "completed", verdict: "unknown", is_current: true },
     fieldEvidence: [{ name: "ET", vehicleValue: null, rimValue: null, resultLabel: "Недостаточно данных" }],
   });
-  assert.match(availableField, /Сравнение параметров/);
+  assert.match(availableField, /<caption>Параметры колёс<\/caption>/);
   assert.match(availableField, /Нет данных/);
   assert.match(availableField, /Недостаточно данных/);
 
@@ -264,14 +267,15 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   const reselectionWhileWheelEditorOpen = fitmentMarkup({
     overview: {},
     nextAction: "run_standard_check",
-    rimEditing: true,
+    rimEditing: false,
+    activeSection: "vehicle",
     vehicleVariantPickerOpen: true,
     vehicleVariantMode: "reselect",
     vehicleVariants: [{ label: "3.0 AWD", technical: "2025" }],
   });
   assert.match(reselectionWhileWheelEditorOpen, /3\.0 AWD/);
   assert.match(reselectionWhileWheelEditorOpen, /data-fitment-action="cancel-vehicle-reselection"/);
-  assert.match(reselectionWhileWheelEditorOpen, /data-fitment-field="rim\.brand"/);
+  assert.doesNotMatch(reselectionWhileWheelEditorOpen, /data-fitment-workspace="rim"/);
   const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
   assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
   assert.doesNotMatch(manualRecovery, /Подтвердить комплектацию/);
@@ -283,7 +287,7 @@ test("an incompatible Fitment result still offers the existing independent rende
   assert.match(markup, /data-fitment-action="create-image"/);
 });
 
-test("Fitment action hierarchy keeps Create Image independent and secondary", () => {
+test("Fitment action hierarchy follows the active task and keeps Create Image independent", () => {
   const buttonClass = (markup, action) => markup.match(new RegExp(`<button[^>]*class="([^"]+)"[^>]*data-fitment-action="${action}"`))?.[1] || "";
   const unfinished = [
     ["complete_vehicle_details", { vehicleEditing: true, vehicleForm: { make: "Zeekr" } }, "save-vehicle"],
@@ -304,7 +308,8 @@ test("Fitment action hierarchy keeps Create Image independent and secondary", ()
 
   for (const verdict of ["compatible", "compatible_with_conditions", "incompatible", "unknown"]) {
     const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus: "completed", check: { execution_status: "completed", verdict, is_current: true } });
-    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", verdict);
+    assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--primary", verdict);
+    assert.equal(buttonClass(markup, "check"), "vnext-button vnext-button--secondary", verdict);
     assert.equal(buttonClass(markup, "edit-rim"), "vnext-button vnext-button--secondary", verdict);
     assert.equal((markup.match(/data-fitment-action="create-image"/g) || []).length, 1, verdict);
   }
@@ -402,7 +407,7 @@ test("the active object editor avoids repeating summary parameters and uses a co
   assert.doesNotMatch(wheelEditor, /<dt>ET<\/dt>/);
   assert.doesNotMatch(wheelEditor, /20 inch/);
   assert.match(wheelEditor, /data-wheel-picker-open="rim\.offset_et_mm"/);
-  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment:has\(\.vnext-fitment__object--editing\) \.vnext-fitment__stage \{ height: 160px; \}/);
+  assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment:has\(\.vnext-fitment__object--editing\) \.vnext-fitment__stage \{ height: 176px; \}/);
 });
 
 test("Fitment parser states stay in wheel context and preserve the existing field actions", () => {
@@ -413,17 +418,17 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
 
   const loading = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: true, statusTone: "neutral" } });
   assert.match(loading, /Определяем параметры колесного диска/);
-  assert.match(loading, /value="BBS"/);
+  assert.match(loading, /id="fitment-rim-editor-title"[^>]*>BBS/);
   assert.match(loading, /data-fitment-source-url/);
 
   const success = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: false, status: "Параметры найдены — проверьте значения", statusTone: "success" } });
   assert.match(success, /Параметры найдены — проверьте значения/);
 
   const variants = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ brand: "BBS", model: "CI-R", sku: "A1", values: { wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.25 } }] } });
-  assert.match(variants, /Выберите вариант диска/);
+  assert.match(variants, /Выберите колесный диск/);
   assert.match(variants, /BBS CI-R/);
   assert.match(variants, /SKU: A1/);
-  assert.match(variants, /19″[^]*?8.5J[^]*?5×112[^]*?66.6 мм[^]*?35.25 мм/);
+  assert.match(variants, /19″[^]*?8,5J[^]*?5×112[^]*?66,6[^]*?35,25/);
   assert.match(variants, /Выбрать/);
   assert.match(variants, /data-fitment-action="rim-variant"/);
   const missingSpecs = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ sku: "A2", values: {} }] } });
@@ -438,7 +443,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(failure, /Сайт недоступен/);
   assert.match(failure, /data-fitment-action="resolve-rim"/);
   assert.match(failure, /Указать параметры вручную/);
-  assert.match(failure, />19<\/button>/);
+  assert.match(failure, />19″<\/button>/);
 });
 
 test("completed Fitment shows verdict before conditions and technical comparison", () => {
@@ -448,8 +453,8 @@ test("completed Fitment shows verdict before conditions and technical comparison
     conditions: [{ label: "Условие установки" }],
     fieldEvidence: [{ name: "ET", vehicleValue: "40", rimValue: "45", resultLabel: "Проверьте" }],
   });
-  assert.ok(markup.indexOf("Подходит с условиями") < markup.indexOf("Условия и пояснения"));
-  assert.ok(markup.indexOf("Условия и пояснения") < markup.indexOf("Сравнение параметров"));
+  assert.ok(markup.indexOf("Подходит с условиями") < markup.indexOf("Условие установки"));
+  assert.ok(markup.indexOf("Условие установки") < markup.indexOf("<table"));
 });
 
 test("completed preliminary Fitment verdict shows the approved installation disclaimer", () => {
@@ -486,7 +491,8 @@ test("Fitment retains the exact job and origin through entry/back and reuses exi
   assert.match(app, /snapshot: vnextFitmentSnapshot/);
   assert.match(app, /setupMode: state\.fitmentForm\?\.setup_mode \|\| overview\?\.setup_mode \|\| "uniform"/);
   assert.match(app, /rearRim: state\.fitmentForm\?\.rear_rim \|\| overview\?\.rear_rim \|\| \{\}/);
-  assert.match(app, /action === "save"\) void saveVnextFitment\(\)/);
+  assert.doesNotMatch(app, /action === "save"\)/);
+  assert.match(app, /action === "save-rim"\) void saveVnextFitment\("rim"\)/);
   assert.match(app, /action === "check"\) void runFitmentCheck\(\)/);
   assert.match(app, /action === "resolve-rim"\)[\s\S]*?setFitmentEditor\("rim"\)[\s\S]*?void resolveFitmentRimSource\(\)/);
   assert.match(app, /action === "load-vehicle-variants"\) \{\s*toggleFitmentModificationPicker\(\)/);
@@ -530,6 +536,8 @@ test("runtime Fitment initialization follows next_action and never opens both ob
   let overview = null;
   const context = {
     state,
+    locale: "ru", fitmentDisplayValue,
+    I18N: { ru: { warnings: { fitment: "Предварительная проверка совместимости." }, fitment: { verdictDisclaimer: "Предварительная оценка не является гарантией установки." } } },
     t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     captureFitmentRuntimeContext: (jobId = state.fitmentJobId) => ({ jobId, generation: state.fitmentContextGeneration }),
     isCurrentFitmentRuntimeContext: value => value.jobId === state.fitmentJobId && value.generation === state.fitmentContextGeneration,
@@ -560,7 +568,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     beginFitmentCatalogueContextChange() {}, renderFitment() {}, loadFitmentVehicleCatalogue() {},
     persistDemoFitmentOverview() {},
     ensureRequiredFitmentVariantLookup() {}, fitmentCheckIsPending: () => false,
-    restoreFitmentTransientDraft: () => "none", applyDemoResultFixture() {},
+    restoreFitmentTransientDraft: () => "none", applyDemoResultFixture() {}, reconcileRequiredFitmentWorkspace() {},
   };
   vm.createContext(context);
   vm.runInContext(source, context);
@@ -729,4 +737,71 @@ test("Fitment candidate controls meet the mobile tap target and saved progressio
   assert.ok(save.indexOf("await refreshFitmentCheckCurrentness()") < save.indexOf("setFitmentEditorsForNextAction(overview)"));
   const catchBlock = save.slice(save.indexOf("} catch (error) {"), save.indexOf("} finally {"));
   assert.doesNotMatch(catchBlock, /setFitmentEditor/);
+});
+
+test("proposal acceptance is distinguishable and its five-control progress reaches zero", () => {
+  const rim = { brand: "BBS", model: "CI-R", sku: "A", wheel_diameter_in: 20, wheel_width_j: 9, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.125 };
+  const pending = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
+  for (const [remaining, count] of [[pending,5],[pending.slice(1),4],[[],0]]) {
+    const markup = fitmentMarkup({ rimEditing:true, rim, rimPendingProposals:remaining, resolver:{url:"https://example.test"} });
+    assert.equal((markup.match(/data-confirmation-state="proposed"/g)||[]).length,count);
+    assert.equal((markup.match(/compound--accepted/g)||[]).length,5-count);
+    assert.match(markup,count ? new RegExp(`Осталось подтвердить ${count}`) : /Все параметры подтверждены/);
+    assert.match(markup,/20″/); assert.match(markup,/9J/); assert.match(markup,/5×112/); assert.match(markup,/ET 35,125/);
+    assert.doesNotMatch(markup,/data-fitment-field="rim\.(brand|model|sku)"/);
+  }
+});
+
+test("an unconfirmed branch cannot leak its draft into Standard canonical summaries", () => {
+  const markup = fitmentMarkup({overview:{},vehicleTitle:"Unsaved vehicle",rimTitle:"Unsaved wheel",rimSpecs:"99J",rimEditing:true,rim:{wheel_width_j:99}});
+  const standard = markup.slice(markup.indexOf('<section class="vnext-fitment__standard"'));
+  assert.doesNotMatch(standard,/Unsaved|99J/);
+  assert.equal((standard.match(/<strong>—<\/strong>/g)||[]).length,2);
+});
+
+test("SKU chooser owns one workspace and suppresses URL task and technical editor", () => {
+  const markup = fitmentMarkup({rimEditing:true,resolver:{open:true,url:"https://shop.test",chooserOpen:true,variants:[{sku:"A",values:{offset_et_mm:35.125}}]}});
+  assert.equal((markup.match(/data-fitment-workspace=/g)||[]).length,1);
+  assert.doesNotMatch(markup,/data-fitment-source-url|data-wheel-picker-open|data-fitment-action="save-rim"/);
+  assert.match(markup,/data-fitment-action="cancel-rim-sku"/);
+  assert.match(markup,/35,125/);
+});
+
+test("staggered Result separates different values and conditions, collapses identical evidence", () => {
+  const row = {field:"offset_et_mm",axle:"front",vehicleValue:"30–45",rimValue:35.125,resultLabel:"Подходит",status:"pass"};
+  const model = {resultSetupMode:"staggered",check:{execution_status:"completed",verdict:"compatible_with_conditions",is_current:true}};
+  for (const [rear, count] of [[{...row,axle:"rear"},1],[{...row,axle:"rear",rimValue:"35,125"},1],[{...row,axle:"rear",rimValue:42.125},2],[{...row,axle:"rear",resultLabel:"Нужна проверка",status:"conditional"},2],[{...row,axle:"rear",status:"conditional"},2]]) {
+    const markup = fitmentMarkup({...model,fieldEvidence:[row,rear]});
+    assert.equal((markup.match(/<table /g)||[]).length,count);
+    assert.match(markup,count===1?/Обе оси — параметры совпадают/:/Задняя ось/);
+  }
+});
+
+test("RU and EN Result, warning and picker use one locale and preserve punctuation and precision", () => {
+  const model = {locale:"en",executionStatus:"completed",resultCopy:"Compatibility has conditions.",check:{execution_status:"completed",verdict:"compatible_with_conditions",is_current:false},preliminaryWarning:true,preliminaryWarningCopy:"Confirm fitment with your installer.",preliminaryDisclaimer:"Not an installation guarantee.",conditions:[{label:"Centering rings required."}],fieldEvidence:[{field:"offset_et_mm",rimValue:"35.125",vehicleValue:"33.275",resultLabel:"Подходит"}],wheelPicker:{path:"rim.offset_et_mm",query:"35.125"}};
+  const markup=fitmentMarkup(model);
+  assert.doesNotMatch(markup,/[А-Яа-яЁё]/);
+  assert.match(markup,/35\.125/); assert.match(markup,/33\.275/);
+  assert.match(markup,/Confirm fitment with your installer\./);
+  assert.match(markup,/Not an installation guarantee\./);
+  assert.equal(fitmentDisplayValue("ET 33.275 / 35.125"),"ET 33,275 / 35,125");
+  const conflict = fitmentMarkup({locale:"en",rimEditing:true,resolver:{conflicts:[{field:"offset_et_mm",current:35.125,suggested:33.275}]}});
+  assert.doesNotMatch(conflict,/[А-Яа-яЁё]/);
+  assert.match(conflict,/aria-label="Conflicting value offset_et_mm"/);
+  const candidate = fitmentMarkup({locale:"en",vehicleEditing:true,vehicleForm:{make:"bmw"},vehicleCandidates:[{field:"make",value:"Audi"}]});
+  assert.doesNotMatch(candidate,/[А-Яа-яЁё]/);
+  assert.match(candidate,/Suggestions for make/);
+});
+
+test("catalogue slug and display spelling do not create a duplicate ZEEKR suggestion", () => {
+  const markup=fitmentMarkup({vehicleEditing:true,vehicleForm:{make:"zeekr"},catalogue:{makes:[{value:"zeekr",label:"ZEEKR"}],states:{makes:{status:"selected"}}},vehicleCandidates:[{field:"make",value:" ZEEKR "}]});
+  assert.doesNotMatch(markup,/data-fitment-action="candidate"/);
+});
+
+
+test("a staggered Result cannot claim equivalent axles when rear evidence is absent", () => {
+  const markup=fitmentMarkup({resultSetupMode:"staggered",check:{execution_status:"completed",verdict:"unknown"},fieldEvidence:[{field:"offset_et_mm",axle:"front",rimValue:35.125}]});
+  assert.equal((markup.match(/<table /g)||[]).length,2);
+  assert.doesNotMatch(markup,/параметры совпадают/);
+  assert.match(markup,/Задняя ось/);
 });

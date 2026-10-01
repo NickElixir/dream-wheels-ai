@@ -1,3 +1,4 @@
+import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -10,8 +11,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_SOURCE = fs.readFileSync(path.join(ROOT, "webapp", "app.js"), "utf8");
 const APP_SOURCE_FOR_VM = APP_SOURCE.replace(
     /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
-    "",
-);
+    `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\n`,
+).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\n\n/u, "");
 
 function storage() {
     const values = new Map();
@@ -168,6 +169,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         globalThis.__fitmentRenderedWorkspace = "";
         renderFitment = () => { globalThis.__fitmentRenderedWorkspace = state.fitmentActiveSection; };
         loadFitmentVehicleCatalogue = () => {};
+        globalThis.__realEnsureRequiredFitmentVariantLookup = ensureRequiredFitmentVariantLookup;
         ensureRequiredFitmentVariantLookup = () => {};
         const realLoadFitmentCheckHistory = loadFitmentCheckHistory;
         const realRefreshFitmentCheckCurrentness = refreshFitmentCheckCurrentness;
@@ -195,7 +197,8 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             snapshot: vnextFitmentSnapshot,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
-            runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
+            runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling, clearFitmentRuntimeRequests, reconcileRequiredFitmentWorkspace,
+            useRealVariantLookup() { ensureRequiredFitmentVariantLookup = globalThis.__realEnsureRequiredFitmentVariantLookup; },
             realLoadFitmentCheckHistory,
             refreshCurrentness: realRefreshFitmentCheckCurrentness,
             saveWithRealCurrentness(...args) {
@@ -1339,7 +1342,8 @@ test("optional vehicle reselection opens from the VNext action while the wheel e
         "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/reselect": response(200, { outcome: "multiple", variants: [variant("A"), variant("B")] }),
     } });
     const canonical = overviewFor(api, "run_standard_check", { confirmedVariant: true });
-    seed(api, canonical, "vehicle");
+    seed(api, canonical, "rim");
+    api.state.fitmentForm.rim.offset_et_mm = "35,125";
     api.state.fitmentRimEditing = true;
 
     api.bridge.action("reselect-vehicle");
@@ -1347,14 +1351,16 @@ test("optional vehicle reselection opens from the VNext action while the wheel e
 
     assert.equal(api.state.fitmentModificationPickerOpen, true);
     assert.equal(api.state.fitmentModificationLookupMode, "reselect");
-    assert.equal(api.state.fitmentRimEditing, true);
+    assert.equal(api.state.fitmentRimEditing, false);
+    assert.equal(api.state.fitmentActiveSection, "vehicle");
     assert.ok(calls.includes("POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/reselect"));
-    const picker = fitmentMarkup({
-        ...api.snapshot(),
-        rimEditing: true,
-    });
+    const picker = fitmentMarkup(api.snapshot());
     assert.match(picker, /<strong>A<\/strong>/);
     assert.match(picker, /data-fitment-action="cancel-vehicle-reselection"/);
+    api.bridge.action("cancel-vehicle-reselection");
+    assert.equal(api.state.fitmentRimEditing, true);
+    assert.equal(api.state.fitmentActiveSection, "rim");
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "35,125");
 });
 
 test("failed vehicle variant Apply keeps the picker and selection available", async () => {
@@ -1428,7 +1434,7 @@ test("accepting a resolver proposal is local and Save waits for explicit confirm
     api.state.fitmentRimManualFields = ["bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j", "center_bore_mm"];
     const initialCallCount = calls.length;
     assert.equal(api.fitmentRimSaveReadiness().ready, false);
-    await api.saveVnextFitment();
+    await api.saveVnextFitment("rim");
     assert.equal(calls.length, initialCallCount, "unconfirmed proposal must not send PATCH");
     const revision = api.state.fitmentOverview.rim_revision;
     api.bridge.action("accept-rim-proposal", "offset_et_mm");
@@ -1537,4 +1543,105 @@ test("SKU change replaces unresolved system values, invalidates changed accepted
     assert.ok(api.state.fitmentSourceConflicts.some(item => item.field === "offset_et_mm"));
     assert.equal(api.state.fitmentForm.rim.wheel_diameter_in, 20);
     assert.ok(api.fitmentRimPendingProposalFields().includes("wheel_diameter_in"), "changed accepted value must require another acceptance");
+});
+
+test("opening and cancelling another SKU preserves accepted A; selecting B invalidates A", () => {
+    const { api } = navigationApi(); seedSourceSelection(api);
+    api.state.fitmentSourceVariantOptions = api.state.fitmentSourceVariants;
+    api.state.fitmentSourceVariants = [];
+    const before = JSON.stringify([api.state.fitmentForm,api.state.fitmentSourceIdentity,api.state.fitmentSourceAcceptedContexts]);
+    api.bridge.action("choose-rim-sku");
+    assert.equal(api.state.fitmentSkuChooserOpen,true);
+    assert.equal(JSON.stringify([api.state.fitmentForm,api.state.fitmentSourceIdentity,api.state.fitmentSourceAcceptedContexts]),before);
+    api.bridge.action("cancel-rim-sku");
+    assert.equal(JSON.stringify([api.state.fitmentForm,api.state.fitmentSourceIdentity,api.state.fitmentSourceAcceptedContexts]),before);
+    api.bridge.action("choose-rim-sku"); api.bridge.action("rim-variant","0");
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,"sku-b");
+    assert.equal(api.state.fitmentSourceAcceptedContexts.center_bore_mm,undefined);
+    assert.ok(api.fitmentRimPendingProposalFields().includes("center_bore_mm"));
+});
+
+test("a newly required Vehicle workspace preserves and resumes the Wheel draft", async () => {
+    const { api } = navigationApi({vnext:true});
+    const ov=overviewFor(api,"select_vehicle_variant"); seed(api,ov,"rim");
+    api.state.fitmentRimEditing=true;
+    api.state.fitmentForm.rim.offset_et_mm="35,125";
+    api.reconcileRequiredFitmentWorkspace();
+    assert.equal(api.state.fitmentActiveSection,"vehicle"); assert.equal(api.state.fitmentRimEditing,false);
+    assert.equal((fitmentMarkup(api.snapshot()).match(/data-fitment-workspace=/g)||[]).length,1);
+    const picked=variant("Long Range"); api.state.fitmentVehicleVariants=[picked]; api.state.fitmentSelectedVehicleVariantIndex=0;
+    // Demo confirms through the real variant operation, with no PATCH/render side effect.
+    api.state.fitmentJobId="guest-demo-zeekr";
+    api.bridge.action("confirm-vehicle-variant");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(api.state.fitmentActiveSection,"rim"); assert.equal(api.state.fitmentRimEditing,true);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm,"35,125");
+});
+
+test("manual Wheel fallback removes resolver provenance while preserving explicit values", () => {
+    const { api }=navigationApi(); seedSourceSelection(api);
+    api.state.fitmentSourceProposalContexts={offset_et_mm:{sourceFingerprint:"source-fp",selectedVariantSku:"sku-a",value:30}};
+    api.bridge.action("manual-rim");
+    assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint,null); assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,null);
+    assert.equal(Object.keys(api.state.fitmentSourceAcceptedContexts).length,0); assert.equal(Object.keys(api.state.fitmentSourceProposalContexts).length,0);
+    assert.equal(api.state.fitmentForm.rim.center_bore_mm,66.6); assert.ok(api.state.fitmentRimManualFields.includes("center_bore_mm"));
+});
+
+test("implicit VNext save does not mutate and navigation resets history loading", async () => {
+    const { api,calls }=navigationApi(); seedSourceSelection(api);
+    await api.saveVnextFitment(); api.bridge.action("save");
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
+    api.state.fitmentCheckHistoryLoading=true; api.clearFitmentRuntimeRequests(); assert.equal(api.state.fitmentCheckHistoryLoading,false);
+    api.state.fitmentSourceVariantOptions=[{sku:"previous-job"}];
+    api.state.fitmentSourceVariantOptionsIdentity={sourceFingerprint:"previous-source"};
+    api.state.fitmentSourceChooserIdentity={sourceFingerprint:"previous-source"};
+    api.state.fitmentSkuChooserOpen=true;
+    api.openFitmentView("another-job");
+    assert.equal(api.state.fitmentSourceVariantOptions.length,0);
+    assert.equal(api.state.fitmentSourceVariantOptionsIdentity,null);
+    assert.equal(api.state.fitmentSourceChooserIdentity,null);
+    assert.equal(api.state.fitmentSkuChooserOpen,false);
+});
+
+test("Standard summaries contain confirmed canonical values, never the edited Wheel draft", () => {
+    const {api}=navigationApi(); const ov=overviewFor(api,"run_standard_check",{confirmedVariant:true});
+    ov.rim_setup_state="confirmed_ready"; seed(api,ov,"rim"); api.state.fitmentForm.rim.offset_et_mm="99,125";
+    let snapshot=api.snapshot(); assert.doesNotMatch(snapshot.canonicalWheelSummary,/99,125/); assert.ok(snapshot.canonicalVehicleSummary);
+    ov.rim_setup_state="partial"; ov.vehicle_state="unconfirmed"; snapshot=api.snapshot();
+    assert.equal(snapshot.canonicalWheelSummary,""); assert.equal(snapshot.canonicalVehicleSummary,"");
+});
+
+
+test("guest Vehicle Save opens the real demo exact-variant lookup", async () => {
+    const {api,calls}=navigationApi({vnext:true});
+    seed(api,overviewFor(api,"complete_vehicle_details"),"vehicle");
+    api.state.fitmentJobId="guest-demo-zeekr";
+    api.state.fitmentVehicleEditing=true;
+    api.useRealVariantLookup();
+    await api.saveVnextFitment("vehicle");
+    assert.equal(api.snapshot().nextAction,"select_vehicle_variant");
+    assert.equal(api.state.fitmentLookup.status,"loaded");
+    assert.ok(api.state.fitmentVehicleVariants.length>0);
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace="vehicle"/);
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
+});
+
+test("readonly SKU lookup and cancel retain A, and reopening B uses the newly returned fingerprint", async () => {
+    const {api}=navigationApi({routes:{"POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve":response(200,{source_fingerprint:"fresh-source",variants:[sourceVariant("sku-b",{wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:112,center_bore_mm:66.6,offset_et_mm:45})]})}});
+    seedSourceSelection(api); api.state.fitmentSourceVariants=[];
+    const before=JSON.stringify([api.state.fitmentForm,api.state.fitmentSourceIdentity,api.state.fitmentSourceAcceptedContexts]);
+    await api.resolveFitmentRimSource({chooserOnly:true});
+    assert.equal(JSON.stringify([api.state.fitmentForm,api.state.fitmentSourceIdentity,api.state.fitmentSourceAcceptedContexts]),before);
+    api.bridge.action("cancel-rim-sku"); api.bridge.action("choose-rim-sku"); api.bridge.action("rim-variant","0");
+    assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint,"fresh-source");
+    assert.equal(api.state.fitmentSourceProposalContexts.center_bore_mm.sourceFingerprint,"fresh-source");
+});
+
+test("a valid multi-SKU resolver response is a chooser, even without shared top-level values", async () => {
+    const {api}=navigationApi({routes:{"POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve":response(200,{source_fingerprint:"source",selection_required:true,values:{},variants:[sourceVariant("sku-a",{wheel_diameter_in:19})]})}});
+    seedSourceSelection(api); api.state.fitmentRimEditing=true;
+    await api.resolveFitmentRimSource();
+    assert.equal(api.state.fitmentSourceStatusTone,"neutral");
+    assert.match(fitmentMarkup(api.snapshot()),/Выберите колесный диск/);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()),/data-fitment-source-url|Указать параметры вручную/);
 });
