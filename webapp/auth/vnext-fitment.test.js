@@ -62,13 +62,41 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   assert.equal(saved.body, "saved body");
   const markup = fitmentMarkup(model);
   assert.match(markup, /option value="zeekr" selected/);
-  assert.match(markup, /data-fitment-field="vehicle.body" value="edited body"/);
-  assert.match(markup, /data-fitment-field="vehicle.modification" value="AWD"/);
+  assert.doesNotMatch(markup, /data-fitment-field="vehicle.body"/);
+  assert.doesNotMatch(markup, /data-fitment-field="vehicle.modification"/);
 
   state.fitmentForm.vehicle.body = "";
-  assert.match(fitmentMarkup(context.vnextFitmentSnapshot()), /data-fitment-field="vehicle.body" value=""/);
+  assert.doesNotMatch(fitmentMarkup(context.vnextFitmentSnapshot()), /data-fitment-field="vehicle.body"/);
   state.fitmentForm.vehicle = null;
   assert.equal(context.vnextFitmentSnapshot().vehicleForm, saved);
+});
+
+test("manual Vehicle catalogue shows Market only when the provider requires a choice", () => {
+  const base = {
+    overview: {}, nextAction: "complete_vehicle_details", vehicleEditing: true,
+    vehicleForm: { make: "zeekr", model: "001", year: "2023", market: "CN" },
+    catalogue: {
+      makes: [{ value: "zeekr", label: "Zeekr" }],
+      models: [{ value: "001", label: "001" }],
+      years: [{ value: "2023", label: "2023" }],
+      markets: [{ value: "CN", label: "Китай" }, { value: "EU", label: "Европа" }],
+      states: {
+        makes: { status: "selected" }, models: { status: "selected" },
+        years: { status: "selected" },
+      },
+    },
+  };
+  const single = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "selected", resolution: "single" } } } });
+  assert.doesNotMatch(single, /data-fitment-field="vehicle.market"/);
+  const multiple = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "selection_required", resolution: "selection_required" } } } });
+  assert.match(multiple, /data-fitment-field="vehicle.market"/);
+  assert.match(multiple, /Версия для рынка/);
+  const failed = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "failed", message: "Не удалось загрузить рынки" } } } });
+  assert.match(failed, /Не удалось загрузить рынки/);
+  assert.match(failed, /data-fitment-action="retry-catalogue"/);
+  const noData = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "no_data", message: "Нет доступных рынков" } } } });
+  assert.match(noData, /Нет доступных рынков/);
+  assert.doesNotMatch(noData, /data-fitment-action="retry-catalogue"/);
 });
 
 test("Fitment view renders exactly the four API verdicts and keeps execution failure separate", () => {
