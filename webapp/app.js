@@ -7206,6 +7206,7 @@ async function loadFitmentOverview(
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
+        state.fitmentChecking = fitmentCheckIsPending(state.fitmentCheck);
         state.fitmentRimManualFields = [];
         state.fitmentRearManualFields = [];
         state.fitmentRearPendingFields = [];
@@ -7347,6 +7348,7 @@ async function hydrateFitmentVehiclePhoto(jobId) {
 }
 
 async function setFitmentVehiclePhoto(file) {
+    if (fitmentMutationsLocked()) return;
     if (!file || !state.fitmentJobId) return;
     state.fitmentRecognitionToken += 1;
     state.fitmentRecognitionController?.abort();
@@ -7375,6 +7377,7 @@ async function setFitmentVehiclePhoto(file) {
 }
 
 async function recognizeFitmentVehicle() {
+    if (fitmentMutationsLocked()) return;
     if (!state.fitmentOverview || state.fitmentRecognition.status === "loading") return;
     const jobId = state.fitmentJobId;
     const revision = state.fitmentOverview.vehicle_revision;
@@ -7620,6 +7623,7 @@ function resolveFitmentParserConflict(fieldName, value = undefined) {
 }
 
 async function resolveFitmentRimSource({ automatic = false } = {}) {
+    if (fitmentMutationsLocked()) return;
     if (!state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId) || state.fitmentSourceResolving) return;
     const productUrl = normalizeFitmentText(state.fitmentForm.rim.product_url);
     if (!productUrl) {
@@ -7847,6 +7851,7 @@ function toggleFitmentModificationPicker() {
 }
 
 async function replaceFitmentVehicleVariant(variant) {
+    if (fitmentMutationsLocked()) return;
     const overview = state.fitmentOverview;
     const current = fitmentSelectedVehicleVariant(overview);
     if (!overview || !variant || !current || state.fitmentVehicleVariantApplying) return;
@@ -7946,6 +7951,10 @@ function fitmentCheckIsPending(check = state.fitmentCheck) {
     return check?.execution_status === "queued" || check?.execution_status === "processing";
 }
 
+function fitmentMutationsLocked() {
+    return state.fitmentChecking || fitmentCheckIsPending();
+}
+
 function fitmentCheckContextKey() {
     const overview = state.fitmentOverview;
     return [
@@ -7986,6 +7995,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
         if (token !== state.fitmentCheckPollToken || state.view !== "fitment" || contextKey !== fitmentCheckContextKey()) return;
         try {
             const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+            if (token !== state.fitmentCheckPollToken || contextKey !== fitmentCheckContextKey()) return;
             if (response.status === 401) {
                 showFitmentAuthRequired();
                 return;
@@ -8011,8 +8021,14 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
 
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (fitmentNextAction(overview) !== "run_standard_check" || state.fitmentChecking) return;
+    if (fitmentNextAction(overview) !== "run_standard_check" || fitmentMutationsLocked() || state.fitmentSaving || state.fitmentVehicleVariantApplying || state.fitmentSourceResolving) return;
+    const contextKey = fitmentCheckContextKey();
+    const token = state.fitmentCheckPollToken;
+    const isCurrentRequest = () => token === state.fitmentCheckPollToken && contextKey === fitmentCheckContextKey();
+    let accepted = false;
     setFitmentEditor("");
+    state.fitmentActiveSection = "result";
+    state.fitmentActiveStep = 3;
     if (shouldUseDemoFitment(state.fitmentJobId)) {
         runDemoFitmentCheck();
         return;
@@ -8036,24 +8052,32 @@ async function runFitmentCheck() {
                 mode: "standard",
             }),
         });
+        if (!isCurrentRequest()) return;
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
         }
         if (!response.ok) throw new Error(await parseApiError(response));
-        state.fitmentCheck = await response.json();
+        const check = await response.json();
+        if (!isCurrentRequest()) return;
+        state.fitmentCheck = check;
+        accepted = true;
         if (fitmentCheckIsPending(state.fitmentCheck)) {
             pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
         }
     } catch (error) {
+        if (!isCurrentRequest()) return;
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
-        if (!fitmentCheckIsPending(state.fitmentCheck)) state.fitmentChecking = false;
-        renderFitment();
+        if ((isCurrentRequest() || accepted) && contextKey === fitmentCheckContextKey()) {
+            if (!fitmentCheckIsPending(state.fitmentCheck)) state.fitmentChecking = false;
+            renderFitment();
+        }
     }
 }
 
 async function applyFitmentVehicleVariant(variant) {
+    if (fitmentMutationsLocked()) return;
     const overview = state.fitmentOverview;
     if (!overview || !variant || state.fitmentVehicleVariantApplying) return;
     const confirmationSection = state.fitmentActiveSection;
@@ -8108,7 +8132,7 @@ async function applyFitmentVehicleVariant(variant) {
 
 async function saveFitment(event, { confirmWheelFields = false } = {}) {
     event?.preventDefault?.();
-    if (!state.fitmentJobId || state.fitmentSaving) return;
+    if (!state.fitmentJobId || state.fitmentSaving || fitmentMutationsLocked()) return;
     const savedFromSection = state.fitmentActiveSection;
     const savingVehicle = savedFromSection === "vehicle";
     const unsavedVehicleDraft = !savingVehicle && state.fitmentVehicleDirty
@@ -10370,7 +10394,7 @@ function vnextFitmentSnapshot() {
         overview,
         loading: state.fitmentLoading,
         saving: state.fitmentSaving,
-        checking: state.fitmentChecking,
+        checking: fitmentMutationsLocked(),
         error: state.fitmentError ? localizeErrorMessage(state.fitmentError) : "",
         authRequired: Boolean(state.fitmentAuthRequired),
         vehicleError: !state.fitmentAuthRequired && errorSection === "vehicle" ? runtimeError : "",
@@ -10386,7 +10410,7 @@ function vnextFitmentSnapshot() {
         conditions: (failedExecution ? [] : check?.conditions || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         fieldEvidence,
         currentness: check ? { isCurrent: check.is_current !== false, stale: check.is_current === false } : null,
-        canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !state.fitmentChecking),
+        canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentMutationsLocked()),
         retryAvailable,
         vehicle,
         vehicleForm: state.fitmentForm?.vehicle || vehicle,
@@ -10466,6 +10490,7 @@ function vnextFitmentSnapshot() {
 }
 
 function setVnextFitmentField(path, value) {
+    if (fitmentMutationsLocked()) return;
     // Keep the user's decimal spelling intact while editing. Conversion at the
     // PATCH boundary accepts comma and dot without turning an intermediate
     // value such as "35," into NaN (and then JSON null).
@@ -10547,8 +10572,9 @@ window.dreamwheelsFitmentBridge = {
     },
     setField: setVnextFitmentField,
     setVehiclePhoto: setFitmentVehiclePhoto,
-    setSourceUrl(value) { state.fitmentForm.rim.product_url = value; markFitmentDirty(); notifyFitmentBridge(); },
+    setSourceUrl(value) { if (fitmentMutationsLocked()) return; state.fitmentForm.rim.product_url = value; markFitmentDirty(); notifyFitmentBridge(); },
     action(action, value = "") {
+        if (fitmentMutationsLocked() && !["back", "reload", "login", "create-image"].includes(action)) return;
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();

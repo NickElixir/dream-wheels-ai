@@ -6,6 +6,19 @@ import { fitmentMarkup, wheelPickerOptions, wheelPickerManualValue } from "../vn
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("pending check locks the mutation region and keeps Create Image outside it", () => {
+  for (const executionStatus of ["queued", "processing"]) {
+    const markup = fitmentMarkup({ executionStatus, checking: true, canRunCheck: false });
+    assert.match(markup, /<fieldset[^>]*disabled/);
+    assert.match(markup, /Проверяем совместимость…/);
+    assert.ok(markup.indexOf("</fieldset>") < markup.indexOf('data-fitment-action="create-image"'));
+    assert.match(markup, /data-fitment-action="check"[^>]*disabled/);
+  }
+  const failed = fitmentMarkup({ executionStatus: "failed", retryAvailable: true, canRunCheck: false });
+  assert.match(failed, /data-fitment-action="check"[^>]*disabled/);
+  assert.match(failed, /Изменить параметры/);
+});
+
 test("ET picker separates recommended/all, prioritizes exact matches and preserves manual decimals", () => {
   assert.ok(wheelPickerOptions("offset_et_mm").matches.length < wheelPickerOptions("offset_et_mm", "", "all").matches.length);
   const exact = wheelPickerOptions("offset_et_mm", "33,275");
@@ -54,6 +67,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     state,
     normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
     fitmentCheckForPresentation: () => null,
+    fitmentMutationsLocked: () => false,
     fitmentUiState: () => ({ nextAction: "complete_vehicle_details", rim: {}, form: { dirty: true } }),
     fitmentContextJob: () => null,
     fitmentNextAction: () => "complete_vehicle_details",
@@ -162,8 +176,8 @@ test("Fitment view renders exactly the four API verdicts and keeps execution fai
     const markup = fitmentMarkup({ jobId: "job-a", overview: {}, check: { execution_status: "completed", verdict, is_current: true }, executionStatus: "completed" });
     assert.match(markup, new RegExp(label));
   }
-  const failed = fitmentMarkup({ jobId: "job-a", overview: {}, executionStatus: "failed", check: { execution_status: "failed" }, error: "Provider is unavailable", retryAvailable: true });
-  assert.match(failed, /Не удалось проверить совместимость/);
+  const failed = fitmentMarkup({ jobId: "job-a", overview: {}, executionStatus: "failed", check: { execution_status: "failed" }, error: "Provider is unavailable", retryAvailable: true, canRunCheck: true });
+  assert.match(failed, /Не удалось выполнить проверку/);
   assert.match(failed, /Provider is unavailable/);
   assert.doesNotMatch(failed, /Технические данные|Недостаточно данных|Не подходит|Подходит/);
 });
@@ -171,8 +185,8 @@ test("Fitment view renders exactly the four API verdicts and keeps execution fai
 test("Fitment queued/processing and stale snapshots use server status/currentness only", () => {
   const queued = fitmentMarkup({ jobId: "A", overview: {}, executionStatus: "queued", vehicleTitle: "Car A", rimTitle: "Wheel A" });
   const processing = fitmentMarkup({ jobId: "A", overview: {}, executionStatus: "processing", vehicleTitle: "Car A", rimTitle: "Wheel A" });
-  const stale = fitmentMarkup({ jobId: "A", overview: {}, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false }, resultCopy: "Vehicle or wheel details changed", retryAvailable: true });
-  assert.match(queued, /Проверка в очереди/);
+  const stale = fitmentMarkup({ jobId: "A", overview: {}, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false }, resultCopy: "Vehicle or wheel details changed", retryAvailable: true, canRunCheck: true });
+  assert.match(queued, /Проверяем совместимость/);
   assert.match(processing, /Проверяем совместимость/);
   assert.match(stale, /Результат больше не актуален/);
   assert.match(stale, /Проверить ещё раз/);
@@ -253,11 +267,11 @@ test("Fitment action hierarchy keeps Create Image independent and secondary", ()
     assert.equal((markup.match(/data-fitment-action="create-image"/g) || []).length, 1, verdict);
   }
 
-  const stale = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
+  const stale = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, canRunCheck: true, executionStatus: "completed", check: { execution_status: "completed", verdict: "compatible", is_current: false } });
   assert.equal(buttonClass(stale, "check"), "vnext-button vnext-button--primary");
   assert.equal(buttonClass(stale, "create-image"), "vnext-button vnext-button--secondary");
 
-  const failed = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, executionStatus: "failed", check: { execution_status: "failed" } });
+  const failed = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", retryAvailable: true, canRunCheck: true, executionStatus: "failed", check: { execution_status: "failed" } });
   assert.equal(buttonClass(failed, "check"), "vnext-button vnext-button--primary");
   assert.equal(buttonClass(failed, "create-image"), "vnext-button vnext-button--secondary");
 
@@ -266,7 +280,7 @@ test("Fitment action hierarchy keeps Create Image independent and secondary", ()
     assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--secondary", executionStatus);
   }
 
-  const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
+  const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, canRunCheck: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
   assert.equal(buttonClass(editingCompleted, "save"), "vnext-button vnext-button--primary");
   assert.equal(buttonClass(editingCompleted, "create-image"), "vnext-button vnext-button--secondary");
   assert.match(editingCompleted, /data-fitment-action="check"[^>]*disabled/);
@@ -471,6 +485,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentContextJob: () => null,
     fitmentUiState: (value) => ({ nextAction: value?.next_action?.kind, rim: { setupState: value?.rim_setup_state, setupMode: value?.setup_mode, front: value?.front_rim, rear: value?.rear_rim } }),
     fitmentCheckForPresentation: () => null,
+    fitmentMutationsLocked: () => false,
     demoVehicleTitle: (value) => [value?.make, value?.model].filter(Boolean).join(" "),
     fitmentMarketLabel: (value) => value || "",
     fitmentPresentationText: (value) => String(value ?? ""),
@@ -540,7 +555,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       fitmentMessage: "", fitmentMessageTone: "neutral", fitmentSourceConflicts: [], fitmentSourceIdentity: {},
     };
     const context = {
-      state, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
+      state, fitmentMutationsLocked: () => false, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
       window: { setTimeout: () => 1, clearTimeout() {} }, AbortController,
       shouldUseDemoFitment: () => false,
       normalizeFitmentText: value => value.trim(),

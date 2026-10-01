@@ -189,6 +189,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
+            runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -300,6 +301,53 @@ function seed(api, overview, section = "vehicle") {
     api.state.fitmentVehicleEditing = false;
     api.state.fitmentRimEditing = false;
 }
+
+test("Standard Check uses canonical IDs only, locks mutations and rejects duplicate start", async () => {
+    let release, payload;
+    const { api, calls } = navigationApi({ routes: {
+        "POST /api/backend/fitment/checks": options => {
+            payload = JSON.parse(options.body);
+            return new Promise(resolve => { release = resolve; });
+        },
+    } });
+    const overview = overviewFor(api, "run_standard_check");
+    seed(api, overview, "result");
+    api.state.fitmentForm.rim.offset_et_mm = "99,125";
+    const request = api.runFitmentCheck();
+    assert.equal(api.fitmentMutationsLocked(), true);
+    api.setVnextFitmentField("rim.offset_et_mm", "30");
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "99,125");
+    await api.saveFitment();
+    await api.runFitmentCheck();
+    assert.equal(calls.filter(call => call.startsWith("POST")).length, 1);
+    assert.equal(calls.some(call => call.startsWith("PATCH")), false);
+    assert.deepEqual(Object.keys(payload).sort(), ["mode", "render_job_id", "rim_setup_id", "trigger", "vehicle_identity_id"]);
+    release(response(200, { id: "check", execution_status: "failed" }));
+    await request;
+    assert.equal(api.fitmentMutationsLocked(), false);
+    assert.equal(api.state.fitmentOverview, overview);
+});
+
+test("Standard Check requires server progression and discards a response after navigation", async () => {
+    let release;
+    const { api, calls } = navigationApi({ routes: {
+        "POST /api/backend/fitment/checks": () => new Promise(resolve => { release = resolve; }),
+    } });
+    seed(api, overviewFor(api, "complete_rim_specs"), "result");
+    await api.runFitmentCheck();
+    assert.equal(calls.includes("POST /api/backend/fitment/checks"), false);
+    api.state.fitmentOverview.next_action = { kind: "run_standard_check" };
+    const request = api.runFitmentCheck();
+    api.clearFitmentCheckPolling();
+    api.state.fitmentJobId = "another-job";
+    api.state.fitmentChecking = false;
+    release(response(200, { id: "obsolete", execution_status: "completed" }));
+    await request;
+    assert.equal(api.state.fitmentCheck, null);
+    assert.equal(api.state.fitmentChecking, false);
+    api.state.fitmentCheck = { execution_status: "queued" };
+    assert.equal(api.fitmentMutationsLocked(), true, "poll transport failure must not unlock a pending snapshot");
+});
 
 function assertSection(api, section) {
     assert.equal(api.state.fitmentActiveSection, section);
