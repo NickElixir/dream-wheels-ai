@@ -1,0 +1,97 @@
+[
+  {
+    "name": "initial-sources",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "manual-vehicle",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "required-variant",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "multi-sku",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "all-proposals",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "partial-acceptance",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "all-confirmed",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "manual-conflict",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "uniform",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "staggered",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "picker-dia",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "picker-et",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "both-ready",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "compatible",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "compatible_with_conditions",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "incompatible",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "unknown",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "stale",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  },
+  {
+    "name": "failed",
+    "labelCyrillic": [],
+    "visibleCyrillic": []
+  }
+]

@@ -1,3 +1,5 @@
+import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
+import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,8 +11,8 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const APP_SOURCE = fs.readFileSync(path.join(REPO_ROOT, "webapp", "app.js"), "utf8");
 const APP_SOURCE_FOR_VM = APP_SOURCE.replace(
     /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
-    "",
-);
+    `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\nconst buildFitmentRimReadiness = ${buildFitmentRimReadiness.toString()};\n`,
+).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\nimport \{ buildFitmentRimReadiness \} from "\.\/vnext\/fitment-readiness\.mjs";\n\n/u, "");
 
 function response(body, status = 200) {
     return {
@@ -403,4 +405,21 @@ test("recognition year range does not reuse a previously remembered exact year",
     assert.equal(api.state.fitmentForm.vehicle.year, "");
     assert.equal(api.state.fitmentForm.vehicle.market, "");
     assert.ok(api.state.fitmentFormState.missingFields.includes("vehicle.year"));
+});
+
+test("owner Market gate auto-resolves one provider market then invalidates it for multiple markets", async () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    const { api } = harness;
+    seedState(harness, { market: "", make: "ZEEKR", model: "007", year: "2025" });
+    await api.revalidateFitmentCatalogueChain(api.beginFitmentCatalogueContextChange());
+    assert.equal(api.state.fitmentForm.vehicle.market,"chdm");
+    assert.equal(api.state.fitmentMarketResolution.resolution,"single");
+    await selectModel(harness,"X");
+    assert.equal(api.state.fitmentMarketResolution.status,"idle");
+    api.state.fitmentForm.vehicle.year = "2023";
+    api.state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+    await api.revalidateFitmentCatalogueChain(api.beginFitmentCatalogueContextChange());
+    assert.equal(api.state.fitmentMarketResolution.resolution,"selection_required");
+    assert.equal(api.state.fitmentForm.vehicle.market,"");
+    assert.ok(api.state.fitmentFormState.invalidFields.includes("vehicle.market"));
 });

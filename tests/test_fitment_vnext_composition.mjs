@@ -1,3 +1,4 @@
+import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,7 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(root, "webapp/vnext/views/fitment.js"), "utf8")
-  .replaceAll("export function ", "function ");
+  .replaceAll("export function ", "function ")
+  .replace(/import \{ fitmentDisplayValue \} from "\.\.\/fitment-display\.mjs";/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};`);
 const context = {};
 vm.runInNewContext(`${source}\nglobalThis.fitmentMarkup = fitmentMarkup;`, context);
 

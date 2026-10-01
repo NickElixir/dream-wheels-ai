@@ -212,7 +212,7 @@ def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> No
         in variant_flow
     )
     save_flow = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
-    assert "const savedFromSection = state.fitmentActiveSection;" in save_flow
+    assert "const savedFromSection = owner || state.fitmentActiveSection;" in save_flow
     assert "state.fitmentActiveSection = savedFromSection;" in save_flow
 
 
@@ -266,8 +266,8 @@ def test_g2_2_disclosure_renderer_never_exposes_empty_content() -> None:
 
 def test_g2_2_readonly_source_and_technical_rows_are_safe_and_partial() -> None:
     assert "function fitmentRimTechnicalSummary(rim = {})" in APP_JS
-    assert "ET ${formatIdentityNumber(rim.offset_et_mm)}" in APP_JS
-    assert "DIA ${formatIdentityNumber(rim.center_bore_mm)}" in APP_JS
+    assert "ET ${fitmentDisplayValue(rim.offset_et_mm, locale)}" in APP_JS
+    assert "DIA ${fitmentDisplayValue(rim.center_bore_mm, locale)}" in APP_JS
     assert "function fitmentSafeSourceDisplay(source)" in APP_JS
     assert "parsed.search" not in APP_JS
     assert "word-break: break-word" in STYLE_CSS
