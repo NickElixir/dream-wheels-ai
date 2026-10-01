@@ -4,8 +4,8 @@ Status: **PARTIAL — READY FOR INDEPENDENT RE-REVIEW; local resolver browser sm
 
 Base: PR #241 runtime HEAD `981382dc11e7085868b3787ae75265a929b0e6b0`.
 Corrective branch: `fix/fitment-vnext-phase-a-corrections`.
-Corrective HEAD: filled after commit.
-PR: filled after creation.
+Corrective runtime HEAD: `eeb72036fe014d7155deb4778fce467cc0d82d5c`.
+PR: [#243](https://github.com/NickElixir/dream-wheels-ai/pull/243), base `feature/fitment-vnext-slice-7-polish`.
 
 This is a focused corrective pass for B1–B4 and H1–H4. It does not integrate or merge the implementation stack. The supplied Phase A review says `NOT READY`; its underlying reviewer report was not present in this checkout, so findings below are mapped to the supplied corrective specification and the cited slice evidence.
 
