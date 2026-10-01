@@ -469,3 +469,18 @@ The response adds `requires_confirmation`; `next_action` stays
 `select_vehicle_variant`. Default calls retain the existing single automatic
 confirmation semantics. Ownership, candidate-currentness and expected Vehicle
 revision checks remain authoritative.
+
+### VNext job-scoped Vehicle recognition proposal (additive)
+
+`POST /identity/fitment/{job_id}/vehicle-proposal` accepts multipart `car_image`
+and `expected_vehicle_revision` with the existing identity auth credentials.
+It authorizes the owned Fitment context, shares the identity resolver rate limit,
+normalizes the image and returns `{job_id, vehicle_revision, vehicle}` using the
+strict existing visual identity schema (make/model/year or year range only).
+It checks Vehicle revision both before and after provider resolution.
+
+The endpoint does not create or update assets, render drafts/jobs, Vehicle,
+Wheel, checks, or credits. It returns a local proposal; catalogue save and exact
+variant confirmation remain separate authoritative actions. Unknown/ambiguous
+results retain their existing schema. Provider failure returns 503 with retry
+information; missing context is 404, unavailable/stale context is 409.
