@@ -32,6 +32,7 @@ const fitmentCallbacks = {
   action: (...args) => window.dreamwheelsFitmentBridge?.action(...args),
   setField: (...args) => window.dreamwheelsFitmentBridge?.setField(...args),
   setSourceUrl: (...args) => window.dreamwheelsFitmentBridge?.setSourceUrl(...args),
+  setVehiclePhoto: (...args) => window.dreamwheelsFitmentBridge?.setVehiclePhoto(...args),
 };
 
 const walletCallbacks = {

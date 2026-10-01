@@ -132,14 +132,14 @@ function response(status, body = {}) {
     };
 }
 
-function navigationApi({ routes = {} } = {}) {
+function navigationApi({ routes = {}, vnext = false } = {}) {
     const calls = [];
     const localStorage = storage();
     const sessionStorage = storage();
     const document = {
         documentElement: { dataset: { appBuild: "navigation-test" } },
         head: { append() {} }, body: element(), hidden: false,
-        addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; },
+        addEventListener() {}, querySelector(selector) { return vnext && selector === "[data-vnext-fitment-root]" ? element() : null; }, querySelectorAll() { return []; },
         createElement: element,
     };
     const window = {
@@ -148,7 +148,7 @@ function navigationApi({ routes = {} } = {}) {
         addEventListener() {}, scrollTo() {}, open() {},
     };
     const context = {
-        AbortController, URL, URLSearchParams, console, document, window,
+        AbortController, URL, URLSearchParams, Blob, File, FormData, console, document, window,
         fetch: async (url, options = {}) => {
             const key = `${options.method || "GET"} ${new URL(url, "https://test.local").pathname}`;
             calls.push(key);
@@ -188,6 +188,7 @@ function navigationApi({ routes = {} } = {}) {
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
+            recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -989,6 +990,53 @@ test("resolver compares proposals with confirmed Wheel values without changing c
     assert.equal(api.fitmentPayload({ includeVehicle: false }).rim.offset_et_mm, 42.75);
     assert.equal(api.fitmentPayload({ includeVehicle: false }).rim.source_fingerprint, null);
     assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm, 35.125);
+});
+
+test("photo replacement and recognition remain local until catalogue/variant Save", async () => {
+    let api, revision, formData;
+    ({ api } = navigationApi({ routes: {
+        "POST /api/backend/identity/fitment/behavior-job/vehicle-proposal": options => {
+            formData = options.body;
+            return response(200, { vehicle_revision: revision, vehicle: { status: "resolved", primary: { make: "Porsche", model: "Cayenne", year_start: 2020, year_end: 2022 } } });
+        },
+    } }));
+    const initial = overviewFor(api, "run_standard_check");
+    seed(api, initial, "vehicle");
+    revision = initial.vehicle_revision;
+    const canonical = JSON.stringify(api.state.fitmentOverview);
+    const beforeVehicle = JSON.stringify(api.state.fitmentForm.vehicle);
+    await api.setFitmentVehiclePhoto(new File(["test"], "photo.png", { type: "image/png" }));
+    assert.equal(JSON.stringify(api.state.fitmentOverview), canonical);
+    await api.recognizeFitmentVehicle();
+    assert.equal(api.state.fitmentRecognition.status, "proposed");
+    assert.equal(formData.get("expected_vehicle_revision"), String(revision));
+    assert.equal(formData.get("car_image").type, "image/png");
+    assert.equal(JSON.stringify(api.state.fitmentForm.vehicle), beforeVehicle);
+    api.useFitmentRecognitionProposal(0);
+    assert.equal(api.state.fitmentForm.vehicle.make, "Porsche");
+    assert.equal(api.state.fitmentForm.vehicle.year, "", "year range must never choose an arbitrary year");
+    assert.equal(api.state.fitmentForm.vehicle.market, "");
+    assert.equal(api.state.fitmentVehicleDirty, true);
+    assert.equal(JSON.stringify(api.state.fitmentOverview), canonical);
+});
+
+test("VNext single variant is preselected locally and waits for explicit Apply", async () => {
+    let api, saved, lookupUrl;
+    const variant = { generation: "E3", modification: "3.0 V6", generation_slug: "e3", modification_slug: "v6" };
+    ({ api } = navigationApi({ vnext: true, routes: {
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants": (_options, url) => {
+            lookupUrl = url;
+            return response(200, { outcome: "single", requires_confirmation: true, variants: [variant] });
+        },
+        "GET /api/backend/jobs/behavior-job/fitment": () => response(200, saved),
+    } }));
+    saved = overviewFor(api, "select_vehicle_variant");
+    seed(api, saved, "vehicle");
+    await api.loadFitmentVehicleVariants();
+    assert.equal(new URL(lookupUrl, "https://test.local").searchParams.get("require_confirmation"), "true");
+    assert.equal(api.state.fitmentVehicleVariants.length, 1);
+    assert.equal(api.state.fitmentSelectedVehicleVariantIndex, 0);
+    assert.equal(api.state.fitmentOverview.next_action.kind, "select_vehicle_variant");
 });
 
 test("accepting a resolver proposal is local and Save waits for explicit confirmation", async () => {

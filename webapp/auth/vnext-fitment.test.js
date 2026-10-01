@@ -23,6 +23,21 @@ test("ET picker separates recommended/all, prioritizes exact matches and preserv
   assert.match(markup, /data-wheel-picker-search/);
 });
 
+test("Vehicle recognition exposes proposals and failure recovery without gating Create Image", () => {
+  const proposed = fitmentMarkup({ vehicleRecognition: { status: "proposed", canRecognize: true, candidates: [{ make: "Porsche", model: "Cayenne", year_start: 2020, year_end: 2022 }] } });
+  assert.match(proposed, /Porsche Cayenne 2020–2022/);
+  assert.match(proposed, /data-fitment-action="recognition-proposal"/);
+  assert.match(proposed, /data-fitment-action="edit-vehicle-photo"/);
+  const failed = fitmentMarkup({ vehicleRecognition: { status: "failed", canRecognize: true } });
+  assert.match(failed, /Не удалось распознать автомобиль по фото/);
+  assert.match(failed, /Попробовать ещё раз/);
+  assert.match(failed, /Указать вручную/);
+  assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
+  const pending = fitmentMarkup({ vehicleRecognition: { status: "loading", canRecognize: true } });
+  assert.match(pending, /Распознаём автомобиль/);
+  assert.match(pending, /data-fitment-action="recognize-vehicle"[^>]*disabled/);
+});
+
 test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
   const app = read("app.js");
   const snapshot = app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField("));
@@ -540,7 +555,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       persistFitmentNavigationContext() {}, ensureRequiredFitmentVariantLookup() {},
       notifyFitmentBridge() {},
       fitmentSectionToStep: value => value === "vehicle" ? 1 : value === "rim" ? 2 : 3,
-      vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {},
+      vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {}, setFitmentVehiclePhoto() {},
     };
     vm.createContext(context);
     vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}\n};`, context);

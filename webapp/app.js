@@ -1417,6 +1417,12 @@ const state = {
     // Vehicle and RimSpec edits have separate mutation boundaries. A RimSpec
     // save must never replay the vehicle payload from a stale draft.
     fitmentVehicleDirty: false,
+    fitmentVehiclePhoto: null,
+    fitmentVehiclePhotoUrl: "",
+    fitmentVehiclePhotoToken: 0,
+    fitmentRecognition: { status: "idle", candidates: [] },
+    fitmentRecognitionToken: 0,
+    fitmentRecognitionController: null,
     fitmentVehicleMarketEdited: false,
     fitmentOverviewCollapsed: false,
     fitmentSourceOpen: false,
@@ -6935,7 +6941,7 @@ async function loadFitmentCatalogue(kind, params = {}, { contextVersion = state.
 
 async function revalidateFitmentCatalogueChain(
     contextVersion = state.fitmentCatalogueContextVersion,
-    { preloaded = {} } = {}
+    { preloaded = {}, allowRemembered = true } = {}
 ) {
     const vehicle = state.fitmentForm.vehicle;
     const vehicleWasDirty = state.fitmentVehicleDirty;
@@ -6971,7 +6977,7 @@ async function revalidateFitmentCatalogueChain(
     }
     const remembered = fitmentRememberedVehicleChain({ make: vehicle.make });
     const currentMakeEntry = fitmentCatalogueSelectionItem("makes", vehicle.make, makesResult.items);
-    const rememberedMakeEntry = fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items);
+    const rememberedMakeEntry = allowRemembered ? fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items) : null;
     const makeEntry = currentMakeEntry || rememberedMakeEntry;
     if (!makeEntry) {
         vehicle.make = "";
@@ -7007,7 +7013,7 @@ async function revalidateFitmentCatalogueChain(
     const currentModelEntry = !parentChange.makeChanged
         ? fitmentCatalogueSelectionItem("models", vehicle.model, modelsResult.items)
         : null;
-    const rememberedModelEntry = fitmentCatalogueSelectionItem("models", rememberedMake.model, modelsResult.items);
+    const rememberedModelEntry = allowRemembered ? fitmentCatalogueSelectionItem("models", rememberedMake.model, modelsResult.items) : null;
     const modelEntry = currentModelEntry || rememberedModelEntry;
     if (!modelEntry) {
         vehicle.model = "";
@@ -7042,7 +7048,7 @@ async function revalidateFitmentCatalogueChain(
         make: vehicle.make,
         model: vehicle.model,
     });
-    const rememberedYearEntry = fitmentCatalogueSelectionItem("years", rememberedYear.year, yearsResult.items);
+    const rememberedYearEntry = allowRemembered ? fitmentCatalogueSelectionItem("years", rememberedYear.year, yearsResult.items) : null;
     const yearEntry = currentYearEntry || rememberedYearEntry;
     vehicle.year = yearEntry ? fitmentOptionValue(yearEntry) : "";
     if (!yearEntry) {
@@ -7075,7 +7081,7 @@ async function revalidateFitmentCatalogueChain(
     } else {
         const explicitMarket = previousMarketStatus === "selected"
             ? previousMarket
-            : rememberedYear.lastExplicitMarket;
+            : allowRemembered ? rememberedYear.lastExplicitMarket : "";
         const rememberedMarket = fitmentCatalogueSelectionItem("markets", explicitMarket, marketResult.items);
         vehicle.market = rememberedMarket ? fitmentOptionValue(rememberedMarket) : "";
         state.fitmentMarketResolution = {
@@ -7249,6 +7255,10 @@ function openFitmentView(
 ) {
     if (!jobId) return;
     clearFitmentRuntimeRequests();
+    if (state.fitmentVehiclePhotoUrl) URL.revokeObjectURL(state.fitmentVehiclePhotoUrl);
+    state.fitmentVehiclePhoto = null;
+    state.fitmentVehiclePhotoUrl = "";
+    state.fitmentRecognition = { status: "idle", candidates: [] };
     state.fitmentJobId = jobId;
     state.fitmentCatalogueDraftMemory = loadFitmentCatalogueDraftMemory(jobId);
     state.fitmentOriginView = originView;
@@ -7299,10 +7309,12 @@ function openFitmentView(
     state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
-    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver });
+    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver }).then(() => hydrateFitmentVehiclePhoto(jobId));
 }
 
 function closeFitmentView() {
+    state.fitmentRecognitionToken += 1;
+    state.fitmentRecognitionController?.abort();
     const originView = state.fitmentOriginView || "dashboard";
     const originJobId = state.fitmentOriginJobId;
     if (originView === "create") {
@@ -7312,6 +7324,128 @@ function closeFitmentView() {
         state.expandedJobId = originJobId;
     }
     setView(originView);
+}
+
+function fitmentVehiclePhotoKey(jobId = state.fitmentJobId) {
+    return `fitment-vehicle-photo:${jobId}`;
+}
+
+async function hydrateFitmentVehiclePhoto(jobId) {
+    if (jobId !== state.fitmentJobId || !state.fitmentOverview) return;
+    try {
+        const key = fitmentVehiclePhotoKey(jobId);
+        const descriptor = JSON.parse(sessionStorage.getItem(key) || "null");
+        if (!Number.isFinite(descriptor?.expiresAt) || descriptor.expiresAt <= Date.now()) return;
+        const draft = await loadDraftFile(key);
+        if (!draft || jobId !== state.fitmentJobId || state.fitmentVehiclePhoto) return;
+        state.fitmentVehiclePhoto = draft.blob;
+        state.fitmentVehiclePhotoUrl = URL.createObjectURL(draft.blob);
+        renderFitment();
+    } catch {
+        // The saved form remains recoverable when photo storage is unavailable.
+    }
+}
+
+async function setFitmentVehiclePhoto(file) {
+    if (!file || !state.fitmentJobId) return;
+    state.fitmentRecognitionToken += 1;
+    state.fitmentRecognitionController?.abort();
+    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+        state.fitmentRecognition = { status: "failed", candidates: [], message: "Выберите JPEG, PNG или WebP до 10 МБ." };
+        renderFitment();
+        return;
+    }
+    const photoToken = ++state.fitmentVehiclePhotoToken;
+    const jobId = state.fitmentJobId;
+    if (state.fitmentVehiclePhotoUrl) URL.revokeObjectURL(state.fitmentVehiclePhotoUrl);
+    state.fitmentVehiclePhoto = file;
+    state.fitmentVehiclePhotoUrl = URL.createObjectURL(file);
+    state.fitmentRecognition = { status: "idle", candidates: [] };
+    persistFitmentTransientDraft("navigation");
+    renderFitment();
+    try {
+        const key = fitmentVehiclePhotoKey(jobId);
+        const bytes = await file.arrayBuffer();
+        if (photoToken !== state.fitmentVehiclePhotoToken || jobId !== state.fitmentJobId) return;
+        await saveDraftFile(key, file, bytes);
+        sessionStorage.setItem(key, JSON.stringify({ expiresAt: Date.now() + FITMENT_TRANSIENT_DRAFT_TTL_MS }));
+    } catch {
+        // Recognition can use the in-memory photo if browser storage is full.
+    }
+}
+
+async function recognizeFitmentVehicle() {
+    if (!state.fitmentOverview || state.fitmentRecognition.status === "loading") return;
+    const jobId = state.fitmentJobId;
+    const revision = state.fitmentOverview.vehicle_revision;
+    const token = ++state.fitmentRecognitionToken;
+    const controller = new AbortController();
+    state.fitmentRecognitionController = controller;
+    state.fitmentRecognition = { status: "loading", candidates: [] };
+    renderFitment();
+    try {
+        let photo = state.fitmentVehiclePhoto;
+        if (!photo) {
+            const job = fitmentContextJob();
+            const url = job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle");
+            if (!url) throw new Error("vehicle_photo_unavailable");
+            const response = url.startsWith("/")
+                ? await authenticatedFetch(apiUrl(url), { headers: withAuthHeaders(), signal: controller.signal })
+                : await fetch(url, { signal: controller.signal });
+            if (!response.ok) throw new Error("vehicle_photo_unavailable");
+            photo = await response.blob();
+        }
+        const body = new FormData();
+        body.append("car_image", photo, "vehicle.jpg");
+        body.append("expected_vehicle_revision", String(revision));
+        const identity = getIdentityPayload({ includeTelegramUserId: true });
+        if (identity.init_data) body.append("init_data", identity.init_data);
+        if (identity.telegram_user_id != null) body.append("telegram_user_id", String(identity.telegram_user_id));
+        const response = await authenticatedFetch(apiUrl(`/identity/fitment/${jobId}/vehicle-proposal`), {
+            method: "POST", headers: withAuthHeaders(), body, signal: controller.signal,
+        });
+        if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+        if (response.status === 401) {
+            state.fitmentRecognition = { status: "failed", candidates: [] };
+            showFitmentAuthRequired();
+            return;
+        }
+        if (!response.ok) throw new Error(await parseApiError(response));
+        const result = await response.json();
+        if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+        if (revision !== state.fitmentOverview?.vehicle_revision || result.vehicle_revision !== revision) throw new Error("vehicle_revision_conflict");
+        const resolution = result.vehicle;
+        const candidates = [resolution?.primary, ...(resolution?.alternatives || [])].filter(Boolean);
+        state.fitmentRecognition = candidates.length
+            ? { status: "proposed", candidates, revision }
+            : { status: "failed", candidates: [] };
+    } catch (error) {
+        if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+        state.fitmentRecognition = { status: "failed", candidates: [] };
+    } finally {
+        if (token === state.fitmentRecognitionToken) {
+            state.fitmentRecognitionController = null;
+            renderFitment();
+        }
+    }
+}
+
+function useFitmentRecognitionProposal(index) {
+    const proposal = state.fitmentRecognition.candidates[index];
+    if (!proposal || state.fitmentRecognition.revision !== state.fitmentOverview?.vehicle_revision) return;
+    state.fitmentForm.vehicle = { make: proposal.make, model: proposal.model, year: proposal.year || "", market: "" };
+    state.fitmentVehicleDirty = true;
+    state.fitmentVehicleMarketEdited = false;
+    state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+    state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
+    state.fitmentRecognition = { ...state.fitmentRecognition, status: "applied" };
+    const contextVersion = beginFitmentCatalogueContextChange();
+    setFitmentEditor("vehicle");
+    setFitmentActiveSection("vehicle");
+    markFitmentDirty();
+    persistFitmentTransientDraft("navigation");
+    void revalidateFitmentCatalogueChain(contextVersion, { allowRemembered: false });
+    renderFitment();
 }
 
 function fitmentSourceErrorMessage(error) {
@@ -7606,8 +7740,9 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
     state.fitmentMessage = "";
     renderFitment();
     try {
+        const requireConfirmation = Boolean(document.querySelector("[data-vnext-fitment-root]"));
         const response = await authenticatedFetch(
-            apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants`, { includeIdentity: true }),
+            apiUrl(`/jobs/${state.fitmentJobId}/fitment/vehicle-variants${requireConfirmation ? "?require_confirmation=true" : ""}`, { includeIdentity: true }),
             { method: "POST", headers: withAuthHeaders() }
         );
         if (response.status === 401) {
@@ -7619,10 +7754,13 @@ async function loadFitmentVehicleVariants({ contextKey = fitmentVariantLookupCon
         if (requestToken !== state.fitmentVariantLookupToken
             || contextKey !== fitmentVariantLookupContextKey()) return;
         state.fitmentLookup = { status: result.outcome === "no_match" ? "no_match" : "loaded", outcome: result.outcome || "" };
-        state.fitmentVehicleVariants = result.outcome === "multiple"
+        state.fitmentVehicleVariants = result.outcome === "multiple" || result.requires_confirmation
             ? dedupeFitmentVehicleVariants(result.variants || [])
             : [];
-        if (result.outcome === "single") {
+        if (result.outcome === "single" && result.requires_confirmation) {
+            state.fitmentSelectedVehicleVariantIndex = 0;
+            await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: "vehicle", preserveWheelDraft: true });
+        } else if (result.outcome === "single") {
             await loadFitmentOverview(state.fitmentJobId, { preserveActiveSection: "vehicle", preserveWheelDraft: true });
             rebaseFitmentTransientVehicleDraft(state.fitmentOverview);
             state.fitmentMessage = locale === "ru" ? "Комплектация выбрана автоматически." : "Vehicle version was selected automatically.";
@@ -7790,6 +7928,10 @@ function clearFitmentCheckPolling() {
 }
 
 function clearFitmentRuntimeRequests() {
+    state.fitmentVehiclePhotoToken += 1;
+    state.fitmentRecognitionToken += 1;
+    state.fitmentRecognitionController?.abort();
+    state.fitmentRecognitionController = null;
     clearFitmentCheckPolling();
     Object.values(state.fitmentCatalogueControllers).forEach((controller) => controller?.abort?.());
     state.fitmentCatalogueControllers = {};
@@ -10251,7 +10393,12 @@ function vnextFitmentSnapshot() {
         vehicleTitle: [vehicle.make, vehicle.model].filter(Boolean).join(" "),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
         vehicleSummaryRows,
-        vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
+        vehiclePreview: state.fitmentVehiclePhotoUrl || fitmentPreviewAsset(job, "vehicle"),
+        vehicleRecognition: {
+            ...(state.fitmentRecognition?.revision !== undefined && state.fitmentRecognition.revision !== overview?.vehicle_revision
+                ? { status: "idle", candidates: [] } : state.fitmentRecognition),
+            canRecognize: Boolean(state.fitmentOverview && (state.fitmentVehiclePhoto || job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle"))),
+        },
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
         activeSection: state.fitmentActiveSection,
         manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
@@ -10399,11 +10546,15 @@ window.dreamwheelsFitmentBridge = {
         }
     },
     setField: setVnextFitmentField,
+    setVehiclePhoto: setFitmentVehiclePhoto,
     setSourceUrl(value) { state.fitmentForm.rim.product_url = value; markFitmentDirty(); notifyFitmentBridge(); },
     action(action, value = "") {
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
+        else if (action === "edit-vehicle-photo") persistFitmentTransientDraft("navigation");
+        else if (action === "recognize-vehicle") void recognizeFitmentVehicle();
+        else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
         else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }
         else if (action === "edit-vehicle") { setFitmentEditor("vehicle"); setFitmentActiveSection("vehicle"); }
