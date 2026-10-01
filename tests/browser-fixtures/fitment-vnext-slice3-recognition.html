@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fitment VNext recognition QA</title>
+  <link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/shell.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+  <style>
+    body { margin: 0; background: var(--vnext-canvas); color: var(--vnext-text); font-family: "IBM Plex Sans", sans-serif; }
+    main { max-width: 1120px; margin: auto; padding: 24px 16px 100px; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <main data-vnext-root>
+    <nav aria-label="QA scenarios"><button id="failure">Recognition failure</button><button id="single">Single exact variant</button></nav>
+    <div id="fitment"></div>
+  </main>
+  <script type="module">
+    import { createFitmentView, refreshFitmentView } from "../../webapp/vnext/views/fitment.js";
+    const model = {
+      overview: { vehicle_state: "confirmed_ready", rim_setup_state: "confirmed_ready" },
+      vehicleTitle: "Mercedes-Benz GLC 2024", rimTitle: "BBS CI-R",
+      vehicleStatus: "Автомобиль подтверждён",
+      nextAction: "run_standard_check", canRunCheck: true,
+      vehicleRecognition: { status: "idle", canRecognize: true },
+      catalogue: {
+        makes: [{ value: "porsche", label: "Porsche" }], models: [{ value: "cayenne", label: "Cayenne" }],
+        years: [{ value: "2020", label: "2020" }, { value: "2021", label: "2021" }, { value: "2022", label: "2022" }],
+        states: { makes: { status: "selected" }, models: { status: "selected" }, years: { status: "loaded_unselected" }, markets: { status: "idle" } },
+      },
+    };
+    // Presentation-only fixture. Ownership/network/revision safety uses API and
+    // runtime transition tests; no recognition provider is called here.
+    const root = createFitmentView(model, {
+      action(action) {
+        if (action === "recognize-vehicle") model.vehicleRecognition = { status: "proposed", canRecognize: true, candidates: [{ make: "Porsche", model: "Cayenne", year_start: 2020, year_end: 2022 }] };
+        if (action === "edit-vehicle" || action === "recognition-proposal") {
+          model.vehicleEditing = true;
+          model.manualVehicleEditing = true;
+          model.vehicleForm = { make: "porsche", model: "cayenne", year: "" };
+          model.vehicleRecognition = { status: "applied", canRecognize: true };
+        }
+        refreshFitmentView(root, model);
+      },
+      setField(path, value) { model.vehicleForm[path.split(".")[1]] = value; refreshFitmentView(root, model); },
+    });
+    document.getElementById("fitment").append(root);
+    document.getElementById("failure").onclick = () => { model.vehicleRecognition = { status: "failed", canRecognize: true }; refreshFitmentView(root, model); };
+    document.getElementById("single").onclick = () => {
+      model.vehicleEditing = false; model.manualVehicleEditing = false; model.nextAction = "select_vehicle_variant";
+      model.vehicleRecognition = { status: "idle", canRecognize: true };
+      model.vehicleVariants = [{ label: "Porsche Cayenne — E3 3.0 V6", technical: "2021 · SUV · Russia" }];
+      model.selectedVehicleVariant = 0; refreshFitmentView(root, model);
+    };
+  </script>
+</body>
+</html>

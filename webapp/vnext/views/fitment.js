@@ -201,6 +201,15 @@ function vehicleEditor(model, vehicle) {
   return `<section class="vnext-fitment__editor" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-vehicle-editor-title">Данные автомобиля</h2></div><div class="vnext-fitment__field-group"><h3>Укажите автомобиль</h3><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button("Сохранить автомобиль", "save", { primary: true, disabled: model.saving })}</section>`;
 }
 
+function vehicleRecognition(model) {
+  const recognition = model.vehicleRecognition || {};
+  if (recognition.status === "loading") return loadingStatus("Распознаём автомобиль");
+  if (recognition.status === "failed") return `<section class="vnext-fitment__recognition" role="alert"><p>${esc(recognition.message || "Не удалось распознать автомобиль по фото.")}</p>${button("Попробовать ещё раз", "recognize-vehicle", { disabled: !recognition.canRecognize })}${button("Указать вручную", "edit-vehicle")}</section>`;
+  if (recognition.status === "proposed") return `<section class="vnext-fitment__recognition"><h2>Предложено по фотографии</h2><p>Проверьте автомобиль по каталогу. Комплектация и рынок будут уточнены отдельно.</p>${(recognition.candidates || []).map((item,index) => `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}">${esc([item.make,item.model,item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : "Год не определён")].join(" "))} — Использовать</button>`).join("")}</section>`;
+  if (recognition.status === "applied") return '<p class="vnext-fitment__notice" role="status">Проверьте данные в каталоге и выберите точный год автомобиля.</p>';
+  return "";
+}
+
 function variantChooser(model) {
   if (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing || model.rimEditing) return "";
   const choices = model.vehicleVariants || [];
@@ -264,8 +273,9 @@ export function fitmentMarkup(model = {}) {
     <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
         ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title" class="vnext-fitment__visually-hidden">Автомобиль</h2>'}
-        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle")}</div>
-        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: true, disabled: true })}</div>
+        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle-photo")}</div>
+        <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="Фото автомобиля">
+        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: true, disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button("Указать вручную", "edit-vehicle")}</div>
         <p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>${model.vehicleVariantName ? `<p class="vnext-fitment__object-detail"><span>Комплектация</span> ${esc(model.vehicleVariantName)}</p>` : ""}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
@@ -275,6 +285,7 @@ export function fitmentMarkup(model = {}) {
         <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${esc(rimStatus)}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
+    ${vehicleRecognition(model)}
     <div class="vnext-fitment__active-editor">${variantChooser(model)}${vehicleEditor(model, vehicle)}${wheelEditor(model, rim)}</div>
     ${model.check || ["queued", "processing", "failed"].includes(model.executionStatus) ? verdict(model) : ""}
     ${checkError}
@@ -318,6 +329,11 @@ export function createFitmentView(model = {}, callbacks = {}) {
     if (path) root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`)?.focus();
   };
   root.addEventListener("click", (event) => {
+    if (event.target.closest('[data-fitment-action="edit-vehicle-photo"]')) {
+      root.fitmentCallbacks?.action?.("edit-vehicle-photo");
+      root.querySelector("[data-fitment-vehicle-photo]")?.click();
+      return;
+    }
     const opener = event.target.closest("[data-wheel-picker-open], [data-fitment-action='open-wheel-picker']");
     if (opener) {
       root.fitmentPicker = { path: opener.dataset.wheelPickerOpen || opener.dataset.value, query: "", mode: "recommended" };
@@ -366,6 +382,12 @@ export function createFitmentView(model = {}, callbacks = {}) {
   };
   root.addEventListener("input", (event) => { if (event.target.tagName !== "SELECT") changeField(event); });
   root.addEventListener("change", (event) => { if (event.target.tagName === "SELECT") changeField(event); });
+  root.addEventListener("change", (event) => {
+    if (event.target.matches("[data-fitment-vehicle-photo]") && event.target.files?.[0]) {
+      root.fitmentCallbacks?.setVehiclePhoto?.(event.target.files[0]);
+      event.target.value = "";
+    }
+  });
   root.addEventListener("input", (event) => {
     if (event.target.matches("[data-wheel-picker-search]") && root.fitmentPicker) {
       root.fitmentPicker.query = event.target.value;

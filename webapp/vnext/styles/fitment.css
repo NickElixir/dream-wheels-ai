@@ -204,3 +204,10 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 @media (min-width: 769px) {
   .vnext-fitment__picker { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%,-50%); width: min(560px,calc(100vw - 48px)); border-radius: 18px; }
 }
+
+.vnext-fitment__source-action { display: grid; gap: 8px; }
+.vnext-fitment__source-action .vnext-button + .vnext-button { min-height: 42px; border: 0; background: transparent; color: var(--vnext-text-secondary); }
+.vnext-fitment__recognition { display: grid; gap: 12px; margin-top: 22px; max-width: 760px; }
+.vnext-fitment__recognition h2 { margin: 0; font-size: 18px; }
+.vnext-fitment__recognition p { margin: 0; color: var(--vnext-text-secondary); }
+.vnext-fitment__recognition > .vnext-button { justify-self: start; }

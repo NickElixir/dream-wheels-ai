@@ -388,3 +388,19 @@ test("demo fixture exposes 001 years and a multi-market resolution", async () =>
     assert.equal(api.state.fitmentMarketResolution.status, "selection_required");
     assert.equal(api.state.fitmentMarketResolution.items.map((item) => item.value).join(","), "chdm,russia");
 });
+
+test("recognition year range does not reuse a previously remembered exact year", async () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    const { api } = harness;
+    seedState(harness, { make: "Porsche", model: "Cayenne", year: "2022", market: "russia" });
+    api.rememberFitmentVehicleCatalogueChain();
+    api.state.fitmentForm.vehicle = { make: "Porsche", model: "Cayenne", year: "", market: "" };
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+    const version = api.beginFitmentCatalogueContextChange();
+    await api.revalidateFitmentCatalogueChain(version, { allowRemembered: false });
+    assert.equal(api.state.fitmentForm.vehicle.model, "Cayenne");
+    assert.equal(api.state.fitmentForm.vehicle.year, "");
+    assert.equal(api.state.fitmentForm.vehicle.market, "");
+    assert.ok(api.state.fitmentFormState.missingFields.includes("vehicle.year"));
+});
