@@ -388,6 +388,33 @@ The backward-compatible migration `0035_fitment_rim_source_state.sql` adds
 nullable source identity/SKU fields and setup revision counters. Legacy rows
 without those fields remain readable as legacy/unknown source evidence.
 
+### VNext explicit Wheel confirmation extension
+
+`PATCH /jobs/{job_id}/fitment` accepts optional `confirmed_fields` inside
+`rim`, `front_rim`, and `rear_rim`. Allowed names are `wheel_diameter_in`,
+`wheel_width_j`, `bolt_count`, `pcd_mm`, `center_bore_mm`, and `offset_et_mm`.
+Each listed field must have a non-null value in the same axle payload. PCD
+confirmation requires both components for the aggregate state to be confirmed.
+
+The list records the user's explicit acceptance in the final Save action. It
+allows newly entered or changed values to be persisted and confirmed in one
+revision-bound PATCH. A resolver run and SKU selection do not send this field.
+Without it, the existing save/confirmation behavior remains supported.
+
+Explicitly confirmed values may replace a previous confirmed value even for
+the same resolver source. A repeat resolver payload without explicit acceptance
+still preserves confirmed canonical values. Front and rear lists are independent;
+Wheel-only PATCH does not change Vehicle canonical data or its revision.
+
+Example axle payload:
+
+```json
+{
+  "offset_et_mm": 35.125,
+  "confirmed_fields": ["offset_et_mm"]
+}
+```
+
 ## Security and audit
 
 - Do not accept user identity, provider IDs or ownership from client-provided metadata.

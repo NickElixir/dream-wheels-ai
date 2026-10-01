@@ -202,6 +202,23 @@ class FitmentRimUpdate(BaseModel):
     source_fingerprint: str | None = Field(default=None, min_length=8, max_length=128)
     selected_variant_sku: str | None = None
     variant_state: Literal["not_applicable", "none", "selection_required", "selected"] | None = None
+    confirmed_fields: list[
+        Literal[
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+        ]
+    ] = Field(default_factory=list, max_length=6)
+
+    @model_validator(mode="after")
+    def bind_confirmations_to_submitted_values(self) -> FitmentRimUpdate:
+        for field_name in self.confirmed_fields:
+            if field_name not in self.model_fields_set or getattr(self, field_name) is None:
+                raise ValueError("confirmed_fields must reference non-null values in this request")
+        return self
 
     @field_validator("brand", "model", "sku", mode="before")
     @classmethod
