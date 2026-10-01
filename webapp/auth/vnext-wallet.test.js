@@ -1,3 +1,4 @@
+import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -11,7 +12,7 @@ import {
 } from "../app-route.mjs";
 
 const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8")
-  .replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\n`).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\n\n/u, "");
+  .replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\nconst buildFitmentRimReadiness = ${buildFitmentRimReadiness.toString()};\n`).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\nimport \{ buildFitmentRimReadiness \} from "\.\/vnext\/fitment-readiness\.mjs";\n\n/u, "");
 
 function runtime({ telegram = false, pathname = "/app/wallet", search = "", applicationRoute = false } = {}) {
   const calls = [];

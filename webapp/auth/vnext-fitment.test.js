@@ -1,3 +1,4 @@
+import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -95,7 +96,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   };
   const context = {
     state,
-    locale: "ru", fitmentDisplayValue,
+    locale: "ru", fitmentDisplayValue, buildFitmentRimReadiness,
     I18N: { ru: { warnings: { fitment: "Предварительная проверка совместимости." }, fitment: { verdictDisclaimer: "Предварительная оценка не является гарантией установки." } } },
     t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
@@ -536,7 +537,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
   let overview = null;
   const context = {
     state,
-    locale: "ru", fitmentDisplayValue,
+    locale: "ru", fitmentDisplayValue, buildFitmentRimReadiness,
     I18N: { ru: { warnings: { fitment: "Предварительная проверка совместимости." }, fitment: { verdictDisclaimer: "Предварительная оценка не является гарантией установки." } } },
     t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     captureFitmentRuntimeContext: (jobId = state.fitmentJobId) => ({ jobId, generation: state.fitmentContextGeneration }),
@@ -787,7 +788,7 @@ test("RU and EN Result, warning and picker use one locale and preserve punctuati
   assert.equal(fitmentDisplayValue("ET 33.275 / 35.125"),"ET 33,275 / 35,125");
   const conflict = fitmentMarkup({locale:"en",rimEditing:true,resolver:{conflicts:[{field:"offset_et_mm",current:35.125,suggested:33.275}]}});
   assert.doesNotMatch(conflict,/[А-Яа-яЁё]/);
-  assert.match(conflict,/aria-label="Conflicting value offset_et_mm"/);
+  assert.match(conflict,/aria-label="Conflicting value ET"/);
   const candidate = fitmentMarkup({locale:"en",vehicleEditing:true,vehicleForm:{make:"bmw"},vehicleCandidates:[{field:"make",value:"Audi"}]});
   assert.doesNotMatch(candidate,/[А-Яа-яЁё]/);
   assert.match(candidate,/Suggestions for make/);
@@ -811,7 +812,7 @@ test("owner polish conflict chips carry source semantics and retain explicit act
     const markup = fitmentMarkup({rimEditing:true,rim:{[field]:current},resolver:{conflicts:[{field,current,suggested}]},rimSaveReadiness:{ready:false}});
     assert.match(markup, new RegExp(`aria-label="Текущее значение ${label}: ${String(current).replace('.',',')}${unit}"`));
     assert.match(markup, new RegExp(`aria-label="Значение ${label} из карточки товара: ${String(suggested).replace('.',',')}${unit}"`));
-    assert.match(markup,/aria-pressed="true"[^>]*data-fitment-action="conflict-keep"/);
+    assert.match(markup,/aria-pressed="false"[^>]*data-fitment-action="conflict-keep"/);
     assert.match(markup,/aria-pressed="false"[^>]*data-fitment-action="conflict-use"/);
     assert.match(markup,/data-fitment-action="save-rim"[^>]*disabled/);
     assert.doesNotMatch(markup,/Подтверждено:|найдено:|>Использовать | >Оставить /);
@@ -826,7 +827,7 @@ test("owner polish statuses distinguish local ready from canonical and split sta
   const saved = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimSaveReadiness:{ready:true}});
   assert.match(saved,/object-status[^>]*>Параметры подтверждены/);
   const changed = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimDraftDirty:true,rimSaveReadiness:{ready:true}});
-  assert.match(changed,/object-status[^>]*>Готово к сохранению/);
+  assert.match(changed,/object-status[^>]*>Есть несохранённые изменения/);
   const staggered = fitmentMarkup({setupMode:"staggered",frontRimSetupState:"partial"});
   assert.match(staggered,/<span>Передняя ось: Не хватает параметров<\/span><span>Задняя ось:/);
   assert.doesNotMatch(staggered,/Не хватает параметров — Задняя ось/);
@@ -841,5 +842,19 @@ test("owner polish uses primary check only at authoritative readiness then prima
   for (const verdict of ["compatible","incompatible","unknown"]) {
     const current = fitmentMarkup({nextAction:"run_standard_check",canRunCheck:true,check:{execution_status:"completed",is_current:true,verdict}});
     assert.match(current,render); assert.doesNotMatch(current,check);
+  }
+});
+
+test("final UI chip semantics use neutral unresolved choices and user-facing RU/EN field names", () => {
+  for(const [field,label] of [["offset_et_mm","ET"],["center_bore_mm","DIA"],["wheel_width_j","Ширина"],["wheel_diameter_in","Диаметр"],["pcd_mm","PCD"],["bolt_count","PCD"]]) {
+    const model={rimEditing:true,resolver:{conflicts:[{field,current:35.125,suggested:33.275}]},rimSaveReadiness:buildFitmentRimReadiness({conflicts:[{field}]})};
+    const markup=fitmentMarkup(model);
+    assert.match(markup,new RegExp(`aria-label="Конфликт значения ${label}"`));
+    assert.doesNotMatch(markup,/conflict-chip" aria-pressed="true"/);
+    const labels=[...markup.matchAll(/aria-label="([^"]*)"/g)].map(match=>match[1]);
+    assert.ok(labels.every(value=>!value.includes(field)));
+    const en=fitmentMarkup({...model,locale:"en"});
+    assert.doesNotMatch(en,/[А-Яа-яЁё]/);
+    assert.match(en,/Choose a value before saving\./);
   }
 });

@@ -1,3 +1,4 @@
+import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -11,8 +12,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_SOURCE = fs.readFileSync(path.join(ROOT, "webapp", "app.js"), "utf8");
 const APP_SOURCE_FOR_VM = APP_SOURCE.replace(
     /^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u,
-    `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\n`,
-).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\n\n/u, "");
+    `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\nconst buildFitmentRimReadiness = ${buildFitmentRimReadiness.toString()};\n`,
+).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\nimport \{ buildFitmentRimReadiness \} from "\.\/vnext\/fitment-readiness\.mjs";\n\n/u, "");
 
 function storage() {
     const values = new Map();
@@ -1662,4 +1663,55 @@ test("owner chips require explicit conflict resolution for ET and DIA while pres
             assert.equal(JSON.stringify(api.state.fitmentOverview),canonical);
         }
     }
+});
+
+for (const [field,current,suggested] of [["offset_et_mm",35.125,33.275],["center_bore_mm",66.6,72.6],["wheel_width_j",9,8.5]]) {
+    for (const useProposal of [false,true]) {
+        test(`final UI gate runtime ${field} ${useProposal ? "use" : "keep"}: zero pending plus conflict never claims all confirmed`, () => {
+            const {api}=navigationApi();
+            seed(api,overviewFor(api,"complete_vehicle_details"),"rim");
+            Object.assign(api.state.fitmentForm.rim,{wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:112,center_bore_mm:66.6,offset_et_mm:35.125,[field]:current});
+            api.state.fitmentRimManualFields=["wheel_diameter_in","wheel_width_j","bolt_count","pcd_mm","center_bore_mm","offset_et_mm"];
+            api.state.fitmentSourceAppliedFields=[];
+            api.state.fitmentRimEditing=true;
+            api.state.fitmentSourceConflicts=[{field,current,suggested,origin:"manual"}];
+            const canonical=JSON.stringify(api.state.fitmentOverview);
+            let snapshot=api.snapshot();
+            assert.deepEqual(JSON.parse(JSON.stringify(snapshot.rimSaveReadiness)),buildFitmentRimReadiness({conflicts:[{field,current,suggested}]}));
+            assert.equal(snapshot.rimSaveReadiness.pending.length,0);
+            const markup=fitmentMarkup(snapshot);
+            assert.equal((markup.match(/Выберите значение перед сохранением\./g)||[]).length,1);
+            assert.doesNotMatch(markup,/Все параметры подтверждены/);
+            assert.match(markup,/Требуется выбрать значение/);
+            assert.match(markup,/data-fitment-action="save-rim"[^>]*disabled/);
+            api.bridge.action(useProposal?"conflict-use":"conflict-keep",useProposal?`${field}|${suggested}`:field);
+            snapshot=api.snapshot();
+            assert.equal(snapshot.rimSaveReadiness.conflicts.length,0);
+            assert.equal(Number(snapshot.rim[field]),useProposal?suggested:current);
+            assert.equal(JSON.stringify(api.state.fitmentOverview),canonical);
+            assert.equal(snapshot.rimSaveReadiness.ready,true);
+            const resolved=fitmentMarkup(snapshot);
+            assert.match(resolved,/Все параметры подтверждены/);
+            assert.match(resolved,/Готово к сохранению/);
+            assert.doesNotMatch(resolved,/data-fitment-action="save-rim"[^>]*disabled/);
+            assert.equal(snapshot.canonicalWheelSummary,"");
+            api.state.fitmentRimEditing=false;
+            assert.match(fitmentMarkup(api.snapshot()),/Есть несохранённые изменения/);
+        });
+    }
+}
+
+test("fidelity fixture readiness uses the runtime builder and never supplies synthetic readiness fields", () => {
+    const fixture=fs.readFileSync(path.join(ROOT,"tests/browser-fixtures/fitment-vnext-ui-fidelity.html"),"utf8");
+    assert.match(fixture,/import \{buildFitmentRimReadiness\} from "\.\.\/\.\.\/webapp\/vnext\/fitment-readiness\.mjs"/);
+    assert.doesNotMatch(fixture,/rimSaveReadiness\s*:\s*\{/);
+    assert.match(fixture,/model\.rimSaveReadiness=buildFitmentRimReadiness\(/);
+});
+
+test("demo fixture market identifiers use the provider slug without a duplicate China alias", () => {
+    const {api}=navigationApi();
+    const demo=api.buildDefaultDemoFitmentOverview();
+    assert.equal(demo.vehicle.market,"chdm");
+    const demoVariants=APP_SOURCE.slice(APP_SOURCE.indexOf("const DEMO_VEHICLE_VARIANTS"),APP_SOURCE.indexOf("const DEMO_VEHICLE_CATALOGUE"));
+    assert.doesNotMatch(demoVariants,/market: "CN"/);
 });

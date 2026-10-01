@@ -46,3 +46,28 @@ test("accepting a proposal keeps focus on the same compound control", () => {
   context.refresh(root,{rimEditing:true,rim:{center_bore_mm:66.6}});
   assert.equal(focused,true);
 });
+
+test("resolving a focused conflict chip restores its compound control without scrolling", () => {
+  for (const path of ["rim.offset_et_mm","rim.center_bore_mm","rim.wheel_width_j","rim.pcd"]) {
+    let focused=null;
+    const chip={dataset:{fitmentFocus:path},tagName:"BUTTON"};
+    const compound={tagName:"BUTTON",focus(options){focused={path,preventScroll:options.preventScroll};}};
+    const root={className:"vnext-fitment",querySelector(selector){return selector.startsWith(":focus")?chip:selector===`[data-fitment-focus="${path}"]`?compound:null;},replaceChildren(){}};
+    const context={CSS:{escape:value=>value},document:{body:{},createElement:()=>({childNodes:[]})}};
+    vm.runInNewContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+    context.refresh(root,{rimEditing:true,resolver:{conflicts:[]}});
+    assert.deepEqual(focused,{path,preventScroll:true});
+  }
+});
+
+test("resolving one PCD conflict focuses the same compound opener while its other conflict remains", () => {
+  let focused=false;
+  const chip={dataset:{fitmentFocus:"rim.pcd",fitmentAction:"conflict-keep"},tagName:"BUTTON"};
+  const disabled={tagName:"BUTTON",disabled:true,focus(){throw Error("cannot focus unresolved compound");}};
+  const opener={focus(options){focused=options.preventScroll;}};
+  const root={className:"vnext-fitment",querySelector(selector){return selector.startsWith(":focus")?chip:selector.includes("data-wheel-picker-open")?opener:selector.includes("data-fitment-focus")?disabled:null;},replaceChildren(){}};
+  const context={CSS:{escape:value=>value},document:{createElement:()=>({childNodes:[]})}};
+  vm.runInNewContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,{rimEditing:true});
+  assert.equal(focused,true);
+});

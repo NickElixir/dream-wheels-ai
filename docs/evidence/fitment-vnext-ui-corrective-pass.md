@@ -329,3 +329,71 @@ PASS — READY FOR OWNER FINAL REVIEW (subject to green final CI recorded in PR)
 DO NOT MERGE — OWNER FINAL REVIEW + INDEPENDENT UI RE-REVIEW REQUIRED
 
 Authenticated staging full E2E remains BLOCKED: disposable Fitment context required. Telegram WebView / independent re-review are not claimed. No merge or deployment performed.
+
+
+## Final focused UI gate correction
+
+Previous independently reviewed HEAD: `078b8624b0b2199f725233080484fafecd4e4ae4`.
+New delivery HEAD and final CI result: recorded in the **Final UI gate corrections** section of [PR #245](https://github.com/NickElixir/dream-wheels-ai/pull/245) and final delivery response; the commit containing this report cannot embed its own hash. One focused correction commit.
+
+Read the focused review `/Users/nikolai/Downloads/fitment-vnext-final-ui-rereview-078b862.md` in full. P1–P7 and preceding approved design remain frozen. No backend, schema, provider semantics, payments, Render, staging or Telegram changes.
+
+| Finding | Correction | Verification |
+|---|---|---|
+| N1 | Production readiness now explicitly returns conflict field names. Conflict has priority over zero-pending all-confirmed copy. One progress notice: **Выберите значение перед сохранением.** Source card: **Требуется выбрать значение**; Save disabled. Notice preserves its approved terminal period through the existing global copy normalization. | Actual app.js snapshot tests + real shell browser |
+| M1 | SKU technical values use nowrap/keep-all/normal wrapping; ≤400px specs use two columns. The action container stays 88px and aligned. | 390×844 + 360×844, all 15 values one line and fit their cells, including Не определено / 42,125123 / 8,5J / 5×112 |
+| L1 | Both unresolved choices aria-pressed=false; removed selected chip rule. Keyboard focus outline remains distinct from resolved selection. | Renderer and browser semantics |
+| L2 | Conflict group uses ET / DIA / Ширина / Диаметр / PCD, with EN equivalents; English sources use Current ET value / ET value from product page. No internal key in labels. | All six runtime component fields; RU/EN |
+| L3 | Chips carry the same parameter focus key. Existing refresh restores its compound with preventScroll. If another PCD sub-conflict still disables the value button, focus goes to the same compound opener. | Real mouse ET use, keyboard ET keep/DIA use; focus tests for ET/DIA/Width/PCD |
+| L5 | Complete unsaved draft: open editor → Готово к сохранению; closed → Есть несохранённые изменения. Canonical Standard Wheel remains — until Save. | Actual runtime snapshots/open+closed browser |
+| L4 demo cleanup | Five demo-only CN market identifiers now use the provider-style chdm slug already used by demo catalogue. No deduplication by visible label and no production alias/provider logic changes. | Default demo + catalogue regressions |
+| Fixture parity | Shared production buildFitmentRimReadiness factory builds ready/missing/invalid/pending/conflicts for runtime and fixture. Fixture no longer hardcodes readiness objects/fictional fields. Runtime tests compare real vnextFitmentSnapshot shape to shared contract. | Explicit parity + N1 runtime regressions |
+
+### N1 runtime state
+
+Before: editor Все параметры подтверждены; source card Не хватает параметров; disabled Save without explanation.
+After: pending=[]; conflicts=[offset_et_mm]; editor Выберите значение перед сохранением.; source card Требуется выбрать значение; Save disabled.
+After explicit keep/use: conflict removed; selected local draft preserved; canonical unchanged; Все параметры подтверждены; Save enabled when other requirements hold. ET 35.125/33.275, DIA 66.6/72.6, Width 9/8.5 tested both ways.
+
+### Focused browser evidence
+
+In-app browser through CUA, no fallback. Real **app.js + VNext adapter + shell + renderer/styles** served locally at `http://127.0.0.1:8774/__seed.html` with the existing controlled local API. Test-only server appended a local state-seeding helper to the served app module, setting complete manually confirmed draft and source conflict; runtime readiness/snapshot/render/action/refresh were the production functions. This instrumentation was not committed and is not part of runtime. No staging/production calls or Save/PATCH were made. Controlled server stopped and runtime tab closed after QA.
+
+Real runtime at 1440×1000: unresolved ET → mouse use → compound focus; ready editor open; closed unsaved. Real runtime at 390×844: unresolved ET; keyboard keep; keyboard DIA use; closed unsaved. Canonical snapshot before/after resolution identical. Source/Standard guidance remains separate. Mobile shell scrolls internally; mobile evidence captures affected viewport after normal control focus, not an invented document-height full-page view.
+
+SKU production-renderer fixture at `http://127.0.0.1:8776/tests/browser-fixtures/fitment-vnext-ui-fidelity.html`: 390×844 and 360×844. Range measurements prove each value occupies one line and fits its cell; all action widths 88px and x positions equal within each viewport. No horizontal overflow. Readiness shape now shared; fixture remains preset data, not authenticated E2E.
+
+Page identity, meaningful content, no framework overlay, relevant console errors=0, interaction proof and screenshots PASS. Existing browser zoom compensated for exact CSS sizes; all temporary device overrides cleared.
+
+[Runtime QA](fitment-vnext-final-ui-gate/runtime-qa.json), [SKU QA](fitment-vnext-final-ui-gate/sku-qa.json), [EN chip labels](fitment-vnext-final-ui-gate/a11y-en.json), [artifact hashes](fitment-vnext-final-ui-gate/artifact-manifest.json).
+
+| State | Evidence |
+|---|---|
+| Real runtime unresolved ET, desktop | [1440](fitment-vnext-final-ui-gate/1440-runtime-et-unresolved.jpg) |
+| Real runtime ET use / ready-open | [1440](fitment-vnext-final-ui-gate/1440-runtime-ready-open-et-use.jpg) |
+| Real runtime unsaved closed | [1440](fitment-vnext-final-ui-gate/1440-runtime-unsaved-closed.jpg), [390](fitment-vnext-final-ui-gate/390-runtime-unsaved-closed.jpg) |
+| Real runtime unresolved ET, mobile | [390](fitment-vnext-final-ui-gate/390-runtime-et-unresolved.jpg) |
+| Real runtime ET keep / compound focus | [390](fitment-vnext-final-ui-gate/390-runtime-et-keep-focus.jpg) |
+| Real runtime DIA use / keyboard focus | [390](fitment-vnext-final-ui-gate/390-runtime-dia-use-keyboard.jpg) |
+| Atomic SKU values | [390](fitment-vnext-final-ui-gate/390-sku-atomic-values.jpg), [360](fitment-vnext-final-ui-gate/360-sku-atomic-values.jpg) |
+
+### Final local test counts
+
+- Frontend (`npm --prefix webapp test`): **194 PASS**.
+- Transition + Catalogue + Composition + Focus + Boot: **110 PASS** (90 + 11 + 2 + 4 + 3).
+- Backend (`pytest -q`): **612 PASS, 5 skipped**, 14 existing httpx warnings.
+- Frontend build: PASS; generated bundles unchanged.
+- Ruff check: PASS; format: 135 files unchanged.
+- Diff check: PASS. Required pre-commit and final CI results recorded in PR after commit.
+
+Preserved regression coverage: one workspace, proposal/confirmed, picker, decimal precision, Market, staggered Result, canonical summaries, SKU Cancel, both-ready/current CTA, Render independence, async isolation/provenance, Wheel-only Save while Vehicle unfinished.
+
+### Remaining external checks
+
+- **Verify actual Wheel Size API market options do not produce duplicate semantic choices.** This is a staging QA item, not a local gate blocker.
+- Authenticated staging full E2E remains BLOCKED pending disposable Fitment context; Telegram QA and cumulative integration review not claimed.
+- One independent focused re-check of N1/M1/L1–L3/L5/parity still required. No further design pass or merge/deploy performed.
+
+Local UI corrections: **PASS**. Delivery gate awaits successful publication and CI; final delivery status and exact HEAD are recorded in the PR/final response when reachable.
+
+**DO NOT MERGE YET — ONE FOCUSED INDEPENDENT CHECK REQUIRED**

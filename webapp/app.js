@@ -6,6 +6,7 @@ import {
 } from "./app-route.mjs";
 
 import { fitmentDisplayValue } from "./vnext/fitment-display.mjs";
+import { buildFitmentRimReadiness } from "./vnext/fitment-readiness.mjs";
 
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
@@ -117,7 +118,7 @@ const DEMO_VEHICLE_VARIANTS = [
         region: "chdm",
         generation_slug: "ev",
         modification_slug: "electric",
-        market: "CN",
+        market: "chdm",
         generation: "EV liftback",
         modification: "Electric",
         engine: "Electric",
@@ -143,7 +144,7 @@ const DEMO_VEHICLE_VARIANTS = [
         region: "chdm",
         generation_slug: "ev",
         modification_slug: "electric",
-        market: "CN",
+        market: "chdm",
         generation: "EV SUV",
         modification: "Electric",
         engine: "Electric",
@@ -156,7 +157,7 @@ const DEMO_VEHICLE_VARIANTS = [
         region: "chdm",
         generation_slug: "ev",
         modification_slug: "electric-performance",
-        market: "CN",
+        market: "chdm",
         generation: "EV SUV",
         modification: "Electric Performance",
         engine: "Electric",
@@ -169,7 +170,7 @@ const DEMO_VEHICLE_VARIANTS = [
         region: "chdm",
         generation_slug: "ev",
         modification_slug: "dual-motor-electric",
-        market: "CN",
+        market: "chdm",
         generation: "EV SUV",
         modification: "Dual Motor Electric",
         engine: "Electric",
@@ -1683,7 +1684,7 @@ function buildDefaultDemoFitmentOverview() {
         body: "EV SUV",
         generation: "EV",
         modification: "Electric",
-        market: "CN",
+        market: "chdm",
         is_user_confirmed: false,
     };
     vehicle.title = demoVehicleTitle(vehicle);
@@ -2286,7 +2287,7 @@ function enforceUiCopyRule(root = document.getElementById("app")) {
     while ((node = walker.nextNode())) textNodes.push(node);
     textNodes.forEach((textNode) => {
         const parent = textNode.parentElement;
-        if (!parent || /^(SCRIPT|STYLE|PRE|CODE|TEXTAREA|OPTION)$/u.test(parent.tagName)) return;
+        if (!parent || parent.hasAttribute?.("data-fitment-conflict-notice") || /^(SCRIPT|STYLE|PRE|CODE|TEXTAREA|OPTION)$/u.test(parent.tagName)) return;
         const normalized = textNode.nodeValue.replace(/[.!?…:;,]+(\s*)$/u, "$1");
         if (normalized !== textNode.nodeValue) textNode.nodeValue = normalized;
     });
@@ -7728,13 +7729,11 @@ function fitmentRimSaveReadiness() {
         }
         pending.push(...fitmentRimPendingProposalFields(scope === "rear_rim" ? "rear" : "front").map((field) => `${scope}.${field}`));
     }
-    return {
-        ready: !missing.length && !invalid.length && !pending.length && !state.fitmentSourceConflicts.length
-            && state.fitmentSourceIdentity.variantState !== "selection_required",
-        missing,
-        invalid,
-        pending,
-    };
+    return buildFitmentRimReadiness({
+        missing, invalid, pending,
+        conflicts: state.fitmentSourceConflicts,
+        selectionRequired: state.fitmentSourceIdentity.variantState === "selection_required",
+    });
 }
 
 function markRimFieldEdited(path) {
