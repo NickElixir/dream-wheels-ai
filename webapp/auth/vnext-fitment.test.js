@@ -6,6 +6,18 @@ import { fitmentMarkup, wheelPickerOptions, wheelPickerManualValue } from "../vn
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("picker makes the workspace inert and catalogue labels explicitly name controls", () => {
+  const markup = fitmentMarkup({ vehicleEditing: true, vehicleForm: {}, catalogue: {}, wheelPicker: { path: "rim.offset_et_mm", query: "35,125", mode: "recommended" } });
+  assert.match(markup, /class="vnext-fitment__workspace" inert/);
+  assert.match(markup, /label for="fitment-field-vehicle-make"/);
+  assert.match(markup, /id="fitment-field-vehicle-make"/);
+  assert.ok(markup.indexOf('role="dialog"') > markup.indexOf('id="fitment-standard-title"'));
+  const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalRimSpecs: ["18″ / 8J / 5×112 / DIA 66,6 / ET 35,125"], vehicleSpecs: ["2024", "X254"] });
+  assert.match(wheel, /Выбрать другой SKU/);
+  assert.match(wheel, /DIA 66,6 \/ ET 35,125/);
+  assert.doesNotMatch(wheel, /SKU[^<]*▾|·/);
+});
+
 test("comparison has shared semantic headers, preserves axles and neutralizes global unknown", () => {
   const fields = ["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm", "offset_et_mm"];
   const rows = fields.map(field => ({ field, axle: "front", vehicleValue: "33.275", rimValue: "35.125", resultLabel: "Подходит" }));
@@ -234,7 +246,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   });
   assert.match(resolver, /Источник колесного диска/);
   assert.match(resolver, /Повторить/);
-  assert.match(resolver, /Заполнить вручную/);
+  assert.match(resolver, /Указать параметры вручную/);
 
   const variants = fitmentMarkup({
     overview: {},
@@ -413,7 +425,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   const failure = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", status: "Сайт недоступен", statusTone: "error" } });
   assert.match(failure, /Сайт недоступен/);
   assert.match(failure, /data-fitment-action="resolve-rim"/);
-  assert.match(failure, /Заполнить вручную/);
+  assert.match(failure, /Указать параметры вручную/);
   assert.match(failure, />19<\/button>/);
 });
 
@@ -448,7 +460,7 @@ test("Fitment retains the exact job and origin through entry/back and reuses exi
   assert.match(app, /rearRim: state\.fitmentForm\?\.rear_rim \|\| overview\?\.rear_rim \|\| \{\}/);
   assert.match(app, /action === "save"\) void saveVnextFitment\(\)/);
   assert.match(app, /action === "check"\) void runFitmentCheck\(\)/);
-  assert.match(app, /action === "resolve-rim"\) void resolveFitmentRimSource\(\)/);
+  assert.match(app, /action === "resolve-rim"\)[\s\S]*?setFitmentEditor\("rim"\)[\s\S]*?void resolveFitmentRimSource\(\)/);
   assert.match(app, /action === "load-vehicle-variants"\) \{\s*toggleFitmentModificationPicker\(\)/);
   assert.match(app, /action === "confirm-vehicle-variant"\)[\s\S]*?applyFitmentVehicleVariant\(variant\)/);
   assert.match(app, /function renderFitment\(\)[\s\S]*?notifyFitmentBridge\(\);\s*return;/);
@@ -576,6 +588,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       state, fitmentMutationsLocked: () => false, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
       window: { setTimeout: () => 1, clearTimeout() {} }, AbortController,
       shouldUseDemoFitment: () => false,
+      fitmentCheckContextKey: () => state.fitmentJobId,
       normalizeFitmentText: value => value.trim(),
       clearFitmentTransientMessage() { state.fitmentMessage = ""; },
       apiUrl: value => value,
@@ -641,7 +654,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
   assert.equal(wheelActive.state.fitmentSourceOpen, true);
   const recoveryMarkup = fitmentMarkup({ overview: {}, rimEditing: true, resolver: { url: wheelActive.state.fitmentForm.rim.product_url, status: wheelActive.state.fitmentSourceStatus, statusTone: "error", loading: false, open: true } });
   assert.match(recoveryMarkup, /Повторить/);
-  assert.match(recoveryMarkup, /Заполнить вручную/);
+  assert.match(recoveryMarkup, /Указать параметры вручную/);
   assert.equal(wheelActive.state.fitmentForm.rim.wheel_diameter_in, "19");
   assert.equal(wheelActive.state.fitmentForm.vehicle.body, "user-edited body");
 });

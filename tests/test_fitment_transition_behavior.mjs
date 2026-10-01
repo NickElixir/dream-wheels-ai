@@ -192,6 +192,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
             realLoadFitmentCheckHistory,
+            resolveFitmentRimSource,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -1129,6 +1130,40 @@ test("accepting a resolver proposal is local and Save waits for explicit confirm
     assert.equal(api.state.fitmentOverview.rim_revision, revision);
     assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"), false);
     assert.equal(api.fitmentRimSaveReadiness().ready, true);
+});
+
+test("manual Wheel fallback does not implicitly accept existing resolver proposals", () => {
+    const { api } = navigationApi();
+    seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
+    api.state.fitmentForm.rim.offset_et_mm = "35.125";
+    api.state.fitmentSourceAppliedFields = ["offset_et_mm"];
+    api.state.fitmentSourceIdentity = { variantState: "selection_required", selectedVariantSku: "old" };
+    api.bridge.action("manual-rim");
+    assert.ok(api.fitmentRimPendingProposalFields().includes("offset_et_mm"));
+    assert.equal(api.state.fitmentSourceIdentity.variantState, "none");
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku, null);
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+});
+
+test("late resolver proposals cannot overwrite manual fallback or a newer URL", async () => {
+    for (const transition of ["manual", "url"]) {
+        let release;
+        const { api } = navigationApi({ routes: {
+            "POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve": () => new Promise(resolve => { release = resolve; }),
+        } });
+        seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
+        api.state.fitmentForm.rim.product_url = "https://shop.example.test/old";
+        api.state.fitmentForm.rim.offset_et_mm = "35.125";
+        const request = api.resolveFitmentRimSource();
+        assert.equal(typeof release, "function");
+        if (transition === "manual") api.bridge.action("manual-rim");
+        else api.bridge.setSourceUrl("https://shop.example.test/new");
+        release(response(200, { final_url: "https://shop.example.test/old", values: { offset_et_mm: 99 }, source_fingerprint: "obsolete" }));
+        await request;
+        assert.equal(api.state.fitmentForm.rim.offset_et_mm, "35.125");
+        assert.notEqual(api.state.fitmentSourceIdentity.sourceFingerprint, "obsolete");
+        assert.equal(api.state.fitmentSourceResolving, false);
+    }
 });
 
 test("staggered copies front proposals once and preserves an independently edited rear draft", () => {

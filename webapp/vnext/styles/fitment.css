@@ -94,7 +94,7 @@
 .vnext-fitment__pcd > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .vnext-fitment__axle { display: grid; gap: 12px; }
 .vnext-fitment__axle-fields { display: grid; gap: 14px; }
-.vnext-fitment__axle--rear { margin-top: 16px; padding-top: 18px; border-top: 1px solid var(--vnext-border); }
+.vnext-fitment__axle--rear { margin-top: 16px; padding-top: 18px; }
 .vnext-fitment__rim-state { margin: -8px 0 0; color: var(--vnext-text-secondary); font-size: 14px; }
 .vnext-fitment__source-disclosure { display: grid; gap: 12px; padding-top: 8px; }
 .vnext-fitment__source-disclosure > .vnext-button { justify-self: start; }
@@ -156,8 +156,6 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-shell__frame:has(.vnext-fitment) > .vnext-shell__topbar { display: none; }
 }
 
-@media (max-width: 900px) {
-}
 
 @media (max-width: 700px) {
   .vnext-fitment__sku-specs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -212,4 +210,18 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__recognition h2 { margin: 0; font-size: 18px; }
 .vnext-fitment__recognition p { margin: 0; color: var(--vnext-text-secondary); }
 .vnext-fitment__recognition > .vnext-button { justify-self: start; }
-.vnext-fitment__mutation-region { border: 0; padding: 0; margin: 0; min-width: 0; }
+.vnext-fitment__mutation-region { display: grid; gap: 24px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.vnext-fitment__workspace { display: grid; gap: 32px; min-width: 0; }
+.vnext-fitment__ready-summaries strong small { display: block; margin-top: 5px; color: var(--vnext-text-secondary); font-size: 13px; font-weight: 400; }
+.vnext-fitment__paired-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+.vnext-fitment__paired-actions > .vnext-button { min-height: 46px; }
+.vnext-fitment__choice, .vnext-fitment__sku-row { border: 0; border-bottom: 1px solid var(--vnext-border); border-radius: 0; background: transparent; }
+.vnext-fitment__variant-list, .vnext-fitment__choices > div:has(.vnext-fitment__sku-row) { gap: 0; }
+.vnext-fitment__compound button:focus-visible, .vnext-fitment__picker button:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: -2px; }
+.vnext-fitment__compound button:disabled { cursor: not-allowed; }
+@media (max-width: 700px) {
+  .vnext-fitment__workspace { gap: 20px; }
+  .vnext-fitment__source-row .vnext-button { min-height: 44px; }
+  .vnext-fitment__paired-actions { display: grid; }
+}
+@media (prefers-reduced-motion: reduce) { .vnext-fitment *, .vnext-fitment *::before, .vnext-fitment *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
