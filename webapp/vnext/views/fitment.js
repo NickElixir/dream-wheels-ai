@@ -130,18 +130,19 @@ function catalogueField(model, kind, label, path, value, extra = {}) {
 
 function axleFields(model, axle, rim, { candidates = true } = {}) {
   const prefix = axle === "rear" ? "rear_rim" : "rim";
+  const pending = axle === "rear" ? model.rearRimPendingProposals || [] : model.rimPendingProposals || [];
   const source = axle === "rear" ? { ...model, rimCandidates: [] } : model;
   const entries = (items, showProposal = true) => items.map(([label, fieldName, value]) => {
     const path = `${prefix}.${fieldName}`;
     const control = candidates
       ? fieldWithCandidates(source, label, path, value, { type: "number", error: model.fieldErrors?.[path] || "" })
       : field(label, path, value, { type: "number", error: model.fieldErrors?.[path] || "" });
-    return showProposal && axle !== "rear" && model.rimPendingProposals?.includes(fieldName)
-      ? `<div class="vnext-fitment__proposal" data-fitment-proposal="${esc(fieldName)}">${control}<p>Предложено автоматически</p>${button("Подтвердить значение", "accept-rim-proposal", { value: fieldName })}</div>`
+    return showProposal && pending.includes(fieldName)
+      ? `<div class="vnext-fitment__proposal" data-fitment-proposal="${esc(path)}">${control}<p>Предложено автоматически</p>${button("Подтвердить значение", "accept-rim-proposal", { value: axle === "rear" ? path : fieldName })}</div>`
       : control;
   });
-  const pcdPending = axle !== "rear" && ["bolt_count", "pcd_mm"].some((fieldName) => model.rimPendingProposals?.includes(fieldName));
-  const pcd = `<div class="vnext-fitment__pcd${pcdPending ? " vnext-fitment__proposal" : ""}"><h4>PCD</h4><div>${entries([["Отверстия", "bolt_count", rim?.bolt_count], ["Разболтовка, мм", "pcd_mm", rim?.pcd_mm]], false).join("")}</div>${pcdPending ? `<p>Предложено автоматически</p>${button("Подтвердить PCD", "accept-rim-proposal", { value: "pcd" })}` : ""}</div>`;
+  const pcdPending = ["bolt_count", "pcd_mm"].some((fieldName) => pending.includes(fieldName));
+  const pcd = `<div class="vnext-fitment__pcd${pcdPending ? " vnext-fitment__proposal" : ""}"><h4>PCD</h4><div>${entries([["Отверстия", "bolt_count", rim?.bolt_count], ["Разболтовка, мм", "pcd_mm", rim?.pcd_mm]], false).join("")}</div>${pcdPending ? `<p>Предложено автоматически</p>${button("Подтвердить PCD", "accept-rim-proposal", { value: axle === "rear" ? "rear_rim.pcd" : "pcd" })}` : ""}</div>`;
   return `<div class="vnext-fitment__axle-fields"><div class="vnext-fitment__fields">${entries([["Диаметр, дюймы", "wheel_diameter_in", rim?.wheel_diameter_in], ["Ширина, J", "wheel_width_j", rim?.wheel_width_j]]).join("")}</div>${pcd}<div class="vnext-fitment__fields">${entries([["DIA, мм", "center_bore_mm", rim?.center_bore_mm], ["ET, мм", "offset_et_mm", rim?.offset_et_mm]]).join("")}</div></div>`;
 }
 
@@ -173,6 +174,9 @@ function variantChooser(model) {
 
 function wheelEditor(model, rim) {
   if (!model.rimEditing) return "";
+  if (model.resolver?.variants?.length) {
+    return `<section class="vnext-fitment__editor" aria-labelledby="fitment-rim-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-rim-editor-title">Выберите колесный диск</h2></div>${sourceEditor(model)}<p class="vnext-fitment__notice">Выбор SKU не подтверждает технические параметры.</p></section>`;
+  }
   const state = model.frontRimSetupState || model.overview?.rim_setup_state;
   const rearState = model.rearRimSetupState;
   const stateText = model.setupMode === "staggered"
@@ -180,10 +184,11 @@ function wheelEditor(model, rim) {
     : rimSetupLabel(state);
   const readiness = model.rimSaveReadiness || { ready: true, missing: [], pending: [] };
   const readinessCopy = readiness.ready ? "Все параметры подтверждены."
-    : readiness.pending?.length ? "Подтвердите предложенные значения перед сохранением."
+    : readiness.invalid?.length ? "Проверьте числовые параметры диска."
+      : readiness.pending?.length ? "Подтвердите предложенные значения перед сохранением."
       : readiness.missing?.length ? "Заполните все параметры диска перед сохранением."
         : "Выберите вариант диска и разрешите конфликты перед сохранением.";
-  return `<section class="vnext-fitment__editor" aria-labelledby="fitment-rim-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-rim-editor-title">Параметры колесного диска</h2></div><p class="vnext-fitment__rim-state" data-rim-setup-state="${esc(state || "unknown")}">${esc(stateText)}</p><div class="vnext-fitment__field-group"><h3>Идентификация диска</h3><div class="vnext-fitment__fields">${fieldWithCandidates(model, "Бренд", "rim.brand", rim.brand, { error: model.fieldErrors?.["rim.brand"] || "" })}${fieldWithCandidates(model, "Модель", "rim.model", rim.model, { error: model.fieldErrors?.["rim.model"] || "" })}${fieldWithCandidates(model, "Артикул", "rim.sku", rim.sku, { error: model.fieldErrors?.["rim.sku"] || "" })}</div></div><div class="vnext-fitment__field-group"><h3>Геометрия</h3><div class="vnext-fitment__axle"><h4>Передняя ось</h4>${axleFields(model, "front", rim)}</div></div><div class="vnext-fitment__field-group"><h3>Конфигурация</h3>${field("Параметры по осям", "setup_mode", model.setupMode, { options: [{ value: "uniform", label: "Одинаковые параметры" }, { value: "staggered", label: "Разные параметры по осям" }] })}${model.setupMode === "staggered" ? `<div class="vnext-fitment__axle vnext-fitment__axle--rear"><h4>Задняя ось</h4>${axleFields(model, "rear", model.rearRim || {}, { candidates: false })}</div>` : ""}</div>${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${sourceEditor(model)}<p class="vnext-fitment__notice" role="status">${readinessCopy}</p>${button("Сохранить параметры", "save", { primary: true, disabled: model.saving || !readiness.ready })}</section>`;
+  return `<section class="vnext-fitment__editor" aria-labelledby="fitment-rim-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-rim-editor-title">Параметры колесного диска</h2></div><p class="vnext-fitment__rim-state" data-rim-setup-state="${esc(state || "unknown")}">${esc(stateText)}</p>${sourceEditor(model)}<div class="vnext-fitment__field-group"><h3>Идентификация диска</h3><div class="vnext-fitment__fields">${fieldWithCandidates(model, "Бренд", "rim.brand", rim.brand, { error: model.fieldErrors?.["rim.brand"] || "" })}${fieldWithCandidates(model, "Модель", "rim.model", rim.model, { error: model.fieldErrors?.["rim.model"] || "" })}${fieldWithCandidates(model, "Артикул", "rim.sku", rim.sku, { error: model.fieldErrors?.["rim.sku"] || "" })}</div></div><div class="vnext-fitment__field-group"><h3>Геометрия</h3><div class="vnext-fitment__axle"><h4>Передняя ось</h4>${axleFields(model, "front", rim)}</div></div><div class="vnext-fitment__field-group"><h3>Конфигурация</h3>${field("Параметры по осям", "setup_mode", model.setupMode, { options: [{ value: "uniform", label: "Одинаковые" }, { value: "staggered", label: "Разные" }] })}${model.setupMode === "staggered" ? `<div class="vnext-fitment__axle vnext-fitment__axle--rear"><h4>Задняя ось</h4>${axleFields(model, "rear", model.rearRim || {}, { candidates: false })}</div>` : ""}</div>${model.rearDraftPreserved ? '<p class="vnext-fitment__notice">Задние параметры сохранены в черновике до сохранения.</p>' : ""}${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}<p class="vnext-fitment__notice" role="status">${readinessCopy}</p>${button("Сохранить параметры", "save", { primary: true, disabled: model.saving || !readiness.ready })}</section>`;
 }
 
 export function fitmentMarkup(model = {}) {

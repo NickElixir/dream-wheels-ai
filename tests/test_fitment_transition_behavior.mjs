@@ -187,7 +187,7 @@ function navigationApi({ routes = {} } = {}) {
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
-            bridge: window.dreamwheelsFitmentBridge, saveVnextFitment,
+            bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -945,6 +945,7 @@ test("accepting a resolver proposal is local and Save waits for explicit confirm
     seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
     Object.assign(api.state.fitmentForm.rim, { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35.125 });
     api.state.fitmentSourceAppliedFields = ["offset_et_mm"];
+    api.state.fitmentRimManualFields = ["bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j", "center_bore_mm"];
     const initialCallCount = calls.length;
     assert.equal(api.fitmentRimSaveReadiness().ready, false);
     await api.saveVnextFitment();
@@ -955,4 +956,33 @@ test("accepting a resolver proposal is local and Save waits for explicit confirm
     assert.equal(api.state.fitmentOverview.rim_revision, revision);
     assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"), false);
     assert.equal(api.fitmentRimSaveReadiness().ready, true);
+});
+
+test("staggered copies front proposals once and preserves an independently edited rear draft", () => {
+    const { api } = navigationApi();
+    seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
+    const geometry = { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: "35,125" };
+    Object.assign(api.state.fitmentForm.rim, geometry);
+    api.state.fitmentRimManualFields = Object.keys(geometry);
+    api.state.fitmentSourceAppliedFields = [];
+    api.state.fitmentSourceIdentity = { sourceFingerprint: "source", selectedVariantSku: "SKU", variantState: "selected" };
+    api.setVnextFitmentField("setup_mode", "staggered");
+    assert.equal(api.state.fitmentForm.rear_rim.offset_et_mm, "35,125");
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+    api.setVnextFitmentField("rear_rim.offset_et_mm", "42,75");
+    assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint, "source");
+    for (const field of ["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm"]) {
+        api.bridge.action("accept-rim-proposal", `rear_rim.${field}`);
+    }
+    assert.equal(api.fitmentRimSaveReadiness().ready, true);
+    api.setVnextFitmentField("setup_mode", "uniform");
+    assert.equal(Object.hasOwn(api.fitmentPayload({ includeVehicle: false }), "rear_rim"), false);
+    api.setVnextFitmentField("setup_mode", "staggered");
+    assert.equal(api.state.fitmentForm.rear_rim.offset_et_mm, "42,75");
+    const payload = api.fitmentPayload({ includeVehicle: false, confirmWheelFields: true });
+    assert.equal(payload.rear_rim.offset_et_mm, 42.75);
+    assert.ok(payload.rear_rim.confirmed_fields.includes("offset_et_mm"));
+    assert.equal(Object.hasOwn(payload, "vehicle"), false);
+    api.setVnextFitmentField("rear_rim.offset_et_mm", "150,001");
+    assert.ok(api.fitmentRimSaveReadiness().invalid.includes("rear_rim.offset_et_mm"));
 });

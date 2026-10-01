@@ -20,6 +20,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   };
   const context = {
     state,
+    normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
     fitmentCheckForPresentation: () => null,
     fitmentUiState: () => ({ nextAction: "complete_vehicle_details", rim: {}, form: { dirty: true } }),
     fitmentContextJob: () => null,
