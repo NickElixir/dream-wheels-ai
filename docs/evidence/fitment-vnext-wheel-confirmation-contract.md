@@ -20,10 +20,13 @@ Wheel-only saves preserve Vehicle canonical fields/revision and authoritative
 
 ## Verification
 
-- Jobs Fitment API, Standard Check API, and resolver tests: 96 passed.
+- Jobs Fitment API, Standard Check API, and resolver tests: 97 passed.
 - New API tests cover a new value, changed value, same/new resolver fingerprint,
   one-PATCH readiness, decimal ET 35.125, unchanged Vehicle, independent Rear,
   and rejection of unsupported/omitted/null confirmation fields.
+- Repeating accepted, unchanged values from the same source performs no Wheel
+  or Vehicle write and keeps revisions stable; source changes still invalidate
+  earlier provenance unless the values are explicitly confirmed again.
 - Existing tests retain the original two-PATCH path for clients without the
   extension and the server's check admission/currentness rules.
 - Ruff check and format verification passed.

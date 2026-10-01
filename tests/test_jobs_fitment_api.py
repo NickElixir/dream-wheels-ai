@@ -820,6 +820,48 @@ def test_confirmed_vehicle_partial_wheel_requires_rim_specs(monkeypatch):
     assert result["next_action"]["kind"] == "complete_rim_specs"
 
 
+def test_repeated_explicit_wheel_confirmation_keeps_revisions(monkeypatch):
+    row = _fitment_row(
+        rim_source_fingerprint="same-source-123",
+        rim_field_provenance={
+            field: {"source": "user_confirmed", "is_user_confirmed": True}
+            for field in jobs_api._RIM_CRITICAL_FIELDS
+        },
+    )
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *_args):
+            writes.append(query)
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {field: float(row[f"rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS}
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "rim": {
+                **values,
+                "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS),
+                "source_fingerprint": "same-source-123",
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert not any("UPDATE rim_specs" in query for query in writes)
+    assert not any("UPDATE vehicle_identities" in query for query in writes)
+    assert response.json()["rim_revision"] == 1
+
+
 @pytest.mark.parametrize("fingerprint", [None, "same-source-123", "new-source-123"])
 def test_explicit_wheel_confirmations_save_new_values_once_without_vehicle_write(
     monkeypatch, fingerprint

@@ -4088,7 +4088,15 @@ async def save_fitment_details(
                     row["rim_field_provenance"],
                 )
                 rim_confirmed.update(
-                    {field: rim_values[field] for field in front_request.confirmed_fields}
+                    {
+                        field: rim_values[field]
+                        for field in front_request.confirmed_fields
+                        if source_changed
+                        or field in rim_changed
+                        or not _is_user_confirmed_provenance(
+                            _field_provenance_value(row["rim_field_provenance"], field)
+                        )
+                    }
                 )
             else:
                 rim_values = {}
@@ -4127,7 +4135,9 @@ async def save_fitment_details(
                     or ("selected" if selected_variant_sku else "none"),
                     "source_revision": int(row.get("rim_source_revision") or 1) + 1,
                 }
-            rim_source_write_needed = bool(source_changed or same_resolved_source)
+            rim_source_write_needed = bool(
+                source_changed or rim_provenance != (row["rim_field_provenance"] or {})
+            )
             rim_write_needed = bool(rim_changed or rim_confirmed or rim_source_write_needed)
             if rim_write_needed or rim_source_write_needed:
                 rim_provenance = _merge_field_provenance(
@@ -4253,9 +4263,6 @@ async def save_fitment_details(
                     rear_row_keys,
                     rear_provenance,
                 )
-                rear_confirmed.update(
-                    {field: rear_values[field] for field in rear_request.confirmed_fields}
-                )
                 rear_source_fingerprint = rear_request.source_fingerprint
                 rear_variant_state = rear_request.variant_state
                 if (
@@ -4279,6 +4286,17 @@ async def save_fitment_details(
                             != row.get("rear_rim_selected_variant_sku")
                         )
                     )
+                )
+                rear_confirmed.update(
+                    {
+                        field: rear_values[field]
+                        for field in rear_request.confirmed_fields
+                        if rear_source_changed
+                        or field in rear_changed
+                        or not _is_user_confirmed_provenance(
+                            _field_provenance_value(rear_provenance, field)
+                        )
+                    }
                 )
                 if rear_source_changed:
                     rear_provenance = dict(rear_provenance)
