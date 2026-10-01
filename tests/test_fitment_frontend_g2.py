@@ -212,7 +212,7 @@ def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> No
         in variant_flow
     )
     save_flow = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
-    assert "const savedFromSection = state.fitmentActiveSection;" in save_flow
+    assert "const savedFromSection = owner || state.fitmentActiveSection;" in save_flow
     assert "state.fitmentActiveSection = savedFromSection;" in save_flow
 
 

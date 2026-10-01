@@ -395,7 +395,7 @@ def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> Non
 
 
 def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
-    assert "const savedFromSection = state.fitmentActiveSection;" in APP_JS
+    assert "const savedFromSection = owner || state.fitmentActiveSection;" in APP_JS
     assert 'if (savedFromSection === "vehicle")' in APP_JS
     assert "state.fitmentActiveStep = 2;" in APP_JS
     assert 'state.fitmentActiveSection = "rim";' in APP_JS

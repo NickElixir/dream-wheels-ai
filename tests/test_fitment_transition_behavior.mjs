@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { fitmentMarkup } from "../webapp/vnext/views/fitment.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_SOURCE = fs.readFileSync(path.join(ROOT, "webapp", "app.js"), "utf8");
@@ -169,6 +170,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         loadFitmentVehicleCatalogue = () => {};
         ensureRequiredFitmentVariantLookup = () => {};
         const realLoadFitmentCheckHistory = loadFitmentCheckHistory;
+        const realRefreshFitmentCheckCurrentness = refreshFitmentCheckCurrentness;
         loadFitmentCheckHistory = async () => {};
         loadRenderHistory = async () => {};
         refreshFitmentCheckCurrentness = async () => {};
@@ -188,10 +190,15 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
+            applyRimSourceValues, markRimFieldEdited,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
+            snapshot: vnextFitmentSnapshot,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
             realLoadFitmentCheckHistory,
+            refreshCurrentness: realRefreshFitmentCheckCurrentness,
+            reselectionVariants: loadFitmentVehicleVariantsForReselection,
+            toggleModificationPicker: toggleFitmentModificationPicker,
             resolveFitmentRimSource,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
@@ -423,7 +430,11 @@ test("MANUAL_VARIANT_PRESERVES_SECTION", async () => {
     let api;
     ({ api } = navigationApi({ routes: {
         "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/apply": response(200, {}),
-        "GET /api/backend/jobs/behavior-job/fitment": () => response(200, overviewFor(api, "complete_rim_specs", { confirmedVariant: true })),
+        "GET /api/backend/jobs/behavior-job/fitment": () => {
+            const authoritative = overviewFor(api, "complete_rim_specs", { confirmedVariant: true });
+            authoritative.selected_modification = variant("B");
+            return response(200, authoritative);
+        },
     } }));
     seed(api, overviewFor(api, "select_vehicle_variant"));
     await api.applyFitmentVehicleVariant(variant("B"));
@@ -943,20 +954,63 @@ test("WHEEL_ONLY_SAVE works while Vehicle is unconfirmed and keeps its revision"
             return response(200, saved);
         },
     } }));
-    seed(api, initial, "rim");
+    seed(api, initial, "vehicle");
     api.useRealValidation();
     api.state.fitmentRimEditing = true;
     Object.assign(api.state.fitmentForm.rim, {
         bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18,
         wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35.25,
     });
-    await api.saveFitment();
+    api.state.fitmentRimManualFields = ["bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j", "center_bore_mm", "offset_et_mm"];
+    await api.saveVnextFitment("rim");
 
     assert.ok(requestBody, "Wheel save must send PATCH while Vehicle is incomplete");
     assert.equal(Object.hasOwn(requestBody, "vehicle"), false);
     assert.equal(requestBody.rim.offset_et_mm, 35.25);
     assert.equal(api.state.fitmentOverview.vehicle_revision, 2);
     assert.equal(api.state.fitmentOverview.next_action.kind, "complete_vehicle_details");
+});
+
+test("Wheel Save closes its editor and leaves Standard Check enabled from server next_action", async () => {
+    let api, requestBody;
+    ({ api } = navigationApi({ vnext: true, routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            requestBody = JSON.parse(options.body);
+            return response(200, overviewFor(api, "run_standard_check", { confirmedVariant: true }));
+        },
+    } }));
+    seed(api, overviewFor(api, "complete_rim_specs", { confirmedVariant: true }), "vehicle");
+    Object.assign(api.state.fitmentForm.rim, { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35 });
+    api.state.fitmentRimManualFields = ["bolt_count", "pcd_mm", "wheel_diameter_in", "wheel_width_j", "center_bore_mm", "offset_et_mm"];
+    api.state.fitmentRimEditing = true;
+    await api.saveVnextFitment("rim");
+    assert.equal(Object.hasOwn(requestBody, "vehicle"), false);
+    assert.equal(api.state.fitmentOverview.next_action.kind, "run_standard_check");
+    assert.equal(api.state.fitmentRimEditing, false);
+    const snapshot = api.snapshot();
+    assert.equal(snapshot.canRunCheck, true);
+    assert.match(fitmentMarkup(snapshot), /data-fitment-action="check"[^>]*>Проверить совместимость<\/button>/);
+});
+
+test("canonical revision change keeps previous evidence visibly stale when detail refresh fails or lies current", async () => {
+    let api;
+    const check = { id: "check-old", execution_status: "completed", verdict: "compatible", is_current: true };
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {
+            const updated = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+            updated.rim_revision += 1;
+            updated.current_check = { ...check, is_current: true };
+            return response(200, updated);
+        },
+        "GET /api/backend/fitment/checks/check-old": response(200, { ...check, is_current: true }),
+    } }));
+    const original = overviewFor(api, "complete_rim_specs", { confirmedVariant: true });
+    original.current_check = check;
+    seed(api, original, "rim");
+    api.state.fitmentCheck = check;
+    await api.saveFitment();
+    assert.equal(api.state.fitmentCheck.is_current, false);
+    assert.equal(api.state.fitmentOverview.current_check.is_current, false);
 });
 
 test("Wheel save preserves an unsaved Vehicle draft with a new server baseline", async () => {
@@ -1114,6 +1168,112 @@ test("VNext single variant is preselected locally and waits for explicit Apply",
     assert.equal(api.state.fitmentOverview.next_action.kind, "select_vehicle_variant");
 });
 
+test("optional vehicle reselection opens choices and Cancel restores the confirmed summary", async () => {
+    let api;
+    ({ api } = navigationApi({ vnext: true, routes: {
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/reselect": response(200, { outcome: "multiple", variants: [variant("A"), variant("B")] }),
+    } }));
+    const canonical = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    seed(api, canonical, "vehicle");
+    api.state.fitmentModificationPickerOpen = true;
+    api.state.fitmentModificationLookupMode = "reselect";
+    await api.reselectionVariants();
+    assert.equal(api.state.fitmentModificationPickerOpen, true);
+    assert.equal(api.state.fitmentModificationLookupMode, "reselect");
+    const picker = fitmentMarkup(api.snapshot());
+    assert.match(picker, /data-fitment-action="cancel-vehicle-reselection"/);
+    api.bridge.action("cancel-vehicle-reselection");
+    assert.equal(api.state.fitmentModificationPickerOpen, false);
+    assert.equal(JSON.stringify(api.state.fitmentOverview), JSON.stringify(canonical));
+    assert.equal(api.state.fitmentOverview.current_check?.is_current, canonical.current_check?.is_current);
+});
+
+test("optional vehicle reselection opens from the VNext action while the wheel editor is active", async () => {
+    const { api, calls } = navigationApi({ vnext: true, routes: {
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/reselect": response(200, { outcome: "multiple", variants: [variant("A"), variant("B")] }),
+    } });
+    const canonical = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    seed(api, canonical, "vehicle");
+    api.state.fitmentRimEditing = true;
+
+    api.bridge.action("reselect-vehicle");
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    assert.equal(api.state.fitmentModificationPickerOpen, true);
+    assert.equal(api.state.fitmentModificationLookupMode, "reselect");
+    assert.equal(api.state.fitmentRimEditing, true);
+    assert.ok(calls.includes("POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/reselect"));
+    const picker = fitmentMarkup({
+        ...api.snapshot(),
+        rimEditing: true,
+    });
+    assert.match(picker, /<strong>A<\/strong>/);
+    assert.match(picker, /data-fitment-action="cancel-vehicle-reselection"/);
+});
+
+test("failed vehicle variant Apply keeps the picker and selection available", async () => {
+    const { api } = navigationApi({ routes: {
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants/apply": response(503, { detail: "provider unavailable" }),
+    } });
+    const overview = overviewFor(api, "select_vehicle_variant");
+    seed(api, overview, "vehicle");
+    api.state.fitmentVehicleVariants = [variant("A"), variant("B")];
+    api.state.fitmentSelectedVehicleVariantIndex = 1;
+    await assert.rejects(api.applyFitmentVehicleVariant(api.state.fitmentVehicleVariants[1]));
+    assert.equal(api.state.fitmentOverview, overview);
+    assert.equal(api.state.fitmentVehicleVariants.length, 2);
+    assert.equal(api.state.fitmentSelectedVehicleVariantIndex, 1);
+    assert.equal(api.state.fitmentVehicleVariantApplying, false);
+});
+
+test("late overview success, 500, and 401 cannot replace a newly opened Fitment job", async () => {
+    for (const lateStatus of [200, 500, 401]) {
+        let releaseA;
+        const { api } = navigationApi({ routes: {
+            "GET /api/backend/jobs/job-a/fitment": () => new Promise(resolve => { releaseA = resolve; }),
+            "GET /api/backend/jobs/job-b/fitment": () => response(200, overviewFor(api, "complete_rim_specs", { confirmedVariant: true })),
+        } });
+        api.state.fitmentJobId = "job-a";
+        api.state.fitmentContextGeneration = 1;
+        const requestA = api.loadFitmentOverview("job-a");
+        api.state.fitmentJobId = "job-b";
+        api.state.fitmentContextGeneration += 1;
+        const requestB = api.loadFitmentOverview("job-b");
+        await requestB;
+        const expected = api.state.fitmentOverview;
+        releaseA(response(lateStatus, lateStatus === 200 ? overviewFor(api, "complete_vehicle_details") : { detail: "late" }));
+        await requestA;
+        assert.equal(api.state.fitmentOverview, expected);
+        assert.equal(api.state.fitmentJobId, "job-b");
+        assert.equal(api.state.fitmentAuthRequired, false);
+        assert.equal(api.state.fitmentLoading, false);
+    }
+});
+
+test("late Wheel Save response from Job A cannot overwrite Job B", async () => {
+    let releaseSave;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/job-a/fitment": () => new Promise(resolve => { releaseSave = resolve; }),
+    } });
+    const original = overviewFor(api, "complete_rim_specs", { confirmedVariant: true });
+    seed(api, original, "rim");
+    api.state.fitmentJobId = "job-a";
+    api.state.fitmentForm.rim.offset_et_mm = 35.125;
+    const save = api.saveFitment(undefined, { owner: "rim", confirmWheelFields: true });
+    const jobB = overviewFor(api, "complete_vehicle_details");
+    api.state.fitmentJobId = "job-b";
+    api.state.fitmentContextGeneration += 1;
+    api.state.fitmentOverview = jobB;
+    api.state.fitmentForm = api.fitmentFormFromOverview(jobB);
+    api.state.fitmentSaving = false;
+    releaseSave(response(200, { ...original, rim_revision: original.rim_revision + 1 }));
+    await save;
+    assert.equal(api.state.fitmentOverview, jobB);
+    assert.equal(api.state.fitmentJobId, "job-b");
+    assert.equal(api.state.fitmentSaving, false);
+    assert.equal(api.state.fitmentError, "");
+});
+
 test("accepting a resolver proposal is local and Save waits for explicit confirmation", async () => {
     const { api, calls } = navigationApi();
     seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
@@ -1196,4 +1356,39 @@ test("staggered copies front proposals once and preserves an independently edite
     assert.equal(Object.hasOwn(payload, "vehicle"), false);
     api.setVnextFitmentField("rear_rim.offset_et_mm", "150,001");
     assert.ok(api.fitmentRimSaveReadiness().invalid.includes("rear_rim.offset_et_mm"));
+});
+
+test("repeating one resolver proposal keeps it pending until explicit acceptance", () => {
+    const { api } = navigationApi();
+    seed(api, overviewFor(api, "complete_rim_specs"), "rim");
+    const value = { wheel_diameter_in: 18, wheel_width_j: 8, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.125 };
+    api.state.fitmentSourceIdentity = { sourceFingerprint: "source-a", selectedVariantSku: "sku-a", variantState: "selected" };
+    api.applyRimSourceValues(value, { sourceFingerprint: "source-a", selectedVariantSku: "sku-a" });
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+    api.applyRimSourceValues(value, { sourceFingerprint: "source-a", selectedVariantSku: "sku-a" });
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 35.125);
+    assert.ok(api.fitmentRimPendingProposalFields().includes("offset_et_mm"));
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+    api.bridge.action("accept-rim-proposal", "offset_et_mm");
+    assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"), false);
+});
+
+test("SKU change replaces unresolved system values, invalidates changed accepted values, and preserves manual fields", () => {
+    const { api } = navigationApi();
+    seed(api, overviewFor(api, "complete_rim_specs"), "rim");
+    const skuA = { wheel_diameter_in: 18, wheel_width_j: 8, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35 };
+    const skuB = { ...skuA, wheel_diameter_in: 19, offset_et_mm: 42 };
+    api.state.fitmentSourceIdentity = { sourceFingerprint: "source-a", selectedVariantSku: "sku-a", variantState: "selected" };
+    api.applyRimSourceValues(skuA, { sourceFingerprint: "source-a", selectedVariantSku: "sku-a" });
+    api.applyRimSourceValues(skuB, { sourceFingerprint: "source-a", selectedVariantSku: "sku-b" });
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in, 19);
+    assert.ok(api.fitmentRimPendingProposalFields().includes("wheel_diameter_in"));
+    api.bridge.action("accept-rim-proposal", "wheel_diameter_in");
+    api.state.fitmentForm.rim.offset_et_mm = 35;
+    api.state.fitmentRimManualFields = ["offset_et_mm"];
+    api.applyRimSourceValues({ ...skuB, wheel_diameter_in: 20, offset_et_mm: 45 }, { sourceFingerprint: "source-a", selectedVariantSku: "sku-c" });
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 35);
+    assert.ok(api.state.fitmentSourceConflicts.some(item => item.field === "offset_et_mm"));
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in, 20);
+    assert.ok(api.fitmentRimPendingProposalFields().includes("wheel_diameter_in"), "changed accepted value must require another acceptance");
 });
