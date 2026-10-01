@@ -7657,6 +7657,10 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
     state.fitmentSourceController?.abort?.();
     const controller = new AbortController();
     state.fitmentSourceController = controller;
+    const contextKey = fitmentCheckContextKey();
+    const isCurrentRequest = () => state.fitmentSourceController === controller
+        && contextKey === fitmentCheckContextKey()
+        && productUrl === normalizeFitmentText(state.fitmentForm.rim.product_url);
     const requestTimeout = window.setTimeout(() => controller.abort(), RIM_SOURCE_RESOLVE_TIMEOUT_MS);
     try {
         const response = await authenticatedFetch(
@@ -7668,12 +7672,14 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
                 signal: controller.signal,
             }
         );
+        if (!isCurrentRequest()) return;
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
         }
         if (!response.ok) throw new Error(await parseApiError(response));
         const result = await response.json();
+        if (!isCurrentRequest()) return;
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
         state.fitmentSourceVariants = result.selection_required ? (result.variants || []) : [];
         state.fitmentSourceConflicts = fitmentCanonicalRimConflicts(result.values, result.conflicts);
@@ -7705,10 +7711,12 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         state.fitmentSourceStatusTone = !resolvedEntries.length ? "error" : result.selection_required || conflictFields.length ? "warning" : "success";
         state.fitmentSourceOpen = true;
     } catch (error) {
+        if (!isCurrentRequest()) return;
         state.fitmentSourceStatus = fitmentSourceErrorMessage(error);
         state.fitmentSourceStatusTone = "error";
     } finally {
         window.clearTimeout(requestTimeout);
+        if (state.fitmentSourceController !== controller) return;
         if (state.fitmentSourceController === controller) state.fitmentSourceController = null;
         state.fitmentSourceResolving = false;
         renderFitment();
@@ -10479,6 +10487,12 @@ function vnextFitmentSnapshot() {
         })(),
         rimSpecs: fitmentRimTechnicalSummary(rim),
         rimSummaryRows,
+        canonicalRimSpecs: [
+            ...(overview?.setup_mode === "staggered"
+                ? [`Передняя ось: ${rimRowsFor(summaryRim).map(([label, value]) => `${label} ${value}`).join(" / ")}`,
+                    `Задняя ось: ${rimRowsFor(summaryRearRim).map(([label, value]) => `${label} ${value}`).join(" / ")}`]
+                : [rimRowsFor(summaryRim).map(([label, value]) => `${label} ${value}`).join(" / ")]),
+        ].filter(Boolean),
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),
@@ -10492,6 +10506,7 @@ function vnextFitmentSnapshot() {
         rimSaveReadiness: rimReadiness,
         rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
+            canChooseSku: Boolean(state.fitmentForm?.rim?.product_url && state.fitmentSourceIdentity?.selectedVariantSku),
             url: state.fitmentForm?.rim?.product_url || "",
             loading: Boolean(state.fitmentSourceResolving),
             status: state.fitmentSourceStatus || "",
@@ -10617,7 +10632,11 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "save") void saveVnextFitment();
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);
-        else if (action === "resolve-rim") void resolveFitmentRimSource();
+        else if (action === "resolve-rim") {
+            setFitmentEditor("rim");
+            setFitmentActiveSection("rim");
+            void resolveFitmentRimSource();
+        }
         else if (action === "rim-variant") selectFitmentRimVariant(Number(value));
         else if (action === "accept-rim-proposal") {
             const rear = value.startsWith("rear_rim.");
@@ -10638,7 +10657,14 @@ window.dreamwheelsFitmentBridge = {
             resolveFitmentParserConflict(fieldName, suggested.join("|"));
         } else if (action === "manual-rim") {
             clearFitmentTransientMessage();
-            clearFitmentResolverFeedback({ close: true });
+            state.fitmentSourceController?.abort?.();
+            state.fitmentSourceController = null;
+            state.fitmentSourceResolving = false;
+            state.fitmentSourceStatus = "";
+            state.fitmentSourceStatusTone = "neutral";
+            state.fitmentSourceVariants = [];
+            state.fitmentSourceOpen = false;
+            state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, variantState: "none", selectedVariantSku: null };
             setFitmentEditor("rim");
             state.fitmentActiveSection = "rim";
             state.fitmentActiveStep = 2;
