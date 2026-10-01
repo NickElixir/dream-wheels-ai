@@ -1,0 +1,339 @@
+{
+  "qualified_at": "2026-10-01T22:03:33.237215+00:00",
+  "qualification_scope": "Real external providers through unchanged runtime adapters; not authenticated staging E2E",
+  "vehicle": [
+    {
+      "id": "V2",
+      "make": "lexus",
+      "model": "rx",
+      "year": 2020,
+      "markets": {
+        "outcome": "success",
+        "resolution": "selection_required",
+        "resolved_market": null,
+        "items": [
+          {
+            "value": "cdm",
+            "label": "Canada",
+            "provider_id": "cdm",
+            "identities": [
+              {
+                "region": "cdm",
+                "provider_id": "cdm"
+              }
+            ]
+          },
+          {
+            "value": "ladm",
+            "label": "Central & South America",
+            "provider_id": "ladm",
+            "identities": [
+              {
+                "region": "ladm",
+                "provider_id": "ladm"
+              }
+            ]
+          },
+          {
+            "value": "chdm",
+            "label": "China",
+            "provider_id": "chdm",
+            "identities": [
+              {
+                "region": "chdm",
+                "provider_id": "chdm"
+              }
+            ]
+          },
+          {
+            "value": "eudm",
+            "label": "Europe",
+            "provider_id": "eudm",
+            "identities": [
+              {
+                "region": "eudm",
+                "provider_id": "eudm"
+              }
+            ]
+          },
+          {
+            "value": "jdm",
+            "label": "Japan",
+            "provider_id": "jdm",
+            "identities": [
+              {
+                "region": "jdm",
+                "provider_id": "jdm"
+              }
+            ]
+          },
+          {
+            "value": "medm",
+            "label": "Middle East",
+            "provider_id": "medm",
+            "identities": [
+              {
+                "region": "medm",
+                "provider_id": "medm"
+              }
+            ]
+          },
+          {
+            "value": "nadm",
+            "label": "North Africa",
+            "provider_id": "nadm",
+            "identities": [
+              {
+                "region": "nadm",
+                "provider_id": "nadm"
+              }
+            ]
+          },
+          {
+            "value": "audm",
+            "label": "Oceania",
+            "provider_id": "audm",
+            "identities": [
+              {
+                "region": "audm",
+                "provider_id": "audm"
+              }
+            ]
+          },
+          {
+            "value": "russia",
+            "label": "Russia+",
+            "provider_id": "russia",
+            "identities": [
+              {
+                "region": "russia",
+                "provider_id": "russia"
+              }
+            ]
+          },
+          {
+            "value": "sadm",
+            "label": "South Africa",
+            "provider_id": "sadm",
+            "identities": [
+              {
+                "region": "sadm",
+                "provider_id": "sadm"
+              }
+            ]
+          },
+          {
+            "value": "skdm",
+            "label": "South Korea",
+            "provider_id": "skdm",
+            "identities": [
+              {
+                "region": "skdm",
+                "provider_id": "skdm"
+              }
+            ]
+          },
+          {
+            "value": "sam",
+            "label": "Southeast Asia",
+            "provider_id": "sam",
+            "identities": [
+              {
+                "region": "sam",
+                "provider_id": "sam"
+              }
+            ]
+          },
+          {
+            "value": "usdm",
+            "label": "USA+",
+            "provider_id": "usdm",
+            "identities": [
+              {
+                "region": "usdm",
+                "provider_id": "usdm"
+              }
+            ]
+          }
+        ]
+      },
+      "variant_region": "cdm",
+      "variants": [
+        {
+          "id": "b58fe86cce",
+          "label": "RX350",
+          "generation_id": "749b3dec12",
+          "generation_label": "AL20 Facelift"
+        },
+        {
+          "id": "752283b149",
+          "label": "RX350L",
+          "generation_id": "749b3dec12",
+          "generation_label": "AL20 Facelift"
+        },
+        {
+          "id": "44a6feaea6",
+          "label": "RX450hL",
+          "generation_id": "749b3dec12",
+          "generation_label": "AL20 Facelift"
+        },
+        {
+          "id": "aba1e5182d",
+          "label": "RX350L",
+          "generation_id": "749b3dec12",
+          "generation_label": "AL20 Facelift"
+        }
+      ]
+    },
+    {
+      "id": "V1",
+      "make": "lada",
+      "model": "vesta",
+      "year": 2020,
+      "markets": {
+        "outcome": "success",
+        "resolution": "single",
+        "resolved_market": {
+          "value": "russia",
+          "label": "Russia+",
+          "provider_id": "russia",
+          "identities": [
+            {
+              "region": "russia",
+              "provider_id": "russia"
+            }
+          ]
+        },
+        "items": []
+      },
+      "variant_region": "russia",
+      "variants": [
+        {
+          "id": "e798f47a7a",
+          "label": "1.6i",
+          "generation_id": "067a26d872",
+          "generation_label": "B/C"
+        },
+        {
+          "id": "b83847c38f",
+          "label": "1.8i",
+          "generation_id": "067a26d872",
+          "generation_label": "B/C"
+        },
+        {
+          "id": "c07eb55b08",
+          "label": "1.6i CNG",
+          "generation_id": "067a26d872",
+          "generation_label": "B/C"
+        },
+        {
+          "id": "7ec6e2c098",
+          "label": "1.6i",
+          "generation_id": "067a26d872",
+          "generation_label": "B/C"
+        }
+      ]
+    }
+  ],
+  "wheel": [
+    {
+      "id": "W1/W3",
+      "url": "https://jaunasriepas.lv/en/rc-design-rc36-black-gloss-polished/sku2305308/",
+      "provider": "Jaunasriepas / RC Design",
+      "source_sku": "2305308",
+      "resolver_variant_count": 0,
+      "values": {
+        "brand": "RC Design",
+        "bolt_count": 5,
+        "pcd_mm": 112.0,
+        "center_bore_mm": 66.6,
+        "offset_et_mm": 35.5
+      },
+      "conflicts": [],
+      "manual_completion": {
+        "wheel_diameter_in": 20,
+        "wheel_width_j": 8.5
+      },
+      "note": "Single product page; SKU, diameter and width not emitted by resolver. Manual values read from the public product heading; no synthetic provider response."
+    },
+    {
+      "id": "W2",
+      "url": "https://konigwheels.com/products/konig-countergram.json",
+      "provider": "KONIG public product JSON",
+      "variant_count": 55,
+      "selection_required": true,
+      "samples": [
+        {
+          "source": {
+            "id": 45789131079908,
+            "title": "4X100 / 15x8 | et 25mm / HYPER CHROME / MACHINED LIP",
+            "sku": "CT8510025C",
+            "option1": "4X100",
+            "option2": "15x8 | et 25mm",
+            "option3": "HYPER CHROME / MACHINED LIP"
+          },
+          "resolver": {
+            "sku": "CT8510025C",
+            "values": {
+              "brand": "KONIG",
+              "sku": "CT8510025C"
+            },
+            "candidates": [
+              {
+                "field": "brand",
+                "value": "KONIG",
+                "source": "json_api_variant",
+                "confidence": 0.9
+              },
+              {
+                "field": "sku",
+                "value": "CT8510025C",
+                "source": "json_api_variant",
+                "confidence": 0.9
+              }
+            ],
+            "conflicts": []
+          }
+        },
+        {
+          "source": {
+            "id": 45789131014372,
+            "title": "4X100 / 15x7.5 | et 35mm / HYPER CHROME / MACHINED LIP",
+            "sku": "CT7510035C",
+            "option1": "4X100",
+            "option2": "15x7.5 | et 35mm",
+            "option3": "HYPER CHROME / MACHINED LIP"
+          },
+          "resolver": {
+            "sku": "CT7510035C",
+            "values": {
+              "brand": "KONIG",
+              "sku": "CT7510035C"
+            },
+            "candidates": [
+              {
+                "field": "brand",
+                "value": "KONIG",
+                "source": "json_api_variant",
+                "confidence": 0.9
+              },
+              {
+                "field": "sku",
+                "value": "CT7510035C",
+                "source": "json_api_variant",
+                "confidence": 0.9
+              }
+            ],
+            "conflicts": []
+          }
+        }
+      ],
+      "note": "Resolver emits SKU and brand only; source option labels include dimensions but those are not parsed. Review chooser and invalidation, then fill missing values manually; do not treat source option text as serialized resolver values."
+    }
+  ],
+  "vehicle_market_duplicates": {
+    "method": "Compare exact IDs and full labels without dropping options; semantic review of returned geography names",
+    "observed": false,
+    "scope": "V1/V2 option sets; not a claim about all future provider data"
+  }
+}
