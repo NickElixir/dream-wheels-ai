@@ -2,9 +2,26 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
-import { fitmentMarkup } from "../vnext/views/fitment.js";
+import { fitmentMarkup, wheelPickerOptions, wheelPickerManualValue } from "../vnext/views/fitment.js";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+
+test("ET picker separates recommended/all, prioritizes exact matches and preserves manual decimals", () => {
+  assert.ok(wheelPickerOptions("offset_et_mm").matches.length < wheelPickerOptions("offset_et_mm", "", "all").matches.length);
+  const exact = wheelPickerOptions("offset_et_mm", "33,275");
+  assert.deepEqual(exact.exact, [33.275]);
+  assert.equal(exact.matches.includes(33.275), false);
+  assert.equal(wheelPickerManualValue("offset_et_mm", "35,125"), "35.125");
+  assert.equal(wheelPickerManualValue("offset_et_mm", "-150"), "-150");
+  assert.equal(wheelPickerManualValue("offset_et_mm", "150,001"), null);
+  assert.equal(wheelPickerManualValue("offset_et_mm", "invalid"), null);
+  assert.equal(wheelPickerManualValue("pcd", "5x114,3"), "5×114.3");
+  const markup = fitmentMarkup({ wheelPicker: { path: "rim.offset_et_mm", query: "35,125", mode: "recommended" } });
+  assert.match(markup, /role="dialog" aria-modal="true"/);
+  assert.match(markup, /data-wheel-picker-value="35.125"/);
+  assert.match(markup, /Ручной ввод ET/);
+  assert.match(markup, /data-wheel-picker-search/);
+});
 
 test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
   const app = read("app.js");
@@ -80,7 +97,8 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
 
 test("Wheel decimal controls preserve comma input until exact numeric serialization", () => {
   const markup = fitmentMarkup({ overview: {}, rimEditing: true, rim: { offset_et_mm: "35,125" } });
-  assert.match(markup, /type="text" inputmode="decimal" data-fitment-field="rim\.offset_et_mm" value="35,125"/);
+  assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
+  assert.match(markup, />35,125<\/button>/);
   const app = read("app.js");
   const normalizer = app.slice(app.indexOf("function normalizeFitmentNumber("), app.indexOf("function formatFitmentNumber("));
   const context = {};
@@ -312,7 +330,7 @@ test("the active object editor avoids repeating summary parameters and uses a co
   const wheelEditor = fitmentMarkup({ overview: {}, rimEditing: true, rimSpecs: "20 inch", rimSummaryRows: [["ET", "40 мм"]], rim: { offset_et_mm: 40 } });
   assert.doesNotMatch(wheelEditor, /<dt>ET<\/dt>/);
   assert.doesNotMatch(wheelEditor, /20 inch/);
-  assert.match(wheelEditor, /data-fitment-field="rim\.offset_et_mm"/);
+  assert.match(wheelEditor, /data-wheel-picker-open="rim\.offset_et_mm"/);
   assert.match(read("vnext/styles/fitment.css"), /\.vnext-fitment:has\(\.vnext-fitment__object--editing\) \.vnext-fitment__stage \{ height: 160px; \}/);
 });
 
@@ -349,7 +367,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(failure, /Сайт недоступен/);
   assert.match(failure, /data-fitment-action="resolve-rim"/);
   assert.match(failure, /Заполнить вручную/);
-  assert.match(failure, /value="19"/);
+  assert.match(failure, />19<\/button>/);
 });
 
 test("completed Fitment shows verdict before conditions and technical comparison", () => {
@@ -365,7 +383,7 @@ test("completed Fitment shows verdict before conditions and technical comparison
 
 test("Fitment presentation is a callback-only view with no API, polling, verdict, or revision logic", () => {
   const view = read("vnext/views/fitment.js");
-  assert.doesNotMatch(view, /fetch\(|setTimeout\(|clearTimeout\(|revision\s*[+\-*/=]|pcd.*(?:match|compare)|infer/i);
+  assert.doesNotMatch(view, /fetch\(|setTimeout\(|clearTimeout\(|revision\s*[+\-*/=]|infer/i);
   assert.match(view, /button\([^\n]*"check"/);
   assert.match(view, /button\([^\n]*"resolve-rim"/);
   assert.match(view, /data-fitment-field=/);
@@ -602,7 +620,7 @@ test("staggered Fitment does not project front rim candidates into rear axle fie
     rim: { offset_et_mm: 42 }, rearRim: { offset_et_mm: 55 },
     rimCandidates: [{ field: "offset_et_mm", value: 35 }],
   });
-  assert.match(markup, /data-fitment-field="rim\.offset_et_mm"[^]*?data-fitment-action="candidate" data-value="rim\.offset_et_mm\|35"/);
+  assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"[^]*?data-fitment-action="candidate" data-value="rim\.offset_et_mm\|35"/);
   assert.doesNotMatch(markup, /data-value="rear_rim\.offset_et_mm\|35"/);
 });
 

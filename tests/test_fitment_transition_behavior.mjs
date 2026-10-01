@@ -969,7 +969,10 @@ test("staggered copies front proposals once and preserves an independently edite
     api.setVnextFitmentField("setup_mode", "staggered");
     assert.equal(api.state.fitmentForm.rear_rim.offset_et_mm, "35,125");
     assert.equal(api.fitmentRimSaveReadiness().ready, false);
+    api.state.fitmentSourceAppliedFields = ["offset_et_mm"];
     api.setVnextFitmentField("rear_rim.offset_et_mm", "42,75");
+    assert.ok(api.state.fitmentSourceAppliedFields.includes("offset_et_mm"));
+    api.bridge.action("accept-rim-proposal", "rim.offset_et_mm");
     assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint, "source");
     for (const field of ["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm"]) {
         api.bridge.action("accept-rim-proposal", `rear_rim.${field}`);

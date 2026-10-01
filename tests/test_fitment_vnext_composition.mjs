@@ -41,7 +41,7 @@ test("a Wheel editor remains the only editor when the server requests a Vehicle 
     vehicleVariants: [{ label: "2.0 AWD" }],
     rim: { offset_et_mm: 35.25 },
   });
-  assert.match(markup, /data-fitment-field="rim\.offset_et_mm"/);
+  assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
   assert.doesNotMatch(markup, /class="vnext-fitment__variant-step"/);
   assert.match(markup, /Выберите комплектацию автомобиля/);
   assert.match(markup, /data-fitment-action="edit-vehicle"/);
