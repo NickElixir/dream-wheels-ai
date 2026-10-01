@@ -211,3 +211,4 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__recognition h2 { margin: 0; font-size: 18px; }
 .vnext-fitment__recognition p { margin: 0; color: var(--vnext-text-secondary); }
 .vnext-fitment__recognition > .vnext-button { justify-self: start; }
+.vnext-fitment__mutation-region { border: 0; padding: 0; margin: 0; min-width: 0; }

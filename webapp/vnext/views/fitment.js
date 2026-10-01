@@ -58,9 +58,9 @@ function verdict(model) {
   const status = model.executionStatus;
   if (status === "failed") {
     const message = model.executionError || model.resultCopy || model.checkError || model.error;
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Не удалось проверить совместимость</h2>${message ? `<p>${esc(message)}</p>` : ""}</section>`;
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Не удалось выполнить проверку</h2>${message ? `<p>${esc(message)}</p>` : ""}${button("Изменить параметры", "edit-rim")}</section>`;
   }
-  if (status === "queued" || status === "processing") return `<section class="vnext-fitment__verdict" role="status"><p class="vnext-eyebrow">Техническая проверка</p>${loadingStatus(status === "queued" ? "Проверка в очереди" : "Проверяем совместимость")}${status === "queued" ? '<p class="vnext-fitment__queue-note">Проверка ожидает запуска.</p>' : ""}<p>${esc(model.vehicleTitle)} — ${esc(model.rimTitle)}</p></section>`;
+  if (status === "queued" || status === "processing" || model.checking) return `<section class="vnext-fitment__verdict"><p class="vnext-eyebrow">Техническая проверка</p>${loadingStatus("Проверяем совместимость…")}<p>${esc(model.vehicleTitle)} — ${esc(model.rimTitle)}</p>${model.checkError ? button("Обновить статус", "reload") : ""}</section>`;
   const check = model.check;
   if (check?.execution_status === "completed") {
     const stale = check.is_current === false;
@@ -257,7 +257,7 @@ export function fitmentMarkup(model = {}) {
   const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
   const activeEditor = variantRequired && !model.manualVehicleEditing || model.vehicleEditing || model.rimEditing;
-  const contextualAction = !activeEditor && retryState && model.retryAvailable
+  const contextualAction = !activeEditor && retryState && model.retryAvailable && model.canRunCheck
     ? button(model.executionStatus === "failed" ? "Повторить проверку" : "Проверить ещё раз", "check", { primary: true, disabled: model.checking })
     : !activeEditor && !completedCurrent && !["queued", "processing", "failed"].includes(model.executionStatus) && model.canRunCheck
       ? button("Проверить совместимость", "check", { primary: true, disabled: model.checking })
@@ -270,6 +270,7 @@ export function fitmentMarkup(model = {}) {
     <div class="vnext-fitment__topline"><h1>Проверка совместимости</h1>${button("Назад", "back")}</div>
     ${authNotice}
     ${model.message ? `<p class="vnext-fitment__notice" role="status">${esc(model.message)}</p>` : ""}
+    <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="Автомобиль и колесный диск">
     <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
         ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title" class="vnext-fitment__visually-hidden">Автомобиль</h2>'}
@@ -287,7 +288,8 @@ export function fitmentMarkup(model = {}) {
     </div>
     ${vehicleRecognition(model)}
     <div class="vnext-fitment__active-editor">${variantChooser(model)}${vehicleEditor(model, vehicle)}${wheelEditor(model, rim)}</div>
-    ${model.check || ["queued", "processing", "failed"].includes(model.executionStatus) ? verdict(model) : ""}
+    </fieldset>
+    ${model.check || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? verdict(model) : ""}
     ${checkError}
     ${evidence(model)}
     ${comparisonTable(model)}
