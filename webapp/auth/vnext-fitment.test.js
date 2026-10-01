@@ -16,6 +16,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     fitmentForm: { vehicle: { ...saved }, rim: {} },
     fitmentVehicleEditing: true,
     fitmentSourceAppliedFields: [],
+    fitmentRimManualFields: [], fitmentSourceConflicts: [], fitmentSourceIdentity: {},
   };
   const context = {
     state,
@@ -51,7 +52,8 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     },
   };
   vm.createContext(context);
-  vm.runInContext(`${snapshot}\n${setter}`, context);
+  const wheelHelpers = app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited("));
+  vm.runInContext(`${wheelHelpers}\n${snapshot}\n${setter}`, context);
   context.setVnextFitmentField("vehicle.make", "zeekr");
   context.setVnextFitmentField("vehicle.body", "edited body");
   context.setVnextFitmentField("vehicle.modification", "AWD");
@@ -338,7 +340,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.equal((missingSpecs.match(/Не определено/g) || []).length, 5);
 
   const conflict = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", conflicts: [{ field: "offset_et_mm", current: 40, suggested: 45 }] } });
-  assert.match(conflict, /Сейчас: 40 — Найдено: 45/);
+  assert.match(conflict, /Подтверждено: 40 — найдено: 45/);
   assert.match(conflict, /data-fitment-action="conflict-use"/);
   assert.match(conflict, /data-fitment-action="conflict-keep"/);
 
@@ -378,7 +380,7 @@ test("Fitment retains the exact job and origin through entry/back and reuses exi
   assert.match(app, /snapshot: vnextFitmentSnapshot/);
   assert.match(app, /setupMode: state\.fitmentForm\?\.setup_mode \|\| overview\?\.setup_mode \|\| "uniform"/);
   assert.match(app, /rearRim: state\.fitmentForm\?\.rear_rim \|\| overview\?\.rear_rim \|\| \{\}/);
-  assert.match(app, /action === "save"\) void saveFitment\(\)/);
+  assert.match(app, /action === "save"\) void saveVnextFitment\(\)/);
   assert.match(app, /action === "check"\) void runFitmentCheck\(\)/);
   assert.match(app, /action === "resolve-rim"\) void resolveFitmentRimSource\(\)/);
   assert.match(app, /action === "load-vehicle-variants"\) \{\s*toggleFitmentModificationPicker\(\)/);
@@ -400,6 +402,7 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
 test("runtime Fitment initialization follows next_action and never opens both object editors", async () => {
   const app = read("app.js");
   const source = [
+    app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited(")),
     app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
     app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),
     app.slice(app.indexOf("async function loadFitmentOverview("), app.indexOf("function openFitmentView(")),
@@ -409,6 +412,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentJobId: "demo-job", fitmentOverview: null, fitmentForm: null, fitmentFormState: {},
     fitmentCheck: null, fitmentCheckHistory: [], fitmentVehicleEditing: false, fitmentRimEditing: false,
     fitmentVehicleDirty: false, fitmentVehicleMarketEdited: false, fitmentSourceAppliedFields: [],
+    fitmentRimManualFields: [],
     fitmentSourceIdentity: {}, fitmentSourceStatus: "", fitmentSourceResolving: false,
     fitmentSourceStatusTone: "neutral", fitmentSourceDetected: false, fitmentSourceVariants: [],
     fitmentSourceConflicts: [], fitmentModificationPickerOpen: false, fitmentVehicleVariantsLoading: false,

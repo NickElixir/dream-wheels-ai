@@ -186,6 +186,8 @@ function navigationApi({ routes = {} } = {}) {
             openFitmentView,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
+            fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
+            bridge: window.dreamwheelsFitmentBridge, saveVnextFitment,
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
@@ -839,6 +841,8 @@ test("RIM_ONLY_SAVE_BOUNDARY sends the real PATCH without Vehicle", async () => 
     seed(api, overview, "rim");
     api.state.fitmentRimEditing = true;
     api.state.fitmentForm.rim.offset_et_mm = 46;
+    Object.assign(api.state.fitmentForm.rim, { wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6 });
+    api.state.fitmentRimManualFields = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
     api.state.fitmentFormState.status = "dirty";
     await api.saveFitment();
 
@@ -891,6 +895,8 @@ test("Wheel save preserves an unsaved Vehicle draft with a new server baseline",
     api.state.fitmentForm.vehicle.model = "Draft Model";
     api.state.fitmentVehicleDirty = true;
     api.state.fitmentForm.rim.offset_et_mm = 35.25;
+    Object.assign(api.state.fitmentForm.rim, { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6 });
+    api.state.fitmentRimManualFields = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
     saved = { ...initial, rim_revision: (initial.rim_revision || 1) + 1 };
     await api.saveFitment();
 
@@ -914,4 +920,39 @@ test("demo Wheel save keeps Vehicle progression authoritative", () => {
     assert.equal(saved.vehicle_revision, before);
     assert.equal(saved.next_action.kind, "complete_vehicle_details");
     assert.equal(saved.rim_revision, api.state.fitmentOverview.rim_revision + 1);
+});
+
+test("resolver compares proposals with confirmed Wheel values without changing canonical data", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "complete_vehicle_details");
+    overview.front_rim = { rim: { offset_et_mm: 35.125 }, field_states: { offset_et_mm: { state: "confirmed", value: 35.125 } } };
+    seed(api, overview, "rim");
+    assert.equal(api.fitmentCanonicalRimConflicts({ offset_et_mm: "35,125" }).length, 0);
+    const conflicts = JSON.parse(JSON.stringify(api.fitmentCanonicalRimConflicts({ offset_et_mm: 42.75 })));
+    assert.deepEqual(conflicts, [{ field: "offset_et_mm", current: 35.125, suggested: 42.75 }]);
+    assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm, 35.125);
+    assert.equal(api.fitmentCanonicalRimConflicts({ center_bore_mm: 66.6 }).length, 0);
+    api.state.fitmentSourceIdentity = { sourceFingerprint: "same-source", selectedVariantSku: "SKU-1", variantState: "selected" };
+    api.state.fitmentSourceConflicts = conflicts;
+    api.bridge.action("conflict-use", "offset_et_mm|42.75");
+    assert.equal(api.fitmentPayload({ includeVehicle: false }).rim.offset_et_mm, 42.75);
+    assert.equal(api.fitmentPayload({ includeVehicle: false }).rim.source_fingerprint, null);
+    assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm, 35.125);
+});
+
+test("accepting a resolver proposal is local and Save waits for explicit confirmation", async () => {
+    const { api, calls } = navigationApi();
+    seed(api, overviewFor(api, "complete_vehicle_details"), "rim");
+    Object.assign(api.state.fitmentForm.rim, { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35.125 });
+    api.state.fitmentSourceAppliedFields = ["offset_et_mm"];
+    const initialCallCount = calls.length;
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+    await api.saveVnextFitment();
+    assert.equal(calls.length, initialCallCount, "unconfirmed proposal must not send PATCH");
+    const revision = api.state.fitmentOverview.rim_revision;
+    api.bridge.action("accept-rim-proposal", "offset_et_mm");
+    assert.equal(calls.length, initialCallCount, "accepting a value must not send PATCH");
+    assert.equal(api.state.fitmentOverview.rim_revision, revision);
+    assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"), false);
+    assert.equal(api.fitmentRimSaveReadiness().ready, true);
 });
