@@ -10043,7 +10043,7 @@ function vnextFitmentSnapshot() {
         retryAvailable,
         vehicle,
         vehicleForm: state.fitmentForm?.vehicle || vehicle,
-        vehicleTitle: demoVehicleTitle(vehicle),
+        vehicleTitle: [vehicle.make, vehicle.model].filter(Boolean).join(" "),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
         vehicleSummaryRows,
         vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
@@ -10076,7 +10076,11 @@ function vnextFitmentSnapshot() {
             },
         },
         rim,
-        rimTitle: demoRimTitle(rim),
+        rimTitle: [summaryRim.brand, summaryRim.model].filter(Boolean).join(" "),
+        rimSourceDomain: (() => {
+            try { return new URL(state.fitmentForm?.rim?.product_url || "").hostname.replace(/^www\./i, ""); }
+            catch { return ""; }
+        })(),
         rimSpecs: fitmentRimTechnicalSummary(rim),
         rimSummaryRows,
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",

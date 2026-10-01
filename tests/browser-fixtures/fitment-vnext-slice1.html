@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fitment VNext Slice 1 QA</title>
+  <link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/shell.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+  <style>
+    body { margin: 0; background: var(--vnext-canvas); color: var(--vnext-text); font-family: "IBM Plex Sans", sans-serif; }
+    .qa-wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 100px; }
+    .qa-controls { display: flex; gap: 8px; margin-bottom: 24px; }
+    .qa-controls button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <main class="qa-wrap">
+    <div class="qa-controls"><button id="vehicle">Vehicle</button><button id="wheel">Wheel</button><button id="result">Result</button></div>
+    <div id="fitment"></div>
+  </main>
+  <script type="module">
+    import { fitmentMarkup } from "../../webapp/vnext/views/fitment.js";
+    const root = document.getElementById("fitment");
+    const model = {
+      overview: { vehicle_state: "unconfirmed", rim_setup_state: "partial" },
+      nextAction: "complete_vehicle_details", vehicleTitle: "Mercedes-Benz GLC",
+      rimTitle: "BBS CI-R", rimSourceDomain: "shop.example.ru",
+      vehicleStatus: "Требуется подтверждение", frontRimSetupState: "partial",
+      vehicleForm: { make: "Mercedes-Benz", model: "GLC", year: 2024 },
+      rim: { brand: "BBS", model: "CI-R", bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 18, wheel_width_j: 8, center_bore_mm: 66.6, offset_et_mm: 35.25 },
+      setupMode: "uniform", vehicleEditing: true, rimEditing: false,
+    };
+    function render() { root.innerHTML = fitmentMarkup(model); }
+    document.getElementById("vehicle").onclick = () => { model.vehicleEditing = true; model.rimEditing = false; render(); };
+    document.getElementById("wheel").onclick = () => { model.vehicleEditing = false; model.rimEditing = true; render(); };
+    document.getElementById("result").onclick = () => {
+      model.vehicleEditing = false; model.rimEditing = false;
+      model.check = { execution_status: "completed", verdict: "incompatible", is_current: true };
+      model.executionStatus = "completed"; render();
+    };
+    root.onclick = (event) => {
+      const action = event.target.closest("[data-fitment-action]")?.dataset.fitmentAction;
+      if (action === "edit-vehicle" || action === "edit-rim") {
+        model.vehicleEditing = action === "edit-vehicle";
+        model.rimEditing = action === "edit-rim";
+        render();
+      }
+    };
+    render();
+  </script>
+</body>
+</html>

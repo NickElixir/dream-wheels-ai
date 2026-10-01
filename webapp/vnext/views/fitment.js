@@ -165,57 +165,49 @@ export function fitmentMarkup(model = {}) {
   }
   const vehicle = model.vehicleForm || model.vehicle || {};
   const rim = model.rim || {};
-  const vehicleNeedsDetails = model.nextAction === "complete_vehicle_details";
   const variantRequired = model.nextAction === "select_vehicle_variant";
-  const rimNeedsDetails = model.nextAction === "complete_rim_specs";
   const rimSetupState = model.frontRimSetupState || model.overview?.rim_setup_state || "unknown";
   const rimStatus = model.setupMode === "staggered"
     ? `Передняя ось: ${rimSetupLabel(rimSetupState)} — Задняя ось: ${rimSetupLabel(model.rearRimSetupState)}`
     : rimSetupLabel(rimSetupState);
-  const vehicleStatus = vehicleNeedsDetails ? "Уточните данные автомобиля" : variantRequired ? "Выберите комплектацию автомобиля" : model.vehicleStatus || "Данные автомобиля";
+  const vehicleStatus = model.vehicleStatus || "Требуется подтверждение";
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
-  const vehicleActions = `<div class="vnext-fitment__actions">${!model.vehicleEditing && !variantRequired ? button("Изменить автомобиль", "edit-vehicle") : ""}${!model.vehicleEditing && variantRequired ? button("Не мой автомобиль — указать вручную", "manual-vehicle") : ""}</div>`;
   const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
   const activeEditor = variantRequired && !model.manualVehicleEditing || model.vehicleEditing || model.rimEditing;
-  const wheelActions = !model.rimEditing && !rimNeedsDetails && !completedCurrent ? button("Изменить параметры", "edit-rim") : "";
   const contextualAction = !activeEditor && retryState && model.retryAvailable
     ? button(model.executionStatus === "failed" ? "Повторить проверку" : "Проверить ещё раз", "check", { primary: true, disabled: model.checking })
     : !activeEditor && !completedCurrent && !["queued", "processing", "failed"].includes(model.executionStatus) && model.canRunCheck
       ? button("Проверить совместимость", "check", { primary: true, disabled: model.checking })
       : "";
-  const createImageIsPrimary = completedCurrent && !activeEditor;
-  const renderAction = button("Создать изображение", "create-image", { primary: createImageIsPrimary });
-  const footerActions = contextualAction ? `${contextualAction}${renderAction}` : `${renderAction}${completedCurrent && !activeEditor ? button("Изменить параметры", "edit-rim") : ""}`;
+  const renderAction = button("Создать изображение", "create-image");
+  const checkAction = contextualAction || button("Проверить совместимость", "check", { primary: true, disabled: !model.canRunCheck || activeEditor || model.checking });
   const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
   const checkError = model.checkError && model.executionStatus !== "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
   return `<section class="vnext-fitment">
     <div class="vnext-fitment__topline"><h1>Проверка совместимости</h1>${button("Назад", "back")}</div>
     ${authNotice}
     ${model.message ? `<p class="vnext-fitment__notice" role="status">${esc(model.message)}</p>` : ""}
-    <div class="vnext-fitment__pair">
+    <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
-        <div class="vnext-fitment__object-meta"><h2 id="fitment-vehicle-title">${esc(model.vehicleTitle || "Данные автомобиля не заполнены")}</h2>
-        ${(model.vehicleSpecs || []).length && !model.vehicleEditing ? `<dl class="vnext-fitment__summary-list">${model.vehicleSummaryRows?.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("") || `<div><dt>Основные данные</dt><dd>${model.vehicleSpecs.map(esc).join(" — ")}</dd></div>`}</dl>` : ""}
-        ${model.vehicleVariantName ? `<div class="vnext-fitment__variant-summary"><span>Комплектация</span><strong>${esc(model.vehicleVariantName)}</strong>${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}</div>` : ""}
-        </div>
-        <div class="vnext-fitment__object-status">${esc(vehicleStatus)}</div>${vehicleError}${vehicleActions}
+        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title" class="vnext-fitment__visually-hidden">Автомобиль</h2>'}
+        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle")}</div>
+        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: true, disabled: true })}</div>
+        <p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>${model.vehicleVariantName ? `<p class="vnext-fitment__object-detail"><span>Комплектация</span> ${esc(model.vehicleVariantName)}</p>` : ""}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
-        <div class="vnext-fitment__object-meta"><h2 id="fitment-rim-title">${esc(model.rimTitle || "Параметры не заполнены")}</h2>
-        ${model.rimSummaryRows?.length && !model.rimEditing ? `<dl class="vnext-fitment__summary-list">${model.rimSummaryRows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>` : !model.rimEditing && model.rimSpecs ? `<p>${esc(model.rimSpecs)}</p>` : ""}
-        </div>
-        <div class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${esc(rimStatus)}</div><p class="vnext-fitment__provenance">${esc(model.rimProvenance || "")}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${wheelActions}
+        ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
+        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Ссылка на товар</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim")}</div>
+        <div class="vnext-fitment__source-action">${button("Распознать колесный диск", "resolve-rim", { primary: true, disabled: !model.rimEditing || !model.resolver?.url || model.resolver?.loading })}</div>
+        <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${esc(rimStatus)}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
-    ${variantChooser(model)}
-    ${vehicleEditor(model, vehicle)}
-    ${wheelEditor(model, rim)}
-    ${verdict(model)}
+    <div class="vnext-fitment__active-editor">${variantChooser(model)}${vehicleEditor(model, vehicle)}${wheelEditor(model, rim)}</div>
+    ${model.check || ["queued", "processing", "failed"].includes(model.executionStatus) ? verdict(model) : ""}
     ${checkError}
     ${evidence(model)}
     ${comparisonTable(model)}
-    <footer class="vnext-fitment__footer">${footerActions}</footer>
+    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">Проверка совместимости</h2><p>${esc(nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p><div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.vehicleTitle || "Требуется подтверждение")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.rimTitle || "Требуется подтверждение")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
   </section>`;
 }
 
