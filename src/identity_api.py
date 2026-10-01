@@ -31,7 +31,7 @@ from src.identity.schemas import (
     VehicleResolutionMetadata,
 )
 from src.identity.service import get_vehicle_identity_resolver
-from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES
+from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES, _fetch_fitment_job_row
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
     FetchLimits,
@@ -59,6 +59,85 @@ class IdentityResolveResponse(BaseModel):
     rim: identity_service.RimIdentityProposal
     pcd_display: str | None = None
     resolver: str
+
+
+class FitmentVehicleProposalResponse(BaseModel):
+    job_id: str
+    vehicle_revision: int
+    vehicle: VehicleIdentityResolution
+
+
+@router.post("/fitment/{job_id}/vehicle-proposal", response_model=FitmentVehicleProposalResponse)
+async def resolve_fitment_vehicle_proposal(
+    job_id: UUID,
+    car_image: Annotated[UploadFile, File()],
+    expected_vehicle_revision: Annotated[int, Form(ge=1)],
+    init_data: Annotated[str, Form()] = "",
+    telegram_user_id: Annotated[int | None, Form()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> FitmentVehicleProposalResponse:
+    """Recognize an owned job's local photo without persisting or creating a render."""
+    preflight_auth_credentials(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="fitment vehicle proposal",
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="fitment vehicle proposal",
+        )
+        row = await _fetch_fitment_job_row(conn, job_id=str(job_id), user_id=principal.user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+    if not row["fitment_available"]:
+        raise HTTPException(status_code=409, detail={"code": "fitment_context_unavailable"})
+    if int(row["vehicle_revision"]) != expected_vehicle_revision:
+        raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    await enforce_rate_limit(
+        scope="identity_resolve",
+        identifier=principal.user_id,
+        limit=IDENTITY_RATE_LIMIT,
+        window_sec=IDENTITY_RATE_WINDOW_SEC,
+    )
+    image_bytes = await _read_identity_upload(car_image, "car")
+    try:
+        normalized = normalize_image(
+            image_bytes,
+            max_image_edge=VEHICLE_IDENTITY_MAX_IMAGE_EDGE,
+            max_pixels=VEHICLE_IDENTITY_MAX_PIXELS,
+        )
+    except ImageNormalizationError as exc:
+        raise _normalization_http_error(exc) from exc
+    try:
+        resolution = await get_vehicle_identity_resolver().resolve(normalized)
+    except VehicleIdentityProviderError as exc:
+        logger.exception(
+            "❌ Fitment vehicle proposal failed job_id=%s user_id=%s error_code=%s",
+            job_id,
+            principal.user_id,
+            exc.error_code,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "vehicle_provider_unavailable", "retryable": exc.retryable},
+        ) from exc
+    async with pool.acquire() as conn:
+        current = await _fetch_fitment_job_row(conn, job_id=str(job_id), user_id=principal.user_id)
+    if not current:
+        raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+    if not current["fitment_available"]:
+        raise HTTPException(status_code=409, detail={"code": "fitment_context_unavailable"})
+    if int(current["vehicle_revision"]) != expected_vehicle_revision:
+        raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    return FitmentVehicleProposalResponse(
+        job_id=str(job_id), vehicle_revision=expected_vehicle_revision, vehicle=resolution
+    )
 
 
 async def _read_identity_upload(upload: UploadFile, label: str) -> bytes:
