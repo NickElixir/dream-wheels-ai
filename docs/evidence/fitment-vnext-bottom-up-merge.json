@@ -1,0 +1,371 @@
+{
+  "delivery": {
+    "starting_staging": "5a30a65059e21da79f3d58f8c9eb2c53ee812fc6",
+    "rollback_ref": "refs/tags/pre-fitment-vnext-merge-2026-10-01",
+    "rollback_created_before": "2026-10-01T21:15:17Z",
+    "reviewed_245_head": "5000465cfc14bb24939c1aa70099774806bf9bc1",
+    "final_runtime_merge": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+    "tree": "031c04abdc9f9656627caa33e7c9f93b63f7251f",
+    "ci_run": 36927901802,
+    "pause_environment_id": 20805708543,
+    "pause_branch_policy_id": 61683643,
+    "verified_at": "2026-10-01T21:20:37.024791+00:00",
+    "known_good_frontend": {
+      "id": "dpl_3ahtDeRsdRvpwUexwFjwTb1oV7V9",
+      "sha": "adef5ce8c98e8d0078556906ed70796dbd9beb0e"
+    },
+    "known_good_backend": {
+      "id": "dep-dauo1t0ae00c73f34su0",
+      "sha": "5a30a65059e21da79f3d58f8c9eb2c53ee812fc6"
+    },
+    "frontend": {
+      "id": "dpl_BhEALDwj5vpBrmSS8DGPnadUxENu",
+      "sha": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+      "built_at": "2026-10-01T21:22:03Z",
+      "url": "https://dream-wheels-ai-webapp-staging-4ez9jfwky.vercel.app"
+    },
+    "backend": {
+      "id": "dep-davcsov9nhgc73fu80j0",
+      "sha": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+      "status": "live",
+      "finished_at": "2026-10-01T21:21:56.733699Z"
+    },
+    "workflow_result": "SUCCESS",
+    "workflow_attempt": 2
+  },
+  "execution": [
+    {
+      "number": 226,
+      "head": "603bc3c7103f348b1b3e7d991b75d49d4e3ecf9e",
+      "base": "staging",
+      "merge": "182606b80c5a87fe957d8a71c2ca0314402ba0ac",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:15:18.345132+00:00",
+      "tree_match": "YES",
+      "next": 227,
+      "child_diff": "YES"
+    },
+    {
+      "number": 227,
+      "head": "19e3edfecf8229b1ca1bd4a051bb728cd219897a",
+      "base": "staging",
+      "merge": "c0f6c0d0a43214c13c4df2fb3cdebbd4b830e910",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:15:31.091822+00:00",
+      "tree_match": "YES",
+      "next": 228,
+      "child_diff": "YES"
+    },
+    {
+      "number": 228,
+      "head": "9281d09510a56c74db7c846865e639d30a95921a",
+      "base": "staging",
+      "merge": "a3e11d36a120b9af06308f37a44a9fee3c6edb72",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:15:44.942307+00:00",
+      "tree_match": "YES",
+      "next": 229,
+      "child_diff": "YES"
+    },
+    {
+      "number": 229,
+      "head": "9398b3f2df4ecc91c18015f2d9fcea76a46268ef",
+      "base": "staging",
+      "merge": "0f1e4a432e6d22f50c6ae01293bbc2139671d763",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:15:57.860339+00:00",
+      "tree_match": "YES",
+      "next": 230,
+      "child_diff": "YES"
+    },
+    {
+      "number": 230,
+      "head": "3fb54ed32efc3993b20b4305cb8ed24e2e1855b7",
+      "base": "staging",
+      "merge": "b6ea67f3baa55081cea55443da1f85c8d759008f",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:16:10.219502+00:00",
+      "tree_match": "YES",
+      "next": 231,
+      "child_diff": "YES"
+    },
+    {
+      "number": 231,
+      "head": "57ae636a7ea3b12d72d835a13afb4291243f7122",
+      "base": "staging",
+      "merge": "36f4e1e28d10e47053f83d062e8d25ce4eac6802",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:16:23.436699+00:00",
+      "tree_match": "YES",
+      "next": 232,
+      "child_diff": "YES"
+    },
+    {
+      "number": 232,
+      "head": "c231f0a4a0f97a566118895fb66633a544d9b093",
+      "base": "staging",
+      "merge": "5e2cd0d5a10a158f3e7a2332acec089fb7f86e7b",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:16:37.342090+00:00",
+      "tree_match": "YES",
+      "next": 233,
+      "child_diff": "YES"
+    },
+    {
+      "number": 233,
+      "head": "75c8ce15bf835bacfc426ceea2c5cc449105e970",
+      "base": "staging",
+      "merge": "0aaadd68d1329fdf8c8449cad9ed8fe7558f41cf",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:16:52.840773+00:00",
+      "tree_match": "YES",
+      "next": 234,
+      "child_diff": "YES"
+    },
+    {
+      "number": 234,
+      "head": "b07ffea4f90fcd82b6716c2265b1e2f7877385e2",
+      "base": "staging",
+      "merge": "35ad8d7b2e6a9031366cf8e4c20417a33cd5047e",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:17:06.235852+00:00",
+      "tree_match": "YES",
+      "next": 235,
+      "child_diff": "YES"
+    },
+    {
+      "number": 235,
+      "head": "50fb3e9e20f3990d05f47974ccde68266572a745",
+      "base": "staging",
+      "merge": "236a98bc24bc3fdab33813cd9d8be7f0e9e10636",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:17:21.643984+00:00",
+      "tree_match": "YES",
+      "next": 236,
+      "child_diff": "YES"
+    },
+    {
+      "number": 236,
+      "head": "26ab712bf3e78486b8b88c01ca3d55fa8d7c25d3",
+      "base": "staging",
+      "merge": "f7961e55ca408fae1e29d7fc46607c301480f776",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:17:36.397249+00:00",
+      "tree_match": "YES",
+      "next": 237,
+      "child_diff": "YES"
+    },
+    {
+      "number": 237,
+      "head": "069f262e52903151b60e40dbbe7b444ce7b03f4f",
+      "base": "staging",
+      "merge": "5446d60718bfce6aa194f7cbd5d389199170610e",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:17:50.494672+00:00",
+      "tree_match": "YES",
+      "next": 238,
+      "child_diff": "YES"
+    },
+    {
+      "number": 238,
+      "head": "5394e4982f8fb5dd03358d90d758cebd14d91d89",
+      "base": "staging",
+      "merge": "cab4865d7e14e9c0a628b484f5b0b83ccc493469",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:18:03.968902+00:00",
+      "tree_match": "YES",
+      "next": 239,
+      "child_diff": "YES"
+    },
+    {
+      "number": 239,
+      "head": "b0eaafce5dd076ec3a878dc7f1ea9561a2506f71",
+      "base": "staging",
+      "merge": "035a813e368186fb6deb6a9df9c70c4ce371a6c8",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:18:19.327915+00:00",
+      "tree_match": "YES",
+      "next": 240,
+      "child_diff": "YES"
+    },
+    {
+      "number": 240,
+      "head": "fd3bf56993c73006b85f3c3205bd731bc22d9540",
+      "base": "staging",
+      "merge": "9b1debbace7a5fa9c3371ff207c70998fe6295cc",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:18:33.642094+00:00",
+      "tree_match": "YES",
+      "next": 241,
+      "child_diff": "YES"
+    },
+    {
+      "number": 241,
+      "head": "981382dc11e7085868b3787ae75265a929b0e6b0",
+      "base": "staging",
+      "merge": "e585cf9fa0d97dfbfa892483c4c49653a0322cd9",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:18:49.172591+00:00",
+      "tree_match": "YES",
+      "next": 243,
+      "child_diff": "YES"
+    },
+    {
+      "number": 243,
+      "head": "512ebe311669ce446b6ac9ffcfadddb8bd5902ac",
+      "base": "staging",
+      "merge": "4585e9a862a39dcd513a451698cc1f4ebcc4c0b8",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:19:02.984683+00:00",
+      "tree_match": "YES",
+      "next": 244,
+      "child_diff": "YES"
+    },
+    {
+      "number": 244,
+      "head": "ac236e75c64b70800ba67964a3c12cd379ec7ffd",
+      "base": "staging",
+      "merge": "7751a2f6744e06863fd69947867a0c7d100ccfa8",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:19:15.857608+00:00",
+      "tree_match": "YES",
+      "next": 245,
+      "child_diff": "YES"
+    },
+    {
+      "number": 245,
+      "head": "5000465cfc14bb24939c1aa70099774806bf9bc1",
+      "base": "staging",
+      "merge": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+      "status": "PASS",
+      "ci": "GREEN",
+      "at": "2026-10-01T21:19:30.447565+00:00",
+      "tree_match": "YES"
+    }
+  ],
+  "reviewed_diff_hashes": [
+    [
+      226,
+      "766130337fb3daefea32424713ef25e13bc861f9eaf55ce931807d47ecb134cd",
+      7
+    ],
+    [
+      227,
+      "e5bec688aac9852a507a4ed6667b32983bdcc20d72d34c897f4898296a4f0a2e",
+      7
+    ],
+    [
+      228,
+      "282c622501ea947705e9663557e0a6df3b8da56ebf69b3615e4f94189f16b48a",
+      5
+    ],
+    [
+      229,
+      "a609fa0eaa7bbf25dd240e2c158c1bebebafcc1a398f749848cd62b14fd1da1f",
+      5
+    ],
+    [
+      230,
+      "4143490b9e9eb8f8df1545cf1ae23314fc2bdb83ff02b5a0f176edf69df93a15",
+      6
+    ],
+    [
+      231,
+      "076bb9b7b37fe7530ab6d8925e13bc587b63e014eac9800d374908553134ffb8",
+      5
+    ],
+    [
+      232,
+      "5b524c26bbdf0b13db2154188808e13c2235403f747e3588251d162900f87e9b",
+      7
+    ],
+    [
+      233,
+      "926a6332ce23232f86e07f13bcff7078b475a0b5c6922a90f6d924ea21b58763",
+      8
+    ],
+    [
+      234,
+      "de6aeff766ae90ef9930acde3eb9a51db92e9f307633b77490063bfa4a48d15c",
+      4
+    ],
+    [
+      235,
+      "70d270a47cd1b3205de7c2a6770b1cf482dd61f2829b03ff8c87fbdc5a16c239",
+      4
+    ],
+    [
+      236,
+      "f72f485ce346dab4494cef8ffe1db39e668125d10688365a0a67f060d696534e",
+      4
+    ],
+    [
+      237,
+      "22777382f99b2b13d84dde4847769969f2efc1e0ba0d7bfddeaef89006168b7b",
+      9
+    ],
+    [
+      238,
+      "e3a6555cb020ddca6f1ee4e49f7e35e84dbd02a22c50af718ad1496234736435",
+      7
+    ],
+    [
+      239,
+      "f597112eae6cc3a79aafea10108103ec6bc40fb7205b902c3bb53ad9c27be9d5",
+      4
+    ],
+    [
+      240,
+      "28c7da8e2d96187d16ec955d6d8b4d74c72b1602918d4ccf878afa1ccd4d84b3",
+      7
+    ],
+    [
+      241,
+      "acd7ff4ff1a78d7a90a39aaab016984f87aae8378ef27d2a95efddcf38992801",
+      6
+    ],
+    [
+      243,
+      "fcb89fae2b848c9d7f2539a735e15fc3807c670dd24fa9bb868a38be16855120",
+      9
+    ],
+    [
+      244,
+      "89cd8bb810b8bf1b4fcff872a63df2fe06bcf11f49fcbe8cd10171db750ed8a3",
+      3
+    ],
+    [
+      245,
+      "b95b5493c2078d22658c540df5d13c81ba66783e264e5729dbe2673a3375afe2",
+      100
+    ]
+  ],
+  "ci": {
+    "frontend_pass": 194,
+    "functional_catalogue_composition_focus_boot_pass": 110,
+    "backend_pass": 612,
+    "backend_skipped": 5,
+    "backend_warnings": 15,
+    "ruff": "PASS",
+    "build": "PASS"
+  },
+  "phase_b": "BLOCKED BY DISPOSABLE FITMENT CONTEXT"
+}
