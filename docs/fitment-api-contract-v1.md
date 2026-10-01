@@ -484,3 +484,13 @@ Wheel, checks, or credits. It returns a local proposal; catalogue save and exact
 variant confirmation remain separate authoritative actions. Unknown/ambiguous
 results retain their existing schema. Provider failure returns 503 with retry
 information; missing context is 404, unavailable/stale context is 409.
+# VNext comparison evidence addition
+
+Existing Standard Check create/detail/history responses add `field_results`.
+Completed checks return five fields per axle in Diameter, Width, PCD, DIA, ET
+order. Each item contains `field`, `axle`, nullable display strings
+`vehicle_value`/`rim_value`, `status` (`pass`, `conditional`, `fail`, `unknown`)
+and nullable `code`. Values use persisted input/evaluation snapshots, including
+for stale checks. Rule-group status is presentation evidence, never a separate
+verdict. The global verdict remains authoritative. Missing historical evidence
+is null/unknown; queued/processing/failed checks return an empty list.
