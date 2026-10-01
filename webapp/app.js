@@ -4203,6 +4203,7 @@ function fitmentSourceIdentityFromOverview(overview) {
         sourceFingerprint: rim.source_fingerprint || null,
         selectedVariantSku: rim.selected_variant_sku || null,
         variantState: rim.variant_state || "not_applicable",
+        sourceUrl: normalizeFitmentText(rim.product_url || rim.rim?.product_url) || null,
     };
 }
 
@@ -7511,7 +7512,11 @@ function applyRimSourceValues(values, context = {}) {
     const manualConflicts = [];
     const identity = { sourceFingerprint: context.sourceFingerprint || null, selectedVariantSku: context.selectedVariantSku || null };
     const canonicalStates = state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
-    for (const [fieldName, value] of Object.entries(values || {})) {
+    const sourceEntries = new Map(Object.entries(values || {}));
+    for (const fieldName of [...Object.keys(proposals), ...Object.keys(accepted)]) {
+        if (!sourceEntries.has(fieldName)) sourceEntries.set(fieldName, undefined);
+    }
+    for (const [fieldName, value] of sourceEntries) {
         const currentValue = state.fitmentForm.rim[fieldName];
         if (!Object.hasOwn(state.fitmentForm.rim, fieldName)) continue;
         const hasValue = value !== null && value !== undefined && value !== "";
@@ -7521,7 +7526,7 @@ function applyRimSourceValues(values, context = {}) {
             && candidate.sourceFingerprint === identity.sourceFingerprint
             && candidate.selectedVariantSku === identity.selectedVariantSku;
         if (state.fitmentRimManualFields.includes(fieldName)) {
-            if (hasValue && !fitmentRimValuesEqual(currentValue, value)) manualConflicts.push({ field: fieldName, current: currentValue, suggested: value });
+            if (hasValue && !fitmentRimValuesEqual(currentValue, value)) manualConflicts.push({ field: fieldName, current: currentValue, suggested: value, origin: "manual" });
             delete proposals[fieldName];
             delete accepted[fieldName];
             continue;
@@ -7532,7 +7537,8 @@ function applyRimSourceValues(values, context = {}) {
             continue;
         }
         if (!hasValue) {
-            if (previousProposal && !sameIdentity(previousProposal)) {
+            if ((previousProposal && !sameIdentity(previousProposal))
+                || (previousAccepted && !sameIdentity(previousAccepted) && fitmentRimValuesEqual(currentValue, previousAccepted.value))) {
                 state.fitmentForm.rim[fieldName] = "";
                 delete proposals[fieldName];
                 delete accepted[fieldName];
@@ -7541,8 +7547,14 @@ function applyRimSourceValues(values, context = {}) {
         }
         if (previousAccepted && fitmentRimValuesEqual(currentValue, previousAccepted.value)) {
             if (fitmentRimValuesEqual(value, previousAccepted.value)) {
-                accepted[fieldName] = { ...identity, value };
-                delete proposals[fieldName];
+                if (sameIdentity(previousAccepted)) {
+                    delete proposals[fieldName];
+                    continue;
+                }
+                state.fitmentForm.rim[fieldName] = value;
+                proposals[fieldName] = { ...identity, value };
+                delete accepted[fieldName];
+                appliedFields.push(fieldName);
                 continue;
             }
             delete accepted[fieldName];
@@ -7576,7 +7588,7 @@ function fitmentCanonicalRimConflicts(values = {}, parserConflicts = []) {
     for (const [field, suggested] of Object.entries(values)) {
         const current = states[field];
         if (current?.state === "confirmed" && !fitmentRimValuesEqual(current.value, suggested)) {
-            conflicts.push({ field, current: current.value, suggested });
+            conflicts.push({ field, current: current.value, suggested, origin: "canonical" });
         }
     }
     for (const item of parserConflicts) {
@@ -7588,9 +7600,26 @@ function fitmentCanonicalRimConflicts(values = {}, parserConflicts = []) {
             current: current?.state === "confirmed" ? current.value : null,
             suggested: candidates[0],
             choices: candidates,
+            origin: "parser",
         });
     }
     return conflicts;
+}
+
+function fitmentSourceContextMatchesCurrent(context) {
+    const identity = state.fitmentSourceIdentity || {};
+    return Boolean(context)
+        && context.sourceFingerprint === identity.sourceFingerprint
+        && context.selectedVariantSku === identity.selectedVariantSku;
+}
+
+function mergeFitmentRimConflicts(...groups) {
+    const merged = new Map();
+    for (const conflict of groups.flat().filter(Boolean)) {
+        const key = `${conflict.field}:${conflict.origin || "source"}`;
+        if (!merged.has(key)) merged.set(key, conflict);
+    }
+    return [...merged.values()];
 }
 
 function fitmentRimPendingProposalFields(axle = "front") {
@@ -7608,7 +7637,8 @@ function fitmentRimPendingProposalFields(axle = "front") {
         if (value === "" || value === null || value === undefined || manual.includes(field)) return false;
         if (rear) return applied.includes(field) || fields[field]?.state === "suggested" && fitmentRimValuesEqual(value, fields[field]?.value);
         if (applied.includes(field)) return true;
-        if (accepted[field] && fitmentRimValuesEqual(value, accepted[field].value)) return false;
+        if (accepted[field] && fitmentSourceContextMatchesCurrent(accepted[field])
+            && fitmentRimValuesEqual(value, accepted[field].value)) return false;
         if (proposals[field] && fitmentRimValuesEqual(value, proposals[field].value)) return true;
         return fields[field]?.state === "suggested" && fitmentRimValuesEqual(value, fields[field]?.value);
     });
@@ -7656,6 +7686,10 @@ function markRimFieldEdited(path) {
     if (!path || (!path.startsWith("rim.") && !path.startsWith("rear_rim."))) return;
     const fieldName = path.replace(/^(?:rim|rear_rim)\./, "");
     if (path.startsWith("rim.")) {
+        if (fieldName === "product_url") {
+            invalidateFitmentRimSourceContext();
+            return;
+        }
         state.fitmentSourceIdentity = {
             ...state.fitmentSourceIdentity,
             sourceFingerprint: null,
@@ -7674,6 +7708,36 @@ function markRimFieldEdited(path) {
     }
 }
 
+function invalidateFitmentRimSourceContext() {
+    const identity = state.fitmentSourceIdentity || {};
+    const currentUrl = normalizeFitmentText(state.fitmentForm?.rim?.product_url);
+    const resolvedUrl = normalizeFitmentText(identity.sourceUrl);
+    const hasSourceState = Boolean(identity.sourceFingerprint || identity.selectedVariantSku
+        || Object.keys(state.fitmentSourceProposalContexts || {}).length
+        || Object.keys(state.fitmentSourceAcceptedContexts || {}).length
+        || state.fitmentSourceVariants?.length || state.fitmentSourceResolving);
+    if (!hasSourceState || resolvedUrl && currentUrl === resolvedUrl) return;
+    state.fitmentSourceController?.abort?.();
+    state.fitmentSourceController = null;
+    state.fitmentSourceResolving = false;
+    const proposals = state.fitmentSourceProposalContexts || {};
+    const accepted = state.fitmentSourceAcceptedContexts || {};
+    const canonicalStates = state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
+    for (const fieldName of new Set([...Object.keys(proposals), ...Object.keys(accepted)])) {
+        if (state.fitmentRimManualFields.includes(fieldName) || canonicalStates[fieldName]?.state === "confirmed") continue;
+        state.fitmentForm.rim[fieldName] = "";
+    }
+    state.fitmentSourceIdentity = { ...identity, sourceFingerprint: null, selectedVariantSku: null, variantState: "none", sourceUrl: null };
+    state.fitmentSourceProposalContexts = {};
+    state.fitmentSourceAcceptedContexts = {};
+    state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceDetected = false;
+    state.fitmentSourceVariants = [];
+    state.fitmentSourceConflicts = [];
+    state.fitmentSourceStatus = "";
+    state.fitmentSourceStatusTone = "neutral";
+}
+
 function markVehicleFieldEdited(path) {
     if (!path?.startsWith("vehicle.")) return;
     const baselineVehicle = state.fitmentFormState.baseline?.vehicle;
@@ -7686,10 +7750,13 @@ function selectFitmentRimVariant(index) {
     if (!variant) return;
     const context = { sourceFingerprint: state.fitmentSourceIdentity.sourceFingerprint, selectedVariantSku: variant.sku || null };
     const appliedFields = applyRimSourceValues(variant.values, context);
+    const manualConflicts = (state.fitmentSourceConflicts || []).filter((conflict) => conflict.origin === "manual");
     state.fitmentSourceAppliedFields = appliedFields;
     state.fitmentSourceDetected = Object.keys(variant.values || {}).length > 0;
     state.fitmentSourceVariants = [];
-    state.fitmentSourceConflicts = fitmentCanonicalRimConflicts(variant.values, variant.conflicts);
+    state.fitmentSourceConflicts = mergeFitmentRimConflicts(
+        fitmentCanonicalRimConflicts(variant.values, variant.conflicts), manualConflicts,
+    );
     state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, ...context, variantState: "selected" };
     state.fitmentSourceStatus = appliedFields.length
         ? (locale === "ru"
@@ -7771,6 +7838,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
             sourceFingerprint: result.source_fingerprint || null,
             selectedVariantSku: result.selected_variant_sku || null,
             variantState: result.selection_required ? "selection_required" : result.selected_variant_sku ? "selected" : "none",
+            sourceUrl: normalizeFitmentText(result.final_url || productUrl),
         };
         const resolvedEntries = Object.entries(result.values || {}).filter(
             ([, value]) => value !== null && value !== undefined && value !== ""
@@ -8384,14 +8452,17 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
             || overview.rim_revision !== previousOverview.rim_revision
             || overview.rim_setup_revision !== previousOverview.rim_setup_revision
         );
-        if (canonicalRevisionChanged && previousCheck?.execution_status === "completed") {
-            if (overview.current_check?.id === previousCheck.id && overview.current_check.is_current !== false) {
-                overview.current_check = { ...overview.current_check, is_current: false };
-                state.fitmentCheck = overview.current_check;
-            } else if (!overview.current_check) {
-                overview.current_check = { ...previousCheck, is_current: false };
-                state.fitmentCheck = overview.current_check;
-            }
+        const serverCheckSummary = overview.current_check;
+        if (serverCheckSummary) {
+            const sameCheck = previousCheck?.id && serverCheckSummary.id === previousCheck.id;
+            const mergedCheck = sameCheck ? { ...previousCheck, ...serverCheckSummary } : serverCheckSummary;
+            if (sameCheck && serverCheckSummary.is_current === false) mergedCheck.is_current = false;
+            if (canonicalRevisionChanged && sameCheck && previousCheck?.execution_status === "completed") mergedCheck.is_current = false;
+            overview.current_check = mergedCheck;
+            state.fitmentCheck = mergedCheck;
+        } else if (canonicalRevisionChanged && previousCheck?.execution_status === "completed") {
+            overview.current_check = { ...previousCheck, is_current: false };
+            state.fitmentCheck = overview.current_check;
         }
         renderFitment();
         await refreshFitmentCheckCurrentness();
@@ -10769,7 +10840,7 @@ window.dreamwheelsFitmentBridge = {
     },
     setField: setVnextFitmentField,
     setVehiclePhoto: setFitmentVehiclePhoto,
-    setSourceUrl(value) { if (fitmentMutationsLocked()) return; state.fitmentForm.rim.product_url = value; markFitmentDirty(); notifyFitmentBridge(); },
+    setSourceUrl(value) { if (fitmentMutationsLocked()) return; setVnextFitmentField("rim.product_url", value); notifyFitmentBridge(); },
     action(action, value = "") {
         if (fitmentMutationsLocked() && !["back", "reload", "login", "create-image"].includes(action)) return;
         if (action === "back") closeFitmentView();

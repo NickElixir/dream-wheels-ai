@@ -191,12 +191,17 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
             applyRimSourceValues, markRimFieldEdited,
+            selectFitmentRimVariant,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             snapshot: vnextFitmentSnapshot,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling,
             realLoadFitmentCheckHistory,
             refreshCurrentness: realRefreshFitmentCheckCurrentness,
+            saveWithRealCurrentness(...args) {
+                refreshFitmentCheckCurrentness = realRefreshFitmentCheckCurrentness;
+                return saveFitment(...args).finally(() => { refreshFitmentCheckCurrentness = async () => {}; });
+            },
             reselectionVariants: loadFitmentVehicleVariantsForReselection,
             toggleModificationPicker: toggleFitmentModificationPicker,
             resolveFitmentRimSource,
@@ -381,6 +386,147 @@ test("history hydrates the current overview summary and ignores a late detail af
     release(response(200, detail));
     await late;
     assert.equal(api.state.fitmentCheck, null);
+});
+
+function sourceVariant(sku, values) { return { sku, values }; }
+
+function seedSourceSelection(api, { acceptedBore = true, manualOffset = false } = {}) {
+    const overview = overviewFor(api, "complete_rim_specs");
+    seed(api, overview, "rim");
+    const fields = {
+        wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112,
+        center_bore_mm: acceptedBore ? 66.6 : "", offset_et_mm: 30,
+    };
+    Object.assign(api.state.fitmentForm.rim, fields, { product_url: "https://shop.example/wheel" });
+    api.state.fitmentSourceIdentity = { sourceFingerprint: "source-fp", selectedVariantSku: "sku-a", variantState: "selection_required", sourceUrl: "https://shop.example/wheel" };
+    api.state.fitmentSourceVariants = [sourceVariant("sku-b", {
+        wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112,
+        center_bore_mm: acceptedBore ? 66.6 : 67.1, offset_et_mm: 45,
+    })];
+    api.state.fitmentSourceAcceptedContexts = acceptedBore ? {
+        center_bore_mm: { sourceFingerprint: "source-fp", selectedVariantSku: "sku-a", value: 66.6 },
+    } : {};
+    if (manualOffset) {
+        api.state.fitmentRimManualFields = ["offset_et_mm"];
+        api.state.fitmentForm.rim.offset_et_mm = 30;
+        api.state.fitmentSourceConflicts = [{ field: "offset_et_mm", current: 30, suggested: 30, origin: "manual" }];
+    }
+}
+
+test("changing SKU keeps an identical accepted value pending for the new source context", () => {
+    const { api } = navigationApi();
+    seedSourceSelection(api);
+    api.selectFitmentRimVariant(0);
+    assert.deepEqual(JSON.parse(JSON.stringify(api.state.fitmentSourceProposalContexts.center_bore_mm)), {
+        sourceFingerprint: "source-fp", selectedVariantSku: "sku-b", value: 66.6,
+    });
+    assert.ok(api.fitmentRimPendingProposalFields().includes("center_bore_mm"));
+    assert.equal(api.state.fitmentSourceAcceptedContexts.center_bore_mm, undefined);
+});
+
+test("changing SKU clears an accepted field that the new SKU does not provide", () => {
+    const { api } = navigationApi();
+    seedSourceSelection(api);
+    api.state.fitmentSourceVariants[0].values.center_bore_mm = null;
+    api.selectFitmentRimVariant(0);
+    assert.equal(api.state.fitmentForm.rim.center_bore_mm, "");
+    assert.equal(api.state.fitmentSourceAcceptedContexts.center_bore_mm, undefined);
+    assert.ok(api.fitmentRimSaveReadiness().missing.includes("rim.center_bore_mm"));
+});
+
+test("changing SKU leaves changed source values pending and preserves manual source conflicts", () => {
+    const { api } = navigationApi();
+    seedSourceSelection(api, { acceptedBore: false, manualOffset: true });
+    api.selectFitmentRimVariant(0);
+    assert.equal(api.state.fitmentForm.rim.center_bore_mm, 67.1);
+    assert.ok(api.fitmentRimPendingProposalFields().includes("center_bore_mm"));
+    assert.ok(api.state.fitmentSourceConflicts.some(conflict => conflict.field === "offset_et_mm" && conflict.origin === "manual"));
+    assert.equal(api.fitmentRimSaveReadiness().ready, false);
+});
+
+test("bridge URL change clears old resolver provenance while preserving manual values and rear draft", () => {
+    const { api } = navigationApi({ vnext: true });
+    seedSourceSelection(api, { manualOffset: true });
+    api.state.fitmentForm.rear_rim = { wheel_diameter_in: 20 };
+    api.state.fitmentSourceProposalContexts = {
+        wheel_diameter_in: { sourceFingerprint: "source-fp", selectedVariantSku: "sku-a", value: 19 },
+    };
+    api.state.fitmentForm.rim.wheel_diameter_in = 19;
+    api.bridge.setSourceUrl("https://shop.example/another-wheel");
+    assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint, null);
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku, null);
+    assert.equal(api.state.fitmentSourceIdentity.variantState, "none");
+    assert.equal(api.state.fitmentSourceProposalContexts.wheel_diameter_in, undefined);
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in, "");
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, 30);
+    assert.equal(api.state.fitmentForm.rear_rim.wheel_diameter_in, 20);
+    assert.equal(api.state.fitmentSourceConflicts.length, 0);
+});
+
+test("URL replacement followed by the Save action cannot PATCH mixed old SKU provenance", async () => {
+    let payload;
+    let api;
+    ({ api } = navigationApi({ vnext: true, routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            payload = JSON.parse(options.body);
+            return response(200, overviewFor(api, "complete_rim_specs"));
+        },
+    } }));
+    seedSourceSelection(api, { manualOffset: true });
+    for (const field of ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm"]) {
+        api.state.fitmentRimManualFields.push(field);
+    }
+    api.state.fitmentSourceAcceptedContexts = {};
+    api.state.fitmentSourceProposalContexts = {};
+    api.state.fitmentSourceAppliedFields = [];
+    api.bridge.setSourceUrl("https://shop.example/another-wheel");
+    api.bridge.action("save-rim");
+    while (!payload) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(payload.rim.product_url, "https://shop.example/another-wheel");
+    assert.equal(payload.rim.source_fingerprint, null);
+    assert.equal(payload.rim.selected_variant_sku, null);
+    assert.equal(payload.rim.variant_state, "none");
+    assert.equal(Object.hasOwn(payload, "vehicle"), false);
+});
+
+for (const detailStatus of [503, 200]) {
+    test(`mutation current_check false remains stale after detail refresh ${detailStatus}`, async () => {
+        const prior = { id: "old-check", execution_status: "completed", is_current: true, verdict: "incompatible", field_results: [{ rim_value: 30 }] };
+        let api;
+        ({ api } = navigationApi({ routes: {
+            "PATCH /api/backend/jobs/behavior-job/fitment": () => response(200, {
+                ...overviewFor(api, "run_standard_check"), rim_revision: 3,
+                current_check: { id: "old-check", execution_status: "completed", is_current: false },
+            }),
+            "GET /api/backend/fitment/checks/old-check": response(detailStatus, detailStatus === 200 ? { ...prior, is_current: true } : { detail: "unavailable" }),
+        } }));
+        const overview = overviewFor(api, "complete_rim_specs");
+        overview.rim_revision = 2;
+        seed(api, overview, "rim");
+        api.state.fitmentCheck = prior;
+        api.state.fitmentForm.rim.offset_et_mm = "31";
+        await api.saveWithRealCurrentness(undefined, { owner: "rim", confirmWheelFields: true });
+        assert.equal(api.state.fitmentCheck.is_current, false);
+        assert.equal(api.state.fitmentCheck.verdict, "incompatible");
+        assert.equal(api.state.fitmentCheck.field_results[0].rim_value, 30);
+    });
+}
+
+test("mutation without canonical revision change does not mark a current check stale", async () => {
+    let api;
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => response(200, {
+            ...overviewFor(api, "run_standard_check"), rim_revision: 2,
+            current_check: { id: "old-check", execution_status: "completed", is_current: true },
+        }),
+        "GET /api/backend/fitment/checks/old-check": response(200, { id: "old-check", execution_status: "completed", is_current: true }),
+    } }));
+    const overview = overviewFor(api, "complete_rim_specs");
+    overview.rim_revision = 2;
+    seed(api, overview, "rim");
+    api.state.fitmentCheck = { id: "old-check", execution_status: "completed", is_current: true };
+    await api.saveWithRealCurrentness(undefined, { owner: "rim" });
+    assert.equal(api.state.fitmentCheck.is_current, true);
 });
 
 function assertSection(api, section) {
@@ -1110,7 +1256,7 @@ test("resolver compares proposals with confirmed Wheel values without changing c
     seed(api, overview, "rim");
     assert.equal(api.fitmentCanonicalRimConflicts({ offset_et_mm: "35,125" }).length, 0);
     const conflicts = JSON.parse(JSON.stringify(api.fitmentCanonicalRimConflicts({ offset_et_mm: 42.75 })));
-    assert.deepEqual(conflicts, [{ field: "offset_et_mm", current: 35.125, suggested: 42.75 }]);
+    assert.deepEqual(conflicts, [{ field: "offset_et_mm", current: 35.125, suggested: 42.75, origin: "canonical" }]);
     assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm, 35.125);
     assert.equal(api.fitmentCanonicalRimConflicts({ center_bore_mm: 66.6 }).length, 0);
     api.state.fitmentSourceIdentity = { sourceFingerprint: "same-source", selectedVariantSku: "SKU-1", variantState: "selected" };
