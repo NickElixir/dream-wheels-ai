@@ -1,0 +1,11 @@
+✔ normalizes the wildcard path and rejects malformed control values (0.86625ms)
+✔ forwards deep paths, query, method, headers, body, and response bytes (34.31775ms)
+✔ rejects malformed and host-switching backend paths before fetch (0.4285ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.220125

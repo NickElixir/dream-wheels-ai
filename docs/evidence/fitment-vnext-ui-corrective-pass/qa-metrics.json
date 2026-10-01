@@ -1,0 +1,1294 @@
+[
+  {
+    "name": "initial-sources",
+    "size": "1440",
+    "dialog": false,
+    "height": 1024,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "manual-vehicle",
+    "size": "1440",
+    "dialog": false,
+    "height": 1361,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "required-variant",
+    "size": "1440",
+    "dialog": false,
+    "height": 1331,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "multi-sku",
+    "size": "1440",
+    "dialog": false,
+    "height": 1508,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-proposals",
+    "size": "1440",
+    "dialog": false,
+    "height": 1838,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "partial-acceptance",
+    "size": "1440",
+    "dialog": false,
+    "height": 1788,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-confirmed",
+    "size": "1440",
+    "dialog": false,
+    "height": 1712,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "manual-conflict",
+    "size": "1440",
+    "dialog": false,
+    "height": 1843,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "uniform",
+    "size": "1440",
+    "dialog": false,
+    "height": 1838,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "staggered",
+    "size": "1440",
+    "dialog": false,
+    "height": 1867,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-dia",
+    "size": "1440",
+    "dialog": true,
+    "height": 1712,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-et",
+    "size": "1440",
+    "dialog": true,
+    "height": 1712,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "both-ready",
+    "size": "1440",
+    "dialog": false,
+    "height": 1024,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible",
+    "size": "1440",
+    "dialog": false,
+    "height": 1615,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible_with_conditions",
+    "size": "1440",
+    "dialog": false,
+    "height": 1671,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "incompatible",
+    "size": "1440",
+    "dialog": false,
+    "height": 1671,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "unknown",
+    "size": "1440",
+    "dialog": false,
+    "height": 1667,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "stale",
+    "size": "1440",
+    "dialog": false,
+    "height": 1765,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "failed",
+    "size": "1440",
+    "dialog": false,
+    "height": 1263,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "initial-sources",
+    "size": "1024",
+    "dialog": false,
+    "height": 1025,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "manual-vehicle",
+    "size": "1024",
+    "dialog": false,
+    "height": 1362,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "required-variant",
+    "size": "1024",
+    "dialog": false,
+    "height": 1332,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "multi-sku",
+    "size": "1024",
+    "dialog": false,
+    "height": 1786,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-proposals",
+    "size": "1024",
+    "dialog": false,
+    "height": 1839,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "partial-acceptance",
+    "size": "1024",
+    "dialog": false,
+    "height": 1789,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-confirmed",
+    "size": "1024",
+    "dialog": false,
+    "height": 1713,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "manual-conflict",
+    "size": "1024",
+    "dialog": false,
+    "height": 1844,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "uniform",
+    "size": "1024",
+    "dialog": false,
+    "height": 1839,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "staggered",
+    "size": "1024",
+    "dialog": false,
+    "height": 1869,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-dia",
+    "size": "1024",
+    "dialog": true,
+    "height": 1713,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-et",
+    "size": "1024",
+    "dialog": true,
+    "height": 1713,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "both-ready",
+    "size": "1024",
+    "dialog": false,
+    "height": 1025,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible",
+    "size": "1024",
+    "dialog": false,
+    "height": 1613,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible_with_conditions",
+    "size": "1024",
+    "dialog": false,
+    "height": 1668,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "incompatible",
+    "size": "1024",
+    "dialog": false,
+    "height": 1668,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "unknown",
+    "size": "1024",
+    "dialog": false,
+    "height": 1664,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "stale",
+    "size": "1024",
+    "dialog": false,
+    "height": 1762,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "failed",
+    "size": "1024",
+    "dialog": false,
+    "height": 1260,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      1024,
+      768
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "initial-sources",
+    "size": "768",
+    "dialog": false,
+    "height": 1024,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "manual-vehicle",
+    "size": "768",
+    "dialog": false,
+    "height": 1355,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "required-variant",
+    "size": "768",
+    "dialog": false,
+    "height": 1325,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "multi-sku",
+    "size": "768",
+    "dialog": false,
+    "height": 1779,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-proposals",
+    "size": "768",
+    "dialog": false,
+    "height": 1833,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "partial-acceptance",
+    "size": "768",
+    "dialog": false,
+    "height": 1782,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-confirmed",
+    "size": "768",
+    "dialog": false,
+    "height": 1707,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "manual-conflict",
+    "size": "768",
+    "dialog": false,
+    "height": 1837,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "uniform",
+    "size": "768",
+    "dialog": false,
+    "height": 1833,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "staggered",
+    "size": "768",
+    "dialog": false,
+    "height": 1862,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-dia",
+    "size": "768",
+    "dialog": true,
+    "height": 1707,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-et",
+    "size": "768",
+    "dialog": true,
+    "height": 1707,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "both-ready",
+    "size": "768",
+    "dialog": false,
+    "height": 1024,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible",
+    "size": "768",
+    "dialog": false,
+    "height": 1601,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible_with_conditions",
+    "size": "768",
+    "dialog": false,
+    "height": 1656,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "incompatible",
+    "size": "768",
+    "dialog": false,
+    "height": 1656,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "unknown",
+    "size": "768",
+    "dialog": false,
+    "height": 1652,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "stale",
+    "size": "768",
+    "dialog": false,
+    "height": 1750,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 1,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "failed",
+    "size": "768",
+    "dialog": false,
+    "height": 1249,
+    "pageOverflow": false,
+    "stages": [
+      176,
+      176
+    ],
+    "tables": 0,
+    "viewport": [
+      768,
+      1024
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "initial-sources",
+    "size": "390",
+    "dialog": false,
+    "height": 1420,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "manual-vehicle",
+    "size": "390",
+    "dialog": false,
+    "height": 1828,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "required-variant",
+    "size": "390",
+    "dialog": false,
+    "height": 1776,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "multi-sku",
+    "size": "390",
+    "dialog": false,
+    "height": 2024,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-proposals",
+    "size": "390",
+    "dialog": false,
+    "height": 2336,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "partial-acceptance",
+    "size": "390",
+    "dialog": false,
+    "height": 2286,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "all-confirmed",
+    "size": "390",
+    "dialog": false,
+    "height": 2211,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "manual-conflict",
+    "size": "390",
+    "dialog": false,
+    "height": 2335,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "uniform",
+    "size": "390",
+    "dialog": false,
+    "height": 2336,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "staggered",
+    "size": "390",
+    "dialog": false,
+    "height": 3025,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-dia",
+    "size": "390",
+    "dialog": true,
+    "height": 2211,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "picker-et",
+    "size": "390",
+    "dialog": true,
+    "height": 2211,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 1
+  },
+  {
+    "name": "both-ready",
+    "size": "390",
+    "dialog": false,
+    "height": 1464,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible",
+    "size": "390",
+    "dialog": false,
+    "height": 2080,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 1,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "compatible_with_conditions",
+    "size": "390",
+    "dialog": false,
+    "height": 2158,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 1,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "incompatible",
+    "size": "390",
+    "dialog": false,
+    "height": 2158,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 1,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "unknown",
+    "size": "390",
+    "dialog": false,
+    "height": 2182,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 1,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "stale",
+    "size": "390",
+    "dialog": false,
+    "height": 2302,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 1,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  },
+  {
+    "name": "failed",
+    "size": "390",
+    "dialog": false,
+    "height": 1712,
+    "pageOverflow": false,
+    "stages": [
+      150,
+      150
+    ],
+    "tables": 0,
+    "viewport": [
+      390,
+      844
+    ],
+    "workspaces": 0
+  }
+]
