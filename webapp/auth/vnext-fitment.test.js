@@ -94,6 +94,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   };
   const context = {
     state,
+    t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
     fitmentCheckForPresentation: () => null,
     fitmentMutationsLocked: () => false,
@@ -260,6 +261,17 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   assert.match(variants, /Подтвердить комплектацию/);
   assert.match(variants, /aria-label="Варианты комплектации"/);
   assert.doesNotMatch(variants, /data-fitment-field="vehicle\.make"/);
+  const reselectionWhileWheelEditorOpen = fitmentMarkup({
+    overview: {},
+    nextAction: "run_standard_check",
+    rimEditing: true,
+    vehicleVariantPickerOpen: true,
+    vehicleVariantMode: "reselect",
+    vehicleVariants: [{ label: "3.0 AWD", technical: "2025" }],
+  });
+  assert.match(reselectionWhileWheelEditorOpen, /3\.0 AWD/);
+  assert.match(reselectionWhileWheelEditorOpen, /data-fitment-action="cancel-vehicle-reselection"/);
+  assert.match(reselectionWhileWheelEditorOpen, /data-fitment-field="rim\.brand"/);
   const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
   assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
   assert.doesNotMatch(manualRecovery, /Подтвердить комплектацию/);
@@ -274,9 +286,9 @@ test("an incompatible Fitment result still offers the existing independent rende
 test("Fitment action hierarchy keeps Create Image independent and secondary", () => {
   const buttonClass = (markup, action) => markup.match(new RegExp(`<button[^>]*class="([^"]+)"[^>]*data-fitment-action="${action}"`))?.[1] || "";
   const unfinished = [
-    ["complete_vehicle_details", { vehicleEditing: true, vehicleForm: { make: "Zeekr" } }, "save"],
+    ["complete_vehicle_details", { vehicleEditing: true, vehicleForm: { make: "Zeekr" } }, "save-vehicle"],
     ["select_vehicle_variant", { selectedVehicleVariant: 0, vehicleVariants: [{ label: "Long Range" }] }, "confirm-vehicle-variant"],
-    ["complete_rim_specs", { rimEditing: true, rim: { wheel_diameter_in: 18 } }, "save"],
+    ["complete_rim_specs", { rimEditing: true, rim: { wheel_diameter_in: 18 } }, "save-rim"],
     ["run_standard_check", { canRunCheck: true }, "check"],
   ];
   for (const [nextAction, model, primaryAction] of unfinished) {
@@ -311,7 +323,7 @@ test("Fitment action hierarchy keeps Create Image independent and secondary", ()
   }
 
   const editingCompleted = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", rimEditing: true, canRunCheck: true, retryAvailable: true, check: { execution_status: "completed", verdict: "compatible", is_current: true } });
-  assert.equal(buttonClass(editingCompleted, "save"), "vnext-button vnext-button--primary");
+  assert.equal(buttonClass(editingCompleted, "save-rim"), "vnext-button vnext-button--primary");
   assert.equal(buttonClass(editingCompleted, "create-image"), "vnext-button vnext-button--secondary");
   assert.match(editingCompleted, /data-fitment-action="check"[^>]*disabled/);
   assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 1);
@@ -440,6 +452,22 @@ test("completed Fitment shows verdict before conditions and technical comparison
   assert.ok(markup.indexOf("Условия и пояснения") < markup.indexOf("Сравнение параметров"));
 });
 
+test("completed preliminary Fitment verdict shows the approved installation disclaimer", () => {
+  const completed = fitmentMarkup({
+    overview: {}, executionStatus: "completed", preliminaryWarning: true,
+    preliminaryWarningCopy: "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",
+    preliminaryDisclaimer: "Предварительная оценка не является гарантией установки.",
+    check: { execution_status: "completed", verdict: "unknown", is_current: true },
+  });
+  assert.match(completed, /Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра\./);
+  assert.match(completed, /Предварительная оценка не является гарантией установки\./);
+  const failed = fitmentMarkup({
+    overview: {}, executionStatus: "failed", preliminaryWarning: false,
+    check: { execution_status: "failed" },
+  });
+  assert.doesNotMatch(failed, /гарантией установки/);
+});
+
 test("Fitment presentation is a callback-only view with no API, polling, verdict, or revision logic", () => {
   const view = read("vnext/views/fitment.js");
   assert.doesNotMatch(view, /fetch\(|setTimeout\(|clearTimeout\(|revision\s*[+\-*/=]|infer/i);
@@ -494,6 +522,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentSourceIdentity: {}, fitmentSourceStatus: "", fitmentSourceResolving: false,
     fitmentSourceStatusTone: "neutral", fitmentSourceDetected: false, fitmentSourceVariants: [],
     fitmentSourceConflicts: [], fitmentModificationPickerOpen: false, fitmentVehicleVariantsLoading: false,
+    fitmentContextGeneration: 0, fitmentOverviewRequestToken: 0, fitmentVehiclePhotoToken: 0,
     fitmentVehicleVariants: [], fitmentSelectedVehicleVariantIndex: null, fitmentModificationLookupMode: "initial",
     fitmentCatalogue: {}, fitmentCheckHistoryLoading: false, fitmentLoading: false, fitmentError: "",
     fitmentMessage: "", fitmentActiveSection: "", fitmentSourceAutoResolvedForJob: "",
@@ -501,6 +530,9 @@ test("runtime Fitment initialization follows next_action and never opens both ob
   let overview = null;
   const context = {
     state,
+    t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
+    captureFitmentRuntimeContext: (jobId = state.fitmentJobId) => ({ jobId, generation: state.fitmentContextGeneration }),
+    isCurrentFitmentRuntimeContext: value => value.jobId === state.fitmentJobId && value.generation === state.fitmentContextGeneration,
     FITMENT_NEXT_ACTION_KINDS: new Set(["complete_vehicle_details", "select_vehicle_variant", "complete_rim_specs", "run_standard_check"]),
     URLSearchParams,
     window: { location: { search: "" } },
@@ -577,7 +609,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       rejectRequest = reject;
     });
     const state = {
-      fitmentJobId: "job-1", fitmentForm: { vehicle: { make: "Zeekr", model: "001", year: "2025", body: "user-edited body" }, rim: { brand: "BBS", product_url: "https://shop.example.test/rim", wheel_diameter_in: "19" } },
+      fitmentJobId: "job-1", fitmentContextGeneration: 0, fitmentForm: { vehicle: { make: "Zeekr", model: "001", year: "2025", body: "user-edited body" }, rim: { brand: "BBS", product_url: "https://shop.example.test/rim", wheel_diameter_in: "19" } },
       fitmentOverview: { next_action: { kind: "complete_vehicle_details" } },
       fitmentVehicleEditing: false, fitmentRimEditing: false, fitmentActiveSection: "rim", fitmentActiveStep: 2,
       fitmentSourceResolving: false, fitmentSourceOpen: false, fitmentSourceAppliedFields: [], fitmentSourceDetected: false,
@@ -586,6 +618,8 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
     };
     const context = {
       state, fitmentMutationsLocked: () => false, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
+      captureFitmentRuntimeContext: (jobId = state.fitmentJobId) => ({ jobId, generation: state.fitmentContextGeneration || 0 }),
+      isCurrentFitmentRuntimeContext: value => value.jobId === state.fitmentJobId && value.generation === (state.fitmentContextGeneration || 0),
       window: { setTimeout: () => 1, clearTimeout() {} }, AbortController,
       shouldUseDemoFitment: () => false,
       fitmentCheckContextKey: () => state.fitmentJobId,
