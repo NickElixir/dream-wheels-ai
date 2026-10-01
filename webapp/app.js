@@ -1429,6 +1429,9 @@ const state = {
     fitmentSourceConflicts: [],
     fitmentSourceIdentity: { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" },
     fitmentRimManualFields: [],
+    fitmentRearManualFields: [],
+    fitmentRearPendingFields: [],
+    fitmentRearDraftInitialized: false,
     fitmentSourceAutoResolvedForJob: "",
     fitmentSourceController: null,
     fitmentVehicleVariants: [],
@@ -2022,7 +2025,10 @@ function fitmentDraftPayload(reason) {
             detected: state.fitmentSourceDetected,
             appliedFields: [...state.fitmentSourceAppliedFields],
             manualFields: [...state.fitmentRimManualFields],
-            conflicts: (state.fitmentSourceConflicts || []).map(({ field, current, suggested }) => ({ field, current, suggested })),
+            rearManualFields: [...state.fitmentRearManualFields],
+            rearPendingFields: [...state.fitmentRearPendingFields],
+            rearDraftInitialized: state.fitmentRearDraftInitialized,
+            conflicts: (state.fitmentSourceConflicts || []).map((conflict) => ({ ...conflict })),
         },
     };
 }
@@ -2144,6 +2150,11 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         };
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleMarketEdited = false;
+        state.fitmentRimManualFields = [];
+        state.fitmentRearManualFields = [];
+        state.fitmentRearPendingFields = [];
+        state.fitmentRearDraftInitialized = overview.setup_mode === "staggered";
+        clearFitmentResolverFeedback();
         persistFitmentTransientDraft(reason || draft.reason);
         return "replaced";
     }
@@ -2172,6 +2183,9 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
     state.fitmentSourceDetected = Boolean(draft.source?.detected);
     state.fitmentSourceAppliedFields = Array.isArray(draft.source?.appliedFields) ? draft.source.appliedFields : [];
     state.fitmentRimManualFields = Array.isArray(draft.source?.manualFields) ? draft.source.manualFields : [];
+    state.fitmentRearManualFields = Array.isArray(draft.source?.rearManualFields) ? draft.source.rearManualFields : [];
+    state.fitmentRearPendingFields = Array.isArray(draft.source?.rearPendingFields) ? draft.source.rearPendingFields : [];
+    state.fitmentRearDraftInitialized = Boolean(draft.source?.rearDraftInitialized || draft.form?.setup_mode === "staggered");
     state.fitmentSourceConflicts = Array.isArray(draft.source?.conflicts) ? draft.source.conflicts : [];
     return "restored";
 }
@@ -4162,6 +4176,7 @@ function clearFitmentResolverFeedback({ close = false } = {}) {
     state.fitmentSourceAppliedFields = [];
     state.fitmentSourceDetected = false;
     state.fitmentSourceConflicts = [];
+    state.fitmentSourceVariants = [];
     if (close) state.fitmentSourceOpen = false;
 }
 
@@ -4811,12 +4826,15 @@ function renderFitmentVerdictGroup(sectionTarget, listTarget, items, kind) {
     }
 }
 
-function fitmentPayload({ includeVehicle = true } = {}) {
+function fitmentPayload({ includeVehicle = true, confirmWheelFields = false } = {}) {
+    const confirmations = confirmWheelFields ? { confirmed_fields: fitmentRimFieldsForConfirmation("front") } : {};
+    const rearConfirmations = confirmWheelFields ? { confirmed_fields: fitmentRimFieldsForConfirmation("rear") } : {};
     const payload = {
         expected_vehicle_revision: state.fitmentOverview?.vehicle_revision,
         expected_rim_revision: state.fitmentOverview?.rim_revision,
         setup_mode: state.fitmentForm.setup_mode,
         rim: {
+            ...confirmations,
             brand: normalizeFitmentText(state.fitmentForm.rim.brand),
             model: normalizeFitmentText(state.fitmentForm.rim.model),
             sku: normalizeFitmentText(state.fitmentForm.rim.sku),
@@ -4833,6 +4851,7 @@ function fitmentPayload({ includeVehicle = true } = {}) {
         },
         ...(state.fitmentForm.setup_mode === "staggered" ? {
             front_rim: {
+                ...confirmations,
                 bolt_count: normalizeFitmentNumber(state.fitmentForm.rim.bolt_count),
                 pcd_mm: normalizeFitmentNumber(state.fitmentForm.rim.pcd_mm),
                 wheel_diameter_in: normalizeFitmentNumber(state.fitmentForm.rim.wheel_diameter_in),
@@ -4844,6 +4863,7 @@ function fitmentPayload({ includeVehicle = true } = {}) {
                 variant_state: state.fitmentSourceIdentity.variantState,
             },
             rear_rim: {
+                ...rearConfirmations,
                 bolt_count: normalizeFitmentNumber(state.fitmentForm.rear_rim.bolt_count),
                 pcd_mm: normalizeFitmentNumber(state.fitmentForm.rear_rim.pcd_mm),
                 wheel_diameter_in: normalizeFitmentNumber(state.fitmentForm.rear_rim.wheel_diameter_in),
@@ -4981,6 +5001,12 @@ function updateDemoFitmentState(overview) {
     state.fitmentOverview = overview;
     state.fitmentForm = fitmentFormFromOverview(overview);
     state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
+    state.fitmentRimManualFields = [];
+    state.fitmentRearManualFields = [];
+    state.fitmentRearPendingFields = [];
+    state.fitmentRearDraftInitialized = overview.setup_mode === "staggered";
+    state.fitmentSourceAppliedFields = [];
+    state.fitmentSourceConflicts = [];
     state.fitmentCheck = overview.current_check || null;
     state.fitmentCheckHistory = Array.isArray(overview.check_history) ? overview.check_history : [];
     state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
@@ -7144,6 +7170,11 @@ async function loadFitmentOverview(
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
+        state.fitmentRimManualFields = [];
+        state.fitmentRearManualFields = [];
+        state.fitmentRearPendingFields = [];
+        state.fitmentRearDraftInitialized = overview.setup_mode === "staggered";
+        clearFitmentResolverFeedback();
         state.fitmentCheckHistory = [];
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentVehicleDirty = false;
@@ -7223,6 +7254,9 @@ function openFitmentView(
     state.fitmentSourceConflicts = [];
     state.fitmentSourceIdentity = { sourceFingerprint: null, selectedVariantSku: null, variantState: "not_applicable" };
     state.fitmentRimManualFields = [];
+    state.fitmentRearManualFields = [];
+    state.fitmentRearPendingFields = [];
+    state.fitmentRearDraftInitialized = false;
     state.fitmentSourceAutoResolvedForJob = "";
     state.fitmentVehicleVariants = [];
     state.fitmentVehicleVariantsLoading = false;
@@ -7274,17 +7308,107 @@ function applyRimSourceValues(values) {
     return appliedFields;
 }
 
+function fitmentRimValuesEqual(left, right) {
+    if (left === null || left === undefined || right === null || right === undefined) return left === right;
+    const a = String(left).trim().replace(",", ".");
+    const b = String(right).trim().replace(",", ".");
+    const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/u;
+    return decimal.test(a) && decimal.test(b) ? Number(a) === Number(b) : a === b;
+}
+
+function fitmentCanonicalRimConflicts(values = {}, parserConflicts = []) {
+    const states = state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
+    const conflicts = [];
+    for (const [field, suggested] of Object.entries(values)) {
+        const current = states[field];
+        if (current?.state === "confirmed" && !fitmentRimValuesEqual(current.value, suggested)) {
+            conflicts.push({ field, current: current.value, suggested });
+        }
+    }
+    for (const item of parserConflicts) {
+        const candidates = (item.candidates || []).map((candidate) => candidate.value);
+        if (!candidates.length || conflicts.some((conflict) => conflict.field === item.field)) continue;
+        const current = states[item.field];
+        conflicts.push({
+            field: item.field,
+            current: current?.state === "confirmed" ? current.value : null,
+            suggested: candidates[0],
+            choices: candidates,
+        });
+    }
+    return conflicts;
+}
+
+function fitmentRimPendingProposalFields(axle = "front") {
+    const critical = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
+    const rear = axle === "rear";
+    const fields = rear ? state.fitmentOverview?.rear_rim?.field_states || {}
+        : state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
+    const manual = rear ? state.fitmentRearManualFields || [] : state.fitmentRimManualFields;
+    const applied = rear ? state.fitmentRearPendingFields || [] : state.fitmentSourceAppliedFields;
+    return critical.filter((field) => {
+        const value = state.fitmentForm?.[rear ? "rear_rim" : "rim"]?.[field];
+        if (value === "" || value === null || value === undefined || manual.includes(field)) return false;
+        return applied.includes(field)
+            || fields[field]?.state === "suggested" && fitmentRimValuesEqual(value, fields[field]?.value);
+    });
+}
+
+function fitmentRimFieldsForConfirmation(axle) {
+    const rear = axle === "rear";
+    const fields = rear ? state.fitmentOverview?.rear_rim?.field_states || {}
+        : state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
+    const form = state.fitmentForm?.[rear ? "rear_rim" : "rim"] || {};
+    const source = state.fitmentOverview?.front_rim?.rim || state.fitmentOverview?.rim || {};
+    const sourceChanged = !rear && state.fitmentSourceIdentity.sourceFingerprint
+        && (state.fitmentSourceIdentity.sourceFingerprint !== source.source_fingerprint
+            || state.fitmentSourceIdentity.selectedVariantSku !== (source.selected_variant_sku || null));
+    return ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"].filter((field) =>
+        sourceChanged || fields[field]?.state !== "confirmed" || !fitmentRimValuesEqual(fields[field]?.value, form[field]));
+}
+
+function fitmentRimSaveReadiness() {
+    const critical = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
+    const scopes = state.fitmentForm?.setup_mode === "staggered" ? ["rim", "rear_rim"] : ["rim"];
+    const missing = [], invalid = [], pending = [];
+    for (const scope of scopes) {
+        for (const field of critical) {
+            const raw = state.fitmentForm?.[scope]?.[field];
+            const path = `${scope}.${field}`;
+            if (raw === "" || raw === null || raw === undefined) { missing.push(path); continue; }
+            const number = normalizeFitmentNumber(raw);
+            if (number === null || field === "offset_et_mm" && Math.abs(number) > 150
+                || field !== "offset_et_mm" && number <= 0
+                || field === "bolt_count" && !Number.isInteger(number)) invalid.push(path);
+        }
+        pending.push(...fitmentRimPendingProposalFields(scope === "rear_rim" ? "rear" : "front").map((field) => `${scope}.${field}`));
+    }
+    return {
+        ready: !missing.length && !invalid.length && !pending.length && !state.fitmentSourceConflicts.length
+            && state.fitmentSourceIdentity.variantState !== "selection_required",
+        missing,
+        invalid,
+        pending,
+    };
+}
+
 function markRimFieldEdited(path) {
     if (!path || (!path.startsWith("rim.") && !path.startsWith("rear_rim."))) return;
     const fieldName = path.replace(/^(?:rim|rear_rim)\./, "");
-    state.fitmentSourceIdentity = {
-        ...state.fitmentSourceIdentity,
-        sourceFingerprint: null,
-        selectedVariantSku: null,
-        variantState: "none",
-    };
+    if (path.startsWith("rim.")) {
+        state.fitmentSourceIdentity = {
+            ...state.fitmentSourceIdentity,
+            sourceFingerprint: null,
+            selectedVariantSku: null,
+            variantState: "none",
+        };
+    }
     if (path.startsWith("rim.") && fieldName && !state.fitmentRimManualFields.includes(fieldName)) {
         state.fitmentRimManualFields.push(fieldName);
+    }
+    if (path.startsWith("rear_rim.") && fieldName) {
+        if (!state.fitmentRearManualFields.includes(fieldName)) state.fitmentRearManualFields.push(fieldName);
+        state.fitmentRearPendingFields = state.fitmentRearPendingFields.filter((field) => field !== fieldName);
     }
 }
 
@@ -7302,6 +7426,7 @@ function selectFitmentRimVariant(index) {
     state.fitmentSourceAppliedFields = appliedFields;
     state.fitmentSourceDetected = Object.keys(variant.values || {}).length > 0;
     state.fitmentSourceVariants = [];
+    state.fitmentSourceConflicts = fitmentCanonicalRimConflicts(variant.values, variant.conflicts);
     state.fitmentSourceIdentity = {
         ...state.fitmentSourceIdentity,
         selectedVariantSku: variant.sku || null,
@@ -7322,7 +7447,7 @@ function selectFitmentRimVariant(index) {
 function resolveFitmentParserConflict(fieldName, value = undefined) {
     if (value !== undefined && Object.hasOwn(state.fitmentForm.rim, fieldName)) {
         state.fitmentForm.rim[fieldName] = value;
-        if (!state.fitmentRimManualFields.includes(fieldName)) state.fitmentRimManualFields.push(fieldName);
+        markRimFieldEdited(`rim.${fieldName}`);
         markFitmentDirty();
     }
     state.fitmentSourceConflicts = state.fitmentSourceConflicts.filter((conflict) => conflict.field !== fieldName);
@@ -7369,7 +7494,7 @@ async function resolveFitmentRimSource({ automatic = false } = {}) {
         const result = await response.json();
         state.fitmentForm.rim.product_url = result.final_url || productUrl;
         state.fitmentSourceVariants = result.selection_required ? (result.variants || []) : [];
-        state.fitmentSourceConflicts = result.conflicts || [];
+        state.fitmentSourceConflicts = fitmentCanonicalRimConflicts(result.values, result.conflicts);
         state.fitmentSourceIdentity = {
             sourceFingerprint: result.source_fingerprint || null,
             selectedVariantSku: result.selected_variant_sku || null,
@@ -7802,7 +7927,7 @@ async function applyFitmentVehicleVariant(variant) {
     }
 }
 
-async function saveFitment(event) {
+async function saveFitment(event, { confirmWheelFields = false } = {}) {
     event?.preventDefault?.();
     if (!state.fitmentJobId || state.fitmentSaving) return;
     const savedFromSection = state.fitmentActiveSection;
@@ -7859,6 +7984,7 @@ async function saveFitment(event) {
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify(fitmentPayload({
                     includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()),
+                    confirmWheelFields,
                 })),
             }
         );
@@ -7875,6 +8001,10 @@ async function saveFitment(event) {
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         clearFitmentResolverFeedback({ close: true });
+        state.fitmentRimManualFields = [];
+        state.fitmentRearManualFields = [];
+        state.fitmentRearPendingFields = [];
+        state.fitmentRearDraftInitialized = overview.setup_mode === "staggered";
         state.fitmentVehicleDirty = false;
         state.fitmentVehicleMarketEdited = false;
         await refreshFitmentCheckCurrentness();
@@ -10027,12 +10157,16 @@ function vnextFitmentSnapshot() {
     const invalidFields = new Set(state.fitmentFormState?.invalidFields || []);
     const missingFields = new Set(state.fitmentFormState?.missingFields || []);
     const fieldErrors = {};
+    const rimReadiness = fitmentRimSaveReadiness();
     for (const path of new Set([...invalidFields, ...missingFields])) {
         if (path === "vehicle.make") fieldErrors[path] = missingFields.has(path) ? "Выберите марку автомобиля" : "Выберите значение из каталога";
         else if (path === "vehicle.model") fieldErrors[path] = missingFields.has(path) ? "Выберите модель автомобиля" : "Выберите значение из каталога";
         else if (path === "vehicle.year") fieldErrors[path] = missingFields.has(path) ? "Выберите год автомобиля" : "Выберите значение из каталога";
         else if (path === "vehicle.market") fieldErrors[path] = missingFields.has(path) ? "Выберите рынок автомобиля" : "Выберите доступный рынок";
         else fieldErrors[path] = `Заполните поле «${fitmentFieldLabel(path)}»`;
+    }
+    for (const path of rimReadiness.invalid) {
+        fieldErrors[path] = path.endsWith("offset_et_mm") ? "ET должен быть от −150 до +150 мм" : "Введите корректное числовое значение";
     }
     const runtimeError = state.fitmentError ? localizeErrorMessage(state.fitmentError) : "";
     const errorSection = state.fitmentActiveSection || fitmentSectionForAction(overview);
@@ -10121,6 +10255,10 @@ function vnextFitmentSnapshot() {
         frontRimSetupState: overview?.front_rim?.rim_setup_state ?? overview?.rim_setup_state ?? null,
         rearRimSetupState: overview?.rear_rim?.rim_setup_state ?? null,
         rimCandidates: Object.entries(overview?.rim_candidates || {}).flatMap(([field, items]) => (Array.isArray(items) ? items : []).filter((item) => item?.value != null && item.value !== "").map((item) => ({ field, value: fitmentPresentationText(item.value) }))),
+        rimPendingProposals: fitmentRimPendingProposalFields(),
+        rearRimPendingProposals: fitmentRimPendingProposalFields("rear"),
+        rimSaveReadiness: rimReadiness,
+        rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
             url: state.fitmentForm?.rim?.product_url || "",
             loading: Boolean(state.fitmentSourceResolving),
@@ -10143,7 +10281,16 @@ function setVnextFitmentField(path, value) {
     // PATCH boundary accepts comma and dot without turning an intermediate
     // value such as "35," into NaN (and then JSON null).
     const nextValue = value;
-    if (path === "vehicle.make") {
+    if (path === "setup_mode") {
+        if (value === "staggered" && !state.fitmentRearDraftInitialized) {
+            const fields = ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"];
+            state.fitmentForm.rear_rim = Object.fromEntries(fields.map((field) => [field, state.fitmentForm.rim[field] ?? ""]));
+            state.fitmentRearPendingFields = [...fields];
+            state.fitmentRearManualFields = [];
+            state.fitmentRearDraftInitialized = true;
+        }
+        state.fitmentForm.setup_mode = value === "staggered" ? "staggered" : "uniform";
+    } else if (path === "vehicle.make") {
         rememberFitmentVehicleCatalogueChain();
         state.fitmentCatalogueParentChange = { makeChanged: nextValue !== state.fitmentForm.vehicle.make, modelChanged: false };
         state.fitmentForm.vehicle.make = nextValue;
@@ -10186,6 +10333,17 @@ function setVnextFitmentField(path, value) {
     renderFitment();
 }
 
+async function saveVnextFitment() {
+    if (state.fitmentActiveSection === "rim" && !fitmentRimSaveReadiness().ready) {
+        state.fitmentError = locale === "ru"
+            ? "Заполните и подтвердите параметры диска, затем сохраните их."
+            : "Complete and confirm the wheel parameters before saving.";
+        renderFitment();
+        return;
+    }
+    return saveFitment(undefined, { confirmWheelFields: state.fitmentActiveSection === "rim" });
+}
+
 window.dreamwheelsFitmentBridge = {
     snapshot: vnextFitmentSnapshot,
     surfaceMounted() {
@@ -10215,11 +10373,24 @@ window.dreamwheelsFitmentBridge = {
             setFitmentActiveSection("vehicle", { scroll: true });
             ensureRequiredFitmentVariantLookup();
         }
-        else if (action === "save") void saveFitment();
+        else if (action === "save") void saveVnextFitment();
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);
         else if (action === "resolve-rim") void resolveFitmentRimSource();
         else if (action === "rim-variant") selectFitmentRimVariant(Number(value));
+        else if (action === "accept-rim-proposal") {
+            const rear = value.startsWith("rear_rim.");
+            const name = value.replace(/^rear_rim\./, "");
+            const fields = name === "pcd" ? ["bolt_count", "pcd_mm"] : [name];
+            const manual = rear ? state.fitmentRearManualFields : state.fitmentRimManualFields;
+            for (const field of fields) {
+                if (!manual.includes(field)) manual.push(field);
+            }
+            if (rear) state.fitmentRearPendingFields = state.fitmentRearPendingFields.filter((field) => !fields.includes(field));
+            else state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => !fields.includes(field));
+            persistFitmentTransientDraft("navigation");
+            renderFitment();
+        }
         else if (action === "conflict-keep") resolveFitmentParserConflict(value);
         else if (action === "conflict-use") {
             const [fieldName, ...suggested] = value.split("|");

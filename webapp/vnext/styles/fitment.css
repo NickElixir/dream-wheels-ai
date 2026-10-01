@@ -76,6 +76,9 @@
 .vnext-fitment__field-message .vnext-button { margin-left: 8px; }
 .vnext-fitment__suggestions { display: flex; flex-wrap: wrap; gap: 7px; }
 .vnext-fitment__suggestions .vnext-button { min-height: 42px; padding: 7px 11px; font-size: 13px; }
+.vnext-fitment__proposal { display: grid; align-content: start; gap: 7px; min-width: 0; }
+.vnext-fitment__proposal > p { margin: 0; color: var(--vnext-text-secondary); font-size: 12px; }
+.vnext-fitment__proposal > .vnext-button { justify-self: start; min-height: 42px; }
 .vnext-fitment__actions, .vnext-fitment__source-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
 .vnext-fitment__source-actions p { flex: 1 1 100%; margin: 0; color: var(--vnext-text-secondary); font-size: 13px; line-height: 1.5; }
 .vnext-fitment__editor > .vnext-button, .vnext-fitment__variant-step > .vnext-button { justify-self: start; }

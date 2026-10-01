@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fitment VNext proposal QA</title>
+  <link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/shell.css">
+  <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+  <style>
+    body { margin: 0; background: var(--vnext-canvas); color: var(--vnext-text); font-family: "IBM Plex Sans", sans-serif; }
+    main { max-width: 1120px; margin: auto; padding: 24px 16px 100px; }
+  </style>
+</head>
+<body>
+  <main id="fixture"></main>
+  <script type="module">
+    import { createFitmentView, refreshFitmentView } from "../../webapp/vnext/views/fitment.js";
+    const model = {
+      overview: { vehicle_state: "unconfirmed", rim_setup_state: "complete_unconfirmed" },
+      nextAction: "complete_vehicle_details", activeSection: "rim", rimEditing: true,
+      rim: { brand: "BBS", model: "CI-R", wheel_diameter_in: 18, wheel_width_j: 8, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: "35,125" },
+      rearRim: { wheel_diameter_in: 18, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: "42,75" },
+      setupMode: "staggered", frontRimSetupState: "complete_unconfirmed", rearRimSetupState: "complete_unconfirmed",
+      rimPendingProposals: ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"],
+      rearRimPendingProposals: ["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"],
+      rimSaveReadiness: { ready: false, missing: [], pending: ["rim.offset_et_mm"] },
+      resolver: { open: false, conflicts: [{ field: "offset_et_mm", current: 35, suggested: 35.125 }] },
+    };
+    // Only presentation callbacks are simulated here. API/draft behavior is
+    // covered by the runtime transition tests, not this visual fixture.
+    const root = createFitmentView(model, {
+      setField(path, value) {
+        if (path === "setup_mode") model.setupMode = value;
+        else {
+          const [scope, field] = path.split(".");
+          model[scope === "rear_rim" ? "rearRim" : "rim"][field] = value;
+        }
+        refreshFitmentView(root, model);
+      },
+      action(action, value) {
+        if (action === "accept-rim-proposal") {
+          const rear = value.startsWith("rear_rim.");
+          const field = value.replace(/^rear_rim\./, "");
+          const names = field === "pcd" ? ["bolt_count", "pcd_mm"] : [field];
+          const key = rear ? "rearRimPendingProposals" : "rimPendingProposals";
+          model[key] = model[key].filter(name => !names.includes(name));
+          refreshFitmentView(root, model);
+        }
+      },
+    });
+    document.getElementById("fixture").append(root);
+  </script>
+</body>
+</html>
