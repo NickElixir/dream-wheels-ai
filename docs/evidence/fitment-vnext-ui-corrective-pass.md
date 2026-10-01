@@ -277,3 +277,55 @@ Owner can inspect the real renderer fixture locally, then review the actual appl
 **UI CORRECTIVE STATUS:** `PASS — READY FOR OWNER REVIEW`
 
 **MERGE STATUS:** `DO NOT MERGE YET — OWNER UI REVIEW + INDEPENDENT RE-REVIEW REQUIRED`
+
+
+## Owner polish pass — PR #245 (2026-10-01)
+
+Bounded follow-up to delivery `ae605adf409337aa64003c8993a1ecebbbcededa`, per owner specification. Original fidelity evidence remains unchanged. No backend/API/domain changes.
+
+| Item | Implementation / verification | Status |
+|---|---|---|
+| P1 Market | Existing provider flow retained: zero → no_data recovery; one → auto-resolved and hidden; multiple → provider select, explicit selection. Parent model change invalidates Market resolution until a new Year is selected and provider data revalidated. | PASS |
+| P2 SKU | Shared 88px action column and same-width end-aligned action. Compact breakpoints explicitly place action at row 1 / column 2. Full values, missing DIA and ET 42.125123 exercised. | PASS |
+| P3 Conflicts | Value-only chips, graphite current selection, neutral proposal, source in aria-label. Existing conflict-keep/use actions retained. Current styling does not resolve conflict. ET and DIA keep/use tested against real runtime without canonical mutation; Width renderer genericity tested. | PASS |
+| P4 Staggered | Front/rear status in separate block spans with 4px gap; uniform remains one status. | PASS |
+| P5 Titles | Source section labels font-weight 600; unchanged position, size and color. RU / EN verified. | PASS |
+| P6 CTA | Check primary only at server run_standard_check and no current Result/editor; current Result makes Create Image primary. Render availability remains independent of verdict. | PASS |
+| Local ready | Ready to save / Готово к сохранению when Wheel readiness is complete and unsaved; branch-local dirty projection supports editing already confirmed Wheel. Standard summaries remain canonical. | PASS |
+| P7 Scope | No changes to approved composition, picker, Result, source dimensions, focus, or frozen semantics. | PASS |
+
+### Automated verification
+
+- Frontend: 193 PASS (`npm --prefix webapp test`).
+- Functional Fitment + Catalogue + Composition/focus + Boot: 100 PASS (`node --test tests/test_fitment_transition_behavior.mjs tests/test_fitment_vehicle_catalogue_behavior.mjs tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_webapp_boot_behavior.mjs`). Includes ET/DIA keep/use and provider single → parent change → multi-market.
+- Backend: 612 PASS, 5 skipped; 14 existing httpx deprecation warnings (`pytest -q`).
+- Frontend build: PASS; generated bundles unchanged.
+- Required commit hooks and CI: final results recorded in PR owner-polish section.
+
+### Browser verification
+
+Production renderer/styles fixture at http://127.0.0.1:8776/tests/browser-fixtures/fitment-vnext-ui-fidelity.html, in-app browser through CUA; no external Playwright fallback. Seven states at exact CSS viewports 1440×1000, 768×1024, 390×844: multi-SKU, manual conflict, staggered incomplete, both-ready, current compatible, all-confirmed unsaved, multi-market. Page identity/nonblank/no-overlay/console/interaction checks PASS.
+
+All 21 measured cases have zero horizontal overflow. All SKU action x positions/widths match within each viewport; subtitles weight 600. Both-ready/current result class hierarchy verified. ET proposal click produces local 33.275; keep click produces 35.125; chips disappear and fixture Save enables only after explicit choice. Real-runtime tests separately verify actions/canonical preservation; fixture callbacks are limited presentation interactions, not backend E2E.
+
+Existing browser zoom 110% was compensated for exact CSS viewport measurement and screenshot coordinates. Device overrides cleared afterwards; no persistent zoom change. EN titles/chips/statuses checked; multi-market fixture contains Russian provider option labels, which remain provider data, not translated runtime UI strings.
+
+[Measured cases](fitment-vnext-owner-polish/qa-metrics.json), [locale checks](fitment-vnext-owner-polish/qa-locale.json), [artifact hashes](fitment-vnext-owner-polish/artifact-manifest.json).
+
+| State | Desktop | Tablet | Mobile |
+|---|---|---|---|
+| Multi-SKU | [1440](fitment-vnext-owner-polish/1440-multi-sku.jpg) | [768](fitment-vnext-owner-polish/768-multi-sku.jpg) | [390](fitment-vnext-owner-polish/390-multi-sku.jpg) |
+| Conflict | [1440](fitment-vnext-owner-polish/1440-manual-conflict.jpg) | [768](fitment-vnext-owner-polish/768-manual-conflict.jpg) | [390](fitment-vnext-owner-polish/390-manual-conflict.jpg) |
+| Staggered | [1440](fitment-vnext-owner-polish/1440-staggered.jpg) | [768](fitment-vnext-owner-polish/768-staggered.jpg) | [390](fitment-vnext-owner-polish/390-staggered.jpg) |
+| Both-ready | [1440](fitment-vnext-owner-polish/1440-both-ready.jpg) | [768](fitment-vnext-owner-polish/768-both-ready.jpg) | [390](fitment-vnext-owner-polish/390-both-ready.jpg) |
+| Current Result | [1440](fitment-vnext-owner-polish/1440-compatible.jpg) | [768](fitment-vnext-owner-polish/768-compatible.jpg) | [390](fitment-vnext-owner-polish/390-compatible.jpg) |
+| Unsaved confirmed Wheel | [1440](fitment-vnext-owner-polish/1440-all-confirmed.jpg) | [768](fitment-vnext-owner-polish/768-all-confirmed.jpg) | [390](fitment-vnext-owner-polish/390-all-confirmed.jpg) |
+| Multiple Market | [1440](fitment-vnext-owner-polish/1440-vehicle-multi-market.jpg) | [768](fitment-vnext-owner-polish/768-vehicle-multi-market.jpg) | [390](fitment-vnext-owner-polish/390-vehicle-multi-market.jpg) |
+
+### Owner-polish gate
+
+PASS — READY FOR OWNER FINAL REVIEW (subject to green final CI recorded in PR).
+
+DO NOT MERGE — OWNER FINAL REVIEW + INDEPENDENT UI RE-REVIEW REQUIRED
+
+Authenticated staging full E2E remains BLOCKED: disposable Fitment context required. Telegram WebView / independent re-review are not claimed. No merge or deployment performed.

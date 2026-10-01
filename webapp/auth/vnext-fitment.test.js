@@ -435,7 +435,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.equal((missingSpecs.match(/Не определено/g) || []).length, 5);
 
   const conflict = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", conflicts: [{ field: "offset_et_mm", current: 40, suggested: 45 }] } });
-  assert.match(conflict, /Подтверждено: 40 — найдено: 45/);
+  assert.match(conflict, /aria-label="Текущее значение ET: 40"/);
   assert.match(conflict, /data-fitment-action="conflict-use"/);
   assert.match(conflict, /data-fitment-action="conflict-keep"/);
 
@@ -714,7 +714,7 @@ test("rim status comes from server-owned per-axle state, not next_action", () =>
   const staggered = fitmentMarkup({
     overview: {}, setupMode: "staggered", frontRimSetupState: "confirmed_ready", rearRimSetupState: "empty",
   });
-  assert.match(staggered, /Передняя ось: Параметры подтверждены — Задняя ось: Параметры не заполнены/);
+  assert.match(staggered, /Передняя ось: Параметры подтверждены<\/span><span>Задняя ось: Параметры не заполнены/);
 });
 
 test("staggered Fitment does not project front rim candidates into rear axle fields", () => {
@@ -804,4 +804,42 @@ test("a staggered Result cannot claim equivalent axles when rear evidence is abs
   assert.equal((markup.match(/<table /g)||[]).length,2);
   assert.doesNotMatch(markup,/параметры совпадают/);
   assert.match(markup,/Задняя ось/);
+});
+
+test("owner polish conflict chips carry source semantics and retain explicit actions", () => {
+  for (const [field, current, suggested, label, unit] of [["offset_et_mm",35.125,33.275,"ET",""],["wheel_width_j",9,8.5,"Ширина","J"]]) {
+    const markup = fitmentMarkup({rimEditing:true,rim:{[field]:current},resolver:{conflicts:[{field,current,suggested}]},rimSaveReadiness:{ready:false}});
+    assert.match(markup, new RegExp(`aria-label="Текущее значение ${label}: ${String(current).replace('.',',')}${unit}"`));
+    assert.match(markup, new RegExp(`aria-label="Значение ${label} из карточки товара: ${String(suggested).replace('.',',')}${unit}"`));
+    assert.match(markup,/aria-pressed="true"[^>]*data-fitment-action="conflict-keep"/);
+    assert.match(markup,/aria-pressed="false"[^>]*data-fitment-action="conflict-use"/);
+    assert.match(markup,/data-fitment-action="save-rim"[^>]*disabled/);
+    assert.doesNotMatch(markup,/Подтверждено:|найдено:|>Использовать | >Оставить /);
+    assert.doesNotMatch(fitmentMarkup({locale:"en",rimEditing:true,resolver:{conflicts:[{field,current,suggested}]}}),/[А-Яа-яЁё]/);
+  }
+});
+
+test("owner polish statuses distinguish local ready from canonical and split staggered lines", () => {
+  const local = fitmentMarkup({rimEditing:true,overview:{rim_setup_state:"partial"},rimSaveReadiness:{ready:true}});
+  assert.match(local,/object-status[^>]*>Готово к сохранению/);
+  assert.match(local,/ready-summaries[\s\S]*<strong>—<\/strong>/);
+  const saved = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimSaveReadiness:{ready:true}});
+  assert.match(saved,/object-status[^>]*>Параметры подтверждены/);
+  const changed = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimDraftDirty:true,rimSaveReadiness:{ready:true}});
+  assert.match(changed,/object-status[^>]*>Готово к сохранению/);
+  const staggered = fitmentMarkup({setupMode:"staggered",frontRimSetupState:"partial"});
+  assert.match(staggered,/<span>Передняя ось: Не хватает параметров<\/span><span>Задняя ось:/);
+  assert.doesNotMatch(staggered,/Не хватает параметров — Задняя ось/);
+});
+
+test("owner polish uses primary check only at authoritative readiness then primary render for current result", () => {
+  const check = /vnext-button--primary" data-fitment-action="check"/;
+  const render = /vnext-button--primary" data-fitment-action="create-image"/;
+  const ready = fitmentMarkup({nextAction:"run_standard_check",canRunCheck:true});
+  assert.match(ready,check); assert.doesNotMatch(ready,render);
+  assert.doesNotMatch(fitmentMarkup({nextAction:"complete_vehicle_details"}),check);
+  for (const verdict of ["compatible","incompatible","unknown"]) {
+    const current = fitmentMarkup({nextAction:"run_standard_check",canRunCheck:true,check:{execution_status:"completed",is_current:true,verdict}});
+    assert.match(current,render); assert.doesNotMatch(current,check);
+  }
 });

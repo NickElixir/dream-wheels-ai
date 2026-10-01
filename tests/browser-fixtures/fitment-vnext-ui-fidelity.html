@@ -20,8 +20,9 @@ const base=()=>({locale:document.querySelector('#locale').value,overview:{vehicl
 const scenarios={
 "initial-sources":{},
 "manual-vehicle":{vehicleEditing:true},
+"vehicle-multi-market":{vehicleEditing:true,vehicleForm:{make:"mercedes",model:"glc",year:"2024",market:""},catalogue:{makes:[{value:"mercedes",label:"Mercedes-Benz"}],models:[{value:"glc",label:"GLC"}],years:[{value:"2024",label:"2024"}],markets:[{value:"EU",label:"Европа"},{value:"CN",label:"Китай"}],states:{makes:{status:"selected"},models:{status:"selected"},years:{status:"selected"},markets:{status:"selection_required",resolution:"selection_required"}}}},
 "required-variant":{nextAction:"select_vehicle_variant",vehicleVariantPickerOpen:true,vehicleVariants:[{label:"GLC 200 4MATIC",technical:"X254 / 2024 / EU"},{label:"GLC 300 4MATIC",technical:"X254 / 2024 / EU"}],selectedVehicleVariant:0},
-"multi-sku":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",open:false,chooserOpen:true,selectedSku:"SKU-A",variants:[{brand:"BBS",model:"CI-R",sku:"SKU-A",values:wheel},{brand:"BBS",model:"CI-R",sku:"SKU-B",values:{...wheel,wheel_width_j:8.5,offset_et_mm:33.275,center_bore_mm:null}},{brand:"BBS",model:"CI-R",sku:"SKU-C",values:{...wheel,wheel_width_j:10,offset_et_mm:42.125}}]}},
+"multi-sku":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",open:false,chooserOpen:true,selectedSku:"SKU-A",variants:[{brand:"BBS",model:"CI-R",sku:"SKU-A",values:wheel},{brand:"BBS",model:"CI-R",sku:"SKU-B",values:{...wheel,wheel_width_j:8.5,offset_et_mm:33.275,center_bore_mm:null}},{brand:"BBS",model:"CI-R",sku:"SKU-C",values:{...wheel,wheel_width_j:10,offset_et_mm:42.125123}}]}},
 "all-proposals":{rimEditing:true,rimPendingProposals:fields,rimSaveReadiness:{ready:false}},
 "partial-acceptance":{rimEditing:true,rimPendingProposals:fields.slice(3),rimSaveReadiness:{ready:false}},
 "all-confirmed":{rimEditing:true,rimPendingProposals:[],rimSaveReadiness:{ready:true}},
@@ -44,7 +45,7 @@ function show(){
   if(name==="incompatible"){model.blockingIssues=[{label:model.locale==="en"?"The wheel PCD does not match the vehicle PCD.":"PCD колесного диска не совпадает с PCD автомобиля."}];model.fieldEvidence[2]={...rows[2],rimValue:"5×114.3",resultLabel:"Не совпадает",status:"fail"};}
  }
  model.canonicalWheelSummary=model.canonicalWheelSummary?.replaceAll(model.locale==="en"?',':'.',model.locale==="en"?'.':',');
- if(!root){root=createFitmentView(model,{action(action,value){if(action==="accept-rim-proposal"){const field=value.split('.')[1];model.rimPendingProposals=(model.rimPendingProposals||[]).filter(f=>field==="pcd"?!["bolt_count","pcd_mm"].includes(f):f!==field);model.rimSaveReadiness={ready:!model.rimPendingProposals.length};refreshFitmentView(root,model);} }});document.querySelector('#fitment').append(root);}else{root.fitmentPicker=null;refreshFitmentView(root,model);}
+ if(!root){root=createFitmentView(model,{action(action,value){if(action==="conflict-use"||action==="conflict-keep"){const [field,valueText]=value.split("|");if(action==="conflict-use")model.rim[field]=Number(valueText);model.resolver.conflicts=model.resolver.conflicts.filter(c=>c.field!==field);model.rimSaveReadiness={ready:!model.resolver.conflicts.length};refreshFitmentView(root,model);}if(action==="accept-rim-proposal"){const field=value.split('.')[1];model.rimPendingProposals=(model.rimPendingProposals||[]).filter(f=>field==="pcd"?!["bolt_count","pcd_mm"].includes(f):f!==field);model.rimSaveReadiness={ready:!model.rimPendingProposals.length};refreshFitmentView(root,model);} }});document.querySelector('#fitment').append(root);}else{root.fitmentPicker=null;refreshFitmentView(root,model);}
  // A preset dialog uses the same production picker and modal behavior.
  if(model.wheelPicker){root.fitmentPicker=model.wheelPicker;refreshFitmentView(root,model);root.querySelector('[data-wheel-picker-search]')?.focus();}
 }

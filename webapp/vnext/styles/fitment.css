@@ -19,7 +19,7 @@
 .vnext-fitment__pair > section { min-width: 0; }
 .vnext-fitment__object { display: grid; align-content: start; min-width: 0; padding: 16px; border: 1px solid var(--vnext-border); border-radius: 10px; background: var(--vnext-surface); }
 .vnext-fitment__object--editing { border-color: var(--vnext-border-strong); background: var(--vnext-surface-elevated); }
-.vnext-fitment__object > .vnext-eyebrow { margin: 0 0 10px; }
+.vnext-fitment__object > .vnext-eyebrow { margin: 0 0 10px; font-weight: 600; }
 .vnext-fitment__object > h2 { margin: 12px 0 0; font-size: 18px; font-weight: var(--vnext-weight-semibold); line-height: 1.25; overflow-wrap: anywhere; }
 .vnext-fitment__visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .vnext-fitment__source-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; min-width: 0; }
@@ -92,7 +92,7 @@
 .vnext-fitment__choices h3 { margin: 0; font-size: 15px; font-weight: var(--vnext-weight-medium); }
 .vnext-fitment__choices > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .vnext-fitment__choices > div:has(.vnext-fitment__sku-row) { display: grid; gap: 8px; }
-.vnext-fitment__sku-row { display: grid; grid-template-columns: minmax(160px,1fr) minmax(0,1.6fr) 66px; gap: 14px; align-items: center; width: 100%; padding: 14px 8px; border: 0; border-bottom: 1px solid var(--vnext-border); border-radius: 0; background: transparent; color: var(--vnext-text); text-align: left; }
+.vnext-fitment__sku-row { display: grid; grid-template-columns: minmax(160px,1fr) minmax(0,1.6fr) 88px; gap: 14px; align-items: center; width: 100%; padding: 14px 8px; border: 0; border-bottom: 1px solid var(--vnext-border); border-radius: 0; background: transparent; color: var(--vnext-text); text-align: left; }
 .vnext-fitment__sku-row:hover, .vnext-fitment__sku-row:focus-visible { border-color: var(--vnext-border-strong); background: var(--vnext-surface-selected); }
 .vnext-fitment__sku-name { font-weight: var(--vnext-weight-medium); }
 .vnext-fitment__sku-code { color: var(--vnext-text-secondary); font-size: 12px; }
@@ -100,10 +100,13 @@
 .vnext-fitment__sku-specs > span { display: grid; gap: 3px; min-width: 0; }
 .vnext-fitment__sku-specs small { display: none; color: var(--vnext-text-secondary); font-size: 11px; }
 .vnext-fitment__sku-specs strong { font-size: 13px; font-weight: var(--vnext-weight-medium); overflow-wrap: anywhere; }
-.vnext-fitment__sku-select { align-self: center; padding: 7px 13px; border: 1px solid var(--vnext-border-strong); border-radius: 6px; }
-.vnext-fitment__conflict { display: grid; gap: 8px; padding-top: 8px; }
-.vnext-fitment__conflict p { margin: 0; color: var(--vnext-text-secondary); }
-.vnext-fitment__conflict > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.vnext-fitment__sku-select { box-sizing: border-box; width: 88px; justify-self: end; white-space: nowrap; text-align: center; align-self: center; padding: 7px 13px; border: 1px solid var(--vnext-border-strong); border-radius: 6px; }
+.vnext-fitment__conflict { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+.vnext-fitment__conflict-chip { padding: 7px 12px; min-height: 36px; border: 1px solid var(--vnext-border-strong); border-radius: 6px; background: transparent; color: var(--vnext-text); font: inherit; }
+.vnext-fitment__conflict-chip[aria-pressed="true"] { background: var(--vnext-surface-selected); font-weight: 600; }
+.vnext-fitment__conflict-chip:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: 2px; }
+.vnext-fitment__object-status > span { display: block; }
+.vnext-fitment__object-status > span + span { margin-top: 4px; }
 .vnext-fitment__loading { display: flex; align-items: center; gap: 10px; color: var(--vnext-text-secondary); }
 .vnext-fitment__loading .vnext-spinner { flex: 0 0 20px; }
 .vnext-fitment__verdict { display: grid; justify-items: start; gap: 8px; }
@@ -140,7 +143,8 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 
 
 @media (max-width: 700px) {
-  .vnext-fitment__sku-row { grid-template-columns: minmax(0,1fr) 66px; gap: 10px; }
+  .vnext-fitment__sku-row { grid-template-columns: minmax(0,1fr) 88px; gap: 10px; }
+  .vnext-fitment__sku-select { grid-column: 2; grid-row: 1; }
   .vnext-fitment__sku-specs { grid-column: 1 / -1; grid-row: 2; }
   .vnext-fitment__choices > .vnext-fitment__sku-legend { display: none !important; }
   .vnext-fitment__sku-specs small { display: block; }
@@ -232,7 +236,7 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__evidence { padding: 8px 12px; border-left: 2px solid var(--vnext-border-strong); background: var(--vnext-surface-elevated); }
 .vnext-fitment__evidence ul { margin: 0; padding-left: 16px; }
 .vnext-fitment__picker .vnext-fitment__section-heading { justify-content: space-between; gap: 16px; }
-.vnext-fitment__choices > .vnext-fitment__sku-legend { display: grid; grid-template-columns: minmax(160px,1fr) minmax(0,1.6fr) 66px; gap: 14px; padding: 0 8px 8px; color: var(--vnext-text-subtle); font-size: 11px; }
+.vnext-fitment__choices > .vnext-fitment__sku-legend { display: grid; grid-template-columns: minmax(160px,1fr) minmax(0,1.6fr) 88px; gap: 14px; padding: 0 8px 8px; color: var(--vnext-text-subtle); font-size: 11px; }
 .vnext-fitment__sku-identity { display: grid; gap: 4px; min-width: 0; }
 .vnext-fitment__sku-image { width: 54px; height: 54px; object-fit: contain; }
 .vnext-fitment__variant-list > .vnext-fitment__paired-actions { margin-top: 14px; }
@@ -241,7 +245,8 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__source-row { align-items: start; }
   .vnext-fitment__source-row p { display: grid; }
   .vnext-fitment__source-row .vnext-button { padding: 0 9px; }
-  .vnext-fitment__sku-row { grid-template-columns: minmax(0,1fr) 66px; }
+  .vnext-fitment__sku-row { grid-template-columns: minmax(0,1fr) 88px; }
+  .vnext-fitment__sku-select { grid-column: 2; grid-row: 1; }
   .vnext-fitment__sku-specs { grid-column: 1 / -1; }
   .vnext-fitment__sku-specs small { display: block; }
   .vnext-fitment__choices > .vnext-fitment__sku-legend { display: none; }

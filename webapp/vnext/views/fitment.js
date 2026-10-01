@@ -38,7 +38,10 @@ function fieldConflict(model, path) {
   const conflict = (model.resolver?.conflicts || []).find((item) => item.field === name);
   if (!conflict) return "";
   const choices = conflict.choices?.length ? conflict.choices : [conflict.suggested];
-  return `<div class="vnext-fitment__conflict" role="group" aria-label="Конфликт значения ${esc(name)}"><p>${conflict.current === null || conflict.current === undefined ? "Найдено несколько значений. Выберите одно." : `Подтверждено: ${esc(wheelDisplay(conflict.current, model.locale))} — найдено: ${esc(wheelDisplay(conflict.suggested, model.locale))}`}</p><div>${choices.map((value) => button(`Использовать ${wheelDisplay(value, model.locale)}`, "conflict-use", { value: `${name}|${value}` })).join("")}${conflict.current === null || conflict.current === undefined ? "" : button(`Оставить ${wheelDisplay(conflict.current, model.locale)}`, "conflict-keep", { value: name })}</div></div>`;
+  const label = { wheel_diameter_in: "Диаметр", wheel_width_j: "Ширина", bolt_count: "PCD", pcd_mm: "PCD", center_bore_mm: "DIA", offset_et_mm: "ET" }[name] || name;
+  const display = value => wheelDisplay(value, model.locale) + (name === "wheel_width_j" ? "J" : "");
+  const chip = (value, current) => `<button type="button" class="vnext-fitment__conflict-chip" aria-pressed="${current}" aria-label="${esc(current ? `Текущее значение ${label}: ${display(value)}` : `Значение ${label} из карточки товара: ${display(value)}`)}" data-fitment-action="${current ? "conflict-keep" : "conflict-use"}" data-value="${esc(current ? name : `${name}|${value}`)}">${esc(display(value))}</button>`;
+  return `<div class="vnext-fitment__conflict" role="group" aria-label="Конфликт значения ${esc(name)}">${conflict.current == null ? "" : chip(conflict.current, true)}${choices.map(value => chip(value, false)).join("")}</div>`;
 }
 
 function fieldWithCandidates(model, label, path, value, options = {}) {
@@ -294,16 +297,18 @@ export function fitmentMarkup(model = {}) {
   const rim = model.rim || {};
   const variantRequired = model.nextAction === "select_vehicle_variant";
   const rimSetupState = model.frontRimSetupState || model.overview?.rim_setup_state || "unknown";
+  const localReady = model.rimSaveReadiness?.ready && (model.rimDraftDirty || model.overview?.rim_setup_state !== "confirmed_ready");
+  const sourceStatus = state => localReady ? "Готово к сохранению" : rimSetupLabel(state);
   const rimStatus = model.setupMode === "staggered"
-    ? `Передняя ось: ${rimSetupLabel(rimSetupState)} — Задняя ось: ${rimSetupLabel(model.rearRimSetupState)}`
-    : rimSetupLabel(rimSetupState);
+    ? `<span>Передняя ось: ${esc(sourceStatus(rimSetupState))}</span><span>Задняя ось: ${esc(sourceStatus(model.rearRimSetupState))}</span>`
+    : esc(sourceStatus(rimSetupState));
   const vehicleStatus = model.vehicleStatus || "Требуется подтверждение";
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
   const activeEditor = variantRequired && !model.manualVehicleEditing && !model.rimEditing || model.vehicleEditing || model.rimEditing;
   const checkLabel = retryState ? model.executionStatus === "failed" ? "Повторить" : "Проверить ещё раз" : completedCurrent ? "Проверить ещё раз" : "Проверить совместимость";
-  const checkAction = button(checkLabel, "check", { primary: !completedCurrent && !activeEditor, disabled: !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
+  const checkAction = button(checkLabel, "check", { primary: !completedCurrent && !activeEditor && model.nextAction === "run_standard_check", disabled: !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
   const renderAction = button("Создать изображение", "create-image", { primary: completedCurrent && !activeEditor });
   const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
   const checkError = model.checkError && model.executionStatus !== "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
@@ -325,7 +330,7 @@ export function fitmentMarkup(model = {}) {
         ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
         <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Ссылка на товар</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
         <div class="vnext-fitment__source-action">${button("Распознать колесный диск", "resolve-rim", { primary: !activeEditor && !model.resolver?.canChooseSku && model.overview?.rim_setup_state !== "confirmed_ready", disabled: !model.resolver?.url || model.resolver?.loading })}${!model.rimEditing ? button("Изменить параметры", "edit-rim") : ""}</div>
-        <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${esc(rimStatus)}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
+        <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
     ${vehicleRecognition(model)}
@@ -466,6 +471,10 @@ const fitmentEnglishCopy = {
   "Уточните данные автомобиля": "Complete the vehicle details",
   "Уточните параметры колесного диска": "Complete the wheel parameters",
   "Данные готовы к проверке": "Details are ready for checking",
+  "Готово к сохранению": "Ready to save",
+  "Текущее значение": "Current value",
+  "Значение": "Value",
+  "из карточки товара": "from the product page",
   "Параметры подтверждены": "Parameters confirmed",
   "Параметры не заполнены": "Parameters are empty",
   "Не хватает параметров": "Parameters are missing",

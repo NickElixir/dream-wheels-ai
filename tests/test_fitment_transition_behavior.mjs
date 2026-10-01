@@ -1645,3 +1645,21 @@ test("a valid multi-SKU resolver response is a chooser, even without shared top-
     assert.match(fitmentMarkup(api.snapshot()),/Выберите колесный диск/);
     assert.doesNotMatch(fitmentMarkup(api.snapshot()),/data-fitment-source-url|Указать параметры вручную/);
 });
+
+test("owner chips require explicit conflict resolution for ET and DIA while preserving canonical values", () => {
+    for (const [field, current, suggested] of [["offset_et_mm",35.125,33.275],["center_bore_mm",66.6,72.6]]) {
+        for (const useProposal of [true,false]) {
+            const { api } = navigationApi();
+            const overview = overviewFor(api,"complete_vehicle_details");
+            seed(api,overview,"rim");
+            api.state.fitmentForm.rim[field] = current;
+            api.state.fitmentSourceConflicts = [{field,current,suggested}];
+            const canonical = JSON.stringify(api.state.fitmentOverview);
+            assert.equal(api.fitmentRimSaveReadiness().ready,false);
+            api.bridge.action(useProposal ? "conflict-use" : "conflict-keep",useProposal ? `${field}|${suggested}` : field);
+            assert.equal(api.state.fitmentSourceConflicts.length,0);
+            assert.equal(Number(api.state.fitmentForm.rim[field]),useProposal ? suggested : current);
+            assert.equal(JSON.stringify(api.state.fitmentOverview),canonical);
+        }
+    }
+});

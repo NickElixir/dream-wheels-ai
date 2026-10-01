@@ -405,3 +405,20 @@ test("recognition year range does not reuse a previously remembered exact year",
     assert.equal(api.state.fitmentForm.vehicle.market, "");
     assert.ok(api.state.fitmentFormState.missingFields.includes("vehicle.year"));
 });
+
+test("owner Market gate auto-resolves one provider market then invalidates it for multiple markets", async () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    const { api } = harness;
+    seedState(harness, { market: "", make: "ZEEKR", model: "007", year: "2025" });
+    await api.revalidateFitmentCatalogueChain(api.beginFitmentCatalogueContextChange());
+    assert.equal(api.state.fitmentForm.vehicle.market,"chdm");
+    assert.equal(api.state.fitmentMarketResolution.resolution,"single");
+    await selectModel(harness,"X");
+    assert.equal(api.state.fitmentMarketResolution.status,"idle");
+    api.state.fitmentForm.vehicle.year = "2023";
+    api.state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
+    await api.revalidateFitmentCatalogueChain(api.beginFitmentCatalogueContextChange());
+    assert.equal(api.state.fitmentMarketResolution.resolution,"selection_required");
+    assert.equal(api.state.fitmentForm.vehicle.market,"");
+    assert.ok(api.state.fitmentFormState.invalidFields.includes("vehicle.market"));
+});

@@ -10818,6 +10818,7 @@ function vnextFitmentSnapshot() {
         rimPendingProposals: fitmentRimPendingProposalFields(),
         rearRimPendingProposals: fitmentRimPendingProposalFields("rear"),
         rimSaveReadiness: rimReadiness,
+        rimDraftDirty: ["rim", "rear_rim", "setup_mode"].some(key => JSON.stringify(state.fitmentForm?.[key]) !== JSON.stringify(state.fitmentFormState?.baseline?.[key])),
         rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
             chooserOpen: Boolean(state.fitmentSkuChooserOpen),
