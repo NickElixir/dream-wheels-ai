@@ -4954,7 +4954,6 @@ function demoServerTransition(action, payload = {}) {
         return nextOverview;
     }
     if (action === "save_rim") {
-        if (!["complete_rim_specs", "run_standard_check"].includes(nextOverview.next_action?.kind)) return nextOverview;
         markDemoCheckStale(nextOverview);
         const incoming = payload.rim || {};
         for (const fieldName of Object.keys(nextOverview.rim_field_states)) {
@@ -4969,7 +4968,8 @@ function demoServerTransition(action, payload = {}) {
         nextOverview.rim_setup_state = "confirmed_ready";
         nextOverview.rim_revision += 1;
         nextOverview.rim_setup_revision += 1;
-        nextOverview.next_action = { kind: "run_standard_check" };
+        nextOverview.next_action = { kind: nextOverview.vehicle_state === "confirmed_ready" && nextOverview.modification_state === "confirmed"
+            ? "run_standard_check" : nextOverview.next_action?.kind === "select_vehicle_variant" ? "select_vehicle_variant" : "complete_vehicle_details" };
         syncDemoRimShape(nextOverview);
         return nextOverview;
     }
@@ -7095,6 +7095,10 @@ async function loadFitmentOverview(
         : ["vehicle", "rim", "result"].includes(state.fitmentActiveSection)
             ? state.fitmentActiveSection
             : "";
+    const editorToPreserve = state.fitmentFormState?.status === "dirty"
+        ? sectionToPreserve === "rim" && state.fitmentRimEditing ? "rim"
+            : sectionToPreserve === "vehicle" && state.fitmentVehicleEditing ? "vehicle" : ""
+        : "";
     let restoration = "none";
     state.fitmentLoading = true;
     state.fitmentError = "";
@@ -7114,6 +7118,9 @@ async function loadFitmentOverview(
                 : fitmentSectionForAction(state.fitmentOverview);
             state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
             if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
+            if (editorToPreserve || restoration === "restored" && state.fitmentFormState.status === "dirty") {
+                setFitmentEditor(editorToPreserve || state.fitmentActiveSection);
+            }
             loadFitmentVehicleCatalogue();
             ensureRequiredFitmentVariantLookup();
             if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -7147,6 +7154,9 @@ async function loadFitmentOverview(
             : fitmentSectionForAction(overview);
         state.fitmentActiveStep = fitmentSectionToStep(state.fitmentActiveSection);
         if (restoreReason) restoration = restoreFitmentTransientDraft({ reason: restoreReason, overview });
+        if (editorToPreserve || restoration === "restored" && state.fitmentFormState.status === "dirty") {
+            setFitmentEditor(editorToPreserve || state.fitmentActiveSection);
+        }
         loadFitmentVehicleCatalogue();
         ensureRequiredFitmentVariantLookup();
         void loadFitmentCheckHistory(overview);
@@ -7797,6 +7807,9 @@ async function saveFitment(event) {
     if (!state.fitmentJobId || state.fitmentSaving) return;
     const savedFromSection = state.fitmentActiveSection;
     const savingVehicle = savedFromSection === "vehicle";
+    const unsavedVehicleDraft = !savingVehicle && state.fitmentVehicleDirty
+        ? cloneFitmentForm(state.fitmentForm).vehicle : null;
+    const vehicleMarketEdited = state.fitmentVehicleMarketEdited;
     const missing = savingVehicle ? validateFitmentForm() : [];
     if (savingVehicle && (missing.length || state.fitmentFormState.invalidFields?.length)) {
         state.fitmentFormState.status = "dirty";
@@ -7822,6 +7835,13 @@ async function saveFitment(event) {
             updateDemoFitmentState(overview);
             clearFitmentResolverFeedback({ close: true });
             state.fitmentFormState.status = "clean";
+            if (unsavedVehicleDraft) {
+                state.fitmentForm.vehicle = unsavedVehicleDraft;
+                state.fitmentVehicleDirty = true;
+                state.fitmentVehicleMarketEdited = vehicleMarketEdited;
+                state.fitmentFormState.status = "dirty";
+            }
+            if (savedFromSection === "rim") setFitmentEditor("rim");
             state.fitmentMessage = transition === "confirm_vehicle"
                 ? (locale === "ru" ? "Данные автомобиля подтверждены. Выберите комплектацию" : "Vehicle details confirmed. Choose a vehicle version")
                 : transition === "save_rim"
@@ -7861,6 +7881,14 @@ async function saveFitment(event) {
         setFitmentEditorsForNextAction(overview);
         state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
         state.fitmentFormState.status = "clean";
+        if (unsavedVehicleDraft) {
+            state.fitmentForm.vehicle = unsavedVehicleDraft;
+            state.fitmentVehicleDirty = true;
+            state.fitmentVehicleMarketEdited = vehicleMarketEdited;
+            state.fitmentFormState.status = "dirty";
+            persistFitmentTransientDraft("navigation");
+        }
+        if (savedFromSection === "rim") setFitmentEditor("rim");
         if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
@@ -10048,6 +10076,7 @@ function vnextFitmentSnapshot() {
         vehicleSummaryRows,
         vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
+        activeSection: state.fitmentActiveSection,
         manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
         vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : "Данные автомобиля",
         vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
