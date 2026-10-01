@@ -10324,7 +10324,10 @@ function setVnextFitmentField(path, value) {
     }
     if (path.startsWith("rim.") || path.startsWith("rear_rim.")) {
         const fieldName = path.replace(/^(?:rim|rear_rim)\./, "");
-        state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
+        if (path.startsWith("rim.")) {
+            state.fitmentSourceAppliedFields = state.fitmentSourceAppliedFields.filter((field) => field !== fieldName);
+            state.fitmentSourceConflicts = state.fitmentSourceConflicts.filter((conflict) => conflict.field !== fieldName);
+        }
         markRimFieldEdited(path);
     }
     markVehicleFieldEdited(path);
@@ -10380,7 +10383,7 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "rim-variant") selectFitmentRimVariant(Number(value));
         else if (action === "accept-rim-proposal") {
             const rear = value.startsWith("rear_rim.");
-            const name = value.replace(/^rear_rim\./, "");
+            const name = value.replace(/^(?:rear_rim|rim)\./, "");
             const fields = name === "pcd" ? ["bolt_count", "pcd_mm"] : [name];
             const manual = rear ? state.fitmentRearManualFields : state.fitmentRimManualFields;
             for (const field of fields) {

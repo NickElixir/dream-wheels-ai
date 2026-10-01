@@ -42,7 +42,7 @@
       action(action, value) {
         if (action === "accept-rim-proposal") {
           const rear = value.startsWith("rear_rim.");
-          const field = value.replace(/^rear_rim\./, "");
+          const field = value.replace(/^(?:rear_rim|rim)\./, "");
           const names = field === "pcd" ? ["bolt_count", "pcd_mm"] : [field];
           const key = rear ? "rearRimPendingProposals" : "rimPendingProposals";
           model[key] = model[key].filter(name => !names.includes(name));

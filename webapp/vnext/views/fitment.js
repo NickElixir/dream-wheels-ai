@@ -128,22 +128,61 @@ function catalogueField(model, kind, label, path, value, extra = {}) {
   });
 }
 
-function axleFields(model, axle, rim, { candidates = true } = {}) {
+
+const wheelPickerPresets = {
+  wheel_diameter_in: [15,16,17,18,19,20,21,22,23,24],
+  wheel_width_j: [6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,11.5,12],
+  pcd: ["4×100","5×100","5×108","5×110","5×112","5×114.3","5×120","5×130","6×130"],
+  center_bore_mm: [57.1,60.1,63.4,64.1,65.1,66.1,66.6,67.1,71.6,72.6,74.1],
+  offset_et_mm: [35,37.5,40,43.1,45,48.1],
+};
+const wheelEtCatalogue = [-129,-37,-30,-25.4,-25,-20,-15.5,-15,-12,-10,-8,-6.4,-6.35,-6,-5,-3,-2.5,-2,-1,0,0.15,0.34,2,3,4,5,6,6.35,6.4,7,7.5,7.6,8,8.6,8.64,8.9,9,10,10.6,11,11.2,11.4,12,12.7,13,13.5,14,14.2,14.22,14.3,14.4,15,15.5,16,17,18,18.5,19,19.05,19.1,19.5,19.85,20,20.5,20.6,21,21.5,22,22.1,22.3,22.35,22.4,22.5,23,23.3,23.5,23.6,24,24.1,24.25,24.75,25,25.1,25.2,25.3,25.4,25.5,26,26.2,26.3,27,27.5,27.6,28,28.4,28.8,29,29.5,30,30.1,30.5,31,31.5,31.7,31.75,31.8,32,32.1,32.2,32.25,32.5,32.7,33,33.2,33.275,33.5,33.7,34,34.1,34.5,35,35.5,35.9,36,36.1,36.5,37,37.17,37.2,37.3,37.5,38,38.1,38.5,38.8,39,39.5,40,40.1,40.475,40.5,40.65,40.7,41,41.1,41.15,41.3,41.5,41.65,42,42.1,42.3,42.4,42.5,42.55,42.85,43,43.1,43.2,43.3,43.5,43.75,44,44.45,44.5,44.7,44.9,45,45.1,45.5,45.72,46,46.4,46.5,46.6,46.67,47,47.3,47.5,47.9,48,48.1,48.2,48.4,48.5,48.75,49,49.5,49.75,50,50.08,50.1,50.3,50.5,50.8,51,51.2,51.5,52,52.2,52.3,52.5,53,53.3,53.4,53.5,53.7,54,54.5,54.6,54.65,54.8,55,55.2,55.5,56,56.1,56.2,56.4,56.5,57,57.15,57.4,57.5,58,58.1,58.2,58.5,59,59.1,59.5,60,60.1,60.2,60.5,60.6,60.8,61,61.1,61.4,61.5,61.85,62,62.2,62.5,62.6,63,63.5,63.8,64,65,66,66.7,67,67.1,68,68.05,68.5,69,70,70.4,71,71.1,71.5,71.6,72,73,75,76,77,78,79,80,81,82,83,87,87.5,88,91,94,98,100,101,102,105,106,107,108,109,109.5,110,113,115,116.5,117,118.3,120,121.5,122.17,122.5,124,125,127,129.5,130.81,131,135.89,136,142];
+const wheelFieldLabels = { wheel_diameter_in: "Диаметр", wheel_width_j: "Ширина", pcd: "PCD", center_bore_mm: "DIA", offset_et_mm: "ET" };
+const wheelDisplay = value => String(value ?? "").replaceAll(".", ",");
+
+export function wheelPickerOptions(field, query = "", mode = "recommended") {
+  const all = field === "offset_et_mm" ? wheelEtCatalogue : wheelPickerPresets[field] || [];
+  const normalized = query.trim().replaceAll(",", ".").replaceAll("x", "×");
+  if (!normalized) return { exact: [], matches: mode === "all" ? all : wheelPickerPresets[field] || [] };
+  const equal = value => field === "pcd" ? String(value) === normalized : Number(value) === Number(normalized);
+  const exact = all.filter(equal);
+  return { exact, matches: all.filter(value => !equal(value) && String(value).includes(normalized)).slice(0,18) };
+}
+
+export function wheelPickerManualValue(field, query) {
+  const normalized = query.trim().replaceAll(",", ".");
+  if (field === "pcd") {
+    const match = normalized.match(/^(\d+)[×xX]([0-9]+(?:\.[0-9]+)?)$/);
+    return match && Number(match[1]) > 0 && Number(match[2]) > 0 ? `${Number(match[1])}×${match[2]}` : null;
+  }
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) return null;
+  const value = Number(normalized);
+  return Number.isFinite(value) && (field === "offset_et_mm" ? Math.abs(value) <= 150 : value > 0) ? normalized : null;
+}
+
+function wheelPickerMarkup(picker) {
+  if (!picker) return "";
+  const field = picker.path.split(".")[1];
+  const label = wheelFieldLabels[field];
+  const options = wheelPickerOptions(field, picker.query, picker.mode);
+  const option = value => `<button type="button" class="vnext-fitment__picker-option" data-wheel-picker-value="${esc(value)}">${esc(wheelDisplay(value))}</button>`;
+  const group = (title, values) => values.length ? `<section><h3>${title}</h3><div class="vnext-fitment__picker-options">${values.map(option).join("")}</div></section>` : "";
+  const manual = wheelPickerManualValue(field, picker.query);
+  return `<div class="vnext-fitment__picker-scrim" data-wheel-picker-close></div><section class="vnext-fitment__picker" role="dialog" aria-modal="true" aria-labelledby="wheel-picker-title"><div class="vnext-fitment__section-heading"><h2 id="wheel-picker-title">${label}</h2><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-close aria-label="Закрыть выбор ${label}">Закрыть</button></div><label class="vnext-fitment__field"><span>Поиск ${label}</span><input type="text" inputmode="${field === "pcd" ? "text" : "decimal"}" data-wheel-picker-search value="${esc(picker.query)}" placeholder="${field === "pcd" ? "5×112" : "Поиск"}"></label>${group("Точное совпадение",options.exact)}${group(picker.query ? "Похожие значения" : picker.mode === "all" ? "Все значения" : field === "offset_et_mm" ? "Рекомендуемые" : "Значения",options.matches)}${field === "offset_et_mm" ? `<button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-mode>${picker.mode === "all" ? "Рекомендуемые значения" : "Показать все значения"}</button>` : ""}<div class="vnext-fitment__picker-manual"><p>Ручной ввод ${label}${field === "offset_et_mm" ? " от −150 до +150 мм. Без округления." : "."}</p><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-value="${esc(manual ?? "")}" ${manual === null ? "disabled" : ""}>Использовать ${esc(wheelDisplay(picker.query))}</button></div></section>`;
+}
+
+function axleFields(model, axle, rim) {
   const prefix = axle === "rear" ? "rear_rim" : "rim";
   const pending = axle === "rear" ? model.rearRimPendingProposals || [] : model.rimPendingProposals || [];
-  const source = axle === "rear" ? { ...model, rimCandidates: [] } : model;
-  const entries = (items, showProposal = true) => items.map(([label, fieldName, value]) => {
-    const path = `${prefix}.${fieldName}`;
-    const control = candidates
-      ? fieldWithCandidates(source, label, path, value, { type: "number", error: model.fieldErrors?.[path] || "" })
-      : field(label, path, value, { type: "number", error: model.fieldErrors?.[path] || "" });
-    return showProposal && pending.includes(fieldName)
-      ? `<div class="vnext-fitment__proposal" data-fitment-proposal="${esc(path)}">${control}<p>Предложено автоматически</p>${button("Подтвердить значение", "accept-rim-proposal", { value: axle === "rear" ? path : fieldName })}</div>`
-      : control;
-  });
-  const pcdPending = ["bolt_count", "pcd_mm"].some((fieldName) => pending.includes(fieldName));
-  const pcd = `<div class="vnext-fitment__pcd${pcdPending ? " vnext-fitment__proposal" : ""}"><h4>PCD</h4><div>${entries([["Отверстия", "bolt_count", rim?.bolt_count], ["Разболтовка, мм", "pcd_mm", rim?.pcd_mm]], false).join("")}</div>${pcdPending ? `<p>Предложено автоматически</p>${button("Подтвердить PCD", "accept-rim-proposal", { value: axle === "rear" ? "rear_rim.pcd" : "pcd" })}` : ""}</div>`;
-  return `<div class="vnext-fitment__axle-fields"><div class="vnext-fitment__fields">${entries([["Диаметр, дюймы", "wheel_diameter_in", rim?.wheel_diameter_in], ["Ширина, J", "wheel_width_j", rim?.wheel_width_j]]).join("")}</div>${pcd}<div class="vnext-fitment__fields">${entries([["DIA, мм", "center_bore_mm", rim?.center_bore_mm], ["ET, мм", "offset_et_mm", rim?.offset_et_mm]]).join("")}</div></div>`;
+  return `<div class="vnext-fitment__proposal-stack">${Object.entries(wheelFieldLabels).map(([field,label]) => {
+    const path = `${prefix}.${field}`;
+    const value = field === "pcd" ? rim?.bolt_count && rim?.pcd_mm ? `${rim.bolt_count}×${rim.pcd_mm}` : "" : rim?.[field] ?? "";
+    const proposed = field === "pcd" ? pending.includes("bolt_count") || pending.includes("pcd_mm") : pending.includes(field);
+    const conflict = axle === "front" ? field === "pcd" ? fieldConflict(model, "rim.bolt_count") + fieldConflict(model, "rim.pcd_mm") : fieldConflict(model, path) : "";
+    const candidates = axle === "front" ? (model.rimCandidates || []).filter(item => item.field === field && String(item.value) !== String(value)) : [];
+    const suggestions = candidates.length ? `<div class="vnext-fitment__suggestions">${candidates.map(item => button(wheelDisplay(item.value), "candidate", { value: `${path}|${item.value}` })).join("")}</div>` : "";
+    return `<div class="vnext-fitment__compound-field"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить" : "Текущее значение"} ${label} ${esc(wheelDisplay(value))}">${esc(value === "" ? "Не выбрано" : wheelDisplay(value))}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? '<small>Предложено автоматически</small>' : ""}${suggestions}${conflict}${model.fieldErrors?.[path] ? `<small role="alert">${esc(model.fieldErrors[path])}</small>` : ""}</div>`;
+  }).join("")}</div>`;
 }
 
 function vehicleEditor(model, vehicle) {
@@ -241,17 +280,19 @@ export function fitmentMarkup(model = {}) {
     ${checkError}
     ${evidence(model)}
     ${comparisonTable(model)}
+    ${wheelPickerMarkup(model.wheelPicker)}
     <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">Проверка совместимости</h2><p>${esc(nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p><div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.vehicleTitle || "Требуется подтверждение")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.rimTitle || "Требуется подтверждение")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
   </section>`;
 }
 
 export function refreshFitmentView(root, model, callbacks = root.fitmentCallbacks) {
   root.fitmentCallbacks = callbacks;
-  const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url]");
-  const focusSelector = focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused ? "[data-fitment-source-url]" : "";
+  root.fitmentModel = model;
+  const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search]");
+  const focusSelector = focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
   const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "url", "tel", "password"].includes(input.type);
   const selection = supportsSelection(focused) ? [focused.selectionStart, focused.selectionEnd] : null;
-  const markup = fitmentMarkup(model);
+  const markup = fitmentMarkup({ ...model, wheelPicker: root.fitmentPicker });
   const next = document.createElement("section");
   next.className = root.className;
   next.innerHTML = markup;
@@ -269,9 +310,55 @@ export function createFitmentView(model = {}, callbacks = {}) {
   root.className = "vnext-fitment";
   root.dataset.vnextFitmentRoot = "";
   root.fitmentCallbacks = callbacks;
+  const redraw = () => refreshFitmentView(root, root.fitmentModel);
+  const closePicker = () => {
+    const path = root.fitmentPicker?.path;
+    root.fitmentPicker = null;
+    redraw();
+    if (path) root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`)?.focus();
+  };
   root.addEventListener("click", (event) => {
+    const opener = event.target.closest("[data-wheel-picker-open], [data-fitment-action='open-wheel-picker']");
+    if (opener) {
+      root.fitmentPicker = { path: opener.dataset.wheelPickerOpen || opener.dataset.value, query: "", mode: "recommended" };
+      redraw();
+      root.querySelector("[data-wheel-picker-search]")?.focus();
+      return;
+    }
+    if (event.target.closest("[data-wheel-picker-close]")) { closePicker(); return; }
+    if (event.target.closest("[data-wheel-picker-mode]")) {
+      root.fitmentPicker.mode = root.fitmentPicker.mode === "all" ? "recommended" : "all";
+      redraw();
+      root.querySelector("[data-wheel-picker-mode]")?.focus();
+      return;
+    }
+    const picked = event.target.closest("[data-wheel-picker-value]");
+    if (picked && !picked.disabled) {
+      const path = root.fitmentPicker.path;
+      const value = picked.dataset.wheelPickerValue;
+      const [scope, fieldName] = path.split(".");
+      root.fitmentPicker = null;
+      if (fieldName === "pcd") {
+        const [count, pcd] = value.split("×");
+        root.fitmentCallbacks?.setField?.(`${scope}.bolt_count`, count);
+        root.fitmentCallbacks?.setField?.(`${scope}.pcd_mm`, pcd);
+      } else root.fitmentCallbacks?.setField?.(path, value);
+      redraw();
+      root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`)?.focus();
+      return;
+    }
     const target = event.target.closest("[data-fitment-action]");
     if (target && root.contains(target) && !target.disabled) root.fitmentCallbacks?.action?.(target.dataset.fitmentAction, target.dataset.value);
+  });
+  root.addEventListener("keydown", (event) => {
+    if (!root.fitmentPicker) return;
+    if (event.key === "Escape") { event.preventDefault(); closePicker(); }
+    if (event.key === "Tab") {
+      const items = [...root.querySelectorAll('[role="dialog"] button:not(:disabled), [role="dialog"] input')];
+      const first = items[0], last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
   });
   const changeField = (event) => {
     const target = event.target.closest("[data-fitment-field]");
@@ -280,6 +367,10 @@ export function createFitmentView(model = {}, callbacks = {}) {
   root.addEventListener("input", (event) => { if (event.target.tagName !== "SELECT") changeField(event); });
   root.addEventListener("change", (event) => { if (event.target.tagName === "SELECT") changeField(event); });
   root.addEventListener("input", (event) => {
+    if (event.target.matches("[data-wheel-picker-search]") && root.fitmentPicker) {
+      root.fitmentPicker.query = event.target.value;
+      redraw();
+    }
     if (event.target.matches("[data-fitment-source-url]")) root.fitmentCallbacks?.setSourceUrl?.(event.target.value);
   });
   return refreshFitmentView(root, model, callbacks);

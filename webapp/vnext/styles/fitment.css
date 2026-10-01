@@ -185,3 +185,22 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__parameter--head { display: none; }
   .vnext-fitment__parameter > span:first-child { grid-column: 1 / -1; }
 }
+
+.vnext-fitment__proposal-stack { display: grid; gap: 16px; max-width: 620px; }
+.vnext-fitment__compound-field { display: grid; gap: 7px; }
+.vnext-fitment__compound-field > span { font-size: 13px; color: var(--vnext-text-secondary); }
+.vnext-fitment__compound-field > small { color: var(--vnext-text-subtle); }
+.vnext-fitment__compound { display: grid; grid-template-columns: minmax(0,3fr) minmax(145px,2fr); border: 1px solid var(--vnext-border-strong); border-radius: 11px; overflow: hidden; background: var(--vnext-surface-elevated); }
+.vnext-fitment__compound > button { min-height: 46px; border: 0; padding: 0 13px; background: transparent; color: var(--vnext-text); text-align: left; font: inherit; cursor: pointer; }
+.vnext-fitment__compound > button:last-child { border-left: 1px solid var(--vnext-border); font-size: 12px; color: var(--vnext-text-secondary); }
+.vnext-fitment__compound--accepted { background: var(--vnext-surface); }
+.vnext-fitment__picker-scrim { position: fixed; inset: 0; z-index: 90; background: #000a; }
+.vnext-fitment__picker { position: fixed; z-index: 100; left: 0; right: 0; bottom: 0; max-height: 82dvh; overflow: auto; background: var(--vnext-surface); border: 1px solid var(--vnext-border-strong); border-radius: 22px 22px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
+.vnext-fitment__picker h3 { font-size: 11px; color: var(--vnext-text-subtle); margin: 0 0 10px; }
+.vnext-fitment__picker-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; }
+.vnext-fitment__picker-option { min-height: 44px; border: 1px solid var(--vnext-border); border-radius: 9px; background: var(--vnext-surface-elevated); color: var(--vnext-text); font: inherit; }
+.vnext-fitment__picker-manual { display: grid; gap: 10px; border-top: 1px solid var(--vnext-border); padding-top: 12px; }
+.vnext-fitment__picker-manual p { margin: 0; color: var(--vnext-text-secondary); font-size: 13px; }
+@media (min-width: 769px) {
+  .vnext-fitment__picker { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%,-50%); width: min(560px,calc(100vw - 48px)); border-radius: 18px; }
+}
