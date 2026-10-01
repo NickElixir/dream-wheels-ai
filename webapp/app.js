@@ -4494,6 +4494,10 @@ function navigateFitmentRecovery(action) {
 }
 
 async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
+    const contextKey = fitmentCheckContextKey();
+    const token = state.fitmentCheckPollToken;
+    const selectedCheckId = state.fitmentCheck?.id;
+    const isCurrentRequest = () => contextKey === fitmentCheckContextKey() && token === state.fitmentCheckPollToken;
     state.fitmentCheckHistory = [];
     if (!overview?.vehicle_identity_id || !overview?.rim_setup_id || shouldUseDemoFitment(state.fitmentJobId)) return;
     state.fitmentCheckHistoryLoading = true;
@@ -4506,25 +4510,34 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
         const response = await authenticatedFetch(apiUrl("/fitment/checks", { includeIdentity: true, params }), {
             headers: withAuthHeaders(),
         });
+        if (!isCurrentRequest()) return;
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
         }
         if (!response.ok) throw new Error(await parseApiError(response));
         const payload = await response.json();
+        if (!isCurrentRequest()) return;
         state.fitmentCheckHistory = Array.isArray(payload.checks) ? payload.checks : [];
-        if (!state.fitmentCheck && state.fitmentCheckHistory.length) {
-            const latest = state.fitmentCheckHistory.find((item) => item.is_current) || state.fitmentCheckHistory[0];
+        if (state.fitmentCheck?.id === selectedCheckId && state.fitmentCheckHistory.length) {
+            const latest = state.fitmentCheckHistory.find((item) => item.id === selectedCheckId)
+                || state.fitmentCheckHistory.find((item) => item.is_current) || state.fitmentCheckHistory[0];
             if (latest?.id && latest.execution_status === "completed") {
                 const detail = await authenticatedFetch(apiUrl(`/fitment/checks/${latest.id}`, { includeIdentity: true }), { headers: withAuthHeaders() });
-                if (detail.ok) state.fitmentCheck = await detail.json();
+                if (detail.ok) {
+                    const check = await detail.json();
+                    if (!isCurrentRequest() || state.fitmentCheck?.id !== selectedCheckId) return;
+                    state.fitmentCheck = check;
+                }
             }
         }
     } catch (error) {
+        if (!isCurrentRequest()) return;
         state.fitmentCheckHistory = [];
         state.fitmentMessage = error?.message || t("errors.requestFailed");
         state.fitmentMessageTone = "warning";
     } finally {
+        if (!isCurrentRequest()) return;
         state.fitmentCheckHistoryLoading = false;
         applyFitmentRestoreSection();
         renderFitment();
@@ -7974,15 +7987,18 @@ function fitmentCheckContextKey() {
 
 async function refreshFitmentCheckCurrentness() {
     const checkId = state.fitmentCheck?.id;
+    const contextKey = fitmentCheckContextKey();
     if (!checkId || !state.fitmentJobId || shouldUseDemoFitment(state.fitmentJobId)) return;
     try {
         const response = await authenticatedFetch(apiUrl(`/fitment/checks/${checkId}`, { includeIdentity: true }), { headers: withAuthHeaders() });
+        if (checkId !== state.fitmentCheck?.id || contextKey !== fitmentCheckContextKey()) return;
         if (response.status === 401) {
             showFitmentAuthRequired();
             return;
         }
         if (!response.ok) return;
-        state.fitmentCheck = await response.json();
+        const check = await response.json();
+        if (checkId === state.fitmentCheck?.id && contextKey === fitmentCheckContextKey()) state.fitmentCheck = check;
     } catch {
         // Currentness is refreshed on the next explicit check/history read.
     }
@@ -10383,9 +10399,12 @@ function vnextFitmentSnapshot() {
         : fitmentNextAction(overview) === "run_standard_check";
     const failedExecution = check?.execution_status === "failed";
     const fieldEvidence = check && !failedExecution ? fitmentResultFieldItems(check).map((item) => ({
+        field: item.field,
+        axle: item.axle,
+        status: item.status,
         name: (item.field ? fitmentFieldLabel(item.field) : item.label || item.code || "Параметр").replace(/^./u, (first) => first.toLocaleUpperCase()),
         label: fitmentResultFieldCopy(item, check),
-        resultLabel: fitmentResultFieldCopy(item, check),
+        resultLabel: item.status === "pass" ? "Подходит" : item.status === "conditional" ? "С условием" : item.status === "fail" ? "Не совпадает" : "Не определено",
         vehicleValue: item.vehicle_value ?? item.vehicle ?? null,
         rimValue: item.rim_value ?? item.rim ?? null,
     })) : [];
