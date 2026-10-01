@@ -3810,6 +3810,7 @@ async def save_fitment_details(
     front_request = request.front_rim or request.rim
     rear_request = request.rear_rim
     rim_updates = front_request.model_dump(exclude_unset=True)
+    rim_updates.pop("confirmed_fields", None)
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
@@ -4072,8 +4073,11 @@ async def save_fitment_details(
                     # canonical evidence and expose the proposed value in
                     # provenance for an explicit keep/use decision.
                     for field_name, _value in list(rim_changed.items()):
-                        if _is_user_confirmed_provenance(
-                            _field_provenance_value(row["rim_field_provenance"], field_name)
+                        if (
+                            field_name not in front_request.confirmed_fields
+                            and _is_user_confirmed_provenance(
+                                _field_provenance_value(row["rim_field_provenance"], field_name)
+                            )
                         ):
                             rim_values[field_name] = row[rim_row_keys[field_name]]
                             rim_changed.pop(field_name)
@@ -4082,6 +4086,9 @@ async def save_fitment_details(
                     {field_name: rim_values[field_name] for field_name in rim_updates},
                     rim_row_keys,
                     row["rim_field_provenance"],
+                )
+                rim_confirmed.update(
+                    {field: rim_values[field] for field in front_request.confirmed_fields}
                 )
             else:
                 rim_values = {}
@@ -4099,6 +4106,8 @@ async def save_fitment_details(
                 rim_provenance = dict(rim_provenance)
                 for field_name, value in front_request.model_dump(exclude_unset=True).items():
                     if field_name not in rim_row_keys or field_name not in rim_values:
+                        continue
+                    if field_name in front_request.confirmed_fields:
                         continue
                     if not _fitment_values_equal(
                         row[rim_row_keys[field_name]], value
@@ -4226,6 +4235,7 @@ async def save_fitment_details(
                     for field, row_key in rear_row_keys.items()
                 }
                 rear_updates = rear_request.model_dump(exclude_unset=True)
+                rear_updates.pop("confirmed_fields", None)
                 rear_updates.pop("source_fingerprint", None)
                 rear_updates.pop("selected_variant_sku", None)
                 rear_updates.pop("variant_state", None)
@@ -4242,6 +4252,9 @@ async def save_fitment_details(
                     {field_name: rear_values[field_name] for field_name in rear_updates},
                     rear_row_keys,
                     rear_provenance,
+                )
+                rear_confirmed.update(
+                    {field: rear_values[field] for field in rear_request.confirmed_fields}
                 )
                 rear_source_fingerprint = rear_request.source_fingerprint
                 rear_variant_state = rear_request.variant_state

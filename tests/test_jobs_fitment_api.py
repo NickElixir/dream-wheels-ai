@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src import jobs_api
@@ -817,6 +818,154 @@ def test_confirmed_vehicle_partial_wheel_requires_rim_specs(monkeypatch):
     assert result["vehicle_state"] == "confirmed_ready"
     assert result["rim_setup_state"] == "partial"
     assert result["next_action"]["kind"] == "complete_rim_specs"
+
+
+@pytest.mark.parametrize("fingerprint", [None, "same-source-123", "new-source-123"])
+def test_explicit_wheel_confirmations_save_new_values_once_without_vehicle_write(
+    monkeypatch, fingerprint
+):
+    row = _fitment_row(
+        rim_center_bore_mm=None,
+        rim_source_fingerprint="same-source-123",
+        rim_field_provenance={
+            field: {"source": "user_confirmed", "is_user_confirmed": True}
+            for field in jobs_api._RIM_CRITICAL_FIELDS
+        },
+    )
+    before_vehicle = {
+        key: deepcopy(value) for key, value in row.items() if key.startswith("vehicle_")
+    }
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            writes.append(query)
+            if "UPDATE vehicle_identities" in query:
+                raise AssertionError("Wheel-only save must not write Vehicle")
+            if "UPDATE rim_specs" in query:
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rim_{field}"] = value
+                row["rim_field_provenance"] = json.loads(args[10])
+                row["rim_revision"] += 1
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {
+        field: float(row[f"rim_{field}"]) if row[f"rim_{field}"] is not None else 66.6
+        for field in jobs_api._RIM_CRITICAL_FIELDS
+    }
+    values["offset_et_mm"] = 35.125
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "rim": {
+                **values,
+                "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS),
+                "source_fingerprint": fingerprint,
+            },
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["rim_setup_state"] == "confirmed_ready"
+    assert result["rim"]["offset_et_mm"] == 35.125
+    assert row["rim_offset_et_mm"] == Decimal("35.125")
+    assert result["vehicle_state"] == "unconfirmed"
+    assert result["next_action"]["kind"] == "complete_vehicle_details"
+    assert {
+        key: value for key, value in row.items() if key.startswith("vehicle_")
+    } == before_vehicle
+    assert sum("UPDATE rim_specs" in query for query in writes) == 1
+
+
+@pytest.mark.parametrize(
+    "rim",
+    [
+        {"confirmed_fields": ["offset_et_mm"]},
+        {"offset_et_mm": None, "confirmed_fields": ["offset_et_mm"]},
+        {"offset_et_mm": 35, "confirmed_fields": ["vehicle.make"]},
+    ],
+)
+def test_wheel_confirmations_require_supported_non_null_values_in_the_same_request(rim):
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={"expected_vehicle_revision": 1, "expected_rim_revision": 1, "rim": rim},
+    )
+    assert response.status_code == 422
+
+
+def test_explicit_rear_confirmation_is_independent_of_front_values(monkeypatch):
+    row = _fitment_row(is_staggered=True, rear_rim_spec_id="dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+    for field in ("brand", "model", "sku", "product_url", *jobs_api._RIM_CRITICAL_FIELDS):
+        row[f"rear_rim_{field}"] = row[f"rim_{field}"]
+    row["rear_rim_field_provenance"] = {}
+    before_front = {key: deepcopy(value) for key, value in row.items() if key.startswith("rim_")}
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            if "UPDATE rim_specs" in query:
+                assert args[-2] == row["rear_rim_spec_id"]
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rear_rim_{field}"] = value
+                row["rear_rim_field_provenance"] = json.loads(args[10])
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {field: float(row[f"rear_rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS}
+    values["offset_et_mm"] = 42.75
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "setup_mode": "staggered",
+            "rear_rim": {**values, "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS)},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["rear_rim"]["rim_setup_state"] == "confirmed_ready"
+    assert row["rear_rim_offset_et_mm"] == Decimal("42.75")
+    assert {key: value for key, value in row.items() if key.startswith("rim_")} == before_front
 
 
 def test_both_confirmed_branches_allow_standard_check(monkeypatch):
