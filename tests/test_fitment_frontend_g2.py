@@ -129,7 +129,8 @@ def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_
     save = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
     assert "fitmentVehicleConfirmationRequired()" in save
     assert (
-        "includeVehicle: state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()" in save
+        "includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
+        in save
     )
     assert "await runFitmentCheck();" not in save
     assert 'fitmentNextAction(overview) === "complete_vehicle_details"' in APP_JS

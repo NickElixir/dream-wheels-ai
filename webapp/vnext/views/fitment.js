@@ -223,7 +223,8 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   root.fitmentCallbacks = callbacks;
   const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url]");
   const focusSelector = focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused ? "[data-fitment-source-url]" : "";
-  const selection = focused && "selectionStart" in focused ? [focused.selectionStart, focused.selectionEnd] : null;
+  const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "url", "tel", "password"].includes(input.type);
+  const selection = supportsSelection(focused) ? [focused.selectionStart, focused.selectionEnd] : null;
   const markup = fitmentMarkup(model);
   const next = document.createElement("section");
   next.className = root.className;
@@ -232,7 +233,7 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   if (focusSelector) {
     const nextFocus = root.querySelector(focusSelector);
     nextFocus?.focus({ preventScroll: true });
-    if (selection && nextFocus?.setSelectionRange) nextFocus.setSelectionRange(...selection);
+    if (selection && supportsSelection(nextFocus)) nextFocus.setSelectionRange(...selection);
   }
   return root;
 }
