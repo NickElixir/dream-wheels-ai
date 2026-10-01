@@ -52,7 +52,11 @@ def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
         "includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
         in save
     )
-    assert "demoServerTransition(transition, fitmentPayload())" in save
+    assert (
+        "demoServerTransition(transition, fitmentPayload({ includeVehicle: savingVehicle, includeWheel: !savingVehicle }))"
+        in save
+    )
+    assert "includeWheel: !savingVehicle" in save
     assert "state.fitmentVehicleDirty = false;" in save
     assert "state.fitmentVehicleDirty = !baselineVehicle" in APP_JS
 

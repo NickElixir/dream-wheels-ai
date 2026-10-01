@@ -922,6 +922,57 @@ test("demo Wheel save keeps Vehicle progression authoritative", () => {
     assert.equal(saved.rim_revision, api.state.fitmentOverview.rim_revision + 1);
 });
 
+test("Vehicle-only Save excludes Wheel fields and retains both axle drafts and acceptance", async () => {
+    let api, saved, requestBody;
+    ({ api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            requestBody = JSON.parse(options.body);
+            return response(200, saved);
+        },
+    } }));
+    const initial = overviewFor(api, "complete_vehicle_details");
+    seed(api, initial, "vehicle");
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentForm.vehicle.model = "Updated model";
+    api.state.fitmentForm.rim.offset_et_mm = "35,125";
+    api.state.fitmentForm.rear_rim.offset_et_mm = "42,75";
+    api.state.fitmentForm.setup_mode = "staggered";
+    api.state.fitmentRimManualFields = ["offset_et_mm"];
+    api.state.fitmentRearPendingFields = ["offset_et_mm"];
+    api.state.fitmentRearDraftInitialized = true;
+    saved = { ...initial, vehicle_revision: initial.vehicle_revision + 1, vehicle: { ...initial.vehicle, model: "Updated model" } };
+    await api.saveFitment();
+    assert.ok(requestBody.vehicle);
+    for (const field of ["rim", "front_rim", "rear_rim", "setup_mode"]) assert.equal(Object.hasOwn(requestBody, field), false, field);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "35,125");
+    assert.equal(api.state.fitmentForm.rear_rim.offset_et_mm, "42,75");
+    assert.equal(api.state.fitmentForm.setup_mode, "staggered");
+    assert.ok(api.state.fitmentRimManualFields.includes("offset_et_mm"));
+    assert.ok(api.state.fitmentRearPendingFields.includes("offset_et_mm"));
+    assert.equal(api.state.fitmentOverview.rim_revision, initial.rim_revision);
+    assert.equal(api.state.fitmentFormState.baseline.rim.offset_et_mm, api.fitmentFormFromOverview(saved).rim.offset_et_mm);
+});
+
+test("Vehicle variant refresh preserves Wheel draft only while its authoritative revisions match", async () => {
+    let api, saved;
+    ({ api } = navigationApi({ routes: {
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants": () => response(200, { outcome: "single" }),
+        "GET /api/backend/jobs/behavior-job/fitment": () => response(200, saved),
+    } }));
+    const initial = overviewFor(api, "select_vehicle_variant");
+    seed(api, initial, "vehicle");
+    api.state.fitmentForm.rim.offset_et_mm = "35,125";
+    api.state.fitmentRimManualFields = ["offset_et_mm"];
+    saved = { ...overviewFor(api, "run_standard_check"), vehicle_revision: initial.vehicle_revision + 1 };
+    await api.loadFitmentVehicleVariants();
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "35,125");
+    assert.ok(api.state.fitmentRimManualFields.includes("offset_et_mm"));
+    saved = { ...saved, rim_revision: saved.rim_revision + 1 };
+    await api.loadFitmentOverview("behavior-job", { preserveWheelDraft: true });
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, api.fitmentFormFromOverview(saved).rim.offset_et_mm);
+    assert.equal(api.state.fitmentRimManualFields.length, 0);
+});
+
 test("resolver compares proposals with confirmed Wheel values without changing canonical data", () => {
     const { api } = navigationApi();
     const overview = overviewFor(api, "complete_vehicle_details");
