@@ -8467,10 +8467,14 @@ async function applyFitmentVehicleVariant(variant) {
     }
 }
 
-async function saveFitment(event, { owner = "", confirmWheelFields = false } = {}) {
+async function saveFitment(event, { owner = "", confirmWheelFields = false, intent = "" } = {}) {
     event?.preventDefault?.();
     if (!state.fitmentJobId || state.fitmentSaving || fitmentMutationsLocked()) return;
-    const savedFromSection = owner || state.fitmentActiveSection;
+    const confirmingVehicle = intent === "confirm_vehicle";
+    if (confirmingVehicle && (!fitmentBaseVehicleAwaitingConfirmation()
+        || !Number.isInteger(state.fitmentOverview?.vehicle_revision) || state.fitmentOverview.vehicle_revision < 1
+        || !Number.isInteger(state.fitmentOverview?.rim_revision) || state.fitmentOverview.rim_revision < 1)) return;
+    const savedFromSection = confirmingVehicle ? "vehicle" : owner || state.fitmentActiveSection;
     if (!["vehicle", "rim"].includes(savedFromSection)) return;
     const runtimeContext = captureFitmentRuntimeContext();
     const isCurrentRequest = () => isCurrentFitmentRuntimeContext(runtimeContext);
@@ -8487,6 +8491,12 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
         renderFitment();
         return;
     }
+    const payload = fitmentPayload({
+        includeVehicle: savingVehicle && (confirmingVehicle || state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()),
+        includeWheel: !savingVehicle,
+        confirmWheelFields,
+    });
+    if (confirmingVehicle && !payload.vehicle) return;
     state.fitmentFormState.validation = "valid";
     // Saving replaces the authoritative vehicle data; invalidate every catalogue
     // response that belongs to the previous form generation before the PATCH.
@@ -8533,11 +8543,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
             {
                 method: "PATCH",
                 headers: withAuthHeaders({ "Content-Type": "application/json" }),
-                body: JSON.stringify(fitmentPayload({
-                    includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()),
-                    includeWheel: !savingVehicle,
-                    confirmWheelFields,
-                })),
+                body: JSON.stringify(payload),
             }
         );
         if (!isCurrentRequest()) return;
@@ -8551,6 +8557,10 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false } = {
         }
         const overview = await response.json();
         if (!isCurrentRequest()) return;
+        if (confirmingVehicle && (!overview.vehicle?.is_user_confirmed
+            || !["confirmed_incomplete", "confirmed_ready"].includes(overview.vehicle_state))) {
+            throw new Error(locale === "ru" ? "Не удалось подтвердить данные автомобиля." : "Vehicle details were not confirmed.");
+        }
         const wheelDraft = savingVehicle ? captureFitmentWheelDraft() : null;
         state.fitmentOverview = overview;
         state.fitmentForm = fitmentFormFromOverview(overview);
@@ -10923,7 +10933,7 @@ function setVnextFitmentField(path, value) {
     renderFitment();
 }
 
-async function saveVnextFitment(owner) {
+async function saveVnextFitment(owner, { intent = "" } = {}) {
     if (!["vehicle", "rim"].includes(owner)) return;
     if (owner === "rim" && !fitmentRimSaveReadiness().ready) {
         state.fitmentError = locale === "ru"
@@ -10932,7 +10942,7 @@ async function saveVnextFitment(owner) {
         renderFitment();
         return;
     }
-    return saveFitment(undefined, { owner, confirmWheelFields: owner === "rim" });
+    return saveFitment(undefined, { owner, confirmWheelFields: owner === "rim", intent });
 }
 
 window.dreamwheelsFitmentBridge = {
@@ -10991,7 +11001,7 @@ window.dreamwheelsFitmentBridge = {
             ensureRequiredFitmentVariantLookup();
         }
         else if (action === "save-vehicle") void saveVnextFitment("vehicle");
-        else if (action === "confirm-vehicle" && fitmentBaseVehicleAwaitingConfirmation()) void saveVnextFitment("vehicle");
+        else if (action === "confirm-vehicle") void saveVnextFitment("vehicle", { intent: "confirm_vehicle" });
         else if (action === "save-rim") void saveVnextFitment("rim");
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);

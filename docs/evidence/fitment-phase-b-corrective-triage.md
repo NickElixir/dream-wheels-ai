@@ -241,3 +241,61 @@ Draft PR targets staging. Exact final HEAD and CI result are reported in the PR
 and delivery response; evidence content is committed with that HEAD. Do not merge,
 deploy, ask Claude to recheck H1 or expand M1/M2/M4 scope until owner freezes the
 remaining scope after independent 390/EN QA completion.
+
+## Final confirm-vehicle mutation ownership correction
+
+### Previous HIGH and root cause
+
+The reviewed `efd136714fb96a008709f731c9079f0e022e8446` exposed a
+section-independent Confirm action, but the save payload still depended on
+`fitmentVehicleConfirmationRequired()` and its active Vehicle section. From Rim
+or Result the action could send revisions without Vehicle and announce success.
+
+### Explicit intent and mutation boundary
+
+The bridge now passes `confirm_vehicle` through `saveVnextFitment` to
+`saveFitment`. That intent owns the Vehicle mutation independently of the active
+section and includes Vehicle plus `expected_vehicle_revision` and
+`expected_rim_revision`, without Rim/front/rear/setup fields. Clean complete saved
+proposal eligibility and positive integer revision guards are checked at the
+mutation boundary. Form validation and current runtime generation guards remain.
+A response without confirmed Vehicle state is rejected before success or variant
+progression. HTTP 409 and server failure retain the existing failure path.
+
+| Active section | Vehicle payload present | Result |
+| --- | --- | --- |
+| vehicle | YES | PASS |
+| rim | YES | PASS |
+| result | YES | PASS |
+
+### Stale / revision guards and Wheel isolation
+
+Edited, incomplete, non-proposed and missing-revision intents produce no PATCH.
+Conflict, server failure and HTTP 200 without confirmation produce no success.
+Wheel canonical data, RimSpec/RimSetup revisions, confirmed fields, SKU/fingerprint
+and local Wheel draft remain unchanged in the ownership regression tests.
+Existing H1-A–G and M1/M2/M4 characterization coverage remains intact.
+
+### Verification
+
+- Transition behavior: 104 PASS, including seven new ownership/failure guards.
+- Cumulative Fitment/catalogue/composition/focus/boot: 125 PASS.
+- Frontend auth/VNext: 194 PASS; production build PASS.
+- Backend: 612 PASS / 5 skipped (14 existing deprecation warnings).
+- Desktop browser 1440×1000: production controller with deterministic local API;
+  base Save → set active Result → Confirm → `confirmed_incomplete` /
+  `select_vehicle_variant`; two exact candidates, no automatic exact selection.
+- Transcript records `active_section: result` on the confirming PATCH, both
+  expected revisions and Vehicle, with no Wheel mutation; browser warn/error
+  logs empty. This is targeted local browser QA, not full staging E2E.
+- Evidence: [sequence](fitment-phase-b-h1/final-confirm-result-sequence.txt) and
+  [screenshot](fitment-phase-b-h1/final-confirm-result.png).
+
+### Exact delivery receipt and scope
+
+The final commit identity cannot be embedded in its own contents. The exact
+published HEAD and CI run for that same HEAD are recorded in the final delivery
+receipt on [Draft PR #247](https://github.com/NickElixir/dream-wheels-ai/pull/247).
+That receipt supersedes earlier HEAD/CI receipts for this focused re-review.
+M1/M2/M4 and LOW runtime fixes: NO. Backend/API/schema/provider changes: NO.
+Merge/deploy: NO. **DO NOT MERGE — ONE FOCUSED INDEPENDENT RE-REVIEW REQUIRED.**

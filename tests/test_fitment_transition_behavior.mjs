@@ -1903,3 +1903,81 @@ test("M2-B triage: manual geometry remains accepted when another SKU lacks geome
     assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"),false);
     assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,"SKU-B");
 });
+
+for (const section of ["vehicle", "rim", "result"]) test(`Final HIGH T1–T4/T7: confirm-vehicle owns Vehicle PATCH from ${section}`, async () => {
+    const payloads = [];
+    const {api} = navigationApi({routes:{
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            const payload = JSON.parse(options.body);
+            payloads.push(payload);
+            assert.deepEqual(payload.vehicle,{make:"LADA",model:"Vesta",year:2020,market:"russia"});
+            return response(200,{...api.state.fitmentOverview,vehicle_revision:3,vehicle_state:"confirmed_incomplete",vehicle:{...api.state.fitmentOverview.vehicle,is_user_confirmed:true},next_action:{kind:"select_vehicle_variant"}});
+        },
+    }});
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:false};
+    overview.rim_setup_state = "confirmed_ready";
+    overview.front_rim = {rim:{...overview.rim},source_revision:3,source_fingerprint:"unchanged-source",selected_variant_sku:"SKU-A",field_states:{offset_et_mm:{value:38,state:"confirmed",is_user_confirmed:true}}};
+    const wheelBefore = JSON.stringify([overview.rim,overview.front_rim,overview.rear_rim,overview.rim_revision,overview.rim_setup_revision]);
+    seed(api,overview,section);
+    seedH1Catalogue(api);
+    api.useRealValidation();
+    api.state.fitmentForm.rim.offset_et_mm = "40,125";
+    api.state.fitmentRimManualFields = ["offset_et_mm"];
+    api.state.fitmentSourceIdentity = {sourceFingerprint:"unchanged-source",selectedVariantSku:"SKU-A",variantState:"selected"};
+    const draftBefore = JSON.stringify([api.state.fitmentForm.rim,api.state.fitmentRimManualFields,api.state.fitmentSourceIdentity]);
+    assert.equal(api.awaitingVehicleConfirmation(),true);
+    api.bridge.action("confirm-vehicle");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(payloads.length,1);
+    for (const key of ["rim","front_rim","rear_rim","rim_setup","setup_mode"]) assert.equal(Object.hasOwn(payloads[0],key),false);
+    assert.equal(payloads[0].expected_vehicle_revision,overview.vehicle_revision);
+    assert.equal(payloads[0].expected_rim_revision,overview.rim_revision);
+    const saved = api.state.fitmentOverview;
+    assert.equal(JSON.stringify([saved.rim,saved.front_rim,saved.rear_rim,saved.rim_revision,saved.rim_setup_revision]),wheelBefore);
+    assert.equal(JSON.stringify([api.state.fitmentForm.rim,api.state.fitmentRimManualFields,api.state.fitmentSourceIdentity]),draftBefore);
+    assert.equal(saved.vehicle_state,"confirmed_incomplete");
+    assert.equal(saved.next_action.kind,"select_vehicle_variant");
+    assert.equal(api.state.fitmentMessageTone,"success");
+    assert.equal(api.state.fitmentSaving,false);
+});
+
+for (const status of [409,503,200]) test(`Final HIGH T6: confirm response ${status}${status===200?" without confirmation":""} cannot report success`, async () => {
+    let count = 0;
+    const {api} = navigationApi({routes:{
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {count+=1;return response(status,status===200?api.state.fitmentOverview:{detail:"failed"});},
+    }});
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:false};
+    seed(api,overview,"result");
+    seedH1Catalogue(api);
+    api.useRealValidation();
+    api.bridge.action("confirm-vehicle");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(count,1);
+    assert.equal(api.state.fitmentOverview.vehicle_state,"unconfirmed");
+    assert.equal(api.state.fitmentMessage,"");
+    assert.notEqual(api.state.fitmentMessageTone,"success");
+    assert.equal(api.state.fitmentFormState.status,"save_failed");
+    assert.equal(api.state.fitmentVehicleVariants.length,0);
+});
+
+test("Final HIGH T5: explicit intent rejects edited, incomplete, non-proposed and revisionless Vehicle", async () => {
+    const {api,calls} = navigationApi();
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia"};
+    for (const invalid of ["edited","incomplete","confirmed","revisionless"]) {
+        seed(api,structuredClone(overview),"result");
+        seedH1Catalogue(api);
+        api.useRealValidation();
+        if (invalid==="edited") api.state.fitmentVehicleDirty=true;
+        if (invalid==="incomplete") api.state.fitmentForm.vehicle.year="";
+        if (invalid==="confirmed") api.state.fitmentOverview.vehicle_state="confirmed_ready";
+        if (invalid==="revisionless") api.state.fitmentOverview.vehicle_revision=null;
+        await api.saveVnextFitment("vehicle",{intent:"confirm_vehicle"});
+    }
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
+});

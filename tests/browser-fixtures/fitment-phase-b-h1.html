@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
 <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
 <style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font)}main{max-width:1120px;margin:auto;padding:24px 16px 80px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;color:var(--vnext-text)}#evidence{color:var(--vnext-text-secondary);white-space:pre-wrap;font-size:12px}</style>
-</head><body><main data-vnext-root><nav><button id="lada">LADA single market</button><button id="lexus">Lexus multi market</button></nav><div id="fitment" data-vnext-fitment-root></div><pre id="evidence"></pre></main>
+</head><body><main data-vnext-root><nav><button id="lada">LADA single market</button><button id="lexus">Lexus multi market</button><button id="result">Set active section: result</button></nav><div id="fitment" data-vnext-fitment-root></div><pre id="evidence"></pre></main>
 <script type="module">
 // Serve from the repository root. Execute the production controller/view with
 // deterministic local API doubles, never a staging session or provider.
@@ -44,7 +44,7 @@ window.fetch = async (url, options = {}) => {
     }
     if (path.endsWith("/fitment") && method === "PATCH") {
         const payload = JSON.parse(options.body);
-        fixtureCalls.push({method,path,payload});
+        fixtureCalls.push({method,path,active_section:state.fitmentActiveSection,payload});
         if (["rim","front_rim","rear_rim","setup_mode"].some(key => Object.hasOwn(payload,key))) throw new Error("Vehicle mutation contains Wheel data");
         const same = payload.vehicle.year === fixtureOverview.vehicle.year && payload.vehicle.market === fixtureOverview.vehicle.market
             && [config.make,config.makeLabel].includes(payload.vehicle.make) && [config.model,config.modelLabel].includes(payload.vehicle.model);
@@ -68,7 +68,7 @@ renderFitment = () => {
     } else refreshFitmentView(fixtureRoot,model);
     const canonical = state.fitmentOverview;
     const wheel = JSON.stringify([canonical.rim,canonical.front_rim,canonical.rear_rim,canonical.rim_revision,canonical.rim_setup_revision]);
-    document.querySelector('#evidence').textContent = JSON.stringify({vehicle_state:canonical.vehicle_state,next_action:canonical.next_action.kind,vehicle_revision:canonical.vehicle_revision,market:canonical.vehicle.market,wheel_unchanged:wheel===fixtureWheelBaseline,calls:fixtureCalls},null,2);
+    document.querySelector('#evidence').textContent = JSON.stringify({active_section:state.fitmentActiveSection,vehicle_state:canonical.vehicle_state,next_action:canonical.next_action.kind,vehicle_revision:canonical.vehicle_revision,market:canonical.vehicle.market,wheel_unchanged:wheel===fixtureWheelBaseline,calls:fixtureCalls},null,2);
 };
 function fixtureStart(scenario) {
     clearFitmentRuntimeRequests();
@@ -111,6 +111,7 @@ function fixtureStart(scenario) {
 }
 document.querySelector('#lada').onclick = () => fixtureStart("lada");
 document.querySelector('#lexus').onclick = () => fixtureStart("lexus");
+document.querySelector('#result').onclick = () => setFitmentActiveSection("result");
 fixtureStart("lada");
 `;
 const moduleUrl = URL.createObjectURL(new Blob([source, harness], {type:'text/javascript'}));
