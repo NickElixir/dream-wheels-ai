@@ -239,7 +239,7 @@ function vehicleEditor(model, vehicle) {
       }) : "";
   const marketNotice = vehicle.year && ["failed", "no_data"].includes(marketState.status)
     ? `<p class="vnext-fitment__notice${marketState.status === "failed" ? " vnext-fitment__notice--error" : ""}" role="${marketState.status === "failed" ? "alert" : "status"}">${esc(marketState.message)}</p>${marketState.status === "failed" ? button("Повторить", "retry-catalogue", { value: "markets" }) : ""}` : "";
-  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button("Сохранить автомобиль", "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
+  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
 }
 
 function vehicleRecognition(model) {
@@ -555,6 +555,7 @@ const fitmentEnglishCopy = {
   "Бренд": "Brand",
   "Артикул": "SKU",
   "Сохранить автомобиль": "Save vehicle",
+  "Подтвердить данные": "Confirm details",
   "Версия для рынка": "Market version",
   "Автомобиль и колесный диск": "Vehicle and wheel",
   "Источники и состояние данных": "Sources and data status",

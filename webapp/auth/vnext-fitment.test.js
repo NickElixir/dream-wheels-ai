@@ -84,6 +84,8 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
 
 test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
   const app = read("app.js");
+  const vehicleHelpers = app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired("))
+    + app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueQueryValue("));
   const snapshot = app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField("));
   const setter = app.slice(app.indexOf("function setVnextFitmentField("), app.indexOf("window.dreamwheelsFitmentBridge ="));
   const saved = { make: "Zeekr", model: "001", year: "2023", body: "saved body" };
@@ -112,7 +114,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     fitmentFieldLabel: path => path,
     fitmentSectionForAction: () => "vehicle",
     fitmentCatalogueItems: kind => kind === "makes" ? [{ value: "zeekr", label: "Zeekr" }] : [],
-    fitmentOptionValue: item => item.value,
+    fitmentOptionValue: item => item?.value || "", fitmentOptionLabel: item => item?.label || "",
     fitmentCatalogueOptionLabel: item => item.label,
     fitmentPreviewAsset: () => "",
     demoRimTitle: () => "",
@@ -134,7 +136,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   };
   vm.createContext(context);
   const wheelHelpers = app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited("));
-  vm.runInContext(`${wheelHelpers}\n${snapshot}\n${setter}`, context);
+  vm.runInContext(`${vehicleHelpers}\n${wheelHelpers}\n${snapshot}\n${setter}`, context);
   context.setVnextFitmentField("vehicle.make", "zeekr");
   context.setVnextFitmentField("vehicle.body", "edited body");
   context.setVnextFitmentField("vehicle.modification", "AWD");
@@ -155,7 +157,9 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   state.fitmentForm.vehicle.body = "";
   assert.doesNotMatch(fitmentMarkup(context.vnextFitmentSnapshot()), /data-fitment-field="vehicle.body"/);
   state.fitmentForm.vehicle = null;
-  assert.equal(context.vnextFitmentSnapshot().vehicleForm, saved);
+  assert.equal(context.vnextFitmentSnapshot().vehicleForm.make, "zeekr");
+  assert.equal(context.vnextFitmentSnapshot().vehicleForm.model, saved.model);
+  assert.equal(state.fitmentOverview.vehicle, saved);
 });
 
 test("Wheel decimal controls preserve comma input until exact numeric serialization", () => {
@@ -515,6 +519,8 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
 test("runtime Fitment initialization follows next_action and never opens both object editors", async () => {
   const app = read("app.js");
   const source = [
+    app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired(")),
+    app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueQueryValue(")),
     app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited(")),
     app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
     app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),
@@ -562,7 +568,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentPresentationText: (value) => String(value ?? ""),
     fitmentCatalogueFieldState: (kind, value) => ({ state: value ? "selected" : "loaded_unselected", message: "" }),
     fitmentFieldLabel: (path) => path,
-    fitmentCatalogueItems: () => [], fitmentOptionValue: (value) => value.value,
+    fitmentCatalogueItems: () => [], fitmentOptionValue: (value) => value?.value || "", fitmentOptionLabel: value => value?.label || "",
     fitmentCatalogueOptionLabel: (value) => value.label, fitmentPreviewAsset: () => "",
     demoRimTitle: () => "", fitmentRimTechnicalSummary: () => "", fitmentRimProvenance: () => "",
     fitmentEffectiveRim: (value) => value.rim || {}, fitmentNextAction: (value) => value?.next_action?.kind,

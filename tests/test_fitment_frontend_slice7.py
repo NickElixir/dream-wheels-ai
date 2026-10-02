@@ -49,7 +49,7 @@ def test_rim_save_has_an_isolated_vehicle_mutation_boundary() -> None:
     assert "function markVehicleFieldEdited(path)" in APP_JS
     assert "if (includeVehicle)" in payload
     assert (
-        "includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
+        "includeVehicle: savingVehicle && (confirmingVehicle || state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
         in save
     )
     assert (

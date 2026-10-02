@@ -127,9 +127,14 @@ def test_missing_vehicle_fields_have_exact_field_level_recovery_copy() -> None:
 
 def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_check() -> None:
     save = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
+    assert 'const confirmingVehicle = intent === "confirm_vehicle";' in save
+    assert "!fitmentBaseVehicleAwaitingConfirmation()" in save
+    assert "if (confirmingVehicle && !payload.vehicle) return;" in save
+    assert "body: JSON.stringify(payload)" in save
+    assert 'saveVnextFitment("vehicle", { intent: "confirm_vehicle" })' in APP_JS
     assert "fitmentVehicleConfirmationRequired()" in save
     assert (
-        "includeVehicle: savingVehicle && (state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
+        "includeVehicle: savingVehicle && (confirmingVehicle || state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
         in save
     )
     assert "await runFitmentCheck();" not in save
@@ -212,7 +217,10 @@ def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> No
         in variant_flow
     )
     save_flow = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
-    assert "const savedFromSection = owner || state.fitmentActiveSection;" in save_flow
+    assert (
+        'const savedFromSection = confirmingVehicle ? "vehicle" : owner || state.fitmentActiveSection;'
+        in save_flow
+    )
     assert "state.fitmentActiveSection = savedFromSection;" in save_flow
 
 

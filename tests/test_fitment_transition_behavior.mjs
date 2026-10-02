@@ -183,6 +183,8 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         fitmentFormIsDirty = () => false;
         globalThis.__navigationApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
+            fitmentCatalogueSelectionItem,
+            awaitingVehicleConfirmation: () => Boolean(vnextFitmentSnapshot().vehicleAwaitingConfirmation),
             useRealValidation() { validateFitmentForm = globalThis.__realValidateFitmentForm; },
             fitmentEffectiveRim, fitmentRimSpecs, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
             deriveVehicleWorkspaceMode, fitmentVehicleWorkspaceMode,
@@ -1714,4 +1716,268 @@ test("demo fixture market identifiers use the provider slug without a duplicate 
     assert.equal(demo.vehicle.market,"chdm");
     const demoVariants=APP_SOURCE.slice(APP_SOURCE.indexOf("const DEMO_VEHICLE_VARIANTS"),APP_SOURCE.indexOf("const DEMO_VEHICLE_CATALOGUE"));
     assert.doesNotMatch(demoVariants,/market: "CN"/);
+});
+
+
+function seedH1Catalogue(api, { make = "lada", model = "vesta", market = "russia", multi = false } = {}) {
+    api.state.fitmentCatalogue = {
+        makes: { status: "loaded", items: [{ value: make, label: make === "lada" ? "LADA" : "Lexus" }] },
+        models: { status: "loaded", items: [{ value: model, label: model === "vesta" ? "Vesta" : "RX" }] },
+        years: { status: "loaded", items: [2020, 2021].map(year => ({ value: String(year), label: String(year) })) },
+    };
+    api.state.fitmentMarketResolution = {
+        status: multi ? "selected" : "resolved_single", resolution: multi ? "selection_required" : "single",
+        resolved_market: multi ? null : { value: market, label: "Russia+" },
+        items: multi ? [{ value: "eudm", label: "Europe" }, { value: "usdm", label: "USA" }] : [],
+    };
+}
+
+function h1Markup(api) {
+    return fitmentMarkup(api.snapshot());
+}
+
+function assertH1Selection(api, make, model, year, market) {
+    const snapshot = api.snapshot();
+    assert.deepEqual([snapshot.vehicleForm.make, snapshot.vehicleForm.model, String(snapshot.vehicleForm.year), snapshot.vehicleForm.market], [make, model, year, market]);
+    const markup = h1Markup(api);
+    for (const value of [make, model, year]) assert.match(markup, new RegExp(`<option value="${value}" selected`));
+}
+
+test("H1-A canonical catalogue labels map to stable selectors without changing canonical data", () => {
+    const { api } = navigationApi();
+    const overview = overviewFor(api, "complete_vehicle_details");
+    overview.vehicle = { make: "LADA", model: "Vesta", year: 2020, market: "russia" };
+    overview.vehicle_state = "unconfirmed";
+    seed(api, overview);
+    api.state.fitmentVehicleEditing = true;
+    seedH1Catalogue(api);
+    assertH1Selection(api, "lada", "vesta", "2020", "russia");
+    assert.equal(api.state.fitmentForm.vehicle.make, "LADA");
+    assert.equal(api.state.fitmentOverview.vehicle.make, "LADA");
+    const options = [{ value: "other", label: "lada" }, { value: "lada", label: "LADA" }];
+    assert.equal(api.fitmentCatalogueSelectionItem("makes", "lada", options).value, "lada");
+    assert.equal(api.fitmentCatalogueSelectionItem("makes", "ambiguous", [{ value: "a", label: "ambiguous" }, { value: "b", label: "ambiguous" }]), null);
+});
+
+for (const scenario of [
+    { name: "H1-B/C/D/G single market", make: "lada", model: "vesta", labelMake: "LADA", labelModel: "Vesta", market: "russia", multi: false },
+    { name: "H1-B/C/E/G multi market", make: "lexus", model: "rx", labelMake: "Lexus", labelModel: "RX", market: "usdm", multi: true },
+]) test(`${scenario.name}: Save then explicit Confirm keeps selection and completed Wheel intact`, async () => {
+    const mutations = [];
+    let overview;
+    const { api, calls } = navigationApi({ vnext: true, routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            const payload = JSON.parse(options.body);
+            mutations.push(payload);
+            overview = structuredClone(overview);
+            overview.vehicle = { ...overview.vehicle, make: scenario.labelMake, model: scenario.labelModel, year: 2020, market: scenario.market, is_user_confirmed: mutations.length === 2 };
+            overview.vehicle_revision += 1;
+            overview.vehicle_state = mutations.length === 1 ? "unconfirmed" : "confirmed_incomplete";
+            overview.next_action = { kind: mutations.length === 1 ? "complete_vehicle_details" : "select_vehicle_variant" };
+            return response(200, overview);
+        },
+        "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants": (_options, url) => {
+            assert.match(url, /require_confirmation=true/);
+            return response(200, { outcome: "multiple", vehicle_revision: overview.vehicle_revision, variants: [variant("Version A"), variant("Version B")] });
+        },
+    } });
+    overview = overviewFor(api, "complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = { make: "", model: "", year: null, market: "", is_user_confirmed: false };
+    overview.rim_setup_state = "confirmed_ready";
+    overview.front_rim = { rim: { ...overview.rim }, revision: 7, source_revision: 3, source_fingerprint: "completed-wheel", selected_variant_sku: "SKU-38", variant_state: "selected", field_states: { offset_et_mm: { value: 38, state: "confirmed", is_user_confirmed: true, source: "user_confirmed" } } };
+    overview.rim_revision = 7;
+    overview.rim_setup_revision = 4;
+    const wheelBefore = JSON.stringify([overview.rim, overview.front_rim, overview.rear_rim, overview.rim_revision, overview.rim_setup_revision, overview.rim_provenance]);
+    seed(api, overview);
+    seedH1Catalogue(api, scenario);
+    api.useRealValidation();
+    api.state.fitmentForm.vehicle = { ...api.state.fitmentForm.vehicle, make: scenario.make, model: scenario.model, year: "2020", market: scenario.market };
+    api.state.fitmentVehicleDirty = true;
+    api.state.fitmentVehicleEditing = true;
+    assert.match(h1Markup(api), /data-fitment-action="save-vehicle"[^>]*>Сохранить автомобиль/);
+    await api.saveVnextFitment("vehicle");
+    assert.equal(mutations.length, 1);
+    assert.equal(api.state.fitmentOverview.vehicle_state, "unconfirmed");
+    assertH1Selection(api, scenario.make, scenario.model, "2020", scenario.market);
+    assert.match(h1Markup(api), /data-fitment-action="confirm-vehicle"[^>]*>Подтвердить данные/);
+    assert.equal(h1Markup(api).includes('data-fitment-field="vehicle.market"'), scenario.multi);
+    assert.equal(calls.some(call => call.includes("vehicle-variants")), false);
+    api.useRealVariantLookup();
+    await api.saveVnextFitment("vehicle");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(mutations.length, 2);
+    assert.deepEqual(mutations[1].vehicle, { make: scenario.labelMake, model: scenario.labelModel, year: 2020, market: scenario.market });
+    assert.equal(mutations[1].expected_vehicle_revision, mutations[0].expected_vehicle_revision + 1);
+    assert.equal(api.state.fitmentOverview.vehicle_state, "confirmed_incomplete");
+    assert.equal(api.state.fitmentOverview.next_action.kind, "select_vehicle_variant");
+    assert.equal(api.state.fitmentVehicleVariants.length, 2);
+    assert.equal(api.state.fitmentOverview.modification_state === "confirmed", false);
+    assert.match(h1Markup(api), /Подтвердить комплектацию/);
+    for (const payload of mutations) {
+        assert.equal(Object.hasOwn(payload, "rim"), false);
+        assert.equal(Object.hasOwn(payload, "front_rim"), false);
+        assert.equal(Object.hasOwn(payload, "rear_rim"), false);
+        assert.equal(Object.hasOwn(payload, "setup_mode"), false);
+    }
+    const saved = api.state.fitmentOverview;
+    assert.equal(JSON.stringify([saved.rim, saved.front_rim, saved.rear_rim, saved.rim_revision, saved.rim_setup_revision, saved.rim_provenance]), wheelBefore);
+});
+
+test("H1-F edit after Save returns to Save and rejects an obsolete Confirm action", async () => {
+    let mutations = 0;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            mutations += 1;
+            const payload = JSON.parse(options.body);
+            assert.equal(payload.vehicle.year, 2021);
+            return response(200, { ...api.state.fitmentOverview, vehicle_revision: 3, vehicle: { make: "LADA", model: "Vesta", year: 2021, market: "russia" } });
+        },
+    } });
+    const overview = overviewFor(api, "complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = { make: "LADA", model: "Vesta", year: 2020, market: "russia" };
+    seed(api, overview);
+    seedH1Catalogue(api);
+    api.state.fitmentVehicleEditing = true;
+    assert.equal(api.awaitingVehicleConfirmation(), true);
+    api.setVnextFitmentField("vehicle.year", "2021");
+    assert.equal(api.awaitingVehicleConfirmation(), false);
+    assert.match(h1Markup(api), /data-fitment-action="save-vehicle"[^>]*>Сохранить автомобиль/);
+    api.bridge.action("confirm-vehicle");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(mutations, 0);
+    seedH1Catalogue(api);
+    api.useRealValidation();
+    await api.saveVnextFitment("vehicle");
+    assert.equal(mutations, 1);
+    assert.equal(api.state.fitmentOverview.vehicle.year, 2021);
+    assert.equal(api.awaitingVehicleConfirmation(), true);
+    assert.match(h1Markup(api), /data-fitment-action="confirm-vehicle"[^>]*>Подтвердить данные/);
+});
+
+
+test("M1 triage: unchanged saved Wheel source is automatically resolved again on each reopen", async () => {
+    let overview;
+    const {api,calls} = navigationApi({routes:{
+        "GET /api/backend/jobs/behavior-job/fitment": () => response(200,overview),
+        "POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve": response(200,{final_url:"https://shop.example.test/wheel",source_fingerprint:"same-source",selected_variant_sku:"same-sku",values:{offset_et_mm:35.5}}),
+    }});
+    overview = overviewFor(api,"run_standard_check",{confirmedVariant:true});
+    overview.rim.product_url = "https://shop.example.test/wheel";
+    overview.rim.offset_et_mm = 38;
+    overview.front_rim = {rim:overview.rim,source_fingerprint:"same-source",selected_variant_sku:"same-sku",source_revision:3,field_states:{offset_et_mm:{value:38,state:"confirmed",is_user_confirmed:true}}};
+    seed(api,overview);
+    for (let entry=0;entry<2;entry++) {
+        api.openFitmentView("behavior-job",{originView:"render-detail"});
+        await new Promise(resolve=>setImmediate(resolve));
+    }
+    assert.equal(calls.filter(call=>call.endsWith("rim-source/resolve")).length,2);
+    assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm,38);
+    assert.equal(api.state.fitmentSourceConflicts.some(conflict=>conflict.field==="offset_et_mm"),true);
+    assert.equal(api.snapshot().canRunCheck,true);
+});
+
+test("M2-A triage: manually completing absent geometry drops selected commercial SKU identity", () => {
+    const {api} = navigationApi();
+    seed(api,overviewFor(api,"complete_vehicle_details"),"rim");
+    api.state.fitmentSourceIdentity = {sourceFingerprint:"product",selectedVariantSku:null,sourceUrl:"https://shop.example.test/wheel",variantState:"selection_required"};
+    api.state.fitmentSourceVariants = [{sku:"SKU-A",values:{brand:"KONIG"}}];
+    api.selectFitmentRimVariant(0);
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,"SKU-A");
+    api.setVnextFitmentField("rim.offset_et_mm","38");
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,null);
+    assert.equal(api.state.fitmentSourceIdentity.sourceFingerprint,null);
+    assert.equal(api.state.fitmentRimManualFields.includes("offset_et_mm"),true);
+});
+
+test("M2-B triage: manual geometry remains accepted when another SKU lacks geometry", () => {
+    const {api} = navigationApi();
+    seed(api,overviewFor(api,"complete_vehicle_details"),"rim");
+    api.setVnextFitmentField("rim.offset_et_mm","38");
+    api.state.fitmentSourceVariants = [{sku:"SKU-B",values:{brand:"KONIG"}}];
+    api.state.fitmentSourceChooserIdentity = {sourceFingerprint:"product",sourceUrl:"https://shop.example.test/wheel"};
+    api.selectFitmentRimVariant(0);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm,"38");
+    assert.equal(api.state.fitmentRimManualFields.includes("offset_et_mm"),true);
+    assert.equal(api.fitmentRimPendingProposalFields().includes("offset_et_mm"),false);
+    assert.equal(api.state.fitmentSourceIdentity.selectedVariantSku,"SKU-B");
+});
+
+for (const section of ["vehicle", "rim", "result"]) test(`Final HIGH T1–T4/T7: confirm-vehicle owns Vehicle PATCH from ${section}`, async () => {
+    const payloads = [];
+    const {api} = navigationApi({routes:{
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            const payload = JSON.parse(options.body);
+            payloads.push(payload);
+            assert.deepEqual(payload.vehicle,{make:"LADA",model:"Vesta",year:2020,market:"russia"});
+            return response(200,{...api.state.fitmentOverview,vehicle_revision:3,vehicle_state:"confirmed_incomplete",vehicle:{...api.state.fitmentOverview.vehicle,is_user_confirmed:true},next_action:{kind:"select_vehicle_variant"}});
+        },
+    }});
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:false};
+    overview.rim_setup_state = "confirmed_ready";
+    overview.front_rim = {rim:{...overview.rim},source_revision:3,source_fingerprint:"unchanged-source",selected_variant_sku:"SKU-A",field_states:{offset_et_mm:{value:38,state:"confirmed",is_user_confirmed:true}}};
+    const wheelBefore = JSON.stringify([overview.rim,overview.front_rim,overview.rear_rim,overview.rim_revision,overview.rim_setup_revision]);
+    seed(api,overview,section);
+    seedH1Catalogue(api);
+    api.useRealValidation();
+    api.state.fitmentForm.rim.offset_et_mm = "40,125";
+    api.state.fitmentRimManualFields = ["offset_et_mm"];
+    api.state.fitmentSourceIdentity = {sourceFingerprint:"unchanged-source",selectedVariantSku:"SKU-A",variantState:"selected"};
+    const draftBefore = JSON.stringify([api.state.fitmentForm.rim,api.state.fitmentRimManualFields,api.state.fitmentSourceIdentity]);
+    assert.equal(api.awaitingVehicleConfirmation(),true);
+    api.bridge.action("confirm-vehicle");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(payloads.length,1);
+    for (const key of ["rim","front_rim","rear_rim","rim_setup","setup_mode"]) assert.equal(Object.hasOwn(payloads[0],key),false);
+    assert.equal(payloads[0].expected_vehicle_revision,overview.vehicle_revision);
+    assert.equal(payloads[0].expected_rim_revision,overview.rim_revision);
+    const saved = api.state.fitmentOverview;
+    assert.equal(JSON.stringify([saved.rim,saved.front_rim,saved.rear_rim,saved.rim_revision,saved.rim_setup_revision]),wheelBefore);
+    assert.equal(JSON.stringify([api.state.fitmentForm.rim,api.state.fitmentRimManualFields,api.state.fitmentSourceIdentity]),draftBefore);
+    assert.equal(saved.vehicle_state,"confirmed_incomplete");
+    assert.equal(saved.next_action.kind,"select_vehicle_variant");
+    assert.equal(api.state.fitmentMessageTone,"success");
+    assert.equal(api.state.fitmentSaving,false);
+});
+
+for (const status of [409,503,200]) test(`Final HIGH T6: confirm response ${status}${status===200?" without confirmation":""} cannot report success`, async () => {
+    let count = 0;
+    const {api} = navigationApi({routes:{
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {count+=1;return response(status,status===200?api.state.fitmentOverview:{detail:"failed"});},
+    }});
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:false};
+    seed(api,overview,"result");
+    seedH1Catalogue(api);
+    api.useRealValidation();
+    api.bridge.action("confirm-vehicle");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(count,1);
+    assert.equal(api.state.fitmentOverview.vehicle_state,"unconfirmed");
+    assert.equal(api.state.fitmentMessage,"");
+    assert.notEqual(api.state.fitmentMessageTone,"success");
+    assert.equal(api.state.fitmentFormState.status,"save_failed");
+    assert.equal(api.state.fitmentVehicleVariants.length,0);
+});
+
+test("Final HIGH T5: explicit intent rejects edited, incomplete, non-proposed and revisionless Vehicle", async () => {
+    const {api,calls} = navigationApi();
+    const overview = overviewFor(api,"complete_vehicle_details");
+    overview.vehicle_state = "unconfirmed";
+    overview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia"};
+    for (const invalid of ["edited","incomplete","confirmed","revisionless"]) {
+        seed(api,structuredClone(overview),"result");
+        seedH1Catalogue(api);
+        api.useRealValidation();
+        if (invalid==="edited") api.state.fitmentVehicleDirty=true;
+        if (invalid==="incomplete") api.state.fitmentForm.vehicle.year="";
+        if (invalid==="confirmed") api.state.fitmentOverview.vehicle_state="confirmed_ready";
+        if (invalid==="revisionless") api.state.fitmentOverview.vehicle_revision=null;
+        await api.saveVnextFitment("vehicle",{intent:"confirm_vehicle"});
+    }
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
 });
