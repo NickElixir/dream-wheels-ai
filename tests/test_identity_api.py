@@ -2,6 +2,7 @@ import asyncio
 import json
 from io import BytesIO
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -66,8 +67,15 @@ def test_identity_resolve_requires_both_images():
     assert response.status_code == 422
 
 
-def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatch):
+@pytest.mark.parametrize("display_failure", [False, True])
+def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatch, display_failure):
     calls: list[tuple[str, object]] = []
+    if display_failure:
+
+        def fail_display(_data):
+            raise OSError("Optional derivative unavailable")
+
+        monkeypatch.setattr(assets_service, "create_car_display", fail_display)
 
     class FakeConn:
         async def fetchval(self, query: str, *args):
@@ -140,6 +148,7 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
     assert "https://shop.example.test/wheel-18" in proposal_update[2][0]
     assert not any(call[0] == "reserve_job_credit" for call in calls)
     assert not any(call[0] == "queue" for call in calls)
+    assert any(call[0] == "insert_asset:car_display" for call in calls) == (not display_failure)
 
 
 def test_rim_proposal_allows_a_source_url_without_technical_values() -> None:
@@ -476,3 +485,9 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
         and "identity_proposal" in call[1]
     )
     assert "https://shop.example.test/selected-wheel-20" in consumed_draft_update[2][0]
+
+    display_promotions = [
+        call for call in calls if call[0] == "execute" and "kind = 'car_display'" in call[1]
+    ]
+    assert len(display_promotions) == 1
+    assert display_promotions[0][2][1:] == ("11111111-1111-4111-8111-111111111111", 77)

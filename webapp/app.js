@@ -1486,6 +1486,9 @@ const state = {
     renderHistoryPollTimer: null,
     renderAssetViewByJob: {},
     renderAssetErrorsByJob: {},
+    renderAssetSignedUrlsByJob: {},
+    renderAssetSignedLoadingByJob: {},
+    renderAssetSignedRetryByJob: {},
     renderAssetBlobUrlsByJob: {},
     renderAssetBlobLoadingByJob: {},
     feedbackByJob: {},
@@ -2905,6 +2908,8 @@ function clearApplicationSessionState() {
     state.walletCabinetLoaded = false;
     state.starterGrant = null;
     state.renderHistory = [];
+    state.renderAssetSignedUrlsByJob = {};
+    state.renderAssetSignedRetryByJob = {};
     state.renderHistoryError = "";
     state.renderHistoryLoading = false;
     state.accountState = null;
@@ -9136,7 +9141,7 @@ function canUseIdentityAssetUrls() {
 function hasAssetSource(job, kind) {
     if (!job) return false;
     if (isGuestRenderJob(job)) return Boolean(guestRenderAssetUrl(job, kind));
-    if (kind === "original") return Boolean(job?.assets?.car_original);
+    if (kind === "original") return Boolean(originalDisplayKind(job));
     if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
     return false;
 }
@@ -9183,7 +9188,7 @@ function assetBlobUrlForJob(job, kind) {
 }
 
 function isAssetBlobLoading(job, kind) {
-    return Boolean(state.renderAssetBlobLoadingByJob[job?.job_id]?.[kind]);
+    return kind === "original" ? Boolean(state.renderAssetSignedLoadingByJob[job?.job_id]) : Boolean(state.renderAssetBlobLoadingByJob[job?.job_id]?.[kind]);
 }
 
 function markAssetBlobLoading(jobId, kind, value) {
@@ -9193,8 +9198,77 @@ function markAssetBlobLoading(jobId, kind, value) {
     };
 }
 
+const ORIGINAL_SIGNED_URL_REFRESH_MARGIN_MS = 60_000;
+
+function originalDisplayKind(job) {
+    return job?.assets?.car_display ? "car_display" : job?.assets?.car_original ? "car_original" : "";
+}
+
+function originalDisplayAuthIdentity() {
+    return JSON.stringify([applicationDataGeneration, getWebsiteAuthToken(), getIdentityPayload()]);
+}
+
+function originalSignedUrlForJob(job) {
+    const entry = state.renderAssetSignedUrlsByJob[job?.job_id];
+    return hasFrontendAuth() && entry?.authIdentity === originalDisplayAuthIdentity()
+        && entry.kind === originalDisplayKind(job)
+        && Date.now() < entry.expiresAt - ORIGINAL_SIGNED_URL_REFRESH_MARGIN_MS ? entry.url : "";
+}
+
+async function ensureOriginalDisplayUrl(job, { force = false } = {}) {
+    if (!job?.job_id || isGuestRenderJob(job) || !hasFrontendAuth() || isSupabasePartialAuth()) return "";
+    const kind = originalDisplayKind(job);
+    if (!kind) return "";
+    const cached = originalSignedUrlForJob(job);
+    if (!force && cached) return cached;
+    if (state.renderAssetSignedLoadingByJob[job.job_id]) return "";
+    const authIdentity = originalDisplayAuthIdentity();
+    state.renderAssetSignedLoadingByJob[job.job_id] = true;
+    try {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${encodeURIComponent(job.job_id)}/assets/${kind}/signed-url`, { includeIdentity: !hasBearerFrontendAuth() }), { headers: withAuthHeaders() });
+        if (!response.ok) throw new Error("Asset signing unavailable");
+        const metadata = await response.json();
+        if (!hasFrontendAuth() || originalDisplayAuthIdentity() !== authIdentity) return "";
+        const expiresAt = Date.parse(metadata.expires_at);
+        const url = new URL(metadata.url);
+        if (metadata.kind !== kind || url.protocol !== "https:" || !Number.isFinite(expiresAt)
+            || expiresAt <= Date.now() + ORIGINAL_SIGNED_URL_REFRESH_MARGIN_MS) throw new Error("Invalid asset signing metadata");
+        state.renderAssetSignedUrlsByJob[job.job_id] = { url: metadata.url, kind, expiresAt, authIdentity };
+        state.renderAssetErrorsByJob[job.job_id] = { ...(state.renderAssetErrorsByJob[job.job_id] || {}), car_original: false };
+    } catch {
+        if (hasFrontendAuth() && originalDisplayAuthIdentity() === authIdentity) {
+            state.renderAssetErrorsByJob[job.job_id] = { ...(state.renderAssetErrorsByJob[job.job_id] || {}), car_original: true };
+        }
+        // Signed URLs are temporary credentials: never log a URL or an exception containing one.
+    } finally {
+        delete state.renderAssetSignedLoadingByJob[job.job_id];
+        notifyRenderBridge();
+        renderRenders();
+        renderDashboard();
+        if (state.view === "render-detail") renderRenderDetail();
+    }
+    return originalSignedUrlForJob(job);
+}
+
+function handleOriginalDisplayError(jobId) {
+    const job = state.renderHistory.find((item) => item.job_id === jobId);
+    if (!job || isGuestRenderJob(job)) return false;
+    if (state.renderAssetSignedLoadingByJob[jobId]) return true;
+    if (!state.renderAssetSignedUrlsByJob[jobId]) return false;
+    if (state.renderAssetSignedRetryByJob[jobId]) {
+        setAssetLoadError(jobId, "car_original", true);
+        return true;
+    }
+    state.renderAssetSignedRetryByJob[jobId] = true;
+    delete state.renderAssetSignedUrlsByJob[jobId];
+    void ensureOriginalDisplayUrl(job, { force: true });
+    notifyRenderBridge();
+    return true;
+}
+
 async function ensureAssetBlobUrl(job, kind) {
-    if (!job?.job_id || !["original", "result"].includes(kind)) return "";
+    if (kind === "original") return ensureOriginalDisplayUrl(job);
+    if (!job?.job_id || kind !== "result") return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
     if (!hasFrontendAuth()) return "";
@@ -9250,7 +9324,7 @@ function assetUrlForJob(job, kind) {
     const guestUrl = guestRenderAssetUrl(job, kind);
     if (guestUrl) return guestUrl;
     if (kind === "original") {
-        return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.car_original);
+        return originalSignedUrlForJob(job);
     }
     return assetBlobUrlForJob(job, kind) || resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
 }
@@ -11175,7 +11249,10 @@ function prepareVnextRenderAssets() {
 window.dreamwheelsRenderBridge = {
     snapshot: vnextRenderSnapshot,
     prepareAssets: prepareVnextRenderAssets,
-    assetError(jobId, kind) { setAssetLoadError(jobId, assetErrorKey(kind), true); },
+    assetError(jobId, kind) {
+        if (kind === "original" && handleOriginalDisplayError(jobId)) return;
+        setAssetLoadError(jobId, assetErrorKey(kind), true);
+    },
     action(action, jobId, value) {
         if (action === "history") setView("renders");
         else if (action === "history-retry") void loadRenderHistory();
@@ -11195,6 +11272,11 @@ window.dreamwheelsRenderBridge = {
             const job = state.renderHistory.find((item) => item.job_id === jobId);
             for (const kind of ["original", "result"]) {
                 if (!job || !hasAssetLoadError(job, kind) || !assetDownloadUrlForJob(job, kind)) continue;
+                if (kind === "original") {
+                    delete state.renderAssetSignedUrlsByJob[jobId];
+                    void ensureOriginalDisplayUrl(job, { force: true });
+                    continue;
+                }
                 const previous = assetBlobUrlForJob(job, kind);
                 if (previous) URL.revokeObjectURL(previous);
                 if (state.renderAssetBlobUrlsByJob[jobId]) delete state.renderAssetBlobUrlsByJob[jobId][kind];
@@ -12828,6 +12910,7 @@ function bindEvents() {
     document.addEventListener("error", (event) => {
         const image = event.target;
         if (!(image instanceof HTMLImageElement) || !image.matches("[data-asset-image]")) return;
+        if (image.dataset.assetKind === "car_original" && handleOriginalDisplayError(image.dataset.jobId)) return;
         setAssetLoadError(image.dataset.jobId, image.dataset.assetKind, true);
     }, true);
 
