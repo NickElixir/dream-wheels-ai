@@ -71,3 +71,25 @@ test("resolving one PCD conflict focuses the same compound opener while its othe
   context.refresh(root,{rimEditing:true});
   assert.equal(focused,true);
 });
+
+test("workspace transitions focus the heading and confirmation returns to summary", () => {
+  const seen=[];
+  const target={focus(){seen.push("heading");}};
+  const summary={focus(){seen.push("summary");}};
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"rim-editor",querySelector(selector){return selector.startsWith(":focus")?null:selector.includes("reselect-vehicle")?summary:target;},replaceChildren(){}};
+  const context={CSS:{escape:value=>value},document:{createElement:()=>({childNodes:[]})}};
+  vm.runInNewContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  for(const model of [{vehicleRecognition:{status:"loading"}},{vehicleEditing:true,vehicleRecognition:{status:"applied"}},{nextAction:"select_vehicle_variant"},{nextAction:"run_standard_check"}])context.refresh(root,model);
+  assert.deepEqual(seen,["heading","heading","heading","summary"]);
+});
+
+test("loading → proposal redraw restores the same recognition heading instead of BODY", () => {
+  let focused=false;
+  const heading={id:"fitment-recognition-title",dataset:{},tagName:"H2"};
+  const replacement={focus(){focused=true;}};
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"vehicle-recognition",querySelector(selector){return selector.startsWith(":focus")?heading:selector==="#fitment-recognition-title"?replacement:null;},replaceChildren(){}};
+  const context={CSS:{escape:value=>value},document:{createElement:()=>({childNodes:[]})}};
+  vm.runInNewContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,{vehicleRecognition:{status:"proposed"}});
+  assert.equal(focused,true);
+});

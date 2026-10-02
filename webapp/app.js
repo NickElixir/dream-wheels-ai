@@ -4416,6 +4416,7 @@ function fitmentNextAction(overview = state.fitmentOverview) {
 }
 
 function setFitmentEditor(section) {
+    if (state.fitmentRecognition) state.fitmentRecognition.workspaceOpen = false;
     state.fitmentVehicleEditing = section === "vehicle";
     state.fitmentRimEditing = section === "rim";
 }
@@ -7514,8 +7515,13 @@ async function recognizeFitmentVehicle() {
     const token = ++state.fitmentRecognitionToken;
     const controller = new AbortController();
     state.fitmentRecognitionController = controller;
-    state.fitmentRecognition = { status: "loading", candidates: [] };
+    setFitmentEditor("");
+    state.fitmentActiveSection = "vehicle";
+    state.fitmentActiveStep = 1;
+    state.fitmentRecognition = { status: "loading", candidates: [], workspaceOpen: true };
+    persistFitmentNavigationContext();
     renderFitment();
+    focusFitmentWorkspace("vehicle");
     try {
         let photo = state.fitmentVehiclePhoto;
         if (!photo) {
@@ -7539,7 +7545,7 @@ async function recognizeFitmentVehicle() {
         });
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         if (response.status === 401) {
-            state.fitmentRecognition = { status: "failed", candidates: [] };
+            state.fitmentRecognition = { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
             showFitmentAuthRequired();
             return;
         }
@@ -7550,11 +7556,11 @@ async function recognizeFitmentVehicle() {
         const resolution = result.vehicle;
         const candidates = [resolution?.primary, ...(resolution?.alternatives || [])].filter(Boolean);
         state.fitmentRecognition = candidates.length
-            ? { status: "proposed", candidates, revision }
-            : { status: "failed", candidates: [] };
+            ? { status: "proposed", candidates, revision, workspaceOpen: state.fitmentRecognition.workspaceOpen }
+            : { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: "failed", candidates: [] };
+        state.fitmentRecognition = { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
@@ -10874,6 +10880,8 @@ function vnextFitmentSnapshot() {
         manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
         vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : fitmentNextAction(overview) === "select_vehicle_variant" ? "Выберите комплектацию автомобиля" : "Требуется подтверждение",
         vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
+        vehicleVariantTechnical: overview?.modification_state === "confirmed"
+            ? fitmentVariantTechnicalSeries(fitmentSelectedVehicleVariant(overview) || {}, fitmentSelectedVehicleVariantName(overview)) : "",
         vehicleVariantAction: ui.nextAction === "select_vehicle_variant",
         canReselectVehicleVariant: overview?.modification_state === "confirmed" && Boolean(fitmentSelectedVehicleVariant(overview)),
         vehicleVariantPickerOpen: Boolean(state.fitmentModificationPickerOpen),

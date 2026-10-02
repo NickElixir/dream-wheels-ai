@@ -73,7 +73,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   assert.match(proposed, /data-fitment-action="recognition-proposal"/);
   assert.match(proposed, /data-fitment-action="edit-vehicle-photo"/);
   const failed = fitmentMarkup({ vehicleRecognition: { status: "failed", canRecognize: true } });
-  assert.match(failed, /Не удалось распознать автомобиль по фото/);
+  assert.match(failed, /Не удалось распознать автомобиль/);
   assert.match(failed, /Попробовать ещё раз/);
   assert.match(failed, /Указать вручную/);
   assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
@@ -371,7 +371,10 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
     vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
   });
-  assert.match(confirmed, /<span>Комплектация<\/span>/);
+  assert.match(confirmed, /<p class="vnext-eyebrow">Комплектация<\/p>/);
+  assert.match(confirmed, /<strong>L9 Max AWD<\/strong>/);
+  assert.match(confirmed, /<span>Подтверждено<\/span>/);
+  assert.doesNotMatch(confirmed, /Комплектация подтверждена/);
   assert.match(confirmed, /L9 Max AWD/);
   assert.match(confirmed, /Изменить комплектацию/);
   assert.doesNotMatch(confirmed, /L9 Pro AWD/);

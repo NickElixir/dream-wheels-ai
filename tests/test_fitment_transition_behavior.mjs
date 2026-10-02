@@ -1981,3 +1981,46 @@ test("Final HIGH T5: explicit intent rejects edited, incomplete, non-proposed an
     }
     assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
 });
+
+test("Wheel → recognition → Vehicle preserves the Wheel draft and canonical revisions", async () => {
+    let revision;
+    const {api,calls}=navigationApi({vnext:true,routes:{
+        "POST /api/backend/identity/fitment/behavior-job/vehicle-proposal":()=>response(200,{vehicle_revision:revision,vehicle:{primary:{make:"Audi",model:"Q8",year:2020}}}),
+    }});
+    seed(api,overviewFor(api,"complete_vehicle_details"),"rim");
+    api.state.fitmentRimEditing=true;
+    api.state.fitmentForm.rim.offset_et_mm="35,125";
+    api.state.fitmentVehiclePhoto=new File(["test"],"car.jpg",{type:"image/jpeg"});
+    revision=api.state.fitmentOverview.vehicle_revision;
+    const canonical=JSON.stringify(api.state.fitmentOverview);
+    await api.recognizeFitmentVehicle();
+    assert.equal(api.state.fitmentRimEditing,false);
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="vehicle-recognition"/);
+    api.useFitmentRecognitionProposal(0);
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="vehicle-editor"/);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()),/Распознано по фотографии/);
+    api.bridge.action("edit-rim");
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="rim-editor"/);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm,"35,125");
+    assert.equal(JSON.stringify(api.state.fitmentOverview),canonical);
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
+});
+
+test("a recognition reply after switching to Wheel does not reopen Vehicle workspace", async () => {
+    let finish;
+    const {api}=navigationApi({vnext:true,routes:{
+        "POST /api/backend/identity/fitment/behavior-job/vehicle-proposal":()=>new Promise(resolve=>{finish=resolve;}),
+    }});
+    seed(api,overviewFor(api,"complete_vehicle_details"),"vehicle");
+    api.state.fitmentVehiclePhoto=new File(["test"],"car.jpg",{type:"image/jpeg"});
+    const pending=api.recognizeFitmentVehicle();
+    api.bridge.action("edit-rim");
+    finish(response(200,{vehicle_revision:api.state.fitmentOverview.vehicle_revision,vehicle:{primary:{make:"Audi",model:"Q8",year:2020}}}));
+    await pending;
+    assert.equal(api.state.fitmentRecognition.status,"proposed");
+    assert.equal(api.state.fitmentRecognition.workspaceOpen,false);
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="rim-editor"/);
+    api.bridge.action("edit-vehicle");
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="vehicle-editor"/);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()),/Распознано по фотографии/);
+});

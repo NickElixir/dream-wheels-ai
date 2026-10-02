@@ -222,12 +222,11 @@ function axleFields(model, axle, rim) {
     const conflict = axle === "front" ? field === "pcd" ? fieldConflict(model, "rim.bolt_count") + fieldConflict(model, "rim.pcd_mm") : fieldConflict(model, path) : "";
     const candidates = axle === "front" ? (model.rimCandidates || []).filter(item => item.field === field && String(item.value) !== String(value)) : [];
     const suggestions = candidates.length ? `<div class="vnext-fitment__suggestions">${candidates.map(item => button(wheelDisplay(item.value, model.locale), "candidate", { value: `${path}|${item.value}` })).join("")}</div>` : "";
-    return `<div class="vnext-fitment__compound-field" data-confirmation-state="${proposed ? "proposed" : value === "" ? "missing" : "confirmed"}"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" data-fitment-focus="${path}" ${errorAttributes} ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить предложение" : value === "" ? "Выбрать" : "Подтверждено"} ${label} ${esc(displayValue)}">${esc(displayValue)}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? '<small>Предложено автоматически</small>' : ""}${suggestions}${conflict}${error ? `<small id="${esc(errorId)}" role="alert">${esc(error)}</small>` : ""}</div>`;
+    return `<div class="vnext-fitment__compound-field" data-confirmation-state="${proposed ? "proposed" : value === "" ? "missing" : "confirmed"}"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" data-fitment-focus="${path}" ${errorAttributes} ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить предложение" : value === "" ? "Выбрать" : "Подтверждено"} ${field === "offset_et_mm" && value !== "" ? "" : label + " "}${esc(displayValue)}">${esc(displayValue)}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? '<small>Предложено автоматически</small>' : ""}${suggestions}${conflict}${error ? `<small id="${esc(errorId)}" role="alert">${esc(error)}</small>` : ""}</div>`;
   }).join("")}</div>`;
 }
 
 function vehicleEditor(model, vehicle) {
-  if (!model.vehicleEditing || model.nextAction === "select_vehicle_variant" && !model.manualVehicleEditing) return "";
   const marketState = model.catalogue?.states?.markets || {};
   const marketRequired = marketState.resolution === "selection_required";
   const marketField = marketRequired
@@ -239,28 +238,54 @@ function vehicleEditor(model, vehicle) {
       }) : "";
   const marketNotice = vehicle.year && ["failed", "no_data"].includes(marketState.status)
     ? `<p class="vnext-fitment__notice${marketState.status === "failed" ? " vnext-fitment__notice--error" : ""}" role="${marketState.status === "failed" ? "alert" : "status"}">${esc(marketState.message)}</p>${marketState.status === "failed" ? button("Повторить", "retry-catalogue", { value: "markets" }) : ""}` : "";
-  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
+  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Автомобиль</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? '<p class="vnext-fitment__notice">Проверьте данные в каталоге и выберите точный год автомобиля.</p>' : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
 }
 
 function vehicleRecognition(model) {
   const recognition = model.vehicleRecognition || {};
-  if (recognition.status === "loading") return loadingStatus("Распознаём автомобиль");
-  if (recognition.status === "failed") return `<section class="vnext-fitment__recognition" role="alert"><p>${esc(recognition.message || "Не удалось распознать автомобиль по фото.")}</p>${button("Попробовать ещё раз", "recognize-vehicle", { disabled: !recognition.canRecognize })}${button("Указать вручную", "edit-vehicle")}</section>`;
-  if (recognition.status === "proposed") return `<section class="vnext-fitment__recognition"><h2>Предложено по фотографии</h2><p>Проверьте автомобиль по каталогу. Комплектация и рынок будут уточнены отдельно.</p>${(recognition.candidates || []).map((item,index) => `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}">${esc([item.make,item.model,item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : "Год не определён")].join(" "))} — Использовать</button>`).join("")}</section>`;
-  if (recognition.status === "applied") return '<p class="vnext-fitment__notice" role="status">Проверьте данные в каталоге и выберите точный год автомобиля.</p>';
-  return "";
+  const heading = recognition.status === "loading" ? "Распознаём автомобиль…" : recognition.status === "failed" ? "Не удалось распознать автомобиль" : "Распознано по фотографии";
+  const candidates = (recognition.candidates || []).map((item, index) => {
+    const identity = [item.make, item.model].filter(Boolean).join(" ");
+    const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : "Год не определён");
+    return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
+  }).join("");
+  const content = recognition.status === "loading" ? loadingStatus("Распознаём автомобиль…") : recognition.status === "failed"
+    ? `${recognition.message ? `<p role="alert">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button("Попробовать ещё раз", "recognize-vehicle", { disabled: !recognition.canRecognize })}${button("Указать вручную", "edit-vehicle")}</div>`
+    : `<p>Выберите найденный автомобиль, чтобы проверить данные по каталогу.</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
+  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Распознавание автомобиля</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
+}
+
+export function activeWorkspaceKind(model = {}) {
+  // Explicit branch intent wins over a retained proposal or required server step.
+  if (model.activeSection === "rim" && model.rimEditing) return "rim-editor";
+  const recognition = model.vehicleRecognition || {};
+  if (recognition.workspaceOpen !== false && ["loading", "proposed", "failed"].includes(recognition.status)
+      && model.activeSection !== "rim") return "vehicle-recognition";
+  if (model.vehicleEditing && (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing)
+      && (model.activeSection === "vehicle" || !model.rimEditing)) return "vehicle-editor";
+  if (model.rimEditing) return "rim-editor";
+  if (model.nextAction === "select_vehicle_variant" || model.vehicleVariantPickerOpen && model.vehicleVariantMode === "reselect") return "vehicle-variant";
+  return "none";
+}
+
+function activeWorkspace(model) {
+  const kind = activeWorkspaceKind(model);
+  let markup = "";
+  if (kind === "vehicle-recognition") markup = vehicleRecognition(model);
+  else if (kind === "vehicle-editor") markup = vehicleEditor(model, model.vehicleForm || model.vehicle || {});
+  else if (kind === "vehicle-variant") markup = variantChooser(model);
+  else if (kind === "rim-editor") markup = wheelEditor(model, model.rim || {});
+  return markup.replace('data-fitment-workspace=', `data-fitment-workspace-kind="${kind}" data-fitment-workspace=`);
 }
 
 function variantChooser(model) {
-  const required = model.nextAction === "select_vehicle_variant";
   const reselection = model.vehicleVariantPickerOpen && model.vehicleVariantMode === "reselect";
-  if ((!required && !reselection) || model.manualVehicleEditing || model.rimEditing) return "";
   const choices = model.vehicleVariants || [];
   const status = model.vehicleLookup?.status;
   const loading = model.vehicleVariantsLoading || status === "loading";
   const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || `Вариант ${index + 1}`)}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span><span class="vnext-fitment__variant-cue">${index === model.selectedVehicleVariant ? "Выбрано" : "Выбрать"}</span></button>`).join("");
   const message = status === "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">Не удалось загрузить комплектации.</p>${button("Повторить", "load-vehicle-variants")}` : status === "no_match" ? `<p class="vnext-fitment__notice" role="status">Комплектации не найдены.</p>` : "";
-  return `<section class="vnext-fitment__variant-step" data-fitment-workspace="vehicle" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><h2 id="fitment-variant-title" tabindex="-1">Выберите комплектацию</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="Варианты комплектации">${choicesMarkup}${loading ? loadingStatus("Загружаем комплектации автомобиля") : ""}${message}<div class="vnext-fitment__paired-actions">${button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true, disabled: model.selectedVehicleVariant == null || !choices[model.selectedVehicleVariant] })}${reselection ? button("Отмена", "cancel-vehicle-reselection") : button("Указать вручную", "manual-vehicle")}</div></div></section>`;
+  return `<section class="vnext-fitment__variant-step" data-fitment-workspace="vehicle" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Комплектация автомобиля</p><h2 id="fitment-variant-title" tabindex="-1">Выберите комплектацию</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="Варианты комплектации">${choicesMarkup}${loading ? loadingStatus("Загружаем комплектации автомобиля") : ""}${message}<div class="vnext-fitment__paired-actions">${button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true, disabled: model.selectedVehicleVariant == null || !choices[model.selectedVehicleVariant] })}${reselection ? button("Отмена", "cancel-vehicle-reselection") : button("Указать вручную", "manual-vehicle")}</div></div></section>`;
 }
 
 function wheelConfirmationProgress(model, axle = "front") {
@@ -275,7 +300,6 @@ function wheelConfirmationProgress(model, axle = "front") {
 }
 
 function wheelEditor(model, rim) {
-  if (!model.rimEditing) return "";
   const chooser = Boolean(model.resolver?.variants?.length);
   const identity = [rim.brand, rim.model].filter(Boolean).join(" ") || "Параметры колесного диска";
   const readiness = model.rimSaveReadiness || { ready: true };
@@ -283,7 +307,7 @@ function wheelEditor(model, rim) {
     ? `<div class="vnext-fitment__fields">${fieldWithCandidates(model, "Бренд", "rim.brand", rim.brand)}${fieldWithCandidates(model, "Модель", "rim.model", rim.model)}${fieldWithCandidates(model, "Артикул", "rim.sku", rim.sku)}</div>` : "";
   const axle = (which, label) => `<section class="vnext-fitment__axle"><h3>${label}</h3>${axleFields(model, which, which === "rear" ? model.rearRim || {} : rim)}${model.setupMode === "staggered" ? `<p class="vnext-fitment__progress">${wheelConfirmationProgress(model, which)}</p>` : ""}</section>`;
   return `<section class="vnext-fitment__editor" data-fitment-workspace="rim" aria-labelledby="fitment-rim-editor-title">
-    <div class="vnext-fitment__editor-heading"><div><h2 id="fitment-rim-editor-title" tabindex="-1">${esc(chooser ? "Выберите колесный диск" : identity)}</h2>${!chooser && (model.resolver?.selectedSku || rim.sku) ? `<p class="vnext-fitment__identity-code">SKU ${esc(model.resolver?.selectedSku || rim.sku)}</p>` : ""}</div>${!chooser ? `<div class="vnext-fitment__mode" role="group" aria-label="Параметры по осям">${[ ["uniform", "Одинаковые"], ["staggered", "Разные"] ].map(([value,label]) => `<button type="button" data-fitment-action="setup-mode" data-value="${value}" aria-pressed="${String((model.setupMode || "uniform") === value)}">${label}</button>`).join("")}</div>` : ""}</div>
+    <div class="vnext-fitment__editor-heading"><div><p class="vnext-eyebrow">Параметры колесного диска</p><h2 id="fitment-rim-editor-title" tabindex="-1">${esc(chooser ? "Выберите колесный диск" : identity)}</h2>${!chooser && (model.resolver?.selectedSku || rim.sku) ? `<p class="vnext-fitment__identity-code">SKU ${esc(model.resolver?.selectedSku || rim.sku)}</p>` : ""}</div>${!chooser ? `<div class="vnext-fitment__mode" role="group" aria-label="Параметры по осям">${[ ["uniform", "Одинаковые"], ["staggered", "Разные"] ].map(([value,label]) => `<button type="button" data-fitment-action="setup-mode" data-value="${value}" aria-pressed="${String((model.setupMode || "uniform") === value)}">${label}</button>`).join("")}</div>` : ""}</div>
     ${chooser || model.resolver?.open || !model.resolver?.url ? sourceEditor(model) : ""}
     ${chooser ? '<p class="vnext-fitment__progress">Выбор SKU не подтверждает технические параметры</p>' : `${identityEditor}<div class="vnext-fitment__axles${model.setupMode === "staggered" ? " vnext-fitment__axles--staggered" : ""}">${axle("front", model.setupMode === "staggered" ? "Передняя ось" : "Обе оси")}${model.setupMode === "staggered" ? axle("rear", "Задняя ось") : ""}</div>${model.setupMode === "staggered" && model.resolver?.canChooseSku ? '<p class="vnext-fitment__progress">SKU относится к передней оси. Задние параметры подтверждаются отдельно.</p>' : ""}${model.rearDraftPreserved ? '<p class="vnext-fitment__progress">Задние параметры сохранены в черновике до сохранения.</p>' : ""}${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${model.setupMode !== "staggered" ? `<p class="vnext-fitment__progress" role="status">${wheelConfirmationProgress(model)}</p>` : ""}${readiness.invalid?.length ? '<p class="vnext-fitment__notice" role="alert">Проверьте числовые параметры диска.</p>' : ""}<div class="vnext-fitment__paired-actions">${button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || !readiness.ready })}${model.resolver?.canChooseSku ? button("Выбрать другой SKU", "choose-rim-sku", { disabled: model.resolver.loading }) : ""}${button(model.rimIdentityEditing ? "Скрыть идентификацию" : "Изменить идентификацию", "toggle-rim-identity")}</div>`}
   </section>`;
@@ -295,8 +319,6 @@ export function fitmentMarkup(model = {}) {
   if (model.vehicleEditing && model.rimEditing) {
     model = { ...model, vehicleEditing: model.activeSection !== "rim", rimEditing: model.activeSection === "rim" };
   }
-  const vehicle = model.vehicleForm || model.vehicle || {};
-  const rim = model.rim || {};
   const variantRequired = model.nextAction === "select_vehicle_variant";
   const rimSetupState = model.frontRimSetupState || model.overview?.rim_setup_state || "unknown";
   const localReady = model.rimSaveReadiness?.ready && (model.rimDraftDirty || model.overview?.rim_setup_state !== "confirmed_ready");
@@ -305,6 +327,7 @@ export function fitmentMarkup(model = {}) {
     ? `<span>Передняя ось: ${esc(sourceStatus(rimSetupState))}</span><span>Задняя ось: ${esc(sourceStatus(model.rearRimSetupState))}</span>`
     : esc(sourceStatus(rimSetupState));
   const vehicleStatus = model.vehicleStatus || "Требуется подтверждение";
+  const configuration = model.vehicleVariantName ? `<div class="vnext-fitment__configuration"><p class="vnext-eyebrow">Комплектация</p><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span>Подтверждено</span></div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
@@ -326,7 +349,7 @@ export function fitmentMarkup(model = {}) {
         <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle-photo")}</div>
         <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="Фото автомобиля">
         <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: !activeEditor && model.overview?.vehicle_state !== "confirmed_ready", disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(model.canReselectVehicleVariant ? "Изменить автомобиль" : "Указать вручную", "edit-vehicle")}</div>
-        <p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>${model.vehicleVariantName ? `<p class="vnext-fitment__object-detail"><span>Комплектация</span> ${esc(model.vehicleVariantName)}</p>` : ""}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${variantRequired && model.rimEditing ? button("Выбрать комплектацию", "show-variants") : ""}${vehicleError}
+        ${configuration}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${variantRequired && model.rimEditing ? button("Выбрать комплектацию", "show-variants") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
         ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
@@ -335,8 +358,7 @@ export function fitmentMarkup(model = {}) {
         <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
-    ${vehicleRecognition(model)}
-    <div class="vnext-fitment__active-editor">${variantChooser(model)}${vehicleEditor(model, vehicle)}${wheelEditor(model, rim)}</div>
+    <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
     </fieldset>
     ${model.check || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${evidence(model)}${comparisonTable(model)}${preliminaryWarning(model)}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
     <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}<div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary || "—")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary || "—")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
@@ -348,9 +370,12 @@ export function fitmentMarkup(model = {}) {
 
 export function refreshFitmentView(root, model, callbacks = root.fitmentCallbacks) {
   root.fitmentCallbacks = callbacks;
+  const previousWorkspace = root.fitmentWorkspaceKind;
+  const nextWorkspace = activeWorkspaceKind(model);
   root.fitmentModel = model;
-  const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search], :focus[data-fitment-focus]");
-  const focusSelector = focused?.dataset.fitmentFocus ? `[data-fitment-focus="${CSS.escape(focused.dataset.fitmentFocus)}"]` : focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
+  root.fitmentWorkspaceKind = nextWorkspace;
+  const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search], :focus[data-fitment-focus], :focus[data-fitment-action], :focus[id^='fitment-']");
+  const focusSelector = focused?.dataset.fitmentAction && !focused.dataset.fitmentFocus ? `[data-fitment-action="${CSS.escape(focused.dataset.fitmentAction)}"][data-value="${CSS.escape(focused.dataset.value || "")}"]` : focused?.dataset.fitmentFocus ? `[data-fitment-focus="${CSS.escape(focused.dataset.fitmentFocus)}"]` : focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.id && !focused.dataset.fitmentField ? `#${CSS.escape(focused.id)}` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
   const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "url", "tel", "password"].includes(input.type);
   const selection = supportsSelection(focused) ? [focused.selectionStart, focused.selectionEnd] : null;
   const markup = fitmentMarkup({ ...model, wheelPicker: root.fitmentPicker });
@@ -358,11 +383,14 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   next.className = root.className;
   next.innerHTML = markup;
   root.replaceChildren(...next.childNodes);
-  if (focusSelector) {
+  if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
+    const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-active-workspace] h2[tabindex]");
+    heading?.focus({ preventScroll: true });
+  } else if (focusSelector) {
     const nextFocus = root.querySelector(focusSelector);
     const focusTarget = nextFocus?.disabled && focused?.dataset.fitmentAction?.startsWith("conflict-")
       ? root.querySelector(`[data-wheel-picker-open="${CSS.escape(focused.dataset.fitmentFocus)}"]`) : nextFocus;
-    focusTarget?.focus({ preventScroll: true });
+    (focusTarget || root.querySelector("[data-fitment-active-workspace] h2[tabindex]") || root.querySelector('[data-fitment-action="edit-vehicle"]'))?.focus({ preventScroll: true });
     if (selection && supportsSelection(nextFocus)) nextFocus.setSelectionRange(...selection);
   }
   return root;
@@ -451,6 +479,15 @@ export function createFitmentView(model = {}, callbacks = {}) {
 }
 
 const fitmentEnglishCopy = {
+  "Распознавание автомобиля": "Vehicle recognition",
+  "Распознано по фотографии": "Recognized from the photo",
+  "Распознаём автомобиль…": "Recognizing the vehicle…",
+  "Не удалось распознать автомобиль": "Unable to recognize the vehicle",
+  "Выберите найденный автомобиль, чтобы проверить данные по каталогу.": "Select the recognized vehicle to verify its details in the catalogue.",
+  "Проверьте данные в каталоге и выберите точный год автомобиля.": "Verify the catalogue details and select the exact vehicle year.",
+  "Попробовать ещё раз": "Try again",
+  "Год не определён": "Year undetermined",
+  "Комплектация автомобиля": "Vehicle version",
   "Проверка совместимости": "Compatibility check",
   "Проверка выполнена": "Check completed",
   "Назад": "Back",
@@ -607,5 +644,5 @@ function localizeFitmentMarkup(markup, locale) {
     for (const [ru, en] of Object.entries(fitmentEnglishCopy).sort((a,b) => b[0].length - a[0].length)) value = value.replaceAll(ru, en);
     return value.replace(/Осталось подтвердить (\d+) параметр(?:а|ов)?/g, "$1 parameters left to confirm").replaceAll("Предыдущий результат", "Previous result").replaceAll("Подтвердить предложение", "Confirm suggestion").replaceAll("Подтверждено", "Confirmed").replaceAll("Использовать", "Use").replaceAll("Поиск", "Search").replaceAll("Ручной ввод", "Manual input").replaceAll("Без округления", "Without rounding");
   };
-  return markup.replace(/>([^<>]+)</g, (_,text) => `>${translate(text)}<`).replace(/(aria-label|placeholder)="([^"]*)"/g, (_,attr,text) => `${attr}="${translate(text)}"`);
+  return markup.replace(/>([^<>]+)</g, (_,text) => `>${translate(text)}<`).replace(/(aria-label|placeholder|alt)="([^"]*)"/g, (_,attr,text) => `${attr}="${translate(text)}"`);
 }
