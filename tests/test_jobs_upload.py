@@ -1,14 +1,33 @@
 import asyncio
+import hashlib
+import json
 from io import BytesIO
 
+import pytest
+from PIL import Image
 from starlette.datastructures import Headers, UploadFile
 
 from src import assets_service, jobs_api
 from src.auth_principal import AuthPrincipal
 
 
-def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
+@pytest.mark.parametrize(
+    "with_display,display_failure", [(False, False), (True, False), (True, True)]
+)
+def test_upload_job_inserts_job_before_assets_and_links_asset_ids(
+    monkeypatch, with_display, display_failure
+):
+    if display_failure:
+
+        def fail_display(_data):
+            raise OSError("Optional derivative unavailable")
+
+        monkeypatch.setattr(assets_service, "create_car_display", fail_display)
     calls: list[tuple[str, object]] = []
+    output = BytesIO()
+    Image.new("RGB", (3200, 2400), "green").save(output, format="JPEG")
+    car_data = output.getvalue() if with_display else b"car-bytes"
+    uploads = {}
 
     class FakeRedis:
         def __init__(self):
@@ -83,6 +102,7 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
 
     async def fake_upload_render_asset(**kwargs):
         kind = kwargs["kind"]
+        uploads[kind] = kwargs["data"]
         return assets_service.AssetUpload(
             id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
             if kind == "car_original"
@@ -118,7 +138,7 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
     response = asyncio.run(
         jobs_api.upload_job(
             car_image=UploadFile(
-                file=BytesIO(b"car-bytes"),
+                file=BytesIO(car_data),
                 filename="car.jpg",
                 headers=Headers({"content-type": "image/jpeg"}),
             ),
@@ -135,7 +155,7 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
     )
 
     assert response.status == "queued"
-    assert [item[0] for item in calls] == [
+    expected = [
         "resolve_principal",
         "tx_enter",
         "insert_job",
@@ -145,4 +165,14 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(monkeypatch):
         "reserve_job_credit",
         "tx_exit",
     ]
+    if with_display and not display_failure:
+        expected[5:5] = ["tx_enter", "insert_asset:car_display", "tx_exit"]
+        with Image.open(BytesIO(uploads["car_display"])) as display:
+            assert display.format == "WEBP"
+            assert display.size == (1600, 1200)
+    assert [item[0] for item in calls] == expected
+    assert hashlib.sha256(uploads["car_original"]).digest() == hashlib.sha256(car_data).digest()
+    payload = json.loads(fake_redis.queue_payloads[0][1])
+    assert "car_original" in payload["car_storage_path"]
+    assert "car_display" not in payload["car_storage_path"]
     assert fake_redis.queue_payloads

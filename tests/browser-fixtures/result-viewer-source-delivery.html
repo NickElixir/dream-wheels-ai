@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Source delivery — production viewer fixture</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css">
+<style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font)}main{max-width:1120px;margin:auto;padding:24px 16px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}pre{white-space:pre-wrap;color:var(--vnext-text-secondary);font-size:12px}</style></head>
+<body><main><nav><button id="new">New job</button><button id="old">Historical job</button><button id="expiry">Near expiry</button></nav><div id="viewer"></div><pre id="evidence"></pre></main>
+<script type="module">
+// API and image transport are isolated QA doubles; controller and view are production code.
+const sourceUrl=new URL('../../webapp/app.js',location.href);
+const source=(await (await fetch(sourceUrl)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,sourceUrl)}"`);
+window.Telegram={Login:{}};
+const harness=`
+import {createRenderView,refreshRenderView} from "${new URL('../../webapp/vnext/views/render.js',location.href)}";
+let fixtureRoot; let fixtureCalls=[];
+const fixtureNativeFetch=window.fetch.bind(window);
+apiUrl=path=>path;
+getWebsiteAuthToken=()=>"fixture-only";
+hasFrontendAuth=()=>true;
+withAuthHeaders=()=>({Authorization:"Bearer fixture-only"});
+authenticatedFetch=async(url,options)=>{fixtureCalls.push({method:"GET",path:url});return fixtureNativeFetch(url,options);};
+scheduleRenderHistoryPolling=()=>{};
+renderRenders=()=>{};renderDashboard=()=>{};renderRenderDetail=()=>{};
+const fixtureUpdate=()=>{
+ if(!fixtureRoot)return;
+ refreshRenderView(fixtureRoot,vnextRenderSnapshot("result"));
+ const job=state.renderHistory[0];const entry=state.renderAssetSignedUrlsByJob[job.job_id];
+ document.querySelector("#evidence").textContent=JSON.stringify({kind:entry?.kind,source:entry?"HTTPS signed Storage double":"pending",signing_requests:fixtureCalls.length,calls:fixtureCalls},null,2);
+};
+notifyRenderBridge=fixtureUpdate;
+const fixtureLoad=old=>{
+ state.renderHistory=[{job_id:old?"22222222-2222-4222-8222-222222222222":"11111111-1111-4111-8111-111111111111",status:"completed",result_url:"https://storage-fixture.invalid/storage/v1/object/public/results/result.webp",assets:{car_original:{download_url:"/not-for-viewer/download"},...(old?{}:{car_display:{id:"display"}})},render_input_snapshot:{vehicle:{make:"Lexus",model:"RX",year:2020},rim:{brand:"BBS",model:"CI-R"}}}];
+ state.view="render-detail";state.renderDetailJobId=state.renderHistory[0].job_id;
+ fixtureRoot=createRenderView("result",vnextRenderSnapshot("result"),window.dreamwheelsRenderBridge);
+ document.querySelector("#viewer").replaceChildren(fixtureRoot);
+ prepareVnextRenderAssets();fixtureUpdate();
+};
+document.querySelector("#new").onclick=()=>fixtureLoad(false);
+document.querySelector("#old").onclick=()=>fixtureLoad(true);
+document.querySelector("#expiry").onclick=()=>{const job=state.renderHistory[0];state.renderAssetSignedUrlsByJob[job.job_id].expiresAt=Date.now()+59_000;prepareVnextRenderAssets();fixtureUpdate();};
+fixtureLoad(false);
+`;
+const blob=new Blob([source,'\n',harness],{type:'text/javascript'});
+const moduleUrl=URL.createObjectURL(blob);await import(moduleUrl);URL.revokeObjectURL(moduleUrl);
+</script></body></html>

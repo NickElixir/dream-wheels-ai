@@ -40,6 +40,8 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0035_fitment_rim_source_state.sql` — source fingerprint, выбранный SKU и revision для `rim_specs`/`rim_setups`
 - `0036_fitment_check_lifecycle.sql` — lifecycle-поля попыток fitment check и индекс активного контекста
 
+- `0037_car_display_assets.sql` — private presentation derivative `car_display`, unique job/draft mapping; originals and historical jobs remain valid.
+
 ## Стратегия применения
 
 **Сейчас (MVP):** миграции применяются вручную через **Supabase SQL Editor** ([app.supabase.com](https://app.supabase.com) → проект → SQL Editor).
@@ -98,3 +100,5 @@ Alembic интегрируется с SQLAlchemy/asyncpg, отслеживает
 ## Применение через MCP
 
 Если работаешь через Claude Code с подключённым Supabase MCP, можно применять миграции через `mcp__supabase__apply_migration` — Claude передаёт SQL в Management API. Это удобно для автоматизации, но **не заменяет ручную проверку** SQL Editor для критичных изменений.
+
+- Before deploying source viewer delivery, apply `0037_car_display_assets.sql` in staging after independent review. No backfill or bucket policy changes. Roll back application code without removing additive indexes or the expanded kind constraint.

@@ -9,13 +9,13 @@ polling статуса. Воркер (process_jobs_loop) живёт отдель
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
 
 import httpx
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src import assets_service, db, identity_service, redis_client, storage
@@ -630,7 +630,7 @@ async def _resolve_jobs_auth(
 
 
 def _asset_from_row(row, prefix: str, *, job_id: str) -> JobAssetResponse | None:
-    asset_id = row[f"{prefix}_asset_id"]
+    asset_id = row.get(f"{prefix}_asset_id")
     if not asset_id:
         return None
     kind = row[f"{prefix}_asset_kind"]
@@ -652,7 +652,7 @@ def _asset_from_row(row, prefix: str, *, job_id: str) -> JobAssetResponse | None
 
 def _assets_from_row(row, *, job_id: str) -> dict[str, JobAssetResponse]:
     assets: dict[str, JobAssetResponse] = {}
-    for prefix in ("car", "rim", "result"):
+    for prefix in ("car", "car_display", "rim", "result"):
         asset = _asset_from_row(row, prefix, job_id=job_id)
         if asset:
             assets[asset.kind] = asset
@@ -761,6 +761,15 @@ def _job_assets_select_clause() -> str:
         car_asset.width AS car_asset_width,
         car_asset.height AS car_asset_height,
         car_asset.created_at AS car_asset_created_at,
+        car_display_asset.id AS car_display_asset_id,
+        car_display_asset.kind AS car_display_asset_kind,
+        car_display_asset.bucket AS car_display_asset_bucket,
+        car_display_asset.storage_key AS car_display_asset_storage_key,
+        car_display_asset.content_type AS car_display_asset_content_type,
+        car_display_asset.size_bytes AS car_display_asset_size_bytes,
+        car_display_asset.width AS car_display_asset_width,
+        car_display_asset.height AS car_display_asset_height,
+        car_display_asset.created_at AS car_display_asset_created_at,
         rim_asset.id AS rim_asset_id,
         rim_asset.kind AS rim_asset_kind,
         rim_asset.bucket AS rim_asset_bucket,
@@ -813,6 +822,9 @@ def _vehicle_identity_join_clause() -> str:
 def _job_assets_join_clause() -> str:
     return """
         LEFT JOIN assets AS car_asset ON car_asset.id = jobs.car_asset_id
+        LEFT JOIN assets AS car_display_asset ON car_display_asset.job_id = jobs.id
+          AND car_display_asset.owner_user_id = jobs.user_id
+          AND car_display_asset.kind = 'car_display'
         LEFT JOIN assets AS rim_asset ON rim_asset.id = jobs.rim_asset_id
         LEFT JOIN assets AS result_asset ON result_asset.id = jobs.result_asset_id
     """
@@ -2192,6 +2204,9 @@ async def upload_job(
             content_type=car_image.content_type or "application/octet-stream",
         )
         uploaded_assets.append(car_asset)
+        car_display = await assets_service.upload_car_display(original=car_asset, data=car_bytes)
+        if car_display is not None:
+            uploaded_assets.append(car_display)
         rim_asset = await assets_service.upload_render_asset(
             owner_user_id=user_id,
             job_id=job_id,
@@ -2232,6 +2247,7 @@ async def upload_job(
                 )
                 await assets_service.insert_asset(conn, car_asset)
                 await assets_service.insert_asset(conn, rim_asset)
+                await assets_service.insert_optional_car_display(conn, car_display)
                 await conn.execute(
                     """
                     UPDATE jobs
@@ -2552,6 +2568,16 @@ async def create_job_from_assets(
                     job_id,
                     draft["car_asset_id"],
                     draft["rim_asset_id"],
+                    user_id,
+                )
+                await conn.execute(
+                    """
+                    UPDATE assets SET job_id = $1::uuid
+                    WHERE render_input_draft_id = $2::uuid
+                      AND owner_user_id = $3 AND kind = 'car_display' AND job_id IS NULL
+                    """,
+                    job_id,
+                    request.draft_id,
                     user_id,
                 )
                 if proposal is not None:
@@ -4458,6 +4484,56 @@ async def save_fitment_details(
 
     assert updated_row is not None
     return _fitment_overview_from_row(updated_row)
+
+
+ASSET_SIGNED_URL_TTL_SECONDS = 600
+
+
+@router.get("/{job_id}/assets/{kind}/signed-url")
+async def get_job_asset_signed_url(
+    job_id: uuid.UUID,
+    kind: Literal["car_display", "car_original"],
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    auth = await _resolve_jobs_auth(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        required=True,
+    )
+    assert auth is not None
+    async with db.get_pool().acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT assets.bucket, assets.storage_key FROM jobs
+            JOIN assets ON assets.job_id = jobs.id AND assets.owner_user_id = jobs.user_id
+            WHERE jobs.id = $1::uuid AND jobs.user_id = $2 AND assets.kind = $3
+              AND assets.bucket = $4
+              AND (assets.kind = 'car_display' OR assets.id = jobs.car_asset_id)
+            """,
+            str(job_id),
+            auth.user_id,
+            kind,
+            storage.RAW_BUCKET,
+        )
+    if not row:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    expires_at = datetime.now(UTC) + timedelta(seconds=ASSET_SIGNED_URL_TTL_SECONDS)
+    try:
+        url = await storage.create_signed_url(
+            bucket=row["bucket"], path=row["storage_key"], expires_in=ASSET_SIGNED_URL_TTL_SECONDS
+        )
+    except storage.StorageError:
+        logger.warning(
+            "asset_signing_failed job_id=%s user_id=%s kind=%s", job_id, auth.user_id, kind
+        )
+        raise HTTPException(status_code=502, detail="Asset signing unavailable") from None
+    return JSONResponse(
+        {"kind": kind, "url": url, "expires_at": expires_at.isoformat()},
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @router.get("/{job_id}/assets/{kind}/download")

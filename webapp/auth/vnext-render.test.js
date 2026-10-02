@@ -67,6 +67,9 @@ getWebsiteAuthToken = () => "test-token";
 withAuthHeaders = () => ({Authorization: "Bearer test-token"});
 getIdentityPayload = () => ({});
 globalThis.api = {state, bridge: window.dreamwheelsRenderBridge, resultUrlForJob, submitHistoryFeedback, loadRenderDetailJob, openRenderDetail, submitJob, ensureAssetBlobUrl, downloadResult,
+ ensureOriginalDisplayUrl, originalSignedUrlForJob, handleOriginalDisplayError,
+ setAuth: (ready) => { hasFrontendAuth = () => ready; },
+ setAuthIdentity: (token) => { getWebsiteAuthToken = () => token; },
  loadRenderHistory,
  setHistoryFetch: (fn) => { fetchRenderHistory = fn; scheduleRenderHistoryPolling = () => {}; },
  classifyGenerationError,
@@ -384,7 +387,7 @@ test("server feedback is visible without transient browser map", () => {
   assert.equal(app.bridge.snapshot("result").feedback.error, "");
 });
 
-test("protected result and original use Authorization fetch+blob; failure does not change job", async () => {
+test("protected result download retains Authorization fetch+blob; original signing failure does not change job", async () => {
   const app = runtime(); const owned = { ...job("A"), result_url: "" }; app.state.renderHistory = [owned];
   const calls = []; app.setObjectURL(() => "blob:private");
   app.setFetch(async (url, options) => { calls.push({ url, options }); return { ok: true, blob: async () => new Blob(["image"]) }; });
@@ -416,9 +419,10 @@ test("missing historical job never falls back to current-job download", async ()
 
 test("protected original succeeds; asset auth/network errors remain asset errors, not render failure", async () => {
   const app=runtime(); const owned=job("A"); app.state.renderHistory=[owned];
-  app.setObjectURL(()=>"blob:original");
-  app.setFetch(async()=>({ok:true,blob:async()=>new Blob(["image"])}));
-  assert.equal(await app.ensureAssetBlobUrl(owned,"original"),"blob:original");
+  app.setObjectURL(()=>{throw new Error("Original must not create Blob URLs");});
+  const signed="https://project.supabase.co/storage/v1/object/sign/raw/original.jpg?token=fixture-only";
+  app.setFetch(async()=>({ok:true,json:async()=>({kind:"car_original",url:signed,expires_at:new Date(Date.now()+600_000).toISOString()})}));
+  assert.equal(await app.ensureAssetBlobUrl(owned,"original"),signed);
   for(const message of ["401 unauthorized","network failed"]){
     app.setFetch(async()=>{throw new Error(message);});
     await app.ensureAssetBlobUrl(owned,"result");
@@ -451,4 +455,56 @@ test("pure presentation covers real statuses, empty/error, feedback and unavaila
   const viewSource = fs.readFileSync(new URL("../vnext/views/render.js", import.meta.url), "utf8");
   assert.doesNotMatch(viewSource, /fetch\(|setInterval\(|setTimeout\(/);
   assert.doesNotMatch(viewSource, /result_url|identityProposal/);
+});
+
+
+for (const display of [true,false]) test(`signed source selects ${display ? "display" : "historical original"}, direct img and one request`, async () => {
+ const app=runtime(); app.setAuth(true); const owned=job("A");
+ if(display) owned.assets.car_display={id:"display"};
+ app.state.renderHistory=[owned]; app.state.renderDetailJobId="A";
+ const kind=display ? "car_display" : "car_original";
+ const signed=`https://project.supabase.co/storage/v1/object/sign/raw/${kind}.webp?token=fixture-only`;
+ let calls=0;
+ app.setObjectURL(()=>{throw new Error("No Blob URLs");});
+ app.setFetch(async(url,options)=>{calls++; assert.equal(url,`/jobs/A/assets/${kind}/signed-url`); assert.equal(options.headers.Authorization,"Bearer test-token"); return {ok:true,blob:()=>{throw new Error("No Blob body");},json:async()=>({kind,url:signed,expires_at:new Date(Date.now()+600_000).toISOString()})};});
+ const [url]=await Promise.all([app.ensureOriginalDisplayUrl(owned),app.ensureOriginalDisplayUrl(owned)]);
+ assert.equal(url,signed);
+ assert.equal(await app.ensureOriginalDisplayUrl(owned),signed);
+ assert.equal(calls,1);
+ assert.match(resultMarkup(app.bridge.snapshot("result")),/src="https:\/\/project.supabase.co\/storage\/v1\/object\/sign/);
+ assert.equal(app.bridge.snapshot("result").resultUrl,"/result-A.jpg");
+});
+
+test("near expiry refreshes signing metadata before using URL", async()=>{
+ const app=runtime(); app.setAuth(true); const owned=job("A"); let calls=0;
+ app.setFetch(async()=>({ok:true,json:async()=>({kind:"car_original",url:`https://project.supabase.co/storage/v1/object/sign/raw/original.webp?token=fixture-${++calls}`,expires_at:new Date(Date.now()+600_000).toISOString()})}));
+ await app.ensureOriginalDisplayUrl(owned);
+ app.state.renderAssetSignedUrlsByJob.A.expiresAt=Date.now()+59_000;
+ assert.equal(app.originalSignedUrlForJob(owned),"");
+ await app.ensureOriginalDisplayUrl(owned); assert.equal(calls,2);
+});
+
+test("source image error refreshes only once and then becomes unavailable",async()=>{
+ const app=runtime(); app.setAuth(true); const owned=job("A");app.state.renderHistory=[owned]; let calls=0;
+ app.setFetch(async()=>({ok:true,json:async()=>({kind:"car_original",url:`https://project.supabase.co/storage/v1/object/sign/raw/original.webp?token=fixture-${++calls}`,expires_at:new Date(Date.now()+600_000).toISOString()})}));
+ await app.ensureOriginalDisplayUrl(owned);
+ app.bridge.assetError("A","original"); await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(calls,2);assert.equal(app.state.renderAssetErrorsByJob.A.car_original,false);
+ app.bridge.assetError("A","original"); await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(calls,2);assert.equal(app.state.renderAssetErrorsByJob.A.car_original,true);
+});
+
+test("unauthenticated viewer never signs and ignores cached signed URLs",async()=>{
+ const app=runtime();app.setAuth(false);let called=false;app.setFetch(async()=>{called=true;});
+ assert.equal(await app.ensureOriginalDisplayUrl(job("A")),"");assert.equal(called,false);
+});
+
+
+test("in-flight signing response is discarded after auth identity changes",async()=>{
+ const app=runtime();app.setAuth(true);let resolve;
+ app.setFetch(()=>new Promise(r=>{resolve=r;}));
+ const pending=app.ensureOriginalDisplayUrl(job("A"));
+ app.setAuthIdentity("different-user-token");
+ resolve({ok:true,json:async()=>({kind:"car_original",url:"https://project.supabase.co/storage/v1/object/sign/raw/original.webp?token=fixture-only",expires_at:new Date(Date.now()+600_000).toISOString()})});
+ assert.equal(await pending,"");assert.equal(app.state.renderAssetSignedUrlsByJob.A,undefined);
 });

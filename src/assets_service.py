@@ -1,5 +1,6 @@
 """Durable render asset persistence helpers."""
 
+import asyncio
 import hashlib
 import logging
 from dataclasses import dataclass
@@ -8,16 +9,17 @@ from typing import Literal
 from uuid import uuid4
 
 import asyncpg
-from PIL import Image
+import httpx
+from PIL import Image, ImageOps
 
 from src import storage
 
 logger = logging.getLogger(__name__)
 
-AssetKind = Literal["car_original", "rim_original", "result"]
+AssetKind = Literal["car_original", "car_display", "rim_original", "result"]
 
-RAW_ASSET_KINDS: set[AssetKind] = {"car_original", "rim_original"}
-ALL_ASSET_KINDS: set[AssetKind] = {"car_original", "rim_original", "result"}
+RAW_ASSET_KINDS: set[AssetKind] = {"car_original", "car_display", "rim_original"}
+ALL_ASSET_KINDS: set[AssetKind] = {"car_original", "car_display", "rim_original", "result"}
 
 
 def _image_dimensions(data: bytes, content_type: str) -> tuple[int | None, int | None]:
@@ -44,6 +46,8 @@ class AssetUpload:
     sha256: str
     render_input_draft_id: str | None = None
     public_url: str | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 def _ext_for_content_type(content_type: str) -> str:
@@ -105,12 +109,23 @@ async def upload_render_asset(
         width,
         height,
     )
-    await storage.upload_bytes(
-        bucket=bucket,
-        path=storage_key,
-        data=data,
-        content_type=content_type,
-    )
+    try:
+        await storage.upload_bytes(
+            bucket=bucket, path=storage_key, data=data, content_type=content_type
+        )
+    except (storage.StorageError, httpx.HTTPError):
+        if kind == "car_display":
+            # A timed-out upload may have created the uniquely named object.
+            try:
+                await storage.delete_object(bucket=bucket, path=storage_key)
+            except (storage.StorageError, httpx.HTTPError):
+                logger.warning(
+                    "car_display_upload_cleanup_failed asset_id=%s user_id=%s",
+                    asset_id,
+                    owner_user_id,
+                )
+        raise
+
     public_url = (
         storage.public_url(bucket, storage_key) if bucket == storage.RESULTS_BUCKET else None
     )
@@ -126,6 +141,8 @@ async def upload_render_asset(
         sha256=hashlib.sha256(data).hexdigest(),
         render_input_draft_id=render_input_draft_id,
         public_url=public_url,
+        width=width,
+        height=height,
     )
 
 
@@ -134,9 +151,9 @@ async def insert_asset(conn: asyncpg.Connection, asset: AssetUpload) -> None:
         """
         INSERT INTO assets (
             id, owner_user_id, job_id, kind, bucket, storage_key,
-            content_type, size_bytes, sha256, render_input_draft_id
+            content_type, size_bytes, sha256, render_input_draft_id, width, height
         )
-        VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid)
+        VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12)
         ON CONFLICT (id) DO NOTHING
         """,
         asset.id,
@@ -149,6 +166,8 @@ async def insert_asset(conn: asyncpg.Connection, asset: AssetUpload) -> None:
         asset.size_bytes,
         asset.sha256,
         asset.render_input_draft_id,
+        asset.width,
+        asset.height,
     )
 
 
@@ -158,3 +177,67 @@ async def delete_uploaded_asset(asset: AssetUpload) -> None:
 
 def asset_download_path(job_id: str, kind: AssetKind) -> str:
     return f"/jobs/{job_id}/assets/{kind}/download"
+
+
+CAR_DISPLAY_MAX_EDGE = 1600
+CAR_DISPLAY_WEBP_QUALITY = 80
+
+
+def create_car_display(data: bytes) -> bytes:
+    """Presentation only: transpose, downsize, strip metadata, preserve original bytes."""
+    with Image.open(BytesIO(data)) as source:
+        image = ImageOps.exif_transpose(source)
+        image.thumbnail((CAR_DISPLAY_MAX_EDGE, CAR_DISPLAY_MAX_EDGE), Image.Resampling.LANCZOS)
+        mode = "RGBA" if "A" in image.getbands() or "transparency" in image.info else "RGB"
+        clean = Image.new(mode, image.size)
+        clean.paste(image.convert(mode))
+        output = BytesIO()
+        clean.save(output, format="WEBP", quality=CAR_DISPLAY_WEBP_QUALITY)
+        return output.getvalue()
+
+
+async def upload_car_display(*, original: AssetUpload, data: bytes) -> AssetUpload | None:
+    """A failed presentation optimization must not block canonical upload."""
+    try:
+        display = await asyncio.to_thread(create_car_display, data)
+        return await upload_render_asset(
+            owner_user_id=original.owner_user_id,
+            job_id=original.job_id,
+            render_input_draft_id=original.render_input_draft_id,
+            kind="car_display",
+            data=display,
+            content_type="image/webp",
+        )
+    except (
+        OSError,
+        ValueError,
+        Image.DecompressionBombError,
+        storage.StorageError,
+        httpx.HTTPError,
+    ):
+        logger.warning(
+            "car_display_generation_failed job_id=%s draft_id=%s user_id=%s",
+            original.job_id,
+            original.render_input_draft_id,
+            original.owner_user_id,
+        )
+        return None
+
+
+async def insert_optional_car_display(conn: asyncpg.Connection, asset: AssetUpload | None) -> None:
+    if asset is None:
+        return
+    try:
+        # Savepoint keeps optional derivative DB failures out of the canonical transaction.
+        async with conn.transaction():
+            await insert_asset(conn, asset)
+    except asyncpg.PostgresError:
+        logger.warning(
+            "car_display_persist_failed asset_id=%s user_id=%s", asset.id, asset.owner_user_id
+        )
+        try:
+            await delete_uploaded_asset(asset)
+        except (storage.StorageError, httpx.HTTPError):
+            logger.warning(
+                "car_display_cleanup_failed asset_id=%s user_id=%s", asset.id, asset.owner_user_id
+            )

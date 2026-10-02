@@ -394,3 +394,22 @@ def test_legacy_job_response_keeps_existing_shape(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == {"status": "queued", "output_image_url": None}
+
+
+def test_job_metadata_exposes_private_display_without_public_url():
+    fields = _base_asset_fields("car_display", kind="car_display")
+    fields.update(
+        car_display_asset_content_type="image/webp",
+        car_display_asset_width=1600,
+        car_display_asset_height=948,
+        car_display_asset_size_bytes=288350,
+    )
+    assets = jobs_api._assets_from_row(
+        _job_row(**fields), job_id="11111111-1111-4111-8111-111111111111"
+    )
+    display = assets["car_display"]
+    assert display.kind == "car_display"
+    assert display.url is None
+    assert display.content_type == "image/webp"
+    assert (display.width, display.height, display.size_bytes) == (1600, 948, 288350)
+    assert "car_display" in display.download_url
