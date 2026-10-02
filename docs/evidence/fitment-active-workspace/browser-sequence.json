@@ -1,0 +1,57 @@
+[
+  {
+    "label": "initial summaries",
+    "count": 0,
+    "focus": "BODY",
+    "kind": "none"
+  },
+  {
+    "label": "Recognize",
+    "count": 1,
+    "focus": "fitment-recognition-title",
+    "kind": "vehicle-recognition",
+    "recognitionPresent": true
+  },
+  {
+    "label": "Apply Audi Q8",
+    "count": 1,
+    "focus": "fitment-vehicle-editor-title",
+    "kind": "vehicle-editor",
+    "recognitionPresent": false
+  },
+  {
+    "label": "Save",
+    "count": 1,
+    "focus": "fitment-vehicle-editor-title",
+    "kind": "vehicle-editor",
+    "recognitionPresent": false
+  },
+  {
+    "label": "Confirm details",
+    "count": 1,
+    "focus": "fitment-variant-title",
+    "kind": "vehicle-variant",
+    "recognitionPresent": false
+  },
+  {
+    "label": "Select 55 TFSI quattro",
+    "count": 1,
+    "focus": "vehicle-variant",
+    "kind": "vehicle-variant",
+    "recognitionPresent": false
+  },
+  {
+    "label": "Confirm configuration",
+    "count": 0,
+    "focus": "reselect-vehicle",
+    "kind": "none",
+    "recognitionPresent": false
+  },
+  {
+    "label": "Edit Wheel",
+    "count": 1,
+    "focus": "fitment-rim-editor-title",
+    "kind": "rim-editor",
+    "recognitionPresent": false
+  }
+]
