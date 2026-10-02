@@ -1,0 +1,40 @@
+{
+  "verified_at": "2026-10-01T22:07:59.576841+00:00",
+  "frontend_version": {
+    "build": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+    "built_at": "2026-10-01T21:22:03Z"
+  },
+  "gateway_health": {
+    "status": "ok"
+  },
+  "feature_flags": {
+    "FITMENT_VERDICT_ENABLED": "true",
+    "RIM_URL_RESOLVER_ENABLED": "true",
+    "VEHICLE_IDENTITY_ENABLED": "true",
+    "WORKER_ENABLED": "true",
+    "VEHICLE_IDENTITY_PROVIDER": "openai"
+  },
+  "backend_deploy": {
+    "id": "dep-davcsov9nhgc73fu80j0",
+    "status": "live",
+    "commit": {
+      "id": "7ac81e2171cff69bd0ea02372a6ae920ff27a444",
+      "message": "Merge pull request #245 from NickElixir/fix/fitment-vnext-ui-fidelity\n\nfix(fitment): align VNext UI with frozen v13 reference",
+      "createdAt": "2026-10-01T21:19:29Z"
+    },
+    "finishedAt": "2026-10-01T21:21:56.733699Z"
+  },
+  "telegram": {
+    "webapp_url": "https://dream-wheels-ai-webapp-staging.vercel.app",
+    "token_present": true,
+    "get_me_ok": true,
+    "bot_username": "dream_wheels_ai_staging_bot",
+    "menu": {
+      "type": "web_app",
+      "text": "Open Staging App",
+      "web_app": {
+        "url": "https://dream-wheels-ai-webapp-staging.vercel.app/t/"
+      }
+    }
+  }
+}
