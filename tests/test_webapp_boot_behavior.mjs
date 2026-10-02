@@ -22,7 +22,7 @@ function storage() {
     };
 }
 
-function bootApi({ savedStorage = storage(), telegram = true, deployedBuild = "new-build" } = {}) {
+function bootApi({ savedStorage = storage(), telegram = true, deployedBuild = "new-build", savedSession = storage() } = {}) {
     let reloads = 0;
     const document = {
         documentElement: { dataset: { appBuild: "old-build" } },
@@ -36,7 +36,7 @@ function bootApi({ savedStorage = storage(), telegram = true, deployedBuild = "n
         location: { search: "", reload() { reloads += 1; } },
         scrollTo() {},
     };
-    const sessionStorage = storage();
+    const sessionStorage = savedSession;
     const context = {
         URL, URLSearchParams, console, document, window,
         fetch: async () => ({ ok: true, async json() { return { build: deployedBuild }; } }),
@@ -50,7 +50,12 @@ const applicationRouteContext = () => null;
 const isApplicationRoute = () => false;
 const safeApplicationReturnPath = () => null;
 ${appSource}
-globalThis.__bootApi = { checkCurrentBuild, setView, restoreTelegramTopLevelView, getView: () => state.view };
+hydrateFilesFromDraft = async () => {};
+renderIdentityFlow = () => {};
+refreshButtonsForCurrentView = () => {};
+loadDashboardData = async () => {};
+syncApplicationAuthWall = () => {};
+globalThis.__bootApi = { state, bootstrapAuthenticatedApplication, readFitmentNavigationContext, checkCurrentBuild, setView, restoreTelegramTopLevelView, getView: () => state.view };
 `, context);
     return { ...context.__bootApi, storage: savedStorage, sessionStorage, reloadCount: () => reloads };
 }
@@ -78,4 +83,20 @@ test("job-specific views do not replace the saved top-level view", () => {
     const reopened = bootApi({ savedStorage });
     reopened.restoreTelegramTopLevelView();
     assert.equal(reopened.getView(), "wallet");
+});
+
+
+test("M4 triage: authenticated website boot skips a normal completed Fitment context restoration", async () => {
+    const savedSession = storage();
+    savedSession.setItem("dreamWheelsFitmentNavigationContext", JSON.stringify({jobId:"ordinary-completed-render",originView:"render-detail",activeSection:"vehicle"}));
+    const app = bootApi({savedSession,telegram:false});
+    app.state.applicationAuthRequired = true;
+    app.state.frontendAuthState = {status:"AUTHENTICATED",principalVerified:true,protectedApiReady:true};
+    app.state.view = "fitment";
+    assert.equal(app.readFitmentNavigationContext().jobId, "ordinary-completed-render");
+    assert.equal(await app.bootstrapAuthenticatedApplication(), true);
+    // Characterize the unfixed website boot, including ordinary product contexts.
+    assert.equal(app.state.fitmentJobId, "");
+    assert.equal(app.state.applicationDataReady, true);
+    assert.equal(app.readFitmentNavigationContext().jobId, "ordinary-completed-render");
 });

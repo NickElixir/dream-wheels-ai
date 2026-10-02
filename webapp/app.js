@@ -4293,6 +4293,26 @@ function validateFitmentForm() {
     return missing;
 }
 
+function fitmentBaseVehicleAwaitingConfirmation() {
+    const overview = state.fitmentOverview;
+    return overview?.vehicle_state === "unconfirmed"
+        && fitmentNextAction(overview) === "complete_vehicle_details"
+        && !state.fitmentVehicleDirty
+        && ["make", "model", "year", "market"].every((field) => (
+            overview.vehicle?.[field] !== null && overview.vehicle?.[field] !== undefined && overview.vehicle?.[field] !== ""
+        ));
+}
+
+function fitmentVehicleFormForPresentation() {
+    const vehicle = state.fitmentForm?.vehicle || state.fitmentOverview?.vehicle || {};
+    return {
+        ...vehicle,
+        make: fitmentCatalogueCanonicalValue("makes", vehicle.make) || vehicle.make,
+        model: fitmentCatalogueCanonicalValue("models", vehicle.model) || vehicle.model,
+        year: fitmentCatalogueCanonicalValue("years", vehicle.year) || vehicle.year,
+    };
+}
+
 function fitmentVehicleConfirmationRequired(overview = state.fitmentOverview) {
     return state.fitmentActiveSection === "vehicle"
         && fitmentNextAction(overview) === "complete_vehicle_details";
@@ -6781,13 +6801,14 @@ function fitmentCatalogueSelectionItem(kind, value, items = []) {
     const canonical = ["regions", "markets"].includes(kind)
         ? fitmentCatalogueMemoryKey("regions", value)
         : normalized;
-    return items.find((item) => {
+    const identityMatch = items.find((item) => {
         const itemValue = fitmentOptionValue(item).trim().toLocaleLowerCase();
-        const itemLabel = fitmentOptionLabel(item).trim().toLocaleLowerCase();
         return itemValue === normalized
-            || itemLabel === normalized
             || (["regions", "markets"].includes(kind) && itemValue === canonical);
-    }) || null;
+    });
+    if (identityMatch) return identityMatch;
+    const labelMatches = items.filter((item) => fitmentOptionLabel(item).trim().toLocaleLowerCase() === normalized);
+    return labelMatches.length === 1 ? labelMatches[0] : null;
 }
 
 function fitmentCatalogueSelectionMatches(kind, value, items) {
@@ -10754,7 +10775,8 @@ function vnextFitmentSnapshot() {
         canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentMutationsLocked()),
         retryAvailable,
         vehicle,
-        vehicleForm: state.fitmentForm?.vehicle || vehicle,
+        vehicleForm: fitmentVehicleFormForPresentation(),
+        vehicleAwaitingConfirmation: fitmentBaseVehicleAwaitingConfirmation(),
         vehicleTitle: [vehicle.make, vehicle.model].filter(Boolean).join(" "),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
         vehiclePreview: state.fitmentVehiclePhotoUrl || fitmentPreviewAsset(job, "vehicle"),
@@ -10969,6 +10991,7 @@ window.dreamwheelsFitmentBridge = {
             ensureRequiredFitmentVariantLookup();
         }
         else if (action === "save-vehicle") void saveVnextFitment("vehicle");
+        else if (action === "confirm-vehicle" && fitmentBaseVehicleAwaitingConfirmation()) void saveVnextFitment("vehicle");
         else if (action === "save-rim") void saveVnextFitment("rim");
         else if (action === "check") void runFitmentCheck();
         else if (action === "recovery") navigateFitmentRecovery(value);

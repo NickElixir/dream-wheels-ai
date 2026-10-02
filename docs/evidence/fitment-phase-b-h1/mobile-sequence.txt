@@ -1,0 +1,54 @@
+- main:
+  - navigation:
+    - button "LADA single market"
+    - button "Lexus multi market"
+  - heading "Проверка совместимости" [level=1]
+  - button "Назад"
+  - group "Автомобиль и колесный диск":
+    - generic "Источники и состояние данных":
+      - region "Lexus RX":
+        - paragraph: Автомобиль
+        - generic: Фото недоступно
+        - heading "Lexus RX" [level=2]
+        - paragraph:
+          - generic: Источник данных
+          - strong: Фото автомобиля
+        - button "Изменить"
+        - button "Распознать автомобиль" [disabled]
+        - button "Указать вручную"
+        - paragraph: Выберите комплектацию автомобиля
+      - region "BBS CI-R":
+        - paragraph: Колесный диск
+        - generic: Фото недоступно
+        - heading "BBS CI-R" [level=2]
+        - paragraph:
+          - generic: Источник данных
+          - strong: Ссылка на товар
+          - generic: shop.example.test
+        - button "Изменить"
+        - button "Распознать колесный диск"
+        - button "Изменить параметры"
+        - paragraph: Параметры подтверждены
+    - region "Выберите комплектацию":
+      - heading "Выберите комплектацию" [level=2]
+      - group "Варианты комплектации":
+        - button "Version A США+ / Sedan Выбрать":
+          - strong: Version A
+          - generic: США+ / Sedan
+          - generic: Выбрать
+        - button "Version B США+ / Sedan Выбрать":
+          - strong: Version B
+          - generic: США+ / Sedan
+          - generic: Выбрать
+        - button "Подтвердить комплектацию" [disabled]
+        - button "Указать вручную"
+  - region "Проверка совместимости":
+    - heading "Проверка совместимости" [level=2]
+    - paragraph: Выберите комплектацию автомобиля
+    - generic: Автомобиль
+    - strong: —
+    - generic: Колесный диск
+    - strong: BBS CI-R – SKU SKU-38 – 18″ / 8J / 5×112 / DIA 66,6 / ET 38
+    - button "Проверить совместимость" [disabled]
+    - button "Создать изображение"
+  - generic: "{ \"vehicle_state\": \"confirmed_incomplete\", \"next_action\": \"select_vehicle_variant\", \"vehicle_revision\": 3, \"market\": \"usdm\", \"wheel_unchanged\": true, \"calls\": [ { \"method\": \"PATCH\", \"path\": \"/jobs/local-h1-job/fitment\", \"payload\": { \"expected_vehicle_revision\": 1, \"expected_rim_revision\": 7, \"vehicle\": { \"make\": \"lexus\", \"model\": \"rx\", \"year\": 2020, \"market\": \"usdm\" } } }, { \"method\": \"PATCH\", \"path\": \"/jobs/local-h1-job/fitment\", \"payload\": { \"expected_vehicle_revision\": 2, \"expected_rim_revision\": 7, \"vehicle\": { \"make\": \"Lexus\", \"model\": \"RX\", \"year\": 2020, \"market\": \"usdm\" } } }, { \"method\": \"POST\", \"path\": \"/jobs/local-h1-job/fitment/vehicle-variants\", \"market\": \"usdm\" } ] }"
