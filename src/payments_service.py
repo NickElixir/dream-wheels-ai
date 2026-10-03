@@ -11,6 +11,7 @@ from typing import Any
 import asyncpg
 
 from src.config import (
+    PAYMENT_PENDING_TIMEOUT_SECONDS,
     PURCHASE_GRANT_TTL_DAYS,
     ROBOKASSA_HASH_ALGO,
     ROBOKASSA_IS_TEST,
@@ -37,6 +38,7 @@ TWOPLACES = Decimal("0.01")
 PAYMENT_STATUS_PENDING = "pending"
 PAYMENT_STATUS_PAID = "paid"
 PAYMENT_STATUS_FAILED = "failed"
+PAYMENT_STATUS_CANCELLED = "cancelled"
 PAYMENT_PROVIDER_ROBOKASSA = "robokassa"
 PAYMENT_CURRENCY_RUB = "RUB"
 PAYMENT_DELIVERY_CHANNEL_WEBSITE = "website"
@@ -561,4 +563,46 @@ async def mark_payment_paid(
         """,
         invoice_id,
     )
+    logger.info(
+        "payment_id=%s old_status=%s new_status=paid reason=provider_callback",
+        row["id"],
+        row["status"],
+    )
     return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+
+
+async def cancel_expired_pending_payments(
+    conn: asyncpg.Connection, *, batch_size: int = 100
+) -> int:
+    """Bounded local timeout; never overwrite a settled payment or grant credits."""
+    if not 1 <= batch_size <= 1000:
+        raise ValueError("batch_size must be between 1 and 1000")
+    async with conn.transaction():
+        rows = await conn.fetch(
+            """
+            WITH expired AS (
+                SELECT id
+                FROM payments
+                WHERE status = 'pending'
+                  AND created_at < statement_timestamp() - ($1 * INTERVAL '1 second')
+                ORDER BY created_at, id
+                LIMIT $2
+                FOR UPDATE SKIP LOCKED
+            )
+            UPDATE payments p
+            SET status = 'cancelled', updated_at = statement_timestamp()
+            FROM expired e
+            WHERE p.id = e.id AND p.status = 'pending'
+              AND p.created_at < statement_timestamp() - ($1 * INTERVAL '1 second')
+            RETURNING p.id, EXTRACT(EPOCH FROM (statement_timestamp() - p.created_at)) AS age
+            """,
+            PAYMENT_PENDING_TIMEOUT_SECONDS,
+            batch_size,
+        )
+    for row in rows:
+        logger.info(
+            "payment_id=%s old_status=pending new_status=cancelled reason=timeout age_seconds=%s",
+            row["id"],
+            int(row["age"]),
+        )
+    return len(rows)

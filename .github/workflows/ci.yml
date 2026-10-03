@@ -105,3 +105,8 @@ jobs:
         env:
           TEST_VEHICLE_CONFIRMATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
         run: pytest -q tests/test_vehicle_confirmation_provenance.py
+
+      - name: Verify payment timeout, late callbacks and credit races on isolated PostgreSQL
+        env:
+          TEST_PAYMENT_LIFECYCLE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: pytest -q tests/test_payment_lifecycle_postgres.py

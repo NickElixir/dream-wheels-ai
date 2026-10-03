@@ -7,7 +7,7 @@ from typing import Literal
 PaymentProviderName = Literal["robokassa", "telegram_stars"]
 PaymentCurrency = Literal["RUB", "XTR"]
 PaymentDeliveryChannel = Literal["website", "mini_app", "bot"]
-PaymentStatus = Literal["pending", "paid", "failed", "refunded"]
+PaymentStatus = Literal["pending", "paid", "failed", "refunded", "cancelled"]
 
 
 @dataclass(frozen=True, slots=True)

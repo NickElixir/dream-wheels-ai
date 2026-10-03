@@ -646,6 +646,8 @@ const I18N = {
             openingPayment: "Открываем Robokassa...",
             paymentSuccess: "Проверяем оплату. Обновляем баланс",
             paymentFail: "Платеж не завершен",
+            paymentPaid: "Оплачен",
+            paymentFailed: "Ошибка",
             pendingFresh: "Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд",
             pendingStale: "Подтверждение оплаты ещё не получено. Обновите статус позже",
             authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
@@ -727,6 +729,8 @@ const I18N = {
         pending: "В ожидании",
         paid: "Оплачено",
         created: "Создан",
+        cancelled: "Отменён",
+        refunded: "Возвращён",
         locale: "RU",
         credits: "рендеров",
     },
@@ -1100,6 +1104,8 @@ const I18N = {
             openingPayment: "Opening Robokassa...",
             paymentSuccess: "Checking payment. Refreshing balance",
             paymentFail: "Payment was not completed",
+            paymentPaid: "Paid",
+            paymentFailed: "Error",
             pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds",
             pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later",
             authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
@@ -1175,6 +1181,8 @@ const I18N = {
         pending: "Pending",
         paid: "Paid",
         created: "Created",
+        cancelled: "Cancelled",
+        refunded: "Refunded",
         locale: "EN",
         credits: "renders",
     },
@@ -8907,9 +8915,11 @@ function getVisibleHistoryItems() {
 }
 
 function formatPaymentStatus(status) {
-    if (status === "paid") return t("paid");
+    if (status === "paid") return t("wallet.paymentPaid");
     if (status === "pending") return t("pending");
-    if (status === "failed" || status === "cancelled" || status === "expired") return t("failed");
+    if (status === "cancelled") return t("cancelled");
+    if (status === "refunded") return t("refunded");
+    if (status === "failed" || status === "expired") return t("wallet.paymentFailed");
     return t("created");
 }
 
