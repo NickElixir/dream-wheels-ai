@@ -7,27 +7,34 @@ PRE_RENDER_FITMENT_V2 = DRAFT
 PRE_RENDER_FITMENT_V2_STATE_INVENTORY = DRAFT
 PRE_RENDER_FITMENT_V2_UI = NOT_FROZEN
 RUNTIME_IMPLEMENTATION = NOT_STARTED
+DELIVERY = DEFERRED_POST_RELEASE
 ```
 
-This document is the next design-contract artifact for moving Standard Fitment
+This document is the design-contract inventory for moving Standard Fitment
 earlier in the Dream Wheels user flow, before the user decides whether to spend
-a render.
+a render. Delivery is explicitly deferred until after Release 1 by
+`docs/adr/0005-release1-create-fitment-boundary.md`.
+
+Release 1 remains render-first at the persistence/navigation level. This V2 artifact
+must not be used to expand the Release 1 scope or to add a second upload flow inside
+Fitment.
 
 It does **not** replace or rewrite the existing frozen V1 contracts in place.
 
 Authority order while this V2 artifact is still draft:
 
-1. `docs/fitment/fitment-verdict-v1.md` remains authoritative for current
+1. `docs/adr/0005-release1-create-fitment-boundary.md` is authoritative for the Release 1 Create/Fitment ownership boundary and the decision to defer pre-render Fitment.
+2. `docs/fitment/fitment-verdict-v1.md` remains authoritative for current
    Standard Fitment verdict meaning and deterministic rule semantics.
-2. `docs/ui/ui-development-process.md` remains authoritative for UI delivery
+3. `docs/ui/ui-development-process.md` remains authoritative for UI delivery
    order.
-3. `docs/ui-design-code.md` remains the current application visual and
+4. `docs/ui-design-code.md` remains the current application visual and
    terminology authority until a separately approved design-code revision.
-4. `docs/ui/fitment-ui-state-spec-v1.md` remains the frozen V1 behavioural
+5. `docs/ui/fitment-ui-state-spec-v1.md` remains the frozen V1 behavioural
    reference for the currently implemented Fitment UI.
-5. `docs/handoffs/14-garage-fitment-flow-decisions.md` supplies the approved
+6. `docs/handoffs/14-garage-fitment-flow-decisions.md` supplies the approved
    product decisions that motivate this V2 flow.
-6. This document defines the **draft V2 state inventory and V1 delta** only.
+7. This document defines the **draft V2 state inventory and V1 delta** only.
 
 No runtime implementation or UI freeze is authorized by this document.
 
