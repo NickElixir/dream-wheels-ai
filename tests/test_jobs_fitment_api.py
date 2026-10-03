@@ -2950,3 +2950,35 @@ def test_same_variant_apply_records_intent_under_lock_and_rejects_race(monkeypat
         assert conn.events[0][1][3] == "vehicle_confirmation_intent"
         assert conn.events[0][1][6:8] == (10, 10)
         assert json.loads(conn.events[0][1][10])["outcome"] == "confirmed"
+
+
+@pytest.mark.parametrize(
+    "wheel_section",
+    [
+        {"rim": {"offset_et_mm": 35.25}},
+        {"front_rim": {"offset_et_mm": 35.25}},
+        {"rim": {"offset_et_mm": 35.25, "confirmed_fields": ["offset_et_mm"]}},
+        {"setup_mode": "staggered"},
+    ],
+)
+def test_staggered_wheel_sections_still_require_rear(monkeypatch, wheel_section):
+    row = _fitment_row(is_staggered=True)
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, *_args):
+            raise AssertionError("invalid Wheel request must not persist any mutation")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    result = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={"expected_vehicle_revision": 1, "expected_rim_revision": 1, **wheel_section},
+    )
+    assert result.status_code == 422
+    assert result.json()["detail"] == {"code": "validation_error", "field": "rear_rim"}
