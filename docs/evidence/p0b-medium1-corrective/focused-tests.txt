@@ -1,0 +1,17 @@
+✔ MEDIUM-1 launch failure is superseded by successful Wheel Save, with current summary and no fake execution (71.434833ms)
+✔ MEDIUM-1 successful Vehicle canonical Save supersedes launch failure (5.746459ms)
+✔ MEDIUM-1 authoritative reload clears launch failure and current Check wins including backend failure (15.084167ms)
+✔ MEDIUM-1 failed or invalid overview reload retains launch failure (14.827292ms)
+✔ MEDIUM-1 invalid Save, failed Save and editor interactions retain launch failure (8.569083ms)
+✔ MEDIUM-1 successful Save clears local failure without resurrecting a stale verdict or losing a newer Wheel edit (8.117167ms)
+✔ MEDIUM-1 guarded authoritative Check read clears flag while failed and rejected stale reads retain it (10.920416ms)
+✔ MEDIUM-1 a late overview from a superseded context cannot clear the current launch failure (3.865458ms)
+✔ MEDIUM-1 Retry and reopening Fitment preserve existing reset semantics (5.129208ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1754.183458

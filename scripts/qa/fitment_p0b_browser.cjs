@@ -6,10 +6,10 @@ if (!["127.0.0.1", "localhost", "[::1]"].includes(new URL(base).hostname)) throw
 fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000},locale:'ru-RU'});
- const errors=[],requests=[],checks=[];let overview,checkStatus='queued',delayPatch=false,releasePatch,checkCounter=0;
+ const errors=[],requests=[],checks=[];let overview,checkStatus='queued',delayPatch=false,releasePatch,checkCounter=0,launchFailure=false;
  const jobId='11111111-1111-4111-8111-111111111111';
  const job={job_id:jobId,status:'completed',fitment_available:true,created_at:'2026-10-03T00:00:00Z',result_url:base+'/assets/demo-vehicle-zeekr.jpg',assets:{car_original:{download_url:base+'/assets/demo-vehicle-zeekr.jpg'},rim_original:{download_url:base+'/assets/demo-rim-xtrike.png'},result:{url:base+'/assets/demo-vehicle-zeekr.jpg'}}};
- await page.route('**/app.js?*',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(repo+'/webapp/app.js','utf8')+'\nwindow.__qa={state,setView,renderFitment,renderDashboard,buildDefaultDemoFitmentOverview,fitmentFormFromOverview,openFitmentView,runFitmentCheck,setVnextFitmentField,saveVnextFitment,vnextFitmentSnapshot,notifyFitmentBridge,clearFitmentCheckPolling};'}));
+ await page.route('**/app.js?*',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(repo+'/webapp/app.js','utf8')+'\nwindow.__qa={state,setView,renderFitment,renderDashboard,buildDefaultDemoFitmentOverview,fitmentFormFromOverview,openFitmentView,runFitmentCheck,setVnextFitmentField,saveVnextFitment,vnextFitmentSnapshot,notifyFitmentBridge,clearFitmentCheckPolling,loadFitmentOverview};'}));
  await page.route('**/auth/app-auth.bundle.js',r=>r.fulfill({body:''}));await page.route('https://telegram.org/**',r=>r.fulfill({body:''}));
  await page.route('**/*',async r=>{let p=new URL(r.request().url()).pathname;if(p.startsWith('/api/backend'))p=p.slice(12);if(!['/jobs','/identity','/cabinet','/fitment','/account','/analytics'].some(x=>p.startsWith(x)))return r.fallback();
   const method=r.request().method();requests.push({method,path:p,body:method==='POST'||method==='PATCH'?r.request().postDataJSON():null});let status=200,body={};
@@ -20,6 +20,7 @@ fs.mkdirSync(out,{recursive:true});
    const saved=structuredClone(overview);Object.assign(saved.rim,payload.rim);Object.assign(saved.front_rim.rim,payload.rim);saved.rim_revision++;saved.rim_setup_revision++;saved.rim_setup_state='confirmed_ready';saved.next_action={kind:'run_standard_check'};saved.current_check=null;
    if(delayPatch)await new Promise(resolve=>releasePatch=resolve);overview=saved;body=saved;
   }else if(p.endsWith('/fitment'))body=overview;
+  else if(p==='/fitment/checks'&&method==='POST'&&launchFailure){checkCounter++;status=500;body={detail:'provider_timeout'};}
   else if(p==='/fitment/checks'&&method==='POST'){checkCounter++;body={id:'execution-'+checkCounter,execution_status:checkStatus,retry_mode:'retryable',vehicle_identity_id:overview.vehicle_identity_id,rim_setup_id:overview.rim_setup_id};}
   else if(p.startsWith('/fitment/checks/'))body={id:'execution-'+checkCounter,execution_status:checkStatus,retry_mode:'retryable'};
   else if(p==='/cabinet')body={balance:31,credit_packages:[],payments:[],user:{id:77}};
@@ -39,6 +40,42 @@ fs.mkdirSync(out,{recursive:true});
    if(selector)await page.locator(selector).scrollIntoViewIfNeeded();
   }
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' horizontal overflow');await page.screenshot({path:out+'/'+name+'.jpg',type:'jpeg',quality:75,fullPage:true});checks.push(name);}
+ if(process.env.P0B_QA_FOCUS==='medium1') {
+  for(const width of [1440,390]) {
+   await page.setViewportSize({width,height:width===390?844:1000});await seed();
+   const root=page.locator('[data-vnext-fitment-root]');
+   launchFailure=true;
+   await root.locator('[data-fitment-action="check"]').click();
+   await page.waitForFunction(()=>window.__qa.state.fitmentCheckStartFailed);
+   assert((await root.innerText()).includes('Проверку выполнить не удалось'));
+   if(width===390)await root.locator('.vnext-fitment__standard').scrollIntoViewIfNeeded();
+   await capture('m1-launch-failed-'+width);
+   await root.locator('[data-fitment-action="edit-rim"][data-value=""]').first().click();
+   await root.locator('[data-wheel-picker-open="rim.offset_et_mm"]').click();
+   const value=width===1440?'36.25':'37.25';
+   await root.locator('[data-wheel-picker-search]').fill(value);
+   await root.locator('.vnext-fitment__picker-manual [data-wheel-picker-value]').click();
+   assert(await page.evaluate(()=>window.__qa.state.fitmentCheckStartFailed));
+   const oldRevision=await page.evaluate(()=>window.__qa.state.fitmentOverview.rim_revision);
+   await root.locator('[data-fitment-action="save-rim"]').first().click();
+   await page.waitForFunction(()=>!window.__qa.state.fitmentSaving&&!window.__qa.state.fitmentCheckStartFailed);
+   assert.equal(await page.evaluate(()=>window.__qa.state.fitmentOverview.rim_revision),oldRevision+1);
+   assert.equal(await page.evaluate(()=>window.__qa.state.fitmentCheck),null);
+   assert(!(await root.innerText()).includes('Проверку выполнить не удалось'));
+   assert(await root.locator('[data-fitment-action="check"]').isEnabled());
+   if(width===390)await root.locator('.vnext-fitment__standard').scrollIntoViewIfNeeded();
+   await capture('m1-wheel-saved-'+width);
+   await root.locator('[data-fitment-action="check"]').click();
+   await page.waitForFunction(()=>window.__qa.state.fitmentCheckStartFailed);
+   await page.evaluate(async()=>{await window.__qa.loadFitmentOverview('11111111-1111-4111-8111-111111111111',{suppressAutomaticResolver:true});});
+   assert.equal(await page.evaluate(()=>window.__qa.state.fitmentCheckStartFailed),false);
+   assert(!(await root.innerText()).includes('Проверку выполнить не удалось'));
+   if(width===390)await root.locator('.vnext-fitment__standard').scrollIntoViewIfNeeded();
+   await capture('m1-overview-reloaded-'+width);
+  }
+  fs.writeFileSync(out+'/evidence.json',JSON.stringify({checks,requests,errors,viewports:[1440,390],environment:'Local runtime with controlled API responses. MEDIUM-1 focused QA, not live staging E2E.'},null,2)+'\n');
+  assert.deepEqual(errors,[]);await browser.close();console.log('MEDIUM-1 Browser PASS',checks.length);return;
+ }
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:width===390?844:1000});await seed();
   const root=page.locator('[data-vnext-fitment-root]');assert(await root.locator('[data-fitment-action="check"]').isEnabled());assert((await root.innerText()).includes('Фото диска'));await capture('clean-'+width);

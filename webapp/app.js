@@ -4535,6 +4535,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
                     const check = await detail.json();
                     if (!isCurrentRequest() || state.fitmentCheck?.id !== selectedCheckId) return;
                     state.fitmentCheck = check;
+                    state.fitmentCheckStartFailed = false;
                 }
             }
         }
@@ -5093,6 +5094,7 @@ function demoServerTransition(action, payload = {}) {
 function updateDemoFitmentState(overview) {
     persistDemoFitmentOverview(overview);
     state.fitmentOverview = overview;
+    state.fitmentCheckStartFailed = false;
     state.fitmentForm = fitmentFormFromOverview(overview);
     state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
     state.fitmentRimManualFields = [];
@@ -7271,6 +7273,7 @@ async function loadFitmentOverview(
             return restoration;
         }
         state.fitmentOverview = overview;
+        state.fitmentCheckStartFailed = false;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
@@ -8299,6 +8302,7 @@ async function refreshFitmentCheckCurrentness() {
         if (isCurrentFitmentRuntimeContext(runtimeContext) && checkId === state.fitmentCheck?.id && contextKey === fitmentCheckContextKey()
             && !(serverAlreadyMarkedStale && check.is_current === true)) {
             state.fitmentCheck = check;
+            state.fitmentCheckStartFailed = false;
         }
     } catch {
         // Currentness is refreshed on the next explicit check/history read.
@@ -8321,6 +8325,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
             const check = await response.json();
             if (token !== state.fitmentCheckPollToken || contextKey !== fitmentCheckContextKey()) return;
             state.fitmentCheck = check;
+            state.fitmentCheckStartFailed = false;
             state.fitmentChecking = fitmentCheckIsPending(check);
             renderFitment();
             if (fitmentCheckIsPending(check)) {
@@ -8379,6 +8384,7 @@ async function runFitmentCheck() {
         const check = await response.json();
         if (!isCurrentRequest()) return;
         state.fitmentCheck = check;
+        state.fitmentCheckStartFailed = false;
         accepted = true;
         if (fitmentCheckIsPending(state.fitmentCheck)) {
             pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
@@ -8560,6 +8566,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
         const wheelDraft = savingVehicle || submittedWheel !== JSON.stringify(fitmentComparableWheel(state.fitmentForm))
             ? captureFitmentWheelDraft() : null;
         state.fitmentOverview = overview;
+        state.fitmentCheckStartFailed = false;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         clearFitmentResolverFeedback({ close: true });
