@@ -1,5 +1,7 @@
 # P0-C1b VEHICLE CONFIRMATION PROVENANCE REPORT
 
+Initial report for reviewed HEAD `f16b2857996e96c2bdc87c85ef52ca6dc999ea4a`. Payload/readback conclusions below are superseded by [MEDIUM-1 corrective report](medium1/corrective-report.md); the current contract requires `outcome=confirmed` for genuine confirmation evidence.
+
 ## 1. Base staging SHA
 
 `6224349af76a5f3ce5385c4f9b52c51de124cd9a`, verified against fetched staging before creating the implementation branch.

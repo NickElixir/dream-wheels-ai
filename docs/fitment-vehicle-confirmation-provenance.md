@@ -9,10 +9,14 @@ Vehicle confirmation is evidenced by an explicit audit intent, rather than infer
 Columns supply `job_id`, `vehicle_identity_id`, server-derived `actor_user_id`, `actor_type=user`, and database `created_at`. Both Vehicle revision columns contain the canonical revision **at confirmation**, so they may be equal. Rim IDs/revisions are null for this Vehicle-only event. Its JSON payload is:
 
 ```json
-{"intent":"explicit_confirm","surface":"technical_fitment","action":"save_vehicle"}
+{"intent":"explicit_vehicle_action","surface":"technical_fitment","action":"save_vehicle","outcome":"saved"}
 ```
 
 Actions are `save_vehicle`, `apply_vehicle_variant`, or `replace_vehicle_variant`, selected by the backend endpoint. The payload contains no auth data, client actor ID, email, or raw request headers.
+
+The backend derives `outcome` from the final canonical row using `_vehicle_state_from_row`: `confirmed_ready` yields `confirmed`; other states yield `saved`. Variant actions additionally require `_modification_from_row(row)[0] == "confirmed"`. No request outcome is trusted.
+
+Event presence alone is not proof of genuine confirmation. `outcome=saved` records an accepted explicit save whose final fields still require confirmation; `outcome=confirmed` records an accepted explicit action leaving genuinely confirmed canonical fields (and configuration for variant actions). The genuine-confirmation evidence predicate is `event_type=vehicle_confirmation_intent AND changes.outcome=confirmed`.
 
 This event proves an accepted explicit save/confirmation action. It does not assert that every field is confirmed, that a catalogue variant is ready, that a Check passed, or that rendering is permitted. Existing staged entry/confirmation semantics remain authoritative.
 
@@ -48,6 +52,6 @@ Historical N-06 downgrade: **NO-GO / NOT EXECUTED**. Historical provenance is in
 
 `tests/test_vehicle_confirmation_provenance.py` uses a uniquely named schema on an explicitly configured **local-only** PostgreSQL target. It applies real model migrations, invokes the canonical endpoint function, reads persisted events via SQL and the existing history query, tests concurrency, and forces an audit insert failure to prove rollback. Provider/auth doubles avoid external services; ownership is still enforced by the real owner-filtered database query.
 
-`docs/evidence/p0c1b-vehicle-confirmation-provenance/confirmation-readback.sql` is the read-only future provenance example. Presence is positive evidence at the recorded revision; absence never proves absence of a historical user action.
+`docs/evidence/p0c1b-vehicle-confirmation-provenance/confirmation-readback.sql` is the read-only future provenance example. Only rows with `outcome=confirmed` are positive confirmation evidence at the recorded revision; absence never proves absence of a historical user action.
 
 The browser fixture executes production controller/view modules with deterministic local API doubles. Its screenshots/transcript verify UI behavior; the PostgreSQL test supplies persistence/transaction evidence. These checks are not authenticated staging E2E.

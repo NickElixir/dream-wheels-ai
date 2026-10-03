@@ -1260,6 +1260,9 @@ async def _insert_vehicle_confirmation_intent(
     """Persist accepted owner intent independently of canonical mutation history."""
     if row["owner_user_id"] != user_id or not row["vehicle_identity_id"]:
         raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+    confirmed = _vehicle_state_from_row(row) == "confirmed_ready"
+    if action != "save_vehicle":
+        confirmed = confirmed and _modification_from_row(row)[0] == "confirmed"
     await _insert_fitment_change_event(
         conn,
         job_id=row["job_id"],
@@ -1273,9 +1276,10 @@ async def _insert_vehicle_confirmation_intent(
         rim_revision_before=None,
         rim_revision_after=None,
         changes={
-            "intent": "explicit_confirm",
+            "intent": "explicit_vehicle_action",
             "surface": "technical_fitment",
             "action": action,
+            "outcome": "confirmed" if confirmed else "saved",
         },
     )
 

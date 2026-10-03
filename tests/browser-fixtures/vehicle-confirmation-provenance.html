@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
 <link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
 <style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font)}main{max-width:1120px;margin:auto;padding:24px 16px 80px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;color:var(--vnext-text)}#evidence{color:var(--vnext-text-secondary);white-space:pre-wrap;font-size:12px}</style>
-</head><body><main data-vnext-root><nav><button id="lada">LADA single market</button><button id="lexus">Lexus multi market</button><button id="result">Set active section: result</button></nav><div id="fitment" data-vnext-fitment-root></div><pre id="evidence"></pre></main>
+</head><body><main data-vnext-root><nav><button id="first">First Vehicle Save</button><button id="lada">LADA single market</button><button id="lexus">Lexus multi market</button><button id="result">Set active section: result</button></nav><div id="fitment" data-vnext-fitment-root></div><pre id="evidence"></pre></main>
 <script type="module">
 // Serve from the repository root. Execute the production controller/view with
 // deterministic local API doubles, never a staging session or provider.
@@ -22,7 +22,7 @@ let fixtureWheelBaseline;
 window.c1bConsoleErrors=[];
 window.addEventListener("error",event=>window.c1bConsoleErrors.push(event.message));
 window.addEventListener("unhandledrejection",event=>window.c1bConsoleErrors.push(String(event.reason)));
-const fixtureOptions = () => fixtureScenario === "lada"
+const fixtureOptions = () => fixtureScenario !== "lexus"
     ? { make: "lada", model: "vesta", makeLabel: "LADA", modelLabel: "Vesta", markets: [{value:"russia",label:"Russia+"}] }
     : { make: "lexus", model: "rx", makeLabel: "Lexus", modelLabel: "RX", markets: [{value:"eudm",label:"Europe"},{value:"usdm",label:"USA"}] };
 const fixtureResponse = body => new Response(JSON.stringify(body), {status:200,headers:{"Content-Type":"application/json"}});
@@ -54,6 +54,7 @@ window.fetch = async (url, options = {}) => {
         fixtureOverview = {...fixtureOverview,vehicle_revision:fixtureOverview.vehicle_revision+(same && fixtureOverview.vehicle.is_user_confirmed ? 0 : 1),
             vehicle:{...fixtureOverview.vehicle,make:config.makeLabel,model:config.modelLabel,year:payload.vehicle.year,market:payload.vehicle.market,is_user_confirmed:same},
             vehicle_state:same?"confirmed_ready":"unconfirmed",next_action:{kind:same?"select_vehicle_variant":"complete_vehicle_details"}};
+        fixtureOverview.vehicle_field_states = Object.fromEntries(["make","model","year","region"].map(field=>[field,{value:fixtureOverview.vehicle[field==="region"?"market":field],state:same?"confirmed":"proposed",is_user_confirmed:same,source:same?"user_confirmed":"user_entered"}]));
         return fixtureResponse(fixtureOverview);
     }
     if (path.endsWith("/fitment")) return fixtureResponse(fixtureOverview);
@@ -71,7 +72,7 @@ renderFitment = () => {
     } else refreshFitmentView(fixtureRoot,model);
     const canonical = state.fitmentOverview;
     const wheel = JSON.stringify([canonical.rim,canonical.front_rim,canonical.rear_rim,canonical.rim_revision,canonical.rim_setup_revision]);
-    document.querySelector('#evidence').textContent = JSON.stringify({active_section:state.fitmentActiveSection,vehicle_state:canonical.vehicle_state,next_action:canonical.next_action.kind,vehicle_revision:canonical.vehicle_revision,market:canonical.vehicle.market,wheel_unchanged:wheel===fixtureWheelBaseline,console_errors:window.c1bConsoleErrors,calls:fixtureCalls},null,2);
+    document.querySelector('#evidence').textContent = JSON.stringify({active_section:state.fitmentActiveSection,vehicle_state:canonical.vehicle_state,form_vehicle:state.fitmentForm.vehicle,invalid:state.fitmentFormState.invalidFields,missing:state.fitmentFormState.missingFields,next_action:canonical.next_action.kind,vehicle_revision:canonical.vehicle_revision,market:canonical.vehicle.market,wheel_unchanged:wheel===fixtureWheelBaseline,console_errors:window.c1bConsoleErrors,calls:fixtureCalls},null,2);
 };
 function fixtureStart(scenario) {
     clearFitmentRuntimeRequests();
@@ -81,6 +82,12 @@ function fixtureStart(scenario) {
     fixtureOverview.job_id = "local-h1-job";
     fixtureOverview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:true};
     fixtureOverview.vehicle_state = "confirmed_ready";
+    if (scenario === "first") {
+        fixtureOverview.vehicle = {make:null,model:null,year:null,market:null,is_user_confirmed:false};
+        fixtureOverview.vehicle_revision = 0;
+        fixtureOverview.vehicle_state = "empty";
+    }
+    fixtureOverview.vehicle_field_states = Object.fromEntries(["make","model","year","region"].map(field=>[field,{value:fixtureOverview.vehicle[field==="region"?"market":field],state:scenario==="first"?"missing":"confirmed",is_user_confirmed:scenario!=="first",source:scenario==="first"?null:"user_confirmed"}]));
     fixtureOverview.vehicle_candidates = {};
     fixtureOverview.rim_setup_state = "confirmed_ready";
     const wheel = {brand:"BBS",model:"CI-R",sku:"SKU-38",product_url:"https://shop.example.test/bbs",wheel_diameter_in:18,wheel_width_j:8,bolt_count:5,pcd_mm:112,center_bore_mm:66.6,offset_et_mm:38,title:"BBS CI-R"};
@@ -98,6 +105,7 @@ function fixtureStart(scenario) {
     state.fitmentJobId = fixtureOverview.job_id;
     state.fitmentOverview = fixtureOverview;
     state.fitmentForm = fitmentFormFromOverview(fixtureOverview);
+    if (scenario === "first") state.fitmentForm.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia"};
     state.fitmentFormState = {status:"clean",baseline:cloneFitmentForm(state.fitmentForm),missingFields:[],invalidFields:[]};
     state.fitmentVehicleDirty = false;
     state.fitmentVehicleEditing = true;
@@ -112,6 +120,7 @@ function fixtureStart(scenario) {
     void loadFitmentCatalogue("makes", {}, {contextVersion:version}).then(makes => revalidateFitmentCatalogueChain(version, {preloaded:{makes}}));
     renderFitment();
 }
+document.querySelector('#first').onclick = () => fixtureStart("first");
 document.querySelector('#lada').onclick = () => fixtureStart("lada");
 document.querySelector('#lexus').onclick = () => fixtureStart("lexus");
 document.querySelector('#result').onclick = () => setFitmentActiveSection("result");

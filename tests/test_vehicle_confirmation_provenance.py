@@ -118,7 +118,7 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
 
             async def events(job_id=job):
                 return await admin.fetch(
-                    "SELECT event_type,actor_user_id,vehicle_identity_id,vehicle_revision_before,vehicle_revision_after,changes FROM fitment_change_events WHERE job_id=$1::uuid ORDER BY created_at,id",
+                    "SELECT id,event_type,actor_user_id,vehicle_identity_id,vehicle_revision_before,vehicle_revision_after,changes FROM fitment_change_events WHERE job_id=$1::uuid ORDER BY created_at,id",
                     job_id,
                 )
 
@@ -133,6 +133,8 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
             first = await save(values, 0)
             vi = await admin.fetchval("SELECT vehicle_identity_id FROM jobs WHERE id=$1::uuid", job)
             assert first.vehicle_revision == 1 and vi is not None
+            assert first.vehicle_state == "unconfirmed"
+            assert all(f.state == "proposed" for f in first.vehicle_field_states.values())
             assert sorted(e["event_type"] for e in await events()) == [
                 "user_save",
                 "vehicle_confirmation_intent",
@@ -147,8 +149,12 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 == 1
             )
 
+            assert json.loads(first_intent["changes"])["outcome"] == "saved"
             confirmed = await save(values, 1)
             assert confirmed.vehicle_revision == 2
+            assert confirmed.vehicle_state == "confirmed_ready"
+            assert all(f.is_user_confirmed for f in confirmed.vehicle_field_states.values())
+            assert json.loads((await intents())[-1]["changes"])["outcome"] == "confirmed"
             before = dict(await admin.fetchrow("SELECT * FROM vehicle_identities WHERE id=$1", vi))
             current_row = await jobs_api._fetch_fitment_job_row(admin, job_id=job, user_id=owner)
             context = {
@@ -171,7 +177,9 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 await admin.fetchrow("SELECT * FROM fitment_checks WHERE id=$1", check)
             )
             assert (await jobs_api._current_check_for_job(admin, current_row)).id == str(check)
-            await save(values, 2)
+            noop = await save(values, 2)
+            assert noop.vehicle_state == "confirmed_ready"
+            assert json.loads((await intents())[-1]["changes"])["outcome"] == "confirmed"
             after = dict(await admin.fetchrow("SELECT * FROM vehicle_identities WHERE id=$1", vi))
             assert after == before  # Includes revision, timestamps, provenance and mappings.
             current_row = await jobs_api._fetch_fitment_job_row(admin, job_id=job, user_id=owner)
@@ -198,6 +206,10 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
             )
             assert sum(isinstance(o, HTTPException) and o.status_code == 409 for o in outcomes) == 1
             assert len(await intents()) == 6
+            accepted = next(o for o in outcomes if not isinstance(o, Exception))
+            assert accepted.vehicle_state == "confirmed_incomplete"
+            assert accepted.vehicle_field_states["year"].state == "proposed"
+            assert json.loads((await intents())[-1]["changes"])["outcome"] == "saved"
             assert (
                 await admin.fetchval("SELECT revision FROM vehicle_identities WHERE id=$1", vi) == 3
             )
@@ -261,7 +273,11 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
             async with admin.transaction(readonly=True):
                 audit_rows = await admin.fetch(audit_select)
                 assert await admin.fetchval("SHOW transaction_read_only") == "on"
-            assert len(audit_rows) == 6
+            all_outcomes = [json.loads(e["changes"])["outcome"] for e in await intents()]
+            assert all_outcomes.count("saved") == 2
+            assert all_outcomes.count("confirmed") == 4
+            assert len(audit_rows) == 4
+            assert first_intent["id"] not in {r["confirmation_event_id"] for r in audit_rows}
             assert all(row["actor_user_id"] == owner for row in audit_rows)
             print(
                 "C1B_DB_EVIDENCE="
@@ -273,6 +289,11 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                         "same_value_full_row_unchanged": True,
                         "changed_save_revision": 3,
                         "persisted_intents": 6,
+                        "saved_intents": 2,
+                        "confirmed_evidence_rows": 4,
+                        "first_save_state": first.vehicle_state,
+                        "confirmation_state": confirmed.vehicle_state,
+                        "changed_save_state": accepted.vehicle_state,
                         "failed_job_intents": 0,
                         "rollback_preserved_identity_count": True,
                         "migration_applied_twice": True,

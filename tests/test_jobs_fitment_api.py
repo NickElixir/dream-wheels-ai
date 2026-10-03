@@ -1260,9 +1260,10 @@ def test_fitment_save_preserves_revision_when_payload_is_unchanged(monkeypatch):
     assert args[5] == 10
     assert args[6:8] == (1, 1)
     assert json.loads(args[10]) == {
-        "intent": "explicit_confirm",
+        "intent": "explicit_vehicle_action",
         "surface": "technical_fitment",
         "action": "save_vehicle",
+        "outcome": "confirmed",
     }
 
 
@@ -2159,6 +2160,7 @@ def test_modification_multiple_never_selects_first_then_user_selection_confirms(
     assert body["selection_source"] == "user"
     assert body["modification_vehicle_revision"] == 10
     assert body["selected_modification"]["modification_slug"] == "v8"
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
     assert conn.row["vehicle_provider_mappings"]["wheel_size"]["selection_source"] == "user"
 
 
@@ -2221,6 +2223,7 @@ def test_single_variant_opt_in_waits_for_explicit_revision_bound_apply(monkeypat
     )
     assert applied.status_code == 200
     assert applied.json()["modification_state"] == "confirmed"
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
 
 
 def test_modification_stale_revision_and_provider_failure_never_resurrect_selection(monkeypatch):
@@ -2464,6 +2467,7 @@ def test_confirmed_replacement_is_atomic_and_preserves_vehicle_revision_and_rim(
         "modification_user_confirmed",
         "vehicle_confirmation_intent",
     ]
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
     assert conn.row["vehicle_modification"] == "4.0 V8"
 
 
@@ -2522,6 +2526,7 @@ def test_confirmed_replacement_same_selection_is_idempotent_and_conflicts_are_sa
     assert len(conn.events) == 1
     assert conn.events[0][1][3] == "vehicle_confirmation_intent"
     assert conn.events[0][1][6:8] == (10, 10)
+    assert json.loads(conn.events[0][1][10])["outcome"] == "confirmed"
 
 
 def test_confirmed_replacement_rejects_stale_target_without_mutating(monkeypatch):
@@ -2944,3 +2949,4 @@ def test_same_variant_apply_records_intent_under_lock_and_rejects_race(monkeypat
         assert len(conn.events) == 1
         assert conn.events[0][1][3] == "vehicle_confirmation_intent"
         assert conn.events[0][1][6:8] == (10, 10)
+        assert json.loads(conn.events[0][1][10])["outcome"] == "confirmed"
