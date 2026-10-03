@@ -4,6 +4,8 @@
 
 Accepted.
 
+**Release 1 boundary update:** the Sprint 2 quick-identity flow below is historical. For the current Release 1 UI/product boundary, `docs/adr/0005-release1-create-fitment-boundary.md` supersedes any requirement that Create recognize or confirm the vehicle before rendering. Fitment is the sole owner of user-confirmed technical vehicle identity in Release 1.
+
 ## Decision
 
 Dream Wheels AI contains two independent pipelines:

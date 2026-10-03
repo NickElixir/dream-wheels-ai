@@ -21,12 +21,35 @@ Fitment Pipeline
 
 Rendering answers how wheels look. Fitment answers preliminary technical possibility. A visual render is never proof of technical compatibility.
 
+## Release 1 ownership boundary
+
+The current Release 1 product contract is defined by `docs/adr/0005-release1-create-fitment-boundary.md`:
+
+```text
+Create owns:
+- car photo
+- wheel photo/source
+- render
+
+Fitment owns:
+- vehicle recognition
+- vehicle catalogue
+- exact variant
+- wheel technical parameters
+- compatibility check
+```
+
+Release 1 remains render-first at the persistence/navigation level: Create produces a RenderJob, and Technical Fitment is opened from Result/History when needed. Pre-render Fitment is intentionally deferred until after Release 1 rather than expanding the current release scope.
+
+The deferred target uses a persistent Pair/Project parent with RenderJob and FitmentCheck as children, so Create and Fitment can later become two entry points to the same pair without duplicating upload flows.
+
 ## Canonical documents
 
 - `docs/ui-design-code.md` — approved UI rules through Sprint 3
 - `docs/ui/ui-development-process.md` — frozen mandatory UI delivery process
 - `docs/sprint-3-ui.md` — approved Sprint 3 layout and interaction reference
 - `docs/adr/0003-render-feedback-data-boundary.md` — feedback persistence and ML boundary
+- `docs/adr/0005-release1-create-fitment-boundary.md` — current Release 1 Create/Fitment ownership and deferred pre-render direction
 - `docs/render-feedback-api-contract-v1.md` — Sprint 3 API/data contract
 - `docs/fitment-schema.md`, `docs/fitment-api-contract-v1.md`, and Fitment ADRs — future Fitment work
 
@@ -50,7 +73,9 @@ Quick rim identity: diameter, mandatory width, PCD stored as `bolt_count` + `pcd
 
 No full vehicle catalogue, rim brand/model, SKU, ET/DIA, provider lookup, FitmentCheck, or verdict.
 
-**Status: completed.**
+**Status: completed as a historical Sprint 2 implementation.**
+
+The Assisted Identity UI is not the current Release 1 product target. Release 1 removes vehicle recognition/confirmation from Create; see ADR 0005.
 
 ### Sprint 2B — Production Vehicle VLM Resolver
 
