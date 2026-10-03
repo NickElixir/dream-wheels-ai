@@ -78,9 +78,9 @@ function parameters(model, rows) {
 
 function verdict(model) {
   const status = model.executionStatus;
-  if (status === "failed") {
-    const message = model.executionError || model.resultCopy || model.checkError || model.error;
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Не удалось выполнить проверку</h2>${message ? `<p>${esc(message)}</p>` : ""}<p>Подтверждённые данные сохранены.</p></section>`;
+  if (model.rimDraftDirty) return `<section class="vnext-fitment__verdict" role="status"><h2>Есть несохранённые изменения</h2><p>Сохраните параметры, чтобы проверить обновлённые данные.</p></section>`;
+  if (status === "failed" || model.checkStartFailed) {
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Проверку выполнить не удалось</h2><p>Попробуйте ещё раз.</p><p>Подтверждённые данные сохранены.</p></section>`;
   }
   if (status === "queued" || status === "processing" || model.checking) return `<section class="vnext-fitment__verdict"><p class="vnext-eyebrow">Техническая проверка</p>${loadingStatus("Проверяем совместимость…")}<p>${esc(model.vehicleTitle)} — ${esc(model.rimTitle)}</p>${model.checkError ? button("Обновить статус", "reload") : ""}</section>`;
   const check = model.check;
@@ -110,9 +110,16 @@ function sourceEditor(model) {
 }
 
 function evidence(model) {
-  const items = [...(model.blockingIssues || []), ...(model.conditions || [])];
-  if (model.check?.execution_status !== "completed" || !items.length) return "";
-  return `<section class="vnext-fitment__evidence"><ul>${items.map((item) => `<li>${esc(item.label || item.message || item.code || "Нет описания")}</li>`).join("")}</ul></section>`;
+  if (model.check?.execution_status !== "completed" || model.checkStartFailed) return "";
+  const seen = new Set();
+  const groups = [["Почему не подходит", model.blockingIssues], ["Что нужно уточнить", model.missingData], ["Условия установки", model.conditions], ["Дополнительная информация", model.advisories]]
+    .map(([title, items]) => ({ title, items: (items || []).map(item => item.label || item.message || item.code || "").filter(label => {
+      if (!label || seen.has(label)) return false;
+      seen.add(label); return true;
+    }) })).filter(group => group.items.length);
+  if (!groups.length) return "";
+  const blockersAndConditions = groups.some(group => group.title === "Почему не подходит") && groups.some(group => group.title === "Условия установки");
+  return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? '<p>Условия установки не отменяют причины несовместимости.</p>' : ""}</section>`;
 }
 
 function comparisonTable(model) {
@@ -322,21 +329,21 @@ export function fitmentMarkup(model = {}) {
   const variantRequired = model.nextAction === "select_vehicle_variant";
   const rimSetupState = model.frontRimSetupState || model.overview?.rim_setup_state || "unknown";
   const localReady = model.rimSaveReadiness?.ready && (model.rimDraftDirty || model.overview?.rim_setup_state !== "confirmed_ready");
-  const sourceStatus = state => model.rimSaveReadiness?.conflicts?.length ? "Требуется выбрать значение" : localReady ? model.rimEditing ? "Готово к сохранению" : "Есть несохранённые изменения" : rimSetupLabel(state);
+  const sourceStatus = state => model.rimSaveReadiness?.conflicts?.length ? "Требуется выбрать значение" : localReady ? model.rimEditing ? "Готово к сохранению" : "Есть несохранённые изменения" : model.rimDraftDirty ? "Есть несохранённые изменения" : rimSetupLabel(state);
   const rimStatus = model.setupMode === "staggered"
     ? `<span>Передняя ось: ${esc(sourceStatus(rimSetupState))}</span><span>Задняя ось: ${esc(sourceStatus(model.rearRimSetupState))}</span>`
     : esc(sourceStatus(rimSetupState));
   const vehicleStatus = model.vehicleStatus || "Требуется подтверждение";
   const configuration = model.vehicleVariantName ? `<div class="vnext-fitment__configuration"><p class="vnext-eyebrow">Комплектация</p><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span>Подтверждено</span></div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
-  const completedCurrent = model.check?.execution_status === "completed" && model.check.is_current !== false;
-  const retryState = model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
+  const completedCurrent = !model.rimDraftDirty && !model.checkStartFailed && model.check?.execution_status === "completed" && model.check.is_current !== false;
+  const retryState = model.checkStartFailed || model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
   const activeEditor = variantRequired && !model.manualVehicleEditing && !model.rimEditing || model.vehicleEditing || model.rimEditing;
-  const checkLabel = retryState ? model.executionStatus === "failed" ? "Повторить" : "Проверить ещё раз" : completedCurrent ? "Проверить ещё раз" : "Проверить совместимость";
-  const checkAction = button(checkLabel, "check", { primary: !completedCurrent && !activeEditor && model.nextAction === "run_standard_check", disabled: !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
+  const checkLabel = retryState ? (model.checkStartFailed || model.executionStatus === "failed") ? "Повторить проверку" : "Проверить ещё раз" : completedCurrent ? "Проверить ещё раз" : "Проверить совместимость";
+  const checkAction = (model.rimDraftDirty ? button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || model.checking }) : "") + button(checkLabel, "check", { primary: !model.rimDraftDirty && !completedCurrent && !activeEditor && model.nextAction === "run_standard_check", disabled: model.rimDraftDirty || !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
   const renderAction = button("Создать изображение", "create-image", { primary: completedCurrent && !activeEditor });
   const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
-  const checkError = model.checkError && model.executionStatus !== "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
+  const checkError = !model.checkStartFailed && model.executionStatus !== "failed" && model.checkError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.checkError)}</p>` : "";
   const markup = `<section class="vnext-fitment">
     <div class="vnext-fitment__workspace" ${model.wheelPicker ? "inert" : ""}>
     <div class="vnext-fitment__topline"><h1>Проверка совместимости</h1>${button("Назад", "back")}</div>
@@ -353,15 +360,15 @@ export function fitmentMarkup(model = {}) {
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
         ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
-        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Ссылка на товар</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
+        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>${esc(model.rimSourceLabel || "Источник не указан")}</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
         <div class="vnext-fitment__source-action">${button("Распознать колесный диск", "resolve-rim", { primary: !activeEditor && !model.resolver?.canChooseSku && model.overview?.rim_setup_state !== "confirmed_ready", disabled: !model.resolver?.url || model.resolver?.loading })}${!model.rimEditing ? button("Изменить параметры", "edit-rim") : ""}</div>
         <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
     <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
     </fieldset>
-    ${model.check || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${evidence(model)}${comparisonTable(model)}${preliminaryWarning(model)}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
-    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}<div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary || "—")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary || "—")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
+    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
+    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}<div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary || "—")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary || "—")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
     </div>
     ${wheelPickerMarkup(model.wheelPicker ? { ...model.wheelPicker, locale: model.locale } : null)}
   </section>`;
@@ -479,6 +486,19 @@ export function createFitmentView(model = {}, callbacks = {}) {
 }
 
 const fitmentEnglishCopy = {
+  "Сохраните параметры, чтобы проверить обновлённые данные.": "Save the details to check the updated data.",
+  "Проверку выполнить не удалось": "The check could not be completed",
+  "Попробуйте ещё раз.": "Please try again.",
+  "Повторить проверку": "Retry check",
+  "Фото диска": "Wheel photo",
+  "Указано вручную": "Entered manually",
+  "Источник не указан": "Source not specified",
+  "Почему не подходит": "Why it does not fit",
+  "Что нужно уточнить": "What needs clarification",
+  "Условия установки": "Installation conditions",
+  "Дополнительная информация": "Additional information",
+  "Условия установки не отменяют причины несовместимости.": "Installation conditions do not override the incompatibility reasons.",
+
   "Автомобиль не указан": "Car not specified",
   "Указать автомобиль": "Specify car",
   "Распознавание автомобиля": "Vehicle recognition",

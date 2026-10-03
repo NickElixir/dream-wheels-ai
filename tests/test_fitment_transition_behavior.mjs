@@ -198,7 +198,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             applyRimSourceValues, markRimFieldEdited,
             selectFitmentRimVariant,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
-            snapshot: vnextFitmentSnapshot,
+            snapshot: vnextFitmentSnapshot, fitmentWheelDraftIsDirty, fitmentWheelSource, buildRenderExpiryCohorts, vnextDashboardSnapshot,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling, clearFitmentRuntimeRequests, reconcileRequiredFitmentWorkspace,
             useRealVariantLookup() { ensureRequiredFitmentVariantLookup = globalThis.__realEnsureRequiredFitmentVariantLookup; },
@@ -334,6 +334,7 @@ test("Standard Check uses canonical IDs only, locks mutations and rejects duplic
     const overview = overviewFor(api, "run_standard_check");
     seed(api, overview, "result");
     api.state.fitmentForm.rim.offset_et_mm = "99,125";
+    api.state.fitmentFormState.baseline = api.cloneFitmentForm(api.state.fitmentForm);
     const request = api.runFitmentCheck();
     assert.equal(api.fitmentMutationsLocked(), true);
     api.setVnextFitmentField("rim.offset_et_mm", "30");
@@ -2081,4 +2082,343 @@ test('P0-A corrective: disabled resolver releases browser claim for a later enab
     api.openFitmentView('behavior-job',{originView:'render-detail'});
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls.filter(call=>call.endsWith('rim-source/resolve')).length,2);
+});
+
+
+test("P0-B domain dirty normalizes decimals and empty values, keeps ET zero and checks all Wheel fields", async () => {
+    const { api, calls } = navigationApi();
+    seed(api, overviewFor(api, "run_standard_check"), "rim");
+    api.state.fitmentForm.rim.center_bore_mm = "66,6";
+    api.state.fitmentFormState.baseline.rim.center_bore_mm = 66.6;
+    api.state.fitmentForm.rim.offset_et_mm = "0";
+    api.state.fitmentFormState.baseline.rim.offset_et_mm = 0;
+    api.state.fitmentForm.rim.sku = "";
+    api.state.fitmentFormState.baseline.rim.sku = null;
+    assert.equal(api.fitmentWheelDraftIsDirty(), false);
+    assert.equal(api.snapshot().canRunCheck, true);
+    for (const [scope, key, value] of [["rim", "offset_et_mm", "1"], ["rim", "brand", "Other"], ["rear_rim", "pcd_mm", "120"]]) {
+        const old = api.state.fitmentForm[scope][key];
+        api.state.fitmentForm[scope][key] = value;
+        assert.equal(api.fitmentWheelDraftIsDirty(), true);
+        assert.equal(api.snapshot().canRunCheck, false);
+        await api.runFitmentCheck();
+        api.state.fitmentForm[scope][key] = old;
+    }
+    api.state.fitmentForm.setup_mode = "staggered";
+    assert.equal(api.fitmentWheelDraftIsDirty(), true);
+    assert.equal(calls.filter(call => call.startsWith("POST")).length, 0);
+});
+
+test("P0-B Wheel Save advances only canonical Wheel and preserves edits made while PATCH is in flight", async () => {
+    let release, payload;
+    const { api } = navigationApi({ routes: { "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+        payload = JSON.parse(options.body);
+        return new Promise(resolve => { release = resolve; });
+    } } });
+    const original = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    seed(api, original, "rim");
+    api.setVnextFitmentField("rim.offset_et_mm", "35.125");
+    const pending = api.saveFitment(undefined, { owner: "rim", confirmWheelFields: true });
+    assert.equal(payload.vehicle, undefined);
+    api.setVnextFitmentField("rim.offset_et_mm", "36.25");
+    const saved = structuredClone(original);
+    saved.rim.offset_et_mm = 35.125;
+    if (saved.front_rim) saved.front_rim.rim.offset_et_mm = 35.125;
+    saved.rim_revision += 1; saved.rim_setup_revision += 1;
+    release(response(200, saved)); await pending;
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "36.25");
+    assert.equal(api.fitmentWheelDraftIsDirty(), true);
+    assert.equal(api.snapshot().canRunCheck, false);
+    assert.equal(api.state.fitmentOverview.vehicle_revision, original.vehicle_revision);
+    assert.equal(JSON.stringify(api.state.fitmentOverview.vehicle), JSON.stringify(original.vehicle));
+    api.setVnextFitmentField("rim.offset_et_mm", "35,125");
+    assert.equal(api.fitmentWheelDraftIsDirty(), false);
+    assert.equal(api.snapshot().canRunCheck, true);
+});
+
+test("P0-B invalid dirty Save opens Wheel editor without PATCH or Check", async () => {
+    const { api, calls } = navigationApi(); seed(api, overviewFor(api, "run_standard_check"), "result");
+    api.setVnextFitmentField("rim.center_bore_mm", "");
+    await api.saveVnextFitment("rim");
+    assert.equal(api.state.fitmentRimEditing, true);
+    assert.ok(api.state.fitmentFormState.missingFields.includes("rim.center_bore_mm"));
+    assert.equal(api.state.fitmentError, "");
+    assert.equal(calls.some(call => call.startsWith("PATCH") || call.startsWith("POST")), false);
+});
+
+test("P0-B launch failure is separate from failed execution and retry uses a new canonical request", async () => {
+    let attempts = 0, release;
+    const { api, calls } = navigationApi({ routes: { "POST /api/backend/fitment/checks": () => {
+        attempts++;
+        return attempts === 1 ? response(500, { detail: "provider_timeout" }) : new Promise(resolve => { release = resolve; });
+    } } });
+    seed(api, overviewFor(api, "run_standard_check"), "result");
+    await api.runFitmentCheck();
+    assert.equal(api.state.fitmentCheck, null);
+    assert.equal(api.snapshot().checkStartFailed, true);
+    const html = fitmentMarkup(api.snapshot());
+    assert.match(html, /Проверку выполнить не удалось/);
+    assert.match(html, /Повторить проверку/);
+    assert.doesNotMatch(html, /provider_timeout|500/);
+    const retry = api.runFitmentCheck(); await api.runFitmentCheck();
+    assert.equal(calls.filter(call => call.startsWith("POST")).length, 2);
+    release(response(200, { id: "new-execution", execution_status: "failed", retry_mode: "retryable" }));
+    await retry;
+    assert.equal(api.snapshot().checkStartFailed, false);
+    assert.equal(api.snapshot().executionStatus, "failed");
+});
+
+test("P0-B wheel source follows canonical URL or photo and hides credentials/query", () => {
+    const { api } = navigationApi();
+    const source = api.fitmentWheelSource({ rim: { product_url: "https://private:secret@www.shop.test/wheel?token=secret" } }, null);
+    assert.equal(source.rimSourceLabel, "Ссылка на товар"); assert.equal(source.rimSourceDomain, "shop.test");
+    assert.equal(api.fitmentWheelSource({ rim: { product_url: "javascript:alert(1)" } }, { assets: { rim_original: {} } }).rimSourceLabel, "Фото диска");
+    assert.equal(api.fitmentWheelSource({ rim_field_states: { offset_et_mm: { source: "user_input" } } }, null).rimSourceLabel, "Указано вручную");
+    assert.equal(api.fitmentWheelSource({}, null).rimSourceLabel, "Источник не указан");
+});
+
+test("P0-B expiry displays all positive active buckets sorted nearest first, permanent last", () => {
+    const { api } = navigationApi();
+    api.state.creditPackages = [
+        { id: "later", remainingCredits: 6, expiresAt: "2099-12-01T00:00:00Z" },
+        { id: "permanent", remainingCredits: 3, expiresAt: null },
+        { id: "early", remainingCredits: 10, expiresAt: "2099-10-01T00:00:00Z" },
+        { id: "middle", remainingCredits: 15, expiresAt: "2099-11-01T00:00:00Z" },
+        { id: "zero", remainingCredits: 0, expiresAt: "2099-10-01T00:00:00Z" },
+        { id: "expired", remainingCredits: 100, expiresAt: "2020-01-01T00:00:00Z" },
+    ];
+    api.state.balance = 34;
+    assert.equal(api.buildRenderExpiryCohorts().map(item => item.key).join(","), "early,middle,later,permanent");
+    const snapshot = api.vnextDashboardSnapshot();
+    assert.equal(snapshot.expiry.length, 4);
+    assert.equal(snapshot.expiry.reduce((sum, item) => sum + item.credits, 0), 34);
+    assert.equal(snapshot.expiry.at(-1).expiresLabel, "без срока");
+});
+
+
+test("P0-B a Wheel edit during currentness refresh cannot become the saved baseline", async () => {
+    let release;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {
+            const next = structuredClone(api.state.fitmentOverview);
+            next.rim.offset_et_mm = 40;
+            if (next.front_rim) next.front_rim.rim.offset_et_mm = 40;
+            next.rim_revision += 1;
+            next.current_check = { id: "old-check", execution_status: "completed", verdict: "compatible", is_current: false };
+            return response(200, next);
+        },
+        "GET /api/backend/fitment/checks/old-check": () => new Promise(resolve => { release = resolve; }),
+    } });
+    seed(api, overviewFor(api, "run_standard_check"), "rim");
+    api.state.fitmentCheck = { id: "old-check", execution_status: "completed", verdict: "compatible" };
+    api.setVnextFitmentField("rim.offset_et_mm", "40");
+    const saving = api.saveWithRealCurrentness(undefined, { owner: "rim", confirmWheelFields: true });
+    while (!release) await new Promise(resolve => setTimeout(resolve, 0));
+    api.setVnextFitmentField("rim.offset_et_mm", "41");
+    release(response(200, { id: "old-check", execution_status: "completed", verdict: "compatible", is_current: false }));
+    await saving;
+    assert.equal(Number(api.state.fitmentFormState.baseline.rim.offset_et_mm), 40);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "41");
+    assert.equal(api.snapshot().rimDraftDirty, true);
+    assert.equal(api.snapshot().canRunCheck, false);
+});
+
+function medium1ReadyOverview(api) {
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    const values = { bolt_count: 5, pcd_mm: 112, wheel_diameter_in: 19, wheel_width_j: 8.5, center_bore_mm: 66.6, offset_et_mm: 35 };
+    Object.assign(overview.rim, values);
+    Object.assign(overview.front_rim.rim, values);
+    overview.rim_setup_state = overview.front_rim.rim_setup_state = "confirmed_ready";
+    for (const [field, value] of Object.entries(values)) {
+        const meta = { value, state: "confirmed", source: "user_input", is_user_confirmed: true };
+        overview.rim_field_states[field] = meta;
+        overview.front_rim.field_states[field] = meta;
+    }
+    overview.current_check = null;
+    return overview;
+}
+
+async function medium1LaunchFailure(api) {
+    await api.runFitmentCheck();
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+    assert.equal(api.snapshot().checkStartFailed, true);
+    assert.match(fitmentMarkup(api.snapshot()), /Проверку выполнить не удалось/);
+}
+
+const medium1FailedLaunchRoute = {
+    "POST /api/backend/fitment/checks": () => response(500, { detail: "provider_timeout" }),
+};
+
+test("MEDIUM-1 launch failure is superseded by successful Wheel Save, with current summary and no fake execution", async () => {
+    const { api } = navigationApi({ routes: {
+        ...medium1FailedLaunchRoute,
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            const payload = JSON.parse(options.body);
+            assert.equal(payload.vehicle, undefined);
+            const saved = structuredClone(api.state.fitmentOverview);
+            Object.assign(saved.rim, payload.rim);
+            Object.assign(saved.front_rim.rim, payload.rim);
+            saved.rim_revision += 1; saved.rim_setup_revision += 1;
+            return response(200, saved);
+        },
+    } });
+    const baseline = medium1ReadyOverview(api); seed(api, baseline, "result");
+    await medium1LaunchFailure(api);
+    api.setVnextFitmentField("rim.offset_et_mm", "36.25");
+    assert.equal(api.state.fitmentCheckStartFailed, true, "a local edit cannot supersede failure");
+    await api.saveVnextFitment("rim");
+    assert.equal(api.state.fitmentOverview.rim_revision, baseline.rim_revision + 1);
+    assert.equal(api.state.fitmentCheckStartFailed, false);
+    assert.equal(api.state.fitmentCheck, null);
+    const model = api.snapshot();
+    assert.equal(model.rimDraftDirty, false); assert.equal(model.canRunCheck, true);
+    const html = fitmentMarkup(model);
+    assert.doesNotMatch(html, /Проверку выполнить не удалось/);
+    assert.match(html, /Данные готовы к проверке/);
+});
+
+test("MEDIUM-1 successful Vehicle canonical Save supersedes launch failure", async () => {
+    const { api } = navigationApi({ routes: {
+        ...medium1FailedLaunchRoute,
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            const payload = JSON.parse(options.body);
+            assert.ok(payload.vehicle); assert.equal(payload.rim, undefined);
+            const saved = structuredClone(api.state.fitmentOverview);
+            Object.assign(saved.vehicle, payload.vehicle);
+            saved.vehicle_revision += 1;
+            saved.next_action = { kind: "select_vehicle_variant" };
+            saved.modification_state = "none";
+            return response(200, saved);
+        },
+    } });
+    const original = medium1ReadyOverview(api); seed(api, original, "result");
+    await medium1LaunchFailure(api);
+    api.setVnextFitmentField("vehicle.body", "sedan");
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+    await api.saveFitment(undefined, { owner: "vehicle" });
+    assert.equal(api.state.fitmentOverview.vehicle_revision, original.vehicle_revision + 1);
+    assert.equal(api.state.fitmentCheckStartFailed, false);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()), /Проверку выполнить не удалось/);
+});
+
+test("MEDIUM-1 authoritative reload clears launch failure and current Check wins including backend failure", async () => {
+    for (const execution of [null, "completed", "failed"]) {
+        let current;
+        const { api } = navigationApi({ routes: {
+            ...medium1FailedLaunchRoute,
+            "GET /api/backend/jobs/behavior-job/fitment": () => response(200, current),
+        } });
+        current = medium1ReadyOverview(api); seed(api, current, "result");
+        await medium1LaunchFailure(api);
+        current = structuredClone(current);
+        current.current_check = execution ? { id: "new-current", execution_status: execution, verdict: execution === "completed" ? "compatible" : null, is_current: true, retry_mode: "retryable" } : null;
+        await api.loadFitmentOverview("behavior-job", { suppressAutomaticResolver: true });
+        assert.equal(api.state.fitmentCheckStartFailed, false);
+        assert.equal(api.snapshot().checkStartFailed, false);
+        const html = fitmentMarkup(api.snapshot());
+        if (execution === "failed") {
+            assert.equal(api.state.fitmentCheck.execution_status, "failed");
+            assert.match(html, /Проверку выполнить не удалось/);
+            assert.match(html, /Попробуйте ещё раз/);
+            assert.match(html, /Повторить проверку/);
+        } else {
+            assert.doesNotMatch(html, /Проверку выполнить не удалось/);
+            if (execution) assert.match(html, /Подходит/);
+        }
+    }
+});
+
+test("MEDIUM-1 failed or invalid overview reload retains launch failure", async () => {
+    for (const reload of [() => response(500, { detail: "offline" }), () => { throw new Error("network failure"); }, () => response(200, {})]) {
+        const { api } = navigationApi({ routes: { ...medium1FailedLaunchRoute, "GET /api/backend/jobs/behavior-job/fitment": reload } });
+        seed(api, medium1ReadyOverview(api), "result"); await medium1LaunchFailure(api);
+        await api.loadFitmentOverview("behavior-job", { suppressAutomaticResolver: true });
+        assert.equal(api.state.fitmentCheckStartFailed, true);
+    }
+});
+
+test("MEDIUM-1 invalid Save, failed Save and editor interactions retain launch failure", async () => {
+    const { api, calls } = navigationApi({ routes: {
+        ...medium1FailedLaunchRoute,
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => response(500, { detail: "save failed" }),
+    } });
+    seed(api, medium1ReadyOverview(api), "result"); await medium1LaunchFailure(api);
+    api.bridge.action("edit-rim");
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+    api.setVnextFitmentField("rim.center_bore_mm", "");
+    await api.saveVnextFitment("rim");
+    assert.equal(calls.filter(call => call.startsWith("PATCH")).length, 0);
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+    api.setVnextFitmentField("rim.center_bore_mm", "66.6");
+    api.setVnextFitmentField("rim.offset_et_mm", "36");
+    await api.saveVnextFitment("rim");
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+});
+
+test("MEDIUM-1 successful Save clears local failure without resurrecting a stale verdict or losing a newer Wheel edit", async () => {
+    let release;
+    const { api } = navigationApi({ routes: {
+        ...medium1FailedLaunchRoute,
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => new Promise(resolve => { release = resolve; }),
+    } });
+    const original = medium1ReadyOverview(api); seed(api, original, "result");
+    api.state.fitmentCheck = { id: "old-completed", execution_status: "completed", verdict: "compatible", is_current: true };
+    await medium1LaunchFailure(api);
+    api.setVnextFitmentField("rim.offset_et_mm", "36");
+    const saving = api.saveVnextFitment("rim");
+    api.setVnextFitmentField("rim.offset_et_mm", "37");
+    const saved = structuredClone(original);
+    saved.rim.offset_et_mm = saved.front_rim.rim.offset_et_mm = 36;
+    saved.rim_revision += 1; saved.rim_setup_revision += 1;
+    saved.current_check = { id: "old-completed", execution_status: "completed", verdict: "compatible", is_current: false };
+    release(response(200, saved)); await saving;
+    assert.equal(api.state.fitmentCheckStartFailed, false);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "37");
+    assert.equal(api.snapshot().rimDraftDirty, true);
+    assert.equal(api.snapshot().canRunCheck, false);
+    assert.equal(api.state.fitmentCheck.is_current, false);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()), /Проверку выполнить не удалось/);
+});
+
+test("MEDIUM-1 guarded authoritative Check read clears flag while failed and rejected stale reads retain it", async () => {
+    for (const kind of ["accepted", "failed", "reject-stale"]) {
+        const { api } = navigationApi({ routes: {
+            ...medium1FailedLaunchRoute,
+            "GET /api/backend/fitment/checks/current": () => kind === "failed" ? response(500, {}) : response(200, { id: "current", execution_status: "completed", verdict: "compatible", is_current: true }),
+        } });
+        seed(api, medium1ReadyOverview(api), "result");
+        api.state.fitmentCheck = { id: "current", execution_status: "completed", verdict: "compatible", is_current: kind !== "reject-stale" };
+        await medium1LaunchFailure(api);
+        await api.refreshCurrentness();
+        assert.equal(api.state.fitmentCheckStartFailed, kind !== "accepted");
+        if (kind === "reject-stale") assert.equal(api.state.fitmentCheck.is_current, false);
+    }
+});
+
+test("MEDIUM-1 a late overview from a superseded context cannot clear the current launch failure", async () => {
+    let release;
+    const { api } = navigationApi({ routes: { ...medium1FailedLaunchRoute, "GET /api/backend/jobs/behavior-job/fitment": () => new Promise(resolve => { release = resolve; }) } });
+    const original = medium1ReadyOverview(api); seed(api, original, "result"); await medium1LaunchFailure(api);
+    const loading = api.loadFitmentOverview("behavior-job", { suppressAutomaticResolver: true });
+    api.state.fitmentContextGeneration += 1;
+    release(response(200, original)); await loading;
+    assert.equal(api.state.fitmentCheckStartFailed, true);
+});
+
+test("MEDIUM-1 Retry and reopening Fitment preserve existing reset semantics", async () => {
+    let retry = false, release;
+    const { api } = navigationApi({ routes: {
+        "POST /api/backend/fitment/checks": () => retry ? new Promise(resolve => { release = resolve; }) : response(500, {}),
+        "GET /api/backend/jobs/behavior-job/fitment": () => response(500, {}),
+    } });
+    seed(api, medium1ReadyOverview(api), "result"); await medium1LaunchFailure(api);
+    retry = true;
+    const starting = api.runFitmentCheck();
+    assert.equal(api.state.fitmentCheckStartFailed, false, "Retry clears before its response");
+    release(response(200, { id: "retry-accepted", execution_status: "failed", retry_mode: "retryable" })); await starting;
+    assert.equal(api.state.fitmentCheckStartFailed, false);
+    assert.equal(api.state.fitmentCheck.execution_status, "failed");
+    api.state.fitmentCheckStartFailed = true;
+    api.openFitmentView("behavior-job");
+    assert.equal(api.state.fitmentCheckStartFailed, false, "view reset clears before loading");
 });

@@ -117,6 +117,8 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     fitmentOptionValue: item => item?.value || "", fitmentOptionLabel: item => item?.label || "",
     fitmentCatalogueOptionLabel: item => item.label,
     fitmentPreviewAsset: () => "",
+    fitmentWheelSource: () => ({ rimSourceLabel: "Источник не указан", rimSourceDomain: "" }),
+    fitmentWheelDraftIsDirty: () => false,
     demoRimTitle: () => "",
     fitmentRimTechnicalSummary: () => "",
     fitmentRimProvenance: () => "",
@@ -215,8 +217,9 @@ test("Fitment view renders exactly the four API verdicts and keeps execution fai
     assert.match(markup, new RegExp(label));
   }
   const failed = fitmentMarkup({ jobId: "job-a", overview: {}, executionStatus: "failed", check: { execution_status: "failed" }, error: "Provider is unavailable", retryAvailable: true, canRunCheck: true });
-  assert.match(failed, /Не удалось выполнить проверку/);
-  assert.match(failed, /Provider is unavailable/);
+  assert.match(failed, /Проверку выполнить не удалось/);
+  assert.doesNotMatch(failed, /Provider is unavailable/);
+  assert.match(failed, /Попробуйте ещё раз/);
   assert.doesNotMatch(failed, /Технические данные|Недостаточно данных|Не подходит|Подходит/);
 });
 
@@ -573,6 +576,8 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentFieldLabel: (path) => path,
     fitmentCatalogueItems: () => [], fitmentOptionValue: (value) => value?.value || "", fitmentOptionLabel: value => value?.label || "",
     fitmentCatalogueOptionLabel: (value) => value.label, fitmentPreviewAsset: () => "",
+    fitmentWheelSource: () => ({ rimSourceLabel: "Источник не указан", rimSourceDomain: "" }),
+    fitmentWheelDraftIsDirty: () => false,
     demoRimTitle: () => "", fitmentRimTechnicalSummary: () => "", fitmentRimProvenance: () => "",
     fitmentEffectiveRim: (value) => value.rim || {}, fitmentNextAction: (value) => value?.next_action?.kind,
     beginFitmentCatalogueContextChange() {}, renderFitment() {}, loadFitmentVehicleCatalogue() {},
@@ -866,4 +871,39 @@ test("final UI chip semantics use neutral unresolved choices and user-facing RU/
     assert.doesNotMatch(en,/[А-Яа-яЁё]/);
     assert.match(en,/Choose a value before saving\./);
   }
+});
+
+
+test("P0-B dirty Wheel replaces readiness and Check with Save in RU and EN", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = fitmentMarkup({ locale, rimDraftDirty: true, canRunCheck: true, nextAction: "run_standard_check" });
+    assert.match(markup, /data-fitment-action="check"[^>]*disabled/);
+    assert.match(markup, /vnext-button--primary[^>]*data-fitment-action="save-rim"/);
+    assert.doesNotMatch(markup, /Данные готовы к проверке/);
+    if (locale === "en") assert.doesNotMatch(markup, /[А-Яа-яЁё]/);
+  }
+});
+
+test("P0-B completed explanations keep backend groups separate and omit empty/duplicate groups", () => {
+  const cases = [
+    { verdict: "incompatible", blockingIssues: [{ label: "PCD mismatch" }, { label: "DIA too small" }], conditions: [{ label: "Use rings" }], advisories: [{ label: "Ask installer" }] },
+    { verdict: "unknown", missingData: [{ label: "ET" }, { label: "DIA" }] },
+    { verdict: "compatible_with_conditions", conditions: [{ label: "Use rings" }] },
+    { verdict: "compatible" },
+  ];
+  for (const model of cases) {
+    const markup = fitmentMarkup({ ...model, executionStatus: "completed", check: { execution_status: "completed", verdict: model.verdict } });
+    assert.equal(markup.includes("Почему не подходит"), Boolean(model.blockingIssues));
+    assert.equal(markup.includes("Что нужно уточнить"), Boolean(model.missingData));
+    assert.equal(markup.includes("Условия установки"), Boolean(model.conditions));
+    assert.equal(markup.includes("Дополнительная информация"), Boolean(model.advisories));
+    assert.equal(markup.includes("Условия установки не отменяют причины несовместимости."), model.verdict === "incompatible");
+    if (model.verdict === "compatible") assert.doesNotMatch(markup, /vnext-fitment__evidence/);
+  }
+  const duplicate = fitmentMarkup({ check: { execution_status: "completed", verdict: "incompatible" }, blockingIssues: [{ label: "shared" }], conditions: [{ label: "shared" }] });
+  assert.equal((duplicate.match(/<li>shared<\/li>/g) || []).length, 1);
+  assert.doesNotMatch(duplicate, /Условия установки/);
+  const english = fitmentMarkup({ locale: "en", check: { execution_status: "completed", verdict: "incompatible" }, blockingIssues: [{ label: "PCD mismatch" }], conditions: [{ label: "Use rings" }] });
+  assert.match(english, /Why it does not fit|Installation conditions do not override/);
+  assert.doesNotMatch(english, /[А-Яа-яЁё]/);
 });

@@ -1450,6 +1450,7 @@ const state = {
     fitmentVariantLookupContextKey: "",
     fitmentVariantLookupToken: 0,
     fitmentCheck: null,
+    fitmentCheckStartFailed: false,
     fitmentChecking: false,
     fitmentAuthRequired: false,
     fitmentFormState: { status: "clean", validation: "valid", baseline: null, missingFields: [], invalidFields: [] },
@@ -3894,8 +3895,25 @@ function cloneFitmentForm(form) {
     return JSON.parse(JSON.stringify(form || createEmptyFitmentForm()));
 }
 
+function fitmentComparableWheel(form = {}) {
+    const numeric = new Set(["wheel_diameter_in", "wheel_width_j", "bolt_count", "pcd_mm", "center_bore_mm", "offset_et_mm"]);
+    const comparable = (rim = {}) => Object.fromEntries(Object.keys(rim || {}).sort().map(key => {
+        const raw = rim[key];
+        const empty = raw == null || String(raw).trim() === "";
+        const number = numeric.has(key) && !empty ? normalizeFitmentNumber(raw) : null;
+        return [key, empty ? null : numeric.has(key) && number !== null ? number : String(raw).trim()];
+    }).filter(([, value]) => value !== null));
+    return { rim: comparable(form?.rim), rear_rim: comparable(form?.rear_rim), setup_mode: form?.setup_mode || "uniform" };
+}
+
+function fitmentWheelDraftIsDirty() {
+    return JSON.stringify(fitmentComparableWheel(state.fitmentForm))
+        !== JSON.stringify(fitmentComparableWheel(state.fitmentFormState.baseline));
+}
+
 function fitmentFormIsDirty() {
-    return JSON.stringify(state.fitmentForm) !== JSON.stringify(state.fitmentFormState.baseline);
+    return fitmentWheelDraftIsDirty()
+        || JSON.stringify(state.fitmentForm?.vehicle) !== JSON.stringify(state.fitmentFormState.baseline?.vehicle);
 }
 
 function markFitmentDirty() {
@@ -4517,6 +4535,7 @@ async function loadFitmentCheckHistory(overview = state.fitmentOverview) {
                     const check = await detail.json();
                     if (!isCurrentRequest() || state.fitmentCheck?.id !== selectedCheckId) return;
                     state.fitmentCheck = check;
+                    state.fitmentCheckStartFailed = false;
                 }
             }
         }
@@ -5075,6 +5094,7 @@ function demoServerTransition(action, payload = {}) {
 function updateDemoFitmentState(overview) {
     persistDemoFitmentOverview(overview);
     state.fitmentOverview = overview;
+    state.fitmentCheckStartFailed = false;
     state.fitmentForm = fitmentFormFromOverview(overview);
     state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
     state.fitmentRimManualFields = [];
@@ -7253,6 +7273,7 @@ async function loadFitmentOverview(
             return restoration;
         }
         state.fitmentOverview = overview;
+        state.fitmentCheckStartFailed = false;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         state.fitmentCheck = overview.current_check || null;
@@ -7327,6 +7348,7 @@ function openFitmentView(
     state.fitmentRestoreSection = ["vehicle", "rim", "result"].includes(restoreSection) ? restoreSection : "";
     state.fitmentOverview = null;
     state.fitmentCheck = null;
+    state.fitmentCheckStartFailed = false;
     state.fitmentCheckHistory = [];
     state.fitmentCheckHistoryLoading = false;
     state.fitmentWorkspaceReturn = null;
@@ -8280,6 +8302,7 @@ async function refreshFitmentCheckCurrentness() {
         if (isCurrentFitmentRuntimeContext(runtimeContext) && checkId === state.fitmentCheck?.id && contextKey === fitmentCheckContextKey()
             && !(serverAlreadyMarkedStale && check.is_current === true)) {
             state.fitmentCheck = check;
+            state.fitmentCheckStartFailed = false;
         }
     } catch {
         // Currentness is refreshed on the next explicit check/history read.
@@ -8302,6 +8325,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
             const check = await response.json();
             if (token !== state.fitmentCheckPollToken || contextKey !== fitmentCheckContextKey()) return;
             state.fitmentCheck = check;
+            state.fitmentCheckStartFailed = false;
             state.fitmentChecking = fitmentCheckIsPending(check);
             renderFitment();
             if (fitmentCheckIsPending(check)) {
@@ -8319,7 +8343,7 @@ function pollFitmentCheck(checkId, contextKey = fitmentCheckContextKey()) {
 
 async function runFitmentCheck() {
     const overview = state.fitmentOverview;
-    if (fitmentNextAction(overview) !== "run_standard_check" || fitmentMutationsLocked() || state.fitmentSaving || state.fitmentVehicleVariantApplying || state.fitmentSourceResolving) return;
+    if (fitmentNextAction(overview) !== "run_standard_check" || fitmentWheelDraftIsDirty() || state.fitmentVehicleDirty || fitmentMutationsLocked() || state.fitmentSaving || state.fitmentVehicleVariantApplying || state.fitmentSourceResolving) return;
     const contextKey = fitmentCheckContextKey();
     const token = state.fitmentCheckPollToken;
     const isCurrentRequest = () => token === state.fitmentCheckPollToken && contextKey === fitmentCheckContextKey();
@@ -8332,6 +8356,7 @@ async function runFitmentCheck() {
         return;
     }
     state.fitmentChecking = true;
+    state.fitmentCheckStartFailed = false;
     clearFitmentTransientMessage();
     state.fitmentError = "";
     renderFitment();
@@ -8359,13 +8384,15 @@ async function runFitmentCheck() {
         const check = await response.json();
         if (!isCurrentRequest()) return;
         state.fitmentCheck = check;
+        state.fitmentCheckStartFailed = false;
         accepted = true;
         if (fitmentCheckIsPending(state.fitmentCheck)) {
             pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
         }
     } catch (error) {
         if (!isCurrentRequest()) return;
-        state.fitmentError = error?.message || t("errors.requestFailed");
+        state.fitmentCheckStartFailed = true;
+        state.fitmentError = "";
     } finally {
         if ((isCurrentRequest() || accepted) && contextKey === fitmentCheckContextKey()) {
             if (!fitmentCheckIsPending(state.fitmentCheck)) state.fitmentChecking = false;
@@ -8458,6 +8485,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
     const unsavedVehicleDraft = !savingVehicle && state.fitmentVehicleDirty
         ? cloneFitmentForm(state.fitmentForm).vehicle : null;
     const vehicleMarketEdited = state.fitmentVehicleMarketEdited;
+    const submittedWheel = JSON.stringify(fitmentComparableWheel(state.fitmentForm));
     const missing = savingVehicle ? validateFitmentForm() : [];
     if (savingVehicle && (missing.length || state.fitmentFormState.invalidFields?.length)) {
         state.fitmentFormState.status = "dirty";
@@ -8535,8 +8563,10 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             || !["confirmed_incomplete", "confirmed_ready"].includes(overview.vehicle_state))) {
             throw new Error(locale === "ru" ? "Не удалось подтвердить данные автомобиля." : "Vehicle details were not confirmed.");
         }
-        const wheelDraft = savingVehicle ? captureFitmentWheelDraft() : null;
+        const wheelDraft = savingVehicle || submittedWheel !== JSON.stringify(fitmentComparableWheel(state.fitmentForm))
+            ? captureFitmentWheelDraft() : null;
         state.fitmentOverview = overview;
+        state.fitmentCheckStartFailed = false;
         state.fitmentForm = fitmentFormFromOverview(overview);
         state.fitmentSourceIdentity = fitmentSourceIdentityFromOverview(overview);
         clearFitmentResolverFeedback({ close: true });
@@ -8563,13 +8593,19 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             overview.current_check = { ...previousCheck, is_current: false };
             state.fitmentCheck = overview.current_check;
         }
+        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
+        state.fitmentFormState.status = "clean";
+        if (wheelDraft) {
+            // Only our successful wheel PATCH can advance this draft's rim baseline.
+            // A newer local edit must survive both PATCH and currentness responses.
+            if (!savingVehicle) wheelDraft.baseline = fitmentRevisionBaseline(overview);
+            restoreFitmentWheelDraft(wheelDraft, overview);
+        }
         renderFitment();
         await refreshFitmentCheckCurrentness();
         if (!isCurrentRequest()) return;
         setFitmentEditorsForNextAction(overview);
-        state.fitmentFormState.baseline = cloneFitmentForm(state.fitmentForm);
-        state.fitmentFormState.status = "clean";
-        if (wheelDraft) restoreFitmentWheelDraft(wheelDraft, overview);
+        markFitmentDirty();
         if (unsavedVehicleDraft) {
             state.fitmentForm.vehicle = unsavedVehicleDraft;
             state.fitmentVehicleDirty = true;
@@ -8577,7 +8613,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             state.fitmentFormState.status = "dirty";
             persistFitmentTransientDraft("navigation");
         }
-        if (savedFromSection === "rim") setFitmentEditor("");
+        if (savedFromSection === "rim") setFitmentEditor(fitmentWheelDraftIsDirty() ? "rim" : "");
         if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
@@ -8593,7 +8629,9 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
                     : (locale === "ru" ? "Автомобиль сохранён." : "Vehicle saved.");
             state.fitmentMessageTone = "success";
             } else {
-                state.fitmentMessage = nextAction === "run_standard_check"
+                state.fitmentMessage = fitmentWheelDraftIsDirty()
+                    ? (locale === "ru" ? "Отправленные параметры сохранены. Новые изменения ещё не сохранены." : "Submitted details saved. New changes are still unsaved.")
+                    : nextAction === "run_standard_check"
                     ? (locale === "ru" ? "Параметры сохранены. Проверку совместимости можно запустить отдельно." : "Details saved. You can start the compatibility check separately.")
                 : (locale === "ru" ? "Параметры сохранены." : "Details saved.");
                 state.fitmentMessageTone = "success";
@@ -9082,20 +9120,21 @@ function formatShortDate(value) {
 
 function expiryLabel(value) {
     const formatted = formatShortDate(value);
+    if (!value) return locale === "ru" ? "без срока" : "no expiry";
     if (!formatted) return "";
     return locale === "ru" ? `до ${formatted}` : `until ${formatted}`;
 }
 
 function buildRenderExpiryCohorts() {
     return state.creditPackages
-        .filter((item) => Number(item.remainingCredits || 0) > 0 && item.expiresAt && Date.parse(item.expiresAt) > Date.now())
+        .filter((item) => Number(item.remainingCredits || 0) > 0 && (!item.expiresAt || Date.parse(item.expiresAt) > Date.now()))
         .map((item) => ({
             key: item.id || `${item.source}-${item.expiresAt}`,
             credits: Number(item.remainingCredits),
             expiresAt: item.expiresAt,
             meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : "Пакет примерок"),
         }))
-        .sort((left, right) => Date.parse(left.expiresAt) - Date.parse(right.expiresAt));
+        .sort((left, right) => (left.expiresAt ? Date.parse(left.expiresAt) : Infinity) - (right.expiresAt ? Date.parse(right.expiresAt) : Infinity));
 }
 
 function resultUrlForJob(job) {
@@ -9877,7 +9916,7 @@ function vnextDashboardJobViewModel(job) {
 }
 
 function vnextDashboardSnapshot() {
-    const expiry = buildRenderExpiryCohorts().slice(0, 2).map((item) => ({
+    const expiry = buildRenderExpiryCohorts().map((item) => ({
         credits: Number(item.credits || 0),
         creditsLabel: formatRenderCount(Number(item.credits || 0)),
         meta: item.meta || "",
@@ -9955,7 +9994,7 @@ function renderDashboard() {
     if (errorText) errorText.textContent = localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны");
     if (dashboardExpiryCard) dashboardExpiryCard.hidden = !expiryCohorts.length;
     if (dashboardExpiryList) {
-        dashboardExpiryList.innerHTML = expiryCohorts.slice(0, 2).map((item) => `
+        dashboardExpiryList.innerHTML = expiryCohorts.map((item) => `
             <div class="dashboard-expiry-line">
                 <div>
                     <strong>${escapeHtml(`${item.credits} ${t("credits")}`)}</strong>
@@ -10554,6 +10593,18 @@ function notifyFitmentBridge() {
     if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:fitmentchange"));
 }
 
+function fitmentWheelSource(overview, job) {
+    const rim = overview?.front_rim?.rim || overview?.rim || {};
+    try {
+        const url = new URL(rim.product_url || "");
+        if (["http:", "https:"].includes(url.protocol)) return { rimSourceLabel: "Ссылка на товар", rimSourceDomain: url.hostname.replace(/^www\./i, "") };
+    } catch { /* Legacy contexts can have no source URL. */ }
+    const photo = Boolean(job?.assets?.rim_original || fitmentPreviewAsset(job, "rim"));
+    const manual = Object.values(overview?.front_rim?.field_states || overview?.rim_field_states || {})
+        .some(field => ["user_input", "user_edited", "manual"].includes(field?.source));
+    return { rimSourceLabel: photo ? "Фото диска" : manual ? "Указано вручную" : "Источник не указан", rimSourceDomain: "" };
+}
+
 function vnextFitmentSnapshot() {
     const overview = state.fitmentOverview;
     const check = fitmentCheckForPresentation();
@@ -10634,6 +10685,7 @@ function vnextFitmentSnapshot() {
         checkError: !state.fitmentAuthRequired && errorSection === "result" ? runtimeError : "",
         executionError: check?.execution_status === "failed" ? fitmentResultCopy(check) : "",
         message: state.fitmentMessage || "",
+        checkStartFailed: Boolean(state.fitmentCheckStartFailed),
         executionStatus: check?.execution_status || "idle",
         nextAction: fitmentNextAction(overview),
         check,
@@ -10643,9 +10695,12 @@ function vnextFitmentSnapshot() {
         preliminaryDisclaimer: I18N[locale].fitment.verdictDisclaimer,
         blockingIssues: (failedExecution ? [] : check?.blocking_issues || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         conditions: (failedExecution ? [] : check?.conditions || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
+        advisories: (failedExecution ? [] : check?.advisories || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
+        missingData: (failedExecution ? [] : [...(check?.missing_fields || []), ...(check?.evidence_summary?.missing_fields || [])])
+            .map(item => ({ label: typeof item === "string" ? fitmentFieldLabel(item) : fitmentVerdictMessage(item) })),
         fieldEvidence,
         currentness: check ? { isCurrent: check.is_current !== false, stale: check.is_current === false } : null,
-        canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentMutationsLocked()),
+        canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentWheelDraftIsDirty() && !state.fitmentVehicleDirty && !state.fitmentSaving && !state.fitmentSourceResolving && !state.fitmentVehicleVariantApplying && !fitmentMutationsLocked()),
         retryAvailable,
         vehicle,
         vehicleForm: fitmentVehicleFormForPresentation(),
@@ -10691,10 +10746,7 @@ function vnextFitmentSnapshot() {
         },
         rim,
         rimTitle: [summaryRim.brand, summaryRim.model].filter(Boolean).join(" "),
-        rimSourceDomain: (() => {
-            try { return new URL(state.fitmentForm?.rim?.product_url || "").hostname.replace(/^www\./i, ""); }
-            catch { return ""; }
-        })(),
+        ...fitmentWheelSource(overview, job),
         rimSpecs: fitmentRimTechnicalSummary(rim),
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
             ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
@@ -10714,7 +10766,7 @@ function vnextFitmentSnapshot() {
         rimPendingProposals: fitmentRimPendingProposalFields(),
         rearRimPendingProposals: fitmentRimPendingProposalFields("rear"),
         rimSaveReadiness: rimReadiness,
-        rimDraftDirty: ["rim", "rear_rim", "setup_mode"].some(key => JSON.stringify(state.fitmentForm?.[key]) !== JSON.stringify(state.fitmentFormState?.baseline?.[key])),
+        rimDraftDirty: fitmentWheelDraftIsDirty(),
         rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
             chooserOpen: Boolean(state.fitmentSkuChooserOpen),
@@ -10799,12 +10851,22 @@ function setVnextFitmentField(path, value) {
 }
 
 async function saveVnextFitment(owner, { intent = "" } = {}) {
-    if (!["vehicle", "rim"].includes(owner)) return;
+    if (!["vehicle", "rim"].includes(owner) || state.fitmentSaving || fitmentMutationsLocked()) return;
     if (owner === "rim" && !fitmentRimSaveReadiness().ready) {
-        state.fitmentError = locale === "ru"
-            ? "Заполните и подтвердите параметры диска, затем сохраните их."
-            : "Complete and confirm the wheel parameters before saving.";
+        const readiness = fitmentRimSaveReadiness();
+        state.fitmentFormState.missingFields = readiness.missing;
+        state.fitmentFormState.invalidFields = readiness.invalid;
+        state.fitmentError = "";
+        setFitmentEditor("rim");
+        state.fitmentActiveSection = "rim";
         renderFitment();
+        const first = [...readiness.missing, ...readiness.invalid, ...readiness.pending,
+            ...readiness.conflicts.map(field => /^(rim|rear_rim)\./.test(field) ? field : `rim.${field}`)][0];
+        window.requestAnimationFrame(() => {
+            const target = first && document.querySelector(`[data-fitment-field="${first}"]:not(:disabled), [data-wheel-picker-open="${first}"]:not(:disabled), [data-fitment-action="conflict-keep"][data-value="${first.replace(/^(rim|rear_rim)\./, "")}"]:not(:disabled)`);
+            if (target) { target.scrollIntoView({ behavior: "auto", block: "center" }); target.focus({ preventScroll: true }); }
+            else focusFitmentWorkspace("rim");
+        });
         return;
     }
     return saveFitment(undefined, { owner, confirmWheelFields: owner === "rim", intent });
