@@ -55,7 +55,7 @@ renderCreateInputs = () => {};
 refreshButtonsForCurrentView = () => {};
 loadDashboardData = async () => {};
 syncApplicationAuthWall = () => {};
-globalThis.__bootApi = { state, bootstrapAuthenticatedApplication, readFitmentNavigationContext, checkCurrentBuild, setView, restoreTelegramTopLevelView, getView: () => state.view };
+globalThis.__bootApi = { formatPaymentStatus, state, bootstrapAuthenticatedApplication, readFitmentNavigationContext, checkCurrentBuild, setView, restoreTelegramTopLevelView, getView: () => state.view };
 `, context);
     return { ...context.__bootApi, storage: savedStorage, sessionStorage, reloadCount: () => reloads };
 }
@@ -99,4 +99,13 @@ test("M4 triage: authenticated website boot skips a normal completed Fitment con
     assert.equal(app.state.fitmentJobId, "");
     assert.equal(app.state.applicationDataReady, true);
     assert.equal(app.readFitmentNavigationContext().jobId, "ordinary-completed-render");
+});
+
+
+test("W-02 payment history distinguishes cancelled from failure and refund", () => {
+    const app = bootApi();
+    assert.equal(app.formatPaymentStatus("cancelled"), "Отменён");
+    assert.equal(app.formatPaymentStatus("refunded"), "Возвращён");
+    assert.notEqual(app.formatPaymentStatus("cancelled"), app.formatPaymentStatus("failed"));
+    assert.notEqual(app.formatPaymentStatus("cancelled"), app.formatPaymentStatus("refunded"));
 });

@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +21,14 @@ from src import (
     share_api,
     storage,
 )
-from src.config import REDIS_JOB_QUEUE, REDIS_URL, WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
+from src.config import (
+    PAYMENT_TIMEOUT_ENABLED,
+    REDIS_JOB_QUEUE,
+    REDIS_URL,
+    WEBAPP_URL,
+    WORKER_ENABLED,
+    runtime_env_summary,
+)
 from src.credits_service import finalize_job_credit, refund_job_credit
 from src.generation import (
     GenerationInput,
@@ -34,6 +41,7 @@ from src.generation import (
     inspect_image,
 )
 from src.image_fetch import fetch_image_bytes
+from src.payment_timeout import payment_timeout_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,13 +79,20 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("🟢 ВОРКЕР ОТКЛЮЧЕН (WORKER_ENABLED=false)")
 
-    yield
+    timeout_task = asyncio.create_task(payment_timeout_loop()) if PAYMENT_TIMEOUT_ENABLED else None
+    try:
+        yield
+    finally:
+        if timeout_task is not None:
+            timeout_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await timeout_task
 
-    if worker_task:
-        worker_task.cancel()
-    await db.close_pool()
-    if redis_client.is_initialized():
-        await redis_client.close_client()
+        if worker_task:
+            worker_task.cancel()
+        await db.close_pool()
+        if redis_client.is_initialized():
+            await redis_client.close_client()
 
 
 app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)
