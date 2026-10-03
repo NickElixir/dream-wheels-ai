@@ -16,7 +16,8 @@ from src.auth_principal import AuthPrincipal
 from src.identity_service import FitmentDetailsUpdateRequest
 
 
-def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
+@pytest.mark.parametrize("staggered", [False, True])
+def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch, staggered):
     dsn = os.environ.get("TEST_VEHICLE_CONFIRMATION_DATABASE_URL")
     if not dsn:
         pytest.skip("Set TEST_VEHICLE_CONFIRMATION_DATABASE_URL to isolated local PostgreSQL")
@@ -95,10 +96,22 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 rim = await admin.fetchval(
                     "INSERT INTO rim_specs(owner_user_id) VALUES($1) RETURNING id", owner
                 )
+                rear = (
+                    (
+                        await admin.fetchval(
+                            "INSERT INTO rim_specs(owner_user_id,offset_et_mm,wheel_width_j) VALUES($1,42.75,9.5) RETURNING id",
+                            owner,
+                        )
+                    )
+                    if staggered
+                    else rim
+                )
                 setup = await admin.fetchval(
-                    "INSERT INTO rim_setups(owner_user_id,front_rim_spec_id,rear_rim_spec_id) VALUES($1,$2,$2) RETURNING id",
+                    "INSERT INTO rim_setups(owner_user_id,front_rim_spec_id,rear_rim_spec_id,is_staggered) VALUES($1,$2,$3,$4) RETURNING id",
                     owner,
                     rim,
+                    rear,
+                    staggered,
                 )
                 return str(
                     await admin.fetchval(
@@ -129,6 +142,24 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                     if e["event_type"] == "vehicle_confirmation_intent"
                 ]
 
+            async def wheel_snapshot():
+                setup = dict(
+                    await admin.fetchrow(
+                        "SELECT s.* FROM rim_setups s JOIN jobs j ON j.rim_setup_id=s.id WHERE j.id=$1::uuid",
+                        job,
+                    )
+                )
+                rims = [
+                    dict(r)
+                    for r in await admin.fetch(
+                        "SELECT * FROM rim_specs WHERE id=$1 OR id=$2 ORDER BY id",
+                        setup["front_rim_spec_id"],
+                        setup["rear_rim_spec_id"],
+                    )
+                ]
+                return setup, rims
+
+            wheel_before = await wheel_snapshot()
             values = {"make": "Audi", "model": "Q8", "year": 2024, "market": "eudm"}
             first = await save(values, 0)
             vi = await admin.fetchval("SELECT vehicle_identity_id FROM jobs WHERE id=$1::uuid", job)
@@ -139,6 +170,7 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 "user_save",
                 "vehicle_confirmation_intent",
             ]
+            assert await wheel_snapshot() == wheel_before
             first_intent = (await intents())[0]
             assert (
                 first_intent["actor_user_id"] == owner and first_intent["vehicle_identity_id"] == vi
@@ -188,6 +220,7 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 dict(await admin.fetchrow("SELECT * FROM fitment_checks WHERE id=$1", check))
                 == check_before
             )
+            assert await wheel_snapshot() == wheel_before
             assert len(await intents()) == 3
             assert len(await events()) == 5  # No fabricated mutation event for the no-op.
 
@@ -220,6 +253,11 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 mutation["vehicle_revision_before"] == 2 and mutation["vehicle_revision_after"] == 3
             )
 
+            current_row = await jobs_api._fetch_fitment_job_row(admin, job_id=job, user_id=owner)
+            stale_check = await jobs_api._current_check_for_job(admin, current_row)
+            assert stale_check is None or stale_check.is_stale
+            assert await wheel_snapshot() == wheel_before
+
             # Validation, stale revisions, wrong ownership and Wheel-only saves cannot emit intent.
             for bad_values, revision, status in (
                 ({**changed, "make": "invalid"}, 3, 422),
@@ -233,10 +271,34 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 await save(changed, 3)
             assert failure.value.status_code == 404
             principal_user = owner
+            assert await wheel_snapshot() == wheel_before
+            if staggered:
+                with pytest.raises(HTTPException) as missing_rear:
+                    await jobs_api.save_fitment_details(
+                        job,
+                        FitmentDetailsUpdateRequest(
+                            rim={"offset_et_mm": 35.25},
+                            expected_vehicle_revision=3,
+                            expected_rim_revision=1,
+                        ),
+                    )
+                assert missing_rear.value.status_code == 422
+                assert missing_rear.value.detail["field"] == "rear_rim"
+                assert await wheel_snapshot() == wheel_before
+            vehicle_before_wheel = dict(
+                await admin.fetchrow("SELECT * FROM vehicle_identities WHERE id=$1", vi)
+            )
             wheel = FitmentDetailsUpdateRequest(
-                rim={"offset_et_mm": 35.25}, expected_vehicle_revision=3, expected_rim_revision=1
+                rear_rim={"offset_et_mm": 42.75} if staggered else None,
+                rim={"offset_et_mm": 35.25},
+                expected_vehicle_revision=3,
+                expected_rim_revision=1,
             )
             await jobs_api.save_fitment_details(job, wheel)
+            assert (
+                dict(await admin.fetchrow("SELECT * FROM vehicle_identities WHERE id=$1", vi))
+                == vehicle_before_wheel
+            )
             assert len(await intents()) == 6
 
             # Failure of the intent insert must roll back first identity creation, attachment,
@@ -283,6 +345,8 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch):
                 "C1B_DB_EVIDENCE="
                 + json.dumps(
                     {
+                        "setup_mode": "staggered" if staggered else "uniform",
+                        "vehicle_only_wheel_rows_unchanged": True,
                         "first_save_intents": 1,
                         "same_value_revision_before": before["revision"],
                         "same_value_revision_after": after["revision"],

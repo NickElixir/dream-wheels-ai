@@ -3908,6 +3908,12 @@ async def save_fitment_details(
     rear_request = request.rear_rim
     rim_updates = front_request.model_dump(exclude_unset=True)
     rim_updates.pop("confirmed_fields", None)
+    wheel_section_present = bool(
+        request.rim.model_fields_set
+        or (request.front_rim and request.front_rim.model_fields_set)
+        or (rear_request and rear_request.model_fields_set)
+        or request.setup_mode is not None
+    )
 
     pool = db.get_pool()
     async with pool.acquire() as conn:
@@ -3926,7 +3932,11 @@ async def save_fitment_details(
             requested_setup_mode = request.setup_mode or (
                 "staggered" if row["is_staggered"] else "uniform"
             )
-            if requested_setup_mode == "staggered" and rear_request is None:
+            if (
+                wheel_section_present
+                and requested_setup_mode == "staggered"
+                and rear_request is None
+            ):
                 raise HTTPException(
                     status_code=422,
                     detail={"code": "validation_error", "field": "rear_rim"},
@@ -4349,7 +4359,7 @@ async def save_fitment_details(
             )
             rear_write_needed = False
             rear_fitment_changes: dict[str, object] = {}
-            if requested_setup_mode == "staggered":
+            if wheel_section_present and requested_setup_mode == "staggered":
                 assert rear_request is not None
                 rear_spec_id = row["rear_rim_spec_id"]
                 if rear_spec_id == row["front_rim_spec_id"]:
