@@ -4,6 +4,8 @@
 
 Accepted for architecture; implementation is phased by the Dual-Track Roadmap.
 
+**Release 1 boundary update:** `docs/adr/0005-release1-create-fitment-boundary.md` is authoritative for the current UI/product ownership split. In Release 1, Create does not require vehicle recognition/confirmation for render permission; Technical Fitment owns that confirmation after a RenderJob exists. The pre-render Fitment model remains a deferred post-release direction.
+
 ## Context
 
 Dream Wheels AI has two independent outcomes:
