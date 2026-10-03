@@ -648,7 +648,7 @@ def test_fitment_save_updates_canonical_entities_only(monkeypatch):
     assert body["rim"]["product_url"] == "https://shop.example.test/oz-18"
     assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
     assert body["rim_candidates"]["pcd_mm"][0]["value"] == 112
-    assert len(execute_calls) == 3
+    assert len(execute_calls) == 4
     assert "UPDATE vehicle_identities" in execute_calls[0][0]
     assert "UPDATE rim_specs" in execute_calls[1][0]
     assert "INSERT INTO fitment_change_events" in execute_calls[2][0]
@@ -1253,7 +1253,17 @@ def test_fitment_save_preserves_revision_when_payload_is_unchanged(monkeypatch):
     assert response.status_code == 200
     assert response.json()["vehicle_revision"] == 1
     assert response.json()["rim_revision"] == 1
-    assert execute_calls == []
+    assert len(execute_calls) == 1
+    query, args = execute_calls[0]
+    assert "INSERT INTO fitment_change_events" in query
+    assert args[3] == "vehicle_confirmation_intent"
+    assert args[5] == 10
+    assert args[6:8] == (1, 1)
+    assert json.loads(args[10]) == {
+        "intent": "explicit_confirm",
+        "surface": "technical_fitment",
+        "action": "save_vehicle",
+    }
 
 
 def test_rim_only_save_preserves_revision_bound_modification_from_stale_vehicle_form(monkeypatch):
@@ -1496,7 +1506,7 @@ def test_fitment_save_confirms_prefilled_values_without_value_change(monkeypatch
     assert response.status_code == 200
     assert response.json()["vehicle_revision"] == 2
     assert response.json()["rim_revision"] == 2
-    assert len(execute_calls) == 3
+    assert len(execute_calls) == 4
     assert "UPDATE vehicle_identities" in execute_calls[0][0]
     assert "UPDATE rim_specs" in execute_calls[1][0]
     assert "INSERT INTO fitment_change_events" in execute_calls[2][0]
@@ -2449,7 +2459,11 @@ def test_confirmed_replacement_is_atomic_and_preserves_vehicle_revision_and_rim(
     assert body["rim_setup_id"] == "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
     assert body["rim_revision"] == 1
     assert conn.vehicle_updates == 1
-    assert len(conn.events) == 1
+    assert len(conn.events) == 2
+    assert [e[1][3] for e in conn.events] == [
+        "modification_user_confirmed",
+        "vehicle_confirmation_intent",
+    ]
     assert conn.row["vehicle_modification"] == "4.0 V8"
 
 
@@ -2505,6 +2519,9 @@ def test_confirmed_replacement_same_selection_is_idempotent_and_conflicts_are_sa
     assert stale_selection.status_code == 409
     assert stale_selection.json() == {"detail": {"code": "modification_selection_conflict"}}
     assert conn.vehicle_updates == 0
+    assert len(conn.events) == 1
+    assert conn.events[0][1][3] == "vehicle_confirmation_intent"
+    assert conn.events[0][1][6:8] == (10, 10)
 
 
 def test_confirmed_replacement_rejects_stale_target_without_mutating(monkeypatch):
@@ -2729,8 +2746,14 @@ def test_missing_vehicle_save_is_atomic_and_wheel_save_does_not_create_vehicle(
                 calls.append("wheel_write")
                 row["rim_revision"] += 1
             elif "INSERT INTO fitment_change_events" in query:
-                assert args[6] == 0
-                assert args[7] == (0 if wheel_only else 1)
+                if args[3] == "vehicle_confirmation_intent":
+                    assert not wheel_only
+                    assert args[5] == 10
+                    assert args[6:8] == (1, 1)
+                    calls.append("confirmation_intent")
+                else:
+                    assert args[6] == 0
+                    assert args[7] == (0 if wheel_only else 1)
             return "UPDATE 1"
 
     async def catalogue(*args, **kwargs):
@@ -2885,3 +2908,39 @@ def test_missing_vehicle_variant_endpoints_return_domain_error_not_500(
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
     response = client.post(f"/jobs/11111111-1111-4111-8111-111111111111/fitment/{endpoint}")
     assert response.status_code == expected
+
+
+@pytest.mark.parametrize("race", [False, True])
+def test_same_variant_apply_records_intent_under_lock_and_rejects_race(monkeypatch, race):
+    variant = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    initial = _confirmed_catalogued_row(variant)
+
+    class Conn(MutableModificationConn):
+        def __init__(self):
+            super().__init__(initial)
+            self.reads = 0
+
+        async def fetchrow(self, query, *_args):
+            self.reads += 1
+            if self.reads == 2:
+                assert "FOR UPDATE OF jobs" in query
+                if race:
+                    return {**initial, "vehicle_revision": 11}
+            return self.row
+
+    conn = Conn()
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    result = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/apply",
+        json={"expected_vehicle_revision": 10, **variant},
+    )
+    assert conn.vehicle_updates == 0
+    if race:
+        assert result.status_code == 409
+        assert conn.events == []
+    else:
+        assert result.status_code == 200
+        assert len(conn.events) == 1
+        assert conn.events[0][1][3] == "vehicle_confirmation_intent"
+        assert conn.events[0][1][6:8] == (10, 10)

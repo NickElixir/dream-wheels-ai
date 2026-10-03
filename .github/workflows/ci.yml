@@ -100,3 +100,8 @@ jobs:
         env:
           TEST_FITMENT_QA_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
         run: pytest -q tests/test_fitment_qa_tooling.py
+
+      - name: Verify Vehicle confirmation persistence and rollback on isolated PostgreSQL
+        env:
+          TEST_VEHICLE_CONFIRMATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: pytest -q tests/test_vehicle_confirmation_provenance.py

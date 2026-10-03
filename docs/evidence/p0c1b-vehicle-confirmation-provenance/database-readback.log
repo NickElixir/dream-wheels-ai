@@ -1,0 +1,3 @@
+C1B_DB_EVIDENCE={"first_save_intents": 1, "same_value_revision_before": 2, "same_value_revision_after": 2, "same_value_full_row_unchanged": true, "changed_save_revision": 3, "persisted_intents": 6, "failed_job_intents": 0, "rollback_preserved_identity_count": true, "migration_applied_twice": true, "same_value_check_still_current": true}
+.
+1 passed in 1.31s

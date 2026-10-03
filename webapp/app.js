@@ -8494,10 +8494,23 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
         return;
     }
     const payload = fitmentPayload({
-        includeVehicle: savingVehicle && (confirmingVehicle || state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired()),
+        includeVehicle: savingVehicle,
         includeWheel: !savingVehicle,
         confirmWheelFields,
     });
+    // Catalogue controls may hold slugs. Re-confirm the canonical spelling only
+    // when the actual form values still match the saved Vehicle configuration.
+    if (savingVehicle && !confirmingVehicle && !fitmentVehicleConfirmationRequired()) {
+        const canonical = state.fitmentOverview.vehicle;
+        const canonicalCatalogueValues = { ...canonical };
+        for (const [field, kind] of [["make", "makes"], ["model", "models"]]) {
+            canonicalCatalogueValues[field] = fitmentOptionValue(fitmentCatalogueSelectionItem(kind, canonical[field], fitmentCatalogueItems(kind))) || canonical[field];
+        }
+        if (fitmentVehicleValuesEquivalent(state.fitmentForm.vehicle, canonicalCatalogueValues)) {
+            payload.vehicle = Object.fromEntries(["make", "model", "year", "market"]
+                .map(field => [field, canonical[field] ?? null]));
+        }
+    }
     if (confirmingVehicle && !payload.vehicle) return;
     state.fitmentFormState.validation = "valid";
     // Saving replaces the authoritative vehicle data; invalidate every catalogue

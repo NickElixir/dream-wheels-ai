@@ -42,6 +42,8 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 
 - `0037_car_display_assets.sql` — private presentation derivative `car_display`, unique job/draft mapping; originals and historical jobs remain valid.
 
+- `0038_vehicle_confirmation_intent.sql` — расширяет Fitment audit allowlist для будущих explicit Vehicle confirmations, включая no-op; без backfill. Применить до deploy нового writer.
+
 ## Стратегия применения
 
 **Сейчас (MVP):** миграции применяются вручную через **Supabase SQL Editor** ([app.supabase.com](https://app.supabase.com) → проект → SQL Editor).

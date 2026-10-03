@@ -1,0 +1,20 @@
+
+> build
+> npm run build:harness && npm run build:app-auth
+
+
+> build:harness
+> esbuild auth/harness.js --bundle --format=esm --target=es2020 --minify --outfile=auth/harness.bundle.js && node auth/normalize-bundle.mjs
+
+
+  auth/harness.bundle.js  229.1kb
+
+⚡ Done in 50ms
+
+> build:app-auth
+> esbuild auth/app-auth.js --bundle --format=iife --target=es2020 --minify --outfile=auth/app-auth.bundle.js && node auth/normalize-bundle.mjs ./app-auth.bundle.js
+
+
+  auth/app-auth.bundle.js  233.8kb
+
+⚡ Done in 32ms

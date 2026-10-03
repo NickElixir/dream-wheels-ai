@@ -2422,3 +2422,23 @@ test("MEDIUM-1 Retry and reopening Fitment preserve existing reset semantics", a
     api.openFitmentView("behavior-job");
     assert.equal(api.state.fitmentCheckStartFailed, false, "view reset clears before loading");
 });
+
+
+test("P0-C1b same-value explicit Vehicle Save still sends Vehicle; Wheel stays independent", async () => {
+    let submitted;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+            submitted = JSON.parse(options.body);
+            assert.ok(submitted.vehicle);
+            assert.equal(submitted.rim, undefined);
+            return response(200, structuredClone(api.state.fitmentOverview));
+        },
+    } });
+    const baseline = medium1ReadyOverview(api);
+    seed(api, baseline, "vehicle");
+    api.state.fitmentVehicleDirty = false;
+    await api.saveFitment(undefined, { owner: "vehicle" });
+    assert.ok(submitted);
+    assert.equal(submitted.vehicle.year, baseline.vehicle.year);
+    assert.equal(api.state.fitmentOverview.vehicle_revision, baseline.vehicle_revision);
+});
