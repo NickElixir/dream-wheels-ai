@@ -402,7 +402,7 @@ test("Fitment candidate suggestions stay beside their field and editors are hidd
     vehicleForm: { make: "", model: "" }, vehicleCandidates: [{ field: "make", value: "Zeekr" }],
     rimEditing: false, rim: { brand: "BBS" },
   });
-  assert.match(markup, /data-fitment-field="vehicle\.make"[^]*?data-fitment-action="candidate" data-value="vehicle\.make\|Zeekr"/);
+  assert.doesNotMatch(markup, /data-fitment-action="candidate" data-value="vehicle\.make/);
   assert.doesNotMatch(markup, /data-fitment-field="rim\.brand"/);
   assert.match(markup, /data-fitment-action="create-image"/);
 });
@@ -800,7 +800,7 @@ test("RU and EN Result, warning and picker use one locale and preserve punctuati
   assert.match(conflict,/aria-label="Conflicting value ET"/);
   const candidate = fitmentMarkup({locale:"en",vehicleEditing:true,vehicleForm:{make:"bmw"},vehicleCandidates:[{field:"make",value:"Audi"}]});
   assert.doesNotMatch(candidate,/[А-Яа-яЁё]/);
-  assert.match(candidate,/Suggestions for make/);
+  assert.doesNotMatch(candidate,/Suggestions for make/);
 });
 
 test("catalogue slug and display spelling do not create a duplicate ZEEKR suggestion", () => {

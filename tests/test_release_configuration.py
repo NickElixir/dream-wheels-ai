@@ -93,7 +93,7 @@ def test_deployed_webapp_uses_runtime_backend_proxy_only() -> None:
     assert "onrender.com" not in json.dumps(VERCEL_JSON)
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;" in APP_JS
-    assert 'authenticatedFetch(apiUrl("/identity/resolve")' in APP_JS
+    assert 'authenticatedFetch(apiUrl("/identity/assets")' in APP_JS
 
 
 def test_proxy_reads_backend_url_only_at_runtime() -> None:

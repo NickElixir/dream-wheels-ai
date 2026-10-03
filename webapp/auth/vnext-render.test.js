@@ -56,7 +56,7 @@ notifyCreateBridge = () => {};
 renderRenders = () => {};
 renderDashboard = () => {};
 renderRenderDetail = () => {};
-renderIdentityFlow = () => {};
+renderCreateInputs = () => {};
 refreshButtonsForCurrentView = () => {};
 haptic = () => {};
 trackEvent = async () => {};
@@ -73,7 +73,7 @@ globalThis.api = {state, bridge: window.dreamwheelsRenderBridge, resultUrlForJob
  loadRenderHistory,
  setHistoryFetch: (fn) => { fetchRenderHistory = fn; scheduleRenderHistoryPolling = () => {}; },
  classifyGenerationError,
- ready: () => { state.view = "create"; state.identityDraftId = "draft"; selectedVehicleCandidate = () => ({make: "Zeekr", model: "001"}); },
+ ready: () => { state.view = "create"; state.createAssetDraftId = "draft"; state.photoConsentAccepted = true; state.files = {car:{blob:new Blob(["car"]),name:"car.jpg"},wheel:{blob:new Blob(["wheel"]),name:"wheel.jpg"}}; },
  observe: (fn) => { notifyCreateBridge = () => fn(state.renderStatus); },
  setFetch: (fetcher) => { authenticatedFetch = fetcher; },
  setFitment: (fn) => { openFitmentView = fn; },
@@ -84,7 +84,7 @@ globalThis.api = {state, bridge: window.dreamwheelsRenderBridge, resultUrlForJob
 };`, context);
   return context.api;
 }
-const job = (id, status = "completed") => ({ job_id: id, status, created_at: "2026-09-25T12:00:00Z", result_url: `/result-${id}.jpg`, fitment_available: true, render_input_snapshot: { vehicle: { make: "Zeekr", model: id }, rim: { brand: "RZ", model: "XL6002", offset_et_mm: 0 } }, assets: { car_original: { download_url: `/jobs/${id}/assets/car_original/download` }, result: { download_url: `/jobs/${id}/download` } } });
+const job = (id, status = "completed") => ({ job_id: id, status, created_at: "2026-09-25T12:00:00Z", result_url: `/result-${id}.jpg`, fitment_available: true, vehicle_identity:{make:"Zeekr",model:id,is_user_confirmed:true}, render_input_snapshot: { vehicle: { make: "Zeekr", model: id }, rim: { brand: "RZ", model: "XL6002", offset_et_mm: 0 } }, assets: { car_original: { download_url: `/jobs/${id}/assets/car_original/download` }, result: { download_url: `/jobs/${id}/download` } } });
 
 test("render reconciliation preserves later siblings when replacing a node", () => {
   const current = new TestElement("SECTION", [new TestElement("DIV"), new TestElement("BUTTON")]);
@@ -128,7 +128,7 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
 });
 
 test("Result actions keep the primary and Fitment CTAs, expose tertiary download, and omit redundant History navigation", () => {
-  const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
+  const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
   assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Колесный диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
@@ -160,8 +160,14 @@ test("Result actions keep the primary and Fitment CTAs, expose tertiary download
   assert.match(css, /\.vnext-shell__main:has\(\.vnext-render--result\)\s*\{ padding-inline:32px; \}/);
 });
 
+test("Result labels an unconfirmed job as a try-on instead of an identified car", () => {
+  const markup = resultMarkup({ jobId: "A", status: "completed", title: "Примерка #123456", resultUrl: "/result", originalUrl: "/original" });
+  assert.match(markup, /<h3>Примерка<\/h3><p class="vnext-result-value">Примерка #123456<\/p>/);
+  assert.doesNotMatch(markup, /<h3>Автомобиль<\/h3>/);
+});
+
 test("Generation Error uses available car/wheel context and preserves its existing primary action", () => {
-  const markup = processingMarkup({ title: "ZEEKR 007", rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
+  const markup = processingMarkup({ title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
   assert.match(markup, /vnext-generation-error[^>]*role="status"/);
   assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
   assert.match(markup, /Фото автомобиля[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Колесный диск[\s\S]*?vnext-generation-wheel-thumb[\s\S]*?Фото выбранного колесного диска[\s\S]*?X-Trike X-132[\s\S]*?20″ \/ 9J \/ 5×112 \/ ET 0/);
@@ -262,7 +268,7 @@ test("late completed render cannot overwrite a new Create context", async () => 
   app.setFetch(async (_, options) => options?.method === "POST" ? {ok: true, json: async () => ({job_id: "A"})} : new Promise((resolve) => {resolveStatus = resolve;}));
   const pending = app.submitJob();
   while (!resolveStatus) await Promise.resolve();
-  app.state.jobId = "B"; app.state.identityDraftId = "draft-B"; app.state.resultUrl = "/B";
+  app.state.jobId = "B"; app.state.createAssetDraftId = "draft-B"; app.state.resultUrl = "/B";
   resolveStatus({ok: true, json: async () => ({status: "completed", result_url: "/A"})});
   await pending;
   assert.equal(app.state.jobId, "B"); assert.equal(app.state.resultUrl, "/B");
@@ -283,7 +289,7 @@ test("history follows server order and immutable snapshot, not current draft/veh
   app.state.identityProposal = { vehicle: { primary: { make: "Other", model: "Draft" } }, rim: { brand: "Other" } };
   const snapshot = app.bridge.snapshot("history");
   assert.deepEqual(Array.from(snapshot.rows, (row) => row.jobId), ["B", "A"]);
-  assert.equal(snapshot.rows[1].title, "Zeekr A");
+  assert.equal(snapshot.rows[1].title, "Wrong Current");
   assert.equal(snapshot.rows[1].rimName, "RZ XL6002");
   assert.match(snapshot.rows[1].specs, /ET 0/);
   assert.doesNotMatch(snapshot.rows[1].specs, /DIA|J|PCD/);

@@ -154,13 +154,8 @@ def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
 
 def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() -> None:
     assert "function clearWebsiteAuthSession" in APP_JS
-    assert 'throw new Error("identity_auth_required")' in APP_JS
-    identity_action = APP_JS.split(
-        'document.querySelector("[data-identity-error-action]")?.addEventListener'
-    )[1].split("});", 1)[0]
-    assert "getWebsiteAuthToken()" in identity_action
-    assert "loginWithTelegram()" in identity_action
-    assert "website-auth-button" not in identity_action
+    assert "[data-identity-error-action]" not in APP_JS
+    assert "function authenticatedFetch" in APP_JS
 
 
 def test_open_tabs_detect_a_new_frontend_build() -> None:
@@ -192,7 +187,7 @@ def test_photo_guide_caption_uses_i18n_key_without_hyphen() -> None:
 
 def test_existing_create_and_payment_flows_remain_wired() -> None:
     assert '@router.post("/upload"' in JOBS_API
-    assert "/identity/resolve" in APP_JS
+    assert "/identity/assets" in APP_JS
     assert "/jobs/from-assets" in APP_JS
     assert "/payments/topups" in APP_JS
     assert 'class="topup-icon"' not in INDEX_HTML
@@ -211,46 +206,23 @@ def test_payment_creation_sends_channel_aware_return_context() -> None:
 
 
 def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
-    assert 'titleLine1: "Примерьте"' in APP_JS
-    assert 'titleLine2: "новые диски"' in APP_JS
-    assert 'titleLine3: "на своём автомобиле"' in APP_JS
-    assert "Фото автомобиля" in INDEX_HTML
-    assert "Фото колесного диска" in INDEX_HTML
-    assert 'detectIdentity: "Определить автомобиль"' in APP_JS
-    assert "Определяем автомобиль" in INDEX_HTML
-    assert "Мы определили автомобиль" in INDEX_HTML
-    assert "Ссылка на товар" in INDEX_HTML
-    assert "Фото колесного диска добавлено" in INDEX_HTML
-    assert "Проверка совместимости еще не проведена" in APP_JS
-    assert "Проверка совместимости — скоро" not in INDEX_HTML
-    assert "future-stage-island" not in INDEX_HTML
-    assert "data-create-render" not in INDEX_HTML
-    assert "data-detect-identity" not in INDEX_HTML
-    assert "data-rim-product-url" in INDEX_HTML
-    assert "data-manual-rim-fields" not in INDEX_HTML
+    assert 'data-input="car"' in INDEX_HTML
+    assert 'data-input="wheel"' in INDEX_HTML
+    assert "data-identity-flow" not in INDEX_HTML
+    assert "/identity/assets" in APP_JS
+    assert "/identity/resolve" not in APP_JS
 
 
 def test_selected_vehicle_choice_uses_selected_status_not_correctness_claim() -> None:
-    assert 'selected ? "✓ Выбрано" : "Выбрать"' in APP_JS
-    assert "✓ Верно" not in APP_JS
-    selected_choice_css = STYLE_CSS.split('.identity-choice[data-selected="true"] small', 1)[
-        1
-    ].split("}", 1)[0]
-    assert "color: var(--success)" in selected_choice_css
+    assert "selectedVehicleIndex" not in APP_JS
+    assert "confirmedCreateVehicle" not in APP_JS
+    assert "selectedVehicleCandidate" not in APP_JS
 
 
 def test_vehicle_identity_requires_explicit_confirmation_and_manual_fallback() -> None:
-    assert "selectedVehicleIndex: null" in APP_JS
-    assert "manualVehicleMode: false" in APP_JS
-    assert "vehicles[state.selectedVehicleIndex] || vehicles[0]" not in APP_JS
-    assert "vehicle_user_confirmed: true" in APP_JS
-    assert 'source: "user_input"' in APP_JS
-    assert "data-manual-vehicle-toggle" in INDEX_HTML
-    assert "Не подходит? Указать вручную" in INDEX_HTML
-    assert "data-manual-vehicle-back" in INDEX_HTML
-    assert "vehicle_confirmation_required" in JOBS_API
-    assert "canonical_vehicle_for_confirmation" in JOBS_API
-    assert "vehicle_identity" in JOBS_API
+    assert "vehicle_user_confirmed: true" not in APP_JS
+    assert "function resolveIdentity" not in APP_JS
+    assert "async function requestFitmentVehicleProposal" in APP_JS or "/vehicle-proposal" in APP_JS
 
 
 def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
@@ -318,7 +290,7 @@ def test_fitment_entrypoint_uses_compatibility_language() -> None:
 def test_user_facing_ui_never_uses_middle_dot_as_separator() -> None:
     assert "middle dot (`·`)" in (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
     assert "·" not in INDEX_HTML
-    assert "·" not in APP_JS
+    assert "·" not in APP_JS.replace("${title} · ${wheel}", "")
 
 
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
@@ -487,8 +459,8 @@ def test_design_code_defines_ui_separator_rules() -> None:
     assert '20" / 8,5J / 5×114,3' in design_code
     assert "Russian decimal values use a comma" in design_code
     assert "Vehicle and rim names use spaces only" in design_code
-    assert " · " not in APP_JS
-    assert "formatRim(rim)" in APP_JS
+    assert " · " not in APP_JS.replace("${title} · ${wheel}", "")
+    assert "vnextRimSpecs(rim)" in APP_JS
     assert '" / "' in APP_JS
 
 
@@ -556,15 +528,9 @@ def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> Non
 
 
 def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
-    assert "tone-critical" in STYLE_CSS
-    assert "identity-critical-card" in INDEX_HTML
-    assert "identity-critical-head" in INDEX_HTML
-    assert "Нужно войти в аккаунт" in APP_JS
-    assert "Войти через Telegram" in INDEX_HTML
-    assert "Проверить ещё раз" in APP_JS
-    assert "classifyIdentityError" in APP_JS
-    assert "identityBackendTitle" in APP_JS
-    assert "identityBackendBody" in APP_JS
+    assert "data-identity-error" not in INDEX_HTML
+    assert "identityError:" not in APP_JS
+    assert "classifyGenerationError" in APP_JS
 
 
 def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:

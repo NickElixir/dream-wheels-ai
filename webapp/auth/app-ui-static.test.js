@@ -96,16 +96,11 @@ test("VNext Wallet owns the visible Balance surface while runtime retains paymen
     assert.match(app, /function schedulePendingInvoiceRefresh\(\)/);
 });
 
-test("vehicle proposals require explicit confirmation and preserve provenance", () => {
-    assert.match(html, /data-manual-vehicle-toggle/);
-    assert.match(html, /Не подходит\? Указать вручную/);
-    assert.match(html, /data-manual-vehicle-back/);
-    assert.match(app, /selectedVehicleIndex: null/);
-    assert.match(app, /state\.selectedVehicleIndex = null/);
-    assert.match(app, /vehicle_user_confirmed: true/);
-    assert.doesNotMatch(app, /vehicle: \{ \.\.\.selectedVehicle, source: "user_confirmed", confidence: 1 \}/);
+test("Create has no vehicle proposal or confirmation ownership", () => {
+    assert.doesNotMatch(html, /data-manual-vehicle-toggle|data-manual-vehicle-back/);
+    assert.doesNotMatch(app, /selectedVehicleIndex|vehicle_user_confirmed: true|manualVehicleMode/);
+    assert.match(app, /\/identity\/assets/);
     assert.match(app, /source: "user_input"/);
-    assert.match(app, /manualVehicleMode/);
 });
 
 test("visibility changes do not reload the active app view", () => {

@@ -77,7 +77,7 @@ class RimProposal(BaseModel):
     pcd_mm: float | None = Field(default=None, gt=0)
     center_bore_mm: float | None = Field(default=None, gt=0)
     offset_et_mm: float | None = None
-    confidence: float = Field(ge=0.0, le=1.0)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     source: IdentitySource = "ocr"
 
     @field_validator("brand", "model", "sku", mode="before")
@@ -259,7 +259,7 @@ class FitmentRimUpdate(BaseModel):
 
 
 class FitmentDetailsUpdateRequest(BaseModel):
-    expected_vehicle_revision: int = Field(ge=1)
+    expected_vehicle_revision: int = Field(ge=0)
     expected_rim_revision: int = Field(ge=1)
     vehicle: FitmentVehicleUpdate = Field(default_factory=FitmentVehicleUpdate)
     rim: FitmentRimUpdate = Field(default_factory=FitmentRimUpdate)
@@ -750,9 +750,9 @@ async def insert_rim_setup(
 
 def render_input_snapshot(
     *,
-    vehicle_identity_id: str,
+    vehicle_identity_id: str | None,
     rim_setup_id: str,
-    vehicle: VehicleCandidate,
+    vehicle: VehicleCandidate | None,
     rim: RimProposal,
     rim_user_confirmed: bool,
     car_asset_id: str,
@@ -764,7 +764,7 @@ def render_input_snapshot(
         "fitment_verdict": None,
         "vehicle_identity_id": vehicle_identity_id,
         "rim_setup_id": rim_setup_id,
-        "vehicle": vehicle.model_dump(mode="json"),
+        "vehicle": vehicle.model_dump(mode="json") if vehicle is not None else None,
         "rim": rim.model_dump(mode="json")
         | {
             "pcd_display": (

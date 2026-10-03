@@ -1,9 +1,11 @@
+import asyncio
 import json
 from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src import jobs_api
@@ -2632,3 +2634,254 @@ def test_each_core_vehicle_change_invalidates_current_modification(monkeypatch):
         assert "selection_source" not in mapping
         assert "selected_modification" not in mapping
         assert conn.execute_calls[0][1][3:6] == (None, None, None)
+
+
+def _missing_vehicle_row() -> dict:
+    row = _fitment_row(
+        vehicle_identity_id=None,
+        vehicle_revision=0,
+        vehicle_is_user_confirmed=False,
+        vehicle_provider_mappings={},
+        vehicle_field_candidates={},
+        vehicle_field_provenance={},
+    )
+    for key in tuple(row):
+        if key.startswith("vehicle_") and key not in {
+            "vehicle_identity_id",
+            "vehicle_revision",
+            "vehicle_is_user_confirmed",
+            "vehicle_provider_mappings",
+            "vehicle_field_candidates",
+            "vehicle_field_provenance",
+        }:
+            row[key] = None
+    return row
+
+
+def test_overview_without_vehicle_uses_empty_state_and_revision_zero(monkeypatch):
+    class Conn:
+        async def fetchrow(self, query, *args):
+            if "FROM fitment_checks" in query:
+                return None
+            assert "COALESCE(vehicle.revision, 0)" in query
+            return _missing_vehicle_row()
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_identity_id"] is None
+    assert body["vehicle_revision"] == 0
+    assert body["vehicle_state"] == "empty"
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+    assert body["readiness"]["ready"] is False
+
+
+@pytest.mark.parametrize("wheel_only", [False, True])
+def test_missing_vehicle_save_is_atomic_and_wheel_save_does_not_create_vehicle(
+    monkeypatch, wheel_only
+):
+    row = _missing_vehicle_row()
+    calls = []
+
+    class Transaction:
+        async def __aenter__(self):
+            calls.append("begin")
+
+        async def __aexit__(self, exc_type, exc, tb):
+            calls.append("rollback" if exc else "commit")
+
+    class Conn:
+        def transaction(self):
+            return Transaction()
+
+        async def fetchrow(self, query, *args):
+            if "FOR UPDATE" in query:
+                assert "FOR UPDATE OF jobs" in query
+                calls.append("lock_job")
+            return deepcopy(row)
+
+        async def fetchval(self, query, *args):
+            assert "INSERT INTO vehicle_identities" in query
+            assert not wheel_only
+            assert args[0] == 10
+            row.update(
+                vehicle_identity_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                vehicle_revision=1,
+                vehicle_make=args[1],
+                vehicle_model=args[2],
+                vehicle_year=args[3],
+                vehicle_market=args[7],
+                vehicle_is_user_confirmed=args[8],
+                vehicle_field_provenance=json.loads(args[9]),
+                vehicle_provider_mappings=json.loads(args[10]),
+            )
+            calls.append("insert_vehicle")
+            return row["vehicle_identity_id"]
+
+        async def execute(self, query, *args):
+            if "UPDATE jobs SET vehicle_identity_id" in query:
+                assert not wheel_only
+                assert "vehicle_identity_id IS NULL" in query
+                calls.append("attach_vehicle")
+            elif "UPDATE rim_specs" in query:
+                calls.append("wheel_write")
+                row["rim_revision"] += 1
+            elif "INSERT INTO fitment_change_events" in query:
+                assert args[6] == 0
+                assert args[7] == (0 if wheel_only else 1)
+            return "UPDATE 1"
+
+    async def catalogue(*args, **kwargs):
+        return dict(
+            make="BMW",
+            model="3 Series",
+            year=2020,
+            region="eu",
+            make_slug="bmw",
+            model_slug="3-series",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", catalogue)
+    body = {"expected_vehicle_revision": 0, "expected_rim_revision": 1}
+    body["rim" if wheel_only else "vehicle"] = (
+        {"offset_et_mm": 35.25}
+        if wheel_only
+        else {
+            "make": "BMW",
+            "model": "3 Series",
+            "year": 2020,
+            "market": "eu",
+        }
+    )
+    response = client.patch("/jobs/11111111-1111-4111-8111-111111111111/fitment", json=body)
+    assert response.status_code == 200, response.text
+    assert calls[0:2] == ["begin", "lock_job"]
+    assert calls[-1] == "commit"
+    if wheel_only:
+        assert response.json()["vehicle_identity_id"] is None
+        assert response.json()["vehicle_revision"] == 0
+        assert "insert_vehicle" not in calls
+        assert "wheel_write" in calls
+    else:
+        assert calls.index("insert_vehicle") < calls.index("attach_vehicle") < calls.index("commit")
+        assert response.json()["vehicle_revision"] == 1
+        assert (
+            response.json()["vehicle_state"] == "unconfirmed"
+        )  # Existing explicit confirmation stage is preserved.
+        stale = client.patch("/jobs/11111111-1111-4111-8111-111111111111/fitment", json=body)
+        assert stale.status_code == 409
+        assert calls.count("insert_vehicle") == 1
+
+
+def test_incomplete_first_vehicle_save_does_not_insert_placeholder(monkeypatch):
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+        async def fetchval(self, *args):
+            raise AssertionError("Must not insert placeholder")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "expected_vehicle_revision": 0,
+            "expected_rim_revision": 1,
+            "vehicle": {"make": "BMW", "model": "3 Series"},
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "vehicle_details_required"
+
+
+@pytest.mark.parametrize("provider_fails", [False, True])
+def test_automatic_source_attempt_is_claimed_once_and_manual_retry_remains_available(
+    monkeypatch, provider_fails
+):
+    attempts = []
+    claimed = False
+
+    class Conn:
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+        async def execute(self, query, *args):
+            nonlocal claimed
+            assert "{_create_url_auto_resolution}" in query
+            assert "revision =" not in query
+            assert args[1] == 10
+            if claimed:
+                return "UPDATE 0"
+            claimed = True
+            return "UPDATE 1"
+
+    async def resolver(url, **kwargs):
+        attempts.append(url)
+        await asyncio.sleep(0.01)
+        if provider_fails:
+            raise RimUrlError("no_data")
+        return RimUrlResolution(
+            requested_url=url, final_url=url, values={}, candidates=(), conflicts=()
+        )
+
+    async def limit(*args, **kwargs):
+        pass
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", False)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", resolver)
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", limit)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve"
+    payload = {"product_url": "https://shop.example/wheel", "automatic": True}
+    disabled = client.post(path, json=payload)
+    assert disabled.status_code == 503
+    assert not claimed and not attempts
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+
+    async def concurrent():
+        return await asyncio.gather(
+            *[
+                jobs_api.resolve_fitment_rim_source(
+                    "11111111-1111-4111-8111-111111111111",
+                    jobs_api.RimSourceResolveRequest(**payload),
+                )
+                for _ in range(2)
+            ],
+            return_exceptions=True,
+        )
+
+    results = asyncio.run(concurrent())
+    errors = [result for result in results if isinstance(result, HTTPException)]
+    assert sorted(error.status_code for error in errors) == (
+        [409, 422] if provider_fails else [409]
+    )
+    assert any(error.detail == {"code": "automatic_source_already_attempted"} for error in errors)
+    assert len(attempts) == 1
+    manual = client.post(path, json={**payload, "automatic": False})
+    assert manual.status_code == (422 if provider_fails else 200)
+    assert len(attempts) == 2
+
+
+@pytest.mark.parametrize(
+    "endpoint,expected", [("vehicle-variants", 409), ("vehicle-variants/reselect", 409)]
+)
+def test_missing_vehicle_variant_endpoints_return_domain_error_not_500(
+    monkeypatch, endpoint, expected
+):
+    class Conn:
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.post(f"/jobs/11111111-1111-4111-8111-111111111111/fitment/{endpoint}")
+    assert response.status_code == expected

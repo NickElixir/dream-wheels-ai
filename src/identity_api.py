@@ -32,7 +32,13 @@ from src.identity.schemas import (
     VehicleResolutionMetadata,
 )
 from src.identity.service import get_vehicle_identity_resolver
-from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES, _fetch_fitment_job_row
+from src.jobs_api import (
+    ALLOWED_UPLOAD_MIME,
+    MAX_RAW_FILE_BYTES,
+    UPLOAD_RATE_LIMIT,
+    UPLOAD_RATE_WINDOW_SEC,
+    _fetch_fitment_job_row,
+)
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
     FetchLimits,
@@ -72,7 +78,7 @@ class FitmentVehicleProposalResponse(BaseModel):
 async def resolve_fitment_vehicle_proposal(
     job_id: UUID,
     car_image: Annotated[UploadFile, File()],
-    expected_vehicle_revision: Annotated[int, Form(ge=1)],
+    expected_vehicle_revision: Annotated[int, Form(ge=0)],
     init_data: Annotated[str, Form()] = "",
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
@@ -512,6 +518,170 @@ async def download_identity_rim_asset(
     )
 
 
+async def _upload_asset_draft(
+    *,
+    pool,
+    owner_user_id: int,
+    car_bytes: bytes,
+    rim_bytes: bytes,
+    car_content_type: str,
+    rim_content_type: str,
+) -> tuple[str, assets_service.AssetUpload, assets_service.AssetUpload]:
+    async with pool.acquire() as conn:
+        draft_id = str(
+            await conn.fetchval(
+                """
+                INSERT INTO render_input_drafts (owner_user_id, status)
+                VALUES ($1, 'resolving')
+                RETURNING id
+                """,
+                owner_user_id,
+            )
+        )
+
+    uploaded_assets: list[assets_service.AssetUpload] = []
+    try:
+        car_asset = await assets_service.upload_render_asset(
+            owner_user_id=owner_user_id,
+            render_input_draft_id=draft_id,
+            kind="car_original",
+            data=car_bytes,
+            content_type=car_content_type,
+        )
+        uploaded_assets.append(car_asset)
+        car_display = await assets_service.upload_car_display(original=car_asset, data=car_bytes)
+        if car_display is not None:
+            uploaded_assets.append(car_display)
+        rim_asset = await assets_service.upload_render_asset(
+            owner_user_id=owner_user_id,
+            render_input_draft_id=draft_id,
+            kind="rim_original",
+            data=rim_bytes,
+            content_type=rim_content_type,
+        )
+        uploaded_assets.append(rim_asset)
+    except storage.StorageError as exc:
+        for uploaded_asset in uploaded_assets:
+            try:
+                await assets_service.delete_uploaded_asset(uploaded_asset)
+            except storage.StorageError as cleanup_exc:
+                logger.exception(
+                    "❌ Identity draft cleanup failed draft_id=%s asset_id=%s: %s",
+                    draft_id,
+                    uploaded_asset.id,
+                    cleanup_exc,
+                )
+        logger.exception(
+            "❌ Identity asset upload failed draft_id=%s user_id=%s: %s",
+            draft_id,
+            owner_user_id,
+            exc,
+        )
+        raise HTTPException(status_code=502, detail="Storage upload failed") from exc
+
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                await assets_service.insert_asset(conn, car_asset)
+                await assets_service.insert_asset(conn, rim_asset)
+                await assets_service.insert_optional_car_display(conn, car_display)
+                await conn.execute(
+                    """
+                    UPDATE render_input_drafts
+                    SET car_asset_id = $1::uuid,
+                        rim_asset_id = $2::uuid,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $3::uuid
+                      AND owner_user_id = $4
+                    """,
+                    car_asset.id,
+                    rim_asset.id,
+                    draft_id,
+                    owner_user_id,
+                )
+    except Exception:
+        for asset in uploaded_assets:
+            try:
+                await assets_service.delete_uploaded_asset(asset)
+            except (storage.StorageError, httpx.HTTPError):
+                logger.warning(
+                    "identity_draft_asset_cleanup_failed draft_id=%s asset_id=%s",
+                    draft_id,
+                    asset.id,
+                )
+        logger.exception(
+            "identity_draft_asset_persist_failed draft_id=%s user_id=%s", draft_id, owner_user_id
+        )
+        raise HTTPException(status_code=500, detail="Asset persistence failed") from None
+
+    return draft_id, car_asset, rim_asset
+
+
+class AssetDraftResponse(BaseModel):
+    draft_id: str
+    car_asset_id: str
+    rim_asset_id: str
+
+
+@router.post("/assets", response_model=AssetDraftResponse)
+async def upload_create_assets(
+    car_image: Annotated[UploadFile, File()],
+    wheel_image: Annotated[UploadFile, File()],
+    consent: Annotated[bool, Form()],
+    init_data: Annotated[str, Form()] = "",
+    telegram_user_id: Annotated[int | None, Form()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> AssetDraftResponse:
+    """Prepare visual inputs without recognition, credits or render enqueue."""
+    if not consent:
+        raise HTTPException(status_code=422, detail={"code": "photo_consent_required"})
+    preflight_auth_credentials(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="create assets",
+    )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await require_auth_principal(
+            conn,
+            init_data=init_data,
+            telegram_user_id=telegram_user_id,
+            authorization=authorization,
+            auth_name="create assets",
+        )
+    await enforce_rate_limit(
+        scope="create_assets",
+        identifier=principal.user_id,
+        limit=UPLOAD_RATE_LIMIT,
+        window_sec=UPLOAD_RATE_WINDOW_SEC,
+    )
+    car_bytes = await _read_identity_upload(car_image, "car")
+    rim_bytes = await _read_identity_upload(wheel_image, "wheel")
+    draft_id, car_asset, rim_asset = await _upload_asset_draft(
+        pool=pool,
+        owner_user_id=principal.user_id,
+        car_bytes=car_bytes,
+        rim_bytes=rim_bytes,
+        car_content_type=car_image.content_type or "application/octet-stream",
+        rim_content_type=wheel_image.content_type or "application/octet-stream",
+    )
+    # Existing status vocabulary: resolved means durable assets are ready for consumption.
+    # No identity proposal is produced by this Release 1 path.
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE render_input_drafts SET status = 'resolved', updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1::uuid AND owner_user_id = $2
+        """,
+            draft_id,
+            principal.user_id,
+        )
+    return AssetDraftResponse(
+        draft_id=draft_id, car_asset_id=car_asset.id, rim_asset_id=rim_asset.id
+    )
+
+
 @router.post("/resolve", response_model=IdentityResolveResponse)
 async def resolve_identity(
     car_image: Annotated[UploadFile | None, File()] = None,
@@ -582,102 +752,14 @@ async def resolve_identity(
     except ImageNormalizationError as exc:
         raise _normalization_http_error(exc) from exc
 
-    async with pool.acquire() as conn:
-        draft_id = str(
-            await conn.fetchval(
-                """
-                INSERT INTO render_input_drafts (owner_user_id, status)
-                VALUES ($1, 'resolving')
-                RETURNING id
-                """,
-                owner_user_id,
-            )
-        )
-
-    logger.info(
-        "🔥 Vehicle identity resolve started draft_id=%s user_id=%s enabled=%s provider=%s model=%s source_url=%s",
-        draft_id,
-        owner_user_id,
-        VEHICLE_IDENTITY_ENABLED,
-        VEHICLE_IDENTITY_PROVIDER,
-        VEHICLE_IDENTITY_MODEL,
-        bool(source_rim.product_url),
+    draft_id, car_asset, rim_asset = await _upload_asset_draft(
+        pool=pool,
+        owner_user_id=owner_user_id,
+        car_bytes=car_bytes,
+        rim_bytes=rim_bytes,
+        car_content_type=car_image.content_type,
+        rim_content_type=wheel_image.content_type,
     )
-
-    uploaded_assets: list[assets_service.AssetUpload] = []
-    try:
-        car_asset = await assets_service.upload_render_asset(
-            owner_user_id=owner_user_id,
-            render_input_draft_id=draft_id,
-            kind="car_original",
-            data=car_bytes,
-            content_type=car_image.content_type or "application/octet-stream",
-        )
-        uploaded_assets.append(car_asset)
-        car_display = await assets_service.upload_car_display(original=car_asset, data=car_bytes)
-        if car_display is not None:
-            uploaded_assets.append(car_display)
-        rim_asset = await assets_service.upload_render_asset(
-            owner_user_id=owner_user_id,
-            render_input_draft_id=draft_id,
-            kind="rim_original",
-            data=rim_bytes,
-            content_type=wheel_image.content_type or "application/octet-stream",
-        )
-        uploaded_assets.append(rim_asset)
-    except storage.StorageError as exc:
-        for uploaded_asset in uploaded_assets:
-            try:
-                await assets_service.delete_uploaded_asset(uploaded_asset)
-            except storage.StorageError as cleanup_exc:
-                logger.exception(
-                    "❌ Identity draft cleanup failed draft_id=%s asset_id=%s: %s",
-                    draft_id,
-                    uploaded_asset.id,
-                    cleanup_exc,
-                )
-        logger.exception(
-            "❌ Identity asset upload failed draft_id=%s user_id=%s: %s",
-            draft_id,
-            owner_user_id,
-            exc,
-        )
-        raise HTTPException(status_code=502, detail="Storage upload failed") from exc
-
-    try:
-        async with pool.acquire() as conn:
-            async with conn.transaction():
-                await assets_service.insert_asset(conn, car_asset)
-                await assets_service.insert_asset(conn, rim_asset)
-                await assets_service.insert_optional_car_display(conn, car_display)
-                await conn.execute(
-                    """
-                    UPDATE render_input_drafts
-                    SET car_asset_id = $1::uuid,
-                        rim_asset_id = $2::uuid,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $3::uuid
-                      AND owner_user_id = $4
-                    """,
-                    car_asset.id,
-                    rim_asset.id,
-                    draft_id,
-                    owner_user_id,
-                )
-    except Exception:
-        for asset in uploaded_assets:
-            try:
-                await assets_service.delete_uploaded_asset(asset)
-            except (storage.StorageError, httpx.HTTPError):
-                logger.warning(
-                    "identity_draft_asset_cleanup_failed draft_id=%s asset_id=%s",
-                    draft_id,
-                    asset.id,
-                )
-        logger.exception(
-            "identity_draft_asset_persist_failed draft_id=%s user_id=%s", draft_id, owner_user_id
-        )
-        raise HTTPException(status_code=500, detail="Asset persistence failed") from None
 
     try:
         resolution = await get_vehicle_identity_resolver().resolve(normalized_car)

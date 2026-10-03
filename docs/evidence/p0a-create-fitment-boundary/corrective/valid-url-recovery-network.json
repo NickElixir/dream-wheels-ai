@@ -1,0 +1,141 @@
+{
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/identity/assets",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/from-assets",
+      "body": {
+        "draft_id": "22222222-2222-4222-8222-000000000001",
+        "idempotency_key": "f00ca12c-2ffe-4c78-bda6-f94cfc970bf4",
+        "rim": {
+          "product_url": "https://shop.example.test/wheel",
+          "source": "user_input"
+        },
+        "rim_user_confirmed": false
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/identity/assets",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/from-assets",
+      "body": {
+        "draft_id": "22222222-2222-4222-8222-000000000002",
+        "idempotency_key": "33db6792-9831-4caf-a1e7-91a953d0d020",
+        "rim": {
+          "product_url": "https://shop.example.test/wheel",
+          "source": "user_input"
+        },
+        "rim_user_confirmed": false
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/assets/car_original/signed-url",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-catalogue/makes",
+      "body": null
+    }
+  ],
+  "errors": [],
+  "checks": "Create prerequisites -> invalid URL field feedback/CTA enabled -> trimmed valid URL saved -> 404 draft recovery with 2 uploads/2 creation calls -> neutral Result -> missing Fitment -> once-only URL resolution",
+  "viewports": [
+    1440,
+    390
+  ]
+}
