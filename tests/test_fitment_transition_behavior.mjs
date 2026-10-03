@@ -198,7 +198,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             applyRimSourceValues, markRimFieldEdited,
             selectFitmentRimVariant,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
-            snapshot: vnextFitmentSnapshot,
+            snapshot: vnextFitmentSnapshot, fitmentWheelDraftIsDirty, fitmentWheelSource, buildRenderExpiryCohorts, vnextDashboardSnapshot,
             recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling, clearFitmentRuntimeRequests, reconcileRequiredFitmentWorkspace,
             useRealVariantLookup() { ensureRequiredFitmentVariantLookup = globalThis.__realEnsureRequiredFitmentVariantLookup; },
@@ -334,6 +334,7 @@ test("Standard Check uses canonical IDs only, locks mutations and rejects duplic
     const overview = overviewFor(api, "run_standard_check");
     seed(api, overview, "result");
     api.state.fitmentForm.rim.offset_et_mm = "99,125";
+    api.state.fitmentFormState.baseline = api.cloneFitmentForm(api.state.fitmentForm);
     const request = api.runFitmentCheck();
     assert.equal(api.fitmentMutationsLocked(), true);
     api.setVnextFitmentField("rim.offset_et_mm", "30");
@@ -2081,4 +2082,143 @@ test('P0-A corrective: disabled resolver releases browser claim for a later enab
     api.openFitmentView('behavior-job',{originView:'render-detail'});
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls.filter(call=>call.endsWith('rim-source/resolve')).length,2);
+});
+
+
+test("P0-B domain dirty normalizes decimals and empty values, keeps ET zero and checks all Wheel fields", async () => {
+    const { api, calls } = navigationApi();
+    seed(api, overviewFor(api, "run_standard_check"), "rim");
+    api.state.fitmentForm.rim.center_bore_mm = "66,6";
+    api.state.fitmentFormState.baseline.rim.center_bore_mm = 66.6;
+    api.state.fitmentForm.rim.offset_et_mm = "0";
+    api.state.fitmentFormState.baseline.rim.offset_et_mm = 0;
+    api.state.fitmentForm.rim.sku = "";
+    api.state.fitmentFormState.baseline.rim.sku = null;
+    assert.equal(api.fitmentWheelDraftIsDirty(), false);
+    assert.equal(api.snapshot().canRunCheck, true);
+    for (const [scope, key, value] of [["rim", "offset_et_mm", "1"], ["rim", "brand", "Other"], ["rear_rim", "pcd_mm", "120"]]) {
+        const old = api.state.fitmentForm[scope][key];
+        api.state.fitmentForm[scope][key] = value;
+        assert.equal(api.fitmentWheelDraftIsDirty(), true);
+        assert.equal(api.snapshot().canRunCheck, false);
+        await api.runFitmentCheck();
+        api.state.fitmentForm[scope][key] = old;
+    }
+    api.state.fitmentForm.setup_mode = "staggered";
+    assert.equal(api.fitmentWheelDraftIsDirty(), true);
+    assert.equal(calls.filter(call => call.startsWith("POST")).length, 0);
+});
+
+test("P0-B Wheel Save advances only canonical Wheel and preserves edits made while PATCH is in flight", async () => {
+    let release, payload;
+    const { api } = navigationApi({ routes: { "PATCH /api/backend/jobs/behavior-job/fitment": options => {
+        payload = JSON.parse(options.body);
+        return new Promise(resolve => { release = resolve; });
+    } } });
+    const original = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    seed(api, original, "rim");
+    api.setVnextFitmentField("rim.offset_et_mm", "35.125");
+    const pending = api.saveFitment(undefined, { owner: "rim", confirmWheelFields: true });
+    assert.equal(payload.vehicle, undefined);
+    api.setVnextFitmentField("rim.offset_et_mm", "36.25");
+    const saved = structuredClone(original);
+    saved.rim.offset_et_mm = 35.125;
+    if (saved.front_rim) saved.front_rim.rim.offset_et_mm = 35.125;
+    saved.rim_revision += 1; saved.rim_setup_revision += 1;
+    release(response(200, saved)); await pending;
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "36.25");
+    assert.equal(api.fitmentWheelDraftIsDirty(), true);
+    assert.equal(api.snapshot().canRunCheck, false);
+    assert.equal(api.state.fitmentOverview.vehicle_revision, original.vehicle_revision);
+    assert.equal(JSON.stringify(api.state.fitmentOverview.vehicle), JSON.stringify(original.vehicle));
+    api.setVnextFitmentField("rim.offset_et_mm", "35,125");
+    assert.equal(api.fitmentWheelDraftIsDirty(), false);
+    assert.equal(api.snapshot().canRunCheck, true);
+});
+
+test("P0-B invalid dirty Save opens Wheel editor without PATCH or Check", async () => {
+    const { api, calls } = navigationApi(); seed(api, overviewFor(api, "run_standard_check"), "result");
+    api.setVnextFitmentField("rim.center_bore_mm", "");
+    await api.saveVnextFitment("rim");
+    assert.equal(api.state.fitmentRimEditing, true);
+    assert.ok(api.state.fitmentFormState.missingFields.includes("rim.center_bore_mm"));
+    assert.equal(api.state.fitmentError, "");
+    assert.equal(calls.some(call => call.startsWith("PATCH") || call.startsWith("POST")), false);
+});
+
+test("P0-B launch failure is separate from failed execution and retry uses a new canonical request", async () => {
+    let attempts = 0, release;
+    const { api, calls } = navigationApi({ routes: { "POST /api/backend/fitment/checks": () => {
+        attempts++;
+        return attempts === 1 ? response(500, { detail: "provider_timeout" }) : new Promise(resolve => { release = resolve; });
+    } } });
+    seed(api, overviewFor(api, "run_standard_check"), "result");
+    await api.runFitmentCheck();
+    assert.equal(api.state.fitmentCheck, null);
+    assert.equal(api.snapshot().checkStartFailed, true);
+    const html = fitmentMarkup(api.snapshot());
+    assert.match(html, /Проверку выполнить не удалось/);
+    assert.match(html, /Повторить проверку/);
+    assert.doesNotMatch(html, /provider_timeout|500/);
+    const retry = api.runFitmentCheck(); await api.runFitmentCheck();
+    assert.equal(calls.filter(call => call.startsWith("POST")).length, 2);
+    release(response(200, { id: "new-execution", execution_status: "failed", retry_mode: "retryable" }));
+    await retry;
+    assert.equal(api.snapshot().checkStartFailed, false);
+    assert.equal(api.snapshot().executionStatus, "failed");
+});
+
+test("P0-B wheel source follows canonical URL or photo and hides credentials/query", () => {
+    const { api } = navigationApi();
+    const source = api.fitmentWheelSource({ rim: { product_url: "https://private:secret@www.shop.test/wheel?token=secret" } }, null);
+    assert.equal(source.rimSourceLabel, "Ссылка на товар"); assert.equal(source.rimSourceDomain, "shop.test");
+    assert.equal(api.fitmentWheelSource({ rim: { product_url: "javascript:alert(1)" } }, { assets: { rim_original: {} } }).rimSourceLabel, "Фото диска");
+    assert.equal(api.fitmentWheelSource({ rim_field_states: { offset_et_mm: { source: "user_input" } } }, null).rimSourceLabel, "Указано вручную");
+    assert.equal(api.fitmentWheelSource({}, null).rimSourceLabel, "Источник не указан");
+});
+
+test("P0-B expiry displays all positive active buckets sorted nearest first, permanent last", () => {
+    const { api } = navigationApi();
+    api.state.creditPackages = [
+        { id: "later", remainingCredits: 6, expiresAt: "2099-12-01T00:00:00Z" },
+        { id: "permanent", remainingCredits: 3, expiresAt: null },
+        { id: "early", remainingCredits: 10, expiresAt: "2099-10-01T00:00:00Z" },
+        { id: "middle", remainingCredits: 15, expiresAt: "2099-11-01T00:00:00Z" },
+        { id: "zero", remainingCredits: 0, expiresAt: "2099-10-01T00:00:00Z" },
+        { id: "expired", remainingCredits: 100, expiresAt: "2020-01-01T00:00:00Z" },
+    ];
+    api.state.balance = 34;
+    assert.equal(api.buildRenderExpiryCohorts().map(item => item.key).join(","), "early,middle,later,permanent");
+    const snapshot = api.vnextDashboardSnapshot();
+    assert.equal(snapshot.expiry.length, 4);
+    assert.equal(snapshot.expiry.reduce((sum, item) => sum + item.credits, 0), 34);
+    assert.equal(snapshot.expiry.at(-1).expiresLabel, "без срока");
+});
+
+
+test("P0-B a Wheel edit during currentness refresh cannot become the saved baseline", async () => {
+    let release;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => {
+            const next = structuredClone(api.state.fitmentOverview);
+            next.rim.offset_et_mm = 40;
+            if (next.front_rim) next.front_rim.rim.offset_et_mm = 40;
+            next.rim_revision += 1;
+            next.current_check = { id: "old-check", execution_status: "completed", verdict: "compatible", is_current: false };
+            return response(200, next);
+        },
+        "GET /api/backend/fitment/checks/old-check": () => new Promise(resolve => { release = resolve; }),
+    } });
+    seed(api, overviewFor(api, "run_standard_check"), "rim");
+    api.state.fitmentCheck = { id: "old-check", execution_status: "completed", verdict: "compatible" };
+    api.setVnextFitmentField("rim.offset_et_mm", "40");
+    const saving = api.saveWithRealCurrentness(undefined, { owner: "rim", confirmWheelFields: true });
+    while (!release) await new Promise(resolve => setTimeout(resolve, 0));
+    api.setVnextFitmentField("rim.offset_et_mm", "41");
+    release(response(200, { id: "old-check", execution_status: "completed", verdict: "compatible", is_current: false }));
+    await saving;
+    assert.equal(Number(api.state.fitmentFormState.baseline.rim.offset_et_mm), 40);
+    assert.equal(api.state.fitmentForm.rim.offset_et_mm, "41");
+    assert.equal(api.snapshot().rimDraftDirty, true);
+    assert.equal(api.snapshot().canRunCheck, false);
 });
