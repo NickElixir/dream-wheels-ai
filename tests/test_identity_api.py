@@ -178,25 +178,10 @@ def test_rim_proposal_allows_a_source_url_without_technical_values() -> None:
     assert snapshot["rim"]["pcd_display"] is None
 
 
-def test_unconfirmed_vehicle_cannot_create_render_job() -> None:
-    response = client.post(
-        "/jobs/from-assets",
-        json={
-            "draft_id": "11111111-1111-4111-8111-111111111111",
-            "idempotency_key": "unconfirmed-key",
-            "vehicle": {
-                "make": "Zeer",
-                "model": "Zeer 1",
-                "year": 2023,
-                "confidence": 0.99,
-                "source": "vlm_visual",
-            },
-            "rim": {"confidence": 0, "source": "unknown"},
-        },
-    )
-
-    assert response.status_code == 422
-    assert response.json()["detail"]["error_code"] == "vehicle_confirmation_required"
+def test_create_request_has_no_vehicle_prerequisite() -> None:
+    request = jobs_api.JobFromAssetsRequest(draft_id="draft", idempotency_key="key")
+    assert request.vehicle is None
+    assert request.vehicle_user_confirmed is False
 
 
 def _proposal_with_candidates() -> identity_service.IdentityProposal:
@@ -291,7 +276,8 @@ def test_insert_rim_spec_persists_only_source_url_when_specs_are_unknown() -> No
     assert captured[5:9] == [None, None, None, None]
 
 
-def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(monkeypatch):
+@pytest.mark.parametrize("legacy_vehicle", [False, True])
+def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_vehicle):
     calls: list[tuple[str, object]] = []
 
     class FakeRedis:
@@ -403,27 +389,31 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     response = client.post(
         "/jobs/from-assets",
         json={
-            "draft_id": "11111111-1111-4111-8111-111111111111",
-            "idempotency_key": "create-key",
-            "init_data": "unused",
-            "vehicle": {
-                "make": "Lexus",
-                "model": "RX",
-                "year": 2021,
-                "confidence": 0.72,
-                "source": "vlm",
-            },
-            "vehicle_user_confirmed": True,
-            "rim": {
-                "product_url": "https://shop.example.test/selected-wheel-20",
-                "wheel_diameter_in": 20,
-                "wheel_width_j": 8.5,
-                "bolt_count": 5,
-                "pcd_mm": 114.3,
-                "confidence": 0.72,
-                "source": "ocr",
-            },
-            "rim_user_confirmed": False,
+            key: value
+            for key, value in {
+                "draft_id": "11111111-1111-4111-8111-111111111111",
+                "idempotency_key": "create-key",
+                "init_data": "unused",
+                "vehicle": {
+                    "make": "Lexus",
+                    "model": "RX",
+                    "year": 2021,
+                    "confidence": 0.72,
+                    "source": "vlm",
+                },
+                "vehicle_user_confirmed": True,
+                "rim": {
+                    "product_url": "https://shop.example.test/selected-wheel-20",
+                    "wheel_diameter_in": 20,
+                    "wheel_width_j": 8.5,
+                    "bolt_count": 5,
+                    "pcd_mm": 114.3,
+                    "confidence": 0.72,
+                    "source": "ocr",
+                },
+                "rim_user_confirmed": False,
+            }.items()
+            if legacy_vehicle or key not in {"vehicle", "vehicle_user_confirmed"}
         },
     )
 
@@ -433,61 +423,108 @@ def test_create_job_from_assets_persists_confirmed_identity_snapshot_and_queues(
     assert len(fake_redis.queue_payloads) == 1
     assert "fitment" not in fake_redis.queue_payloads[0].lower()
 
-    vehicle_insert = next(call for call in calls if call[0] == "insert_vehicle_identity")
-    assert vehicle_insert[1][6] is True
-    vehicle_provenance = json.loads(vehicle_insert[1][7])
-    assert vehicle_provenance["make"] == {
-        "source": "vlm_visual",
-        "confidence": 0.72,
-        "is_user_confirmed": True,
-    }
-    vehicle_candidates = json.loads(vehicle_insert[1][8])
-    assert vehicle_candidates["model"][0]["value"] == "RX"
-    assert vehicle_candidates["model"][0]["source"] == "vlm_visual"
-    assert vehicle_candidates["year"][1]["value"] == 2021
-
+    assert not any(call[0] == "insert_vehicle_identity" for call in calls)
     rim_insert = next(call for call in calls if call[0] == "insert_rim_spec")
-    assert rim_insert[1][1] == "OZ"
+    assert rim_insert[1][1] is None  # No AI draft prefill in Create.
     assert rim_insert[1][4] == "https://shop.example.test/selected-wheel-20"
-    assert float(rim_insert[1][9]) == 66.6
-    assert float(rim_insert[1][10]) == 35
-    rim_candidates = json.loads(rim_insert[1][12])
-    assert rim_candidates["pcd_mm"][0]["value"] == 114.3
-    assert rim_candidates["product_url"][0]["value"] == "https://shop.example.test/oz-18"
-
-    fitment_event = next(
-        call
-        for call in calls
-        if call[0] == "execute" and "INSERT INTO fitment_change_events" in call[1]
-    )
-    event_changes = json.loads(fitment_event[2][10])
-    assert fitment_event[2][3] == "initial_prefill"
-    assert fitment_event[2][4] == "system"
-    assert event_changes["vehicle"]["model"]["new"] == "RX"
-    assert event_changes["rim"]["center_bore_mm"]["new"] == 66.6
-
+    assert json.loads(rim_insert[1][12]) == {}
     job_insert = next(
         call for call in calls if call[0] == "execute" and call[1].startswith("INSERT INTO jobs")
     )
     snapshot = json.loads(job_insert[2][8])
+    assert job_insert[2][6] is None
+    assert snapshot["vehicle_identity_id"] is None
+    assert snapshot["vehicle"] is None
     assert snapshot["fitment_verdict"] is None
-    assert snapshot["purpose"] == "visual_render"
-    assert snapshot["vehicle"]["year"] == 2021
-    assert snapshot["rim"]["pcd_display"] == "5×114.3"
-    assert snapshot["rim"]["is_user_confirmed"] is False
     assert snapshot["rim"]["product_url"] == "https://shop.example.test/selected-wheel-20"
-
-    consumed_draft_update = next(
+    assert snapshot["rim"]["is_user_confirmed"] is False
+    event = next(
         call
         for call in calls
-        if call[0] == "execute"
-        and "UPDATE render_input_drafts" in call[1]
-        and "identity_proposal" in call[1]
+        if call[0] == "execute" and "INSERT INTO fitment_change_events" in call[1]
     )
-    assert "https://shop.example.test/selected-wheel-20" in consumed_draft_update[2][0]
-
+    assert event[2][1] is None
+    assert event[2][7] == 0
+    assert "vehicle" not in json.loads(event[2][10])
+    assert json.loads(fake_redis.queue_payloads[0])["vehicle_identity_id"] is None
     display_promotions = [
         call for call in calls if call[0] == "execute" and "kind = 'car_display'" in call[1]
     ]
     assert len(display_promotions) == 1
     assert display_promotions[0][2][1:] == ("11111111-1111-4111-8111-111111111111", 77)
+
+
+def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch):
+    calls = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchval(self, query, *args):
+            assert "INSERT INTO render_input_drafts" in query
+            return "11111111-1111-4111-8111-111111111111"
+
+        async def execute(self, query, *args):
+            calls.append(query)
+            return "UPDATE 1"
+
+    async def auth(*args, **kwargs):
+        return _auth_principal()
+
+    async def limit(*args, **kwargs):
+        pass
+
+    async def upload(**kwargs):
+        return assets_service.AssetUpload(
+            id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            owner_user_id=77,
+            job_id=None,
+            kind=kwargs["kind"],
+            bucket="raw",
+            storage_key="draft/photo.png",
+            content_type=kwargs["content_type"],
+            size_bytes=len(kwargs["data"]),
+            sha256="0" * 64,
+            render_input_draft_id=kwargs["render_input_draft_id"],
+        )
+
+    async def insert(conn, asset):
+        calls.append(asset.kind)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Create must not recognize vehicle or resolve URL")
+
+    monkeypatch.setattr(identity_api, "require_auth_principal", auth)
+    monkeypatch.setattr(identity_api, "enforce_rate_limit", limit)
+    monkeypatch.setattr(identity_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(identity_api.assets_service, "upload_render_asset", upload)
+    monkeypatch.setattr(identity_api.assets_service, "insert_asset", insert)
+    monkeypatch.setattr(identity_api, "get_vehicle_identity_resolver", forbidden)
+    monkeypatch.setattr(identity_api, "resolve_rim_product_url", forbidden)
+    response = client.post(
+        "/identity/assets",
+        data={"consent": "true", "init_data": "unused"},
+        files={
+            "car_image": ("car.png", _image_bytes(), "image/png"),
+            "wheel_image": ("wheel.png", _image_bytes(), "image/png"),
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert "vehicle" not in response.json()
+    assert any("status = 'resolved'" in query for query in calls)
+    assert "car_original" in calls and "rim_original" in calls
+    assert not any("INSERT INTO jobs" in query or "vehicle_identities" in query for query in calls)
+
+
+def test_create_asset_upload_requires_consent():
+    response = client.post(
+        "/identity/assets",
+        data={"consent": "false"},
+        files={
+            "car_image": ("car.png", _image_bytes(), "image/png"),
+            "wheel_image": ("wheel.png", _image_bytes(), "image/png"),
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "photo_consent_required"

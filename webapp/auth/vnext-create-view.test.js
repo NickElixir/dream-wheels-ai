@@ -34,6 +34,8 @@ class ElementStub {
   setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   setAttribute(key, value) { this.attributes[key] = value; }
   addEventListener(name, callback) { this.listeners[name] = callback; }
+  get nodeType() { return this.tagName === "#text" ? 3 : 1; }
+  get childNodes() { return this.children; }
   get childElementCount() { return this.children.length; }
   get allText() { return this.textContent + this.children.map((child) => child.allText || child.textContent || "").join(""); }
   find(predicate) {
@@ -52,231 +54,48 @@ globalThis.document = {
   querySelector: () => null,
 };
 const { createCreateView, refreshCreateView } = await import("../vnext/views/create.js");
-function nodesWithRole(root, role) {
-  const nodes = [];
-  (function visit(node) {
-    if (node.attributes?.role === role) nodes.push(node);
-    node.children.forEach(visit);
-  })(root);
-  return nodes;
-}
 
-test("URL resolution states expose explicit recovery and honest variant readiness", () => {
-  const snapshot = { bothReady: true, consentAccepted: true, draftId: "draft", selectedVehicle: { make: "Audi", model: "Q8" }, sourceEditing: true, proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } };
-  const loading = createCreateView({ ...snapshot, rimSourceResolving: true });
-  assert.match(loading.allText, /Получаем данные по ссылке/);
-  assert.equal(loading.find((node) => node.textContent === "Создать изображение").disabled, true);
-  const error = createCreateView({ ...snapshot, rimSourceError: { title: "Не удалось получить данные по ссылке", body: "Попробуйте другую ссылку или загрузите изображение диска вручную", retryable: true, manualFallback: true } });
-  assert.match(error.allText, /Попробовать другую ссылку/);
-  assert.match(error.allText, /Загрузить вручную/);
-  assert.equal(error.find((node) => node.textContent === "Создать изображение").disabled, false, "operational error preserves previous usable wheel");
-  const success = createCreateView({ ...snapshot, sourceEditing: false, rimSourceStatus: "success" });
-  assert.match(success.allText, /Ссылка сохранена/);
-  assert.match(success.allText, /ET 0/);
-  for (const variant of ["none", "selected", "selection_required"]) {
-    const view = createCreateView({ ...snapshot, sourceEditing: false, proposal: { vehicle: {}, rim: { variant_state: variant } } });
-    assert.equal(view.find((node) => node.textContent === "Создать изображение").disabled, variant === "selection_required");
-    if (variant === "selection_required") assert.match(view.allText, /Требуется выбрать точный вариант диска/);
+const photo={previewUrl:'/photo.jpg'};
+const ready={files:{car:photo,wheel:photo},bothReady:true,consentAccepted:true};
+for(const [snapshot,reason,disabled] of [
+  [{},'Добавьте фото автомобиля',true],
+  [{files:{car:photo}},'Добавьте фото диска',true],
+  [{...ready,consentAccepted:false},'Подтвердите согласие на обработку фотографий',true],
+  [ready,'',false],
+  [{...ready,submitting:true},'',true],
+])test(`Create has one always present primary CTA: ${reason||'ready/submitting'}`,()=>{
+  const view=createCreateView(snapshot);
+  const cta=view.find(n=>n.textContent==='Создать изображение');
+  assert(cta);assert.equal(cta.disabled,disabled);
+  if(reason)assert.match(view.allText,new RegExp(reason));
+  assert.doesNotMatch(view.allText,/Определить автомобиль|Подтвердить автомобиль|Проверить совместимость|Марка|Модель/);
+});
+
+test('legacy recognition/provider states and verdicts cannot gate visual render',()=>{
+  for(const verdict of ['incompatible','unknown','failed','stale']){
+    const view=createCreateView({...ready,identityResolving:true,identityError:'legacy',proposal:{vehicle:{primary:{make:'AI Ghost'}},rim:{variant_state:'selection_required'}},fitmentVerdict:verdict});
+    assert.equal(view.find(n=>n.textContent==='Создать изображение').disabled,false);
+    assert.doesNotMatch(view.allText,/AI Ghost|Определяем|Требуется выбрать/);
   }
 });
 
-test("Create renders fixed empty/upload stages and replaces either asset through the legacy picker callback", () => {
-  const picked = [];
-  const view = createCreateView({}, { pickFile: (kind) => picked.push(kind) });
-  assert.match(view.allText, /Добавьте фото автомобиля/);
-  assert.match(view.allText, /Добавьте фото диска/);
-  assert.match(view.className, /vnext-create/);
-  const stages = [];
-  (function visit(node) { if (node.className?.includes("vnext-create__stage")) stages.push(node); node.children.forEach(visit); })(view);
-  assert.equal(stages.length, 2);
-  stages[0].listeners.click();
-  stages[1].listeners.click();
-  assert.deepEqual(picked, ["car", "wheel"]);
+test('product URL save delegates storage and explains deferred Fitment ownership',()=>{
+  let saved;const view=createCreateView({...ready,sourceEditing:true},{saveRimProductUrl:value=>saved=value});
+  assert.match(view.allText,/Сохраним её для последующей проверки совместимости/);
+  assert.doesNotMatch(view.allText,/Определить параметры|Получаем данные/);
+  const input=view.find(n=>n.name==='rim_product_url');input.value='https://shop.example/wheel';
+  view.find(n=>n.textContent==='Сохранить ссылку').listeners.click();
+  assert.equal(saved,'https://shop.example/wheel');
 });
 
-test("wheel source action works after full identity success and zero ET remains available", () => {
-  let editing = null;
-  const view = createCreateView({ proposal: { vehicle: {}, rim: { offset_et_mm: 0 } } }, { setSourceEditing: (value) => { editing = value; } });
-  view.find((node) => node.tagName === "button" && node.textContent === "Добавить ссылку на товар").listeners.click();
-  assert.equal(editing, true);
-  assert.match(view.allText, /ET 0/);
-  const wheel = view.find((node) => node.className === "vnext-create__object vnext-create__object--wheel");
-  assert.ok(wheel, "wheel URL action is owned by the wheel object");
-  assert.match(wheel.allText, /Добавить ссылку на товар/);
-  assert.doesNotMatch(wheel.allText, /Данные-кандидаты/);
+test('picker and consent callbacks remain functional',()=>{
+  let consent;const picked=[];const view=createCreateView({...ready,consentAccepted:false},{pickFile:kind=>picked.push(kind),setConsent:value=>consent=value});
+  view.find(n=>n.className.includes('vnext-create__stage')).listeners.click();assert.deepEqual(picked,['car']);
+  const checkbox=view.find(n=>n.type==='checkbox');checkbox.checked=true;checkbox.listeners.change();assert.equal(consent,true);
 });
 
-test("Create hides filesystem metadata and exposes a spinner for blocking identity recognition", () => {
-  const loading = createCreateView({
-    files: { car: { name: "private-car-photo.png", size: 2242880, previewUrl: "blob:car" }, wheel: { name: "race-wheel.png", size: 1024, previewUrl: "blob:wheel" } },
-    identityResolving: true,
-  });
-  assert.doesNotMatch(loading.allText, /private-car-photo\.png|race-wheel\.png|2\.2\s?МБ|1\.0\s?КБ|2242880/);
-  assert.match(loading.allText, /Определяем автомобиль/);
-  assert.ok((function count(node) { return (node.className === "vnext-spinner" ? 1 : 0) + node.children.reduce((sum, child) => sum + count(child), 0); })(loading) > 0);
-});
-
-test("required Create vehicle choice stays open even when a provisional vehicle is already present", () => {
-  const view = createCreateView({
-    proposal: { vehicle: { primary: { make: "Li Auto", model: "L9", year: 2024 }, alternatives: [{ make: "Li Auto", model: "L9 Max", year: 2024 }] }, rim: {} },
-    selectedVehicle: { make: "Li Auto", model: "L9", year: 2024 }, selectedVehicleIndex: null,
-  });
-  assert.match(view.allText, /Мы нашли несколько вариантов\./);
-  assert.match(view.allText, /Выберите ваш автомобиль\./);
-  assert.match(view.allText, /Это нужно, чтобы продолжить\./);
-  assert.match(view.allText, /L9 Max/);
-  assert.doesNotMatch(view.allText, /Скрыть варианты/);
-  assert.doesNotMatch(view.allText, /Изменить данные/);
-  assert.match(view.allText, /Не мой автомобиль — указать вручную/);
-  const choices = nodesWithRole(view, "radio");
-  assert.deepEqual(choices.map((choice) => choice.attributes["aria-checked"]), ["false", "false"]);
-  assert.deepEqual(choices.map((choice) => choice.children[0].textContent), ["Li Auto L9 2024", "Li Auto L9 Max 2024"]);
-  assert.deepEqual(choices.map((choice) => choice.attributes.role), ["radio", "radio"]);
-});
-
-test("Create selected recognized vehicle uses an accessible radio row without decorative marker", () => {
-  const view = createCreateView({
-    proposal: { vehicle: { primary: { make: "Audi", model: "Q8", year: 2024 }, alternatives: [] }, rim: {} },
-    selectedVehicle: null, selectedVehicleIndex: null,
-  });
-  assert.match(view.allText, /Подтвердите автомобиль/);
-  assert.match(view.allText, /Это нужно, чтобы продолжить\./);
-  assert.doesNotMatch(view.allText, /комплектац|модификац|trim/i);
-  const selected = createCreateView({
-    vehicleEditing: true, selectedVehicle: { make: "Audi", model: "Q8", year: 2024 }, selectedVehicleIndex: 0,
-    proposal: { vehicle: { primary: { make: "Audi", model: "Q8", year: 2024 }, alternatives: [{ make: "Audi", model: "Q8 e-tron", year: 2024 }] }, rim: {} },
-  });
-  const choice = nodesWithRole(selected, "radio")[0];
-  assert.equal(choice.attributes["aria-checked"], "true");
-  assert.equal(choice.children[0].textContent, "Audi Q8 2024");
-  assert.doesNotMatch(choice.allText, /[●○]/);
-  const css = fs.readFileSync(new URL("../vnext/styles/surfaces.css", import.meta.url), "utf8");
-  assert.doesNotMatch(css, /vehicle-option:last-child\s*\{[^}]*border-bottom:\s*0/);
-});
-
-test("confirmed Create vehicle summary retains status and explicit edit action", () => {
-  const view = createCreateView({
-    proposal: { vehicle: { primary: { make: "Li Auto", model: "L9", year: 2024 } }, rim: {} },
-    selectedVehicle: { make: "Li Auto", model: "L9", year: 2024 }, selectedVehicleIndex: 0,
-  });
-  assert.match(view.allText, /Автомобиль подтверждён/);
-  assert.match(view.allText, /Li Auto L9 2024/);
-  assert.match(view.allText, /Изменить данные/);
-});
-
-test("manual vehicle correction saves explicitly and returns to summary", () => {
-  let saved;
-  const snapshot = { proposal: { vehicle: { primary: null }, rim: {} }, manualVehicle: {} };
-  const view = createCreateView(snapshot, { saveManualVehicle: (values) => { saved = values; } });
-  const save = view.find((node) => node.textContent === "Сохранить");
-  assert.equal(save.disabled, true);
-  const fields = view.querySelectorAll("input");
-  fields.find((input) => input.name === "make").value = "Audi";
-  const model = fields.find((input) => input.name === "model");
-  model.value = "Q8";
-  model.listeners.input();
-  assert.equal(save.disabled, false);
-  save.listeners.click();
-  assert.equal(saved.make, "Audi");
-  assert.equal(saved.model, "Q8");
-  const summary = createCreateView({ ...snapshot, manualVehicleMode: true, selectedVehicle: saved });
-  assert.match(summary.allText, /Данные автомобиляAudi Q8/);
-  assert.equal(summary.querySelectorAll("input").length, 0);
-});
-
-test("async refresh preserves unsaved source/form values, focus and cursor without nesting Create", () => {
-  const snapshot = { bothReady: true, sourceEditing: true, proposal: { vehicle: { primary: null }, rim: {} } };
-  const current = createCreateView(snapshot);
-  const make = current.querySelectorAll("input").find((input) => input.name === "make");
-  make.value = "Unsaved vehicle";
-  make.setSelectionRange(4, 4);
-  make.focus();
-  const source = current.querySelectorAll("input").find((input) => input.name === "rim_product_url");
-  source.value = "https://example.com/unsaved";
-  const next = refreshCreateView(current, snapshot, {});
-  assert.equal(document.activeElement.value, "Unsaved vehicle");
-  assert.equal(document.activeElement.selectionStart, 4);
-  assert.equal(next.querySelectorAll("input").find((input) => input.name === "rim_product_url").value, "https://example.com/unsaved");
-  assert.equal(next.children.some((node) => node.className === "vnext-create"), false);
-  document.activeElement = null;
-});
-
-test("Create Image remains enabled for every Fitment verdict and execution failure", () => {
-  for (const verdict of ["compatible", "compatible_with_conditions", "unknown", "incompatible", "failure"]) {
-    let rendered = 0;
-    const view = createCreateView({ bothReady: true, consentAccepted: true, draftId: "draft", selectedVehicle: { make: "Audi", model: "Q8" }, proposal: { vehicle: {}, rim: {} }, fitmentVerdict: verdict }, { createImage: () => rendered++ });
-    const create = view.find((node) => node.tagName === "button" && node.textContent === "Создать изображение");
-    assert.equal(create.disabled, false, verdict);
-    create.listeners.click();
-    assert.equal(rendered, 1);
-  }
-});
-
-test("Create renders uploaded media and keeps consent and identity resolution explicit", () => {
-  let consent = null;
-  const view = createCreateView({
-    files: { car: { name: "car.jpg", size: 1024, previewUrl: "blob:car" }, wheel: null },
-    bothReady: true,
-    consentAccepted: false,
-  }, { setConsent: (checked) => { consent = checked; } });
-  const image = view.find((node) => node.tagName === "img");
-  assert.equal(image.src, "blob:car");
-  assert.match(view.allText, /Согласие/);
-  assert.match(view.allText, /legal\.dreamwheels\.pro\/legal\/privacy|Политика конфиденциальности/);
-  const checkbox = view.find((node) => node.tagName === "input");
-  checkbox.checked = true;
-  checkbox.listeners.change();
-  assert.equal(consent, true);
-});
-
-test("identity loading, proposal summary, retry, Create Image and Fitment delegation render correctly", () => {
-  const called = [];
-  const loading = createCreateView({ identityResolving: true }, {});
-  assert.match(loading.allText, /Определяем автомобиль/);
-
-  const proposal = {
-    bothReady: true,
-    consentAccepted: true,
-    draftId: "draft-1",
-    selectedVehicle: { make: "Audi", model: "Q8", year: 2024, source: "vlm", confidence: 0.92 },
-    selectedVehicleIndex: 0,
-    proposal: {
-      vehicle: { primary: { make: "Audi", model: "Q8", year: 2024, confidence: 0.92 }, alternatives: [] },
-      rim: { brand: "X-Trike", model: "A-123", wheel_diameter_in: 20, wheel_width_j: 9, bolt_count: 5, pcd_mm: 112 },
-    },
-  };
-  const view = createCreateView(proposal, {
-    createImage: () => called.push("render"),
-    checkCompatibility: () => called.push("fitment"),
-  });
-  assert.match(view.allText, /Audi Q8/);
-  assert.match(view.allText, /X-Trike/);
-  assert.match(view.allText, /5×112/);
-  assert.doesNotMatch(view.allText, /ET —|DIA —/);
-  const actions = [];
-  (function visit(node) { if (node.tagName === "button") actions.push(node); node.children.forEach(visit); })(view);
-  const create = actions.find((button) => button.textContent === "Создать изображение");
-  const fitment = actions.find((button) => button.textContent === "Проверить совместимость");
-  assert.equal(create.disabled, false);
-  assert.equal(fitment.disabled, true, "Fitment requires the existing render job context");
-  create.listeners.click();
-  assert.deepEqual(called, ["render"]);
-
-  const fitmentReady = createCreateView({ ...proposal, jobId: "job-1", fitmentJobId: "job-1", resultUrl: "/result.jpg" }, {
-    createImage: () => {}, checkCompatibility: () => called.push("fitment-ready"),
-  });
-  const fitmentButton = fitmentReady.find((node) => node.tagName === "button" && node.textContent === "Проверить совместимость");
-  assert.equal(fitmentButton.disabled, false);
-  fitmentButton.listeners.click();
-  assert.equal(called.at(-1), "fitment-ready");
-});
-
-test("identity error renders retry without inventing parser URL states", () => {
-  let retries = 0;
-  const view = createCreateView({ identityError: { title: "Сервис распознавания временно недоступен", body: "Попробуйте позже." } }, { retryIdentity: () => retries++ });
-  assert.match(view.allText, /Сервис распознавания временно недоступен/);
-  const retry = view.find((node) => node.tagName === "button" && node.textContent === "Повторить");
-  retry.listeners.click();
-  assert.equal(retries, 1);
-  assert.doesNotMatch(view.allText, /Не удалось получить данные по ссылке|URL resolver/i);
+test('Create preserves RU/EN language selection',()=>{
+  const view=createCreateView({...ready,locale:'en',sourceEditing:true});
+  assert.match(view.allText,/Create image/);assert.match(view.allText,/later compatibility check/);
+  assert.doesNotMatch(view.allText,/Ссылка на товар|Создать изображение/);
 });

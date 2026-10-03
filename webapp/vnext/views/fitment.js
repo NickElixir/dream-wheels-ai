@@ -46,7 +46,7 @@ function fieldConflict(model, path) {
 }
 
 function fieldWithCandidates(model, label, path, value, options = {}) {
-  const kind = path.startsWith("vehicle.") ? "vehicleCandidates" : path.startsWith("rim.") ? "rimCandidates" : "";
+  const kind = path.startsWith("rim.") ? "rimCandidates" : "";
   const fieldName = path.replace(/^(?:vehicle|rim|rear_rim)\./, "");
   const candidates = kind
     ? (model[kind] || []).filter((candidate) => candidate.field === fieldName && normalizedIdentity(candidate.value) !== normalizedIdentity(value))
@@ -345,10 +345,10 @@ export function fitmentMarkup(model = {}) {
     <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="Автомобиль и колесный диск">
     <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
-        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title" class="vnext-fitment__visually-hidden">Автомобиль</h2>'}
-        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Изменить", "edit-vehicle-photo")}</div>
+        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title">Автомобиль не указан</h2>'}
+        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Заменить фото", "edit-vehicle-photo")}</div>
         <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="Фото автомобиля">
-        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: !activeEditor && model.overview?.vehicle_state !== "confirmed_ready", disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(model.canReselectVehicleVariant ? "Изменить автомобиль" : "Указать вручную", "edit-vehicle")}</div>
+        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: !activeEditor && model.overview?.vehicle_state !== "confirmed_ready", disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(!model.overview?.vehicle_identity_id && model.overview?.vehicle_state === "empty" ? "Указать автомобиль" : model.canReselectVehicleVariant ? "Изменить автомобиль" : "Указать вручную", "edit-vehicle")}</div>
         ${configuration}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${variantRequired && model.rimEditing ? button("Выбрать комплектацию", "show-variants") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
@@ -479,6 +479,8 @@ export function createFitmentView(model = {}, callbacks = {}) {
 }
 
 const fitmentEnglishCopy = {
+  "Автомобиль не указан": "Car not specified",
+  "Указать автомобиль": "Specify car",
   "Распознавание автомобиля": "Vehicle recognition",
   "Распознано по фотографии": "Recognized from the photo",
   "Распознаём автомобиль…": "Recognizing the vehicle…",
@@ -497,6 +499,7 @@ const fitmentEnglishCopy = {
   "Фото автомобиля": "Vehicle photo",
   "Ссылка на товар": "Product link",
   "Изменить": "Change",
+  "Заменить фото": "Replace photo",
   "Распознать автомобиль": "Recognize vehicle",
   "Распознать колесный диск": "Recognize wheel",
   "Указать вручную": "Enter manually",

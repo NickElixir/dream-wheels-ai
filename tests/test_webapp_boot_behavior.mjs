@@ -51,7 +51,7 @@ const isApplicationRoute = () => false;
 const safeApplicationReturnPath = () => null;
 ${appSource}
 hydrateFilesFromDraft = async () => {};
-renderIdentityFlow = () => {};
+renderCreateInputs = () => {};
 refreshButtonsForCurrentView = () => {};
 loadDashboardData = async () => {};
 syncApplicationAuthWall = () => {};

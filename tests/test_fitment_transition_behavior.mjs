@@ -182,7 +182,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         globalThis.__fitmentFormIsDirty = fitmentFormIsDirty;
         fitmentFormIsDirty = () => false;
         globalThis.__navigationApi = {
-            state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
+            state, humanRenderTitle, buildDefaultDemoFitmentOverview, fitmentFormFromOverview, cloneFitmentForm,
             fitmentCatalogueSelectionItem,
             awaitingVehicleConfirmation: () => Boolean(vnextFitmentSnapshot().vehicleAwaitingConfirmation),
             useRealValidation() { validateFitmentForm = globalThis.__realValidateFitmentForm; },
@@ -1857,7 +1857,7 @@ test("H1-F edit after Save returns to Save and rejects an obsolete Confirm actio
 });
 
 
-test("M1 triage: unchanged saved Wheel source is automatically resolved again on each reopen", async () => {
+test("P0-A: saved Wheel source is automatically resolved only on first entry", async () => {
     let overview;
     const {api,calls} = navigationApi({routes:{
         "GET /api/backend/jobs/behavior-job/fitment": () => response(200,overview),
@@ -1872,9 +1872,9 @@ test("M1 triage: unchanged saved Wheel source is automatically resolved again on
         api.openFitmentView("behavior-job",{originView:"render-detail"});
         await new Promise(resolve=>setImmediate(resolve));
     }
-    assert.equal(calls.filter(call=>call.endsWith("rim-source/resolve")).length,2);
+    assert.equal(calls.filter(call=>call.endsWith("rim-source/resolve")).length,1);
     assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm,38);
-    assert.equal(api.state.fitmentSourceConflicts.some(conflict=>conflict.field==="offset_et_mm"),true);
+    assert.equal(api.state.fitmentSourceConflicts.length,0);
     assert.equal(api.snapshot().canRunCheck,true);
 });
 
@@ -2023,4 +2023,38 @@ test("a recognition reply after switching to Wheel does not reopen Vehicle works
     api.bridge.action("edit-vehicle");
     assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="vehicle-editor"/);
     assert.doesNotMatch(fitmentMarkup(api.snapshot()),/Распознано по фотографии/);
+});
+
+test("P0-A: AI vehicle snapshots never name Result, History or failed cards", () => {
+    const {api}=navigationApi();
+    const job={job_id:"abcdef12-1111-4111-8111-111111111111",status:"failed",render_input_snapshot:{vehicle:{make:"Ghost",model:"AI"},rim:{brand:"BBS",model:"CH-R"}},vehicle:{make:"Ghost"},metadata:{vehicle:{make:"Ghost"}}};
+    assert.equal(api.humanRenderTitle(job),"Примерка · BBS CH-R");
+    assert.equal(api.humanRenderTitle({...job,render_input_snapshot:{vehicle:{make:"Ghost"}}}),"Примерка #abcdef");
+    assert.equal(api.humanRenderTitle({...job,vehicle_identity:{make:"BMW",model:"3 Series",is_user_confirmed:true}}),"BMW 3 Series");
+    assert.equal(api.humanRenderTitle({...job,vehicle_identity:{make:"Ghost",model:"AI",is_user_confirmed:false}}),"Примерка · BBS CH-R");
+});
+
+for(const failed of [false,true]) test(`P0-A: ${failed?"failed":"successful"} automatic URL resolution is not retried on reopen or session guard reset`,async()=>{
+    let overview;
+    const {api,calls}=navigationApi({routes:{
+        "GET /api/backend/jobs/behavior-job/fitment":()=>response(200,overview),
+        "POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve":response(failed?422:200,failed?{detail:{code:"no_data"}}:{final_url:"https://shop.example.test/wheel",values:{}}),
+    }});
+    overview=overviewFor(api,"complete_vehicle_details");overview.rim.product_url="https://shop.example.test/wheel";overview.front_rim={rim:overview.rim};seed(api,overview);
+    for(let i=0;i<3;i++){
+        api.state.fitmentSourceAutoResolvedForJob="";
+        api.openFitmentView("behavior-job",{originView:"render-detail"});
+        await new Promise(resolve=>setImmediate(resolve));
+    }
+    assert.equal(calls.filter(c=>c.endsWith("rim-source/resolve")).length,1);
+    await api.resolveFitmentRimSource();
+    assert.equal(calls.filter(c=>c.endsWith("rim-source/resolve")).length,2);
+});
+
+test("P0-A: Fitment without product URL never auto-resolves a source",async()=>{
+    let overview;
+    const {api,calls}=navigationApi({routes:{"GET /api/backend/jobs/behavior-job/fitment":()=>response(200,overview)}});
+    overview=overviewFor(api,"complete_vehicle_details");overview.rim.product_url=null;overview.front_rim={rim:overview.rim};seed(api,overview);
+    api.openFitmentView("behavior-job",{originView:"render-detail"});await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.filter(c=>c.endsWith("rim-source/resolve")).length,0);
 });

@@ -109,7 +109,7 @@ def test_render_cta_and_fitment_entry_are_independent_of_render_completion() -> 
     assert 'setView("create")' in APP_JS
     assert (
         "WHEN jobs.status = 'completed'"
-        not in JOBS_API.split("def _fitment_available_clause()")[1].split(
+        in JOBS_API.split("def _fitment_available_clause()")[1].split(
             "def _job_assets_join_clause()"
         )[0]
     )

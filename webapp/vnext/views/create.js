@@ -1,34 +1,5 @@
 import { createButton, createTextAction } from "../ui/primitives.js";
 
-const wheelFields = [
-  ["brand", "Бренд"], ["model", "Модель"], ["sku", "Артикул"],
-  ["wheel_diameter_in", "Диаметр"], ["wheel_width_j", "Ширина"], ["pcd", "PCD"],
-  ["offset_et_mm", "ET"], ["center_bore_mm", "DIA"],
-];
-
-function appendFieldRow(list, label, value) {
-  if (value === null || value === undefined || String(value).trim() === "") return;
-  const row = document.createElement("div");
-  row.className = "vnext-create__summary-row";
-  const key = document.createElement("span");
-  key.className = "vnext-create__summary-label";
-  key.textContent = label;
-  const result = document.createElement("strong");
-  result.className = "vnext-create__summary-value";
-  result.textContent = String(value);
-  row.append(key, result);
-  list.append(row);
-}
-
-function manualVehicleValid(form) {
-  const values = Object.fromEntries([...form.querySelectorAll("input")].map((input) => [input.name, input.value.trim()]));
-  if (!values.make || !values.model) return false;
-  const year = Number(values.year) || null;
-  const start = Number(values.year_start) || null;
-  const end = Number(values.year_end) || null;
-  return !(year && (start || end)) && !((start && !end) || (!start && end) || (start && end && start > end));
-}
-
 function imageStage(kind, file, callbacks, disabled, snapshot) {
   const article = document.createElement("article");
   article.className = `vnext-create__object vnext-create__object--${kind}`;
@@ -95,147 +66,15 @@ function statusLine(label, tone = "pending", detail = "") {
   return box;
 }
 
-function vehiclePanel(snapshot, callbacks) {
-  const proposal = snapshot.proposal?.vehicle;
-  if (!proposal) return null;
-  const choices = Array.isArray(proposal.alternatives) ? [proposal.primary, ...proposal.alternatives].filter(Boolean).slice(0, 3) : [proposal.primary].filter(Boolean);
-  const requiresChoice = choices.length > 0 && snapshot.selectedVehicleIndex == null && !snapshot.manualVehicleMode;
-  const panel = document.createElement("section");
-  panel.className = "vnext-create__summary-section";
-  const head = document.createElement("div");
-  head.className = "vnext-create__section-heading";
-  const title = document.createElement("h2");
-  title.textContent = "Автомобиль";
-  const edit = createTextAction({ label: "Изменить данные", onClick: () => callbacks.setVehicleEditing?.(!snapshot.vehicleEditing) });
-  edit.disabled = Boolean(snapshot.rimSourceResolving || snapshot.submitting);
-  head.append(title);
-  if (!requiresChoice) head.append(edit);
-  panel.append(head);
-
-  if ((snapshot.manualVehicleMode && snapshot.vehicleEditing) || (!choices.length && !snapshot.selectedVehicle)) {
-    const form = document.createElement("div");
-    form.className = "vnext-create__manual-grid";
-    [["make", "Марка"], ["model", "Модель"], ["year", "Год"], ["year_start", "Год от"], ["year_end", "Год до"]].forEach(([key, fieldLabel]) => {
-      const field = document.createElement("label");
-      field.className = "vnext-field";
-      const caption = document.createElement("span");
-      caption.textContent = fieldLabel;
-      const input = document.createElement("input");
-      input.value = snapshot.manualVehicle?.[key] || "";
-      input.name = key;
-      input.inputMode = key.startsWith("year") ? "numeric" : "text";
-      input.addEventListener("input", () => { save.disabled = !manualVehicleValid(form); });
-      field.append(caption, input);
-      form.append(field);
-    });
-    const save = createButton({ label: "Сохранить", onClick: () => callbacks.saveManualVehicle?.(Object.fromEntries([...form.querySelectorAll("input")].map((input) => [input.name, input.value.trim()]))) });
-    save.disabled = !manualVehicleValid(form);
-    panel.append(form, save, createTextAction({ label: "Отмена", onClick: callbacks.cancelVehicleEditing }));
-  } else if (snapshot.selectedVehicle && !snapshot.vehicleEditing && !requiresChoice) {
-    const selected = snapshot.selectedVehicle;
-    const fields = document.createElement("div");
-    fields.className = "vnext-create__summary-list";
-    const status = document.createElement("p");
-    status.className = "vnext-create__decision-title";
-    status.textContent = "Автомобиль подтверждён";
-    panel.append(status);
-    appendFieldRow(fields, "Данные автомобиля", [selected.make, selected.model, selected.year || (selected.year_start && selected.year_end ? `${selected.year_start}–${selected.year_end}` : "")].filter(Boolean).join(" "));
-    fields.children[0]?.append(edit);
-    if (fields.children[0]) fields.children[0].className += " vnext-create__summary-row--action";
-    panel.replaceChildren(status, fields);
-  } else {
-    const decision = document.createElement("div");
-    decision.className = "vnext-create__decision";
-    const decisionTitle = document.createElement("h3");
-    decisionTitle.textContent = choices.length > 1 ? "Мы нашли несколько вариантов." : "Мы определили автомобиль";
-    decision.append(decisionTitle);
-    const identifiedVehicle = document.createElement("strong");
-    identifiedVehicle.className = "vnext-create__identified-vehicle";
-    identifiedVehicle.textContent = [proposal.primary?.make, proposal.primary?.model, proposal.primary?.year || (proposal.primary?.year_start && proposal.primary?.year_end ? `${proposal.primary.year_start}–${proposal.primary.year_end}` : "")].filter(Boolean).join(" ");
-    decision.append(identifiedVehicle);
-    const confidence = Number(proposal.primary?.confidence);
-    if (Number.isFinite(confidence) && confidence > 0) {
-      const confidenceCopy = document.createElement("span");
-      confidenceCopy.textContent = `Уверенность ${Math.round(confidence * 100)}%`;
-      decision.append(confidenceCopy);
-    }
-    if (requiresChoice) {
-      const chooseTitle = document.createElement("h3");
-      chooseTitle.textContent = choices.length > 1 ? "Выберите ваш автомобиль." : "Подтвердите автомобиль";
-      decision.append(chooseTitle);
-      const continueCopy = document.createElement("span");
-      continueCopy.textContent = "Это нужно, чтобы продолжить.";
-      decision.append(continueCopy);
-    }
-    panel.append(decision);
-    const selectedIndex = snapshot.selectedVehicleIndex;
-    const list = document.createElement("div");
-    list.className = "vnext-create__vehicle-options";
-    list.setAttribute("role", "radiogroup");
-    list.setAttribute("aria-label", "Вариант автомобиля");
-    choices.forEach((candidate, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "vnext-create__vehicle-option";
-      if (index === selectedIndex) button.setAttribute("aria-pressed", "true");
-      button.setAttribute("role", "radio");
-      button.setAttribute("aria-checked", String(index === selectedIndex));
-      const name = document.createElement("strong");
-      name.textContent = [candidate.make, candidate.model, candidate.year || (candidate.year_start && candidate.year_end ? `${candidate.year_start}–${candidate.year_end}` : "")].filter(Boolean).join(" ");
-      const meta = document.createElement("span");
-      const confidence = Number(candidate.confidence);
-      meta.textContent = [candidate.source === "user_input" ? "Указано вручную" : (Number.isFinite(confidence) && confidence > 0 ? `Уверенность ${Math.round(confidence * 100)}%` : "Предложение по фото")].join("");
-      button.append(name, meta);
-      button.addEventListener("click", () => callbacks.chooseVehicle?.(index));
-      list.append(button);
-    });
-    panel.append(list);
-    if (requiresChoice) panel.append(statusLine("Это необходимо для технической проверки", "unknown"));
-    if (snapshot.vehicleEditing && !requiresChoice) panel.append(createTextAction({ label: "Скрыть варианты", onClick: () => callbacks.setVehicleEditing?.(false) }));
-    const manual = createButton({ label: "Не мой автомобиль — указать вручную", variant: "secondary", onClick: () => callbacks.setManualVehicleMode?.(true) });
-    manual.className += " vnext-create__manual-recovery";
-    panel.append(manual);
-  }
-  return panel;
-}
-
 function wheelSummary(snapshot, callbacks) {
-  const rim = snapshot.proposal?.rim || {};
   const section = document.createElement("div");
   section.className = "vnext-create__wheel-details";
-  const identity = document.createElement("strong");
-  identity.className = "vnext-create__wheel-identity";
-  identity.textContent = [rim.brand, rim.model, rim.sku || rim.article].filter(Boolean).join(" ") || "Данные колесного диска";
-  section.append(identity);
-  const sourceAction = createButton({
-    label: snapshot.sourceEditing ? "Закрыть ссылку" : (snapshot.rimProductUrl ? "Изменить ссылку на товар" : "Добавить ссылку на товар"),
-    variant: "secondary",
+  section.append(createButton({
+    label: snapshot.sourceEditing ? "Закрыть ссылку" : snapshot.rimProductUrl ? "Изменить ссылку на товар" : "Добавить ссылку на товар",
+    variant: "secondary", disabled: snapshot.submitting,
     onClick: () => callbacks.setSourceEditing?.(!snapshot.sourceEditing),
-  });
-  sourceAction.disabled = Boolean(snapshot.rimSourceResolving || snapshot.submitting);
-  const values = {
-    brand: rim.brand,
-    model: rim.model,
-    sku: rim.sku || rim.article,
-    wheel_diameter_in: rim.wheel_diameter_in ? `${rim.wheel_diameter_in}″` : "",
-    wheel_width_j: rim.wheel_width_j ? `${rim.wheel_width_j}J` : "",
-    pcd: rim.bolt_count && rim.pcd_mm ? `${rim.bolt_count}×${rim.pcd_mm}` : "",
-    offset_et_mm: rim.offset_et_mm !== null && rim.offset_et_mm !== undefined ? `ET ${rim.offset_et_mm}` : "",
-    center_bore_mm: rim.center_bore_mm ? `DIA ${rim.center_bore_mm}` : "",
-  };
-  const specs = document.createElement("p");
-  specs.className = "vnext-create__wheel-specs";
-  specs.textContent = wheelFields.map(([key]) => values[key]).filter(Boolean).join(" / ");
-  specs.hidden = !specs.textContent;
-  section.append(specs, sourceAction);
-  if (snapshot.rimSourceStatus === "success") section.append(statusLine("Ссылка сохранена", "positive"));
-  if (rim.variant_state === "selection_required") {
-    section.append(statusLine("Требуется выбрать точный вариант диска", "unknown"));
-    section.append(createButton({ label: "Загрузить вручную", variant: "secondary", onClick: callbacks.manualRimRecovery, disabled: snapshot.rimSourceResolving }));
-  }
-  if (rim.conflicts?.length) {
-    section.append(statusLine("Требуют уточнения", "unknown", rim.conflicts.map((conflict) => wheelFields.find(([key]) => key === conflict.field)?.[1] || conflict.field).join(", ")));
-  }
+  }));
+  if (snapshot.rimProductUrl && !snapshot.sourceEditing) section.append(statusLine("Ссылка сохранена", "positive"));
   if (snapshot.sourceEditing) section.append(sourceEditor(snapshot, callbacks));
   return section;
 }
@@ -253,9 +92,9 @@ function sourceEditor(snapshot, callbacks) {
   input.inputMode = "url";
   input.autocomplete = "url";
   input.placeholder = "https://";
-  input.value = snapshot.rimSourceAttemptUrl || snapshot.rimProductUrl || "";
+  input.value = snapshot.rimProductUrl || "";
   field.append(caption, input);
-  const save = createButton({ label: snapshot.draftId ? "Определить параметры" : "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.rimSourceResolving || snapshot.submitting });
+  const save = createButton({ label: "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     callbacks.saveRimProductUrl?.(input.value);
@@ -263,25 +102,10 @@ function sourceEditor(snapshot, callbacks) {
   form.append(field);
   const helper = document.createElement("p");
   helper.className = "vnext-create__source-helper";
-  helper.textContent = "Необязательно — попробуем определить модель и параметры по странице товара.";
+  helper.textContent = "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.";
   form.append(helper);
-  if (snapshot.rimSourceResolving) form.append(statusLine("Получаем данные по ссылке", "pending"));
-  if (snapshot.rimSourceError) {
-    const error = snapshot.rimSourceError;
-    const recovery = document.createElement("div");
-    recovery.className = "vnext-create__source-recovery";
-    recovery.append(statusLine(error.title, "negative", error.body));
-    if (error.auth) recovery.append(createButton({ label: "Войти", variant: "secondary", onClick: callbacks.openAuth }));
-    else if (error.fullResolve) recovery.append(createButton({ label: "Определить автомобиль", variant: "secondary", onClick: callbacks.resolveIdentity }));
-    else {
-      recovery.append(createButton({ label: "Попробовать другую ссылку", variant: "secondary", onClick: () => { input.focus(); input.select(); } }));
-      if (error.retryable) recovery.append(createButton({ label: "Повторить", variant: "secondary", onClick: callbacks.retryRimSource }));
-    }
-    if (error.manualFallback) recovery.append(createButton({ label: "Загрузить вручную", variant: "secondary", onClick: callbacks.manualRimRecovery }));
-    form.append(recovery);
-  }
   const cancel = createTextAction({ label: "Отмена", onClick: () => callbacks.setSourceEditing?.(false) });
-  cancel.disabled = Boolean(snapshot.rimSourceResolving);
+  cancel.disabled = Boolean(snapshot.submitting);
   form.append(save, cancel);
   return form;
 }
@@ -292,15 +116,16 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 
   const pair = document.createElement("div");
   pair.className = "vnext-create__pair";
-  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting || snapshot.identityResolving || snapshot.rimSourceResolving, snapshot), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting || snapshot.identityResolving || snapshot.rimSourceResolving, snapshot));
+  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting, snapshot), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting, snapshot));
   page.append(pair);
 
-  if (snapshot.bothReady && !snapshot.consentAccepted) {
+  if (snapshot.bothReady) {
     const consent = document.createElement("label");
     consent.className = "vnext-create__consent";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = false;
+    checkbox.checked = Boolean(snapshot.consentAccepted);
+    checkbox.disabled = Boolean(snapshot.submitting);
     checkbox.addEventListener("change", () => callbacks.setConsent?.(checkbox.checked));
     const text = document.createElement("span");
     text.append(document.createTextNode("Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. "));
@@ -320,24 +145,6 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
     page.append(consent);
   }
 
-  if (snapshot.identityResolving) page.append(statusLine("Определяем автомобиль", "pending", "Анализируем загруженные фотографии."));
-  if (snapshot.identityError) {
-    const error = document.createElement("div");
-    error.className = "vnext-create__error";
-    error.append(statusLine(snapshot.identityError.title || "Не удалось определить автомобиль", "negative", snapshot.identityError.body || ""));
-    if (snapshot.identityError.showPrimaryAction) error.append(createButton({ label: snapshot.identityError.primaryActionLabel, variant: "secondary", onClick: callbacks.handleIdentityError }));
-    error.append(createButton({ label: snapshot.identityError.retryLabel || "Повторить", variant: "secondary", onClick: callbacks.retryIdentity }));
-    page.append(error);
-  }
-
-  if (snapshot.proposal && !snapshot.identityResolving) {
-    const summary = document.createElement("div");
-    summary.className = "vnext-create__summary";
-    const vehicle = vehiclePanel(snapshot, callbacks);
-    if (vehicle) summary.append(vehicle);
-    page.append(summary);
-  }
-
   if (snapshot.submitting) page.append(statusLine(snapshot.renderStatus || "Создаём виртуальную примерку", "pending", "Это может занять до 90 секунд."));
   if (snapshot.renderError) {
     const error = document.createElement("div");
@@ -349,18 +156,39 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 
   const actions = document.createElement("div");
   actions.className = "vnext-create__actions";
-  const hasIdentity = Boolean(snapshot.draftId && snapshot.selectedVehicle);
-  const canStart = snapshot.bothReady && snapshot.consentAccepted && hasIdentity && !snapshot.submitting && !snapshot.identityResolving && !snapshot.vehicleEditing && !snapshot.rimSourceResolving && !snapshot.rimAssetPreviewPending && snapshot.proposal?.rim?.variant_state !== "selection_required";
-  let primaryAction = null;
-  if (snapshot.proposal && !snapshot.identityResolving) {
-    primaryAction = createButton({ label: "Создать изображение", onClick: callbacks.createImage, disabled: !canStart });
-    actions.append(primaryAction);
-  } else if (snapshot.bothReady && snapshot.consentAccepted && !snapshot.identityResolving) {
-    actions.append(createButton({ label: "Определить автомобиль", onClick: callbacks.resolveIdentity }));
+  const reason = !snapshot.files?.car ? "Добавьте фото автомобиля"
+    : !snapshot.files?.wheel ? "Добавьте фото диска"
+    : !snapshot.consentAccepted ? "Подтвердите согласие на обработку фотографий" : "";
+  actions.append(createButton({ label: "Создать изображение", onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
+  if (reason) {
+    const hint = document.createElement("p");
+    hint.className = "vnext-create__source-helper";
+    hint.setAttribute("role", "status");
+    hint.textContent = reason;
+    actions.append(hint);
   }
-  const fitmentReady = Boolean(snapshot.fitmentJobId && snapshot.resultUrl && hasIdentity && !snapshot.submitting && !snapshot.rimSourceResolving && !snapshot.rimAssetPreviewPending);
-  actions.append(createButton({ label: "Проверить совместимость", variant: "secondary", onClick: callbacks.checkCompatibility, disabled: !fitmentReady }));
   page.append(actions);
+  if (snapshot.locale === "en") {
+    const translations = {
+      "Автомобиль": "Car", "Колесный диск": "Wheel", "Добавить фото": "Add photo",
+      "Заменить фото": "Replace photo", "Фото автомобиля": "Car photo", "Фото колесного диска": "Wheel photo",
+      "Фото автомобиля добавлено": "Car photo added", "Фото колесного диска добавлено": "Wheel photo added",
+      "Добавьте фото автомобиля": "Add a car photo", "Добавьте фото диска": "Add a wheel photo",
+      "Создать изображение": "Create image", "Подтвердите согласие на обработку фотографий": "Confirm consent to process the photos",
+      "Добавить ссылку на товар": "Add product link", "Изменить ссылку на товар": "Edit product link",
+      "Закрыть ссылку": "Close link", "Ссылка на товар": "Product link", "Сохранить ссылку": "Save link",
+      "Ссылка сохранена": "Link saved", "Отмена": "Cancel",
+      "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.": "Product link is optional. We will save it for a later compatibility check.",
+      "Политика конфиденциальности": "Privacy policy", "Согласие на обработку данных": "Data processing consent",
+      "Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. ": "I confirm my right to use these photos and consent to processing them for a visual try-on. ",
+      "Создаём виртуальную примерку": "Creating a visual try-on", "Это может занять до 90 секунд.": "This may take up to 90 seconds.",
+    };
+    const visit = (node) => {
+      if ((node.nodeType === 3 || !node.childNodes.length) && translations[node.textContent]) node.textContent = translations[node.textContent];
+      for (const child of node.childNodes) visit(child);
+    };
+    visit(page);
+  }
   return page;
 }
 

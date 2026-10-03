@@ -126,10 +126,11 @@ class JobCreateResponse(BaseModel):
 class JobFromAssetsRequest(BaseModel):
     draft_id: str
     idempotency_key: str
-    vehicle: identity_service.VehicleCandidate
+    # Legacy inputs are accepted but never establish a Create vehicle identity.
+    vehicle: identity_service.VehicleCandidate | None = None
     vehicle_user_confirmed: bool = False
-    rim: identity_service.RimProposal
-    rim_user_confirmed: bool = True
+    rim: identity_service.RimProposal = Field(default_factory=identity_service.RimProposal)
+    rim_user_confirmed: bool = False
     init_data: str | None = None
     telegram_user_id: int | None = None
 
@@ -270,6 +271,7 @@ class FitmentRimResponse(BaseModel):
     wheel_width_j: float | None = None
     offset_et_mm: float | None = None
     has_product_url: bool
+    product_url_auto_resolve_attempted: bool = False
     title: str
 
 
@@ -325,9 +327,7 @@ class FitmentNextActionResponse(BaseModel):
 
 class FitmentOverviewResponse(BaseModel):
     job_id: str
-    vehicle_identity_id: str
-    rim_setup_id: str
-    vehicle_identity_id: str
+    vehicle_identity_id: str | None = None
     rim_setup_id: str
     status: str
     result_url: str | None = None
@@ -380,6 +380,7 @@ class FitmentHistoryResponse(BaseModel):
 
 
 class RimSourceResolveRequest(BaseModel):
+    automatic: bool = False
     product_url: str = Field(min_length=1, max_length=2048)
 
     @field_validator("product_url")
@@ -794,7 +795,7 @@ def _job_assets_select_clause() -> str:
 def _fitment_available_clause() -> str:
     return (
         "CASE "
-        "WHEN jobs.vehicle_identity_id IS NOT NULL "
+        "WHEN jobs.status = 'completed' "
         "AND jobs.rim_setup_id IS NOT NULL "
         "THEN true ELSE false END AS fitment_available"
     )
@@ -1437,6 +1438,9 @@ def _rim_response_from_row(row, prefix: str) -> FitmentRimResponse:
             else None
         ),
         has_product_url=bool(_rim_row_value(row, prefix, "product_url")),
+        product_url_auto_resolve_attempted=bool(
+            _rim_provenance_from_row(row, prefix).get("_create_url_auto_resolution")
+        ),
         title=identity_service.rim_fitment_summary(values),
     )
 
@@ -1493,6 +1497,8 @@ def _fitment_context_identity_from_job_row(row) -> dict[str, object]:
 
 
 async def _current_check_for_job(conn, row) -> FitmentCurrentCheckResponse | None:
+    if not row.get("vehicle_identity_id"):
+        return None
     checks = await conn.fetch(
         """
         SELECT id, execution_status, verdict, input_snapshot
@@ -1818,7 +1824,7 @@ async def _fetch_fitment_job_row(
     for_update: bool = False,
 ):
     job_id = _validate_fitment_job_id(job_id)
-    lock_clause = " FOR UPDATE OF vehicle" if for_update else ""
+    lock_clause = " FOR UPDATE OF jobs" if for_update else ""
     row = await conn.fetchrow(
         f"""
         SELECT
@@ -1843,7 +1849,7 @@ async def _fetch_fitment_job_row(
             vehicle.provider_mapping_revision AS vehicle_provider_mapping_revision,
             vehicle.field_provenance AS vehicle_field_provenance,
             vehicle.field_candidates AS vehicle_field_candidates,
-            vehicle.revision AS vehicle_revision,
+            COALESCE(vehicle.revision, 0) AS vehicle_revision,
             rim_setup.front_rim_spec_id::text AS front_rim_spec_id,
             rim_setup.rear_rim_spec_id::text AS rear_rim_spec_id,
             rim_setup.is_staggered,
@@ -2332,15 +2338,7 @@ async def create_job_from_assets(
     request: JobFromAssetsRequest,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """Create a render job from confirmed Sprint 2 identity draft assets."""
-    if not request.vehicle_user_confirmed:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error_code": "vehicle_confirmation_required",
-                "message": "Explicit vehicle confirmation is required before rendering",
-            },
-        )
+    """Create a visual render from durable assets; Fitment owns vehicle identity."""
     preflight_auth_credentials(
         init_data=request.init_data,
         telegram_user_id=request.telegram_user_id,
@@ -2389,7 +2387,6 @@ async def create_job_from_assets(
                         draft.id::text AS draft_id,
                         draft.car_asset_id::text AS car_asset_id,
                         draft.rim_asset_id::text AS rim_asset_id,
-                        draft.identity_proposal AS identity_proposal,
                         car_asset.storage_key AS car_storage_key,
                         rim_asset.storage_key AS rim_storage_key
                     FROM render_input_drafts AS draft
@@ -2409,28 +2406,11 @@ async def create_job_from_assets(
                     user_id,
                 )
                 if not draft:
-                    raise HTTPException(status_code=404, detail="Identity draft not found")
+                    raise HTTPException(status_code=404, detail="Asset draft not found")
 
-                proposal = identity_service.parse_identity_proposal(draft["identity_proposal"])
-                vehicle_candidates, rim_candidates = (
-                    identity_service.field_candidates_from_identity_proposal(proposal)
-                )
-                canonical_vehicle = identity_service.canonical_vehicle_for_confirmation(
-                    request.vehicle,
-                    proposal,
-                )
-                canonical_rim = identity_service.prefill_rim_from_proposal(request.rim, proposal)
-                if proposal is not None:
-                    proposal.rim = proposal.rim.model_copy(
-                        update={"product_url": canonical_rim.product_url}
-                    )
-                vehicle_identity_id = await identity_service.insert_vehicle_identity(
-                    conn,
-                    owner_user_id=user_id,
-                    vehicle=canonical_vehicle,
-                    user_confirmed=request.vehicle_user_confirmed,
-                    field_candidates=vehicle_candidates,
-                )
+                canonical_rim = request.rim
+                rim_candidates = {}
+                vehicle_identity_id = None
                 rim_spec_id = await identity_service.insert_rim_spec(
                     conn,
                     owner_user_id=user_id,
@@ -2446,7 +2426,7 @@ async def create_job_from_assets(
                 snapshot = identity_service.render_input_snapshot(
                     vehicle_identity_id=vehicle_identity_id,
                     rim_setup_id=rim_setup_id,
-                    vehicle=canonical_vehicle,
+                    vehicle=None,
                     rim=request.rim,
                     rim_user_confirmed=request.rim_user_confirmed,
                     car_asset_id=draft["car_asset_id"],
@@ -2475,17 +2455,6 @@ async def create_job_from_assets(
                     rim_setup_id,
                     json.dumps(snapshot),
                 )
-                initial_vehicle_confirmed = request.vehicle_user_confirmed
-                initial_vehicle_meta = {
-                    "source": _normalized_identity_source(canonical_vehicle.source),
-                    "confidence": canonical_vehicle.confidence,
-                    "is_user_confirmed": initial_vehicle_confirmed,
-                }
-                initial_vehicle_provenance = {
-                    field_name: initial_vehicle_meta
-                    for field_name in ("make", "model", "year", "year_start", "year_end")
-                    if getattr(canonical_vehicle, field_name, None) is not None
-                }
                 initial_rim_provenance = {
                     field_name: {
                         "source": "user_confirmed"
@@ -2509,21 +2478,6 @@ async def create_job_from_assets(
                     if getattr(canonical_rim, field_name) is not None
                 }
                 initial_changes: dict[str, object] = {}
-                initial_changes.update(
-                    _build_fitment_changes(
-                        section="vehicle",
-                        before_values={},
-                        after_values={
-                            "make": canonical_vehicle.make,
-                            "model": canonical_vehicle.model,
-                            "year": canonical_vehicle.year,
-                            "year_start": canonical_vehicle.year_start,
-                            "year_end": canonical_vehicle.year_end,
-                        },
-                        before_provenance={},
-                        after_provenance=initial_vehicle_provenance,
-                    )
-                )
                 initial_changes.update(
                     _build_fitment_changes(
                         section="rim",
@@ -2553,7 +2507,7 @@ async def create_job_from_assets(
                     actor_type="system",
                     actor_user_id=None,
                     vehicle_revision_before=None,
-                    vehicle_revision_after=1,
+                    vehicle_revision_after=0,
                     rim_revision_before=None,
                     rim_revision_after=1,
                     changes=initial_changes,
@@ -2580,32 +2534,13 @@ async def create_job_from_assets(
                     request.draft_id,
                     user_id,
                 )
-                if proposal is not None:
-                    await conn.execute(
-                        """
-                        UPDATE render_input_drafts
-                        SET identity_proposal = $1::jsonb,
-                            status = 'consumed',
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = $2::uuid
-                          AND owner_user_id = $3
-                        """,
-                        proposal.model_dump_json(),
-                        request.draft_id,
-                        user_id,
-                    )
-                else:
-                    await conn.execute(
-                        """
-                        UPDATE render_input_drafts
-                        SET status = 'consumed',
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = $1::uuid
-                          AND owner_user_id = $2
-                        """,
-                        request.draft_id,
-                        user_id,
-                    )
+                await conn.execute(
+                    """UPDATE render_input_drafts
+                    SET status = 'consumed', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $1::uuid AND owner_user_id = $2""",
+                    request.draft_id,
+                    user_id,
+                )
                 await reserve_job_credit(conn, user_id=user_id, job_id=job_id)
     except InsufficientCreditsError as exc:
         await rds.delete(idem_redis_key)
@@ -3246,7 +3181,7 @@ async def resolve_fitment_rim_source(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Return an unpersisted, user-confirmable draft from a public product page."""
-    if not RIM_URL_RESOLVER_ENABLED:
+    if not RIM_URL_RESOLVER_ENABLED and not request.automatic:
         raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
 
     auth = await _resolve_jobs_auth(
@@ -3270,6 +3205,34 @@ async def resolve_fitment_rim_source(
         raise HTTPException(status_code=404, detail="Fitment overview not found")
     if not row["fitment_available"]:
         raise HTTPException(status_code=409, detail="Fitment overview is unavailable for this job")
+
+    if request.automatic:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                """UPDATE rim_specs AS rim
+                SET field_provenance = jsonb_set(
+                    COALESCE(rim.field_provenance, '{}'::jsonb),
+                    '{_create_url_auto_resolution}', 'true'::jsonb
+                )
+                FROM jobs, rim_setups AS setup
+                WHERE jobs.id = $1::uuid AND jobs.user_id = $2
+                  AND jobs.status = 'completed'
+                  AND setup.id = jobs.rim_setup_id AND setup.owner_user_id = $2
+                  AND rim.id = setup.front_rim_spec_id AND rim.owner_user_id = $2
+                  AND rim.product_url = $3
+                  AND NOT COALESCE(rim.field_provenance, '{}'::jsonb)
+                          @> '{"_create_url_auto_resolution": true}'::jsonb
+                """,
+                job_id,
+                user_id,
+                request.product_url,
+            )
+        if _parse_update_count(result) != 1:
+            raise HTTPException(
+                status_code=409, detail={"code": "automatic_source_already_attempted"}
+            )
+    if not RIM_URL_RESOLVER_ENABLED:
+        raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
 
     try:
         resolution = await resolve_rim_product_url(
@@ -3848,7 +3811,9 @@ async def save_fitment_details(
     async with pool.acquire() as conn:
         async with conn.transaction():
             user_id = auth.user_id
-            row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            row = await _fetch_fitment_job_row(
+                conn, job_id=job_id, user_id=user_id, for_update=True
+            )
             if not row:
                 raise HTTPException(status_code=404, detail="Fitment overview not found")
             if not row["fitment_available"]:
@@ -3952,6 +3917,12 @@ async def save_fitment_details(
             complete_vehicle_context = bool(vehicle_values) and all(
                 vehicle_values[field] not in (None, "") for field in core_vehicle_fields
             )
+            if (
+                vehicle_updates
+                and row["vehicle_identity_id"] is None
+                and not complete_vehicle_context
+            ):
+                raise HTTPException(status_code=422, detail={"code": "vehicle_details_required"})
             needs_catalogue_validation = complete_vehicle_context and bool(
                 core_changed or set(vehicle_confirmed).intersection(core_vehicle_fields)
             )
@@ -4023,46 +3994,82 @@ async def save_fitment_details(
                     )
                     for field in core_vehicle_fields
                 )
-                result = await conn.execute(
-                    """
-                    UPDATE vehicle_identities
-                    SET make = $1,
-                        model = $2,
-                        year = $3,
-                        body = $4,
-                        generation = $5,
-                        modification = $6,
-                        market = $7,
-                        is_user_confirmed = $8,
-                        field_provenance = $9::jsonb,
-                        provider_mappings = $10::jsonb,
-                        provider_mapping_revision = provider_mapping_revision + $11,
-                        revision = revision + 1,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $12::uuid
-                      AND owner_user_id = $13
-                      AND revision = $14
-                    """,
-                    vehicle_values["make"],
-                    vehicle_values["model"],
-                    vehicle_values["year"],
-                    vehicle_values["body"],
-                    vehicle_values["generation"],
-                    vehicle_values["modification"],
-                    vehicle_values["market"],
-                    vehicle_is_user_confirmed,
-                    json.dumps(vehicle_provenance),
-                    json.dumps(provider_mappings),
-                    1 if mapping_changed else 0,
-                    row["vehicle_identity_id"],
-                    user_id,
-                    request.expected_vehicle_revision,
-                )
-                if _parse_update_count(result) != 1:
-                    raise HTTPException(
-                        status_code=409,
-                        detail="Fitment vehicle was updated elsewhere. Reload and try again.",
+                if row["vehicle_identity_id"] is None:
+                    vehicle_id = str(
+                        await conn.fetchval(
+                            """INSERT INTO vehicle_identities (
+                            owner_user_id, make, model, year, body, generation, modification,
+                            market, is_user_confirmed, field_provenance, provider_mappings,
+                            provider_mapping_revision, revision
+                        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12,1)
+                        RETURNING id""",
+                            user_id,
+                            vehicle_values["make"],
+                            vehicle_values["model"],
+                            vehicle_values["year"],
+                            vehicle_values["body"],
+                            vehicle_values["generation"],
+                            vehicle_values["modification"],
+                            vehicle_values["market"],
+                            vehicle_is_user_confirmed,
+                            json.dumps(vehicle_provenance),
+                            json.dumps(provider_mappings),
+                            1 if mapping_changed else 0,
+                        )
                     )
+                    result = await conn.execute(
+                        """UPDATE jobs SET vehicle_identity_id = $1::uuid
+                        WHERE id = $2::uuid AND user_id = $3 AND vehicle_identity_id IS NULL""",
+                        vehicle_id,
+                        job_id,
+                        user_id,
+                    )
+                    if _parse_update_count(result) != 1:
+                        raise HTTPException(
+                            status_code=409, detail={"code": "vehicle_revision_conflict"}
+                        )
+                    row["vehicle_identity_id"] = vehicle_id
+                else:
+                    result = await conn.execute(
+                        """
+                        UPDATE vehicle_identities
+                        SET make = $1,
+                            model = $2,
+                            year = $3,
+                            body = $4,
+                            generation = $5,
+                            modification = $6,
+                            market = $7,
+                            is_user_confirmed = $8,
+                            field_provenance = $9::jsonb,
+                            provider_mappings = $10::jsonb,
+                            provider_mapping_revision = provider_mapping_revision + $11,
+                            revision = revision + 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $12::uuid
+                          AND owner_user_id = $13
+                          AND revision = $14
+                        """,
+                        vehicle_values["make"],
+                        vehicle_values["model"],
+                        vehicle_values["year"],
+                        vehicle_values["body"],
+                        vehicle_values["generation"],
+                        vehicle_values["modification"],
+                        vehicle_values["market"],
+                        vehicle_is_user_confirmed,
+                        json.dumps(vehicle_provenance),
+                        json.dumps(provider_mappings),
+                        1 if mapping_changed else 0,
+                        row["vehicle_identity_id"],
+                        user_id,
+                        request.expected_vehicle_revision,
+                    )
+                    if _parse_update_count(result) != 1:
+                        raise HTTPException(
+                            status_code=409,
+                            detail="Fitment vehicle was updated elsewhere. Reload and try again.",
+                        )
 
             if rim_updates:
                 rim_updates.pop("source_fingerprint", None)
