@@ -3181,7 +3181,7 @@ async def resolve_fitment_rim_source(
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Return an unpersisted, user-confirmable draft from a public product page."""
-    if not RIM_URL_RESOLVER_ENABLED and not request.automatic:
+    if not RIM_URL_RESOLVER_ENABLED:
         raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
 
     auth = await _resolve_jobs_auth(
@@ -3231,9 +3231,6 @@ async def resolve_fitment_rim_source(
             raise HTTPException(
                 status_code=409, detail={"code": "automatic_source_already_attempted"}
             )
-    if not RIM_URL_RESOLVER_ENABLED:
-        raise HTTPException(status_code=503, detail="Rim URL resolver is disabled")
-
     try:
         resolution = await resolve_rim_product_url(
             request.product_url,

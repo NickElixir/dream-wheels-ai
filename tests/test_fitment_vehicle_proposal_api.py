@@ -29,6 +29,20 @@ def test_proposal_requires_auth_before_database_access(monkeypatch):
     assert request().status_code == 401
 
 
+def test_recognition_retains_own_quota_after_create_uploads(monkeypatch, proposal_context):
+    quotas = {"identity_resolve": 0, "create_assets": 10}
+
+    async def limit(**kwargs):
+        assert kwargs["scope"] == "identity_resolve"
+        assert kwargs["limit"] == 20
+        assert kwargs["window_sec"] == 3600
+        quotas[kwargs["scope"]] += 1
+
+    monkeypatch.setattr(identity_api, "enforce_rate_limit", limit)
+    assert request().status_code == 200
+    assert quotas == {"identity_resolve": 1, "create_assets": 10}
+
+
 @pytest.fixture
 def proposal_context(monkeypatch):
     row = {"fitment_available": True, "vehicle_revision": 10}

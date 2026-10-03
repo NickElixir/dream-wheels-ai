@@ -1,9 +1,11 @@
+import asyncio
 import json
 from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src import jobs_api
@@ -2823,6 +2825,7 @@ def test_automatic_source_attempt_is_claimed_once_and_manual_retry_remains_avail
 
     async def resolver(url, **kwargs):
         attempts.append(url)
+        await asyncio.sleep(0.01)
         if provider_fails:
             raise RimUrlError("no_data")
         return RimUrlResolution(
@@ -2834,16 +2837,34 @@ def test_automatic_source_attempt_is_claimed_once_and_manual_retry_remains_avail
 
     _patch_auth(monkeypatch)
     monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
-    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", False)
     monkeypatch.setattr(jobs_api, "resolve_rim_product_url", resolver)
     monkeypatch.setattr(jobs_api, "enforce_rate_limit", limit)
     path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve"
     payload = {"product_url": "https://shop.example/wheel", "automatic": True}
-    first = client.post(path, json=payload)
-    assert first.status_code == (422 if provider_fails else 200)
-    second = client.post(path, json=payload)
-    assert second.status_code == 409
-    assert second.json()["detail"]["code"] == "automatic_source_already_attempted"
+    disabled = client.post(path, json=payload)
+    assert disabled.status_code == 503
+    assert not claimed and not attempts
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+
+    async def concurrent():
+        return await asyncio.gather(
+            *[
+                jobs_api.resolve_fitment_rim_source(
+                    "11111111-1111-4111-8111-111111111111",
+                    jobs_api.RimSourceResolveRequest(**payload),
+                )
+                for _ in range(2)
+            ],
+            return_exceptions=True,
+        )
+
+    results = asyncio.run(concurrent())
+    errors = [result for result in results if isinstance(result, HTTPException)]
+    assert sorted(error.status_code for error in errors) == (
+        [409, 422] if provider_fails else [409]
+    )
+    assert any(error.detail == {"code": "automatic_source_already_attempted"} for error in errors)
     assert len(attempts) == 1
     manual = client.post(path, json={**payload, "automatic": False})
     assert manual.status_code == (422 if provider_fails else 200)

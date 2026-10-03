@@ -99,3 +99,12 @@ test('Create preserves RU/EN language selection',()=>{
   assert.match(view.allText,/Create image/);assert.match(view.allText,/later compatibility check/);
   assert.doesNotMatch(view.allText,/Ссылка на товар|Создать изображение/);
 });
+
+test('invalid optional URL has accessible field feedback while Create stays enabled',()=>{
+  const view=createCreateView({...ready,sourceEditing:true,productUrlError:'Укажите корректную ссылку на товар'});
+  assert.match(view.allText,/Укажите корректную ссылку на товар/);
+  const field=view.find(node=>node.name==='rim_product_url');
+  assert.equal(field.attributes['aria-invalid'],'true');
+  assert.equal(field.attributes['aria-describedby'],'create-product-url-error');
+  assert.equal(view.find(node=>node.tagName==='button' && node.textContent==='Создать изображение').disabled,false);
+});

@@ -32,7 +32,13 @@ from src.identity.schemas import (
     VehicleResolutionMetadata,
 )
 from src.identity.service import get_vehicle_identity_resolver
-from src.jobs_api import ALLOWED_UPLOAD_MIME, MAX_RAW_FILE_BYTES, _fetch_fitment_job_row
+from src.jobs_api import (
+    ALLOWED_UPLOAD_MIME,
+    MAX_RAW_FILE_BYTES,
+    UPLOAD_RATE_LIMIT,
+    UPLOAD_RATE_WINDOW_SEC,
+    _fetch_fitment_job_row,
+)
 from src.rate_limit import enforce_rate_limit
 from src.rim_url_resolver import (
     FetchLimits,
@@ -645,10 +651,10 @@ async def upload_create_assets(
             auth_name="create assets",
         )
     await enforce_rate_limit(
-        scope="identity_resolve",
+        scope="create_assets",
         identifier=principal.user_id,
-        limit=IDENTITY_RATE_LIMIT,
-        window_sec=IDENTITY_RATE_WINDOW_SEC,
+        limit=UPLOAD_RATE_LIMIT,
+        window_sec=UPLOAD_RATE_WINDOW_SEC,
     )
     car_bytes = await _read_identity_upload(car_image, "car")
     rim_bytes = await _read_identity_upload(wheel_image, "wheel")

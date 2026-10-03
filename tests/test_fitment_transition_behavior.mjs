@@ -2058,3 +2058,27 @@ test("P0-A: Fitment without product URL never auto-resolves a source",async()=>{
     api.openFitmentView("behavior-job",{originView:"render-detail"});await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls.filter(c=>c.endsWith("rim-source/resolve")).length,0);
 });
+
+test('P0-A corrective: disabled resolver releases browser claim for a later enabled entry', async () => {
+    let overview; let enabled=false;
+    const {api,calls}=navigationApi({routes:{
+        'GET /api/backend/jobs/behavior-job/fitment':()=>response(200,overview),
+        'POST /api/backend/jobs/behavior-job/fitment/rim-source/resolve':()=>enabled
+            ? response(422,{detail:{code:'no_data'}})
+            : response(503,{detail:'Rim URL resolver is disabled'}),
+    }});
+    overview=overviewFor(api,'complete_vehicle_details');
+    overview.rim.product_url='https://shop.example.test/wheel';
+    overview.front_rim={rim:overview.rim};
+    seed(api,overview);
+    api.openFitmentView('behavior-job',{originView:'render-detail'});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.filter(call=>call.endsWith('rim-source/resolve')).length,1);
+    enabled=true;
+    api.openFitmentView('behavior-job',{originView:'render-detail'});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.filter(call=>call.endsWith('rim-source/resolve')).length,2);
+    api.openFitmentView('behavior-job',{originView:'render-detail'});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.filter(call=>call.endsWith('rim-source/resolve')).length,2);
+});

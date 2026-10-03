@@ -48,6 +48,6 @@ Browser QA exercised empty, car-only, car-and-wheel, and consent-ready Create st
 ## 6. Known limits and follow-up
 
 - Live staging Create → render → first Fitment save and legacy job checks require deployment of this branch; they were not claimed by local browser QA.
-- The automatic URL resolver continues to honor the existing `RIM_URL_RESOLVER_ENABLED` feature flag. If disabled, the attempted claim is recorded and the call returns 503; an explicit retry becomes available when the feature is enabled.
+- Corrective pass M-2 supersedes the initial flag behavior: a disabled resolver returns 503 without consuming either the server or browser automatic claim. See [corrective report](corrective/report.md).
 - Existing jobs and old forced vehicle confirmations were left intact. The separate N-06 provenance audit and migration remain outside P0-A.
 - No P0-B/P1/P2/P3 work, payment changes, or verdict engine changes were made.

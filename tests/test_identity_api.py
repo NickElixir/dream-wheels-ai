@@ -288,6 +288,8 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
         async def set(self, key: str, value: str, *, ex: int, nx: bool):
             assert ex == jobs_api.IDEMPOTENCY_TTL_SEC
             assert nx is True
+            if key in self.values:
+                return False
             self.values[key] = value
             return True
 
@@ -418,6 +420,14 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
     )
 
     assert response.status_code == 200
+    replay = client.post("/jobs/from-assets", json=json.loads(response.request.content))
+    assert replay.status_code == 200
+    assert replay.json()["job_id"] == response.json()["job_id"]
+    assert len(fake_redis.queue_payloads) == 1
+    assert sum(call[0] == "reserve_job_credit" for call in calls) == 1
+    assert (
+        sum(call[0] == "execute" and call[1].startswith("INSERT INTO jobs") for call in calls) == 1
+    )
     assert response.json()["status"] == "queued"
     assert any(call[0] == "reserve_job_credit" for call in calls)
     assert len(fake_redis.queue_payloads) == 1
@@ -454,8 +464,10 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
     assert display_promotions[0][2][1:] == ("11111111-1111-4111-8111-111111111111", 77)
 
 
-def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch):
+@pytest.mark.parametrize("recognition_count", [0, 21])
+def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch, recognition_count):
     calls = []
+    quotas = {"identity_resolve": recognition_count, "create_assets": 0}
 
     class Conn:
         def transaction(self):
@@ -473,7 +485,11 @@ def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch):
         return _auth_principal()
 
     async def limit(*args, **kwargs):
-        pass
+        assert kwargs["scope"] == "create_assets"
+        assert kwargs["limit"] == jobs_api.UPLOAD_RATE_LIMIT
+        assert kwargs["window_sec"] == jobs_api.UPLOAD_RATE_WINDOW_SEC
+        quotas[kwargs["scope"]] += 1
+        assert quotas[kwargs["scope"]] <= kwargs["limit"]
 
     async def upload(**kwargs):
         return assets_service.AssetUpload(
@@ -511,6 +527,7 @@ def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch):
         },
     )
     assert response.status_code == 200, response.text
+    assert quotas == {"identity_resolve": recognition_count, "create_assets": 1}
     assert "vehicle" not in response.json()
     assert any("status = 'resolved'" in query for query in calls)
     assert "car_original" in calls and "rim_original" in calls
@@ -528,3 +545,12 @@ def test_create_asset_upload_requires_consent():
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "photo_consent_required"
+
+
+def test_direct_create_request_rejects_malformed_optional_url():
+    response = client.post(
+        "/jobs/from-assets",
+        json={"draft_id": "draft", "idempotency_key": "key", "rim": {"product_url": "garbage URL"}},
+    )
+    assert response.status_code == 422
+    assert any(item["loc"][-1] == "product_url" for item in response.json()["detail"])

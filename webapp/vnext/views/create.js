@@ -82,6 +82,7 @@ function wheelSummary(snapshot, callbacks) {
 function sourceEditor(snapshot, callbacks) {
   const form = document.createElement("form");
   form.className = "vnext-create__source-form";
+  form.noValidate = true;
   const field = document.createElement("label");
   field.className = "vnext-field";
   const caption = document.createElement("span");
@@ -93,6 +94,7 @@ function sourceEditor(snapshot, callbacks) {
   input.autocomplete = "url";
   input.placeholder = "https://";
   input.value = snapshot.rimProductUrl || "";
+  input.setAttribute("aria-invalid", String(Boolean(snapshot.productUrlError)));
   field.append(caption, input);
   const save = createButton({ label: "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
   form.addEventListener("submit", (event) => {
@@ -100,6 +102,15 @@ function sourceEditor(snapshot, callbacks) {
     callbacks.saveRimProductUrl?.(input.value);
   });
   form.append(field);
+  if (snapshot.productUrlError) {
+    const error = document.createElement("p");
+    error.className = "vnext-create__source-helper";
+    error.setAttribute("role", "alert");
+    error.id = "create-product-url-error";
+    error.textContent = snapshot.productUrlError;
+    input.setAttribute("aria-describedby", error.id);
+    form.append(error);
+  }
   const helper = document.createElement("p");
   helper.className = "vnext-create__source-helper";
   helper.textContent = "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.";

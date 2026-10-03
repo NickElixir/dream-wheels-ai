@@ -1370,6 +1370,7 @@ const state = {
     createIdempotencyKey: "",
     vnextCreateSourceEditing: false,
     rimProductUrl: "",
+    createProductUrlError: "",
     jobId: null,
     resultUrl: null,
     resultDownloadUrl: null,
@@ -7536,6 +7537,12 @@ function markFitmentSourceAutoAttempted(jobId) {
     catch { /* The current session guard remains available without browser storage. */ }
 }
 
+function releaseFitmentSourceAutoAttempt(jobId) {
+    if (state.fitmentSourceAutoResolvedForJob === jobId) state.fitmentSourceAutoResolvedForJob = "";
+    try { localStorage.removeItem(`dw:fitment:source-auto:${jobId}`); }
+    catch { /* Server overview remains authoritative when storage is unavailable. */ }
+}
+
 function fitmentSourceErrorMessage(error) {
     return locale === "ru"
         ? "Не удалось определить параметры автоматически"
@@ -7863,12 +7870,19 @@ async function resolveFitmentRimSource({ automatic = false, chooserOnly = false 
                 signal: controller.signal,
             }
         );
-        if (!isCurrentRequest()) return;
-        if (response.status === 401) {
-            showFitmentAuthRequired();
-            return;
+        if (!response.ok) {
+            const message = await parseApiError(response);
+            if (automatic && response.status === 503 && message === "Rim URL resolver is disabled") {
+                releaseFitmentSourceAutoAttempt(runtimeContext.jobId);
+            }
+            if (!isCurrentRequest()) return;
+            if (response.status === 401) {
+                showFitmentAuthRequired();
+                return;
+            }
+            throw new Error(message);
         }
-        if (!response.ok) throw new Error(await parseApiError(response));
+        if (!isCurrentRequest()) return;
         const result = await response.json();
         if (!isCurrentRequest()) return;
         state.fitmentSourceVariantOptions = result.variants || [];
@@ -10485,6 +10499,7 @@ function resetCreateAssets() {
     state.createAssetDraftId = "";
     state.createIdempotencyKey = "";
     state.createJobDraftId = "";
+    state.createProductUrlError = "";
     state.vnextCreateSourceEditing = false;
     renderCreateInputs();
 }
@@ -11080,6 +11095,7 @@ function vnextCreateSnapshot() {
         bothReady: Boolean(state.files.car?.blob && state.files.wheel?.blob),
         consentAccepted: state.photoConsentAccepted,
         rimProductUrl: state.rimProductUrl,
+        productUrlError: state.createProductUrlError,
         sourceEditing: state.vnextCreateSourceEditing,
         submitting: state.submitting,
         renderStatus: document.querySelector("[data-status-text]")?.textContent || "",
@@ -11109,7 +11125,14 @@ window.dreamwheelsCreateBridge = {
     },
     setSourceEditing(enabled) { state.vnextCreateSourceEditing = Boolean(enabled); notifyCreateBridge(); },
     saveRimProductUrl(value) {
-        state.rimProductUrl = String(value || "").trim();
+        const url = createProductUrlValue(value);
+        state.createProductUrlError = url === undefined
+            ? (locale === "ru" ? "Укажите корректную ссылку на товар" : "Enter a valid product link") : "";
+        if (url === undefined) {
+            notifyCreateBridge();
+            return;
+        }
+        state.rimProductUrl = url || "";
         state.vnextCreateSourceEditing = false;
         renderCreateInputs();
     },
@@ -11460,6 +11483,16 @@ function makeIdempotencyKey() {
     return `dw-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function createProductUrlValue(value) {
+    const text = String(value || "").trim();
+    if (!text) return null;
+    if (text.length > 2048 || !/^https?:\/\/[^/?#\\\s]+(?:[/?#]|$)/i.test(text) || /[\\\s]/.test(text)) return undefined;
+    try {
+        const url = new URL(text);
+        return url.hostname && !url.username && !url.password ? text : undefined;
+    } catch { return undefined; }
+}
+
 
 
 async function submitJob() {
@@ -11512,48 +11545,64 @@ async function submitJob() {
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     let renderDraftId = state.createAssetDraftId;
     try {
-        if (!renderDraftId) {
-            const uploads = new FormData();
-            uploads.append("car_image", state.files.car.blob, state.files.car.name);
-            uploads.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
-            uploads.append("consent", "true");
-            if (identity.init_data) uploads.append("init_data", identity.init_data);
-            if (identity.telegram_user_id != null) uploads.append("telegram_user_id", String(identity.telegram_user_id));
-            const uploadResponse = await authenticatedFetch(apiUrl("/identity/assets"), {
-                method: "POST", headers: withAuthHeaders(), body: uploads,
+        // Recover only an explicit unusable-draft response, once per submission.
+        // Network ambiguity retains the existing key so a retry can replay its job.
+        for (let recovery = 0; ; recovery += 1) {
+            if (!renderDraftId) {
+                const uploads = new FormData();
+                uploads.append("car_image", state.files.car.blob, state.files.car.name);
+                uploads.append("wheel_image", state.files.wheel.blob, state.files.wheel.name);
+                uploads.append("consent", "true");
+                if (identity.init_data) uploads.append("init_data", identity.init_data);
+                if (identity.telegram_user_id != null) uploads.append("telegram_user_id", String(identity.telegram_user_id));
+                const uploadResponse = await authenticatedFetch(apiUrl("/identity/assets"), {
+                    method: "POST", headers: withAuthHeaders(), body: uploads,
+                });
+                const uploaded = await uploadResponse.json().catch(() => ({}));
+                if (!uploadResponse.ok) throw new Error(typeof uploaded.detail === "string" ? uploaded.detail : `HTTP ${uploadResponse.status}`);
+                if (inputVersion !== state.createInputVersion) return;
+                renderDraftId = uploaded.draft_id;
+                state.createAssetDraftId = renderDraftId;
+            }
+            if (!state.createIdempotencyKey) state.createIdempotencyKey = makeIdempotencyKey();
+            const payload = {
+                draft_id: renderDraftId, idempotency_key: state.createIdempotencyKey,
+                rim: { product_url: createProductUrlValue(state.rimProductUrl) || null, source: "user_input" },
+                rim_user_confirmed: false,
+            };
+            if (identity.init_data) payload.init_data = identity.init_data;
+            if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
+            const resp = await authenticatedFetch(apiUrl("/jobs/from-assets"), {
+                method: "POST",
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify(payload),
             });
-            const uploaded = await uploadResponse.json().catch(() => ({}));
-            if (!uploadResponse.ok) throw new Error(typeof uploaded.detail === "string" ? uploaded.detail : `HTTP ${uploadResponse.status}`);
+            const data = await resp.json().catch(() => ({}));
             if (inputVersion !== state.createInputVersion) return;
-            renderDraftId = uploaded.draft_id;
-            state.createAssetDraftId = renderDraftId;
+            if (!resp.ok) {
+                if (resp.status === 404 && data.detail === "Asset draft not found") {
+                    renderDraftId = "";
+                    state.createAssetDraftId = "";
+                    state.createIdempotencyKey = "";
+                    if (recovery === 0) continue;
+                }
+                const detail = Array.isArray(data.detail)
+                    ? data.detail.map((entry) => entry.msg).join("; ")
+                    : (data.detail || `HTTP ${resp.status}`);
+                throw new Error(detail);
+            }
+            // Reset/replacement can occur while this request is in flight. The
+            // server job continues, but must not take over a newer Create context.
+            if (inputVersion !== state.createInputVersion) return;
+            if (!data.job_id) throw new Error("Render job was not accepted");
+            state.jobId = data.job_id;
+            state.createJobDraftId = renderDraftId;
+            state.createAssetDraftId = "";
+            state.createIdempotencyKey = "";
+            state.renderStatus = data.status || "queued";
+            void trackEvent("render_started", { job_id: state.jobId });
+            break;
         }
-        if (!state.createIdempotencyKey) state.createIdempotencyKey = makeIdempotencyKey();
-        const payload = {
-            draft_id: renderDraftId, idempotency_key: state.createIdempotencyKey,
-            rim: { product_url: state.rimProductUrl.trim() || null, source: "user_input" },
-            rim_user_confirmed: false,
-        };
-        if (identity.init_data) payload.init_data = identity.init_data;
-        if (identity.telegram_user_id != null) payload.telegram_user_id = identity.telegram_user_id;
-        const resp = await authenticatedFetch(apiUrl("/jobs/from-assets"), {
-            method: "POST",
-            headers: withAuthHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify(payload),
-        });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) {
-            const detail = Array.isArray(data.detail)
-                ? data.detail.map((entry) => entry.msg).join("; ")
-                : (data.detail || `HTTP ${resp.status}`);
-            throw new Error(detail);
-        }
-        // Reset/replacement can occur while this request is in flight. The
-        // server job continues, but must not take over a newer Create context.
-        if (inputVersion !== state.createInputVersion) return;
-        state.jobId = data.job_id;
-        state.renderStatus = data.status || "queued";
-        void trackEvent("render_started", { job_id: state.jobId });
     } catch (error) {
         if (inputVersion !== state.createInputVersion) return;
         showError(error.message);
@@ -11567,7 +11616,7 @@ async function submitJob() {
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
         await sleep(POLL_INTERVAL_MS);
-        if (state.jobId !== renderJobId || state.createAssetDraftId !== renderDraftId) return;
+        if (state.jobId !== renderJobId || state.createInputVersion !== inputVersion) return;
         let statusData;
         try {
             const response = await authenticatedFetch(
@@ -11578,13 +11627,12 @@ async function submitJob() {
         } catch {
             continue;
         }
-        if (state.jobId !== renderJobId || state.createAssetDraftId !== renderDraftId) return;
+        if (state.jobId !== renderJobId || state.createInputVersion !== inputVersion) return;
 
         if (statusData.status === "completed") {
             state.submitting = false;
             state.renderStatus = "completed";
             state.resultUrl = statusData.result_url || statusData.output_image_url || statusData.assets?.result?.url || "";
-            state.createJobDraftId = state.createAssetDraftId;
             state.resultDownloadUrl = apiUrl(`/jobs/${state.jobId}/download`, {
                 includeIdentity: true,
             });
@@ -12075,8 +12123,7 @@ function bindEvents() {
         });
     });
     document.querySelector("[data-rim-product-url]")?.addEventListener("input", (event) => {
-        state.rimProductUrl = event.target.value;
-        renderCreateInputs();
+        window.dreamwheelsCreateBridge.saveRimProductUrl(event.target.value);
     });
     document.querySelector("[data-fitment-source-disclosure]")?.addEventListener("toggle", (event) => {
         state.fitmentSourceOpen = event.currentTarget.open;
