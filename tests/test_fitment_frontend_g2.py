@@ -133,10 +133,7 @@ def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_
     assert "body: JSON.stringify(payload)" in save
     assert 'saveVnextFitment("vehicle", { intent: "confirm_vehicle" })' in APP_JS
     assert "fitmentVehicleConfirmationRequired()" in save
-    assert (
-        "includeVehicle: savingVehicle && (confirmingVehicle || state.fitmentVehicleDirty || fitmentVehicleConfirmationRequired())"
-        in save
-    )
+    assert "includeVehicle: savingVehicle" in save
     assert "await runFitmentCheck();" not in save
     assert 'fitmentNextAction(overview) === "complete_vehicle_details"' in APP_JS
 

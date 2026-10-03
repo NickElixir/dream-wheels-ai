@@ -1250,6 +1250,40 @@ async def _resolve_exact_vehicle_catalogue_selection(
     }
 
 
+async def _insert_vehicle_confirmation_intent(
+    conn,
+    *,
+    row,
+    user_id: int,
+    action: Literal["save_vehicle", "apply_vehicle_variant", "replace_vehicle_variant"],
+) -> None:
+    """Persist accepted owner intent independently of canonical mutation history."""
+    if row["owner_user_id"] != user_id or not row["vehicle_identity_id"]:
+        raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
+    confirmed = _vehicle_state_from_row(row) == "confirmed_ready"
+    if action != "save_vehicle":
+        confirmed = confirmed and _modification_from_row(row)[0] == "confirmed"
+    await _insert_fitment_change_event(
+        conn,
+        job_id=row["job_id"],
+        vehicle_identity_id=row["vehicle_identity_id"],
+        rim_spec_id=None,
+        event_type="vehicle_confirmation_intent",
+        actor_type="user",
+        actor_user_id=user_id,
+        vehicle_revision_before=row["vehicle_revision"],
+        vehicle_revision_after=row["vehicle_revision"],
+        rim_revision_before=None,
+        rim_revision_after=None,
+        changes={
+            "intent": "explicit_vehicle_action",
+            "surface": "technical_fitment",
+            "action": action,
+            "outcome": "confirmed" if confirmed else "saved",
+        },
+    )
+
+
 def _vehicle_field_states_from_row(
     row,
 ) -> dict[str, FitmentVehicleFieldStateResponse]:
@@ -3573,7 +3607,37 @@ async def replace_fitment_vehicle_variant(
     if not _variant_selection_matches(selected_modification, request.expected_current_selection):
         raise HTTPException(status_code=409, detail={"code": "modification_selection_conflict"})
     if _variant_selection_matches(selected_modification, request.new_selection):
-        return _fitment_overview_from_row(row)
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                current = await _fetch_fitment_job_row(
+                    conn, job_id=job_id, user_id=user_id, for_update=True
+                )
+                if not current:
+                    raise HTTPException(
+                        status_code=404, detail={"code": "fitment_context_not_found"}
+                    )
+                if int(current["vehicle_revision"]) != request.expected_vehicle_revision:
+                    raise HTTPException(
+                        status_code=409, detail={"code": "vehicle_revision_conflict"}
+                    )
+                current_state, _, current_selection, _ = _modification_from_row(current)
+                if (
+                    current_state != "confirmed"
+                    or current_selection is None
+                    or not (
+                        _variant_selection_matches(
+                            current_selection, request.expected_current_selection
+                        )
+                        and _variant_selection_matches(current_selection, request.new_selection)
+                    )
+                ):
+                    raise HTTPException(
+                        status_code=409, detail={"code": "modification_selection_conflict"}
+                    )
+                await _insert_vehicle_confirmation_intent(
+                    conn, row=current, user_id=user_id, action="replace_vehicle_variant"
+                )
+        return _fitment_overview_from_row(current)
 
     try:
         variants = await _find_current_vehicle_variants(row)
@@ -3615,6 +3679,9 @@ async def replace_fitment_vehicle_variant(
                     status_code=409, detail={"code": "modification_selection_conflict"}
                 )
             if _variant_selection_matches(current_selection, request.new_selection):
+                await _insert_vehicle_confirmation_intent(
+                    conn, row=current, user_id=user_id, action="replace_vehicle_variant"
+                )
                 return _fitment_overview_from_row(current)
 
             mapping = dict(current["vehicle_provider_mappings"] or {})
@@ -3661,6 +3728,10 @@ async def replace_fitment_vehicle_variant(
                 },
             )
             updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            assert updated is not None
+            await _insert_vehicle_confirmation_intent(
+                conn, row=updated, user_id=user_id, action="replace_vehicle_variant"
+            )
     assert updated is not None
     return _fitment_overview_from_row(updated)
 
@@ -3697,7 +3768,35 @@ async def apply_fitment_vehicle_variant(
             for key in ("generation", "modification", "body", "market")
         )
     ):
-        return _fitment_overview_from_row(row)
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                current = await _fetch_fitment_job_row(
+                    conn, job_id=job_id, user_id=user_id, for_update=True
+                )
+                if not current:
+                    raise HTTPException(
+                        status_code=404, detail={"code": "fitment_context_not_found"}
+                    )
+                if int(current["vehicle_revision"]) != request.expected_vehicle_revision:
+                    raise HTTPException(
+                        status_code=409, detail={"code": "vehicle_revision_conflict"}
+                    )
+                current_state, _, current_selection, _ = _modification_from_row(current)
+                if (
+                    current_state != "confirmed"
+                    or current_selection is None
+                    or not all(
+                        str(getattr(current_selection, key)) == str(getattr(request, key))
+                        for key in ("generation", "modification", "body", "market")
+                    )
+                ):
+                    raise HTTPException(
+                        status_code=409, detail={"code": "modification_selection_not_pending"}
+                    )
+                await _insert_vehicle_confirmation_intent(
+                    conn, row=current, user_id=user_id, action="apply_vehicle_variant"
+                )
+        return _fitment_overview_from_row(current)
     if modification_state != "suggested":
         raise HTTPException(status_code=409, detail={"code": "modification_selection_not_pending"})
 
@@ -3722,7 +3821,9 @@ async def apply_fitment_vehicle_variant(
 
     async with pool.acquire() as conn:
         async with conn.transaction():
-            current = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            current = await _fetch_fitment_job_row(
+                conn, job_id=job_id, user_id=user_id, for_update=True
+            )
             if not current:
                 raise HTTPException(status_code=404, detail={"code": "fitment_context_not_found"})
             if int(current["vehicle_revision"]) != request.expected_vehicle_revision:
@@ -3778,6 +3879,10 @@ async def apply_fitment_vehicle_variant(
                 },
             )
             updated = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            assert updated is not None
+            await _insert_vehicle_confirmation_intent(
+                conn, row=updated, user_id=user_id, action="apply_vehicle_variant"
+            )
     assert updated is not None
     return _fitment_overview_from_row(updated)
 
@@ -4485,6 +4590,11 @@ async def save_fitment_details(
                 )
 
             updated_row = await _fetch_fitment_job_row(conn, job_id=job_id, user_id=user_id)
+            if vehicle_updates:
+                assert updated_row is not None
+                await _insert_vehicle_confirmation_intent(
+                    conn, row=updated_row, user_id=user_id, action="save_vehicle"
+                )
 
     assert updated_row is not None
     return _fitment_overview_from_row(updated_row)

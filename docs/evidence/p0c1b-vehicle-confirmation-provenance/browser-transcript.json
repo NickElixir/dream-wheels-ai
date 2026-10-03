@@ -1,0 +1,73 @@
+{
+  "surface": "production app.js/controller/view with local API doubles; not staging E2E",
+  "url": "http://127.0.0.1:8774/tests/browser-fixtures/vehicle-confirmation-provenance.html",
+  "title": "P0-C1b — Vehicle Save browser smoke",
+  "same_value": {
+    "active_section": "vehicle",
+    "vehicle_state": "confirmed_ready",
+    "next_action": "select_vehicle_variant",
+    "vehicle_revision": 1,
+    "market": "russia",
+    "wheel_unchanged": true,
+    "console_errors": [],
+    "calls": [
+      {
+        "method": "PATCH",
+        "path": "/jobs/local-h1-job/fitment",
+        "active_section": "vehicle",
+        "payload": {
+          "expected_vehicle_revision": 1,
+          "expected_rim_revision": 7,
+          "vehicle": {
+            "make": "LADA",
+            "model": "Vesta",
+            "year": 2020,
+            "market": "russia"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/jobs/local-h1-job/fitment/vehicle-variants",
+        "market": "russia"
+      }
+    ]
+  },
+  "changed_value": {
+    "active_section": "vehicle",
+    "vehicle_state": "unconfirmed",
+    "next_action": "complete_vehicle_details",
+    "vehicle_revision": 2,
+    "market": "russia",
+    "wheel_unchanged": true,
+    "console_errors": [],
+    "calls": [
+      {
+        "method": "PATCH",
+        "path": "/jobs/local-h1-job/fitment",
+        "active_section": "vehicle",
+        "payload": {
+          "expected_vehicle_revision": 1,
+          "expected_rim_revision": 7,
+          "vehicle": {
+            "make": "lada",
+            "model": "vesta",
+            "year": 2021,
+            "market": "russia"
+          }
+        }
+      }
+    ]
+  },
+  "invalid_value": {
+    "active_section": "vehicle",
+    "vehicle_state": "confirmed_ready",
+    "next_action": "select_vehicle_variant",
+    "vehicle_revision": 1,
+    "market": "russia",
+    "wheel_unchanged": true,
+    "console_errors": [],
+    "calls": []
+  },
+  "console": []
+}
