@@ -1,3 +1,4 @@
+import { copy as uiText } from "../copy.mjs";
 import { createIsland } from "../ui/primitives.js";
 
 export function createPhotoGuideView(model) {

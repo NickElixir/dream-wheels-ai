@@ -28,7 +28,7 @@ test("Create view source covers upload, consent, URL storage, retry and render a
   for (const state of ["bothReady", "consentAccepted", "submitting"]) {
     assert.ok(view.includes(state), `missing Create state: ${state}`);
   }
-  for (const action of ["Добавить фото", "Заменить фото", "Создать изображение", "Повторить"]) {
+  for (const action of ["create.addPhoto", "create.replacePhoto", "create.createImage", "create.retry"]) {
     assert.ok(view.includes(action), `missing Create action: ${action}`);
   }
   assert.match(css, /\.vnext-create__pair\s*\{[^}]*grid-template-columns/);

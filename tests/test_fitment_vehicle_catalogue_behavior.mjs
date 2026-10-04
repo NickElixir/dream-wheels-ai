@@ -1,4 +1,4 @@
-import { copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
+import { copy, legacyTranslations, errorCopy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -426,5 +426,5 @@ test("owner Market gate auto-resolves one provider market then invalidates it fo
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
 }

@@ -1,3 +1,5 @@
+import { COPY } from "../vnext/copy.mjs";
+import { photoGuideViewModel } from "../vnext/models/photo-guide.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -35,8 +37,9 @@ test("Dashboard consumes a read-only legacy view model and keeps domain actions 
 test("Dashboard headline preserves the copy and renders in the requested three lines", () => {
   const view = read("vnext/views/dashboard.js");
   const css = read("vnext/styles/surfaces.css");
-  assert.match(view, /title\.setAttribute\("aria-label", "Примерьте новые диски на своём автомобиле"\)/);
-  assert.match(view, /\["Примерьте", "новые диски", "на своём автомобиле"\]/);
+  assert.match(view, /title\.setAttribute\("aria-label", uiText\("dashboard\.tryNewWheelsOnYourVehicle"/);
+  assert.equal(COPY["dashboard.tryNewWheelsOnYourVehicle"].ru, "Примерьте новые диски на своём автомобиле");
+  for (const [key, text] of [["dashboard.try", "Примерьте"], ["dashboard.newWheels", "новые диски"], ["dashboard.onYourVehicle", "на своём автомобиле"]]) { assert.ok(view.includes(key)); assert.equal(COPY[key].ru, text); }
   assert.doesNotMatch(view, /Загрузите автомобиль и выберите конкретный колесный диск/);
   assert.match(css, /\.vnext-dashboard__intro h2 span \{ display: block; \}/);
 });
@@ -50,9 +53,9 @@ test("Photo Guide uses real frozen reference photography and approved preparatio
   for (const copy of [
     "Покажите автомобиль целиком",
     "Колёса должны быть видны",
-    'copy("photo.sharp.title")',
+    "Используйте резкое фото",
     "Не меняйте фото перед загрузкой",
-  ]) assert.ok(model.includes(copy), `missing Photo Guide rule: ${copy}`);
+  ]) assert.ok(JSON.stringify(photoGuideViewModel("ru")).includes(copy), `missing Photo Guide rule: ${copy}`);
 });
 
 test("Documents keeps four frozen legal rows, existing legal endpoints and no arrow affordance", () => {
@@ -61,7 +64,7 @@ test("Documents keeps four frozen legal rows, existing legal endpoints and no ar
   for (const pathPart of ["/legal/privacy", "/legal/offer", "/legal/refund", "/legal/consent"]) {
     assert.ok(model.includes(pathPart), `missing legal endpoint: ${pathPart}`);
   }
-  assert.match(view, /open\.textContent = "Открыть"/);
+  assert.match(view, /open\.textContent = uiText\("dashboard\.open"/);
   assert.doesNotMatch(view, /›|→|arrow/i);
   assert.doesNotMatch(view, /fetch\(|state\./);
 });
@@ -71,8 +74,8 @@ test("Auth/session VNext presentation preserves existing controller hooks and ex
   const app = read("app.js");
   const css = read("vnext/styles/auth.css");
   assert.match(html, /\/vnext\/styles\/auth\.css/);
-  assert.match(app, /sessionExpiredTitle: "Сессия истекла"/);
-  assert.match(app, /Предыдущее действие не будет запущено автоматически/);
+  assert.equal(COPY["legacy.auth.sessionExpiredTitle"].ru, "Сессия истекла");
+  assert.ok(Object.values(COPY).some(pair => pair.ru.includes("Предыдущее действие не будет запущено автоматически")));
   assert.match(app, /dialog\.dataset\.vnextAuthStep = state\.authDialogStep/);
   assert.match(app, /gate\.dataset\.vnextAuthState/);
   assert.match(app, /isRestoringStep\s*\? t\("auth\.appGateRestoring"\)/);

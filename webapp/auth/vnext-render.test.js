@@ -1,3 +1,4 @@
+import { copy, legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -39,10 +40,10 @@ class TestElement {
 const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8").replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\nconst buildFitmentRimReadiness = ${buildFitmentRimReadiness.toString()};\n`).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\nimport \{ buildFitmentRimReadiness \} from "\.\/vnext\/fitment-readiness\.mjs";\n\n/u, "");
 function runtime() {
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = {
+  const context = { legacyTranslations, errorCopy, uiCopy:copy,
     URL, URLSearchParams, Blob, FormData, console,
     document: { documentElement: { dataset: {} }, body: { classList: { add() {}, remove() {} }, appendChild() {} }, addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], createElement: () => ({ click() {}, remove() {}, set textContent(value) { this.innerHTML = String(value); } }) },
-    window: { Telegram: {}, location: { search: "" }, dispatchEvent() {}, scrollTo() {} },
+    window: { addEventListener() {}, Telegram: {}, location: { search: "" }, dispatchEvent() {}, scrollTo() {} },
     localStorage: storage, sessionStorage: storage, navigator: { language: "ru-RU", userAgent: "test" },
     setTimeout, clearTimeout,
   };
@@ -188,7 +189,7 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.match(noContext, /vnext-generation-error--no-car/);
   assert.doesNotMatch(noContext, /<img|vnext-generation-wheel-thumb/);
   const bootstrap = fs.readFileSync(new URL("../vnext/bootstrap.js", import.meta.url), "utf8");
-  assert.match(bootstrap, /model\.error \? "Виртуальная примерка"/);
+  assert.match(bootstrap, /model\.error \? uiText\("page\.tryOn"/);
   assert.match(bootstrap, /if \(heading && heading\.textContent !== title\) heading\.textContent = title/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
   assert.match(css, /\.vnext-render p\.vnext-generation-value\s*\{[^}]*color:var\(--vnext-text-value\)/);

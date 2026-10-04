@@ -1,6 +1,8 @@
-const emptyDashboard = Object.freeze({
+import { copy as uiText, applicationLocale } from "../copy.mjs";
+const emptyDashboard = (locale) => Object.freeze({
+  locale,
   balance: null,
-  balanceLabel: "0 рендеров",
+  balanceLabel: uiText("shell.renders", locale),
   expiry: [],
   expiryNote: "",
   loading: false,
@@ -12,7 +14,7 @@ const emptyDashboard = Object.freeze({
 });
 
 export function legacyDashboardSnapshot() {
-  return window.DreamWheelsLegacy?.dashboardSnapshot?.() || emptyDashboard;
+  return window.DreamWheelsLegacy?.dashboardSnapshot?.() || emptyDashboard(applicationLocale());
 }
 
 export function legacyOpenRenderDetail(jobId) {

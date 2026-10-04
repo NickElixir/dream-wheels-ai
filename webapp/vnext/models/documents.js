@@ -1,27 +1,29 @@
-export function documentsViewModel() {
+import { copy as uiText, applicationLocale } from "../copy.mjs";
+export function documentsViewModel(locale = applicationLocale()) {
   return Object.freeze({
-    title: "Документы",
-    eyebrow: "Правовая информация",
-    copy: "Здесь собраны документы, которые относятся к использованию сервиса, оплате и обработке персональных данных.",
+    locale,
+    title: uiText("nav.documents", locale),
+    eyebrow: uiText("documents.legalInformation", locale),
+    copy: uiText("documents.theseDocumentsCoverUseOfTheServicePaymentsAnd", locale),
     rows: [
       {
-        title: "Политика конфиденциальности",
-        copy: "Как сервис обрабатывает и защищает пользовательские данные.",
+        title: uiText("create.privacyPolicy", locale),
+        copy: uiText("documents.howTheServiceProcessesAndProtectsUserData", locale),
         href: "https://legal.dreamwheels.pro/legal/privacy",
       },
       {
-        title: "Публичная оферта",
-        copy: "Условия приобретения и использования рендеров.",
+        title: uiText("documents.publicOffer", locale),
+        copy: uiText("documents.termsForPurchasingAndUsingRenders", locale),
         href: "https://legal.dreamwheels.pro/legal/offer",
       },
       {
-        title: "Условия возврата",
-        copy: "Порядок возврата оплаты в предусмотренных случаях.",
+        title: uiText("documents.refundTerms", locale),
+        copy: uiText("documents.howPaymentsAreRefundedInEligibleCases", locale),
         href: "https://legal.dreamwheels.pro/legal/refund",
       },
       {
-        title: "Согласие на обработку персональных данных",
-        copy: "Условия обработки данных, необходимых для работы сервиса.",
+        title: uiText("documents.consentToPersonalDataProcessing", locale),
+        copy: uiText("documents.termsForProcessingTheDataRequiredToOperateThe", locale),
         href: "https://legal.dreamwheels.pro/legal/consent",
       },
     ],

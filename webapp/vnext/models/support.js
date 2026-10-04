@@ -1,38 +1,39 @@
-import { copy } from "../copy.mjs";
-export function supportViewModel() {
+import { copy as uiText, applicationLocale } from "../copy.mjs";
+export function supportViewModel(locale = applicationLocale()) {
   return Object.freeze({
-    title: "Поддержка",
-    eyebrow: "Помощь",
-    heroTitle: "Разберёмся с проблемой",
-    copy: "Опишите, что произошло. Для вопросов по генерации, оплате, данным автомобиля или диска лучше сразу указать, на каком шаге возникла проблема.",
-    messageLabel: "Сообщение",
-    messagePlaceholder: "Например: не удалось обновить данные диска по ссылке…",
-    supportLabel: "Написать в поддержку",
+    locale,
+    title: uiText("nav.support", locale),
+    eyebrow: uiText("nav.help", locale),
+    heroTitle: uiText("support.letSSolveTheProblem", locale),
+    copy: uiText("support.describeWhatHappenedForQuestionsAboutGenerationPaymentOr", locale),
+    messageLabel: uiText("support.message", locale),
+    messagePlaceholder: uiText("support.forExampleTheWheelDetailsCouldNotBeUpdated", locale),
+    supportLabel: uiText("support.contactSupport", locale),
     supportEmail: "dreamwheelsai@yandex.ru",
     supportSubject: "Dream Wheels Support",
-    selfHelpTitle: "Что можно проверить самостоятельно",
+    selfHelpTitle: uiText("support.thingsYouCanCheckYourself", locale),
     topics: [
       {
-        label: "Как подготовить фотографию автомобиля",
+        label: uiText("support.howToPrepareAVehiclePhoto", locale),
         kind: "navigate",
         view: "photo-guide",
       },
       {
-        label: "Что делать, если ссылка на диск не распозналась",
+        label: uiText("support.whatToDoIfAWheelLinkWasNot", locale),
         kind: "detail",
-        detail: "Попробуйте другую ссылку. Если источник снова не распознаётся, загрузите фотографию диска вручную.",
+        detail: uiText("support.tryADifferentLinkIfItStillCannotBe", locale),
       },
       {
-        label: "Почему техническая проверка не блокирует примерку",
+        label: uiText("support.whyTheTechnicalCheckDoesNotBlockATry", locale),
         kind: "detail",
-        detail: copy("support.fitment"),
+        detail: uiText("support.fitment", locale),
       },
       {
-        label: "Оплата и срок действия рендеров",
+        label: uiText("support.paymentAndRenderExpiry", locale),
         kind: "detail",
-        detail: "Баланс, срок действия рендеров и история пополнений доступны в разделе «Баланс».",
+        detail: uiText("support.yourBalanceRenderExpiryDatesAndTopUpHistory", locale),
       },
     ],
-    documentsLabel: "Правовые документы",
+    documentsLabel: uiText("support.legalDocuments", locale),
   });
 }

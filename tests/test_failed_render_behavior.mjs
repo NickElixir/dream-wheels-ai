@@ -1,3 +1,4 @@
+import { copy, legacyTranslations, errorCopy } from "../webapp/vnext/copy.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -11,7 +12,7 @@ const fn = name => {
 };
 const i18n = source.slice(source.indexOf('const I18N ='), source.indexOf('function detectLocale()'));
 function model(status, billing, locale = 'ru', overrides = {}) {
-  const context = {job: {render_billing_status: billing}};
+  const context = { legacyTranslations, errorCopy, uiCopy:copy,job: {render_billing_status: billing}};
   vm.runInNewContext(`${i18n}\nconst locale=${JSON.stringify(locale)};\n${fn('t')}\n${fn('renderFailureCopy')}\n${fn('renderBillingMessage')}\nthis.copy=renderFailureCopy(); this.billing=renderBillingMessage(job);`, context);
   return {jobId:'job-1', status, title:'Lexus RX', failureCopy:context.copy, billingMessage:context.billing, originalUrl:'https://source.test/original', resultUrl:status==='completed'?'https://result.test/image':'', statusLabel:'Не удалось', dateLabel:'4 октября', createdLabel:'12:00', ...overrides};
 }
@@ -64,7 +65,7 @@ test('polling merges authoritative billing without deriving it from failed', () 
 
 test('network or queue ambiguity never promises a refund', () => {
   for(const locale of ['ru','en']){
-    const context={};
+    const context={legacyTranslations,uiCopy:copy};
     vm.runInNewContext(`${i18n}\nconst locale=${JSON.stringify(locale)};\n${fn('t')}\n${fn('classifyGenerationError')}\nthis.error=classifyGenerationError('queue unavailable');`,context);
     assert.doesNotMatch(context.error.title,/не будет списан|not be charged/);
   }

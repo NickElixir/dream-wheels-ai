@@ -65,7 +65,7 @@ test("ET picker separates recommended/all, prioritizes exact matches and preserv
   const markup = fitmentMarkup({ wheelPicker: { path: "rim.offset_et_mm", query: "35,125", mode: "recommended" } });
   assert.match(markup, /role="dialog" aria-modal="true"/);
   assert.match(markup, /data-wheel-picker-value="35.125"/);
-  assert.match(markup, /Ручной ввод ET/);
+  assert.match(markup, /ET — от −150 до \+150 мм\. Без округления\./);
   assert.match(markup, /data-wheel-picker-search/);
 });
 
@@ -558,7 +558,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     isCurrentFitmentRuntimeContext: value => value.jobId === state.fitmentJobId && value.generation === state.fitmentContextGeneration,
     FITMENT_NEXT_ACTION_KINDS: new Set(["complete_vehicle_details", "select_vehicle_variant", "complete_rim_specs", "run_standard_check"]),
     URLSearchParams,
-    window: { location: { search: "" } },
+    window: { addEventListener() {}, location: { search: "" } },
     shouldUseDemoFitment: () => true,
     loadDemoFitmentOverview: () => overview,
     validateFitmentOverview: () => true,
@@ -645,7 +645,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       state, fitmentMutationsLocked: () => false, locale: "ru", RIM_SOURCE_RESOLVE_TIMEOUT_MS: 30_000,
       captureFitmentRuntimeContext: (jobId = state.fitmentJobId) => ({ jobId, generation: state.fitmentContextGeneration || 0 }),
       isCurrentFitmentRuntimeContext: value => value.jobId === state.fitmentJobId && value.generation === (state.fitmentContextGeneration || 0),
-      window: { setTimeout: () => 1, clearTimeout() {} }, AbortController,
+      window: { addEventListener() {}, setTimeout: () => 1, clearTimeout() {} }, AbortController,
       shouldUseDemoFitment: () => false,
       fitmentCheckContextKey: () => state.fitmentJobId,
       normalizeFitmentText: value => value.trim(),
@@ -795,7 +795,7 @@ test("staggered Result separates different values and conditions, collapses iden
 });
 
 test("RU and EN Result, warning and picker use one locale and preserve punctuation and precision", () => {
-  const model = {locale:"en",executionStatus:"completed",resultCopy:"Compatibility has conditions.",check:{execution_status:"completed",verdict:"compatible_with_conditions",is_current:false},preliminaryWarning:true,preliminaryWarningCopy:"Confirm fitment with your installer.",preliminaryDisclaimer:"Not an installation guarantee.",conditions:[{label:"Centering rings required."}],fieldEvidence:[{field:"offset_et_mm",rimValue:"35.125",vehicleValue:"33.275",resultLabel:"Подходит"}],wheelPicker:{path:"rim.offset_et_mm",query:"35.125"}};
+  const model = {locale:"en",executionStatus:"completed",resultCopy:"Compatibility has conditions.",check:{execution_status:"completed",verdict:"compatible_with_conditions",is_current:false},preliminaryWarning:true,preliminaryWarningCopy:"Confirm fitment with your installer.",preliminaryDisclaimer:"Not an installation guarantee.",conditions:[{label:"Centering rings required."}],fieldEvidence:[{field:"offset_et_mm",rimValue:"35.125",vehicleValue:"33.275",status:"pass",resultLabel:"Matches"}],wheelPicker:{path:"rim.offset_et_mm",query:"35.125"}};
   const markup=fitmentMarkup(model);
   assert.doesNotMatch(markup,/[А-Яа-яЁё]/);
   assert.match(markup,/35\.125/); assert.match(markup,/33\.275/);
@@ -804,7 +804,7 @@ test("RU and EN Result, warning and picker use one locale and preserve punctuati
   assert.equal(fitmentDisplayValue("ET 33.275 / 35.125"),"ET 33,275 / 35,125");
   const conflict = fitmentMarkup({locale:"en",rimEditing:true,resolver:{conflicts:[{field:"offset_et_mm",current:35.125,suggested:33.275}]}});
   assert.doesNotMatch(conflict,/[А-Яа-яЁё]/);
-  assert.match(conflict,/aria-label="Conflicting value ET"/);
+  assert.match(conflict,/aria-label="Conflicting value: ET"/);
   const candidate = fitmentMarkup({locale:"en",vehicleEditing:true,vehicleForm:{make:"bmw"},vehicleCandidates:[{field:"make",value:"Audi"}]});
   assert.doesNotMatch(candidate,/[А-Яа-яЁё]/);
   assert.doesNotMatch(candidate,/Suggestions for make/);

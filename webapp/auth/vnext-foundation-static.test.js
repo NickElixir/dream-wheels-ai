@@ -1,3 +1,4 @@
+import { supportViewModel } from "../vnext/models/support.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,7 +32,7 @@ test("VNext shell delegates navigation and keeps Help in the mobile model", () =
   const shell = read("vnext/shell/app-shell.js");
   const bootstrap = read("vnext/bootstrap.js");
   const navigation = read("vnext/api/legacy-navigation.js");
-  assert.match(shell, /\["Помощь", "support"\]/);
+  assert.match(shell, /\["nav.help", "support"\]/);
   assert.doesNotMatch(shell, /Ещё/);
   assert.match(shell, /pageTitle\.textContent = title/);
   assert.match(bootstrap, /title: model\.title/);
@@ -59,7 +60,7 @@ test("VNext primitives remain presentation-only and Support matches the frozen p
     "Оплата и срок действия рендеров",
     "Правовые документы",
     "dreamwheelsai@yandex.ru",
-  ]) assert.ok(model.includes(text), `missing frozen Support copy: ${text}`);
+  ]) assert.ok(JSON.stringify(supportViewModel("ru")).includes(text), `missing frozen Support copy: ${text}`);
 
   assert.match(view, /textarea/);
   assert.match(view, /mailto:/);

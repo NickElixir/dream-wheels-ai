@@ -1,4 +1,4 @@
-import { copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
+import { copy, legacyTranslations, errorCopy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -2445,5 +2445,5 @@ test("P0-C1b same-value explicit Vehicle Save still sends Vehicle; Wheel stays i
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
 }
