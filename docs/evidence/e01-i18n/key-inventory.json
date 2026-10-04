@@ -7943,5 +7943,50 @@
     "en": "Verify",
     "status": "KEYED",
     "pass": "corrective"
+  },
+  {
+    "path": "webapp/app.js",
+    "current_literal": "Загрузка изображения начата",
+    "new_key": "render.download.started",
+    "ru": "Загрузка изображения начата",
+    "en": "Image download started",
+    "status": "KEYED",
+    "pass": "remaining-runtime-leaks"
+  },
+  {
+    "path": "webapp/app.js",
+    "current_literal": "Не удалось скачать изображение. Повторите попытку.",
+    "new_key": "render.download.failed",
+    "ru": "Не удалось скачать изображение. Повторите попытку.",
+    "en": "Could not download the image. Try again.",
+    "status": "KEYED",
+    "pass": "remaining-runtime-leaks"
+  },
+  {
+    "path": "webapp/app.js",
+    "current_literal": "Примерка недоступна. Обновите историю и повторите попытку.",
+    "new_key": "render.download.unavailable",
+    "ru": "Примерка недоступна. Обновите историю и повторите попытку.",
+    "en": "This try-on is unavailable. Refresh History and try again.",
+    "status": "KEYED",
+    "pass": "remaining-runtime-leaks"
+  },
+  {
+    "path": "webapp/app.js",
+    "current_literal": "Стартовый пакет",
+    "new_key": "wallet.starterPackage",
+    "ru": "Стартовый пакет",
+    "en": "Starter package",
+    "status": "KEYED",
+    "pass": "remaining-runtime-leaks"
+  },
+  {
+    "path": "webapp/app.js",
+    "current_literal": "Выберите JPEG, PNG или WebP до 10 МБ.",
+    "new_key": "fitment.vehicle.photo.invalid",
+    "ru": "Выберите JPEG, PNG или WebP до 10 МБ.",
+    "en": "Choose a JPEG, PNG or WebP image up to 10 MB.",
+    "status": "KEYED",
+    "pass": "remaining-runtime-leaks"
   }
 ]

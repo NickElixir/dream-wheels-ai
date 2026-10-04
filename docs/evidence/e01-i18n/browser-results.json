@@ -436,6 +436,56 @@
   },
   {
     "width": 390,
+    "locale": "ru",
+    "scenario": "result-download-started",
+    "text": "Результат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nЗагрузка изображения начата\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка\n\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result-download-failed",
+    "text": "Результат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nНе удалось скачать изображение. Повторите попытку.\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка\n\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result-download-unavailable",
+    "text": "Результат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nПримерка недоступна. Обновите историю и повторите попытку.\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка\n\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "starter-expiry",
+    "text": "Главная\nСрок действия\n3 рендеров\nСтартовый пакет\nбез срока\nСначала спишутся рендеры с ближайшим сроком действия\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "vehicle-photo-invalid",
+    "text": "nav.fitment\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nРАСПОЗНАВАНИЕ АВТОМОБИЛЯ\n\nНе удалось распознать автомобиль\n\nВыберите JPEG, PNG или WebP до 10 МБ.\n\nПопробовать ещё раз\nУказать вручную\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
     "locale": "en",
     "scenario": "dashboard",
     "text": "Home\n\nNEW TRY-ON\n\nTry\nnew wheels\non your vehicle\nCreate a try-on\n\nLATEST RESULT\n\nYour first try-on\n\nUpload photos of the vehicle and wheel — the finished result will appear here.\n\nCreate a try-on\n\nBALANCE\n\n12\nrenders\nTop up balance\n\nRECENT TRY-ONS\n\nYour latest virtual try-ons will appear here.\n\nHome\nCreate\nHistory\nBalance\nHelp",
@@ -780,6 +830,56 @@
     "scenario": "account-merge",
     "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts",
     "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result-download-started",
+    "text": "Result\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nImage download started\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement\n\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result-download-failed",
+    "text": "Result\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nCould not download the image. Try again.\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement\n\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result-download-unavailable",
+    "text": "Result\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nThis try-on is unavailable. Refresh History and try again.\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement\n\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "starter-expiry",
+    "text": "Home\nExpiry dates\n3 renders\nStarter package\nno expiry\nRenders with the nearest expiry date are used first\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "vehicle-photo-invalid",
+    "text": "nav.fitment\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE RECOGNITION\n\nUnable to recognize the vehicle\n\nChoose a JPEG, PNG or WebP image up to 10 MB.\n\nTry again\nEnter manually\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
     "overflow": false,
     "clipped": [],
     "errors": []
@@ -1221,6 +1321,56 @@
   },
   {
     "width": 1440,
+    "locale": "ru",
+    "scenario": "result-download-started",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nРезультат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nЗагрузка изображения начата\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result-download-failed",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nРезультат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nНе удалось скачать изображение. Повторите попытку.\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result-download-unavailable",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nРезультат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nПримерка недоступна. Обновите историю и повторите попытку.\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\n\nРезультат примерки\n\n\nИсходное фото\n\nСравнение результата и оригинала\n\n\nОценка результата\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "starter-expiry",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nГлавная\nСрок действия\n3 рендеров\nСтартовый пакет\nбез срока\nСначала спишутся рендеры с ближайшим сроком действия",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "vehicle-photo-invalid",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nРАСПОЗНАВАНИЕ АВТОМОБИЛЯ\n\nНе удалось распознать автомобиль\n\nВыберите JPEG, PNG или WebP до 10 МБ.\n\nПопробовать ещё раз\nУказать вручную\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
     "locale": "en",
     "scenario": "dashboard",
     "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nHome\n\nNEW TRY-ON\n\nTry\nnew wheels\non your vehicle\nCreate a try-on\n\nLATEST RESULT\n\nYour first try-on\n\nUpload photos of the vehicle and wheel — the finished result will appear here.\n\nCreate a try-on\n\nBALANCE\n\n12\nrenders\nTop up balance\n\nRECENT TRY-ONS\n\nYour latest virtual try-ons will appear here.",
@@ -1565,6 +1715,56 @@
     "scenario": "account-merge",
     "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts",
     "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result-download-started",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nResult\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nImage download started\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result-download-failed",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nResult\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nCould not download the image. Try again.\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result-download-unavailable",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nResult\nORIGINAL\nRESULT\n↔\nTRY-ON\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nCREATED\n\n04.10.2026\n\nCreate another version\nCheck compatibility\nDownload result\n\nThis try-on is unavailable. Refresh History and try again.\n\nRate the result\n\nHelp improve future try-ons\n\nGood result\nNeeds improvement",
+    "aria": "Main navigation\n\n\nAccount\n\n\n\nAI render\n\n\nOriginal photo\n\nCompare the result and original\n\n\nRate the result\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "starter-expiry",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nHome\nExpiry dates\n3 renders\nStarter package\nno expiry\nRenders with the nearest expiry date are used first",
+    "aria": "Main navigation\n\n\nAccount\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "vehicle-photo-invalid",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE RECOGNITION\n\nUnable to recognize the vehicle\n\nChoose a JPEG, PNG or WebP image up to 10 MB.\n\nTry again\nEnter manually\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
     "overflow": false,
     "clipped": [],
     "errors": []

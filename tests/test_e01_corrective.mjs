@@ -53,3 +53,33 @@ test('Telegram login network/provider errors refresh dashboard, wallet and auth 
   assert.doesNotMatch(state.websiteLoginError+state.walletMessage+message.textContent,/[А-Яа-яЁё]/u);
  }
 });
+test('Result downloads localize success/failure/missing notices and retain download routes',async()=>{
+ for(const language of ['ru','en'])for(const outcome of ['started','failed','unavailable']){
+  let fetched=0,clicked=0,notified=0;
+  const state={renderHistory:outcome==='unavailable'?[]:[{job_id:'A'}],downloadNoticeByJob:{},jobId:'B',resultDownloadUrl:'/jobs/B/download'};
+  const context=runtime(['downloadResult'],{locale:language,state,SUPPORTS_DOWNLOAD_FILE:false,
+   isGuestRenderJob:()=>false,isWebsiteAuthMode:()=>true,isSupabaseFrontendAuth:()=>false,apiUrl:path=>path,
+   notifyRenderBridge(){notified++;},setDownloadButtonState(){},t:()=>'',haptic(){},withAuthHeaders:()=>({Authorization:'Bearer fixture'}),
+   authenticatedFetch:async(url,options)=>{fetched++;assert.equal(url,'/jobs/A/download');assert.equal(options.headers.Authorization,'Bearer fixture');return {ok:outcome==='started',blob:async()=>new Blob(['image'])};},
+   parseApiError:async()=> 'fixture failed',URL:{createObjectURL:()=> 'blob:fixture',revokeObjectURL(){}},
+   document:{createElement:()=>({click(){clicked++;},remove(){}}),body:{appendChild(){}}},setTimeout:fn=>fn(),console:{error(){}}});
+  await context.downloadResult({jobId:'A'});
+  assert.equal(state.downloadNoticeByJob.A,copy(`render.download.${outcome}`,language));assert.equal(state.jobId,'B');assert.equal(state.resultDownloadUrl,'/jobs/B/download');
+  assert.equal(fetched,outcome==='unavailable'?0:1);assert.equal(clicked,outcome==='started'?1:0);assert.ok(notified>0);
+ }
+});
+test('starter cohorts preserve filtering, order, credits and provider labels in both locales',()=>{
+ for(const language of ['ru','en']){
+  const state={creditPackages:[{id:'starter',source:'starter_grant',remainingCredits:3,expiresAt:null},{id:'custom',source:'starter_grant',remainingCredits:2,expiresAt:'2099-01-01',label:'User label'},{id:'empty',remainingCredits:0}]};
+  const context=runtime(['buildRenderExpiryCohorts'],{locale:language,state});const rows=context.buildRenderExpiryCohorts();
+  assert.equal(rows.length,2);assert.equal(rows[0].key,'custom');assert.equal(rows[0].meta,'User label');assert.equal(rows[1].meta,copy('wallet.starterPackage',language));assert.equal(rows[1].credits,3);
+ }
+});
+test('Fitment rejects invalid photo types and oversized files with localized copy before storage',async()=>{
+ for(const language of ['ru','en'])for(const file of [{type:'image/gif',size:1},{type:'image/png',size:10*1024*1024+1}]){
+  let renders=0,aborts=0;
+  const state={fitmentJobId:'A',fitmentRecognitionToken:0,fitmentRecognitionController:{abort(){aborts++;}}};
+  const context=runtime(['setFitmentVehiclePhoto'],{locale:language,state,fitmentMutationsLocked:()=>false,renderFitment(){renders++;}});
+  await context.setFitmentVehiclePhoto(file);assert.equal(state.fitmentRecognition.status,'failed');assert.equal(state.fitmentRecognition.message,copy('fitment.vehicle.photo.invalid',language));assert.equal(state.fitmentJobId,'A');assert.equal(renders,1);assert.equal(aborts,1);assert.equal(state.fitmentVehiclePhoto,undefined);
+ }
+});

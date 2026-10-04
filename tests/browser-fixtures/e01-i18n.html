@@ -22,7 +22,21 @@ document.documentElement.lang=locale;
 let content,title,activeView='fitment';
 const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
 const result={jobId:'qa-result',status:'completed',title:'ZEEKR 007',rimName:'BBS CI-R',specs:'19 × 8.5J',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:true,createdLabel:'04.10.2026',statusLabel:locale==='en'?'Ready':'Готово',dateLabel:'04.10.2026',reasons:[]};
-if(scenario.startsWith('account-')) {
+if(scenario.startsWith('result-download-')) {
+ const outcome=scenario.slice('result-download-'.length);state.renderHistory=outcome==='unavailable'?[]:[{job_id:'qa-result'}];
+ isWebsiteAuthMode=()=>true;isSupabaseFrontendAuth=()=>false;notifyRenderBridge=()=>{};setDownloadButtonState=()=>{};haptic=()=>{};
+ authenticatedFetch=async()=>{if(outcome==='failed')throw Error('fixture failed');return {ok:true,blob:async()=>new Blob(['fixture'],{type:'image/jpeg'})};};
+ await downloadResult({jobId:'qa-result'});
+ content=createRenderView('result',{...result,locale,downloadNotice:state.downloadNoticeByJob['qa-result']},{});title=uiCopy('page.renderResult',locale);activeView='renders';
+} else if(scenario==='starter-expiry') {
+ const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
+ content=new DOMParser().parseFromString(html,'text/html').querySelector('[data-dashboard-expiry]');document.querySelector('#fixture').append(content);
+ state.creditPackages=[{id:'starter',source:'starter_grant',remainingCredits:3,expiresAt:null}];applyTranslations();renderDashboard();title=uiCopy('nav.dashboard',locale);activeView='dashboard';
+} else if(scenario==='vehicle-photo-invalid') {
+ state.fitmentJobId='qa-result';state.fitmentOverview={vehicle_state:'empty',rim_setup_state:'empty',next_action:'complete_vehicle_details',vehicle:{}};
+ renderFitment=()=>{};await setFitmentVehiclePhoto(new File(['fixture'],'bad.gif',{type:'image/gif'}));
+ content=createFitmentView(vnextFitmentSnapshot(),{});title=uiCopy('nav.fitment',locale);
+} else if(scenario.startsWith('account-')) {
  const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
  const parsed=new DOMParser().parseFromString(html,'text/html');content=document.createElement('main');
  for(const selector of ['[data-view="settings"]','[data-account-link-dialog]','[data-account-merge-dialog]'])content.append(parsed.querySelector(selector));

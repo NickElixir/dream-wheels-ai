@@ -166,3 +166,30 @@ presentation sources and their tests/evidence only. No backend/migration/style
 files changed. Fitment decisions, render lifecycle, payment/credit lifecycle,
 auth authority and request payloads/destinations remain unchanged. Merge is not
 performed. Ready for a short corrective re-review after exact-HEAD CI succeeds.
+
+
+## Remaining runtime leaks — Result / starter grant / photo validation
+
+Review of `60e55f3e52a113534a1945c1425e9d398564528c` is preserved in
+`claude/e01-pr263-corrective-rereview-60e55f3.md` and the local project's `claude/`
+directory. Its reported checks are distinguished from independently run checks.
+
+Five new canonical keys replace five inline strings at the source: Result download
+success, failure and unavailable-history notices; starter-grant package fallback;
+and vehicle-photo format/10 MB rejection. COPY now has 932 bilingual entries. The
+production diff only changes these text expressions. Download route, authorization,
+job selection, sorting/filtering/credits, provider labels, MIME/size limit and upload
+behavior are unchanged. Backend, migrations and styles remain unchanged.
+
+Regression checks invoke all three production functions in both locales, asserting
+unchanged download routes/current-job context, cohort order/credits/provider labels,
+and invalid-photo rejection before storage. Browser coverage adds actual Result
+notices, the legacy expiry card and Fitment recognition validation presentation.
+
+Validation: Node 256 PASS (includes 3 gateway checks); frontend/auth 213 PASS;
+Python 760 PASS / 22 local database skips; Ruff check/format, build and diff checks
+PASS; generated auth bundles unchanged. Browser 176 PASS at 390×900 and 1440×900,
+RU/EN, including all previous 156 checks and 20 new checks. Newly covered EN text,
+ARIA, alt and placeholders contain no frontend-owned Cyrillic. The exact new SHA
+and CI run are recorded in the PR handoff after this commit is pushed. Prior CI
+for `60e55f3` is not used as verification of the subsequent fix. Merge not performed.

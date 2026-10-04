@@ -3700,6 +3700,26 @@ export const COPY = {
   "account.link.verify": {
     "ru": "Подтвердить",
     "en": "Verify"
+  },
+  "render.download.started": {
+    "ru": "Загрузка изображения начата",
+    "en": "Image download started"
+  },
+  "render.download.failed": {
+    "ru": "Не удалось скачать изображение. Повторите попытку.",
+    "en": "Could not download the image. Try again."
+  },
+  "render.download.unavailable": {
+    "ru": "Примерка недоступна. Обновите историю и повторите попытку.",
+    "en": "This try-on is unavailable. Refresh History and try again."
+  },
+  "wallet.starterPackage": {
+    "ru": "Стартовый пакет",
+    "en": "Starter package"
+  },
+  "fitment.vehicle.photo.invalid": {
+    "ru": "Выберите JPEG, PNG или WebP до 10 МБ.",
+    "en": "Choose a JPEG, PNG or WebP image up to 10 MB."
   }
 };
 

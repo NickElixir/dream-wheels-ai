@@ -6633,7 +6633,7 @@ async function setFitmentVehiclePhoto(file) {
     state.fitmentRecognitionToken += 1;
     state.fitmentRecognitionController?.abort();
     if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
-        state.fitmentRecognition = { status: "failed", candidates: [], message: "Выберите JPEG, PNG или WebP до 10 МБ." };
+        state.fitmentRecognition = { status: "failed", candidates: [], message: uiCopy("fitment.vehicle.photo.invalid", locale) };
         renderFitment();
         return;
     }
@@ -8336,7 +8336,7 @@ function buildRenderExpiryCohorts() {
             key: item.id || `${item.source}-${item.expiresAt}`,
             credits: Number(item.remainingCredits),
             expiresAt: item.expiresAt,
-            meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : uiCopy("wallet.package", locale)),
+            meta: item.label || (item.source === "starter_grant" ? uiCopy("wallet.starterPackage", locale) : uiCopy("wallet.package", locale)),
         }))
         .sort((left, right) => (left.expiresAt ? Date.parse(left.expiresAt) : Infinity) - (right.expiresAt ? Date.parse(right.expiresAt) : Infinity));
 }
@@ -10651,7 +10651,7 @@ function requestTelegramDownload(url, fileName) {
 async function downloadResult({ jobId = "" } = {}) {
     const job = jobId ? state.renderHistory.find((item) => item.job_id === jobId) : null;
     if (jobId && !job) {
-        state.downloadNoticeByJob[jobId] = "Примерка недоступна. Обновите историю и повторите попытку.";
+        state.downloadNoticeByJob[jobId] = uiCopy("render.download.unavailable", locale);
         notifyRenderBridge();
         return;
     }
@@ -10708,11 +10708,11 @@ async function downloadResult({ jobId = "" } = {}) {
         setDownloadButtonState({ disabled: false, text: t("actions.downloadFailed") });
         haptic("warning");
         state.downloading = false;
-        if (jobId) state.downloadNoticeByJob[jobId] = "Не удалось скачать изображение. Повторите попытку.";
+        if (jobId) state.downloadNoticeByJob[jobId] = uiCopy("render.download.failed", locale);
         notifyRenderBridge();
         return;
     }
-    if (jobId) state.downloadNoticeByJob[jobId] = "Загрузка изображения начата";
+    if (jobId) state.downloadNoticeByJob[jobId] = uiCopy("render.download.started", locale);
     notifyRenderBridge();
     setTimeout(() => {
         state.downloading = false;
