@@ -22,6 +22,7 @@ from src.fitment.context import (
     context_identity,
     is_current_snapshot,
 )
+from src.fitment.diameter_reference import DiameterReferenceDetail, diameter_reference_detail
 from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.rules.engine import run_checks
@@ -75,6 +76,7 @@ class CheckResponse(BaseModel):
     diagnostics: list[dict] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
     field_results: list[CheckFieldResult] = Field(default_factory=list)
+    diameter_reference_details: list[DiameterReferenceDetail] = Field(default_factory=list)
     versions: dict = Field(default_factory=dict)
     error: dict | None = None
     is_current: bool = False
@@ -908,6 +910,27 @@ def _comparison_fields(row: dict, rules: list[dict]) -> list[CheckFieldResult]:
     return output
 
 
+def _diameter_reference_details(row: dict) -> list[DiameterReferenceDetail]:
+    if row.get("execution_status") != "completed":
+        return []
+    snapshot = _json_object(row.get("input_snapshot"), field_name="diameter input_snapshot")
+    evaluation = _json_object(
+        row.get("evaluation_snapshot"), field_name="diameter evaluation_snapshot"
+    )
+    setup = snapshot.get("rim_setup")
+    profile = evaluation.get("normalized_profile")
+    if not isinstance(setup, dict):
+        return []
+    references = profile.get("allowed_wheels") if isinstance(profile, dict) else None
+    output = []
+    for axle in ["front", "rear"] if setup.get("is_staggered") else ["front"]:
+        rim = setup.get(axle)
+        field = rim.get("wheel_diameter_in") if isinstance(rim, dict) else None
+        submitted = field.get("value") if isinstance(field, dict) else field
+        output.append(diameter_reference_detail(submitted, references, axle=axle))
+    return output
+
+
 def _response(row, *, is_current: bool | None = None) -> CheckResponse:
     result = _json_object(row["result"], field_name="fitment check result")
     error = _json_object(row["error"], field_name="fitment check error") or None
@@ -940,6 +963,7 @@ def _response(row, *, is_current: bool | None = None) -> CheckResponse:
         diagnostics=result.get("diagnostics") or [],
         missing_fields=result.get("missing_fields") or [],
         field_results=_comparison_fields(row, rules),
+        diameter_reference_details=_diameter_reference_details(row),
         versions={
             "provider": "wheel_size",
             "engine": row["engine_version"],

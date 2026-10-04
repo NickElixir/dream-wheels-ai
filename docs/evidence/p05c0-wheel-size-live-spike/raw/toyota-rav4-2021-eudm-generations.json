@@ -1,0 +1,290 @@
+{
+  "data": [
+    {
+      "slug": "9d28de8ff9",
+      "name": "I (XA10)",
+      "platform": "",
+      "start": 1994,
+      "end": 2000,
+      "bodies": [
+        {
+          "slug": "d0aa518d4d",
+          "name": "Open Off-Road Vehicle",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-1994-2000-1466692795.9.jpg"
+        },
+        {
+          "slug": "b5a1d92522",
+          "name": "Closed Off-Road Vehicle, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-1994-2000-1466692796.49.jpg"
+        },
+        {
+          "slug": "0d8080853a",
+          "name": "Closed Off-Road Vehicle, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-1994-2000-1466692796.79.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "jdm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000
+      ],
+      "year_ranges": [
+        "1994-2000"
+      ]
+    },
+    {
+      "slug": "f0f6ba4b5e",
+      "name": "II (XA20)",
+      "platform": "",
+      "start": 2000,
+      "end": 2005,
+      "bodies": [
+        {
+          "slug": "7ae11af208",
+          "name": "Closed Off-Road Vehicle, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2000-2005-1727334625.911086.jpg"
+        },
+        {
+          "slug": "8a057268a7",
+          "name": "Closed Off-Road Vehicle, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2000-2005-1727334626.4970584.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005
+      ],
+      "year_ranges": [
+        "2000-2005"
+      ]
+    },
+    {
+      "slug": "1b113258af",
+      "name": "III (XA30)",
+      "platform": "",
+      "start": 2005,
+      "end": 2009,
+      "bodies": [
+        {
+          "slug": "300d1539c3",
+          "name": "Closed Off-Road Vehicle, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2005-2009-1727334372.8324504.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2006,
+        2007,
+        2008,
+        2009
+      ],
+      "year_ranges": [
+        "2006-2009"
+      ]
+    },
+    {
+      "slug": "f0837f171a",
+      "name": "III (XA30) Facelift",
+      "platform": "",
+      "start": 2008,
+      "end": 2016,
+      "bodies": [
+        {
+          "slug": "bdad073d2c",
+          "name": "Closed Off-Road Vehicle, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2008-2016-1727334526.631708.jpg"
+        }
+      ],
+      "regions": [
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "year_ranges": [
+        "2008-2013"
+      ]
+    },
+    {
+      "slug": "e92d74ccac",
+      "name": "IV (XA40)",
+      "platform": "",
+      "start": 2012,
+      "end": 2023,
+      "bodies": [
+        {
+          "slug": "4f11b55f57",
+          "name": "SUV, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2012-2016-1603374685.0212514.webp"
+        }
+      ],
+      "regions": [
+        "chdm",
+        "eudm",
+        "medm",
+        "nadm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016
+      ],
+      "year_ranges": [
+        "2012-2016"
+      ]
+    },
+    {
+      "slug": "7a9a322cbe",
+      "name": "IV (XA40) Facelift",
+      "platform": "",
+      "start": 2015,
+      "end": 2019,
+      "bodies": [
+        {
+          "slug": "f02a8fde79",
+          "name": "SUV, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2015-2019-1603374790.0849433.jpg"
+        }
+      ],
+      "regions": [
+        "chdm",
+        "eudm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "year_ranges": [
+        "2015-2019"
+      ]
+    },
+    {
+      "slug": "c44bebb973",
+      "name": "V (XA50)",
+      "platform": "",
+      "start": 2019,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "523df5a6db",
+          "name": "SUV, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+        },
+        {
+          "slug": "5658eb3bf0",
+          "name": "SUV, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "russia",
+        "sadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "year_ranges": [
+        "2019-2025"
+      ]
+    },
+    {
+      "slug": "7d806dddbe",
+      "name": "VI (XA60)",
+      "platform": "",
+      "start": 2025,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "99f7ba97af",
+          "name": "SUV, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2025-2027-1782218761.9949374.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "sam",
+        "usdm"
+      ],
+      "years": [
+        2025,
+        2026
+      ],
+      "year_ranges": [
+        "2025-2026"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 8
+  }
+}

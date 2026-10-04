@@ -37,6 +37,7 @@ from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
+from src.fitment.variant_details import VariantDisplayDetails
 from src.fitment.vehicle_catalogue import VehicleCatalogueAggregator
 from src.rate_limit import enforce_rate_limit
 from src.render_billing import RenderBillingStatus, billing_evidence_select, render_billing_status
@@ -247,7 +248,7 @@ class FitmentVehicleFieldStateResponse(BaseModel):
     is_user_confirmed: bool = False
 
 
-class FitmentSelectedModificationResponse(BaseModel):
+class FitmentSelectedModificationResponse(VariantDisplayDetails):
     model_config = ConfigDict(protected_namespaces=())
 
     provider: Literal["wheel_size"]
@@ -427,7 +428,7 @@ class RimSourceResolveResponse(BaseModel):
     source_fingerprint: str | None = None
 
 
-class VehicleVariantResponse(BaseModel):
+class VehicleVariantResponse(VariantDisplayDetails):
     model_config = ConfigDict(protected_namespaces=())
 
     make_slug: str
@@ -1688,6 +1689,7 @@ def _modification_from_row(
         selected_response = FitmentSelectedModificationResponse(
             provider="wheel_size",
             **{key: str(selected[key]) for key in _SELECTED_MODIFICATION_KEYS},
+            **VariantDisplayDetails.model_validate(selected).model_dump(),
         )
     except (TypeError, ValueError):
         return "none", None, None, None
@@ -1716,10 +1718,13 @@ def _base_wheel_size_mapping(
     return {}
 
 
-def _canonical_selected_modification(variant: dict[str, str]) -> dict[str, str] | None:
+def _canonical_selected_modification(variant: dict) -> dict | None:
     if not _SELECTED_MODIFICATION_KEYS.issubset(variant):
         return None
-    return {key: str(variant[key]) for key in _SELECTED_MODIFICATION_KEYS}
+    return {
+        **{key: str(variant[key]) for key in _SELECTED_MODIFICATION_KEYS},
+        **VariantDisplayDetails.model_validate(variant).model_dump(),
+    }
 
 
 _VARIANT_SELECTION_KEYS = (

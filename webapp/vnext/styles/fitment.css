@@ -274,3 +274,7 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__configuration > strong { font-size: 19px; font-weight: var(--vnext-weight-semibold); overflow-wrap: anywhere; }
 .vnext-fitment__configuration > small, .vnext-fitment__configuration > span { color: var(--vnext-text-secondary); font-size: 13px; }
 .vnext-fitment__choice:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: -2px; }
+
+.vnext-fitment__diameter-reference { padding: 16px 0; overflow-wrap: anywhere; border-top: 1px solid var(--vnext-border); }
+.vnext-fitment__diameter-reference h3 { margin: 0 0 8px; }
+.vnext-fitment__diameter-reference p { margin: 6px 0; }

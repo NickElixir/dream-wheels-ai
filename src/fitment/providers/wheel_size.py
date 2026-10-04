@@ -49,6 +49,7 @@ from src.fitment.schemas import (
     VehicleIdentity,
     parse_bolt_pattern,
 )
+from src.fitment.variant_details import wheel_size_display_details
 
 logger = logging.getLogger(__name__)
 
@@ -474,7 +475,7 @@ class WheelSizeProvider:
         model_slug: str,
         region: str,
         year: int,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, Any]]:
         """List variants for an already validated catalogue selection.
 
         This is deliberately separate from :meth:`find_vehicle_variants`,
@@ -487,7 +488,7 @@ class WheelSizeProvider:
             return []
 
         generations = await self._cataloging("generations", {**base, "year": year})
-        variants: list[dict[str, str]] = []
+        variants: list[dict[str, Any]] = []
         for generation in generations:
             generation_slug = str(generation.get("slug") or "")
             if not generation_slug:
@@ -519,6 +520,7 @@ class WheelSizeProvider:
                         "market": region,
                         "generation_slug": generation_slug,
                         "modification_slug": modification_slug,
+                        **wheel_size_display_details(modification),
                     }
                 )
         return variants

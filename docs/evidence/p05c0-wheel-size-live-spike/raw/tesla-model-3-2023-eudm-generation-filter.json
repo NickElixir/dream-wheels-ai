@@ -1,0 +1,250 @@
+{
+  "data": [
+    {
+      "slug": "5a081c2f38",
+      "name": "Long Range",
+      "body": null,
+      "trim": "Long Range",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Performance"
+      ],
+      "make": {
+        "slug": "tesla",
+        "name": "Tesla",
+        "name_en": "Tesla"
+      },
+      "model": {
+        "slug": "model-3",
+        "name": "Model 3",
+        "name_en": "Model 3"
+      },
+      "generation": {
+        "slug": "efdde87c66",
+        "name": "",
+        "platform": "",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "459ad054a6",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Electric",
+        "capacity": null,
+        "type": null,
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "not_applicable",
+        "electrification_level": "bev",
+        "primary_fuel": {
+          "code": "electric",
+          "title": "Electric"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "jdm",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    },
+    {
+      "slug": "0d7499344b",
+      "name": "Long Range",
+      "body": null,
+      "trim": "Long Range",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "tesla",
+        "name": "Tesla",
+        "name_en": "Tesla"
+      },
+      "model": {
+        "slug": "model-3",
+        "name": "Model 3",
+        "name_en": "Model 3"
+      },
+      "generation": {
+        "slug": "efdde87c66",
+        "name": "",
+        "platform": "",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "459ad054a6",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Electric",
+        "capacity": null,
+        "type": null,
+        "power": {
+          "kW": 258.0,
+          "PS": 351,
+          "hp": 346
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "not_applicable",
+        "electrification_level": "bev",
+        "primary_fuel": {
+          "code": "electric",
+          "title": "Electric"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "jdm",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    },
+    {
+      "slug": "fe8e947903",
+      "name": "Standard Range",
+      "body": null,
+      "trim": "Standard Range",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "RWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "tesla",
+        "name": "Tesla",
+        "name_en": "Tesla"
+      },
+      "model": {
+        "slug": "model-3",
+        "name": "Model 3",
+        "name_en": "Model 3"
+      },
+      "generation": {
+        "slug": "efdde87c66",
+        "name": "",
+        "platform": "",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "459ad054a6",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+          }
+        ]
+      },
+      "start_year": 2021,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Electric",
+        "capacity": null,
+        "type": null,
+        "power": {
+          "kW": 208.0,
+          "PS": 283,
+          "hp": 279
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "not_applicable",
+        "electrification_level": "bev",
+        "primary_fuel": {
+          "code": "electric",
+          "title": "Electric"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "jdm",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 3,
+    "engine": {
+      "fuels": [
+        "electric"
+      ],
+      "horsepower": {
+        "min": 279,
+        "max": 456
+      }
+    },
+    "debug": null
+  }
+}

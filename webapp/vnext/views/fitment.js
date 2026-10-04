@@ -122,6 +122,11 @@ function evidence(model) {
   return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? '<p>Условия установки не отменяют причины несовместимости.</p>' : ""}</section>`;
 }
 
+function diameterReferences(model) {
+  if (model.check?.execution_status !== "completed" || model.checkStartFailed) return "";
+  return (model.diameterReferences || []).map(detail => `<section class="vnext-fitment__diameter-reference"><p class="vnext-eyebrow">${esc(detail.axleLabel)}</p><h3>${esc(detail.title)}</h3>${[detail.referenceCopy, detail.submittedCopy, detail.copy, detail.disclaimer].filter(Boolean).map(text => `<p>${esc(text)}</p>`).join("")}</section>`).join("");
+}
+
 function comparisonTable(model) {
   if (model.executionStatus === "failed" || model.check?.execution_status !== "completed") return "";
   const rows = model.fieldEvidence || [];
@@ -367,7 +372,7 @@ export function fitmentMarkup(model = {}) {
     </div>
     <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
     </fieldset>
-    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
+    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + diameterReferences(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
     <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}<div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary || "—")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary || "—")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
     </div>
     ${wheelPickerMarkup(model.wheelPicker ? { ...model.wheelPicker, locale: model.locale } : null)}

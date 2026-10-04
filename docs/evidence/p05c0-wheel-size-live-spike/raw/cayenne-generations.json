@@ -1,0 +1,249 @@
+{
+  "data": [
+    {
+      "slug": "2eace51d8f",
+      "name": "E1 (9PA)",
+      "platform": "PL71",
+      "start": 2002,
+      "end": 2007,
+      "bodies": [
+        {
+          "slug": "f6c9dc70ec",
+          "name": "SUV, 5d (955)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2002-2007-1776702012.8131115.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "russia"
+      ],
+      "years": [
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007
+      ],
+      "year_ranges": [
+        "2002-2007"
+      ]
+    },
+    {
+      "slug": "1359aa933b",
+      "name": "E1 (9PA) Facelift",
+      "platform": "PL71",
+      "start": 2007,
+      "end": 2010,
+      "bodies": [
+        {
+          "slug": "dfb84a11f4",
+          "name": "SUV, 5d (957)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2007-2010-1776702065.3216276.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "medm",
+        "russia"
+      ],
+      "years": [
+        2007,
+        2008,
+        2009,
+        2010
+      ],
+      "year_ranges": [
+        "2007-2010"
+      ]
+    },
+    {
+      "slug": "df4fe8a8bc",
+      "name": "E2 (92A)",
+      "platform": "PL72",
+      "start": 2010,
+      "end": 2014,
+      "bodies": [
+        {
+          "slug": "340a39045c",
+          "name": "SUV, 5d (958)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2010-2014-1776702130.1990757.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "medm",
+        "russia"
+      ],
+      "years": [
+        2010,
+        2011,
+        2012,
+        2013,
+        2014
+      ],
+      "year_ranges": [
+        "2010-2014"
+      ]
+    },
+    {
+      "slug": "9afefc5294",
+      "name": "E2 (92A) Facelift",
+      "platform": "",
+      "start": 2014,
+      "end": 2018,
+      "bodies": [
+        {
+          "slug": "17eb7ecc4c",
+          "name": "SUV, 5d (958)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2014-2018-1776702202.459431.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "medm",
+        "russia"
+      ],
+      "years": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018
+      ],
+      "year_ranges": [
+        "2014-2018"
+      ]
+    },
+    {
+      "slug": "2794f6a20e",
+      "name": "E3 (9Y)",
+      "platform": "MLB Evo",
+      "start": 2017,
+      "end": 2023,
+      "bodies": [
+        {
+          "slug": "fb25b181be",
+          "name": "SUV, 5d (9YA)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+        },
+        {
+          "slug": "4acd768785",
+          "name": "Coupe SUV, 5d (9YB)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "russia",
+        "sadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "year_ranges": [
+        "2017-2023"
+      ]
+    },
+    {
+      "slug": "eaf76caaba",
+      "name": "E3 (9Y) Facelift",
+      "platform": "MLB Evo",
+      "start": 2023,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "84fc285ce4",
+          "name": "SUV, 5d (9YA)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2023-2027-1789635572.1946456.jpg"
+        },
+        {
+          "slug": "da04e7275d",
+          "name": "Coupe SUV, 5d (9YB)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2023-2027-1789635572.9360595.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "year_ranges": [
+        "2023-2026"
+      ]
+    },
+    {
+      "slug": "c7bc77c261",
+      "name": "E4 (X1)",
+      "platform": "PPE",
+      "start": 2026,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "d5e50295cc",
+          "name": "SUV, 5d (X1A)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2026-2027-1789637399.100343.jpg"
+        },
+        {
+          "slug": "ce9d84d48b",
+          "name": "Coupe SUV, 5d (X1B)",
+          "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2026-2027-1789637399.9504058.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "eudm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2026,
+        2027
+      ],
+      "year_ranges": [
+        "2026-2027"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 7
+  }
+}
