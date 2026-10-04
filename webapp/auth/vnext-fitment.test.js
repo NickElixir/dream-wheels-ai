@@ -86,7 +86,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   const app = read("app.js");
   const vehicleHelpers = app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired("))
     + app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueQueryValue("));
-  const snapshot = app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField("));
+  const snapshot = app.slice(app.indexOf("function fitmentDiameterPresentation("), app.indexOf("function setVnextFitmentField("));
   const setter = app.slice(app.indexOf("function setVnextFitmentField("), app.indexOf("window.dreamwheelsFitmentBridge ="));
   const saved = { make: "Zeekr", model: "001", year: "2023", body: "saved body" };
   const state = {
@@ -531,7 +531,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
     app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),
     app.slice(app.indexOf("async function loadFitmentOverview("), app.indexOf("function openFitmentView(")),
-    app.slice(app.indexOf("function vnextFitmentSnapshot()"), app.indexOf("function setVnextFitmentField(")),
+    app.slice(app.indexOf("function fitmentDiameterPresentation("), app.indexOf("function setVnextFitmentField(")),
   ].join("\n");
   const state = {
     fitmentJobId: "demo-job", fitmentOverview: null, fitmentForm: null, fitmentFormState: {},

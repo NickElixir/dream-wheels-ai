@@ -460,6 +460,18 @@ const I18N = {
             caption: "Результат примерки готов",
         },
         fitment: {
+            diameterBelow: "Размер меньше справочного диапазона",
+            diameterAbove: "Размер больше справочного диапазона",
+            diameterWithin: "Диаметр внутри справочного диапазона",
+            diameterKnown: "Диаметр есть в справочнике",
+            diameterUnknown: "Нет справочных данных о диаметре",
+            diameterReferences: "Известные справочные диаметры",
+            diameterSelected: "Выбран диаметр",
+            diameterUnconfirmed: "Совместимость этого диаметра не подтверждена справочными данными.",
+            diameterGap: "Выбранный диаметр отсутствует среди известных справочных диаметров.",
+            diameterDisclaimer: "Совпадение диаметра не подтверждает общую совместимость диска.",
+            diameterFront: "Передняя ось",
+            diameterRear: "Задняя ось",
             eyebrow: "Проверка совместимости",
             title: "Проверьте, подойдут ли диски",
             subtitleFallback: "Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод",
@@ -917,6 +929,18 @@ const I18N = {
             caption: "Your render with new wheels is ready",
         },
         fitment: {
+            diameterBelow: "Diameter is below the reference range",
+            diameterAbove: "Diameter is above the reference range",
+            diameterWithin: "Diameter is within the reference range",
+            diameterKnown: "Diameter is listed in the reference",
+            diameterUnknown: "No usable diameter reference data",
+            diameterReferences: "Known reference diameters",
+            diameterSelected: "Selected diameter",
+            diameterUnconfirmed: "Reference data does not confirm compatibility of this diameter.",
+            diameterGap: "The selected diameter is not among the known reference diameters.",
+            diameterDisclaimer: "A diameter match does not confirm overall wheel compatibility.",
+            diameterFront: "Front axle",
+            diameterRear: "Rear axle",
             eyebrow: "Fitment preparation",
             title: "Basic vehicle parameters",
             subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
@@ -1578,6 +1602,16 @@ function fitmentPresentationText(value) {
 }
 
 function fitmentVariantTechnicalSeries(variant, name = fitmentVariantDisplayName(variant)) {
+    const number = value => typeof value === "number" && Number.isFinite(value) && value > 0;
+    const power = number(variant?.power_kw) ? `${variant.power_kw} kW`
+        : number(variant?.power_ps) ? `${variant.power_ps} PS`
+        : number(variant?.power_hp) ? `${variant.power_hp} hp` : "";
+    const years = variant?.production_year_from && variant?.production_year_to
+        ? `${variant.production_year_from}–${variant.production_year_to}`
+        : String(variant?.production_year_from || variant?.production_year_to || "");
+    const detail = [...(variant?.trim_body_types || []), power, ...(variant?.trim_attributes || []), variant?.engine_code, years]
+        .filter(value => typeof value === "string" && value.trim());
+    if (detail.length) return [...new Set(detail)].join(" / ");
     const market = fitmentMarketLabel(variant?.region || variant?.market);
     const generationOrBody = fitmentPresentationText(variant?.body || variant?.body_type)
         || fitmentPresentationText(variant?.generation);
@@ -10628,6 +10662,23 @@ function fitmentWheelSource(overview, job) {
     return { rimSourceLabel: photo ? "Фото диска" : manual ? "Указано вручную" : "Источник не указан", rimSourceDomain: "" };
 }
 
+function fitmentDiameterPresentation(detail) {
+    const relation = detail.reference_relation;
+    const exact = detail.exact_diameter_match;
+    const titleKey = relation === "below" ? "diameterBelow" : relation === "above" ? "diameterAbove"
+        : relation === "within_bounds" ? exact === true ? "diameterKnown" : "diameterWithin" : "diameterUnknown";
+    const values = (detail.reference_diameters_in || []).map(value => `${formatIdentityNumber(value)}″`).join(" / ");
+    return {
+        axleLabel: t(`fitment.${detail.axle === "rear" ? "diameterRear" : "diameterFront"}`),
+        title: t(`fitment.${titleKey}`),
+        referenceCopy: values ? `${t("fitment.diameterReferences")}: ${values}` : "",
+        submittedCopy: detail.rim_diameter_in != null ? `${t("fitment.diameterSelected")}: ${formatIdentityNumber(detail.rim_diameter_in)}″` : "",
+        copy: relation === "below" || relation === "above" ? t("fitment.diameterUnconfirmed")
+            : relation === "within_bounds" && exact === false ? t("fitment.diameterGap") : "",
+        disclaimer: t("fitment.diameterDisclaimer"),
+    };
+}
+
 function vnextFitmentSnapshot() {
     const overview = state.fitmentOverview;
     const check = fitmentCheckForPresentation();
@@ -10722,6 +10773,7 @@ function vnextFitmentSnapshot() {
         missingData: (failedExecution ? [] : [...(check?.missing_fields || []), ...(check?.evidence_summary?.missing_fields || [])])
             .map(item => ({ label: typeof item === "string" ? fitmentFieldLabel(item) : fitmentVerdictMessage(item) })),
         fieldEvidence,
+        diameterReferences: (failedExecution ? [] : check?.diameter_reference_details || []).map(fitmentDiameterPresentation),
         currentness: check ? { isCurrent: check.is_current !== false, stale: check.is_current === false } : null,
         canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentWheelDraftIsDirty() && !state.fitmentVehicleDirty && !state.fitmentSaving && !state.fitmentSourceResolving && !state.fitmentVehicleVariantApplying && !fitmentMutationsLocked()),
         retryAvailable,
