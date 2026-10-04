@@ -63,6 +63,9 @@ jobs:
       - name: Fitment composition and focus tests
         run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs
 
+      - name: Failed render behavioral tests
+        run: node --test tests/test_failed_render_behavior.mjs
+
       - name: Webapp boot behavior tests
         run: node --test tests/test_webapp_boot_behavior.mjs
 
@@ -110,3 +113,8 @@ jobs:
         env:
           TEST_PAYMENT_LIFECYCLE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
         run: pytest -q tests/test_payment_lifecycle_postgres.py
+
+      - name: Verify render finality and accounting on isolated PostgreSQL
+        env:
+          TEST_RENDER_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: pytest -q tests/test_render_finality_postgres.py

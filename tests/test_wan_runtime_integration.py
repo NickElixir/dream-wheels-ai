@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from src import main, storage
+from src import assets_service, main, storage
 from src.generation.base import GenerationProviderError, GenerationResult, ProviderDiagnostics
 
 JOB_ID = "11111111-1111-4111-8111-111111111111"
@@ -34,6 +34,10 @@ class FakeConnection:
 
     async def execute(self, query: str, *args):
         self.executed.append((query, args))
+
+    async def fetchval(self, query, *args):
+        self.executed.append((query, args))
+        return JOB_ID
 
     async def fetchrow(self, *_args, **_kwargs):
         return {"car_asset_id": "car", "rim_asset_id": "rim"}
@@ -102,10 +106,21 @@ def patch_webapp_inputs(monkeypatch):
 
 
 def patch_completion_dependencies(monkeypatch, *, finalized, events):
-    async def fake_save_render_output(_pool, _job_id, _user_id, data, content_type="image/jpeg"):
+    async def fake_upload_candidate(_job_id, _user_id, data, content_type="image/jpeg"):
         assert data
         assert content_type == "image/png"
-        return "https://results.example/render.png"
+        return assets_service.AssetUpload(
+            JOB_ID,
+            77,
+            JOB_ID,
+            "result",
+            "results",
+            "render.png",
+            "image/png",
+            len(data),
+            "0" * 64,
+            public_url="https://results.example/render.png",
+        )
 
     async def fake_finalize(_conn, *, user_id, job_id):
         finalized.append((user_id, job_id))
@@ -114,7 +129,7 @@ def patch_completion_dependencies(monkeypatch, *, finalized, events):
     async def fake_record(_conn, *, user_id, event_name, properties):
         events.append((user_id, event_name, properties))
 
-    monkeypatch.setattr(main, "_save_render_output", fake_save_render_output)
+    monkeypatch.setattr(main, "_upload_render_output_candidate", fake_upload_candidate)
     monkeypatch.setattr(main, "finalize_job_credit", fake_finalize)
     monkeypatch.setattr(main.analytics_api, "record_system_event", fake_record)
 
@@ -304,7 +319,7 @@ def test_storage_failure_does_not_regenerate_and_refunds(monkeypatch):
         return 3
 
     monkeypatch.setattr(main, "_persist_generation_metadata", fake_persist)
-    monkeypatch.setattr(main, "_save_render_output", fake_save)
+    monkeypatch.setattr(main, "_upload_render_output_candidate", fake_save)
     monkeypatch.setattr(main, "refund_job_credit", fake_refund)
     monkeypatch.setattr(main.analytics_api, "record_system_event", _noop_record)
 

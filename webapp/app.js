@@ -398,7 +398,7 @@ const I18N = {
             parser: "Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.",
             fitment: "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",
             missingData: "Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.",
-            generationUnavailable: "Генерация временно недоступна. Рендер не будет списан.",
+            generationUnavailable: "Генерация временно недоступна.",
         },
         photoGuide: {
             eyebrow: "Помощь",
@@ -691,6 +691,14 @@ const I18N = {
             retry: "Повторить",
             createAnother: "Создать ещё вариант",
             download: "Скачать изображение",
+            generationFailed: "Не удалось создать изображение",
+            notCharged: "Кредит за этот рендер не списан.",
+            sourcePhoto: "Исходное фото автомобиля",
+            sourceUnavailable: "Исходное фото недоступно",
+            assetUnavailable: "Изображение сейчас недоступно",
+            loadingImage: "Загружаем изображение…",
+            failedBadge: "Рендер не создан",
+
         },
         settings: {
             eyebrow: "Параметры кабинета",
@@ -867,7 +875,7 @@ const I18N = {
             parser: "Parameters were detected automatically. Review the values before the technical assessment.",
             fitment: "This is a preliminary compatibility check. It is based on the available technical parameters. Before buying, confirm compatibility with the seller or an installation centre.",
             missingData: "There is not enough data for a reliable compatibility check. Review the missing wheel parameters manually.",
-            generationUnavailable: "Generation is temporarily unavailable. A render will not be charged.",
+            generationUnavailable: "Generation is temporarily unavailable.",
         },
         photoGuide: {
             eyebrow: "Help",
@@ -1155,6 +1163,16 @@ const I18N = {
             empty: "No renders yet. Create your first one on the main screen",
             completed: "Done",
             failed: "Failed",
+            processing: "Processing",
+            retry: "Retry",
+            open: "Open",
+            generationFailed: "Image generation failed",
+            notCharged: "You were not charged for this render.",
+            sourcePhoto: "Original vehicle photo",
+            sourceUnavailable: "Original photo unavailable",
+            assetUnavailable: "Image currently unavailable",
+            loadingImage: "Loading image…",
+            failedBadge: "Render not created",
         },
         settings: {
             eyebrow: "Cabinet settings",
@@ -9421,6 +9439,14 @@ function downloadUrlForJob(job) {
     return resultUrlForJob(job);
 }
 
+function renderFailureCopy() {
+    return Object.fromEntries(["generationFailed", "sourcePhoto", "sourceUnavailable", "assetUnavailable", "loadingImage", "failedBadge", "retry", "open"].map(key => [key, t(`renders.${key}`)]));
+}
+
+function renderBillingMessage(job) {
+    return job?.render_billing_status === "refunded" ? t("renders.notCharged") : "";
+}
+
 function statusLabel(status) {
     if (status === "completed") return t("renders.completed");
     if (status === "failed") return t("renders.failed");
@@ -9512,6 +9538,10 @@ function renderAssetMissingState(text = "Изображение временно
 }
 
 function renderHistoryViewer(job) {
+    if (job.status === "failed") {
+        const source = isAssetAvailable(job, "original") ? assetUrlForJob(job, "original") : "";
+        return `<section class="render-failed-state" role="status"><h3>${escapeHtml(t("renders.generationFailed"))}</h3>${source ? `<img class="render-thumb-image" src="${escapeHtml(source)}" alt="${escapeHtml(t("renders.sourcePhoto"))}" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="original">` : ""}${renderBillingMessage(job) ? `<p>${escapeHtml(renderBillingMessage(job))}</p>` : ""}<button type="button" class="ghost-button compact-button" data-nav="create">${escapeHtml(t("renders.retry"))}</button></section>`;
+    }
     const activeView = defaultAssetViewForJob(job);
     const originalAvailable = hasAssetSource(job, "original");
     const resultAvailable = hasAssetSource(job, "result");
@@ -9702,17 +9732,17 @@ function renderHistoryCard(job) {
     const rimSummary = rimSummaryForJob(job);
     const status = job.status || "processing";
     const guestDemo = isGuestRenderJob(job);
-    const resultUrl = assetUrlForJob(job, "result");
+    const resultUrl = assetUrlForJob(job, status === "failed" ? "original" : "result");
     const createdAt = formatDateTime(job.created_at);
     const canOpen = status === "completed";
     const hasResult = hasAssetSource(job, "result");
     const hasOriginal = hasAssetSource(job, "original");
     const summaryText = status === "failed"
-        ? "Не удалось создать результат"
+        ? t("renders.generationFailed")
         : status === "completed"
           ? (hasResult || hasOriginal ? createdAt : "Изображения временно недоступны")
           : "Создаём результат";
-    const subtitle = rimSummary || summaryText;
+    const subtitle = status === "failed" ? summaryText : rimSummary || summaryText;
     const metaText = status === "completed" ? createdAt : "";
     const action = status === "failed"
         ? `<button type="button" class="ghost-button compact-button" data-nav="create">${t("renders.retry")}</button>`
@@ -9726,7 +9756,7 @@ function renderHistoryCard(job) {
         <article class="render-card cabinet-render-card">
             <div class="render-summary">
                 <div class="render-thumb-wrap">
-                    ${hasResult && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="result">` : `<div class="render-thumb"></div>`}
+                    ${(status === "failed" ? hasOriginal : hasResult) && resultUrl ? `<img src="${escapeHtml(resultUrl)}" alt="" class="render-thumb-image" data-asset-image data-job-id="${escapeHtml(job.job_id)}" data-asset-kind="${status === "failed" ? "original" : "result"}">` : `<div class="render-thumb"></div>`}
                 </div>
                 <div class="render-body">
                     <div class="render-info-island">
@@ -9735,6 +9765,7 @@ function renderHistoryCard(job) {
                         ${metaText ? `<div class="render-meta">${escapeHtml(metaText)}</div>` : ""}
                         ${guestDemo ? `<div class="render-demo-note">Гостевой пример</div>` : ""}
                         ${statusMarkup}
+                        ${status === "failed" && renderBillingMessage(job) ? `<p>${escapeHtml(renderBillingMessage(job))}</p>` : ""}
                     </div>
                 </div>
                 <div class="render-card-action">${action}</div>
@@ -9757,7 +9788,7 @@ function renderRenderDetail() {
         }
         return;
     }
-    const downloadUrl = hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
+    const downloadUrl = job.status === "completed" && hasAssetSource(job, "result") ? downloadUrlForJob(job) : "";
     const fitmentOverview = state.fitmentContextByJob[job.job_id] || null;
     const fitmentAction = fitmentAvailable(job)
         ? `<button type="button" class="ghost-button compact-button" data-open-fitment="${escapeHtml(job.job_id)}" data-origin-view="render-detail">${escapeHtml(fitmentReturnAction(fitmentOverview))}</button>`
@@ -9768,7 +9799,7 @@ function renderRenderDetail() {
             <h2>${escapeHtml(humanRenderTitle(job))}</h2>
             <p class="meta">${escapeHtml(formatDateTime(job.created_at))}</p>
             ${renderHistoryViewer(job)}
-            <div class="render-expanded-actions">
+            <div class="render-expanded-actions" ${job.status === "failed" ? "hidden" : ""}>
                 ${downloadUrl ? `<a class="ghost-button compact-button" href="${escapeHtml(downloadUrl)}" download>Скачать результат</a>` : ""}
                 <button type="button" class="ghost-button compact-button" data-share-history-result="${escapeHtml(job.job_id)}">Поделиться</button>
                 ${fitmentAction}
@@ -9909,6 +9940,7 @@ function mergeStatusIntoHistory(jobId, statusData) {
         return {
             ...job,
             status: statusData.status || job.status,
+            render_billing_status: statusData.render_billing_status || "unknown",
             completed_at: statusData.completed_at || job.completed_at,
             result_url: statusData.result_url || statusData.output_image_url || job.result_url,
             error_code: statusData.error_code ?? job.error_code,
@@ -9963,11 +9995,12 @@ function vnextDashboardJobViewModel(job) {
     return {
         jobId: job.job_id || "",
         status: job.status || "pending",
+        failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job.status),
         title: humanRenderTitle(job),
         subtitle: rimSummaryForJob(job) || "",
         meta: formatDateTime(job.completed_at || job.created_at),
-        imageUrl: resultUrl || "",
+        imageUrl: job.status === "failed" && isAssetAvailable(job, "original") ? assetUrlForJob(job, "original") : resultUrl || "",
         canOpen: job.status === "completed",
     };
 }
@@ -11123,12 +11156,13 @@ function vnextRenderJob(job) {
         vehicleConfirmed: Boolean(job?.vehicle_identity?.is_user_confirmed),
         rimName: [rim.brand, rim.model].filter(Boolean).join(" "), specs,
         createdLabel: formatDateTime(job?.created_at), dateLabel: formatShortDate(job?.created_at),
+        failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job?.status), resultUrl: assetUrlForJob(job, "result"),
         originalUrl: assetUrlForJob(job, "original"),
         originalFailed: hasAssetLoadError(job, "original"), resultFailed: hasAssetLoadError(job, "result"),
         originalLoading: hasAssetSource(job, "original") && !assetUrlForJob(job, "original") && !hasAssetLoadError(job, "original"),
         resultLoading: hasAssetSource(job, "result") && !assetUrlForJob(job, "result") && !hasAssetLoadError(job, "result"),
-        canFitment: fitmentAvailable(job), canDownload: hasAssetSource(job, "result"),
+        canFitment: fitmentAvailable(job), canDownload: job?.status === "completed" && isAssetAvailable(job, "result"),
         downloading: state.downloading, downloadNotice: state.downloadNoticeByJob[job?.job_id] || "",
         feedback: { sentiment: feedbackSentimentForJob(job), reason: feedbackReasonForJob(job), busy: Boolean(state.feedbackBusyByJob[job?.job_id]), error: state.feedbackErrorByJob[job?.job_id] ? localizeErrorMessage(state.feedbackErrorByJob[job.job_id]) : "", notice: state.feedbackNoticeByJob[job?.job_id] || "" },
         reasons: FEEDBACK_REASONS,
@@ -11146,6 +11180,8 @@ function vnextRenderSnapshot(surface) {
     if (surface === "processing") {
         const create = vnextCreateSnapshot();
         return {
+            retryAction: "generation-retry",
+            failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage({ render_billing_status: state.renderBillingStatus }),
             status: state.renderStatus || "queued", title: locale === "ru" ? "Виртуальная примерка" : "Visual try-on",
             rimName: "",
             specs: "",
@@ -11636,6 +11672,7 @@ async function submitJob() {
     if (state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
     const inputVersion = state.createInputVersion;
     state.submitting = true;
+    state.renderBillingStatus = "unknown";
     state.renderStatus = "queued";
     state.createJobDraftId = "";
     showCreateScreen("result");
@@ -11786,9 +11823,10 @@ async function submitJob() {
 
         if (statusData.status === "failed") {
             state.renderStatus = "failed";
+            state.renderBillingStatus = statusData.render_billing_status || "unknown";
             state.createAssetDraftId = "";
             state.createIdempotencyKey = "";
-            showError(statusData.error_message || statusData.error || statusData.error_code || t("errors.generationFailed"));
+            showError(t("renders.generationFailed"));
             return;
         }
         state.renderStatus = statusData.status || state.renderStatus;

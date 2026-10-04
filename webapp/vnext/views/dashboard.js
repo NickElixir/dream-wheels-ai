@@ -6,13 +6,13 @@ function createMedia(job, className = "") {
   if (job?.imageUrl) {
     const image = document.createElement("img");
     image.src = job.imageUrl;
-    image.alt = job.title || "Результат примерки";
+    image.alt = job.status === "failed" ? job.failureCopy?.sourcePhoto : job.title || "Результат примерки";
     image.loading = "lazy";
     media.append(image);
   } else {
     const placeholder = document.createElement("div");
     placeholder.className = "vnext-dashboard__media-placeholder";
-    placeholder.textContent = job?.status === "failed" ? "Результат недоступен" : "Виртуальная примерка";
+    placeholder.textContent = job?.status === "failed" ? (job.failureCopy?.sourcePhoto || "") : "Виртуальная примерка";
     media.append(placeholder);
   }
   return media;
@@ -53,9 +53,12 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
   copy.append(title, subtitle);
   if (latest.status !== "completed") {
     copy.append(createStatusText({
-      label: latest.statusLabel,
+      label: latest.status === "failed" ? latest.failureCopy?.generationFailed : latest.statusLabel,
       tone: latest.status === "failed" ? "negative" : "pending",
     }));
+  }
+  if (latest.status === "failed" && latest.billingMessage) {
+    const billing = document.createElement("p"); billing.textContent = latest.billingMessage; copy.append(billing);
   }
   meta.append(copy);
 
@@ -159,9 +162,12 @@ function createRecent(model, { navigate, openRenderDetail } = {}) {
       item.append(open);
     } else if (job.status !== "completed") {
       item.append(createStatusText({
-        label: job.statusLabel,
+        label: job.status === "failed" ? job.failureCopy?.generationFailed : job.statusLabel,
         tone: job.status === "failed" ? "negative" : "pending",
       }));
+    }
+    if (job.status === "failed" && job.billingMessage) {
+      const billing = document.createElement("p"); billing.textContent = job.billingMessage; item.append(billing);
     }
     grid.append(item);
   });

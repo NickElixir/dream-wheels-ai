@@ -771,6 +771,9 @@ async def reserve_job_credit(
         balance = await get_balance(conn, user_id)
         return balance
 
+    if current_status == "refunded":
+        raise RuntimeError(f"cannot reserve refunded job job_id={job_id}")
+
     balance = await get_balance(conn, user_id)
     effective_cost = int(job_row["credit_cost"] or credit_cost)
     if balance < effective_cost:

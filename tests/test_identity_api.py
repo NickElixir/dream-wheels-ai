@@ -463,6 +463,15 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
     assert len(display_promotions) == 1
     assert display_promotions[0][2][1:] == ("11111111-1111-4111-8111-111111111111", 77)
 
+    retry_payload = json.loads(response.request.content)
+    retry_payload["idempotency_key"] = "new-render-after-failure"
+    new_render = client.post("/jobs/from-assets", json=retry_payload)
+    assert new_render.status_code == 200
+    assert new_render.json()["job_id"] != response.json()["job_id"]
+    assert sum(call[0] == "reserve_job_credit" for call in calls) == 2
+    assert len(fake_redis.queue_payloads) == 2
+    assert not any(call[0] == "execute" and "UPDATE jobs SET status" in call[1] for call in calls)
+
 
 @pytest.mark.parametrize("recognition_count", [0, 21])
 def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch, recognition_count):
