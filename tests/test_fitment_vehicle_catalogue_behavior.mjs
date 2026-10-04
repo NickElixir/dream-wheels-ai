@@ -1,3 +1,4 @@
+import { copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -148,7 +149,7 @@ globalThis.__fitmentCatalogueTestApi = {
     revalidateFitmentCatalogueChain,
     retryFitmentCatalogue,
 };`;
-    vm.runInNewContext(apiSource, context, { filename: "webapp/app.js" });
+    runInCopyContext(apiSource, context, { filename: "webapp/app.js" });
     const api = context.__fitmentCatalogueTestApi;
     api.state.fitmentJobId = "behavior-job";
     api.state.fitmentCatalogueDraftMemory = api.createFitmentCatalogueDraftMemory("behavior-job");
@@ -423,3 +424,7 @@ test("owner Market gate auto-resolves one provider market then invalidates it fo
     assert.equal(api.state.fitmentForm.vehicle.market,"");
     assert.ok(api.state.fitmentFormState.invalidFields.includes("vehicle.market"));
 });
+
+function runInCopyContext(script, context = {}, ...options) {
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+}

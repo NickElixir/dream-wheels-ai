@@ -103,7 +103,7 @@ def test_editors_replace_summaries_and_resolver_has_manual_fallback() -> None:
     assert 'state.fitmentRimEditing = section === "rim";' in APP_JS
     assert 'setFitmentEditor("rim")' in APP_JS
     assert "Не удалось определить параметры автоматически" in APP_JS
-    assert "Это не блокирует проверку — укажите параметры колесного диска вручную" in APP_JS
+    assert 'uiCopy("fitment.notice.manualWheel", locale)' in APP_JS
     assert "data-fitment-source-manual" in INDEX_HTML
     assert "data-fitment-source-retry" in INDEX_HTML
     assert "data-fitment-source-disclosure" in INDEX_HTML
@@ -201,7 +201,7 @@ def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons()
         in verdict_mapper
     )
     assert "Потребуются центровочные кольца" in verdict_mapper
-    assert "Разболтовка колесного диска не совпадает" in verdict_mapper
+    assert 'uiCopy("fitment.notice.pcdMismatch", locale)' in verdict_mapper
     assert "Ступичное отверстие больше штатного" in field_mapper
     assert 'fieldName === "center_bore_mm" && hasCenterBoreCondition' in field_mapper
     assert "Требуется условие" not in APP_JS
@@ -357,7 +357,7 @@ def test_check_states_keep_processing_and_provider_failure_distinct() -> None:
 def test_render_cta_remains_outside_fitment_result_workspace() -> None:
     assert "data-fitment-create-image" in INDEX_HTML
     assert "data-fitment-render-copy" in INDEX_HTML
-    assert "Вы все еще можете создать изображение, чтобы оценить внешний вид дисков" in APP_JS
+    assert 'uiCopy("fitment.notice.visualTryOn", locale)' in APP_JS
     assert 'setView("create")' in APP_JS
     assert "data-fitment-actions" in INDEX_HTML
     assert "independently from the fitment result" in APP_JS

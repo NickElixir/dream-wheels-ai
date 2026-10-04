@@ -1,3 +1,4 @@
+import { copy } from "../copy.mjs";
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&#39;",
 }[char]));
@@ -45,7 +46,7 @@ export function createWalletView(model = {}, callbacks = {}) {
           <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>Выберите пакет</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-duration hidden></span><span data-wallet-selection-email hidden></span></div>
           <button type="button" class="vnext-button vnext-button--primary vnext-wallet__pay" data-wallet-action="pay" disabled>Перейти к оплате</button>
           <p class="vnext-wallet__provider">Оплата через Robokassa</p>
-          <p class="vnext-wallet__legal">Продолжая, вы принимаете <a href="${legalOrigin}/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link>оферту</a> и <a href="${legalOrigin}/legal/refund" target="_blank" rel="noopener noreferrer" data-external-link>условия возврата</a>. <a href="${legalOrigin}/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link>Обработка персональных данных</a>.</p>
+          <p class="vnext-wallet__legal">${esc(copy("wallet.legal.prefix"))}<a href="${legalOrigin}/legal/offer" target="_blank" rel="noopener noreferrer" data-external-link>${esc(copy("wallet.legal.offer"))}</a>, <a href="${legalOrigin}/legal/refund" target="_blank" rel="noopener noreferrer" data-external-link>${esc(copy("wallet.legal.refund"))}</a>${esc(copy("wallet.legal.and"))}<a href="${legalOrigin}/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link>${esc(copy("wallet.legal.privacy"))}</a>.</p>
         </section>
       </div>
       <aside class="vnext-wallet__pending" data-wallet-pending hidden aria-label="Оплата в обработке">

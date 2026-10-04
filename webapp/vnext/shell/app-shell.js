@@ -1,14 +1,15 @@
+import { copy } from "../copy.mjs";
 const desktopNav = [
-  ["Главная", "dashboard"], ["Примерить диски", "create"], ["Мои примерки", "renders"], ["Баланс", "wallet"],
+  ["Главная", "dashboard"], ["nav.create", "create"], ["nav.history", "renders"], ["Баланс", "wallet"],
 ];
 const helpNav = [["Поддержка", "support"], ["Как подготовить фото", "photo-guide"], ["Документы", "docs"]];
-const mobileNav = [["Главная", "dashboard"], ["Создать", "create"], ["Мои", "renders"], ["Баланс", "wallet"], ["Помощь", "support"]];
+const mobileNav = [["Главная", "dashboard"], ["nav.createMobile", "create"], ["nav.history", "renders"], ["Баланс", "wallet"], ["Помощь", "support"]];
 
 function navButton([label, view], activeView, navigate) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "vnext-shell__nav-button";
-  button.textContent = label;
+  button.textContent = label.startsWith("nav.") ? copy(label) : label;
   if (view === activeView) button.setAttribute("aria-current", "page");
   button.addEventListener("click", () => navigate(view));
   return button;
@@ -81,7 +82,7 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
     const button = document.createElement("button");
     button.type = "button";
     button.className = "vnext-shell__bottom-button";
-    button.textContent = labelText;
+    button.textContent = labelText.startsWith("nav.") ? copy(labelText) : labelText;
     if (view === mobileActiveView) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => navigate(view));
     bottom.append(button);

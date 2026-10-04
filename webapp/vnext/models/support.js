@@ -1,3 +1,4 @@
+import { copy } from "../copy.mjs";
 export function supportViewModel() {
   return Object.freeze({
     title: "Поддержка",
@@ -24,7 +25,7 @@ export function supportViewModel() {
       {
         label: "Почему техническая проверка не блокирует примерку",
         kind: "detail",
-        detail: "Визуальная примерка и техническая проверка совместимости работают независимо. Результат Fitment не управляет разрешением на создание изображения.",
+        detail: copy("support.fitment"),
       },
       {
         label: "Оплата и срок действия рендеров",

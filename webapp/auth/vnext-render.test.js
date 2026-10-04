@@ -130,7 +130,7 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
 test("Result actions keep the primary and Fitment CTAs, expose tertiary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
-  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Колесный диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
+  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
   assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*>Проверить совместимость/);
@@ -145,7 +145,7 @@ test("Result actions keep the primary and Fitment CTAs, expose tertiary download
   assert.doesNotMatch(markup, /class="vnext-result-aside"><p class="vnext-eyebrow">Виртуальная примерка/);
   assert.doesNotMatch(markup, /👍|👎/);
   const sparse = resultMarkup({ jobId: "B", status: "completed", resultUrl: "/result", originalUrl: "/original" });
-  assert.doesNotMatch(sparse, /<h3>(?:Автомобиль|Колесный диск|Создано)<\/h3>|—/);
+  assert.doesNotMatch(sparse, /<h3>(?:Автомобиль|Диск|Создано)<\/h3>|—/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
   const tokens = fs.readFileSync(new URL("../vnext/styles/tokens.css", import.meta.url), "utf8");
   assert.match(tokens, /--vnext-text-value:\s*#[0-9a-f]{6}/i);
@@ -170,7 +170,7 @@ test("Generation Error uses available car/wheel context and preserves its existi
   const markup = processingMarkup({ title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg", error: { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", showSupport: true } });
   assert.match(markup, /vnext-generation-error[^>]*role="status"/);
   assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
-  assert.match(markup, /Фото автомобиля[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Колесный диск[\s\S]*?vnext-generation-wheel-thumb[\s\S]*?Фото выбранного колесного диска[\s\S]*?X-Trike X-132[\s\S]*?20″ \/ 9J \/ 5×112 \/ ET 0/);
+  assert.match(markup, /Фото автомобиля[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?vnext-generation-wheel-thumb[\s\S]*?Фото выбранного диска[\s\S]*?X-Trike X-132[\s\S]*?20″ \/ 9J \/ 5×112 \/ ET 0/);
   assert.match(markup, /class="vnext-generation-value">ZEEKR 007/);
   assert.match(markup, /class="vnext-generation-value">X-Trike X-132/);
   assert.match(markup, /class="vnext-generation-specs">20″ \/ 9J \/ 5×112 \/ ET 0/);
@@ -183,7 +183,7 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.match(missingCar, /vnext-generation-error--no-car[\s\S]*?ZEEKR 007/);
   assert.doesNotMatch(missingCar, /<img|vnext-generation-wheel-thumb/);
   const missingWheel = processingMarkup({ title: "ZEEKR 007", carUrl: "/car.jpg", error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
-  assert.doesNotMatch(missingWheel, /<h3>Колесный диск<\/h3>|vnext-generation-wheel-thumb/);
+  assert.doesNotMatch(missingWheel, /<h3>Диск<\/h3>|vnext-generation-wheel-thumb/);
   const noContext = processingMarkup({ error: { title: "Ошибка", copy: "Попробуйте ещё раз.", actionLabel: "Повторить" } });
   assert.match(noContext, /vnext-generation-error--no-car/);
   assert.doesNotMatch(noContext, /<img|vnext-generation-wheel-thumb/);

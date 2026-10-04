@@ -42,5 +42,5 @@ def test_wallet_explains_the_paid_unit_as_a_render_generation():
     app_js = Path("webapp/app.js").read_text(encoding="utf-8")
 
     assert 'lede: "1 рендер — 1 генерация виртуальной примерки"' in app_js
-    assert 'renders: "История рендеров"' in app_js
+    assert 'renders: "История"' in app_js
     assert 'startRender: "Создать виртуальную примерку"' in app_js

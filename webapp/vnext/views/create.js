@@ -1,3 +1,4 @@
+import { copy } from "../copy.mjs";
 import { createButton, createTextAction } from "../ui/primitives.js";
 
 function imageStage(kind, file, callbacks, disabled, snapshot) {
@@ -7,7 +8,7 @@ function imageStage(kind, file, callbacks, disabled, snapshot) {
   heading.className = "vnext-create__object-heading";
   const label = document.createElement("p");
   label.className = "vnext-eyebrow";
-  label.textContent = kind === "car" ? "Автомобиль" : "Колесный диск";
+  label.textContent = kind === "car" ? "Автомобиль" : copy("wheel.label", snapshot.locale);
   const action = createTextAction({
     label: file ? (kind === "car" ? "Заменить фото" : "Заменить фото") : "Добавить фото",
     onClick: () => callbacks.pickFile?.(kind),
@@ -18,13 +19,13 @@ function imageStage(kind, file, callbacks, disabled, snapshot) {
   const stage = document.createElement("button");
   stage.type = "button";
   stage.className = `vnext-create__stage${file ? " is-ready" : " is-empty"}`;
-  stage.setAttribute("aria-label", file ? `Заменить фото: ${kind === "car" ? "автомобиль" : "колесный диск"}` : `Добавить фото: ${kind === "car" ? "автомобиль" : "колесный диск"}`);
+  stage.setAttribute("aria-label", file ? `Заменить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}` : `Добавить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}`);
   stage.disabled = Boolean(disabled);
   stage.addEventListener("click", () => callbacks.pickFile?.(kind));
   if (file?.previewUrl) {
     const image = document.createElement("img");
     image.src = file.previewUrl;
-    image.alt = kind === "car" ? "Загруженный автомобиль" : "Загруженный колесный диск";
+    image.alt = kind === "car" ? "Загруженный автомобиль" : copy("wheel.uploaded", snapshot.locale);
     stage.append(image);
   } else {
     const empty = document.createElement("span");
@@ -37,8 +38,8 @@ function imageStage(kind, file, callbacks, disabled, snapshot) {
   foot.className = "vnext-create__object-foot";
   const status = document.createElement("span");
   status.textContent = file
-    ? (kind === "car" ? "Фото автомобиля добавлено" : "Фото колесного диска добавлено")
-    : (kind === "car" ? "Фото автомобиля" : "Фото колесного диска");
+    ? (kind === "car" ? "Фото автомобиля добавлено" : copy("wheel.photoAdded", snapshot.locale))
+    : (kind === "car" ? "Фото автомобиля" : copy("wheel.photo", snapshot.locale));
   foot.append(status);
   article.append(heading, stage, foot);
   if (kind === "wheel") article.append(wheelSummary(snapshot, callbacks));
@@ -181,9 +182,9 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
   page.append(actions);
   if (snapshot.locale === "en") {
     const translations = {
-      "Автомобиль": "Car", "Колесный диск": "Wheel", "Добавить фото": "Add photo",
-      "Заменить фото": "Replace photo", "Фото автомобиля": "Car photo", "Фото колесного диска": "Wheel photo",
-      "Фото автомобиля добавлено": "Car photo added", "Фото колесного диска добавлено": "Wheel photo added",
+      "Автомобиль": "Car", "Добавить фото": "Add photo",
+      "Заменить фото": "Replace photo", "Фото автомобиля": "Car photo",
+      "Фото автомобиля добавлено": "Car photo added",
       "Добавьте фото автомобиля": "Add a car photo", "Добавьте фото диска": "Add a wheel photo",
       "Создать изображение": "Create image", "Подтвердите согласие на обработку фотографий": "Confirm consent to process the photos",
       "Добавить ссылку на товар": "Add product link", "Изменить ссылку на товар": "Edit product link",

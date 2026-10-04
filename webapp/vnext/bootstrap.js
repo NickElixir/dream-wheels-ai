@@ -1,3 +1,4 @@
+import { copy } from "./copy.mjs";
 import { legacyDashboardSnapshot, legacyOpenAuth, legacyOpenRenderDetail } from "./api/legacy-dashboard.js";
 import { legacyNavigate, legacyOpenExternal } from "./api/legacy-navigation.js";
 import { documentsViewModel } from "./models/documents.js";
@@ -105,7 +106,7 @@ function surfaceDescriptor(view) {
   if (kind) {
     const model = window.dreamwheelsRenderBridge?.snapshot(view === "create" && kind === "result" ? "current-result" : kind) || {};
     return {
-      title: kind === "history" ? "Мои примерки" : kind === "result" ? "Результат" : model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку",
+      title: kind === "history" ? copy("nav.history") : kind === "result" ? "Результат" : model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку",
       content: createRenderView(kind, model, renderCallbacks),
     };
   }
@@ -121,7 +122,7 @@ function surfaceDescriptor(view) {
   }
   if (view === "create") {
     return {
-      title: "Примерить диски",
+      title: copy("nav.create"),
       content: createCreateView(window.dreamwheelsCreateBridge?.snapshot() || {}, createCallbacks()),
     };
   }

@@ -1,0 +1,62 @@
+[
+  {
+    "locale": "ru",
+    "state": "compatible",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--compatible\" role=\"status\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Подходит</h2></section>"
+  },
+  {
+    "locale": "ru",
+    "state": "compatible_with_conditions",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--compatible_with_conditions\" role=\"status\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Подходит с условиями</h2></section>"
+  },
+  {
+    "locale": "ru",
+    "state": "unknown",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--unknown\" role=\"status\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Не можем подтвердить совместимость</h2><p>Не хватает данных о параметре DIA.</p></section>"
+  },
+  {
+    "locale": "ru",
+    "state": "incompatible",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--incompatible\" role=\"status\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Не подходит</h2></section>"
+  },
+  {
+    "locale": "ru",
+    "state": "failed",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--failed\" role=\"alert\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Проверку выполнить не удалось</h2><p>Попробуйте ещё раз.</p><p>Подтверждённые данные сохранены.</p></section>"
+  },
+  {
+    "locale": "ru",
+    "state": "stale",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--stale\" role=\"status\"><p class=\"vnext-eyebrow\">Техническая проверка</p><h2>Результат больше не актуален</h2><p class=\"vnext-fitment__previous-verdict\">Предыдущий результат: Не можем подтвердить совместимость</p><p>Данные автомобиля или диска изменились.</p></section>"
+  },
+  {
+    "locale": "en",
+    "state": "compatible",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--compatible\" role=\"status\"><p class=\"vnext-eyebrow\">Technical check</p><h2>Compatible</h2></section>"
+  },
+  {
+    "locale": "en",
+    "state": "compatible_with_conditions",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--compatible_with_conditions\" role=\"status\"><p class=\"vnext-eyebrow\">Technical check</p><h2>Compatible with conditions</h2></section>"
+  },
+  {
+    "locale": "en",
+    "state": "unknown",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--unknown\" role=\"status\"><p class=\"vnext-eyebrow\">Technical check</p><h2>Compatibility could not be confirmed</h2><p>There is not enough data about DIA.</p></section>"
+  },
+  {
+    "locale": "en",
+    "state": "incompatible",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--incompatible\" role=\"status\"><p class=\"vnext-eyebrow\">Technical check</p><h2>Incompatible</h2></section>"
+  },
+  {
+    "locale": "en",
+    "state": "failed",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--failed\" role=\"alert\"><p class=\"vnext-eyebrow\">Technical check</p><h2>The check could not be completed</h2><p>Please try again.</p><p>Confirmed details are preserved.</p></section>"
+  },
+  {
+    "locale": "en",
+    "state": "stale",
+    "markup": "<section class=\"vnext-fitment__verdict vnext-fitment__verdict--stale\" role=\"status\"><p class=\"vnext-eyebrow\">Technical check</p><h2>The result is no longer current</h2><p class=\"vnext-fitment__previous-verdict\">Previous result: Compatibility could not be confirmed</p><p>Vehicle or wheel parameters have changed.</p></section>"
+  }
+]

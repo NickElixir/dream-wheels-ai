@@ -1,3 +1,4 @@
+import { copy as uiCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -15,7 +16,7 @@ test("picker makes the workspace inert and catalogue labels explicitly name cont
   assert.match(markup, /id="fitment-field-vehicle-make"/);
   assert.ok(markup.indexOf('role="dialog"') > markup.indexOf('id="fitment-standard-title"'));
   const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalWheelSummary: "18″ / 8J / 5×112 / DIA 66,6 / ET 35,125", vehicleSpecs: ["2024", "X254"] });
-  assert.match(wheel, /Выбрать другой SKU/);
+  assert.match(wheel, /Выбрать другой вариант/);
   assert.match(wheel, /DIA 66,6 \/ ET 35,125/);
   assert.doesNotMatch(wheel, /SKU[^<]*▾|·/);
 });
@@ -137,7 +138,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
       object[section][field] = value;
     },
   };
-  vm.createContext(context);
+  vm.createContext(Object.assign(context, { uiCopy }));
   const wheelHelpers = app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited("));
   vm.runInContext(`${vehicleHelpers}\n${wheelHelpers}\n${snapshot}\n${setter}`, context);
   context.setVnextFitmentField("vehicle.make", "zeekr");
@@ -172,7 +173,7 @@ test("Wheel decimal controls preserve comma input until exact numeric serializat
   const app = read("app.js");
   const normalizer = app.slice(app.indexOf("function normalizeFitmentNumber("), app.indexOf("function formatFitmentNumber("));
   const context = {};
-  vm.createContext(context);
+  vm.createContext(Object.assign(context, { uiCopy }));
   vm.runInContext(`${normalizer}\nthis.normalize = normalizeFitmentNumber`, context);
   assert.equal(context.normalize("35,125"), 35.125);
   assert.equal(context.normalize("35.125"), 35.125);
@@ -197,7 +198,7 @@ test("manual Vehicle catalogue shows Market only when the provider requires a ch
   assert.doesNotMatch(single, /data-fitment-field="vehicle.market"/);
   const multiple = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "selection_required", resolution: "selection_required" } } } });
   assert.match(multiple, /data-fitment-field="vehicle.market"/);
-  assert.match(multiple, /Версия для рынка/);
+  assert.match(multiple, /Рынок/);
   const failed = fitmentMarkup({ ...base, catalogue: { ...base.catalogue, states: { ...base.catalogue.states, markets: { status: "failed", message: "Не удалось загрузить рынки" } } } });
   assert.match(failed, /Не удалось загрузить рынки/);
   assert.match(failed, /data-fitment-action="retry-catalogue"/);
@@ -257,7 +258,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
     rimEditing: true,
     resolver: { url: "https://shop.example.test/wheel", status: "Не удалось определить параметры", statusTone: "error", loading: false, open: true },
   });
-  assert.match(resolver, /Источник колесного диска/);
+  assert.match(resolver, /Данные диска/);
   assert.match(resolver, /Повторить/);
   assert.match(resolver, /Указать параметры вручную/);
 
@@ -347,7 +348,7 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
   for (const [nextAction, label] of [
     ["complete_vehicle_details", "Уточните данные автомобиля"],
     ["select_vehicle_variant", "Выберите комплектацию автомобиля"],
-    ["complete_rim_specs", "Уточните параметры колесного диска"],
+    ["complete_rim_specs", "Уточните параметры диска"],
     ["run_standard_check", "Данные готовы к проверке"],
   ]) {
     assert.match(fitmentMarkup({ overview: {}, nextAction }), new RegExp(label));
@@ -429,7 +430,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(idle, /Определить параметры/);
 
   const loading = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: true, statusTone: "neutral" } });
-  assert.match(loading, /Определяем параметры колесного диска/);
+  assert.match(loading, /Определяем параметры диска/);
   assert.match(loading, /id="fitment-rim-editor-title"[^>]*>BBS/);
   assert.match(loading, /data-fitment-source-url/);
 
@@ -437,9 +438,9 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(success, /Параметры найдены — проверьте значения/);
 
   const variants = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ brand: "BBS", model: "CI-R", sku: "A1", values: { wheel_diameter_in: 19, wheel_width_j: 8.5, bolt_count: 5, pcd_mm: 112, center_bore_mm: 66.6, offset_et_mm: 35.25 } }] } });
-  assert.match(variants, /Выберите колесный диск/);
+  assert.match(variants, /Выберите диск/);
   assert.match(variants, /BBS CI-R/);
-  assert.match(variants, /SKU: A1/);
+  assert.match(variants, /Артикул: A1/);
   assert.match(variants, /19″[^]*?8,5J[^]*?5×112[^]*?66,6[^]*?35,25/);
   assert.match(variants, /Выбрать/);
   assert.match(variants, /data-fitment-action="rim-variant"/);
@@ -586,7 +587,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     ensureRequiredFitmentVariantLookup() {}, fitmentCheckIsPending: () => false,
     restoreFitmentTransientDraft: () => "none", applyDemoResultFixture() {}, reconcileRequiredFitmentWorkspace() {},
   };
-  vm.createContext(context);
+  vm.createContext(Object.assign(context, { uiCopy }));
   vm.runInContext(source, context);
 
   const makeOverview = (nextAction, rimSetupState = "empty") => ({
@@ -661,7 +662,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       fitmentSectionToStep: value => value === "vehicle" ? 1 : value === "rim" ? 2 : 3,
       vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {}, setFitmentVehiclePhoto() {},
     };
-    vm.createContext(context);
+    vm.createContext(Object.assign(context, { uiCopy }));
     vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}\n};`, context);
     return { context, state, rejectRequest, resolveRequest: (...args) => resolveRequest(...args), reject: error => rejectRequest(error) };
   }
