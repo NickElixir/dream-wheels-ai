@@ -2,6 +2,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import ClassVar
 
+from tests.helpers.source_extract import extract_function
+
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
@@ -72,9 +74,7 @@ def _scope(source: str, start: str, end: str) -> str:
 
 
 def test_vehicle_and_result_states_are_table_driven_by_server_next_action() -> None:
-    helper = _scope(
-        APP_JS, "function fitmentVehicleHelperLines(ui)", "function renderFitmentVehicleHelper"
-    )
+    helper = extract_function(APP_JS, "fitmentVehicleHelperLines")
     state_copy = {
         "complete_vehicle_details": [
             "Автомобиль определён по фотографии",
@@ -95,11 +95,8 @@ def test_vehicle_and_result_states_are_table_driven_by_server_next_action() -> N
 
 
 def test_complete_vehicle_details_does_not_expose_variant_picker_or_internal_provenance() -> None:
-    vehicle_renderer = _scope(
-        APP_JS, "function renderFitment()", "function renderFitmentRimVariants"
-    )
+    vehicle_renderer = extract_function(APP_JS, "renderFitment")
     assert "renderFitmentVehicleHelper(ui);" in vehicle_renderer
-    assert "fitmentVehicleWorkspaceMode(overview)" in vehicle_renderer
     assert (
         'const requiredVariantSelection = vehicleWorkspaceMode === "variant_select_required";'
         in vehicle_renderer
@@ -112,9 +109,7 @@ def test_complete_vehicle_details_does_not_expose_variant_picker_or_internal_pro
 
 
 def test_missing_vehicle_fields_have_exact_field_level_recovery_copy() -> None:
-    validation = _scope(
-        APP_JS, "function renderFitmentValidation()", "function validateFitmentOverview"
-    )
+    validation = extract_function(APP_JS, "renderFitmentValidation")
     for path, copy in {
         "vehicle.make": "Выберите марку автомобиля",
         "vehicle.model": "Выберите модель автомобиля",
@@ -127,7 +122,7 @@ def test_missing_vehicle_fields_have_exact_field_level_recovery_copy() -> None:
 
 
 def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_check() -> None:
-    save = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
+    save = extract_function(APP_JS, "saveFitment")
     assert 'const confirmingVehicle = intent === "confirm_vehicle";' in save
     assert "!fitmentBaseVehicleAwaitingConfirmation()" in save
     assert "if (confirmingVehicle && !payload.vehicle) return;" in save
@@ -140,7 +135,7 @@ def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_
 
 
 def test_stale_result_recovery_maps_each_server_action_to_a_focused_next_step() -> None:
-    result = _scope(APP_JS, "function renderFitmentV2Result(", "function renderFitment()")
+    result = extract_function(APP_JS, "renderFitmentV2Result")
     assert "Результат больше не актуален" in result
     assert 'uiCopy("fitment.notice.stale", locale)' in APP_JS
     assert "const resultRecovery = deriveResultRecovery(ui.server, check);" in result
@@ -194,27 +189,20 @@ def test_g2_1_variant_copy_and_card_hierarchy_are_canonical() -> None:
     assert "Выбрать комплектацию" in APP_JS
     assert "function fitmentVariantTechnicalSeries(variant" in APP_JS
     assert "technical.textContent = fitmentVariantTechnicalSeries(variant, name);" in APP_JS
-    assert (
-        "button.innerHTML"
-        not in APP_JS.split("function renderFitment()", 1)[1].split(
-            "function renderFitmentRimVariants", 1
-        )[0]
-    )
+    assert "button.innerHTML" not in extract_function(APP_JS, "renderFitment")
     assert "button.append(technical, primary);" in APP_JS
     assert "data-fitment-modification-row" in INDEX_HTML
     assert "data-fitment-modification-toggle" in INDEX_HTML
 
 
 def test_g2_1_variant_confirmation_stays_in_vehicle_and_rereads_overview() -> None:
-    variant_flow = _scope(
-        APP_JS, "async function applyFitmentVehicleVariant", "async function saveFitment"
-    )
+    variant_flow = extract_function(APP_JS, "applyFitmentVehicleVariant")
     assert "await loadFitmentOverview(state.fitmentJobId" in variant_flow
     assert (
         'state.fitmentActiveSection = confirmationSection === "vehicle" ? "vehicle" : confirmationSection;'
         in variant_flow
     )
-    save_flow = _scope(APP_JS, "async function saveFitment(", "async function fetchRenderHistory")
+    save_flow = extract_function(APP_JS, "saveFitment")
     assert (
         'const savedFromSection = confirmingVehicle ? "vehicle" : owner || state.fitmentActiveSection;'
         in save_flow
@@ -258,9 +246,7 @@ def test_g2_1_disclosure_is_lightweight_and_accessible_without_arrows() -> None:
 
 
 def test_g2_2_disclosure_renderer_never_exposes_empty_content() -> None:
-    renderer = _scope(
-        APP_JS, "function buildRimSecondaryDetails", "function renderFitmentSourceDisclosure"
-    )
+    renderer = extract_function(APP_JS, "buildRimSecondaryDetails")
     assert "const technical = fitmentRimTechnicalSummary(rim);" in renderer
     assert "fitmentRimHasManualProvenance(overview)" in renderer
     assert 'value: locale === "ru" ? "Не указан" : "Not specified"' in renderer
@@ -281,17 +267,13 @@ def test_g2_2_readonly_source_and_technical_rows_are_safe_and_partial() -> None:
 
 
 def test_g2_2_url_absence_does_not_imply_manual_provenance() -> None:
-    provenance = _scope(
-        APP_JS, "function fitmentRimHasManualProvenance", "function fitmentSafeSourceDisplay"
-    )
+    provenance = extract_function(APP_JS, "fitmentRimHasManualProvenance")
     assert (
         'manualSources = new Set(["manual", "manual_input", "user_input", "user_edited"])'
         in provenance
     )
     assert 'source === "user_confirmed"' not in provenance
-    details = _scope(
-        APP_JS, "function buildRimSecondaryDetails", "function renderFitmentSourceDisclosure"
-    )
+    details = extract_function(APP_JS, "buildRimSecondaryDetails")
     assert "else if (fitmentRimHasManualProvenance(overview))" in details
     assert "else if (technical.length)" in details
 

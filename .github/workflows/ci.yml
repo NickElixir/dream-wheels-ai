@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Install frontend test dependencies
+        run: npm ci --prefix webapp
+
       - name: Ruff lint
         run: ruff check .
 
@@ -61,7 +64,7 @@ jobs:
         run: node --test tests/test_fitment_transition_behavior.mjs
 
       - name: Fitment composition and focus tests
-        run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_e01_i18n.mjs tests/test_e01_corrective.mjs
+        run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_e01_i18n.mjs tests/test_e01_corrective.mjs tests/test_source_extract.mjs
 
       - name: Failed render behavioral tests
         run: node --test tests/test_failed_render_behavior.mjs
@@ -70,7 +73,7 @@ jobs:
         run: node --test tests/test_webapp_boot_behavior.mjs
 
       - name: Webapp auth harness tests
-        run: npm ci --prefix webapp && npm --prefix webapp test
+        run: npm --prefix webapp test
 
       - name: Webapp auth harness bundle
         run: npm --prefix webapp run build && git diff --exit-code -- webapp/auth/harness.bundle.js

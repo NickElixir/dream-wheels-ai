@@ -1,3 +1,4 @@
+import { extractFunction, extractFunctions, extractDeclaration } from "../../tests/helpers/source-extract.mjs";
 import { copy as uiCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import assert from "node:assert/strict";
@@ -86,10 +87,10 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
 
 test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
   const app = read("app.js");
-  const vehicleHelpers = app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired("))
-    + app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueParentReadiness("));
-  const snapshot = app.slice(app.indexOf("function fitmentDiameterPresentation("), app.indexOf("function setVnextFitmentField("));
-  const setter = app.slice(app.indexOf("function setVnextFitmentField("), app.indexOf("window.dreamwheelsFitmentBridge ="));
+  const vehicleHelpers = extractFunctions(app, ["fitmentBaseVehicleAwaitingConfirmation","fitmentVehicleFormForPresentation"])
+    + extractFunctions(app, ["fitmentCatalogueSelectionItem","fitmentCatalogueSelectionMatches","fitmentCatalogueCanonicalValue"]);
+  const snapshot = extractFunctions(app, ["fitmentDiameterPresentation","vnextFitmentSnapshot"]);
+  const setter = extractFunctions(app, ["setVnextFitmentField","saveVnextFitment"]);
   const saved = { make: "Zeekr", model: "001", year: "2023", body: "saved body" };
   const state = {
     fitmentOverview: { vehicle: saved },
@@ -139,7 +140,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     },
   };
   vm.createContext(Object.assign(context, { uiCopy }));
-  const wheelHelpers = app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited("));
+  const wheelHelpers = extractFunctions(app, ["fitmentRimValuesEqual","fitmentCanonicalRimConflicts","fitmentSourceContextMatchesCurrent","mergeFitmentRimConflicts","fitmentRimPendingProposalFields","fitmentRimFieldsForConfirmation","fitmentRimSaveReadiness"]);
   vm.runInContext(`${vehicleHelpers}\n${wheelHelpers}\n${snapshot}\n${setter}`, context);
   context.setVnextFitmentField("vehicle.make", "zeekr");
   context.setVnextFitmentField("vehicle.body", "edited body");
@@ -171,7 +172,7 @@ test("Wheel decimal controls preserve comma input until exact numeric serializat
   assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
   assert.match(markup, />ET 35,125<\/button>/);
   const app = read("app.js");
-  const normalizer = app.slice(app.indexOf("function normalizeFitmentNumber("), app.indexOf("function formatFitmentNumber("));
+  const normalizer = extractFunction(app, "normalizeFitmentNumber");
   const context = {};
   vm.createContext(Object.assign(context, { uiCopy }));
   vm.runInContext(`${normalizer}\nthis.normalize = normalizeFitmentNumber`, context);
@@ -515,7 +516,7 @@ test("Fitment retains the exact job and origin through entry/back and reuses exi
 
 test("Fitment preserves render independence and single-column tablet/mobile layouts", () => {
   const app = read("app.js");
-  const submit = app.slice(app.indexOf("async function submitJob("), app.indexOf("function ", app.indexOf("async function submitJob(") + 1));
+  const submit = extractFunction(app, "submitJob");
   assert.doesNotMatch(submit, /fitmentVerdict|fitmentCheck|fitmentOverview/);
   const css = read("vnext/styles/fitment.css");
   assert.match(css, /@media\s*\(max-width:\s*700px\)[^]*?\.vnext-fitment__pair\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
@@ -527,13 +528,13 @@ test("Fitment preserves render independence and single-column tablet/mobile layo
 test("runtime Fitment initialization follows next_action and never opens both object editors", async () => {
   const app = read("app.js");
   const source = [
-    app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired(")),
-    app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueParentReadiness(")),
-    app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited(")),
-    app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
-    app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),
-    app.slice(app.indexOf("async function loadFitmentOverview("), app.indexOf("function openFitmentView(")),
-    app.slice(app.indexOf("function fitmentDiameterPresentation("), app.indexOf("function setVnextFitmentField(")),
+    extractFunctions(app, ["fitmentBaseVehicleAwaitingConfirmation","fitmentVehicleFormForPresentation"]),
+    extractFunctions(app, ["fitmentCatalogueSelectionItem","fitmentCatalogueSelectionMatches","fitmentCatalogueCanonicalValue"]),
+    extractFunctions(app, ["fitmentRimValuesEqual","fitmentCanonicalRimConflicts","fitmentSourceContextMatchesCurrent","mergeFitmentRimConflicts","fitmentRimPendingProposalFields","fitmentRimFieldsForConfirmation","fitmentRimSaveReadiness"]),
+    extractFunctions(app, ["fitmentNextAction","setFitmentEditor","setFitmentEditorsForNextAction"]),
+    extractFunction(app, "updateDemoFitmentState"),
+    extractFunction(app, "loadFitmentOverview"),
+    extractFunctions(app, ["fitmentDiameterPresentation","vnextFitmentSnapshot"]),
   ].join("\n");
   const state = {
     fitmentJobId: "demo-job", fitmentOverview: null, fitmentForm: null, fitmentFormState: {},
@@ -621,10 +622,10 @@ test("runtime Fitment initialization follows next_action and never opens both ob
 
 test("deferred wheel-source failures preserve the active editor, navigation, and unsaved values", async () => {
   const app = read("app.js");
-  const resolver = app.slice(app.indexOf("async function resolveFitmentRimSource("), app.indexOf("async function loadFitmentVehicleVariants(", app.indexOf("async function resolveFitmentRimSource(")));
-  const navigation = app.slice(app.indexOf("function setFitmentEditor("), app.indexOf("function setFitmentEditorsForNextAction("));
-  const section = app.slice(app.indexOf("function fitmentSectionToStep("), app.indexOf("function navigateFitmentRecovery("));
-  const bridge = app.slice(app.indexOf("window.dreamwheelsFitmentBridge = {"), app.indexOf("\n};\n\nlet renderAssetPreparationPending"));
+  const resolver = extractFunction(app, "resolveFitmentRimSource");
+  const navigation = extractFunction(app, "setFitmentEditor");
+  const section = extractFunctions(app, ["fitmentSectionToStep","clearFitmentTransientMessage","setFitmentActiveSection"]);
+  const bridge = extractDeclaration(app, "window.dreamwheelsFitmentBridge");
 
   function createRuntime() {
     let rejectRequest;
@@ -663,7 +664,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {}, setFitmentVehiclePhoto() {},
     };
     vm.createContext(Object.assign(context, { uiCopy }));
-    vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}\n};`, context);
+    vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}`, context);
     return { context, state, rejectRequest, resolveRequest: (...args) => resolveRequest(...args), reject: error => rejectRequest(error) };
   }
 
@@ -748,8 +749,7 @@ test("Fitment candidate controls meet the mobile tap target and saved progressio
   const css = read("vnext/styles/fitment.css");
   assert.match(css, /\.vnext-fitment__suggestions \.vnext-button \{ min-height:\s*42px/);
   const app = read("app.js");
-  const saveStart = app.indexOf("async function saveFitment(");
-  const save = app.slice(saveStart, app.indexOf("async function fetchRenderHistory(", saveStart));
+  const save = extractFunction(app, "saveFitment");
   assert.ok(save.indexOf("const overview = await response.json()") < save.indexOf("setFitmentEditorsForNextAction(overview)"));
   assert.ok(save.indexOf("await refreshFitmentCheckCurrentness()") < save.indexOf("setFitmentEditorsForNextAction(overview)"));
   const catchBlock = save.slice(save.indexOf("} catch (error) {"), save.indexOf("} finally {"));

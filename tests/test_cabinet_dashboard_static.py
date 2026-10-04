@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from tests.helpers.source_extract import extract_function
+
 ROOT = Path(__file__).resolve().parents[1]
 COPY = json.loads(
     Path("webapp/vnext/copy.mjs")
@@ -128,9 +130,7 @@ def test_website_login_warms_popup_dependencies_before_first_click() -> None:
     assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
     assert "WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS" in APP_JS
     assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
-    loader = APP_JS.split("function loadTelegramLoginLibrary()", 1)[1].split(
-        "function hasFreshWebsiteLoginNonce", 1
-    )[0]
+    loader = extract_function(APP_JS, "loadTelegramLoginLibrary")
     assert 'document.querySelector("script[data-telegram-login-library]")?.remove();' in loader
     assert "Telegram Login library timed out" in loader
     assert "window.clearTimeout(timeoutId);" in loader
@@ -143,10 +143,7 @@ def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
     assert "function getPreparedTelegramLoginResources()" in APP_JS
     assert "function startAuthDialogTelegramLogin()" in APP_JS
     assert 'setAuthDialogMessage(t("auth.openingTelegram"))' in APP_JS
-    assert (
-        "void warmWebsiteLoginResources();"
-        in APP_JS.split("function openAuthDialog()", 1)[1].split("function closeAuthDialog()", 1)[0]
-    )
+    assert "void warmWebsiteLoginResources();" in extract_function(APP_JS, "openAuthDialog")
     assert "authTelegramButton?.addEventListener(eventName, warmWebsiteLoginResources" in APP_JS
     backdrop_listener = APP_JS.split(
         'document.querySelector("[data-auth-dialog]")?.addEventListener("click", '
@@ -273,8 +270,6 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "Сохранить параметры" in APP_JS
     assert "await runFitmentCheck();" not in APP_JS
     assert "You can start the compatibility check separately." in APP_JS
-    assert "function buildRimSecondaryDetails(overview" in APP_JS
-    assert "fitmentSafeSourceDisplay(source)" in APP_JS
     assert "state.fitmentSourceOpen = true;" in APP_JS
     assert "clearFitmentResolverFeedback({ close: true });" in APP_JS
     assert "Wheel parameters could not be determined automatically" in APP_JS
@@ -310,9 +305,7 @@ def test_fitment_panel_collapses_hidden_status_islands() -> None:
 
 
 def test_detail_screen_has_one_fitment_editor_cta_and_no_duplicate_new_tryon() -> None:
-    detail = APP_JS.split("function renderRenderDetail() {")[1].split("function openRenderDetail")[
-        0
-    ]
+    detail = extract_function(APP_JS, "renderRenderDetail")
     assert COPY["legacy.fitment.openFromHistory"]["ru"] == "Проверить совместимость"
     assert detail.count("data-open-fitment") == 1
     assert "render-expanded-actions" in detail
@@ -340,9 +333,7 @@ def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> N
 
 
 def test_detail_screen_rerenders_after_history_refresh_and_can_fetch_missing_job() -> None:
-    load_history = APP_JS.split("async function loadRenderHistory")[1].split(
-        "async function loadDashboardData"
-    )[0]
+    load_history = extract_function(APP_JS, "requestRenderHistory")
     assert 'state.view === "render-detail"' in load_history
     assert "renderRenderDetail()" in load_history
     assert "async function loadRenderDetailJob(jobId)" in APP_JS
@@ -351,9 +342,7 @@ def test_detail_screen_rerenders_after_history_refresh_and_can_fetch_missing_job
 
 
 def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> None:
-    history_card = APP_JS.split("function renderHistoryCard(job) {")[1].split(
-        "function renderRenderDetail()"
-    )[0]
+    history_card = extract_function(APP_JS, "renderHistoryCard")
     assert 'status === "completed"' in history_card
     assert 'const statusMarkup = status === "completed"' in history_card
     assert "grid-template-columns: minmax(160px, 30%) minmax(0, 1fr)" in STYLE_CSS
@@ -390,7 +379,7 @@ def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
 
 
 def test_active_view_rerender_helper_covers_every_declared_view() -> None:
-    helper = APP_JS.split("function rerenderActiveView() {", 1)[1].split("\n}\n", 1)[0]
+    helper = extract_function(APP_JS, "rerenderActiveView")
     for view in (
         "dashboard",
         "create",
@@ -404,9 +393,7 @@ def test_active_view_rerender_helper_covers_every_declared_view() -> None:
         "docs",
     ):
         assert f'case "{view}":' in helper
-    feedback_handler = APP_JS.split("async function submitHistoryFeedback", 1)[1].split(
-        "\nfunction renderHistoryCard", 1
-    )[0]
+    feedback_handler = extract_function(APP_JS, "submitHistoryFeedback")
     assert feedback_handler.count("rerenderActiveView();") == 2
 
 

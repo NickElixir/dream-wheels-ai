@@ -1,3 +1,4 @@
+import {extractFunction, extractDeclaration} from "./helpers/source-extract.mjs";
 import { copy, legacyTranslations, errorCopy } from "../webapp/vnext/copy.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -6,11 +7,8 @@ import test from 'node:test';
 import { historyMarkup, resultMarkup, processingMarkup } from '../webapp/vnext/views/render.js';
 
 const source = fs.readFileSync(new URL('../webapp/app.js', import.meta.url), 'utf8');
-const fn = name => {
-  const start=source.indexOf(`function ${name}(`);
-  return source.slice(start,source.indexOf('\n}',start)+2);
-};
-const i18n = source.slice(source.indexOf('const I18N ='), source.indexOf('function detectLocale()'));
+const fn = name => extractFunction(source,name);
+const i18n = extractDeclaration(source,'I18N');
 function model(status, billing, locale = 'ru', overrides = {}) {
   const context = { legacyTranslations, errorCopy, uiCopy:copy,job: {render_billing_status: billing}};
   vm.runInNewContext(`${i18n}\nconst locale=${JSON.stringify(locale)};\n${fn('t')}\n${fn('renderFailureCopy')}\n${fn('renderBillingMessage')}\nthis.copy=renderFailureCopy(); this.billing=renderBillingMessage(job);`, context);

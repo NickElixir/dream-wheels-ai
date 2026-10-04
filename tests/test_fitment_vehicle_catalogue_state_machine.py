@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from tests.helpers.source_extract import extract_function
+
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
@@ -19,11 +21,11 @@ def _scope(source: str, start: str, end: str) -> str:
 
 def test_vehicle_editor_uses_required_and_optional_variant_workspace_modes() -> None:
     assert "function fitmentVehicleWorkspaceMode(" in APP_JS
-    mode = _scope(APP_JS, "function deriveVehicleWorkspaceMode", "function deriveResultRecovery")
+    mode = extract_function(APP_JS, "deriveVehicleWorkspaceMode")
     assert 'mode: "variant_select_required", collapsible: false' in mode
     assert 'mode: "variant_reselect", collapsible: true' in mode
     assert 'mode: "base_edit", collapsible: false' in mode
-    render = _scope(APP_JS, "function renderFitment()", "function renderFitmentRimVariants")
+    render = extract_function(APP_JS, "renderFitment")
     assert 'vehicleWorkspaceMode === "base_edit"' in render
     assert 'vehicleWorkspaceMode === "variant_reselect"' in render
     assert (
@@ -55,9 +57,7 @@ def test_vehicle_editor_order_is_make_model_year_then_conditional_market_on_all_
 
 
 def test_catalogue_field_states_are_explicit_and_accessible() -> None:
-    field_state = _scope(
-        APP_JS, "function fitmentCatalogueFieldState", "function fitmentCatalogueDependencyKey"
-    )
+    field_state = extract_function(APP_JS, "fitmentCatalogueFieldState")
     for state in (
         "idle_parent_missing",
         "loading",
@@ -90,9 +90,7 @@ def test_catalogue_memory_is_job_scoped_bounded_expiring_and_nested() -> None:
     assert "FITMENT_CATALOGUE_MEMORY_MAX_MAKES_PER_MARKET" in APP_JS
     assert "FITMENT_CATALOGUE_MEMORY_MAX_MODELS_PER_MAKE" in APP_JS
     assert "jobId !== jobId" in APP_JS
-    memory = _scope(
-        APP_JS, "function fitmentRememberedVehicleChain", "function fitmentRevisionBaseline"
-    )
+    memory = extract_function(APP_JS, "fitmentRememberedVehicleChain")
     assert "lastMake" in memory
     assert "lastModel" in memory
     assert "lastYear" in memory
@@ -102,25 +100,15 @@ def test_catalogue_memory_is_job_scoped_bounded_expiring_and_nested() -> None:
 
 def test_parent_changes_abort_and_revalidate_only_current_dependency_chain() -> None:
     assert "function beginFitmentCatalogueContextChange()" in APP_JS
-    assert "controller?.abort?.()" in _scope(
-        APP_JS, "function beginFitmentCatalogueContextChange", "function resetFitmentCatalogue"
-    )
-    request_guard = _scope(
-        APP_JS,
-        "function isCurrentFitmentCatalogueRequest",
-        "function beginFitmentCatalogueContextChange",
-    )
+    assert "controller?.abort?.()" in extract_function(APP_JS, "beginFitmentCatalogueContextChange")
+    request_guard = extract_function(APP_JS, "isCurrentFitmentCatalogueRequest")
     assert "request.version === state.fitmentCatalogueContextVersion" in request_guard
     assert "request.token === state.fitmentCatalogueRequestToken" in request_guard
     assert (
         "fitmentCatalogueDependencyKey(kind, params) === fitmentCatalogueDependencyKey(kind, fitmentCatalogueCurrentParams(kind))"
         in request_guard
     )
-    chain = _scope(
-        APP_JS,
-        "async function revalidateFitmentCatalogueChain",
-        "function loadFitmentVehicleCatalogue",
-    )
+    chain = extract_function(APP_JS, "revalidateFitmentCatalogueChain")
     assert 'await loadFitmentCatalogue("makes"' in chain
     assert 'await loadFitmentCatalogue("models"' in chain
     assert 'await loadFitmentCatalogue("years"' in chain
@@ -137,15 +125,11 @@ def test_parent_changes_abort_and_revalidate_only_current_dependency_chain() -> 
 def test_no_data_and_failure_have_different_rendering_paths_and_retry_uses_current_context() -> (
     None
 ):
-    loader = _scope(
-        APP_JS,
-        "async function loadFitmentCatalogue",
-        "async function revalidateFitmentCatalogueChain",
-    )
+    loader = extract_function(APP_JS, "loadFitmentCatalogue")
     assert 'state.fitmentCatalogue[kind] = { status: "failed", items: [] };' in loader
     assert 'result.outcome === "no_data"' in loader
     assert 'return { outcome: "failed", items: [] };' in loader
-    retry = _scope(APP_JS, "function retryFitmentCatalogue", "async function loadFitmentOverview")
+    retry = extract_function(APP_JS, "retryFitmentCatalogue")
     assert "beginFitmentCatalogueContextChange();" in retry
     assert "fitmentCatalogueCurrentParams(kind)" in retry
     assert 'result.outcome === "failed"' in retry
@@ -153,21 +137,19 @@ def test_no_data_and_failure_have_different_rendering_paths_and_retry_uses_curre
 
 
 def test_save_is_disabled_until_all_four_current_catalogue_selections_are_valid() -> None:
-    validation = _scope(
-        APP_JS, "function validateFitmentForm", "function fitmentVehicleConfirmationRequired"
-    )
+    validation = extract_function(APP_JS, "validateFitmentForm")
     assert '"make", "model", "year"' in validation
     assert 'fitmentCatalogueFieldState(kind, value, locale).state === "selected"' in validation
     assert 'marketState.status === "resolved_single"' in validation
     assert 'marketState.status === "selected"' in validation
-    render = _scope(APP_JS, "function renderFitment()", "function renderFitmentRimVariants")
+    render = extract_function(APP_JS, "renderFitment")
     assert 'state.fitmentFormState.validation !== "valid"' in render
-    save = _scope(APP_JS, "async function saveFitment", "async function fetchRenderHistory")
+    save = extract_function(APP_JS, "saveFitment")
     assert "state.fitmentFormState.invalidFields?.length" in save
 
 
 def test_catalogue_values_are_deduplicated_by_canonical_value_and_years_are_deterministic() -> None:
-    controls = _scope(APP_JS, "function renderFitmentControls", "function fitmentContextJob")
+    controls = extract_function(APP_JS, "renderFitmentControls")
     assert 'kind === "years"' in controls
     assert (
         "sort((left, right) => Number(fitmentOptionValue(right)) - Number(fitmentOptionValue(left)))"

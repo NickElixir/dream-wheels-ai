@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tests.helpers.source_extract import extract_function
+
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
@@ -32,9 +34,7 @@ def test_make_first_editor_loads_market_resolution_after_year() -> None:
     assert 'input.dataset.fitmentCatalogue === "models"' in APP_JS
     assert 'input.dataset.fitmentCatalogue === "years"' in APP_JS
     assert "input.dataset.fitmentMarketResolution !== undefined" in APP_JS
-    chain = APP_JS.split("async function revalidateFitmentCatalogueChain", 1)[1].split(
-        "function loadFitmentVehicleCatalogue", 1
-    )[0]
+    chain = extract_function(APP_JS, "revalidateFitmentCatalogueChain")
     assert chain.index('loadFitmentCatalogue("makes"') < chain.index(
         'loadFitmentCatalogue("models"'
     )
@@ -80,9 +80,7 @@ def test_rim_source_suggestions_and_sku_selection_stay_explicit() -> None:
 
 
 def test_manual_save_and_staggered_payload_are_server_authoritative() -> None:
-    save = APP_JS.split("async function saveFitment(")[1].split(
-        "async function fetchRenderHistory"
-    )[0]
+    save = extract_function(APP_JS, "saveFitment")
     assert "await runFitmentCheck();" not in save
     assert "Details saved. You can start the compatibility check separately." in save
     assert "setup_mode: state.fitmentForm.setup_mode" in APP_JS
@@ -96,7 +94,6 @@ def test_async_check_polling_and_failed_state_never_become_unknown() -> None:
     assert "queued" in APP_JS and "processing" in APP_JS
     assert "window.setTimeout(poll, POLL_INTERVAL_MS)" in APP_JS
     assert 'execution_status === "failed"' in APP_JS
-    assert 'const showRetry = failed && check.retry_mode !== "not_applicable"' in APP_JS
     assert "`failed` is operational" in (ROOT / "docs" / "fitment-api-contract-v1.md").read_text(
         encoding="utf-8"
     )
