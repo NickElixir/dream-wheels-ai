@@ -217,7 +217,7 @@ test("History rows share inset and thumbnail grid at mobile widths", () => {
 test("Processing preserves status hierarchy while separating selected wheel identity from specs", () => {
   const markup = processingMarkup({ status: "processing", title: "ZEEKR 007", rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg" });
   assert.match(markup, /<h2>Создаём виртуальную примерку<\/h2>/);
-  assert.match(markup, /<strong>Создаём примерку\.\.\.<\/strong>/);
+  assert.match(markup, /<strong>Создаём примерку…<\/strong>/);
   assert.match(markup, /class="vnext-render-object">ZEEKR 007/);
   assert.match(markup, /class="vnext-processing-wheel-name">X-Trike X-132/);
   assert.match(markup, /class="vnext-processing-wheel-specs">20″ \/ 9J \/ 5×112 \/ ET 0/);

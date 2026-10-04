@@ -22,7 +22,13 @@ document.documentElement.lang=locale;
 let content,title,activeView='fitment';
 const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
 const result={jobId:'qa-result',status:'completed',title:'ZEEKR 007',rimName:'BBS CI-R',specs:'19 × 8.5J',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:true,createdLabel:'04.10.2026',statusLabel:locale==='en'?'Ready':'Готово',dateLabel:'04.10.2026',reasons:[]};
-if(scenario.startsWith('result-download-')) {
+if(scenario==='p2a-copy-consistency') {
+ const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
+ const parsed=new DOMParser().parseFromString(html,'text/html');content=document.createElement('section');content.className='panel';
+ const keys=['auth.loginShort','menu.wallet','wallet.title','wallet.eyebrow','create.createRender','caption.fitment','fitment.eyebrow','fitment.modification','photoGuide.carSection','caption.photoGuide','settings.linked','auth.preparing','status.generating','auth.loggingIn','auth.sendingCode','auth.checkingCode','status.startingServer','status.uploading','actions.requestingDownload','actions.preparing','wallet.loading','wallet.refreshingInvoice','wallet.openingPayment'];
+ for(const key of keys){const original=parsed.querySelector('[data-i18n="'+key+'"]');const node=original?original.cloneNode(true):document.createElement('p');node.dataset.i18n=key;node.dataset.p2Copy=key;node.setAttribute('data-i18n-sentence','');content.append(node);}
+ document.querySelector('#fixture').append(content);applyTranslations();title=uiCopy('nav.dashboard',locale);activeView='dashboard';
+} else if(scenario.startsWith('result-download-')) {
  const outcome=scenario.slice('result-download-'.length);state.renderHistory=outcome==='unavailable'?[]:[{job_id:'qa-result'}];
  isWebsiteAuthMode=()=>true;isSupabaseFrontendAuth=()=>false;notifyRenderBridge=()=>{};setDownloadButtonState=()=>{};haptic=()=>{};
  authenticatedFetch=async()=>{if(outcome==='failed')throw Error('fixture failed');return {ok:true,blob:async()=>new Blob(['fixture'],{type:'image/jpeg'})};};
