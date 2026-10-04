@@ -1,0 +1,56 @@
+[
+  {
+    "mutation": "billing",
+    "suite": "tests/test_failed_render_behavior.mjs",
+    "exitCode": 1,
+    "detected": true,
+    "failedContracts": [
+      "\u2716 failed unknown ru: one failure, safe billing, source photo (1.777334ms)",
+      "\u2716 failed reserved ru: one failure, safe billing, source photo (0.914042ms)",
+      "\u2716 failed charged ru: one failure, safe billing, source photo (2.326375ms)",
+      "\u2716 failed undefined ru: one failure, safe billing, source photo (1.043042ms)",
+      "\u2716 failed unknown en: one failure, safe billing, source photo (0.849833ms)",
+      "\u2716 failed reserved en: one failure, safe billing, source photo (1.675333ms)",
+      "\u2716 failed charged en: one failure, safe billing, source photo (2.787917ms)",
+      "\u2716 failed undefined en: one failure, safe billing, source photo (0.999125ms)",
+      "\u2716 failed unknown ru: one failure, safe billing, source photo (1.777334ms)",
+      "\u2716 failed reserved ru: one failure, safe billing, source photo (0.914042ms)",
+      "\u2716 failed charged ru: one failure, safe billing, source photo (2.326375ms)",
+      "\u2716 failed undefined ru: one failure, safe billing, source photo (1.043042ms)",
+      "\u2716 failed unknown en: one failure, safe billing, source photo (0.849833ms)",
+      "\u2716 failed reserved en: one failure, safe billing, source photo (1.675333ms)",
+      "\u2716 failed charged en: one failure, safe billing, source photo (2.787917ms)",
+      "\u2716 failed undefined en: one failure, safe billing, source photo (0.999125ms)"
+    ]
+  },
+  {
+    "mutation": "retry",
+    "suite": "tests/test_fitment_transition_behavior.mjs",
+    "exitCode": 1,
+    "detected": true,
+    "failedContracts": [
+      "\u2716 failed legacy Fitment result offers retry only when the server permits it and never changes canonical check state (4.027292ms)",
+      "\u2716 failed legacy Fitment result offers retry only when the server permits it and never changes canonical check state (4.027292ms)"
+    ]
+  },
+  {
+    "mutation": "source",
+    "suite": "tests/test_fitment_transition_behavior.mjs",
+    "exitCode": 1,
+    "detected": true,
+    "failedContracts": [
+      "\u2716 Fitment source details keep safe labels and hide persisted source while editing (2.565917ms)",
+      "\u2716 Fitment source details keep safe labels and hide persisted source while editing (2.565917ms)"
+    ]
+  },
+  {
+    "mutation": "locale",
+    "suite": "tests/test_fitment_transition_behavior.mjs",
+    "exitCode": 1,
+    "detected": true,
+    "failedContracts": [
+      "\u2716 legacy Fitment visual try-on copy follows en without changing form/check state (2.27075ms)",
+      "\u2716 legacy Fitment visual try-on copy follows en without changing form/check state (2.27075ms)"
+    ]
+  }
+]

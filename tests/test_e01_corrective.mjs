@@ -1,3 +1,4 @@
+import {extractFunction} from "./helpers/source-extract.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -6,7 +7,7 @@ import {copy} from '../webapp/vnext/copy.mjs';
 const source=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
 function runtime(names,extra={}){
  const context=vm.createContext({uiCopy:copy,locale:'ru',state:{},...extra});
- for(const name of names){const start=source.search(new RegExp(`^(?:async )?function ${name}\\(`,'m'));assert.ok(start>=0,name);const rest=source.slice(start);const end=rest.slice(1).search(/\n(?:async )?function /);vm.runInContext(end<0?rest:rest.slice(0,end+1),context);}
+ for(const name of names)vm.runInContext(extractFunction(source,name),context);
  return context;
 }
 test('catalogue presentation preserves state and explicitly localizes all kinds/states',()=>{
@@ -19,7 +20,7 @@ test('catalogue presentation preserves state and explicitly localizes all kinds/
  context.fitmentCatalogueParentReadiness=()=> 'missing';
  assert.equal(context.fitmentCatalogueFieldState('models','','en').message,'Select a make first');
  assert.equal(context.fitmentCatalogueFieldState('years','','en').message,'Select a model first');
- assert.match(source.slice(source.indexOf('function vnextFitmentSnapshot()')),/fitmentCatalogueFieldState\(kind, value, locale\)/);
+ assert.match(extractFunction(source,'vnextFitmentSnapshot'),/fitmentCatalogueFieldState\(kind, value, locale\)/);
 });
 test('generation classification retains action/support semantics in both languages',()=>{
  const context=runtime(['classifyGenerationError']);

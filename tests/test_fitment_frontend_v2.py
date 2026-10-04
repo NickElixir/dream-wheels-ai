@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tests.helpers.source_extract import extract_function
+
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
@@ -51,9 +53,7 @@ def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
     assert 'return FITMENT_NEXT_ACTION_KINDS.has(kind) ? kind : "";' in APP_JS
     assert '|| "complete_vehicle_details"' not in APP_JS
     assert "const nextAction = fitmentNextAction(overview);" in APP_JS
-    save = APP_JS.split("async function saveFitment(", 1)[1].split(
-        "async function fetchRenderHistory", 1
-    )[0]
+    save = extract_function(APP_JS, "saveFitment")
     assert "await runFitmentCheck();" not in save
     assert "Проверку совместимости можно запустить отдельно" in save
     assert "state.fitmentActiveSection = savedFromSection;" in save
@@ -190,12 +190,8 @@ def test_result_disclaimer_uses_one_blue_info_card_without_separator_or_status_s
 
 
 def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons() -> None:
-    verdict_mapper = _scope(
-        APP_JS, "function fitmentVerdictMessage", "function fitmentFieldStateLabel"
-    )
-    field_mapper = _scope(
-        APP_JS, "function fitmentResultFieldCopy", "function renderFitmentV2Result"
-    )
+    verdict_mapper = extract_function(APP_JS, "fitmentVerdictMessage")
+    field_mapper = extract_function(APP_JS, "fitmentResultFieldCopy")
     assert (
         '"hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"'
         in verdict_mapper
@@ -224,9 +220,7 @@ def test_vehicle_editor_keeps_base_data_separate_from_catalogue_modification() -
     assert "/^[a-f0-9]{8,}$/i.test(text)" in APP_JS
     assert "function fitmentVehicleBaseSpecs(vehicle)" in APP_JS
     assert "variant?.body || variant?.body_type" in APP_JS
-    variant_mapper = APP_JS.split("function fitmentVariantTechnicalSeries", 1)[1].split(
-        "function demoPcdDisplay", 1
-    )[0]
+    variant_mapper = extract_function(APP_JS, "fitmentVariantTechnicalSeries")
     assert "fitmentPresentationText(variant?.generation)" in variant_mapper
     assert ".map(fitmentPresentationText)" in variant_mapper
     assert "function fitmentMarketLabel(value" in APP_JS
@@ -306,9 +300,7 @@ def test_make_first_catalogue_uses_provider_aggregate_and_conditional_market() -
 
 
 def test_basic_vehicle_payload_does_not_reserialize_catalogue_variant_fields() -> None:
-    payload = APP_JS.split("function fitmentPayload(", 1)[1].split(
-        "function cloneDemoFitmentOverview", 1
-    )[0]
+    payload = extract_function(APP_JS, "fitmentPayload")
     vehicle_payload = payload.split("payload.vehicle =", 1)[1]
     assert "make:" in vehicle_payload
     assert "model:" in vehicle_payload
@@ -319,7 +311,7 @@ def test_basic_vehicle_payload_does_not_reserialize_catalogue_variant_fields() -
 
 
 def test_result_demo_fixtures_cover_real_missing_evidence_and_conditional_mapping() -> None:
-    fixture = _scope(APP_JS, "function applyDemoResultFixture", "function runDemoFitmentCheck")
+    fixture = extract_function(APP_JS, "applyDemoResultFixture")
     assert 'missing_fields: verdict === "unknown" ? ["offset_et", "center_bore"] : []' in fixture
     assert 'code: "rim_offset_missing"' in fixture
     assert 'code: "center_bore_unknown"' in fixture
@@ -336,13 +328,9 @@ def test_result_demo_fixtures_cover_real_missing_evidence_and_conditional_mappin
 def test_fitment_feedback_is_cleared_at_meaningful_transitions() -> None:
     assert "function clearFitmentTransientMessage()" in APP_JS
     assert "if (state.fitmentActiveSection !== section) clearFitmentTransientMessage();" in APP_JS
-    check_flow = APP_JS.split("async function runFitmentCheck()", 1)[1].split(
-        "async function applyFitmentVehicleVariant", 1
-    )[0]
+    check_flow = extract_function(APP_JS, "runFitmentCheck")
     assert "clearFitmentTransientMessage();" in check_flow
-    save_flow = APP_JS.split("async function saveFitment(", 1)[1].split(
-        "async function fetchRenderHistory", 1
-    )[0]
+    save_flow = extract_function(APP_JS, "saveFitment")
     assert "clearFitmentResolverFeedback({ close: true });" in save_flow
 
 
@@ -384,9 +372,7 @@ def test_guest_demo_pair_uses_distinct_local_assets() -> None:
 
 
 def test_rim_preview_uses_rim_asset_and_never_the_vehicle_asset() -> None:
-    preview = APP_JS.split("function fitmentPreviewAsset(job, kind)", 1)[1].split(
-        "async function ensureFitmentPreviewAsset", 1
-    )[0]
+    preview = extract_function(APP_JS, "fitmentPreviewAsset")
     assert 'guestRenderAssetUrl(job, kind === "vehicle" ? "original" : "rim_original")' in preview
     assert 'kind === "vehicle" ? "car_original" : "rim_original"' in preview
     assert 'kind === "vehicle" ? "original" : "original"' not in preview

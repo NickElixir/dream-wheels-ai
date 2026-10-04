@@ -11,6 +11,7 @@
     "@supabase/supabase-js": "2.115.0"
   },
   "devDependencies": {
+    "acorn": "8.15.0",
     "esbuild": "0.28.2"
   }
 }

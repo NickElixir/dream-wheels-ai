@@ -502,12 +502,16 @@ test("a second Supabase 401 expires the session without a third request", async 
     assert.equal(auth.getState().protectedApiReady, false);
 });
 
-test("concurrent Supabase 401s share one refresh attempt", async () => {
+test("concurrent Supabase 401s share one refresh attempt", { timeout: 5000 }, async () => {
+    let releaseInitialResponses, releaseRefresh, signalRefreshStarted;
+    const initialResponses = new Promise(resolve => { releaseInitialResponses = resolve; });
+    const refreshGate = new Promise(resolve => { releaseRefresh = resolve; });
+    const refreshStarted = new Promise(resolve => { signalRefreshStarted = resolve; });
     const session = fakeSessionController({
         sessionPresent: true,
         accessToken: "supabase-token-a",
         refreshAccessToken: "supabase-token-b",
-        onRefresh: () => new Promise((resolve) => setTimeout(resolve, 10)),
+        onRefresh: async () => { signalRefreshStarted(); await refreshGate; },
     });
     let calls = 0;
     const auth = createFrontendAuthController({
@@ -517,16 +521,26 @@ test("concurrent Supabase 401s share one refresh attempt", async () => {
             if (input === "/api/backend/auth/me") return okMeResponse();
             if (input === "/api/backend/auth/bootstrap") return okBootstrapResponse();
             calls += 1;
-            if (calls === 1 || calls === 2) return { ok: false, status: 401 };
+            if (calls <= 2) {
+                if (calls === 2) releaseInitialResponses();
+                await initialResponses;
+                return { ok: false, status: 401 };
+            }
             return { ok: true, status: 200 };
         },
     });
 
     await auth.initialize();
-    const responses = await Promise.all([
+    const pending = Promise.all([
         auth.authenticatedFetch("/api/jobs/1"),
         auth.authenticatedFetch("/api/jobs/2"),
     ]);
+
+    await refreshStarted;
+    assert.equal(calls, 2);
+    assert.equal(session.getRefreshCalls(), 1);
+    releaseRefresh();
+    const responses = await pending;
 
     assert.deepEqual(responses.map((response) => response.status), [200, 200]);
     assert.equal(session.getRefreshCalls(), 1);

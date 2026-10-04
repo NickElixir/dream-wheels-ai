@@ -218,8 +218,10 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
     return { api: context.__navigationApi, calls, sessionStorage };
 }
 
-function pcdProjectionApi({ vnext = false } = {}) {
+function pcdProjectionApi({ vnext = false, language = "ru", resultDom = false } = {}) {
     const events = [];
+    const verdictCard = element(), checkButton = element();
+    const renderCopy = { textContent: "" }, renderHelper = { textContent: "" };
     const pcdSelect = {
         ...element(),
         value: "",
@@ -242,6 +244,10 @@ function pcdProjectionApi({ vnext = false } = {}) {
         head: { append() {} }, body: element(), hidden: false,
         addEventListener() {},
         querySelector(selector) {
+            if (resultDom && selector === "[data-fitment-verdict-card]") return verdictCard;
+            if (resultDom && selector === "[data-fitment-check]") return checkButton;
+            if (selector === "[data-fitment-render-copy]") return renderCopy;
+            if (selector === "[data-fitment-render-helper]") return renderHelper;
             if (vnext && selector === "[data-vnext-fitment-root]") return element();
             if (selector === "[data-fitment-pcd-select]") return pcdSelect;
             if (selector === "[data-fitment-pcd-custom]") return pcdCustom;
@@ -266,7 +272,7 @@ function pcdProjectionApi({ vnext = false } = {}) {
             calls.push(args);
             return response(200, {});
         },
-        localStorage: storage(), sessionStorage: storage(), navigator: { language: "ru-RU", userAgent: "test" },
+        localStorage: storage(), sessionStorage: storage(), navigator: { language: language === "en" ? "en-US" : "ru-RU", userAgent: "test" },
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
@@ -278,8 +284,9 @@ function pcdProjectionApi({ vnext = false } = {}) {
         globalThis.__pcdProjectionApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview,
             syncFitmentPcdControl, renderFitment, buildRimSecondaryDetails,
+            bridges: { Create: window.dreamwheelsCreateBridge, Render: window.dreamwheelsRenderBridge, Fitment: window.dreamwheelsFitmentBridge, Wallet: window.dreamwheelsWalletBridge },
         };`, context);
-    return { api: context.__pcdProjectionApi, pcdSelect, pcdCustom, calls, events };
+    return { api: context.__pcdProjectionApi, pcdSelect, pcdCustom, calls, events, renderCopy, renderHelper, verdictCard, checkButton };
 }
 
 function renderV2RimEditor(api, rim) {
@@ -1005,6 +1012,55 @@ test("Fitment source details keep safe labels and hide persisted source while ed
     assert.equal(api.buildRimSecondaryDetails(overview, { editing: true }).rows.length, 0);
     overview.front_rim.rim.product_url = "https://host.internal/private";
     assert.equal(api.buildRimSecondaryDetails(overview).rows[0].value, "Источник указан");
+});
+
+for (const language of ["ru", "en"]) test(`legacy Fitment visual try-on copy follows ${language} without changing form/check state`, () => {
+    const { api, renderCopy, renderHelper } = pcdProjectionApi({ language });
+    const before = JSON.stringify(api.state.fitmentForm);
+    api.renderFitment();
+    assert.equal(renderCopy.textContent, language === "en" ? "Visual try-on" : "Визуальная примерка");
+    assert.equal(renderHelper.textContent, language === "en" ? "See how the selected wheel looks on your vehicle" : "Посмотрите, как выбранный диск выглядит на вашем автомобиле");
+    api.state.fitmentCheck = { verdict: "incompatible", execution_status: "completed", is_current: true };
+    api.renderFitment();
+    assert.equal(renderHelper.textContent, copy("fitment.notice.visualTryOn", language));
+    assert.equal(JSON.stringify(api.state.fitmentForm), before);
+    assert.equal(api.state.fitmentCheck.verdict, "incompatible");
+});
+
+test("failed legacy Fitment result offers retry only when the server permits it and never changes canonical check state", () => {
+    const { api, verdictCard, checkButton } = pcdProjectionApi({ resultDom: true });
+    api.state.fitmentOverview = api.buildDefaultDemoFitmentOverview();
+    api.state.fitmentOverview.next_action = { kind: "run_standard_check" };
+    api.state.fitmentActiveSection = "result";
+    for (const retry_mode of ["retryable", "not_applicable"]) {
+        api.state.fitmentCheck = { execution_status: "failed", verdict: null, is_current: true, retry_mode };
+        const before = JSON.stringify(api.state.fitmentCheck);
+        api.renderFitment();
+        assert.equal(verdictCard.dataset.status, "failed");
+        assert.equal(checkButton.hidden, retry_mode === "not_applicable");
+        assert.equal(checkButton.disabled, false);
+        assert.equal(JSON.stringify(api.state.fitmentCheck), before);
+    }
+});
+
+test("public Create/Render/Fitment/Wallet bridge methods and snapshots preserve canonical state without network mutations", () => {
+    const { api, calls } = pcdProjectionApi();
+    const expected = {
+        Create: ["snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
+        Render: ["snapshot", "prepareAssets", "assetError", "action"],
+        Fitment: ["snapshot", "surfaceMounted", "setField", "setVehiclePhoto", "setSourceUrl", "action"],
+        Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "login"],
+    };
+    const canonical = () => JSON.stringify({ form: api.state.fitmentForm, overview: api.state.fitmentOverview, check: api.state.fitmentCheck, job: api.state.fitmentJobId, renders: api.state.renderHistory, credits: api.state.creditPackages });
+    const before = canonical(), callsBefore = calls.length;
+    for (const [name, methods] of Object.entries(expected)) {
+        const bridge = api.bridges[name];
+        assert.deepEqual(Object.keys(bridge).sort(), [...methods].sort());
+        for (const method of methods) assert.equal(typeof bridge[method], "function");
+        assert.equal(typeof bridge.snapshot(name === "Render" ? "history" : undefined), "object");
+    }
+    assert.equal(canonical(), before);
+    assert.equal(calls.length, callsBefore);
 });
 
 test("V2_PCD_PRESET_HYDRATES_VISIBLE_SELECT", () => {
