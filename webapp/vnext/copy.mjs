@@ -1022,12 +1022,12 @@ export const COPY = {
     "en": "Try-on queued"
   },
   "render.generatingRender": {
-    "ru": "Создаём примерку...",
-    "en": "Generating render..."
+    "ru": "Создаём примерку…",
+    "en": "Creating the try-on…"
   },
   "render.thisCanTakeUpToSeconds": {
     "ru": "Это может занять до 90 секунд",
-    "en": "This can take up to 90 seconds"
+    "en": "This may take up to 90 seconds."
   },
   "render.loadingTryOn": {
     "ru": "Загружаем примерку…",
@@ -1727,15 +1727,15 @@ export const COPY = {
   },
   "legacy.auth.loginShort": {
     "ru": "Войти",
-    "en": "Log in"
+    "en": "Sign in"
   },
   "legacy.auth.loggingIn": {
-    "ru": "Входим...",
-    "en": "Logging in..."
+    "ru": "Входим…",
+    "en": "Signing in…"
   },
   "legacy.auth.preparing": {
-    "ru": "Подготавливаем вход...",
-    "en": "Preparing login..."
+    "ru": "Подготавливаем вход…",
+    "en": "Preparing sign-in…"
   },
   "legacy.auth.retryTelegram": {
     "ru": "Повторить вход через Telegram",
@@ -1874,12 +1874,12 @@ export const COPY = {
     "en": "The security check is unavailable. Please try again."
   },
   "legacy.auth.sendingCode": {
-    "ru": "Отправляем код...",
-    "en": "Sending code..."
+    "ru": "Отправляем код…",
+    "en": "Sending code…"
   },
   "legacy.auth.checkingCode": {
-    "ru": "Проверяем код...",
-    "en": "Checking code..."
+    "ru": "Проверяем код…",
+    "en": "Checking code…"
   },
   "legacy.auth.signedIn": {
     "ru": "Вход выполнен",
@@ -1959,7 +1959,7 @@ export const COPY = {
   },
   "legacy.menu.wallet": {
     "ru": "Баланс",
-    "en": "Wallet"
+    "en": "Balance"
   },
   "legacy.menu.renders": {
     "ru": "История",
@@ -2027,7 +2027,7 @@ export const COPY = {
   },
   "legacy.caption.fitment": {
     "ru": "Совместимость",
-    "en": "Fitment"
+    "en": "Compatibility"
   },
   "legacy.caption.wallet": {
     "ru": "Баланс",
@@ -2047,7 +2047,7 @@ export const COPY = {
   },
   "legacy.caption.photoGuide": {
     "ru": "Как подготовить фото",
-    "en": "How to prepare a photo"
+    "en": "How to prepare photos"
   },
   "legacy.caption.docs": {
     "ru": "Документы",
@@ -2139,7 +2139,7 @@ export const COPY = {
   },
   "legacy.create.createRender": {
     "ru": "Создать виртуальную примерку",
-    "en": "Create virtual render"
+    "en": "Create a try-on"
   },
   "legacy.warnings.beta": {
     "ru": "Dream Wheels находится в бета-режиме. Некоторые функции проходят финальное тестирование, а результат ИИ может содержать визуальные неточности.",
@@ -2171,7 +2171,7 @@ export const COPY = {
   },
   "legacy.photoGuide.carSection": {
     "ru": "Фото автомобиля",
-    "en": "Car photo"
+    "en": "Vehicle photo"
   },
   "legacy.photoGuide.carTitle": {
     "ru": "Покажите автомобиль целиком",
@@ -2195,7 +2195,7 @@ export const COPY = {
   },
   "legacy.photoGuide.carCheck1": {
     "ru": "Автомобиль виден целиком",
-    "en": "The whole car is visible"
+    "en": "The whole vehicle is visible"
   },
   "legacy.photoGuide.carCheck2": {
     "ru": "Снимите сбоку или под небольшим углом",
@@ -2326,24 +2326,24 @@ export const COPY = {
     "en": "Creating an image…"
   },
   "legacy.status.startingServer": {
-    "ru": "Запускаем сервер...",
-    "en": "Starting server..."
+    "ru": "Запускаем сервер…",
+    "en": "Starting server…"
   },
   "legacy.status.coldStart": {
     "ru": "Первый запуск может занять до 40 секунд",
     "en": "First launch can take up to 40 seconds"
   },
   "legacy.status.uploading": {
-    "ru": "Загружаем файлы...",
-    "en": "Uploading files..."
+    "ru": "Загружаем файлы…",
+    "en": "Uploading files…"
   },
   "legacy.status.upTo90": {
     "ru": "Это может занять до 90 секунд",
-    "en": "This can take up to 90 seconds"
+    "en": "This may take up to 90 seconds."
   },
   "legacy.status.generating": {
-    "ru": "Создаём примерку...",
-    "en": "Generating render..."
+    "ru": "Создаём примерку…",
+    "en": "Creating the try-on…"
   },
   "legacy.result.imageAlt": {
     "ru": "Результат примерки",
@@ -2407,7 +2407,7 @@ export const COPY = {
   },
   "legacy.fitment.eyebrow": {
     "ru": "Проверка совместимости",
-    "en": "Fitment preparation"
+    "en": "Compatibility check"
   },
   "legacy.fitment.title": {
     "ru": "Проверьте, подойдут ли диски",
@@ -2631,7 +2631,7 @@ export const COPY = {
   },
   "legacy.fitment.modification": {
     "ru": "Комплектация",
-    "en": "Trim"
+    "en": "Vehicle version"
   },
   "legacy.fitment.market": {
     "ru": "Рынок",
@@ -2702,8 +2702,8 @@ export const COPY = {
     "en": "Download image"
   },
   "legacy.actions.requestingDownload": {
-    "ru": "Запрашиваем скачивание...",
-    "en": "Requesting download..."
+    "ru": "Запрашиваем скачивание…",
+    "en": "Requesting download…"
   },
   "legacy.actions.downloadCanceled": {
     "ru": "Скачивание отменено",
@@ -2722,8 +2722,8 @@ export const COPY = {
     "en": "Share"
   },
   "legacy.actions.preparing": {
-    "ru": "Готовим...",
-    "en": "Preparing..."
+    "ru": "Готовим…",
+    "en": "Preparing…"
   },
   "legacy.actions.openingTelegram": {
     "ru": "Открываем Telegram",
@@ -2827,11 +2827,11 @@ export const COPY = {
   },
   "legacy.wallet.eyebrow": {
     "ru": "Кабинет",
-    "en": "Cabinet"
+    "en": "Account"
   },
   "legacy.wallet.title": {
     "ru": "Баланс",
-    "en": "Wallet"
+    "en": "Balance"
   },
   "legacy.wallet.lede": {
     "ru": "1 рендер — 1 генерация виртуальной примерки",
@@ -3003,7 +3003,7 @@ export const COPY = {
   },
   "legacy.wallet.refundLink": {
     "ru": "Условия возврата",
-    "en": "Refund Terms"
+    "en": "Refund terms"
   },
   "legacy.wallet.paymentHistory": {
     "ru": "История платежей",
@@ -3062,20 +3062,20 @@ export const COPY = {
     "en": "Enter a valid email"
   },
   "legacy.wallet.loading": {
-    "ru": "Загружаем кабинет...",
-    "en": "Loading cabinet..."
+    "ru": "Загружаем кабинет…",
+    "en": "Loading account…"
   },
   "legacy.wallet.refreshInvoice": {
     "ru": "Обновить статус",
     "en": "Refresh invoice"
   },
   "legacy.wallet.refreshingInvoice": {
-    "ru": "Обновляем статус оплаты...",
-    "en": "Refreshing invoice status..."
+    "ru": "Обновляем статус оплаты…",
+    "en": "Refreshing invoice status…"
   },
   "legacy.wallet.openingPayment": {
-    "ru": "Открываем Robokassa...",
-    "en": "Opening Robokassa..."
+    "ru": "Открываем Robokassa…",
+    "en": "Opening Robokassa…"
   },
   "legacy.wallet.paymentSuccess": {
     "ru": "Проверяем оплату. Обновляем баланс",
@@ -3235,7 +3235,7 @@ export const COPY = {
   },
   "legacy.settings.eyebrow": {
     "ru": "Параметры кабинета",
-    "en": "Cabinet settings"
+    "en": "Account settings"
   },
   "legacy.settings.title": {
     "ru": "Настройки",
@@ -3271,7 +3271,7 @@ export const COPY = {
   },
   "legacy.settings.linked": {
     "ru": "Подключено",
-    "en": "Connected"
+    "en": "Linked"
   },
   "legacy.settings.soon": {
     "ru": "Скоро",
@@ -3507,7 +3507,7 @@ export const COPY = {
   },
   "generation.error.vehicle.replace": {
     "ru": "Заменить фото автомобиля",
-    "en": "Replace car photo"
+    "en": "Replace vehicle photo"
   },
   "generation.error.balance.title": {
     "ru": "Недостаточно рендеров на балансе",

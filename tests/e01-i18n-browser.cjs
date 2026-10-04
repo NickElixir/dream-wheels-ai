@@ -1,8 +1,11 @@
 const fs=require('node:fs');
+const path=require('node:path');
+const evidenceDirectory=process.env.E01_EVIDENCE_DIR||'docs/evidence/e01-i18n';
+fs.mkdirSync(evidenceDirectory,{recursive:true});
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 (async()=>{
 const browser=await chromium.launch({headless:true});const checks=[];
-const scenarios=['dashboard','logged-out','create','result','history','processing','refunded','missing-asset','compatible','conditions','unknown','incompatible','failed','stale','editor','wallet','pending-payment','support','photo-guide','docs','auth-email','auth-otp','auth-restored','auth-restoring','vehicle-editor-loading','vehicle-editor-empty','vehicle-editor-failed','create-generation-service','create-generation-wheel','create-generation-timeout','account-settings','account-settings-error','account-link-email','account-link-otp','account-merge','result-download-started','result-download-failed','result-download-unavailable','starter-expiry','vehicle-photo-invalid'];
+const scenarios=['dashboard','logged-out','create','result','history','processing','refunded','missing-asset','compatible','conditions','unknown','incompatible','failed','stale','editor','wallet','pending-payment','support','photo-guide','docs','auth-email','auth-otp','auth-restored','auth-restoring','vehicle-editor-loading','vehicle-editor-empty','vehicle-editor-failed','create-generation-service','create-generation-wheel','create-generation-timeout','account-settings','account-settings-error','account-link-email','account-link-otp','account-merge','result-download-started','result-download-failed','result-download-unavailable','starter-expiry','vehicle-photo-invalid','p2a-copy-consistency'];
 for(const width of [390,1440])for(const locale of ['ru','en'])for(const scenario of scenarios){
  const page=await browser.newPage({viewport:{width,height:900},locale:locale==='ru'?'ru-RU':'en-US'}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -16,6 +19,11 @@ for(const width of [390,1440])for(const locale of ['ru','en'])for(const scenario
  const cyrillic=locale==='en'?[...(text+'\n'+aria).matchAll(/[^\n]*[А-Яа-яЁё][^\n]*/gu)].map(x=>x[0]):[];
  if(overflow||clipped.length||errors.length||cyrillic.length)throw Error(JSON.stringify({width,locale,scenario,overflow,clipped,errors,cyrillic}));
 
+ if(scenario==='p2a-copy-consistency'){
+  const expected=locale==='en'?{'auth.loginShort':'Sign in','menu.wallet':'Balance','wallet.title':'Balance','wallet.eyebrow':'Account','create.createRender':'Create a try-on','caption.fitment':'Compatibility','fitment.eyebrow':'Compatibility check','fitment.modification':'Vehicle version','photoGuide.carSection':'Vehicle photo','caption.photoGuide':'How to prepare photos','settings.linked':'Linked','auth.preparing':'Preparing sign-in…','status.generating':'Creating the try-on…'}:{'auth.loginShort':'Войти','menu.wallet':'Баланс','fitment.modification':'Комплектация','auth.preparing':'Подготавливаем вход…','status.generating':'Создаём примерку…'};
+  for(const [key,value]of Object.entries(expected))if(await page.locator(`[data-p2-copy="${key}"]`).textContent()!==value)throw Error('legacy semantic copy mismatch: '+key);
+  if(text.includes('...'))throw Error('legacy UI has ASCII ellipsis');
+ }
  if(locale==='en'){
   const expected={'result-download-started':'Image download started','result-download-failed':'Could not download the image. Try again.','result-download-unavailable':'This try-on is unavailable. Refresh History and try again.','starter-expiry':'Starter package','vehicle-photo-invalid':'Choose a JPEG, PNG or WebP image up to 10 MB.'}[scenario];
   if(expected&&!text.includes(expected))throw Error('new runtime notice missing: '+expected);
@@ -44,7 +52,7 @@ for(const width of [390,1440])for(const locale of ['ru','en'])for(const scenario
   checks.push({width,locale:'en',scenario:scenario+'-locale-switch',preserved:after,text:switched});
  }
  checks.push({width,locale,scenario,text,aria,overflow,clipped,errors});
- if(width===390&&locale==='en'&&['dashboard','editor','pending-payment','support','photo-guide','docs','refunded'].includes(scenario))await page.screenshot({path:`docs/evidence/e01-i18n/${scenario}-${width}-${locale}.jpg`,fullPage:true,type:'jpeg',quality:75});
+ if(width===390&&locale==='en'&&['dashboard','editor','pending-payment','support','photo-guide','docs','refunded'].includes(scenario))await page.screenshot({path:path.join(evidenceDirectory,`${scenario}-${width}-${locale}.jpg`),fullPage:true,type:'jpeg',quality:75});
  await page.close();
 }
 // Exercise the production bootstrap and the application locale event on mounted surfaces.
@@ -61,5 +69,5 @@ for(const width of [390,1440]) {
  }
  await page.close();
 }
-fs.writeFileSync('docs/evidence/e01-i18n/browser-results.json',JSON.stringify(checks,null,2)+'\n');await browser.close();console.log(`${checks.length} browser states PASS`);
+fs.writeFileSync(path.join(evidenceDirectory,'browser-results.json'),JSON.stringify(checks,null,2)+'\n');await browser.close();console.log(`${checks.length} browser states PASS`);
 })().catch(e=>{console.error(e);process.exit(1)});
