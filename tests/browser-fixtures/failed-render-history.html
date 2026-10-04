@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Failed render QA — production views</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css">
+<style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font);color:var(--vnext-text)}main{max-width:1120px;margin:auto;padding:24px 16px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}h1{font-size:24px}#result{margin-top:32px}button,select{max-width:100%}.vnext-history-row{min-width:0}</style></head>
+<body><main><nav aria-label="QA scenarios"><select id="scenario"><option value="refunded">Failed + refunded</option><option value="unknown">Failed + unknown billing</option><option value="missing">Completed + missing asset</option><option value="valid">Completed + valid asset</option><option value="legacy">Legacy failed + no source</option></select><select id="language"><option value="ru">RU</option><option value="en">EN</option></select></nav><h1>Мои примерки</h1><div id="history"></div><div id="result"></div><p id="action" role="status"></p></main>
+<script type="module">
+import {createRenderView} from '../../webapp/vnext/views/render.js';
+const source=await (await fetch('../../webapp/app.js')).text();
+const fn=name=>{const start=source.indexOf(`function ${name}(`);return source.slice(start,source.indexOf('\n}',start)+2);};
+const i18n=source.slice(source.indexOf('const I18N ='),source.indexOf('function detectLocale()'));
+const labels=language=>new Function(`${i18n}\nconst locale=${JSON.stringify(language)};\n${fn('t')}\n${fn('renderFailureCopy')}\n${fn('renderBillingMessage')}\nreturn {copy:renderFailureCopy(),billing:renderBillingMessage({render_billing_status:'refunded'})};`)();
+const original=new URL('../../webapp/assets/demo-vehicle-zeekr.jpg',location.href).href;
+const generated=new URL('../../webapp/assets/demo-render-zeekr-xtrike.jpg',location.href).href;
+function render(){
+ const scenario=document.querySelector('#scenario').value, language=document.querySelector('#language').value;
+ document.documentElement.lang=language;
+ const strings=labels(language),completed=['missing','valid'].includes(scenario);
+ const job={jobId:'qa-render',status:completed?'completed':'failed',title:'Zeekr 001',failureCopy:strings.copy,billingMessage:scenario==='refunded'?strings.billing:'',originalUrl:scenario==='legacy'?'':original,resultUrl:scenario==='valid'?generated:'',resultFailed:scenario==='missing',canDownload:scenario==='valid',statusLabel:completed?'Готово':strings.copy.failedBadge,createdLabel:'04.10.2026, 12:00',dateLabel:'04.10.2026',rimName:'X’trike X-129',specs:'20 × 9.0J',downloadNotice:'',reasons:[]};
+ const callbacks={action(action){document.querySelector('#action').textContent=action==='retry-create'?'Create opened — original failed job unchanged':action;},assetError(){}};
+ document.querySelector('#history').replaceChildren(createRenderView('history',{rows:[{...job,thumbnailUrl:completed?job.resultUrl:job.originalUrl,thumbnailKind:completed?'result':'original',thumbnailFailed:job.resultFailed}]},callbacks));
+ document.querySelector('#result').replaceChildren(createRenderView('result',job,callbacks));
+ document.querySelector('#action').textContent='';
+ document.querySelector('h1').textContent=language==='ru'?'Мои примерки':'My try-ons';
+ window.qaModel=job;
+}
+document.querySelector('#scenario').onchange=render;document.querySelector('#language').onchange=render;render();
+</script></body></html>

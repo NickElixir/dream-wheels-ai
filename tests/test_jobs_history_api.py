@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src import jobs_api
@@ -259,7 +260,8 @@ def test_failed_job_status_returns_error_metadata_for_owner(monkeypatch):
     body = response.json()
     assert body["status"] == "failed"
     assert body["error_code"] == "StorageError"
-    assert body["error"] == "Storage upload failed"
+    assert body["error"] == "Image generation failed. Please try again."
+    assert body["render_billing_status"] == "unknown"
 
 
 def test_history_returns_structured_feedback(monkeypatch):
@@ -413,3 +415,51 @@ def test_job_metadata_exposes_private_display_without_public_url():
     assert display.content_type == "image/webp"
     assert (display.width, display.height, display.size_bytes) == (1600, 948, 288350)
     assert "car_display" in display.download_url
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/jobs",
+        "/jobs/11111111-1111-4111-8111-111111111111",
+        "/jobs/11111111-1111-4111-8111-111111111111/status",
+    ],
+)
+@pytest.mark.parametrize(
+    "evidence,expected",
+    [
+        ({}, "unknown"),
+        (
+            {
+                "credit_status": "refunded",
+                "credit_cost": 1,
+                "reserve_count": 1,
+                "reserve_delta": -1,
+                "refund_count": 1,
+                "refund_delta": 1,
+                "finalize_count": 0,
+            },
+            "refunded",
+        ),
+    ],
+)
+def test_billing_evidence_is_consistent_across_read_surfaces(monkeypatch, path, evidence, expected):
+    row = _job_row(status="failed", error_message="secret https://internal.test/token", **evidence)
+
+    class Conn:
+        async def fetchrow(self, query, *args):
+            assert "credit_ledger" in query and "jobs.user_id = $2" in query
+            return row
+
+        async def fetch(self, query, *args):
+            assert "credit_ledger" in query and "jobs.user_id = $1" in query
+            return [row]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get(path)
+    assert response.status_code == 200
+    body = response.json()
+    job = body["jobs"][0] if path == "/jobs" else body
+    assert job["render_billing_status"] == expected
+    assert "secret" not in response.text and "internal.test" not in response.text

@@ -137,3 +137,14 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
   .vnext-history-row h3 { font-size:14px; }
   .vnext-history-row p { font-size:11px; }
 }
+
+.vnext-render-failed { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+.vnext-render-failed > div { min-width: 0; overflow-wrap: anywhere; }
+.vnext-render-failed h2 { white-space: normal; }
+.vnext-render-failed-source { aspect-ratio: 4 / 3; max-height: 420px; display: grid; place-items: center; background: var(--vnext-surface); border-radius: 16px; overflow: hidden; }
+.vnext-render-failed-source img, .vnext-render-asset-unavailable img { width: 100%; height: 100%; object-fit: contain; }
+.vnext-render-asset-unavailable { text-align: center; padding: 24px; }
+.vnext-render-asset-unavailable img { max-height: 320px; }
+@media (max-width: 600px) { .vnext-render-failed { grid-template-columns: minmax(0, 1fr); gap: 16px; } .vnext-render-failed-source { max-height: 240px; } }
+
+.vnext-render-failed h2, .vnext-render-asset-unavailable h2 { color: var(--vnext-text); }

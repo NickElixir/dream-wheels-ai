@@ -1,0 +1,129 @@
+{
+  "url": "http://127.0.0.1:8765/tests/browser-fixtures/failed-render-history.html",
+  "title": "Failed render QA — production views",
+  "browser": "Chromium / Playwright bundled runtime",
+  "consoleErrors": [],
+  "checks": [
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "refunded",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "unknown",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "missing",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "valid",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "legacy",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "refunded",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "unknown",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "missing",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "valid",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "legacy",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "refunded",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "unknown",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "missing",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "valid",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "legacy",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "refunded",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "unknown",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "missing",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "valid",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "legacy",
+      "overflow": false
+    }
+  ],
+  "transport": "isolated fixture, production renderer and i18n/billing projection; no live APIs"
+}

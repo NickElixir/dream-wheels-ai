@@ -211,7 +211,7 @@ async def _save_render_output(
     user_id: int,
     img_bytes: bytes,
     content_type: str = "image/jpeg",
-) -> str:
+) -> str | None:
     """Сохранить рендер в постоянное public-хранилище Supabase results."""
     asset = await assets_service.upload_render_asset(
         owner_user_id=user_id,
@@ -222,6 +222,21 @@ async def _save_render_output(
     )
     async with pool.acquire() as conn:
         async with conn.transaction():
+            active = await conn.fetchval(
+                "SELECT id FROM jobs WHERE id = $1::uuid AND user_id = $2 "
+                "AND status = 'processing' AND credit_status = 'reserved' FOR UPDATE",
+                job_id,
+                user_id,
+            )
+            if not active:
+                logger.info("Ignoring late render output job_id=%s user_id=%s", job_id, user_id)
+                try:
+                    await assets_service.delete_uploaded_asset(asset)
+                except Exception:
+                    logger.exception(
+                        "Late render output cleanup failed job_id=%s user_id=%s", job_id, user_id
+                    )
+                return None
             await assets_service.insert_asset(conn, asset)
             await conn.execute(
                 """
@@ -250,7 +265,7 @@ async def _persist_generation_metadata(pool, job_id: str, result: GenerationResu
                 generation_latency_ms = $4,
                 generation_cost = $5,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $6::uuid
+            WHERE id = $6::uuid AND status = 'processing' AND credit_status = 'reserved'
             """,
             result.provider,
             result.provider_request_id,
@@ -301,7 +316,7 @@ _SAFE_PROVIDER_MESSAGES = {
 def _safe_job_failure(error: Exception) -> tuple[str, str]:
     if isinstance(error, GenerationProviderError):
         return error.code, _SAFE_PROVIDER_MESSAGES[error.code]
-    return type(error).__name__, str(error)
+    return "generation_failed", "Image generation failed. Please try again."
 
 
 async def _mark_render_failed(
@@ -316,6 +331,15 @@ async def _mark_render_failed(
     error_code, error_message = _safe_job_failure(error)
     async with pool.acquire() as conn:
         async with conn.transaction():
+            active = await conn.fetchval(
+                "SELECT id FROM jobs WHERE id = $1::uuid AND user_id = $2 "
+                "AND status IN ('queued', 'processing') FOR UPDATE",
+                job_id,
+                user_id,
+            )
+            if not active:
+                logger.info("Ignoring late render failure job_id=%s user_id=%s", job_id, user_id)
+                return
             await refund_job_credit(conn, user_id=user_id, job_id=job_id)
             await conn.execute(
                 "UPDATE jobs SET status = 'failed', error_code = $1, error_message = $2, "
@@ -342,11 +366,16 @@ async def process_render_job(
 ) -> None:
     """Run one render without owning queue or credit compensation policy."""
     async with pool.acquire() as conn:
-        await conn.execute(
+        claimed = await conn.fetchval(
             "UPDATE jobs SET status = 'processing', updated_at = CURRENT_TIMESTAMP "
-            "WHERE id = $1::uuid",
+            "WHERE id = $1::uuid AND user_id = $2 AND status = 'queued' "
+            "AND credit_status = 'reserved' RETURNING id",
             job_id,
+            user_id,
         )
+    if not claimed:
+        logger.info("Ignoring render queue replay job_id=%s user_id=%s", job_id, user_id)
+        return
 
     await _save_legacy_bot_inputs(pool, job_id, user_id, job_data)
     vehicle, rim_reference = await _load_generation_inputs(pool, job_id, job_data)
@@ -361,15 +390,23 @@ async def process_render_job(
         content_type=result.content_type,
     )
 
+    if output_url is None:
+        return
+
     async with pool.acquire() as conn:
         async with conn.transaction():
-            await conn.execute(
+            completed = await conn.fetchval(
                 "UPDATE jobs SET status = 'completed', output_image_url = $1, "
                 "completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP "
-                "WHERE id = $2::uuid",
+                "WHERE id = $2::uuid AND user_id = $3 AND status = 'processing' "
+                "AND credit_status = 'reserved' RETURNING id",
                 output_url,
                 job_id,
+                user_id,
             )
+            if not completed:
+                logger.info("Ignoring late render completion job_id=%s user_id=%s", job_id, user_id)
+                return
             await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
             await analytics_api.record_system_event(
                 conn,

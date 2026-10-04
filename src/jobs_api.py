@@ -39,6 +39,7 @@ from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
 from src.fitment.schemas import VehicleIdentity as ProviderVehicleIdentity
 from src.fitment.vehicle_catalogue import VehicleCatalogueAggregator
 from src.rate_limit import enforce_rate_limit
+from src.render_billing import RenderBillingStatus, billing_evidence_select, render_billing_status
 from src.rim_url_resolver import (
     FetchLimits,
     PublicHttpsPolicy,
@@ -153,6 +154,7 @@ class JobFeedbackEnvelope(BaseModel):
 class JobStatusResponse(BaseModel):
     job_id: str | None = None
     status: str
+    render_billing_status: RenderBillingStatus = "unknown"
     output_image_url: str | None = None
     created_at: datetime | None = None
     completed_at: datetime | None = None
@@ -169,6 +171,7 @@ class JobStatusDetailedResponse(BaseModel):
 
     job_id: str
     status: str
+    render_billing_status: RenderBillingStatus = "unknown"
     result_url: str | None = None
     share_url: str | None = None
     error: str | None = None
@@ -204,6 +207,7 @@ class VehicleIdentitySummary(BaseModel):
 class JobHistoryItem(BaseModel):
     job_id: str
     status: str
+    render_billing_status: RenderBillingStatus = "unknown"
     created_at: datetime
     completed_at: datetime | None = None
     result_url: str | None = None
@@ -2060,6 +2064,14 @@ async def _compensate_queue_publish_failure(
     try:
         async with pool.acquire() as conn:
             async with conn.transaction():
+                active = await conn.fetchval(
+                    "SELECT id FROM jobs WHERE id = $1::uuid AND user_id = $2 "
+                    "AND status IN ('queued', 'processing') FOR UPDATE",
+                    job_id,
+                    user_id,
+                )
+                if not active:
+                    return
                 await refund_job_credit(conn, user_id=user_id, job_id=job_id)
                 await conn.execute(
                     "UPDATE jobs SET status = 'failed', error_code = $1, error_message = $2, "
@@ -2652,6 +2664,7 @@ async def list_jobs(
             SELECT
                 jobs.id::text AS job_id,
                 jobs.status,
+                {billing_evidence_select()},
                 jobs.created_at,
                 jobs.completed_at,
                 jobs.output_image_url,
@@ -2681,11 +2694,14 @@ async def list_jobs(
         JobHistoryItem(
             job_id=row["job_id"],
             status=row["status"],
+            render_billing_status=render_billing_status(row),
             created_at=row["created_at"],
             completed_at=row["completed_at"],
             result_url=row["output_image_url"],
             error_code=row["error_code"],
-            error_message=row["error_message"],
+            error_message="Image generation failed. Please try again."
+            if row["status"] == "failed"
+            else None,
             generation_provider=row["generation_provider"],
             provider_request_id=row["provider_request_id"],
             fitment_available=bool(row["fitment_available"]),
@@ -2734,6 +2750,7 @@ async def get_job_status(
             SELECT
                 jobs.id::text AS job_id,
                 jobs.status,
+                {billing_evidence_select()},
                 jobs.created_at,
                 jobs.completed_at,
                 jobs.output_image_url,
@@ -2759,11 +2776,14 @@ async def get_job_status(
         JobStatusResponse(
             job_id=row["job_id"],
             status=row["status"],
+            render_billing_status=render_billing_status(row),
             output_image_url=row["output_image_url"],
             created_at=row["created_at"],
             completed_at=row["completed_at"],
             error_code=row["error_code"],
-            error_message=row["error_message"],
+            error_message="Image generation failed. Please try again."
+            if row["status"] == "failed"
+            else None,
             feedback=_feedback_from_row(row, job_id=row["job_id"]),
             assets=_assets_from_row(row, job_id=row["job_id"]),
             render_input_snapshot=_snapshot_from_row(row, job_id=row["job_id"]),
@@ -2795,6 +2815,7 @@ async def get_job_status_detailed(
             SELECT
                 jobs.id::text AS job_id,
                 jobs.status,
+                {billing_evidence_select()},
                 jobs.output_image_url,
                 jobs.error_code,
                 jobs.error_message,
@@ -2819,11 +2840,14 @@ async def get_job_status_detailed(
         JobStatusDetailedResponse(
             job_id=job_id,
             status=row["status"],
+            render_billing_status=render_billing_status(row),
             result_url=row["output_image_url"],
             share_url=share_url_for_job(job_id, bust_preview_cache=True)
             if row["output_image_url"]
             else None,
-            error=row["error_message"],
+            error="Image generation failed. Please try again."
+            if row["status"] == "failed"
+            else None,
             error_code=row["error_code"],
             fitment_available=bool(row["fitment_available"]),
             feedback=_feedback_from_row(row, job_id=row["job_id"]),

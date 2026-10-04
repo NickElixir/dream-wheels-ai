@@ -35,6 +35,10 @@ class FakeConnection:
     async def execute(self, query: str, *args):
         self.executed.append((query, args))
 
+    async def fetchval(self, query, *args):
+        self.executed.append((query, args))
+        return JOB_ID
+
     async def fetchrow(self, *_args, **_kwargs):
         return {"car_asset_id": "car", "rim_asset_id": "rim"}
 

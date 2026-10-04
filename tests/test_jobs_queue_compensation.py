@@ -24,6 +24,10 @@ def test_compensate_queue_publish_failure_refunds_credit_and_marks_job_failed():
         def transaction(self):
             return FakeTransaction()
 
+        async def fetchval(self, query: str, *args):
+            calls.append(("fetchval", query, args))
+            return args[0]
+
         async def execute(self, query: str, *args):
             calls.append(("execute", query, args))
 
