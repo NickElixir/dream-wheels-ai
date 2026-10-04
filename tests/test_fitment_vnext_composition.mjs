@@ -327,3 +327,23 @@ test('P1 RU/EN verdict snapshots: compatible, conditions, unknown, incompatible,
     assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0],markup,`${locale}/${state}`);
   }
 });
+
+test('copy keeps the screen renderable when a key is missing', () => {
+  const warnings = [];
+  const original = console.warn;
+  console.warn = message => warnings.push(message);
+  try {
+    for (const key of ['fitment.typo', 'toString', '__proto__']) {
+      assert.equal(copy(key, 'ru'), key);
+      assert.equal(copy(key, 'en'), key);
+    }
+    assert.equal(warnings.length, 6);
+    assert.ok(warnings.every(message => message.startsWith('Unknown copy key: ')));
+  } finally {
+    console.warn = original;
+  }
+});
+
+test('PCD unknown copy uses grammatical Russian', () => {
+  assert.equal(copy('fitment.verdict.unknown.pcd', 'ru'), 'Не хватает данных о разболтовке.');
+});

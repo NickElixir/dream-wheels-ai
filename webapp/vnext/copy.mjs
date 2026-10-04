@@ -104,7 +104,7 @@ export const COPY = {
     "en": "There is not enough data about DIA."
   },
   "fitment.verdict.unknown.pcd": {
-    "ru": "Не хватает данных о параметре разболтовка.",
+    "ru": "Не хватает данных о разболтовке.",
     "en": "There is not enough data about the bolt pattern."
   },
   "fitment.verdict.unknown.vehicle": {
@@ -274,8 +274,11 @@ export const COPY = {
 };
 
 export function copy(key, locale = globalThis.document?.documentElement?.lang || "ru") {
-  const value = COPY[key];
-  if (!value) throw new Error(`Unknown copy key: ${key}`);
+  const value = Object.hasOwn(COPY, key) ? COPY[key] : null;
+  if (!value) {
+    console.warn(`Unknown copy key: ${key}`);
+    return key;
+  }
   return value[locale === "en" ? "en" : "ru"];
 }
 
