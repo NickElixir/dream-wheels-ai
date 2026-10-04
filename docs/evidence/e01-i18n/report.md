@@ -1,8 +1,9 @@
 # E-01 — Full Release 1 RU/EN cleanup
 
 BASE: `d76189421993cf53aa5149fdf67fe4461e439517` (staging after PR #262).
-HEAD: implementation checkpoint recorded below; the final evidence commit and its
-exact CI SHA are recorded in the PR handoff. No merge is authorized or performed.
+HEAD (implementation checkpoint): `1992ae041f1aa4d381aed41a43963bed3e7f09b7`.
+The following evidence-only commit does not change implementation. The exact final
+PR HEAD and CI run are recorded in the PR handoff. No merge is performed.
 
 ## Audit and inventory
 
@@ -95,8 +96,9 @@ term); Рынок → Market; Артикул → SKU; Диаметр → Diamete
 - `browser-results.json` contains all machine results; seven representative mobile
   EN screenshots are included. Runner: `tests/e01-i18n-browser.cjs`, local server
   port 8779; `PLAYWRIGHT_MODULE` selects the installed Playwright runtime.
-- Exact final HEAD CI: pending PR checks; final result belongs to the immutable PR
-  handoff, avoiding a self-referential commit SHA in this tracked report.
+- Exact final HEAD CI: the PR handoff records the verified SHA and run URL.
+  [Branch CI](https://github.com/NickElixir/dream-wheels-ai/actions?query=branch%3Afix%2Fe01-i18n)
+  is the authoritative live result; a commit cannot include its own final SHA.
 
 Backend, migrations, fitment verdict/field_results, render lifecycle, billing,
 credit reservation/refund/finality, payment lifecycle, provider behavior, asset
