@@ -4849,7 +4849,7 @@ function fitmentVerdictMessage(item) {
         return ru ? "Выберите комплектацию автомобиля по каталогу Wheel‑Size" : "Select the vehicle version from Wheel‑Size";
     }
     if (code === "vehicle_reference_offset_missing") {
-        return ru ? "Не удалось подтвердить ET автомобиля по данным Wheel‑Size" : "The vehicle ET could not be confirmed by Wheel‑Size";
+        return ru ? "Для выбранного размера нет справочных данных по ET" : "No ET reference is available for the selected size";
     }
     if (code === "rim_offset_missing") {
         return ru ? "Укажите ET колесного диска для технической проверки" : "Enter the wheel ET for the technical check";
@@ -4865,7 +4865,8 @@ function fitmentVerdictMessage(item) {
     }
     if (code === "pcd_unknown") return ru ? "Уточните разболтовку колесного диска" : "Clarify the wheel bolt pattern";
     if (code === "center_bore_unknown") return ru ? "Уточните ступичное отверстие" : "Clarify the center bore";
-    if (["size_unknown", "size_not_in_reference", "allowed_set_empty"].includes(code)) return ru ? "Уточните размер колесного диска" : "Clarify the wheel size";
+    if (code === "size_not_in_reference") return ru ? "Комбинация диаметра и ширины отсутствует в справочных данных" : "The diameter and width combination is absent from the reference";
+    if (["size_unknown", "allowed_set_empty"].includes(code)) return ru ? "Уточните размер колесного диска" : "Clarify the wheel size";
     if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости — повторите позже" : "The technical compatibility service could not be reached — try again later";
     if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы — попробуйте позже" : "The technical compatibility service is rate-limited — try again later";
     if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен" : "The technical compatibility service is temporarily unavailable";

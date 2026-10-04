@@ -13,13 +13,17 @@ bolt count, PCD, DIA, diameter, width and ET. Tyre compatibility, load rating,
 brakes/X-factor, and fastener hardware (bolt/nut type, thread size and tightening
 torque) remain outside Standard Fitment V1.
 
-**Owner decision — 2026-10-04:** Standard V1 evaluates bolt count, PCD, DIA,
-diameter, width and ET as separate technical dimensions. One of these wheel
-parameters must not become an implicit prerequisite for evaluating another.
-Provider, selected-modification and axle context may select the relevant
-reference evidence, but the field-level result remains independent. Any future
-rule that deliberately couples parameters for physical clearance requires a
-separate approved evidence contract.
+**Owner clarification — P0.5-E, 2026-10-04:**
+
+Diameter, Width, ET, PCD, Bolt count and DIA have independent field-level results. A field result must not be copied from another parameter.
+
+Reference selection may depend on technical context. In Standard Fitment V1, ET reference is selected for the exact axle + submitted Diameter + submitted Width, using trusted saved values. Missing contextual reference gives `unknown / vehicle_reference_offset_missing`; outside the interval gives `unknown / et_outside_reference_range`, without a physical-clearance inference.
+
+Independent Diameter and Width matches do not prove that their combination is present in the provider-approved size set. For references `19×8.5` and `20×9`, submitted `19×9` can have Diameter=pass and Width=pass, ET=unknown and overall=unknown. The conservative overall `size_offset` rule and `size_not_in_reference` explanation remain unchanged.
+
+The presentation contract has six rows per axle: `wheel_diameter_in`, `wheel_width_j`, `offset_et_mm`, `pcd`, `bolt_count`, `center_bore_mm`. `pcd` is the numeric diameter in mm; bolt count is a separate row. Both factual conflicts are shown even if the persisted `bolt_pattern` rule has only one primary reason. Overall unknown does not mask individual row statuses.
+
+Rows and diameter details use saved input/evaluation snapshots only, with existing evidence policy and tolerances. Discrete diameter/width matches can pass; being merely within bounds cannot. The diameter detail exact-match flag follows the same tolerance and trust check as its row; insufficient trusted evidence leaves it unknown (`null`). No live provider/current-input lookup, engine/version change or migration is introduced.
 
 For Standard V1, ET is evaluated as its own field against the applicable
 provider-derived ET reference for the confirmed vehicle/modification and axle
@@ -98,7 +102,7 @@ A wheel bore smaller than the vehicle hub cannot mount and is `incompatible`. A 
 
 For Standard V1, diameter, width and ET are three separate field checks. A diameter result must not depend on the submitted width; a width result must not depend on the submitted diameter; and ET must not inherit a combined diameter+width match.
 
-ET is evaluated against its own applicable provider-derived reference for the confirmed vehicle/modification and axle context. ET inside that reference is compatible for the ET field. ET outside it is `unknown`, with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance. Standard V1 does not calculate clearance, so it must not use `compatible_with_conditions` for that case. A missing rim ET or vehicle ET reference is `unknown`.
+ET is evaluated against its own applicable provider-derived reference for the confirmed vehicle/modification and exact axle + submitted Diameter + submitted Width context. This selects evidence; it does not copy another field status. ET inside that reference is compatible for the ET field. ET outside it is `unknown`, with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance. Standard V1 does not calculate clearance, so it must not use `compatible_with_conditions` for that case. A missing rim ET or vehicle ET reference is `unknown`.
 
 The broader evidence model may later introduce deliberately coupled physical-clearance rules. Such coupling is outside Standard V1 and requires a separate approved rule and evidence contract; it must not arise implicitly from the provider response shape.
 

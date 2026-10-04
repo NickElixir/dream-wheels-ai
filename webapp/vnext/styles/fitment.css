@@ -278,3 +278,8 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__diameter-reference { padding: 16px 0; overflow-wrap: anywhere; border-top: 1px solid var(--vnext-border); }
 .vnext-fitment__diameter-reference h3 { margin: 0 0 8px; }
 .vnext-fitment__diameter-reference p { margin: 6px 0; }
+
+@media (max-width: 700px) {
+  .vnext-fitment__comparison-table col:nth-child(1) { width: 26%; }
+  .vnext-fitment__comparison-table col:nth-child(2), .vnext-fitment__comparison-table col:nth-child(3) { width: 22%; }
+}

@@ -109,3 +109,41 @@ test("new workspace copy is translated in EN", () => {
   assert.match(context.fitmentMarkup({locale:"en",rimEditing:true}),/Wheel parameters/);
   assert.match(context.fitmentMarkup({locale:"en",nextAction:"select_vehicle_variant"}),/Vehicle version/);
 });
+
+for (const locale of ["ru", "en"]) {
+  test(`overall unknown preserves six independent result rows (${locale})`, () => {
+    const fieldEvidence = [
+      ["wheel_diameter_in", "pass", "19", "19"], ["wheel_width_j", "unknown", "8.5", "10"],
+      ["offset_et_mm", "unknown", null, "45"], ["pcd", "pass", "112", "112"],
+      ["bolt_count", "pass", "5", "5"], ["center_bore_mm", "pass", "66.6", "66.6"],
+    ].map(([field, status, vehicleValue, rimValue]) => ({field, status, vehicleValue, rimValue}));
+    const markup = context.fitmentMarkup({locale, overview: {}, executionStatus: "completed", nextAction: "run_standard_check", check: {execution_status: "completed", verdict: "unknown"}, fieldEvidence, blockingIssues: [{label: "Combination missing from reference"}]});
+    const table = markup.match(/<table[\s\S]*?<\/table>/u)[0];
+    assert.equal([...table.matchAll(/<th scope="row">/gu)].length, 6);
+    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "Matches" : "Подходит"}</td>`, "gu"))].length, 4);
+    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "Unknown" : "Не определено"}</td>`, "gu"))].length, 2);
+    assert.match(table, /<th scope="row">PCD<\/th>/u);
+    assert.ok(table.includes(`<th scope="row">${locale === "en" ? "Bolt count" : "Количество отверстий"}</th>`));
+    assert.doesNotMatch(table, /5×112/u);
+    assert.match(markup, /Combination missing from reference/u);
+  });
+}
+
+test("unknown overall still separates axle tables when only field status differs", () => {
+  const fieldEvidence = ["front", "rear"].flatMap(axle => ["pcd", "bolt_count"].map(field => ({axle, field, vehicleValue: "5", rimValue: "5", status: axle === "front" ? "pass" : "fail"})));
+  const markup = context.fitmentMarkup({overview: {}, executionStatus: "completed", check: {execution_status: "completed", verdict: "unknown"}, fieldEvidence});
+  assert.equal([...markup.matchAll(/<table /gu)].length, 2);
+  assert.match(markup, /vnext-fitment__row-result--fail/u);
+});
+
+test("overall combination warning and missing contextual ET copy remain explicit in RU/EN", () => {
+  const app = fs.readFileSync(path.join(root, "webapp/app.js"), "utf8");
+  const start = app.indexOf("function fitmentVerdictMessage(");
+  const copy = app.slice(start, app.indexOf("\nfunction ", start + 1));
+  for (const locale of ["ru", "en"]) {
+    const copyContext = {locale};
+    vm.runInNewContext(`${copy}\nglobalThis.message = fitmentVerdictMessage;`, copyContext);
+    assert.match(copyContext.message({code: "size_not_in_reference"}), locale === "ru" ? /Комбинация диаметра и ширины/u : /diameter and width combination/u);
+    assert.match(copyContext.message({code: "vehicle_reference_offset_missing"}), locale === "ru" ? /Для выбранного размера нет справочных данных по ET/u : /No ET reference.*selected size/u);
+  }
+});

@@ -60,10 +60,10 @@ def test_cayenne_exact_modification_saved_api_detail_width_independent():
                     "rim_setup": {
                         "is_staggered": True,
                         "front": {
-                            "wheel_diameter_in": {"value": 19},
-                            "wheel_width_j": {"value": width},
+                            "wheel_diameter_in": {"source": "user_confirmed", "value": 19},
+                            "wheel_width_j": {"source": "user_confirmed", "value": width},
                         },
-                        "rear": {"wheel_diameter_in": {"value": 16}},
+                        "rear": {"wheel_diameter_in": {"source": "user_confirmed", "value": 16}},
                     }
                 },
                 "evaluation_snapshot": {"normalized_profile": profile},

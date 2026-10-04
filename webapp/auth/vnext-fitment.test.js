@@ -20,21 +20,22 @@ test("picker makes the workspace inert and catalogue labels explicitly name cont
   assert.doesNotMatch(wheel, /SKU[^<]*▾|·/);
 });
 
-test("comparison has shared semantic headers, preserves axles and neutralizes global unknown", () => {
-  const fields = ["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm", "offset_et_mm"];
-  const rows = fields.map(field => ({ field, axle: "front", vehicleValue: "33.275", rimValue: "35.125", resultLabel: "Подходит" }));
+test("comparison has shared semantic headers, preserves axles and individual field statuses under global unknown", () => {
+  const fields = ["wheel_diameter_in", "wheel_width_j", "offset_et_mm", "pcd", "bolt_count", "center_bore_mm"];
+  const rows = fields.map(field => ({ field, axle: "front", status: "pass", vehicleValue: "33.275", rimValue: "35.125", resultLabel: "Подходит" }));
   const model = { check: { execution_status: "completed", verdict: "unknown", is_current: false }, fieldEvidence: rows };
   const markup = fitmentMarkup(model);
   assert.equal((markup.match(/<th scope="col">/g) || []).length, 4);
-  assert.equal((markup.match(/<tr tabindex="0">/g) || []).length, 5);
+  assert.equal((markup.match(/<tr tabindex="0">/g) || []).length, 6);
   const table = markup.slice(markup.indexOf("<table"), markup.indexOf("</table>"));
-  assert.doesNotMatch(table, /Подходит|data-label/);
+  assert.match(table, /Подходит/);
+  assert.doesNotMatch(table, /data-label/);
   assert.match(table, /35,125/);
   assert.match(markup, /Результат больше не актуален/);
   const axles = fitmentMarkup({ ...model, fieldEvidence: [...rows, ...rows.map(row => ({ ...row, axle: "rear", rimValue: "42.125" }))] });
   assert.match(axles, /Передняя ось/);
   assert.match(axles, /Задняя ось/);
-  assert.equal((axles.match(/<tr tabindex="0">/g) || []).length, 10);
+  assert.equal((axles.match(/<tr tabindex="0">/g) || []).length, 12);
 });
 
 test("pending check locks the mutation region and keeps Create Image outside it", () => {
@@ -233,7 +234,7 @@ test("Fitment queued/processing and stale snapshots use server status/currentnes
   assert.match(stale, /Проверить ещё раз/);
 });
 
-test("Fitment comparison keeps all five rows with explicit missing evidence", () => {
+test("Fitment comparison keeps all six rows with explicit missing evidence", () => {
   const availableField = fitmentMarkup({
     overview: {},
     executionStatus: "completed",
@@ -247,7 +248,7 @@ test("Fitment comparison keeps all five rows with explicit missing evidence", ()
   const noFields = fitmentMarkup({ overview: {}, executionStatus: "completed", check: { execution_status: "completed", verdict: "unknown" } });
   assert.match(noFields, /Нет данных/);
   assert.match(noFields, /PCD/);
-  assert.equal((noFields.match(/<tr tabindex="0">/g) || []).length, 5);
+  assert.equal((noFields.match(/<tr tabindex="0">/g) || []).length, 6);
 });
 
 test("Fitment keeps resolver retries, manual recovery, and explicit variant selection visible", () => {

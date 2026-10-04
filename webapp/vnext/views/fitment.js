@@ -62,17 +62,24 @@ function normalizedIdentity(value) {
 }
 
 const comparisonFields = [
-  ["wheel_diameter_in", "Диаметр", "″"], ["wheel_width_j", "Ширина", "J"],
-  ["pcd", "PCD", ""], ["center_bore_mm", "DIA", " мм"], ["offset_et_mm", "ET", " мм"],
+  ["wheel_diameter_in", "Диаметр", "Diameter", "″"], ["wheel_width_j", "Ширина", "Width", "J"],
+  ["offset_et_mm", "ET", "ET", " mm"], ["pcd", "PCD", "PCD", " mm"],
+  ["bolt_count", "Количество отверстий", "Bolt count", ""], ["center_bore_mm", "DIA", "DIA", " mm"],
 ];
+const comparisonLabel = (model, ru, en) => model.locale === "en" ? en : ru;
+const comparisonResult = (model, item) => ({
+  pass: comparisonLabel(model, "Подходит", "Matches"),
+  conditional: comparisonLabel(model, "С условием", "With conditions"),
+  fail: comparisonLabel(model, "Не совпадает", "Mismatch"),
+  unknown: comparisonLabel(model, "Не определено", "Unknown"),
+}[item.status] || item.resultLabel || comparisonLabel(model, "Нет данных", "No data"));
 
 function parameters(model, rows) {
-  const informational = model.check?.verdict === "unknown";
-  return comparisonFields.map(([field, name, unit]) => {
-    const item = rows.find(row => row.field === field || row.name === name) || {};
-    const value = raw => raw == null ? "Нет данных" : esc(fitmentDisplayValue(raw, model.locale) + unit);
-    const result = informational ? "Не определено" : item.resultLabel || "Нет данных";
-    return `<tr tabindex="0"><th scope="row">${name}</th><td>${value(item.vehicleValue)}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${!informational && item.status === "conditional" ? " vnext-fitment__row-result--conditional" : !informational && item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
+  return comparisonFields.map(([field, ru, en, unit]) => {
+    const item = rows.find(row => row.field === field || row.name === ru || row.name === en) || {};
+    const value = raw => raw == null ? comparisonLabel(model, "Нет данных", "No data") : esc(fitmentDisplayValue(raw, model.locale) + (model.locale !== "en" ? unit.replace(" mm", " мм") : unit));
+    const result = comparisonResult(model, item);
+    return `<tr tabindex="0"><th scope="row">${comparisonLabel(model, ru, en)}</th><td>${value(item.vehicleValue)}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${item.status === "conditional" ? " vnext-fitment__row-result--conditional" : item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
   }).join("");
 }
 
@@ -132,16 +139,16 @@ function comparisonTable(model) {
   const rows = model.fieldEvidence || [];
   const front = rows.filter(row => row.axle !== "rear");
   const rear = rows.filter(row => row.axle === "rear");
-  const comparable = items => comparisonFields.map(([field, name]) => {
-    const item = items.find(row => row.field === field || row.name === name) || {};
+  const comparable = items => comparisonFields.map(([field, ru, en]) => {
+    const item = items.find(row => row.field === field || row.name === ru || row.name === en) || {};
     const display = value => value == null ? "Нет данных" : fitmentDisplayValue(value, model.locale);
     const tone = ["conditional", "fail"].includes(item.status) ? item.status : "";
-    return [display(item.vehicleValue), display(item.rimValue), model.check?.verdict === "unknown" ? "Не определено" : item.resultLabel || "Нет данных", model.check?.verdict === "unknown" ? "" : tone];
+    return [display(item.vehicleValue), display(item.rimValue), comparisonResult(model, item), tone];
   });
   const staggered = Boolean(rear.length || (model.resultSetupMode || model.overview?.setup_mode) === "staggered");
   const separateAxles = staggered && (!rear.length || JSON.stringify(comparable(front)) !== JSON.stringify(comparable(rear)));
-  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">Параметр</th><th scope="col">Автомобиль</th><th scope="col">Колесный диск</th><th scope="col">Результат</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
-  return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? "Передняя ось" : staggered ? "Обе оси — параметры совпадают" : "Параметры колёс")}${separateAxles ? table(rear, "Задняя ось") : ""}</section>`;
+  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">${comparisonLabel(model, "Параметр", "Parameter")}</th><th scope="col">${comparisonLabel(model, "Автомобиль", "Vehicle")}</th><th scope="col">${comparisonLabel(model, "Колесный диск", "Wheel")}</th><th scope="col">${comparisonLabel(model, "Результат", "Result")}</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
+  return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? comparisonLabel(model, "Передняя ось", "Front axle") : staggered ? comparisonLabel(model, "Обе оси — параметры совпадают", "Both axles — matching parameters") : comparisonLabel(model, "Параметры колёс", "Wheel parameters"))}${separateAxles ? table(rear, comparisonLabel(model, "Задняя ось", "Rear axle")) : ""}</section>`;
 }
 
 function preliminaryWarning(model) {
