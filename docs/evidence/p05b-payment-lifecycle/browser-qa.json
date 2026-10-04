@@ -1,0 +1,18 @@
+[
+  {
+    "width": 390,
+    "url": "http://127.0.0.1:8775/tests/browser-fixtures/payment-lifecycle-wallet.html",
+    "title": "W-02 payment lifecycle wallet",
+    "statuses": "all five visible",
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "url": "http://127.0.0.1:8775/tests/browser-fixtures/payment-lifecycle-wallet.html",
+    "title": "W-02 payment lifecycle wallet",
+    "statuses": "all five visible",
+    "overflow": false,
+    "errors": []
+  }
+]

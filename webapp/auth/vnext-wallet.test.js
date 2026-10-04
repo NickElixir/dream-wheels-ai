@@ -93,7 +93,7 @@ test("Wallet keeps pending operational state separate from paid and failed histo
   app.state.payments = entries;
   let model = app.bridge.snapshot();
   assert.equal(model.latestPendingPayment.amountLabel, "500 ₽");
-  assert.deepEqual(Array.from(model.paymentHistory.slice(0, 3), (item) => item.statusLabel), ["В ожидании", "Оплачено", "Сбой"]);
+  assert.deepEqual(Array.from(model.paymentHistory.slice(0, 3), (item) => item.statusLabel), ["В ожидании", "Оплачен", "Ошибка"]);
   assert.equal(model.paymentHistory.length, 10);
   assert.equal(model.hasMoreHistory, true);
   app.bridge.showMoreHistory();
@@ -199,7 +199,7 @@ test("Website success return takes paid status and new balance only from cabinet
   assert.equal(app.bridge.snapshot().latestPendingPayment, null);
 });
 
-test("Cancelled and expired invoices retain the existing failed mapping without a pending island", () => {
+test("Cancelled is distinct from failure; legacy expired invoices retain error mapping", () => {
   const app = runtime();
   app.state.payments = ["cancelled", "expired"].map((status, index) => ({
     invoiceId: index + 1, amount: 200, credits: 7,
@@ -207,7 +207,7 @@ test("Cancelled and expired invoices retain the existing failed mapping without 
   }));
   const model = app.bridge.snapshot();
   assert.equal(model.latestPendingPayment, null);
-  assert.deepEqual(Array.from(model.paymentHistory, (item) => item.statusLabel), ["Сбой", "Сбой"]);
+  assert.deepEqual(Array.from(model.paymentHistory, (item) => item.statusLabel), ["Отменён", "Ошибка"]);
   assert.deepEqual(Array.from(model.paymentHistory, (item) => item.tone), ["warning", "warning"]);
 });
 
@@ -327,4 +327,14 @@ test("Cabinet error retains the last known balance and auth loss hides old accou
   assert.equal(expired.balance, null);
   assert.equal(expired.latestPendingPayment, null);
   assert.equal(expired.paymentHistory.length, 0);
+});
+
+
+test("W-02 cancelled history is not pending or refunded and new checkout remains available", () => {
+  const app = runtime();
+  app.state.payments = [{invoiceId: 42, amount: 200, credits: 7, createdAt: "Сегодня", createdAtMs: Date.now(), status: "cancelled"}, {invoiceId: 41, amount: 200, credits: 7, createdAt: "Вчера", createdAtMs: Date.now(), status: "refunded"}];
+  const model = app.bridge.snapshot();
+  assert.equal(model.latestPendingPayment, null);
+  assert.deepEqual(Array.from(model.paymentHistory, item => item.statusLabel), ["Отменён", "Возвращён"]);
+  assert.ok(model.topUpPackages.length > 0);
 });
