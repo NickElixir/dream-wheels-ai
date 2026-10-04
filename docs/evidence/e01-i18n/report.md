@@ -170,9 +170,9 @@ performed. Ready for a short corrective re-review after exact-HEAD CI succeeds.
 
 ## Remaining runtime leaks — Result / starter grant / photo validation
 
-Review of `60e55f3e52a113534a1945c1425e9d398564528c` is preserved in
-`claude/e01-pr263-corrective-rereview-60e55f3.md` and the local project's `claude/`
-directory. Its reported checks are distinguished from independently run checks.
+Review of `60e55f3e52a113534a1945c1425e9d398564528c` was supplied by the owner
+in the conversation. Its reported checks are distinguished from independently
+run checks.
 
 Five new canonical keys replace five inline strings at the source: Result download
 success, failure and unavailable-history notices; starter-grant package fallback;
