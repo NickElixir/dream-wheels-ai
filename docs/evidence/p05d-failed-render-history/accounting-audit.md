@@ -123,3 +123,5 @@ Gate A/B/C/D: backend может построить консервативный
 Отдельно `tests/test_credits_service.py`: **13 passed** (0.08s). Эти tests не подтверждают PostgreSQL transaction/race/replay; financial runtime changes не внесены.
 
 Owner decision received 2026-10-04: P0.5-D0 закрыт. Runtime correction использует atomic queued claim, guarded completion и locked failure/refund; исходные ссылки остаются evidence audited base, новые проверки документируются в report.md.
+
+Runtime corrections completed after owner decision: terminal queue replay now exits before provider; failure/refund retains one transaction with locked active-state eligibility; successful completion is conditional on processing/reserved; refunded job reservation is rejected. Read-only billing projection requires matching full-cost ledger evidence; default legacy not_charged remains unknown. The unconditional network/queue no-charge warning was removed. See report.md for the reconciled staging base, tests and browser scope. No historical financial mutation occurred.

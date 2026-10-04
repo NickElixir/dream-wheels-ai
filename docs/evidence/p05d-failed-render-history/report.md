@@ -46,3 +46,13 @@ All requested terminal-state, duplicate-delivery, late-completion, failure/refun
 Deferred accounting/runtime findings from base audit: stuck processing recovery after destructive BLPOP/process death; partial FIFO refund for a multi-credit job with mixed expiry; replacement refund package TTL policy; ledger reconciliation/corruption if already present. Unknown projection avoids unsupported financial copy. These remain separate work; D does not rebuild wallets/refund old jobs. No new blocker identified in the scoped implementation; independent review remains required before merge.
 
 P0.5-D0: CLOSED. Ready for independent review after exact delivery HEAD CI. Do not auto-merge.
+
+## Staging reconciliation and final verification
+
+Updated on `origin/staging` **e472b21** (P0.5-B/C and C0 evidence merged). Shared `jobs_api.py`, `main.py`, `app.js` merged cleanly; CI conflict resolved by retaining B/C PostgreSQL checks and adding D finality tests. Focused self-review checked guarded render mutations, authenticated SQL projections and current failure/polling/retry hooks against this base.
+
+After reconciliation: full backend with the isolated render DSN **716 passed, 10 skipped** (includes all **9 render PostgreSQL regressions**); affected Node/gateway/catalogue suite **189 passed**; auth/frontend suite **213 passed**; dedicated render behavior suite **18 passed**, including no financial promise for network/queue ambiguity. Ruff lint/format and compileall pass. Frontend bundles build without a source diff. Browser fixtures rechecked on the reconciled source: 20 responsive RU/EN state checks, zero console errors/overflow; screenshots refreshed. Browser fixture transports and retry callback remain isolated doubles, while the runtime retry is separately exercised by the real frontend test harness and API reservation tests.
+
+Removed the pre-existing unconditional “render will not be charged” availability warning: failed job state, queue exception and network ambiguity all remain insufficient refund evidence.
+
+Exact delivery commit CI is checked on GitHub before the final handoff; results/URL belong to the PR and delivery response to avoid a self-referential report commit SHA. Independent review is still required, and merge is not performed.

@@ -450,7 +450,12 @@ test("pure presentation covers real statuses, empty/error, feedback and unavaila
   for (const status of ["queued", "processing"]) assert.match(processingMarkup({ status }), /Создаём виртуальную примерку/);
   assert.match(processingMarkup({ error: { title: "Недостаточно рендеров", actionLabel: "Пополнить счёт" } }), /Недостаточно рендеров/);
   assert.match(resultMarkup({ jobId: "A", status: "completed", resultUrl: "/result", originalUrl: "/original", feedback: { sentiment: "disliked", error: "failure" } }), /vnext-compare-range/);
-  assert.match(resultMarkup({ jobId: "A", status: "completed", resultFailed: true }), /Изображение временно недоступно/);
+  const app = runtime();
+  app.state.renderHistory = [{...job("A"), result_url:"", assets:{}}];
+  app.state.renderDetailJobId = "A";
+  const unavailable = resultMarkup(app.bridge.snapshot("result"));
+  assert.match(unavailable, /Изображение сейчас недоступно/);
+  assert.doesNotMatch(unavailable, /Не удалось создать изображение|Рендер не создан/);
   assert.match(historyMarkup({ rows: [] }), /Готовых рендеров пока нет/);
   assert.match(historyMarkup({ error: "network" }), /Повторить/);
   for (const status of ["completed", "processing", "queued", "failed"]) {
@@ -513,4 +518,29 @@ test("in-flight signing response is discarded after auth identity changes",async
  app.setAuthIdentity("different-user-token");
  resolve({ok:true,json:async()=>({kind:"car_original",url:"https://project.supabase.co/storage/v1/object/sign/raw/original.webp?token=fixture-only",expires_at:new Date(Date.now()+600_000).toISOString()})});
  assert.equal(await pending,"");assert.equal(app.state.renderAssetSignedUrlsByJob.A,undefined);
+});
+
+
+test("user retry submits a new generation key and preserves the old failed History job", async () => {
+  const app=runtime(); app.ready();
+  const old={...job("OLD","failed"),render_billing_status:"refunded"};
+  app.state.renderHistory=[old];
+  app.setHistory(async()=>{});
+  const requests=[];
+  app.setFetch(async(path,options)=>{
+    if(path==="/identity/assets")return {ok:true,json:async()=>({draft_id:"new-draft"})};
+    if(options?.method==="POST"){
+      requests.push(JSON.parse(options.body));
+      return {ok:true,json:async()=>({job_id:`NEW-${requests.length}`})};
+    }
+    return {ok:true,json:async()=>({status:"failed",render_billing_status:"refunded"})};
+  });
+  await app.submitJob();
+  await app.submitJob();
+  assert.equal(requests.length,2);
+  assert.notEqual(requests[0].idempotency_key,requests[1].idempotency_key);
+  assert.equal(app.state.jobId,"NEW-2");
+  assert.equal(app.state.renderHistory[0],old);
+  assert.equal(old.status,"failed");
+  assert.equal(old.render_billing_status,"refunded");
 });

@@ -398,7 +398,7 @@ const I18N = {
             parser: "Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.",
             fitment: "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",
             missingData: "Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.",
-            generationUnavailable: "Генерация временно недоступна. Рендер не будет списан.",
+            generationUnavailable: "Генерация временно недоступна.",
         },
         photoGuide: {
             eyebrow: "Помощь",
@@ -875,7 +875,7 @@ const I18N = {
             parser: "Parameters were detected automatically. Review the values before the technical assessment.",
             fitment: "This is a preliminary compatibility check. It is based on the available technical parameters. Before buying, confirm compatibility with the seller or an installation centre.",
             missingData: "There is not enough data for a reliable compatibility check. Review the missing wheel parameters manually.",
-            generationUnavailable: "Generation is temporarily unavailable. A render will not be charged.",
+            generationUnavailable: "Generation is temporarily unavailable.",
         },
         photoGuide: {
             eyebrow: "Help",

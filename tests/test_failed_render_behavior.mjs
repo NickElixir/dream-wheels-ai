@@ -61,3 +61,11 @@ test('polling merges authoritative billing without deriving it from failed', () 
   vm.runInNewContext(`mergeStatusIntoHistory('job-1',{status:'failed'});`,context);
   assert.equal(context.state.renderHistory[0].render_billing_status,'unknown');
 });
+
+test('network or queue ambiguity never promises a refund', () => {
+  for(const locale of ['ru','en']){
+    const context={};
+    vm.runInNewContext(`${i18n}\nconst locale=${JSON.stringify(locale)};\n${fn('t')}\n${fn('classifyGenerationError')}\nthis.error=classifyGenerationError('queue unavailable');`,context);
+    assert.doesNotMatch(context.error.title,/не будет списан|not be charged/);
+  }
+});
