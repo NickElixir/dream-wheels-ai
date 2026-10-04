@@ -218,7 +218,8 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
     return { api: context.__navigationApi, calls, sessionStorage };
 }
 
-function pcdProjectionApi() {
+function pcdProjectionApi({ vnext = false } = {}) {
+    const events = [];
     const pcdSelect = {
         ...element(),
         value: "",
@@ -241,6 +242,7 @@ function pcdProjectionApi() {
         head: { append() {} }, body: element(), hidden: false,
         addEventListener() {},
         querySelector(selector) {
+            if (vnext && selector === "[data-vnext-fitment-root]") return element();
             if (selector === "[data-fitment-pcd-select]") return pcdSelect;
             if (selector === "[data-fitment-pcd-custom]") return pcdCustom;
             return null;
@@ -254,11 +256,12 @@ function pcdProjectionApi() {
     const window = {
         Telegram: { Login: {} }, location: { search: "" }, innerWidth: 1280,
         setTimeout, clearTimeout, requestAnimationFrame(callback) { callback(); },
-        addEventListener() {}, scrollTo() {}, open() {},
+        addEventListener() {}, scrollTo() {}, open() {}, dispatchEvent(event) { events.push(event.type); },
     };
     const calls = [];
     const context = {
         AbortController, URL, URLSearchParams, console, document, window,
+        CustomEvent: class { constructor(type) { this.type = type; } },
         fetch: async (...args) => {
             calls.push(args);
             return response(200, {});
@@ -274,9 +277,9 @@ function pcdProjectionApi() {
         ${APP_SOURCE_FOR_VM}
         globalThis.__pcdProjectionApi = {
             state, buildDefaultDemoFitmentOverview, fitmentFormFromOverview,
-            syncFitmentPcdControl, renderFitment,
+            syncFitmentPcdControl, renderFitment, buildRimSecondaryDetails,
         };`, context);
-    return { api: context.__pcdProjectionApi, pcdSelect, pcdCustom, calls };
+    return { api: context.__pcdProjectionApi, pcdSelect, pcdCustom, calls, events };
 }
 
 function renderV2RimEditor(api, rim) {
@@ -979,6 +982,29 @@ test("RIM_CARD_EDITOR_PCD_CONSISTENCY uses one effective RimSpec", () => {
     assert.equal(effective.pcd_mm, 108);
     assert.equal(form.rim.bolt_count, 4);
     assert.equal(form.rim.pcd_mm, 108);
+});
+
+test("Fitment delegates to the mounted VNext bridge without touching fallback controls or canonical state", () => {
+    const { api, pcdSelect, calls, events } = pcdProjectionApi({ vnext: true });
+    api.state.view = "fitment";
+    const formBefore = JSON.stringify(api.state.fitmentForm);
+    const callsBefore = calls.length;
+    api.renderFitment();
+    assert.deepEqual(events, ["dreamwheels:fitmentchange"]);
+    assert.equal(pcdSelect.value, "");
+    assert.equal(JSON.stringify(api.state.fitmentForm), formBefore);
+    assert.equal(calls.length, callsBefore);
+});
+
+test("Fitment source details keep safe labels and hide persisted source while editing", () => {
+    const { api } = pcdProjectionApi();
+    const overview = { front_rim: { rim: { product_url: "https://www.example.com/wheel?token=private#fragment", wheel_diameter_in: 19 } } };
+    const details = api.buildRimSecondaryDetails(overview);
+    assert.equal(details.rows[0].value, "example.com/wheel");
+    assert.equal(details.editable, false);
+    assert.equal(api.buildRimSecondaryDetails(overview, { editing: true }).rows.length, 0);
+    overview.front_rim.rim.product_url = "https://host.internal/private";
+    assert.equal(api.buildRimSecondaryDetails(overview).rows[0].value, "Источник указан");
 });
 
 test("V2_PCD_PRESET_HYDRATES_VISIBLE_SELECT", () => {

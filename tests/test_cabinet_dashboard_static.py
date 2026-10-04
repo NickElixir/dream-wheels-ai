@@ -244,7 +244,7 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "expected_vehicle_revision" in APP_JS
     assert "expected_rim_revision" in APP_JS
     assert "fitment_available" in APP_JS
-    assert "readinessUnconfirmed" in APP_JS
+    assert 'uiCopy("bridge.confirmed", locale)' in APP_JS
     assert 'params.get("preview") === "fitment"' in APP_JS
     assert "FITMENT_PREVIEW_STORAGE_KEY" in APP_JS
     assert "buildDefaultDemoFitmentOverview" in APP_JS
@@ -273,8 +273,8 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
     assert "Сохранить параметры" in APP_JS
     assert "await runFitmentCheck();" not in APP_JS
     assert "You can start the compatibility check separately." in APP_JS
-    assert "function fitmentSourceBrand(overview)" in APP_JS
-    assert "new URL(productUrl).hostname" in APP_JS
+    assert "function buildRimSecondaryDetails(overview" in APP_JS
+    assert "fitmentSafeSourceDisplay(source)" in APP_JS
     assert "state.fitmentSourceOpen = true;" in APP_JS
     assert "clearFitmentResolverFeedback({ close: true });" in APP_JS
     assert "Wheel parameters could not be determined automatically" in APP_JS

@@ -1,0 +1,22 @@
+{
+  "deletedSymbols": [
+    "renderFitmentLegacy",
+    "fitmentSourceValue",
+    "fitmentNextStep",
+    "fitmentCatalogueErrorMessage",
+    "fitmentCatalogueQueryValue",
+    "formatPcd",
+    "fitmentVehicleMeta",
+    "fitmentRimMeta",
+    "fitmentSourceBrand",
+    "fitmentSourceSku",
+    "setFitmentOverviewCollapsed",
+    "renderFitmentCandidates",
+    "fitmentCandidatesFor",
+    "fitmentCandidateLabel",
+    "fitmentModificationStateLabel",
+    "fitmentRetryMessage"
+  ],
+  "sourceTestsFixturesHtmlRemainingReferences": 0,
+  "historicalEvidenceNotRewritten": true
+}

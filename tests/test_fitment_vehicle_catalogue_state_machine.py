@@ -167,7 +167,7 @@ def test_save_is_disabled_until_all_four_current_catalogue_selections_are_valid(
 
 
 def test_catalogue_values_are_deduplicated_by_canonical_value_and_years_are_deterministic() -> None:
-    controls = _scope(APP_JS, "function renderFitmentControls", "function renderFitmentLegacy")
+    controls = _scope(APP_JS, "function renderFitmentControls", "function fitmentContextJob")
     assert 'kind === "years"' in controls
     assert (
         "sort((left, right) => Number(fitmentOptionValue(right)) - Number(fitmentOptionValue(left)))"

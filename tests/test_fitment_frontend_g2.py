@@ -99,7 +99,7 @@ def test_complete_vehicle_details_does_not_expose_variant_picker_or_internal_pro
         APP_JS, "function renderFitment()", "function renderFitmentRimVariants"
     )
     assert "renderFitmentVehicleHelper(ui);" in vehicle_renderer
-    assert "fitmentModificationStateLabel(ui)" not in vehicle_renderer
+    assert "fitmentVehicleWorkspaceMode(overview)" in vehicle_renderer
     assert (
         'const requiredVariantSelection = vehicleWorkspaceMode === "variant_select_required";'
         in vehicle_renderer
