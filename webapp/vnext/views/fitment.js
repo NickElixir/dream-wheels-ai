@@ -181,6 +181,7 @@ function catalogueField(model, kind, label, path, value, extra = {}) {
     options,
     disabled,
     message: fieldState.message || "",
+    placeholder: fieldState.placeholder,
     retry,
     error: model.fieldErrors?.[path] || "",
     ...extra,

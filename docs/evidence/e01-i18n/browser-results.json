@@ -241,6 +241,201 @@
   },
   {
     "width": 390,
+    "locale": "ru",
+    "scenario": "vehicle-editor-loading",
+    "text": "nav.fitment\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nЗагружаем марки…\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "vehicle-editor-empty",
+    "text": "nav.fitment\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nНет доступных марок\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "vehicle-editor-failed",
+    "text": "nav.fitment\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nНе удалось загрузить марки Повторить\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "create-generation-service",
+    "text": "Генерация временно недоступна.\n\nСервис временно недоступен. Повторите попытку через несколько минут или обратитесь в поддержку.\n\nПовторить",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "create-generation-wheel",
+    "text": "Не удалось обработать изображение диска\n\nЗагрузите другое фото: диск должен быть снят спереди и находиться в фокусе.\n\nЗаменить фото диска",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "create-generation-timeout",
+    "text": "Примерка всё ещё создаётся\n\nМы продолжаем обрабатывать фото. Результат появится в «Моих примерках».\n\nОбновить статус",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-settings-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "ACCOUNT\n\nAccount settings\n\nLink Email and Telegram to sign in either way. Your balance, render history and payments stay shared.\n\nEmail\n\nqa@example.com\n\nLinked\nTelegram\n\nNot linked\n\nLink"
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "account-settings",
+    "text": "АККАУНТ\n\nНастройки аккаунта\n\nПодключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.\n\nEmail\n\nqa@example.com\n\nПодключено\nTelegram\n\nНе подключён\n\nПодключить",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-settings-error-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": ""
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "account-settings-error",
+    "text": "",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-link-email-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "qa@example.com",
+      "otp": "",
+      "open": true,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nEmail\nGet code\n\nEnter a valid email address."
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "account-link-email",
+    "text": "×\n\nDREAMWHEELS AI\n\nПодключить Email\n\nПодтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.\n\nЭлектронная почта\nПолучить код\n\nВведите корректный Email.",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-link-otp-locale-switch",
+    "preserved": {
+      "step": "otp",
+      "email": "qa@example.com",
+      "otp": "123456",
+      "open": true,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 2
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nCode from email\n\nCode sent to qa••••@example.com\n\nVerify\n\nCould not verify your email. Check the code and try again."
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "account-link-otp",
+    "text": "×\n\nDREAMWHEELS AI\n\nПодключить Email\n\nПодтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.\n\nКод из письма\n\nКод отправлен на qa••••@example.com\n\nПодтвердить\n\nНе удалось подтвердить Email. Проверьте код и попробуйте ещё раз.",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-merge-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts"
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "account-merge",
+    "text": "×\n\nDREAMWHEELS AI\n\nОбъединить аккаунты?\n\nTelegram уже используется в другом аккаунте Dream Wheels.\n\nПосле объединения баланс, история рендеров и оплаты сохранятся и станут общими.\n\nОбъединение нельзя отменить.\n\ncreate.cancel\nОбъединить аккаунты",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
     "locale": "en",
     "scenario": "dashboard",
     "text": "Home\n\nNEW TRY-ON\n\nTry\nnew wheels\non your vehicle\nCreate a try-on\n\nLATEST RESULT\n\nYour first try-on\n\nUpload photos of the vehicle and wheel — the finished result will appear here.\n\nCreate a try-on\n\nBALANCE\n\n12\nrenders\nTop up balance\n\nRECENT TRY-ONS\n\nYour latest virtual try-ons will appear here.\n\nHome\nCreate\nHistory\nBalance\nHelp",
@@ -383,7 +578,7 @@
     "width": 390,
     "locale": "en",
     "scenario": "editor",
-    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\n\nParameters confirmed\n\nWHEEL\n\nWheel parameters\nSame\nDifferent\nAdd product link\nBrand\nModel\nSKU\nBoth axles\nDiameter\nNot selected\nChoose another ▾\nWidth\nNot selected\nChoose another ▾\nPCD\nNot selected\nChoose another ▾\nDIA\nNot selected\nChoose another ▾\nET\nNot selected\nChoose another ▾\n\n5 parameters left to confirm\n\nSave parameters\nHide\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nCheck completed\nCheck again\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\n\nParameters confirmed\n\nWHEEL\n\nWheel parameters\nSame\nDifferent\nAdd product link\nBrand\nModel\nSKU\nBoth axles\nDiameter\nNot selected\nChoose another ▾\nWidth\nNot selected\nChoose another ▾\nPCD\nNot selected\nChoose another ▾\nDIA\nNot selected\nChoose another ▾\nET\nNot selected\nChoose another ▾\n\nParameters left to confirm: 5\n\nSave parameters\nHide\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nCheck completed\nCheck again\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
     "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nAxle configuration\n\n\nSelect Diameter Not selected\n\n\nChoose another Diameter for the front axle\n\n\nSelect Width Not selected\n\n\nChoose another Width for the front axle\n\n\nSelect PCD Not selected\n\n\nChoose another PCD for the front axle\n\n\nSelect DIA Not selected\n\n\nChoose another DIA for the front axle\n\n\nSelect ET Not selected\n\n\nChoose another ET for the front axle\n\n\nMain navigation\n\n",
     "overflow": false,
     "clipped": [],
@@ -475,6 +670,116 @@
     "scenario": "auth-restoring",
     "text": "Sign in\n×\n\nDREAMWHEELS AI\n\nOpening the app\n\nChecking your protected session before opening the app\n\nHome\nCreate\nHistory\nBalance\nHelp",
     "aria": "Main navigation\n\n\nAccount\n\n\nClose\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nSend again in 30s\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "vehicle-editor-loading",
+    "text": "nav.fitment\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nLoading makes…\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "vehicle-editor-empty",
+    "text": "nav.fitment\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nNo makes available\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "vehicle-editor-failed",
+    "text": "nav.fitment\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nFailed to load makes Retry\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image\nHome\nCreate\nHistory\nBalance\nHelp",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "create-generation-service",
+    "text": "Generation is temporarily unavailable.\n\nThe service is temporarily unavailable. Try again in a few minutes or contact support.\n\nRetry",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "create-generation-wheel",
+    "text": "Could not process the wheel image\n\nUpload another photo with the wheel facing the camera and in focus.\n\nReplace wheel photo",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "create-generation-timeout",
+    "text": "Your try-on is still being created\n\nWe are still processing your photos. The result will appear in My try-ons.\n\nRefresh status",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-settings",
+    "text": "ACCOUNT\n\nAccount settings\n\nLink Email and Telegram to sign in either way. Your balance, render history and payments stay shared.\n\nEmail\n\nqa@example.com\n\nLinked\nTelegram\n\nNot linked\n\nLink",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-settings-error",
+    "text": "",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-link-email",
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nEmail\nGet code\n\nEnter a valid email address.",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-link-otp",
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nCode from email\n\nCode sent to qa••••@example.com\n\nVerify\n\nCould not verify your email. Check the code and try again.",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "account-merge",
+    "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
     "overflow": false,
     "clipped": [],
     "errors": []
@@ -721,6 +1026,201 @@
   },
   {
     "width": 1440,
+    "locale": "ru",
+    "scenario": "vehicle-editor-loading",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nЗагружаем марки…\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "vehicle-editor-empty",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nНет доступных марок\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "vehicle-editor-failed",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nАвтомобиль не указан\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать автомобиль\n\nТребуется подтверждение\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры не заполнены\n\nАВТОМОБИЛЬ\n\nУкажите автомобиль\nМарка\nВыберите марку\nНе удалось загрузить марки Повторить\nМодель\nВыберите модель\nСначала выберите марку\nГод\nВыберите год\nСначала выберите модель\nСохранить автомобиль\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить совместимость\nСоздать изображение",
+    "aria": "Основная навигация\n\n\nАккаунт\n\n\nАвтомобиль и диск\n\n\nИсточники и состояние данных\n\n\nФото автомобиля\n\n\nОсновная навигация\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "create-generation-service",
+    "text": "Генерация временно недоступна.\n\nСервис временно недоступен. Повторите попытку через несколько минут или обратитесь в поддержку.\n\nПовторить",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "create-generation-wheel",
+    "text": "Не удалось обработать изображение диска\n\nЗагрузите другое фото: диск должен быть снят спереди и находиться в фокусе.\n\nЗаменить фото диска",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "create-generation-timeout",
+    "text": "Примерка всё ещё создаётся\n\nМы продолжаем обрабатывать фото. Результат появится в «Моих примерках».\n\nОбновить статус",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-settings-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "ACCOUNT\n\nAccount settings\n\nLink Email and Telegram to sign in either way. Your balance, render history and payments stay shared.\n\nEmail\n\nqa@example.com\n\nLinked\nTelegram\n\nNot linked\n\nLink"
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "account-settings",
+    "text": "АККАУНТ\n\nНастройки аккаунта\n\nПодключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.\n\nEmail\n\nqa@example.com\n\nПодключено\nTelegram\n\nНе подключён\n\nПодключить",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-settings-error-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": ""
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "account-settings-error",
+    "text": "",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-link-email-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "qa@example.com",
+      "otp": "",
+      "open": true,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nEmail\nGet code\n\nEnter a valid email address."
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "account-link-email",
+    "text": "×\n\nDREAMWHEELS AI\n\nПодключить Email\n\nПодтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.\n\nЭлектронная почта\nПолучить код\n\nВведите корректный Email.",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-link-otp-locale-switch",
+    "preserved": {
+      "step": "otp",
+      "email": "qa@example.com",
+      "otp": "123456",
+      "open": true,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 2
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nCode from email\n\nCode sent to qa••••@example.com\n\nVerify\n\nCould not verify your email. Check the code and try again."
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "account-link-otp",
+    "text": "×\n\nDREAMWHEELS AI\n\nПодключить Email\n\nПодтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.\n\nКод из письма\n\nКод отправлен на qa••••@example.com\n\nПодтвердить\n\nНе удалось подтвердить Email. Проверьте код и попробуйте ещё раз.",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-merge-locale-switch",
+    "preserved": {
+      "step": "email",
+      "email": "",
+      "otp": "",
+      "open": false,
+      "auth": {
+        "status": "authenticated",
+        "provider": "supabase"
+      },
+      "requests": 0
+    },
+    "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts"
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "account-merge",
+    "text": "×\n\nDREAMWHEELS AI\n\nОбъединить аккаунты?\n\nTelegram уже используется в другом аккаунте Dream Wheels.\n\nПосле объединения баланс, история рендеров и оплаты сохранятся и станут общими.\n\nОбъединение нельзя отменить.\n\ncreate.cancel\nОбъединить аккаунты",
+    "aria": "Закрыть\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nЗакрыть\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
     "locale": "en",
     "scenario": "dashboard",
     "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nHome\n\nNEW TRY-ON\n\nTry\nnew wheels\non your vehicle\nCreate a try-on\n\nLATEST RESULT\n\nYour first try-on\n\nUpload photos of the vehicle and wheel — the finished result will appear here.\n\nCreate a try-on\n\nBALANCE\n\n12\nrenders\nTop up balance\n\nRECENT TRY-ONS\n\nYour latest virtual try-ons will appear here.",
@@ -863,7 +1363,7 @@
     "width": 1440,
     "locale": "en",
     "scenario": "editor",
-    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\n\nParameters confirmed\n\nWHEEL\n\nWheel parameters\nSame\nDifferent\nAdd product link\nBrand\nModel\nSKU\nBoth axles\nDiameter\nNot selected\nChoose another ▾\nWidth\nNot selected\nChoose another ▾\nPCD\nNot selected\nChoose another ▾\nDIA\nNot selected\nChoose another ▾\nET\nNot selected\nChoose another ▾\n\n5 parameters left to confirm\n\nSave parameters\nHide\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nCheck completed\nCheck again\nCreate image",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\n\nParameters confirmed\n\nWHEEL\n\nWheel parameters\nSame\nDifferent\nAdd product link\nBrand\nModel\nSKU\nBoth axles\nDiameter\nNot selected\nChoose another ▾\nWidth\nNot selected\nChoose another ▾\nPCD\nNot selected\nChoose another ▾\nDIA\nNot selected\nChoose another ▾\nET\nNot selected\nChoose another ▾\n\nParameters left to confirm: 5\n\nSave parameters\nHide\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nCheck completed\nCheck again\nCreate image",
     "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nAxle configuration\n\n\nSelect Diameter Not selected\n\n\nChoose another Diameter for the front axle\n\n\nSelect Width Not selected\n\n\nChoose another Width for the front axle\n\n\nSelect PCD Not selected\n\n\nChoose another PCD for the front axle\n\n\nSelect DIA Not selected\n\n\nChoose another DIA for the front axle\n\n\nSelect ET Not selected\n\n\nChoose another ET for the front axle\n\n\nMain navigation\n\n",
     "overflow": false,
     "clipped": [],
@@ -955,6 +1455,116 @@
     "scenario": "auth-restoring",
     "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nSign in\n×\n\nDREAMWHEELS AI\n\nOpening the app\n\nChecking your protected session before opening the app",
     "aria": "Main navigation\n\n\nAccount\n\n\nClose\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nSend again in 30s\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "vehicle-editor-loading",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nLoading makes…\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "vehicle-editor-empty",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nNo makes available\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "vehicle-editor-failed",
+    "text": "DREAM WHEELS AI\nHome\nCreate a try-on\nHistory\nBalance\nHELP\nSupport\nHow to prepare photos\nDocuments\nAccount\nProfile settings\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nVehicle not specified\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nSpecify vehicle\n\nConfirmation required\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters are empty\n\nVEHICLE\n\nEnter vehicle details\nMake\nSelect make\nFailed to load makes Retry\nModel\nSelect model\nSelect a make first\nYear\nSelect year\nSelect a model first\nSave vehicle\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck compatibility\nCreate image",
+    "aria": "Main navigation\n\n\nAccount\n\n\nVehicle and wheel\n\n\nSources and data status\n\n\nVehicle photo\n\n\nMain navigation\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "create-generation-service",
+    "text": "Generation is temporarily unavailable.\n\nThe service is temporarily unavailable. Try again in a few minutes or contact support.\n\nRetry",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "create-generation-wheel",
+    "text": "Could not process the wheel image\n\nUpload another photo with the wheel facing the camera and in focus.\n\nReplace wheel photo",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "create-generation-timeout",
+    "text": "Your try-on is still being created\n\nWe are still processing your photos. The result will appear in My try-ons.\n\nRefresh status",
+    "aria": "",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-settings",
+    "text": "ACCOUNT\n\nAccount settings\n\nLink Email and Telegram to sign in either way. Your balance, render history and payments stay shared.\n\nEmail\n\nqa@example.com\n\nLinked\nTelegram\n\nNot linked\n\nLink",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-settings-error",
+    "text": "",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-link-email",
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nEmail\nGet code\n\nEnter a valid email address.",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-link-otp",
+    "text": "×\n\nDREAMWHEELS AI\n\nLink Email\n\nVerify your email address to use it to sign in to this account.\n\nCode from email\n\nCode sent to qa••••@example.com\n\nVerify\n\nCould not verify your email. Check the code and try again.",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "account-merge",
+    "text": "×\n\nDREAMWHEELS AI\n\nMerge accounts?\n\nTelegram is already used in another Dream Wheels account.\n\nAfter merging, your balance, render history and payments will be preserved and shared.\n\nMerging cannot be undone.\n\ncreate.cancel\nMerge accounts",
+    "aria": "Close\n\n\nDream Wheels AI\n\n\n\n\nname@example.com\nClose\n\n\nDream Wheels AI\n\n",
     "overflow": false,
     "clipped": [],
     "errors": []

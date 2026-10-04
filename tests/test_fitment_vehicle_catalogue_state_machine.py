@@ -1,8 +1,15 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+COPY = json.loads(
+    (ROOT / "webapp/vnext/copy.mjs")
+    .read_text(encoding="utf-8")
+    .split("export const COPY = ", 1)[1]
+    .split(";\n\n", 1)[0]
+)
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 
 
@@ -60,17 +67,17 @@ def test_catalogue_field_states_are_explicit_and_accessible() -> None:
         "failed",
     ):
         assert f'state: "{state}"' in field_state
-    assert "Сначала выберите марку" in APP_JS
-    assert "Сначала выберите модель" in APP_JS
-    assert "Загружаем марки…" in APP_JS
-    assert "Загружаем модели…" in APP_JS
-    assert "Загружаем годы…" in APP_JS
-    assert "Нет доступных марок" in APP_JS
-    assert "Нет доступных моделей" in APP_JS
-    assert "Нет доступных годов" in APP_JS
-    assert "Не удалось загрузить марки" in APP_JS
-    assert "Не удалось загрузить модели" in APP_JS
-    assert "Не удалось загрузить годы" in APP_JS
+    assert any(pair["ru"] == "Сначала выберите марку" for pair in COPY.values())
+    assert any(pair["ru"] == "Сначала выберите модель" for pair in COPY.values())
+    assert any(pair["ru"] == "Загружаем марки…" for pair in COPY.values())
+    assert any(pair["ru"] == "Загружаем модели…" for pair in COPY.values())
+    assert any(pair["ru"] == "Загружаем годы…" for pair in COPY.values())
+    assert any(pair["ru"] == "Нет доступных марок" for pair in COPY.values())
+    assert any(pair["ru"] == "Нет доступных моделей" for pair in COPY.values())
+    assert any(pair["ru"] == "Нет доступных годов" for pair in COPY.values())
+    assert any(pair["ru"] == "Не удалось загрузить марки" for pair in COPY.values())
+    assert any(pair["ru"] == "Не удалось загрузить модели" for pair in COPY.values())
+    assert any(pair["ru"] == "Не удалось загрузить годы" for pair in COPY.values())
     assert 'select.setAttribute("aria-busy", String(fieldState.state === "loading"));' in APP_JS
     assert 'data-fitment-catalogue-retry="makes"' in INDEX_HTML
     assert 'data-fitment-catalogue-retry="markets"' in INDEX_HTML
@@ -150,7 +157,7 @@ def test_save_is_disabled_until_all_four_current_catalogue_selections_are_valid(
         APP_JS, "function validateFitmentForm", "function fitmentVehicleConfirmationRequired"
     )
     assert '"make", "model", "year"' in validation
-    assert 'fitmentCatalogueFieldState(kind, value).state === "selected"' in validation
+    assert 'fitmentCatalogueFieldState(kind, value, locale).state === "selected"' in validation
     assert 'marketState.status === "resolved_single"' in validation
     assert 'marketState.status === "selected"' in validation
     render = _scope(APP_JS, "function renderFitment()", "function renderFitmentRimVariants")

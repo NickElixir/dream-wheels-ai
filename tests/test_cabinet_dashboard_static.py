@@ -661,9 +661,9 @@ def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> No
 
 def test_generation_errors_use_actionable_copy_without_exposing_internal_messages() -> None:
     assert "classifyGenerationError" in APP_JS
-    assert "Не удалось обработать изображение диска" in APP_JS
-    assert "Не удалось распознать автомобиль на фото" in APP_JS
-    assert "Сервис временно недоступен" in APP_JS
+    assert any("Не удалось обработать изображение диска" in pair["ru"] for pair in COPY.values())
+    assert any("Не удалось распознать автомобиль на фото" in pair["ru"] for pair in COPY.values())
+    assert any("Сервис временно недоступен" in pair["ru"] for pair in COPY.values())
     assert "data-error-action" in INDEX_HTML
     assert "data-error-copy" in INDEX_HTML
 

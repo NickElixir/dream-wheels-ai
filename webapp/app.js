@@ -294,10 +294,11 @@ window.addEventListener("dreamwheels:localechange", (event) => {
     document.documentElement.lang = locale;
     applyTranslations();
     renderAuthDialog();
+    refreshAccountPresentation();
 });
 
 function t(path, { sentence = false } = {}) {
-    const value = path.split(".").reduce((current, key) => current?.[key], I18N[locale]) ?? path;
+    const value = path.split(".").reduce((current, key) => current?.[key], I18N[locale]) ?? (path.startsWith("account.") ? uiCopy(path, locale) : path);
     return typeof value === "string" && !sentence ? value.replace(/[.!?…:;,]+$/u, "") : value;
 }
 
@@ -1509,8 +1510,33 @@ function updateAccountBlock() {
     if (name) name.textContent = account.identifier;
     if (avatar) avatar.textContent = getInitials(account.identifier);
     if (subtitle) {
-        subtitle.textContent = account.provider || "Кабинет";
+        subtitle.textContent = account.provider || uiCopy("account.cabinet", locale);
     }
+}
+
+function setAccountPresentation(field, key) {
+    state[`${field}Key`] = key;
+    state[field] = uiCopy(key, locale);
+    return state[field];
+}
+
+function refreshAccountPresentation() {
+    const previousLoginError = state.websiteLoginError;
+    const authMessage = document.querySelector("[data-auth-message]");
+    const loginErrorVisible = Boolean(previousLoginError && authMessage?.textContent === previousLoginError);
+    for (const field of ["accountStateError", "accountSettingsNotice", "accountLinkStatus", "accountMergeStatus", "websiteLoginError"]) {
+        if (state[`${field}Key`]) state[field] = uiCopy(state[`${field}Key`], locale);
+    }
+    renderAccountSettings();
+    renderAccountLinkDialog();
+    const copy = document.querySelector("[data-account-merge-copy]");
+    if (copy && state.accountMergeProvider) copy.textContent = uiCopy("account.merge.providerInUse", locale, { method: accountProviderLabel(state.accountMergeProvider) });
+    const status = document.querySelector("[data-account-merge-status]");
+    if (status) status.textContent = state.accountMergeStatus;
+    updateAccountBlock();
+    updateWebsiteAuthUi();
+    if (loginErrorVisible) setAuthDialogMessage(state.websiteLoginError, true);
+    if (state.websiteLoginErrorKey && state.walletMessage === previousLoginError) setWalletMessage(state.websiteLoginError, "error");
 }
 
 function accountRequestUrl(path) {
@@ -1525,7 +1551,7 @@ function renderAccountSettings() {
     const container = document.querySelector("[data-account-settings-content]");
     if (!container) return;
     if (state.accountStateLoading) {
-        container.innerHTML = '<div class="account-settings-empty">Загружаем способы входа…</div>';
+        container.innerHTML = `<div class="account-settings-empty">${escapeHtml(uiCopy("account.settings.loading", locale))}</div>`;
         return;
     }
     if (state.accountStateError) {
@@ -1534,17 +1560,17 @@ function renderAccountSettings() {
     }
     const identities = state.accountState?.identities;
     if (!identities) {
-        container.innerHTML = '<div class="account-settings-empty">Войдите, чтобы увидеть способы входа.</div>';
+        container.innerHTML = `<div class="account-settings-empty">${escapeHtml(uiCopy("account.settings.signInRequired", locale))}</div>`;
         return;
     }
     const renderRow = (provider, identity) => {
         const title = accountProviderLabel(provider);
         const description = identity.linked
-            ? (identity.display || "Подтверждён")
-            : "Не подключён";
+            ? (identity.display || uiCopy("account.settings.confirmed", locale))
+            : uiCopy("account.settings.notLinked", locale);
         const action = identity.linked
-            ? '<span class="status-pill success">Подключено</span>'
-            : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">Подключить</button>`;
+            ? `<span class="status-pill success">${escapeHtml(uiCopy("account.settings.linked", locale))}</span>`
+            : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">${escapeHtml(uiCopy("account.settings.link", locale))}</button>`;
         return `<div class="form-row"><div><strong>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
     };
     const bothLinked = identities.email?.linked && identities.telegram?.linked;
@@ -1552,7 +1578,7 @@ function renderAccountSettings() {
         renderRow("supabase", identities.email || { linked: false }),
         renderRow("telegram", identities.telegram || { linked: false }),
         bothLinked
-            ? '<div class="account-settings-note">Email и Telegram ведут в один аккаунт. Баланс, история рендеров и оплаты общие.</div>'
+            ? `<div class="account-settings-note">${escapeHtml(uiCopy("account.settings.sharedAccount", locale))}</div>`
             : "",
         state.accountSettingsNotice
             ? `<div class="account-settings-note">${escapeHtml(state.accountSettingsNotice)}</div>`
@@ -1564,6 +1590,7 @@ async function loadAccountState({ silent = false } = {}) {
     if (!isFrontendUserAuthenticated()) return;
     state.accountStateLoading = !silent;
     state.accountStateError = "";
+    state.accountStateErrorKey = "";
     renderAccountSettings();
     try {
         const response = await authenticatedFetch(accountRequestUrl("/auth/account"));
@@ -1572,7 +1599,7 @@ async function loadAccountState({ silent = false } = {}) {
         state.accountState = payload;
         updateAccountBlock();
     } catch (error) {
-        state.accountStateError = "Не удалось загрузить способы входа. Попробуйте ещё раз.";
+        setAccountPresentation("accountStateError", "account.settings.loadFailed");
     } finally {
         state.accountStateLoading = false;
         renderAccountSettings();
@@ -1590,13 +1617,13 @@ function renderAccountLinkDialog() {
     if (!dialog) return;
     dialog.hidden = !state.accountLinkDialogOpen;
     const emailMode = state.accountLinkMode === "supabase";
-    if (title) title.textContent = emailMode ? "Подключить Email" : "Подключить Telegram";
+    if (title) title.textContent = emailMode ? uiCopy("account.link.emailTitle", locale) : uiCopy("account.link.telegramTitle", locale);
     if (copy) copy.textContent = emailMode
-        ? "Подтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт."
-        : "Подтверждаем Telegram, чтобы подключить его к этому аккаунту.";
+        ? uiCopy("account.link.emailCopy", locale)
+        : uiCopy("account.link.telegramCopy", locale);
     if (emailForm) emailForm.hidden = !emailMode || state.accountLinkStep !== "email";
     if (otpForm) otpForm.hidden = !emailMode || state.accountLinkStep !== "otp";
-    if (destination) destination.textContent = state.accountLinkEmail ? `Код отправлен на ${maskAuthEmail(state.accountLinkEmail)}` : "";
+    if (destination) destination.textContent = state.accountLinkEmail ? uiCopy("account.link.codeSent", locale, { email: maskAuthEmail(state.accountLinkEmail) }) : "";
     if (status) {
         status.textContent = state.accountLinkStatus;
         status.dataset.tone = state.accountLinkStatusError ? "error" : "";
@@ -1610,6 +1637,7 @@ function closeAccountLinkDialog() {
     state.accountLinkDialogOpen = false;
     state.accountLinkMode = null;
     state.accountLinkStatus = "";
+    state.accountLinkStatusKey = "";
     state.accountLinkStatusError = false;
     renderAccountLinkDialog();
 }
@@ -1622,6 +1650,7 @@ function resetAccountLinkFlow(provider) {
     state.accountLinkEmail = "";
     state.accountLinkOtp = "";
     state.accountLinkStatus = "";
+    state.accountLinkStatusKey = "";
     state.accountLinkStatusError = false;
     state.accountLinkEmailController = null;
     renderAccountLinkDialog();
@@ -1679,9 +1708,10 @@ function showAccountMerge(result, provider) {
     state.accountMergeToken = result.merge_token;
     state.accountMergeProvider = provider;
     state.accountMergeStatus = "";
+    state.accountMergeStatusKey = "";
     const copy = document.querySelector("[data-account-merge-copy]");
     if (copy) {
-        copy.textContent = `${accountProviderLabel(provider)} уже используется в другом аккаунте Dream Wheels.`;
+        copy.textContent = uiCopy("account.merge.providerInUse", locale, { method: accountProviderLabel(provider) });
     }
     document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", false);
     renderAccountLinkDialog();
@@ -1692,7 +1722,7 @@ async function finishAccountLink(result, provider) {
         showAccountMerge(result, provider);
         return;
     }
-    state.accountLinkStatus = result.status === "already_linked" ? "Этот способ входа уже подключён." : "Способ входа подключён.";
+    setAccountPresentation("accountLinkStatus", result.status === "already_linked" ? "account.link.alreadyLinked" : "account.link.linked");
     await loadAccountState({ silent: true });
     state.accountLinkBusy = false;
     renderAccountLinkDialog();
@@ -1702,20 +1732,20 @@ async function finishAccountLink(result, provider) {
 async function requestAccountLinkEmailOtp() {
     const email = String(document.querySelector("[data-account-link-email]")?.value || "").trim();
     if (!validFrontendEmail(email)) {
-        state.accountLinkStatus = "Введите корректный Email.";
+        setAccountPresentation("accountLinkStatus", "account.link.invalidEmail");
         state.accountLinkStatusError = true;
         renderAccountLinkDialog();
         return;
     }
     const config = window.__DREAM_WHEELS_AUTH_CONFIG__ || {};
     if (config.turnstileSiteKey && !state.accountLinkTurnstileToken) {
-        state.accountLinkStatus = "Подтвердите, что вы человек, чтобы получить код.";
+        setAccountPresentation("accountLinkStatus", "legacy.auth.turnstileRequired");
         state.accountLinkStatusError = true;
         renderAccountLinkDialog();
         return;
     }
     state.accountLinkBusy = true;
-    state.accountLinkStatus = "Отправляем код…";
+    setAccountPresentation("accountLinkStatus", "account.link.sending");
     state.accountLinkStatusError = false;
     renderAccountLinkDialog();
     try {
@@ -1724,9 +1754,9 @@ async function requestAccountLinkEmailOtp() {
         await state.accountLinkEmailController.requestEmailOtp(email, state.accountLinkTurnstileToken);
         state.accountLinkEmail = email;
         state.accountLinkStep = "otp";
-        state.accountLinkStatus = "Введите код из письма.";
+        setAccountPresentation("accountLinkStatus", "account.link.enterCode");
     } catch (_) {
-        state.accountLinkStatus = "Не удалось отправить код. Попробуйте ещё раз.";
+        setAccountPresentation("accountLinkStatus", "account.link.sendFailed");
         state.accountLinkStatusError = true;
     } finally {
         state.accountLinkBusy = false;
@@ -1738,7 +1768,7 @@ async function verifyAccountLinkEmailOtp() {
     const otp = String(document.querySelector("[data-account-link-otp]")?.value || "").replace(/\D+/gu, "");
     if (!otp) return;
     state.accountLinkBusy = true;
-    state.accountLinkStatus = "Проверяем код…";
+    setAccountPresentation("accountLinkStatus", "account.link.verifying");
     state.accountLinkStatusError = false;
     renderAccountLinkDialog();
     try {
@@ -1746,7 +1776,7 @@ async function verifyAccountLinkEmailOtp() {
         const result = await submitAccountLink("supabase", { access_token: accessToken });
         await finishAccountLink(result, "supabase");
     } catch (_) {
-        state.accountLinkStatus = "Не удалось подтвердить Email. Проверьте код и попробуйте ещё раз.";
+        setAccountPresentation("accountLinkStatus", "account.link.verifyFailed");
         state.accountLinkStatusError = true;
         state.accountLinkBusy = false;
         renderAccountLinkDialog();
@@ -1756,12 +1786,12 @@ async function verifyAccountLinkEmailOtp() {
 async function startTelegramAccountLink() {
     resetAccountLinkFlow("telegram");
     state.accountLinkBusy = true;
-    state.accountLinkStatus = "Подготавливаем вход…";
+    setAccountPresentation("accountLinkStatus", "account.link.preparing");
     renderAccountLinkDialog();
     try {
         const resources = getPreparedTelegramLoginResources()
             || { nonce: await fetchWebsiteLoginNonce(), telegramLogin: await loadTelegramLoginLibrary() };
-        state.accountLinkStatus = "Открываем Telegram…";
+        setAccountPresentation("accountLinkStatus", "account.link.openingTelegram");
         renderAccountLinkDialog();
         const numericClientId = Number(resources.nonce.client_id);
         if (!Number.isSafeInteger(numericClientId)) throw new Error("Invalid Telegram client id");
@@ -1778,7 +1808,7 @@ async function startTelegramAccountLink() {
         await finishAccountLink(linked, "telegram");
     } catch (_) {
         state.accountLinkBusy = false;
-        state.accountLinkStatus = "Telegram не подключён. Ничего не изменилось.";
+        setAccountPresentation("accountLinkStatus", "account.link.telegramCancelled");
         state.accountLinkStatusError = true;
         renderAccountLinkDialog();
     } finally {
@@ -1790,7 +1820,7 @@ async function startTelegramAccountLink() {
 async function confirmAccountMerge() {
     if (!state.accountMergeToken || state.accountMergeBusy) return;
     state.accountMergeBusy = true;
-    state.accountMergeStatus = "Объединяем аккаунты…";
+    setAccountPresentation("accountMergeStatus", "account.merge.processing");
     const status = document.querySelector("[data-account-merge-status]");
     if (status) status.textContent = state.accountMergeStatus;
     try {
@@ -1801,12 +1831,12 @@ async function confirmAccountMerge() {
         });
         if (!response.ok) throw new Error(await parseApiError(response));
         await loadAccountState({ silent: true });
-        state.accountSettingsNotice = "Аккаунты объединены. Баланс, история рендеров и оплаты сохранены.";
+        setAccountPresentation("accountSettingsNotice", "account.merge.success");
         state.accountMergeOpen = false;
         document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
         renderAccountSettings();
     } catch (_) {
-        state.accountMergeStatus = "Не удалось объединить аккаунты. Данные не изменены. Попробуйте ещё раз.";
+        setAccountPresentation("accountMergeStatus", "account.merge.failed");
         if (status) {
             status.textContent = state.accountMergeStatus;
             status.dataset.tone = "error";
@@ -2026,7 +2056,9 @@ function clearApplicationSessionState() {
     state.accountState = null;
     state.accountStateLoading = false;
     state.accountStateError = "";
+    state.accountStateErrorKey = "";
     state.accountSettingsNotice = "";
+    state.accountSettingsNoticeKey = "";
     state.expandedJobId = "";
     state.files = { car: null, wheel: null };
     resetCreateAssets();
@@ -2578,6 +2610,7 @@ async function loginWithTelegram({ preparedResources = null } = {}) {
     if (state.websiteLoginPending) return;
     state.websiteLoginPending = true;
     state.websiteLoginError = "";
+    state.websiteLoginErrorKey = "";
     updateWebsiteAuthUi();
 
     try {
@@ -2630,10 +2663,10 @@ async function loginWithTelegram({ preparedResources = null } = {}) {
         console.warn("[DW] Telegram website login failed", {
             code: typeof error?.code === "string" ? error.code : "unknown",
         });
-        const message = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
-            ? "Не удалось связаться с сервисом входа. Проверьте подключение и попробуйте ещё раз."
-            : "Не удалось войти через Telegram. Попробуйте ещё раз.";
-        state.websiteLoginError = message;
+        const key = error instanceof TypeError || /fetch|network|connection/i.test(String(error?.message || ""))
+            ? "legacy.auth.networkError"
+            : "auth.telegram.loginFailed";
+        const message = setAccountPresentation("websiteLoginError", key);
         setWalletMessage(message, "error");
         return false;
     } finally {
@@ -3368,7 +3401,7 @@ function validateFitmentForm() {
         .map((kind) => {
             const field = { makes: "make", models: "model", years: "year" }[kind];
             const value = state.fitmentForm.vehicle[field];
-            return fitmentCatalogueFieldState(kind, value).state === "selected" ? null : `vehicle.${field}`;
+            return fitmentCatalogueFieldState(kind, value, locale).state === "selected" ? null : `vehicle.${field}`;
         })
         .filter(Boolean);
     const marketState = state.fitmentMarketResolution || {};
@@ -4423,7 +4456,7 @@ function renderFitmentControls() {
         if (!select) return;
         const current = currentValue === null || currentValue === undefined ? "" : String(currentValue);
         const field = select.closest(".fitment-field");
-        const fieldState = fitmentCatalogueFieldState(kind, current);
+        const fieldState = fitmentCatalogueFieldState(kind, current, locale);
         const statusNode = field?.querySelector(`[data-fitment-catalogue-state="${kind}"]`);
         const retry = field?.querySelector(`[data-fitment-catalogue-retry="${kind}"]`);
         if (field) field.dataset.catalogueState = fieldState.state;
@@ -4518,7 +4551,7 @@ function renderFitmentControls() {
         }
     }
     const vehicleHelper = document.querySelector("[data-fitment-vehicle-helper]");
-    const yearsHaveNoData = fitmentCatalogueFieldState("years", form.vehicle.year).state === "no_data";
+    const yearsHaveNoData = fitmentCatalogueFieldState("years", form.vehicle.year, locale).state === "no_data";
     if (vehicleHelper) {
         vehicleHelper.hidden = !yearsHaveNoData;
         vehicleHelper.textContent = yearsHaveNoData
@@ -5970,37 +6003,37 @@ function fitmentCatalogueParentReadiness(kind) {
     return "ready";
 }
 
-function fitmentCatalogueFieldState(kind, value) {
+function fitmentCatalogueFieldState(kind, value, language = locale) {
     const placeholder = {
-        makes: "Выберите марку",
-        models: "Выберите модель",
-        years: "Выберите год",
-    }[kind] || "Выберите значение";
+        makes: uiCopy("fitment.catalog.make.placeholder", language),
+        models: uiCopy("fitment.catalog.model.placeholder", language),
+        years: uiCopy("fitment.catalog.year.placeholder", language),
+    }[kind] || uiCopy("fitment.catalog.value.placeholder", language);
     const parent = fitmentCatalogueParentReadiness(kind);
     if (parent === "missing") return { state: "idle_parent_missing", message: {
-        models: "Сначала выберите марку",
-        years: "Сначала выберите модель",
+        models: uiCopy("fitment.catalog.model.selectMakeFirst", language),
+        years: uiCopy("fitment.catalog.year.selectModelFirst", language),
     }[kind] || placeholder, placeholder };
     if (parent === "loading") return { state: "loading", message: {
-        makes: "Загружаем марки…",
-        models: "Загружаем модели…",
-        years: "Загружаем годы…",
+        makes: uiCopy("fitment.catalog.make.loading", language),
+        models: uiCopy("fitment.catalog.model.loading", language),
+        years: uiCopy("fitment.catalog.year.loading", language),
     }[kind], placeholder };
     const raw = state.fitmentCatalogue[kind] || { status: "idle", items: [] };
     if (raw.status === "loading" || raw.status === "idle") return { state: "loading", message: {
-        makes: "Загружаем марки…",
-        models: "Загружаем модели…",
-        years: "Загружаем годы…",
+        makes: uiCopy("fitment.catalog.make.loading", language),
+        models: uiCopy("fitment.catalog.model.loading", language),
+        years: uiCopy("fitment.catalog.year.loading", language),
     }[kind], placeholder };
     if (raw.status === "no_data") return { state: "no_data", message: {
-        makes: "Нет доступных марок",
-        models: "Нет доступных моделей",
-        years: "Нет доступных годов",
+        makes: uiCopy("fitment.catalog.make.empty", language),
+        models: uiCopy("fitment.catalog.model.empty", language),
+        years: uiCopy("fitment.catalog.year.empty", language),
     }[kind], placeholder };
     if (raw.status === "failed") return { state: "failed", message: {
-        makes: "Не удалось загрузить марки",
-        models: "Не удалось загрузить модели",
-        years: "Не удалось загрузить годы",
+        makes: uiCopy("fitment.catalog.make.loadFailed", language),
+        models: uiCopy("fitment.catalog.model.loadFailed", language),
+        years: uiCopy("fitment.catalog.year.loadFailed", language),
     }[kind], placeholder };
     return value !== null && value !== undefined && value !== ""
         && fitmentCatalogueSelectionMatches(kind, value, raw.items)
@@ -9825,7 +9858,7 @@ function vnextFitmentSnapshot() {
         label: fitmentCatalogueOptionLabel(item, kind),
     }));
     const catalogueState = (kind, value) => {
-        const fieldState = fitmentCatalogueFieldState(kind, value);
+        const fieldState = fitmentCatalogueFieldState(kind, value, locale);
         return { ...fieldState, status: fieldState.state };
     };
     const marketResolution = state.fitmentMarketResolution || {};
@@ -10795,7 +10828,7 @@ async function submitJob() {
         if (statusBlock) statusBlock.hidden = true;
         if (resultBlock) resultBlock.hidden = true;
         if (errorBlock) errorBlock.hidden = false;
-        const errorState = classifyGenerationError(message);
+        const errorState = classifyGenerationError(message, locale);
         if (errorText) errorText.textContent = errorState.title;
         if (errorTitle) errorTitle.textContent = errorState.title;
         if (errorCopy) errorCopy.textContent = errorState.copy;
@@ -10813,8 +10846,8 @@ async function submitJob() {
     if (statusBlock) statusBlock.hidden = false;
     if (resultBlock) resultBlock.hidden = true;
     if (errorBlock) errorBlock.hidden = true;
-    if (statusText) statusText.textContent = "Подготавливаем примерку";
-    if (statusSub) statusSub.textContent = "Это обычно занимает 1–2 минуты";
+    if (statusText) statusText.textContent = uiCopy("generation.status.preparing", locale);
+    if (statusSub) statusSub.textContent = uiCopy("generation.status.preparingHint", locale);
 
     const identity = getIdentityPayload({ includeTelegramUserId: true });
     let renderDraftId = state.createAssetDraftId;
@@ -10883,7 +10916,7 @@ async function submitJob() {
         return;
     }
 
-    if (statusText) statusText.textContent = "Примеряем диски";
+    if (statusText) statusText.textContent = uiCopy("generation.status.generating", locale);
     notifyCreateBridge();
 
     const renderJobId = state.jobId;
@@ -10937,11 +10970,11 @@ async function submitJob() {
     if (statusBlock) statusBlock.hidden = true;
     if (resultBlock) resultBlock.hidden = true;
     if (errorBlock) errorBlock.hidden = false;
-    if (errorText) errorText.textContent = "Примерка всё ещё создаётся";
-    if (errorTitle) errorTitle.textContent = "Примерка всё ещё создаётся";
-    if (errorCopy) errorCopy.textContent = "Мы продолжаем обрабатывать фото. Результат появится в «Моих примерках».";
+    if (errorText) errorText.textContent = uiCopy("generation.status.stillProcessingTitle", locale);
+    if (errorTitle) errorTitle.textContent = uiCopy("generation.status.stillProcessingTitle", locale);
+    if (errorCopy) errorCopy.textContent = uiCopy("generation.status.stillProcessingCopy", locale);
     if (errorAction) {
-        errorAction.textContent = "Обновить статус";
+        errorAction.textContent = uiCopy("action.refreshStatus", locale);
         errorAction.dataset.generationErrorAction = "refresh-job";
     }
     refreshButtonsForCurrentView();
@@ -10971,27 +11004,27 @@ async function refreshExistingJobStatus() {
     void loadRenderHistory({ silent: true }).then(() => openRenderDetail(state.jobId, "create"));
 }
 
-function classifyGenerationError(message) {
+function classifyGenerationError(message, language = locale) {
     const normalized = String(message || "").toLowerCase();
     if (/(timeout|unavailable|connection|network|fetch|временно|недоступ)/.test(normalized)) {
         return {
-            title: t("warnings.generationUnavailable"),
-            copy: "Сервис временно недоступен. Повторите попытку через несколько минут или обратитесь в поддержку.",
-            actionLabel: "Повторить",
+            title: uiCopy("legacy.warnings.generationUnavailable", language),
+            copy: uiCopy("generation.error.service.copy", language),
+            actionLabel: uiCopy("create.retry", language),
             action: "retry",
             showSupport: true,
         };
     }
     if (/(wheel|rim|disk|колес|диск)/.test(normalized)) {
-        return { title: "Не удалось обработать изображение диска", copy: "Загрузите другое фото: диск должен быть снят спереди и находиться в фокусе.", actionLabel: "Заменить фото диска", action: "wheel", showSupport: false };
+        return { title: uiCopy("generation.error.wheel.title", language), copy: uiCopy("generation.error.wheel.copy", language), actionLabel: uiCopy("generation.error.wheel.replace", language), action: "wheel", showSupport: false };
     }
     if (/(vehicle|car|identity|автомоб|машин)/.test(normalized)) {
-        return { title: "Не удалось распознать автомобиль на фото", copy: "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.", actionLabel: "Заменить фото автомобиля", action: "car", showSupport: false };
+        return { title: uiCopy("generation.error.vehicle.title", language), copy: uiCopy("generation.error.vehicle.copy", language), actionLabel: uiCopy("generation.error.vehicle.replace", language), action: "car", showSupport: false };
     }
     if (/(credits?|balance|insufficient|баланс|недостаточно\s+(кредит|рендер))/.test(normalized)) {
-        return { title: "Недостаточно рендеров на балансе", copy: "Пополните счёт, чтобы создать новую виртуальную примерку.", actionLabel: "Пополнить счёт", action: "wallet", showSupport: false };
+        return { title: uiCopy("generation.error.balance.title", language), copy: uiCopy("generation.error.balance.copy", language), actionLabel: uiCopy("generation.error.balance.topUp", language), action: "wallet", showSupport: false };
     }
-    return { title: "Не удалось создать виртуальную примерку", copy: "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.", actionLabel: "Повторить", action: "retry", showSupport: true };
+    return { title: uiCopy("generation.error.generic.title", language), copy: uiCopy("generation.error.generic.copy", language), actionLabel: uiCopy("create.retry", language), action: "retry", showSupport: true };
 }
 
 function handleFileSelected(kind, file) {

@@ -64,3 +64,18 @@ test('E-01: legacy catalogue adapter preserves the approved bilingual dictionary
  // Staging dictionary plus translations for three missing EN result keys and the missing RU wallet details label.
  assert.equal(createHash('sha256').update(JSON.stringify(canonical(legacyTranslations()))).digest('hex'),'9b465cf4c4331f584aeff1aa7b85dabb5e8a2d9dab2bbecd1377bd8acb44f44d');
 });
+
+test('E-01 corrective: every dynamic reason/error mapping exists and resolves in RU/EN',()=>{
+ const source=fs.readFileSync(new URL('webapp/vnext/copy.mjs',root),'utf8');
+ for(const name of ['unknownReasonKeys','errorKeys']){
+  const match=source.match(new RegExp(`const ${name} = (\\{[\\s\\S]*?\\});`));assert.ok(match,name);
+  const entries=Function(`return (${match[1]})`)();assert.ok(Object.keys(entries).length>0);
+  for(const [code,value] of Object.entries(entries))for(const locale of ['ru','en']){
+   const key=name==='unknownReasonKeys'?`fitment.verdict.unknown.${value}`:value;
+   assert.ok(Object.hasOwn(COPY,key),`${name}.${code}: ${key}`);assert.ok(COPY[key][locale]);
+   const actual=name==='errorKeys'?errorCopy({code},locale):unknownVerdictSubtitle({locale,check:{execution_status:'completed',verdict:'unknown',blocking_issues:[{code}]}});
+   assert.equal(actual,copy(key,locale),`${name}.${code} ${locale}`);
+  }
+ }
+ assert.equal(copy('fitment.confirmation.remaining','en',{count:1}),'Parameters left to confirm: 1');
+});

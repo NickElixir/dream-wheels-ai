@@ -105,3 +105,64 @@ credit reservation/refund/finality, payment lifecycle, provider behavior, asset
 access, auth authority, API payloads, routing and navigation destinations are
 unchanged. No layout/style source is modified. Existing behavioral assertions are
 retained; static copy checks now follow the catalog instead of inline literals.
+
+
+## Corrective pass — M-1 / M-2 / M-3
+
+Reviewed checkpoint: `47fa1384a31284859357c0d260607cd281d43b84`.
+Base remains `d76189421993cf53aa5149fdf67fe4461e439517`.
+The new exact HEAD and its CI run are recorded in PR #263's handoff/body after
+this single corrective commit is pushed; the previous HEAD/CI are not evidence
+for the corrective result.
+
+The original 102-state browser coverage missed three upstream legacy presentation
+paths. This pass expands coverage to 156 states and fixes the sources:
+
+- M-1: `fitmentCatalogueFieldState(kind, value, language)` localizes make/model/year
+  placeholders and dependency/loading/empty/failed messages. Its state decisions
+  are unchanged. `vnextFitmentSnapshot()` passes `locale` explicitly; the VNext
+  catalogue field now uses the already escaped localized placeholder.
+- M-2: `classifyGenerationError(message, language)` retains the five regex branches,
+  actions and support flags. `submitJob()` localizes preparing/generating and
+  still-processing/refresh copy at the existing write points. Browser fixtures
+  invoke production submission and classification with isolated request doubles;
+  timeout time advances only inside the test fixture. Retry keys, upload recovery,
+  polling deadlines, render state and credit behavior remain unchanged.
+- M-3: account settings/link/OTP/Telegram/merge runtime and static account HTML use
+  canonical keys. `setAccountPresentation()` retains a semantic companion key for
+  notices; `refreshAccountPresentation()` relocalizes and redraws existing surfaces
+  without requests or auth/account reset. Email and OTP DOM values are untouched.
+  The existing `data-i18n` adapter can resolve canonical account keys while still
+  preferring existing derived legacy entries. Telegram login errors and the account
+  subtitle fallback are localized; provider/user values remain verbatim.
+- LOW-1: EN uses `Parameters left to confirm: {count}`, including count 1.
+- LOW-3: every entry of both `unknownReasonKeys` and `errorKeys` is exercised through
+  its public behavior in RU and EN, with catalog existence assertions. No production
+  export was introduced for testing. LOW-2, LOW-4 and LOW-5 remain deferred.
+
+All 70 new keys are used; COPY now contains 927 entries. No second translation
+source, substring replacement or DOM text walker was added. Legacy dictionary
+content and its existing digest remain unchanged. `key-inventory.json` appends
+corrective entries; `catalog-summary.json` separates original and corrective counts.
+
+Validation at the corrective source checkpoint:
+
+- Node: 253 PASS (includes three gateway checks); targeted corrective tests cover
+  catalogue states, classification actions, dynamic map completeness and account
+  notice/Telegram error refresh without another login.
+- Frontend/auth: 213 PASS, including failed-render retry/upload recovery tests.
+- Python: 760 PASS, 22 local database skips. Ruff check and format: PASS (152 files).
+- Build: PASS; generated auth bundles unchanged. `git diff --check`: PASS.
+- Browser: 156 PASS, 390×900 / 1440×900, RU/EN. Existing scenarios plus vehicle
+  editor loading/empty/failed, production Create service/wheel/timeout, account
+  settings/error/link email/link OTP/merge. Ten account RU→EN checks preserve input,
+  dialog/flow/auth state and request count. Six prior production bootstrap locale
+  checks remain. Newly covered EN frontend-owned Cyrillic: **0** across visible
+  text, ARIA, alt and placeholders with controlled ASCII data; no page errors,
+  horizontal overflow or clipped actions/statuses.
+
+Focused corrective re-review: the diff after the reviewed checkpoint changes
+presentation sources and their tests/evidence only. No backend/migration/style
+files changed. Fitment decisions, render lifecycle, payment/credit lifecycle,
+auth authority and request payloads/destinations remain unchanged. Merge is not
+performed. Ready for a short corrective re-review after exact-HEAD CI succeeds.

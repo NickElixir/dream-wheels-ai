@@ -273,8 +273,11 @@ def test_vehicle_catalogue_cascade_revalidates_before_clearing_stale_values() ->
 
 def test_vehicle_catalogue_no_data_is_neutral_and_stale_year_is_not_kept() -> None:
     assert 'result.outcome === "no_data"' in APP_JS
-    assert 'fitmentCatalogueFieldState("years", form.vehicle.year).state === "no_data"' in APP_JS
-    assert "Нет доступных годов" in APP_JS
+    assert (
+        'fitmentCatalogueFieldState("years", form.vehicle.year, locale).state === "no_data"'
+        in APP_JS
+    )
+    assert 'uiCopy("fitment.catalog.year.empty", language)' in APP_JS
     assert 'if (yearsResult.outcome === "no_data")' in APP_JS
     assert 'vehicle.year = ""' in APP_JS
 

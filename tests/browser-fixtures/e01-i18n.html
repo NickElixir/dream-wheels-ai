@@ -22,7 +22,41 @@ document.documentElement.lang=locale;
 let content,title,activeView='fitment';
 const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
 const result={jobId:'qa-result',status:'completed',title:'ZEEKR 007',rimName:'BBS CI-R',specs:'19 × 8.5J',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:true,createdLabel:'04.10.2026',statusLabel:locale==='en'?'Ready':'Готово',dateLabel:'04.10.2026',reasons:[]};
-if(scenario.startsWith('auth-')) {
+if(scenario.startsWith('account-')) {
+ const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
+ const parsed=new DOMParser().parseFromString(html,'text/html');content=document.createElement('main');
+ for(const selector of ['[data-view="settings"]','[data-account-link-dialog]','[data-account-merge-dialog]'])content.append(parsed.querySelector(selector));
+ document.querySelector('#fixture').append(content);content.querySelector('[data-view="settings"]').hidden=false;
+ state.accountState={identities:{email:{linked:true,display:'qa@example.com'},telegram:{linked:false}}};
+ state.frontendAuthState={status:'authenticated',provider:'supabase'};state.accountLinkDialogOpen=false;
+ window.qaRequests=0;state.accountLinkEmailController={async requestEmailOtp(){window.qaRequests++;},async verifyEmailOtp(){window.qaRequests++;throw Error('bad OTP');}};
+ if(scenario!=='account-settings')content.querySelector('[data-view="settings"]').hidden=true;
+ if(scenario.startsWith('account-link')){
+  state.accountLinkDialogOpen=true;state.accountLinkMode='supabase';state.accountLinkStep='email';
+  content.querySelector('[data-account-link-email]').value='qa@example.com';
+  if(scenario==='account-link-otp'){await requestAccountLinkEmailOtp();content.querySelector('[data-account-link-otp]').value='123456';await verifyAccountLinkEmailOtp();}
+  else {content.querySelector('[data-account-link-email]').value='invalid';await requestAccountLinkEmailOtp();content.querySelector('[data-account-link-email]').value='qa@example.com';}
+ }
+ if(scenario==='account-settings-error')setAccountPresentation('accountStateError','account.settings.loadFailed');
+ if(scenario==='account-merge')showAccountMerge({merge_token:'qa-token'},'telegram');
+ applyTranslations();refreshAccountPresentation();
+ window.qaAccountState=()=>({step:state.accountLinkStep,email:content.querySelector('[data-account-link-email]').value,otp:content.querySelector('[data-account-link-otp]').value,open:state.accountLinkDialogOpen,auth:state.frontendAuthState,requests:window.qaRequests});
+} else if(scenario.startsWith('create-generation-')) {
+ content=document.createElement('main');content.className='panel';content.innerHTML='<div data-status><h2 data-status-text></h2><p data-status-sub></p></div><div data-result hidden></div><div data-error hidden><h2 data-error-title></h2><p data-error-copy></p><button data-error-action></button><span data-error-support hidden></span></div>';
+ document.querySelector('#fixture').append(content);
+ state.photoConsentAccepted=true;state.files.car={blob:new Blob(['car']),name:'car.jpg'};state.files.wheel={blob:new Blob(['wheel']),name:'wheel.jpg'};state.createAssetDraftId='qa-draft';
+ showCreateScreen=()=>{};notifyCreateBridge=()=>{};refreshButtonsForCurrentView=()=>{};loadRenderHistory=async()=>{};trackEvent=async()=>{};haptic=()=>{};
+ const kind=scenario.slice('create-generation-'.length);const originalNow=Date.now;let clock=originalNow();
+ window.qaLifecycle=[];
+ authenticatedFetch=async()=>{
+  window.qaLifecycle.push(content.querySelector('[data-status-text]').textContent);
+  if(kind==='service'||kind==='wheel')throw Error(kind==='service'?'network unavailable':'wheel invalid');
+  return {ok:true,json:async()=>({job_id:'qa-job',status:'processing'})};
+ };
+ sleep=async()=>{window.qaLifecycle.push(content.querySelector('[data-status-text]').textContent);clock+=POLL_TIMEOUT_MS+1;};
+ if(kind==='timeout')Date.now=()=>clock;
+ try{await submitJob();}finally{Date.now=originalNow;}
+} else if(scenario.startsWith('auth-')) {
  const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
  content=new DOMParser().parseFromString(html,'text/html').querySelector('[data-auth-dialog]');
  document.querySelector('#fixture').append(content);
@@ -48,6 +82,11 @@ if(scenario.startsWith('auth-')) {
  content=createCreateView({locale,files:{car:{previewUrl:result.originalUrl},wheel:{previewUrl:asset('demo-rim-xtrike.jpg')}},consentAccepted:true},{});title=uiCopy('nav.create',locale);activeView='create';
 } else if(scenario==='result'||scenario==='history') {
  content=createRenderView(scenario==='history'?'history':'result',scenario==='history'?{rows:[{...result,thumbnailUrl:result.resultUrl}]}:result,{});title=scenario==='history'?uiCopy('nav.history',locale):(locale==='en'?'Result':'Результат');activeView='renders';
+} else if(scenario.startsWith('vehicle-editor-')) {
+ state.fitmentForm.vehicle={make:'',model:'',year:''};state.fitmentVehicleEditing=true;
+ state.fitmentOverview={vehicle_state:'empty',rim_setup_state:'empty',next_action:'complete_vehicle_details',vehicle:{}};
+ state.fitmentCatalogue.makes={status:scenario.endsWith('empty')?'no_data':scenario.endsWith('failed')?'failed':'loading',items:[]};
+ const model=vnextFitmentSnapshot();window.qaModel=model;content=createFitmentView(model,{});title=uiCopy('nav.fitment',locale);
 } else {
  const key=scenario==='compatible'?'compatible':scenario==='conditions'?'dia-conditional':scenario==='incompatible'?'J':'A';
  state.fitmentCheck=structuredClone(data[key]);state.fitmentCheck.is_current=scenario!=='stale';
@@ -55,7 +94,7 @@ if(scenario.startsWith('auth-')) {
  state.fitmentOverview={vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready',setup_mode:'square',next_action:'run_standard_check',vehicle:{make:'Example',model:'Stock car'}};
  const model=vnextFitmentSnapshot();if(scenario==='editor'){model.rimEditing=true;model.rimIdentityEditing=true;model.wheelPicker={locale,field:'offset_et_mm',path:'rim.offset_et_mm',value:35,manual:true};}content=createFitmentView(model,{});title=locale==='en'?'Compatibility check':'Проверка совместимости';window.qaModel=model;
 }
-document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate(){},authenticated:scenario!=='logged-out',locale}));
+if(!scenario.startsWith('account-')&&!scenario.startsWith('create-generation-'))document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate(){},authenticated:scenario!=='logged-out',locale}));
 window.qaBootstrapSurface=async(view)=>{ document.querySelector('#fixture').dataset.view=view;await import("${new URL('../../webapp/vnext/bootstrap.js',location.href)}");window.dispatchEvent(new CustomEvent('dreamwheels:viewchange',{detail:{view}})); };
 window.qaScenario=scenario;window.qaRemount=(next)=>{ document.documentElement.lang=next;window.dispatchEvent(new CustomEvent('dreamwheels:localechange',{detail:{locale:next}})); };window.qaReady=true;
 `;

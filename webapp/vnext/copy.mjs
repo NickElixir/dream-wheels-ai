@@ -1339,7 +1339,7 @@ export const COPY = {
   },
   "fitment.confirmation.remaining": {
     "ru": "Осталось подтвердить {count} {value1}",
-    "en": "{count} parameters left to confirm"
+    "en": "Parameters left to confirm: {count}"
   },
   "fitment.summary.front": {
     "ru": "Передняя ось: {value0}",
@@ -3420,6 +3420,286 @@ export const COPY = {
   "legacy.credits": {
     "ru": "рендеров",
     "en": "renders"
+  },
+  "fitment.catalog.make.placeholder": {
+    "ru": "Выберите марку",
+    "en": "Select make"
+  },
+  "fitment.catalog.model.placeholder": {
+    "ru": "Выберите модель",
+    "en": "Select model"
+  },
+  "fitment.catalog.year.placeholder": {
+    "ru": "Выберите год",
+    "en": "Select year"
+  },
+  "fitment.catalog.value.placeholder": {
+    "ru": "Выберите значение",
+    "en": "Select value"
+  },
+  "fitment.catalog.model.selectMakeFirst": {
+    "ru": "Сначала выберите марку",
+    "en": "Select a make first"
+  },
+  "fitment.catalog.year.selectModelFirst": {
+    "ru": "Сначала выберите модель",
+    "en": "Select a model first"
+  },
+  "fitment.catalog.make.loading": {
+    "ru": "Загружаем марки…",
+    "en": "Loading makes…"
+  },
+  "fitment.catalog.make.empty": {
+    "ru": "Нет доступных марок",
+    "en": "No makes available"
+  },
+  "fitment.catalog.make.loadFailed": {
+    "ru": "Не удалось загрузить марки",
+    "en": "Failed to load makes"
+  },
+  "fitment.catalog.model.loading": {
+    "ru": "Загружаем модели…",
+    "en": "Loading models…"
+  },
+  "fitment.catalog.model.empty": {
+    "ru": "Нет доступных моделей",
+    "en": "No models available"
+  },
+  "fitment.catalog.model.loadFailed": {
+    "ru": "Не удалось загрузить модели",
+    "en": "Failed to load models"
+  },
+  "fitment.catalog.year.loading": {
+    "ru": "Загружаем годы…",
+    "en": "Loading years…"
+  },
+  "fitment.catalog.year.empty": {
+    "ru": "Нет доступных годов",
+    "en": "No years available"
+  },
+  "fitment.catalog.year.loadFailed": {
+    "ru": "Не удалось загрузить годы",
+    "en": "Failed to load years"
+  },
+  "generation.error.service.copy": {
+    "ru": "Сервис временно недоступен. Повторите попытку через несколько минут или обратитесь в поддержку.",
+    "en": "The service is temporarily unavailable. Try again in a few minutes or contact support."
+  },
+  "generation.error.wheel.title": {
+    "ru": "Не удалось обработать изображение диска",
+    "en": "Could not process the wheel image"
+  },
+  "generation.error.wheel.copy": {
+    "ru": "Загрузите другое фото: диск должен быть снят спереди и находиться в фокусе.",
+    "en": "Upload another photo with the wheel facing the camera and in focus."
+  },
+  "generation.error.wheel.replace": {
+    "ru": "Заменить фото диска",
+    "en": "Replace wheel photo"
+  },
+  "generation.error.vehicle.title": {
+    "ru": "Не удалось распознать автомобиль на фото",
+    "en": "Could not identify the car in the photo"
+  },
+  "generation.error.vehicle.copy": {
+    "ru": "Загрузите другое фото: автомобиль должен быть виден целиком и снят сбоку.",
+    "en": "Upload another photo showing the entire car from the side."
+  },
+  "generation.error.vehicle.replace": {
+    "ru": "Заменить фото автомобиля",
+    "en": "Replace car photo"
+  },
+  "generation.error.balance.title": {
+    "ru": "Недостаточно рендеров на балансе",
+    "en": "Not enough renders on your balance"
+  },
+  "generation.error.balance.copy": {
+    "ru": "Пополните счёт, чтобы создать новую виртуальную примерку.",
+    "en": "Top up your balance to create a new virtual try-on."
+  },
+  "generation.error.balance.topUp": {
+    "ru": "Пополнить счёт",
+    "en": "Top up"
+  },
+  "generation.error.generic.title": {
+    "ru": "Не удалось создать виртуальную примерку",
+    "en": "Could not create the virtual try-on"
+  },
+  "generation.error.generic.copy": {
+    "ru": "Попробуйте ещё раз. Если ошибка повторится, обратитесь в поддержку.",
+    "en": "Try again. If the error persists, contact support."
+  },
+  "generation.status.preparing": {
+    "ru": "Подготавливаем примерку",
+    "en": "Preparing the try-on"
+  },
+  "generation.status.preparingHint": {
+    "ru": "Это обычно занимает 1–2 минуты",
+    "en": "This usually takes 1–2 minutes"
+  },
+  "generation.status.generating": {
+    "ru": "Примеряем диски",
+    "en": "Creating the try-on"
+  },
+  "generation.status.stillProcessingTitle": {
+    "ru": "Примерка всё ещё создаётся",
+    "en": "Your try-on is still being created"
+  },
+  "generation.status.stillProcessingCopy": {
+    "ru": "Мы продолжаем обрабатывать фото. Результат появится в «Моих примерках».",
+    "en": "We are still processing your photos. The result will appear in My try-ons."
+  },
+  "account.cabinet": {
+    "ru": "Кабинет",
+    "en": "Account"
+  },
+  "account.settings.loading": {
+    "ru": "Загружаем способы входа…",
+    "en": "Loading sign-in methods…"
+  },
+  "account.settings.signInRequired": {
+    "ru": "Войдите, чтобы увидеть способы входа.",
+    "en": "Sign in to see your sign-in methods."
+  },
+  "account.settings.confirmed": {
+    "ru": "Подтверждён",
+    "en": "Verified"
+  },
+  "account.settings.notLinked": {
+    "ru": "Не подключён",
+    "en": "Not linked"
+  },
+  "account.settings.linked": {
+    "ru": "Подключено",
+    "en": "Linked"
+  },
+  "account.settings.link": {
+    "ru": "Подключить",
+    "en": "Link"
+  },
+  "account.settings.sharedAccount": {
+    "ru": "Email и Telegram ведут в один аккаунт. Баланс, история рендеров и оплаты общие.",
+    "en": "Email and Telegram access the same account. Your balance, render history and payments are shared."
+  },
+  "account.settings.loadFailed": {
+    "ru": "Не удалось загрузить способы входа. Попробуйте ещё раз.",
+    "en": "Could not load sign-in methods. Try again."
+  },
+  "account.link.emailTitle": {
+    "ru": "Подключить Email",
+    "en": "Link Email"
+  },
+  "account.link.telegramTitle": {
+    "ru": "Подключить Telegram",
+    "en": "Link Telegram"
+  },
+  "account.link.emailCopy": {
+    "ru": "Подтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.",
+    "en": "Verify your email address to use it to sign in to this account."
+  },
+  "account.link.telegramCopy": {
+    "ru": "Подтверждаем Telegram, чтобы подключить его к этому аккаунту.",
+    "en": "Verifying Telegram to link it to this account."
+  },
+  "account.link.alreadyLinked": {
+    "ru": "Этот способ входа уже подключён.",
+    "en": "This sign-in method is already linked."
+  },
+  "account.link.linked": {
+    "ru": "Способ входа подключён.",
+    "en": "Sign-in method linked."
+  },
+  "account.link.invalidEmail": {
+    "ru": "Введите корректный Email.",
+    "en": "Enter a valid email address."
+  },
+  "account.link.sending": {
+    "ru": "Отправляем код…",
+    "en": "Sending code…"
+  },
+  "account.link.enterCode": {
+    "ru": "Введите код из письма.",
+    "en": "Enter the code from the email."
+  },
+  "account.link.sendFailed": {
+    "ru": "Не удалось отправить код. Попробуйте ещё раз.",
+    "en": "Could not send the code. Try again."
+  },
+  "account.link.verifying": {
+    "ru": "Проверяем код…",
+    "en": "Checking code…"
+  },
+  "account.link.verifyFailed": {
+    "ru": "Не удалось подтвердить Email. Проверьте код и попробуйте ещё раз.",
+    "en": "Could not verify your email. Check the code and try again."
+  },
+  "account.link.preparing": {
+    "ru": "Подготавливаем вход…",
+    "en": "Preparing sign-in…"
+  },
+  "account.link.openingTelegram": {
+    "ru": "Открываем Telegram…",
+    "en": "Opening Telegram…"
+  },
+  "account.link.telegramCancelled": {
+    "ru": "Telegram не подключён. Ничего не изменилось.",
+    "en": "Telegram was not linked. Nothing has changed."
+  },
+  "account.merge.processing": {
+    "ru": "Объединяем аккаунты…",
+    "en": "Merging accounts…"
+  },
+  "account.merge.success": {
+    "ru": "Аккаунты объединены. Баланс, история рендеров и оплаты сохранены.",
+    "en": "Accounts merged. Your balance, render history and payments have been preserved."
+  },
+  "account.merge.failed": {
+    "ru": "Не удалось объединить аккаунты. Данные не изменены. Попробуйте ещё раз.",
+    "en": "Could not merge accounts. Your data has not changed. Try again."
+  },
+  "account.link.codeSent": {
+    "ru": "Код отправлен на {email}",
+    "en": "Code sent to {email}"
+  },
+  "account.merge.providerInUse": {
+    "ru": "{method} уже используется в другом аккаунте Dream Wheels.",
+    "en": "{method} is already used in another Dream Wheels account."
+  },
+  "auth.telegram.loginFailed": {
+    "ru": "Не удалось войти через Telegram. Попробуйте ещё раз.",
+    "en": "Could not sign in with Telegram. Try again."
+  },
+  "account.settings.title": {
+    "ru": "Настройки аккаунта",
+    "en": "Account settings"
+  },
+  "account.settings.lede": {
+    "ru": "Подключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.",
+    "en": "Link Email and Telegram to sign in either way. Your balance, render history and payments stay shared."
+  },
+  "account.merge.title": {
+    "ru": "Объединить аккаунты?",
+    "en": "Merge accounts?"
+  },
+  "account.merge.inUse": {
+    "ru": "Этот способ входа уже используется в другом аккаунте Dream Wheels.",
+    "en": "This sign-in method is already used in another Dream Wheels account."
+  },
+  "account.merge.preservation": {
+    "ru": "После объединения баланс, история рендеров и оплаты сохранятся и станут общими.",
+    "en": "After merging, your balance, render history and payments will be preserved and shared."
+  },
+  "account.merge.irreversible": {
+    "ru": "Объединение нельзя отменить.",
+    "en": "Merging cannot be undone."
+  },
+  "account.merge.confirm": {
+    "ru": "Объединить аккаунты",
+    "en": "Merge accounts"
+  },
+  "account.link.verify": {
+    "ru": "Подтвердить",
+    "en": "Verify"
   }
 };
 

@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 (async()=>{
 const browser=await chromium.launch({headless:true});const checks=[];
-const scenarios=['dashboard','logged-out','create','result','history','processing','refunded','missing-asset','compatible','conditions','unknown','incompatible','failed','stale','editor','wallet','pending-payment','support','photo-guide','docs','auth-email','auth-otp','auth-restored','auth-restoring'];
+const scenarios=['dashboard','logged-out','create','result','history','processing','refunded','missing-asset','compatible','conditions','unknown','incompatible','failed','stale','editor','wallet','pending-payment','support','photo-guide','docs','auth-email','auth-otp','auth-restored','auth-restoring','vehicle-editor-loading','vehicle-editor-empty','vehicle-editor-failed','create-generation-service','create-generation-wheel','create-generation-timeout','account-settings','account-settings-error','account-link-email','account-link-otp','account-merge'];
 for(const width of [390,1440])for(const locale of ['ru','en'])for(const scenario of scenarios){
  const page=await browser.newPage({viewport:{width,height:900},locale:locale==='ru'?'ru-RU':'en-US'}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -15,6 +15,30 @@ for(const width of [390,1440])for(const locale of ['ru','en'])for(const scenario
  const clipped=await page.locator('button,.vnext-status').evaluateAll(elements=>elements.filter(el=>el.getBoundingClientRect().width && (el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1)).map(el=>({text:el.textContent,scroll:el.scrollWidth,width:el.clientWidth})));
  const cyrillic=locale==='en'?[...(text+'\n'+aria).matchAll(/[^\n]*[А-Яа-яЁё][^\n]*/gu)].map(x=>x[0]):[];
  if(overflow||clipped.length||errors.length||cyrillic.length)throw Error(JSON.stringify({width,locale,scenario,overflow,clipped,errors,cyrillic}));
+
+ if(scenario.startsWith('vehicle-editor-')){
+  if(await page.locator('[data-fitment-field="vehicle.model"]').isEnabled())throw Error('model must wait for make');
+  if(locale==='en'){
+   if(!text.includes('Select a make first'))throw Error('missing make dependency');
+   const expected=scenario.endsWith('empty')?'No makes available':scenario.endsWith('failed')?'Failed to load makes':'Loading makes';
+   if(!text.includes(expected))throw Error('catalogue status missing: '+expected);
+   const placeholder=await page.locator('[data-fitment-field="vehicle.make"]').innerText();if(!placeholder.includes('Select make'))throw Error('make placeholder');
+  }
+ }
+ if(scenario.startsWith('create-generation-')&&locale==='en'){
+  const expected=scenario.endsWith('timeout')?'Refresh status':scenario.endsWith('wheel')?'Replace wheel photo':'Retry';
+  if(!text.includes(expected))throw Error('generation action missing: '+expected);
+  const lifecycle=await page.evaluate(()=>window.qaLifecycle);if(!lifecycle.includes('Preparing the try-on'))throw Error('preparing status missing');
+  if(scenario.endsWith('timeout')&&!lifecycle.includes('Creating the try-on'))throw Error('generating status missing');
+ }
+ if(scenario.startsWith('account-')&&locale==='ru'){
+  const before=await page.evaluate(()=>window.qaAccountState());
+  await page.evaluate(()=>window.qaRemount('en'));
+  const after=await page.evaluate(()=>window.qaAccountState());if(JSON.stringify(before)!==JSON.stringify(after))throw Error('locale change altered account flow');
+  const switched=await page.locator('#fixture').innerText();const attrs=await page.locator('#fixture').evaluate(root=>[...root.querySelectorAll('[aria-label],[alt],[placeholder]')].map(el=>[el.getAttribute('aria-label'),el.getAttribute('alt'),el.getAttribute('placeholder')].join(' ')).join(' '));
+  if(/[А-Яа-яЁё]/.test(switched+attrs))throw Error('stale RU account presentation: '+switched);
+  checks.push({width,locale:'en',scenario:scenario+'-locale-switch',preserved:after,text:switched});
+ }
  checks.push({width,locale,scenario,text,aria,overflow,clipped,errors});
  if(width===390&&locale==='en'&&['dashboard','editor','pending-payment','support','photo-guide','docs','refunded'].includes(scenario))await page.screenshot({path:`docs/evidence/e01-i18n/${scenario}-${width}-${locale}.jpg`,fullPage:true,type:'jpeg',quality:75});
  await page.close();

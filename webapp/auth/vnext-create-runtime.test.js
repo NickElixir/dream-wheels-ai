@@ -1,4 +1,4 @@
-import { legacyTranslations, errorCopy } from "../vnext/copy.mjs";
+import { copy, legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -17,7 +17,7 @@ function runtime() {
     static createObjectURL() { return `blob:asset-${++asset}`; }
     static revokeObjectURL(url) { revoked.push(url); }
   }
-  const context = { legacyTranslations, errorCopy,
+  const context = { legacyTranslations, errorCopy, uiCopy:copy,
     URL: AssetURL, URLSearchParams, Blob, FormData, console: { log() {}, warn() {}, error() {} },
     document: { documentElement: { dataset: {} }, body: { classList: { add() {}, remove() {} } }, addEventListener() {}, querySelector: (key) => errors[key] || null, querySelectorAll: () => [] },
     window: { addEventListener() {}, Telegram: {}, location: { search: "" }, dispatchEvent() {} },

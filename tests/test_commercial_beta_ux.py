@@ -41,7 +41,7 @@ def test_commercial_beta_warnings_are_present_in_their_product_states():
 def test_generation_unavailable_uses_controlled_copy_and_recovery():
     app_js = Path("webapp/app.js").read_text(encoding="utf-8")
 
-    assert 'title: t("warnings.generationUnavailable")' in app_js
+    assert 'title: uiCopy("legacy.warnings.generationUnavailable", language)' in app_js
     assert "showSupport: true" in app_js
     assert 'action: "retry"' in app_js
 
