@@ -281,6 +281,14 @@ export const COPY = {
     "ru": "Это не блокирует проверку — укажите параметры диска вручную.",
     "en": "This does not block the check — enter the wheel parameters manually."
   },
+  "fitment.visualTryOn.title": {
+    "ru": "Визуальная примерка",
+    "en": "Visual try-on"
+  },
+  "fitment.visualTryOn.helper": {
+    "ru": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "en": "See how the selected wheel looks on your vehicle"
+  },
   "fitment.notice.visualTryOn": {
     "ru": "Вы всё ещё можете создать изображение, чтобы оценить внешний вид дисков.",
     "en": "You can still create an image to see how the wheels look."

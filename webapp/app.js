@@ -4955,11 +4955,11 @@ function renderFitment() {
     const renderCopy = document.querySelector("[data-fitment-render-copy]");
     const renderHelper = document.querySelector("[data-fitment-render-helper]");
     const incompatibleRender = check?.verdict === "incompatible" && check.is_current !== false;
-    if (renderCopy) renderCopy.textContent = "Визуальная примерка";
+    if (renderCopy) renderCopy.textContent = uiCopy("fitment.visualTryOn.title", locale);
     if (renderHelper) {
         renderHelper.textContent = incompatibleRender
             ? uiCopy("fitment.notice.visualTryOn", locale)
-            : "Посмотрите, как выбранный диск выглядит на вашем автомобиле";
+            : uiCopy("fitment.visualTryOn.helper", locale);
     }
     if (state.fitmentMessage && state.fitmentActiveSection === "result" && check?.execution_status === "completed") {
         clearFitmentTransientMessage();
