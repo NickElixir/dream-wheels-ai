@@ -1,0 +1,90 @@
+[
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.3 XLI",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "7d8a4a5ab2"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.8 GT",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "c46a2b1b54"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.3",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "80f5c854f8"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.6 Si",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "bc3bf86964"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "2.0 D",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "116041b237"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.8",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "9c7591bd19"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.6i",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "574f6443af"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "corolla",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "VII (E100)",
+    "modification": "1.3 XLI",
+    "body": "",
+    "generation_slug": "921c2dc40d",
+    "modification_slug": "c84ee9e76c"
+  }
+]

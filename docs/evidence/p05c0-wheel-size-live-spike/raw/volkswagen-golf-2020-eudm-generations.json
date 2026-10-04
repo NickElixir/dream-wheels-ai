@@ -1,0 +1,408 @@
+{
+  "data": [
+    {
+      "slug": "b19aa25ff5",
+      "name": "Mk1/A1 (17)",
+      "platform": "",
+      "start": 1974,
+      "end": 1984,
+      "bodies": [
+        {
+          "slug": "4f81b1d964",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1974-1984-1636458766.2099304.jpg"
+        },
+        {
+          "slug": "5b5e6cc50c",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1974-1984-1636458766.9980266.jpg"
+        }
+      ],
+      "regions": [
+        "eudm"
+      ],
+      "years": [
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984
+      ],
+      "year_ranges": [
+        "1974-1984"
+      ]
+    },
+    {
+      "slug": "d210cf373c",
+      "name": "Mk2/A2 (19E/1G)",
+      "platform": "",
+      "start": 1983,
+      "end": 1992,
+      "bodies": [
+        {
+          "slug": "3cc578f087",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1983-1992-1636458785.23455.jpg"
+        },
+        {
+          "slug": "c0c783b5fc",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1983-1992-1636458785.647839.jpg"
+        }
+      ],
+      "regions": [
+        "eudm"
+      ],
+      "years": [
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992
+      ],
+      "year_ranges": [
+        "1983-1992"
+      ]
+    },
+    {
+      "slug": "fb3f76858c",
+      "name": "Mk3/A3 (1H/1E/1V)",
+      "platform": "",
+      "start": 1991,
+      "end": 1998,
+      "bodies": [
+        {
+          "slug": "015e319335",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1991-1998-1668078560.4145157.jpg"
+        },
+        {
+          "slug": "3be0214185",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1991-1998-1668078561.1240666.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "jdm"
+      ],
+      "years": [
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997
+      ],
+      "year_ranges": [
+        "1991-1997"
+      ]
+    },
+    {
+      "slug": "aeefb05091",
+      "name": "Mk4/A4 (1J)",
+      "platform": "",
+      "start": 1997,
+      "end": 2006,
+      "bodies": [
+        {
+          "slug": "1625abb8e4",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1997-2006-1636458823.937207.jpg"
+        },
+        {
+          "slug": "c952ce9851",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-1997-2006-1636458824.7148683.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia"
+      ],
+      "years": [
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005
+      ],
+      "year_ranges": [
+        "1997-2005"
+      ]
+    },
+    {
+      "slug": "ccd45007df",
+      "name": "Mk5/A5 (1K)",
+      "platform": "",
+      "start": 2003,
+      "end": 2009,
+      "bodies": [
+        {
+          "slug": "1192265fb3",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2003-2009-1636458855.7486188.jpg"
+        },
+        {
+          "slug": "aec851e565",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2003-2009-1636458856.1469655.jpg"
+        },
+        {
+          "slug": "14c4f36143",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2003-2009-1636458856.313466.jpg"
+        }
+      ],
+      "regions": [
+        "eudm",
+        "jdm",
+        "medm",
+        "russia"
+      ],
+      "years": [
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009
+      ],
+      "year_ranges": [
+        "2003-2009"
+      ]
+    },
+    {
+      "slug": "ae587cfeea",
+      "name": "Mk6/A6 (5K)",
+      "platform": "",
+      "start": 2008,
+      "end": 2014,
+      "bodies": [
+        {
+          "slug": "f04cd7399b",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2008-2014-1636458873.5140333.jpg"
+        },
+        {
+          "slug": "455cb2657a",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2008-2014-1636458874.2986948.jpg"
+        },
+        {
+          "slug": "5f7039b1bb",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2008-2014-1636458874.4994042.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "year_ranges": [
+        "2008-2013"
+      ]
+    },
+    {
+      "slug": "d47844673f",
+      "name": "Mk7 (5G)",
+      "platform": "",
+      "start": 2012,
+      "end": 2017,
+      "bodies": [
+        {
+          "slug": "bd3ef5c190",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2012-2017-1701966039.9819026.jpg"
+        },
+        {
+          "slug": "fbfe5ba2ce",
+          "name": "Hatchback, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2012-2017-1701966040.7457044.jpg"
+        },
+        {
+          "slug": "8ef99bfe02",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2012-2017-1701966040.928673.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "sadm",
+        "sam",
+        "usdm"
+      ],
+      "years": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017
+      ],
+      "year_ranges": [
+        "2012-2017"
+      ]
+    },
+    {
+      "slug": "96f2d6069d",
+      "name": "Mk7 (5G) Facelift",
+      "platform": "",
+      "start": 2017,
+      "end": 2020,
+      "bodies": [
+        {
+          "slug": "c0167d1ca6",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+        },
+        {
+          "slug": "c87579e736",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2017,
+        2018,
+        2019,
+        2020
+      ],
+      "year_ranges": [
+        "2017-2020"
+      ]
+    },
+    {
+      "slug": "687fe34a90",
+      "name": "Mk8 (CD1)",
+      "platform": "",
+      "start": 2019,
+      "end": 2024,
+      "bodies": [
+        {
+          "slug": "4123e5cc43",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+        },
+        {
+          "slug": "c89f28fe87",
+          "name": "Variant, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "russia",
+        "sadm",
+        "sam",
+        "usdm"
+      ],
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "year_ranges": [
+        "2019-2024"
+      ]
+    },
+    {
+      "slug": "fa12a7143c",
+      "name": "Mk8 (CD1) Facelift",
+      "platform": "",
+      "start": 2024,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "2ff7a93114",
+          "name": "Hatchback, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2024-2027-1783494231.7323618.jpg"
+        },
+        {
+          "slug": "bae3576d0a",
+          "name": "Variant, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2024-2027-1783494232.1872828.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "nadm",
+        "sadm",
+        "sam",
+        "skdm"
+      ],
+      "years": [
+        2024,
+        2025,
+        2026,
+        2027
+      ],
+      "year_ranges": [
+        "2024-2027"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 10
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "credential_value_matches": 0,
+  "sensitive_raw_payload_fields": [],
+  "raw_files_checked": 38,
+  "json_hash_checks": "PASS",
+  "raw_redactions_required": 0,
+  "request_params_no_auth": true,
+  "files_over_500KiB": []
+}

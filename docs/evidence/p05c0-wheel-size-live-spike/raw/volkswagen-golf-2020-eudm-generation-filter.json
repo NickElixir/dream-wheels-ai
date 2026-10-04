@@ -1,0 +1,489 @@
+{
+  "data": [
+    {
+      "slug": "9277e5d8e6",
+      "name": "1.6 TDI",
+      "body": null,
+      "trim": "1.6 TDI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Trendline",
+        "Comfortline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "code": "DDYA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "ddeb5989b3",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "DADA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "188b8a4c84",
+      "name": "2.0 TDI",
+      "body": null,
+      "trim": "2.0 TDI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "CRBC"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "2a7b128d60",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "code": "DACA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "b495104fa9",
+      "name": "1.0 TSI",
+      "body": null,
+      "trim": "1.0 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Trendline",
+        "Comfortline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I3",
+        "power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "code": "CHZD"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "83124abf86",
+      "name": "1.5 TGI",
+      "body": null,
+      "trim": "1.5 TGI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Trendline",
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol-CNG",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "cng",
+          "title": "Compressed Natural Gas (CNG)"
+        },
+        "engine_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 6,
+    "engine": {
+      "fuels": [
+        "cng",
+        "diesel",
+        "petrol",
+        "petrol_cng"
+      ],
+      "horsepower": {
+        "min": 114,
+        "max": 148
+      }
+    },
+    "debug": null
+  }
+}

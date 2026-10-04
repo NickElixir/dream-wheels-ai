@@ -1,0 +1,5446 @@
+[
+  {
+    "sample": "bmw-3-series-2020-eudm-modifications",
+    "name": "330d",
+    "generation": "VII (G20/G21/G28)",
+    "A_slug": "33e2e04077",
+    "B_slug": "e5a4b5bc79",
+    "current_ui_primary_A": "330d",
+    "current_ui_primary_B": "330d",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "33e2e04077",
+      "name": "330d",
+      "body": null,
+      "trim": "330d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": null,
+        "type": "I6",
+        "power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "e5a4b5bc79",
+      "name": "330d",
+      "body": null,
+      "trim": "330d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 265,
+        "B": 286
+      },
+      "engine.capacity": {
+        "A": null,
+        "B": "3.0"
+      },
+      "slug": {
+        "A": "33e2e04077",
+        "B": "e5a4b5bc79"
+      },
+      "engine.power.kW": {
+        "A": 195.0,
+        "B": 210.0
+      },
+      "engine.power.hp": {
+        "A": 261,
+        "B": 282
+      },
+      "start_year": {
+        "A": 2019,
+        "B": 2020
+      },
+      "powertrain.engine_power.hp": {
+        "A": 261,
+        "B": 282
+      },
+      "engine.power.PS": {
+        "A": 265,
+        "B": 286
+      },
+      "powertrain.engine_power.kW": {
+        "A": 195.0,
+        "B": 210.0
+      },
+      "end_year": {
+        "A": 2020,
+        "B": 2022
+      }
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-modifications",
+    "name": "330d xDrive",
+    "generation": "VII (G20/G21/G28)",
+    "A_slug": "aeef2e2263",
+    "B_slug": "3b3557aefc",
+    "current_ui_primary_A": "330d xDrive",
+    "current_ui_primary_B": "330d xDrive",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "aeef2e2263",
+      "name": "330d xDrive",
+      "body": null,
+      "trim": "330d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2021,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    "raw_B": {
+      "slug": "3b3557aefc",
+      "name": "330d xDrive",
+      "body": null,
+      "trim": "330d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 265,
+        "B": 286
+      },
+      "regions[]": {
+        "A": "russia",
+        "B": "eudm"
+      },
+      "slug": {
+        "A": "aeef2e2263",
+        "B": "3b3557aefc"
+      },
+      "engine.power.kW": {
+        "A": 195.0,
+        "B": 210.0
+      },
+      "engine.power.hp": {
+        "A": 261,
+        "B": 282
+      },
+      "start_year": {
+        "A": 2019,
+        "B": 2020
+      },
+      "powertrain.engine_power.hp": {
+        "A": 261,
+        "B": 282
+      },
+      "engine.power.PS": {
+        "A": 265,
+        "B": 286
+      },
+      "powertrain.engine_power.kW": {
+        "A": 195.0,
+        "B": 210.0
+      },
+      "end_year": {
+        "A": 2021,
+        "B": 2022
+      }
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-modifications",
+    "name": "320i",
+    "generation": "VII (G20/G21/G28)",
+    "A_slug": "f0762c6aef",
+    "B_slug": "2c0a14f47c",
+    "current_ui_primary_A": "320i",
+    "current_ui_primary_B": "320i",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "f0762c6aef",
+      "name": "320i",
+      "body": null,
+      "trim": "320i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.6",
+        "type": "I4",
+        "power": {
+          "kW": 125.0,
+          "PS": 170,
+          "hp": 168
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 125.0,
+          "PS": 170,
+          "hp": 168
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "nadm"
+      ]
+    },
+    "raw_B": {
+      "slug": "2c0a14f47c",
+      "name": "320i",
+      "body": null,
+      "trim": "320i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 170,
+        "B": 184
+      },
+      "engine.code": {
+        "A": null,
+        "B": "B48B20B"
+      },
+      "engine.capacity": {
+        "A": "1.6",
+        "B": "2.0"
+      },
+      "regions[]": {
+        "A": "nadm",
+        "B": "medm"
+      },
+      "trim_levels[]": {
+        "A": [],
+        "B": "Base"
+      },
+      "slug": {
+        "A": "f0762c6aef",
+        "B": "2c0a14f47c"
+      },
+      "engine.power.kW": {
+        "A": 125.0,
+        "B": 135.0
+      },
+      "engine.power.hp": {
+        "A": 168,
+        "B": 181
+      },
+      "powertrain.engine_power.hp": {
+        "A": 168,
+        "B": 181
+      },
+      "engine.power.PS": {
+        "A": 170,
+        "B": 184
+      },
+      "powertrain.engine_power.kW": {
+        "A": 125.0,
+        "B": 135.0
+      }
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-modifications",
+    "name": "M340i xDrive",
+    "generation": "VII (G20/G21/G28)",
+    "A_slug": "3333e5b5d0",
+    "B_slug": "e99ec12bee",
+    "current_ui_primary_A": "M340i xDrive",
+    "current_ui_primary_B": "M340i xDrive",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "3333e5b5d0",
+      "name": "M340i xDrive",
+      "body": null,
+      "trim": "M340i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 275.0,
+          "PS": 374,
+          "hp": 369
+        },
+        "code": "B58B30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 275.0,
+          "PS": 374,
+          "hp": 369
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia"
+      ]
+    },
+    "raw_B": {
+      "slug": "e99ec12bee",
+      "name": "M340i xDrive",
+      "body": null,
+      "trim": "M340i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 285.0,
+          "PS": 387,
+          "hp": 382
+        },
+        "code": "B58B30B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 285.0,
+          "PS": 387,
+          "hp": 382
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 374,
+        "B": 387
+      },
+      "engine.code": {
+        "A": "B58B30",
+        "B": "B58B30B"
+      },
+      "trim_levels[]": {
+        "A": [],
+        "B": "M Special"
+      },
+      "slug": {
+        "A": "3333e5b5d0",
+        "B": "e99ec12bee"
+      },
+      "engine.power.kW": {
+        "A": 275.0,
+        "B": 285.0
+      },
+      "engine.power.hp": {
+        "A": 369,
+        "B": 382
+      },
+      "powertrain.engine_power.hp": {
+        "A": 369,
+        "B": 382
+      },
+      "engine.power.PS": {
+        "A": 374,
+        "B": 387
+      },
+      "powertrain.engine_power.kW": {
+        "A": 275.0,
+        "B": 285.0
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "2.9 Turbo S",
+    "generation": "E3 (9Y)",
+    "A_slug": "af284e7b2d",
+    "B_slug": "12991bdfa4",
+    "current_ui_primary_A": "2.9 Turbo S",
+    "current_ui_primary_B": "2.9 Turbo S",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "af284e7b2d",
+      "name": "2.9 Turbo S",
+      "body": null,
+      "trim": "2.9 Turbo S",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.9",
+        "type": "V6",
+        "power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "code": "MDC.AB (DCA)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "12991bdfa4",
+      "name": "2.9 Turbo S",
+      "body": null,
+      "trim": "2.9 Turbo S",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.9",
+        "type": "V6",
+        "power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "code": "MDC.AB (DCA)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "af284e7b2d",
+        "B": "12991bdfa4"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "4.0 Turbo",
+    "generation": "E3 (9Y)",
+    "A_slug": "b33a1e86a6",
+    "B_slug": "fc2890c44d",
+    "current_ui_primary_A": "4.0 Turbo",
+    "current_ui_primary_B": "4.0 Turbo",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "b33a1e86a6",
+      "name": "4.0 Turbo",
+      "body": null,
+      "trim": "4.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "fc2890c44d",
+      "name": "4.0 Turbo",
+      "body": null,
+      "trim": "4.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "b33a1e86a6",
+        "B": "fc2890c44d"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "3.0 Turbo",
+    "generation": "E3 (9Y)",
+    "A_slug": "117a52c786",
+    "B_slug": "19e5c5a357",
+    "current_ui_primary_A": "3.0 Turbo",
+    "current_ui_primary_B": "3.0 Turbo",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "117a52c786",
+      "name": "3.0 Turbo",
+      "body": null,
+      "trim": "3.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "19e5c5a357",
+      "name": "3.0 Turbo",
+      "body": null,
+      "trim": "3.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "117a52c786",
+        "B": "19e5c5a357"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation": "E3 (9Y)",
+    "A_slug": "cae4a57bcd",
+    "B_slug": "974ad82995",
+    "current_ui_primary_A": "3.0 Turbo E-Hybrid",
+    "current_ui_primary_B": "3.0 Turbo E-Hybrid",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "cae4a57bcd",
+      "name": "3.0 Turbo E-Hybrid",
+      "body": null,
+      "trim": "3.0 Turbo E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "974ad82995",
+      "name": "3.0 Turbo E-Hybrid",
+      "body": null,
+      "trim": "3.0 Turbo E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "cae4a57bcd",
+        "B": "974ad82995"
+      },
+      "start_year": {
+        "A": 2018,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation": "E3 (9Y)",
+    "A_slug": "f4593152ea",
+    "B_slug": "70a5e2c25d",
+    "current_ui_primary_A": "4.0 Turbo S E-Hybrid",
+    "current_ui_primary_B": "4.0 Turbo S E-Hybrid",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "f4593152ea",
+      "name": "4.0 Turbo S E-Hybrid",
+      "body": null,
+      "trim": "4.0 Turbo S E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "70a5e2c25d",
+      "name": "4.0 Turbo S E-Hybrid",
+      "body": null,
+      "trim": "4.0 Turbo S E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "f4593152ea",
+        "B": "70a5e2c25d"
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-modifications",
+    "name": "4.0 Turbo GTS",
+    "generation": "E3 (9Y)",
+    "A_slug": "ea6a99ab69",
+    "B_slug": "f8b7e58815",
+    "current_ui_primary_A": "4.0 Turbo GTS",
+    "current_ui_primary_B": "4.0 Turbo GTS",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "ea6a99ab69",
+      "name": "4.0 Turbo GTS",
+      "body": null,
+      "trim": "4.0 Turbo GTS",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "f8b7e58815",
+      "name": "4.0 Turbo GTS",
+      "body": null,
+      "trim": "4.0 Turbo GTS",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "ea6a99ab69",
+        "B": "f8b7e58815"
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "2.9 Turbo S",
+    "generation": "E3 (9Y)",
+    "A_slug": "af284e7b2d",
+    "B_slug": "12991bdfa4",
+    "current_ui_primary_A": "2.9 Turbo S",
+    "current_ui_primary_B": "2.9 Turbo S",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "af284e7b2d",
+      "name": "2.9 Turbo S",
+      "body": null,
+      "trim": "2.9 Turbo S",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.9",
+        "type": "V6",
+        "power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "code": "MDC.AB (DCA)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "12991bdfa4",
+      "name": "2.9 Turbo S",
+      "body": null,
+      "trim": "2.9 Turbo S",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.9",
+        "type": "V6",
+        "power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "code": "MDC.AB (DCA)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 324.0,
+          "PS": 441,
+          "hp": 434
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "af284e7b2d",
+        "B": "12991bdfa4"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "4.0 Turbo",
+    "generation": "E3 (9Y)",
+    "A_slug": "b33a1e86a6",
+    "B_slug": "fc2890c44d",
+    "current_ui_primary_A": "4.0 Turbo",
+    "current_ui_primary_B": "4.0 Turbo",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "b33a1e86a6",
+      "name": "4.0 Turbo",
+      "body": null,
+      "trim": "4.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "fc2890c44d",
+      "name": "4.0 Turbo",
+      "body": null,
+      "trim": "4.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "b33a1e86a6",
+        "B": "fc2890c44d"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "3.0 Turbo",
+    "generation": "E3 (9Y)",
+    "A_slug": "117a52c786",
+    "B_slug": "19e5c5a357",
+    "current_ui_primary_A": "3.0 Turbo",
+    "current_ui_primary_B": "3.0 Turbo",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "117a52c786",
+      "name": "3.0 Turbo",
+      "body": null,
+      "trim": "3.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "19e5c5a357",
+      "name": "3.0 Turbo",
+      "body": null,
+      "trim": "3.0 Turbo",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "117a52c786",
+        "B": "19e5c5a357"
+      },
+      "start_year": {
+        "A": 2017,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation": "E3 (9Y)",
+    "A_slug": "cae4a57bcd",
+    "B_slug": "974ad82995",
+    "current_ui_primary_A": "3.0 Turbo E-Hybrid",
+    "current_ui_primary_B": "3.0 Turbo E-Hybrid",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "cae4a57bcd",
+      "name": "3.0 Turbo E-Hybrid",
+      "body": null,
+      "trim": "3.0 Turbo E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "974ad82995",
+      "name": "3.0 Turbo E-Hybrid",
+      "body": null,
+      "trim": "3.0 Turbo E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "3.0",
+        "type": "V6",
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": "MDC.BE (DCB)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "system_power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "cae4a57bcd",
+        "B": "974ad82995"
+      },
+      "start_year": {
+        "A": 2018,
+        "B": 2019
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation": "E3 (9Y)",
+    "A_slug": "f4593152ea",
+    "B_slug": "70a5e2c25d",
+    "current_ui_primary_A": "4.0 Turbo S E-Hybrid",
+    "current_ui_primary_B": "4.0 Turbo S E-Hybrid",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "f4593152ea",
+      "name": "4.0 Turbo S E-Hybrid",
+      "body": null,
+      "trim": "4.0 Turbo S E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "70a5e2c25d",
+      "name": "4.0 Turbo S E-Hybrid",
+      "body": null,
+      "trim": "4.0 Turbo S E-Hybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 404.0,
+          "PS": 549,
+          "hp": 542
+        },
+        "system_power": {
+          "kW": 500.0,
+          "PS": 680,
+          "hp": 671
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "rear",
+            "power": {
+              "kW": 100.0,
+              "PS": 136,
+              "hp": 134
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "f4593152ea",
+        "B": "70a5e2c25d"
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-modifications",
+    "name": "4.0 Turbo GTS",
+    "generation": "E3 (9Y)",
+    "A_slug": "ea6a99ab69",
+    "B_slug": "f8b7e58815",
+    "current_ui_primary_A": "4.0 Turbo GTS",
+    "current_ui_primary_B": "4.0 Turbo GTS",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "ea6a99ab69",
+      "name": "4.0 Turbo GTS",
+      "body": null,
+      "trim": "4.0 Turbo GTS",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "f8b7e58815",
+      "name": "4.0 Turbo GTS",
+      "body": null,
+      "trim": "4.0 Turbo GTS",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "trim_levels": [],
+      "make": {
+        "slug": "porsche",
+        "name": "Porsche",
+        "name_en": "Porsche"
+      },
+      "model": {
+        "slug": "cayenne",
+        "name": "Cayenne",
+        "name_en": "Cayenne"
+      },
+      "generation": {
+        "slug": "2794f6a20e",
+        "name": "E3 (9Y)",
+        "platform": "MLB Evo",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "fb25b181be",
+            "name": "SUV, 5d (9YA)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711727.8066738.jpg"
+          },
+          {
+            "slug": "4acd768785",
+            "name": "Coupe SUV, 5d (9YB)",
+            "image": "https://cdn.wheel-size.com/automobile/body/porsche-cayenne-2017-2023-1789711728.4017882.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "4.0",
+        "type": "V8",
+        "power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "code": "MDC.UA (DCU)"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 338.0,
+          "PS": 460,
+          "hp": 453
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "slug": {
+        "A": "ea6a99ab69",
+        "B": "f8b7e58815"
+      },
+      "trim_body_types[]": {
+        "A": [],
+        "B": "Coupe"
+      }
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-modifications",
+    "name": "Long Range",
+    "generation": "",
+    "A_slug": "5a081c2f38",
+    "B_slug": "0d7499344b",
+    "current_ui_primary_A": "Long Range",
+    "current_ui_primary_B": "Long Range",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "5a081c2f38",
+      "name": "Long Range",
+      "body": null,
+      "trim": "Long Range",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Performance"
+      ],
+      "make": {
+        "slug": "tesla",
+        "name": "Tesla",
+        "name_en": "Tesla"
+      },
+      "model": {
+        "slug": "model-3",
+        "name": "Model 3",
+        "name_en": "Model 3"
+      },
+      "generation": {
+        "slug": "efdde87c66",
+        "name": "",
+        "platform": "",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "459ad054a6",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Electric",
+        "capacity": null,
+        "type": null,
+        "power": {
+          "kW": 340.0,
+          "PS": 462,
+          "hp": 456
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "not_applicable",
+        "electrification_level": "bev",
+        "primary_fuel": {
+          "code": "electric",
+          "title": "Electric"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "jdm",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "0d7499344b",
+      "name": "Long Range",
+      "body": null,
+      "trim": "Long Range",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "tesla",
+        "name": "Tesla",
+        "name_en": "Tesla"
+      },
+      "model": {
+        "slug": "model-3",
+        "name": "Model 3",
+        "name_en": "Model 3"
+      },
+      "generation": {
+        "slug": "efdde87c66",
+        "name": "",
+        "platform": "",
+        "start": 2017,
+        "end": 2023,
+        "bodies": [
+          {
+            "slug": "459ad054a6",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+          }
+        ]
+      },
+      "start_year": 2018,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Electric",
+        "capacity": null,
+        "type": null,
+        "power": {
+          "kW": 258.0,
+          "PS": 351,
+          "hp": 346
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "not_applicable",
+        "electrification_level": "bev",
+        "primary_fuel": {
+          "code": "electric",
+          "title": "Electric"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "jdm",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "trim_levels[]": {
+        "A": "Performance",
+        "B": []
+      },
+      "slug": {
+        "A": "5a081c2f38",
+        "B": "0d7499344b"
+      },
+      "engine.power.kW": {
+        "A": 340.0,
+        "B": 258.0
+      },
+      "engine.power.hp": {
+        "A": 456,
+        "B": 346
+      },
+      "engine.power.PS": {
+        "A": 462,
+        "B": 351
+      }
+    }
+  },
+  {
+    "sample": "toyota-corolla-1995-eudm-modifications",
+    "name": "1.3 XLI",
+    "generation": "VII (E100)",
+    "A_slug": "7d8a4a5ab2",
+    "B_slug": "c84ee9e76c",
+    "current_ui_primary_A": "1.3 XLI",
+    "current_ui_primary_B": "1.3 XLI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "7d8a4a5ab2",
+      "name": "1.3 XLI",
+      "body": null,
+      "trim": "1.3 XLI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "corolla",
+        "name": "Corolla",
+        "name_en": "Corolla"
+      },
+      "generation": {
+        "slug": "921c2dc40d",
+        "name": "VII (E100)",
+        "platform": "",
+        "start": 1991,
+        "end": 2002,
+        "bodies": [
+          {
+            "slug": "2b346a0aa3",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/15b0e296.jpg"
+          },
+          {
+            "slug": "ddf9029977",
+            "name": "Hatchback, 3d",
+            "image": "https://cdn.wheel-size.com/automobile/body/f37f5e35.jpg"
+          },
+          {
+            "slug": "b67fb3360a",
+            "name": "Liftback",
+            "image": "https://cdn.wheel-size.com/automobile/body/4494eac2.jpg"
+          },
+          {
+            "slug": "6915849303",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/2916406b.jpg"
+          },
+          {
+            "slug": "f3c89b7be3",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/69519d80.jpg"
+          }
+        ]
+      },
+      "start_year": 1992,
+      "end_year": 1995,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 65.0,
+          "PS": 88,
+          "hp": 87
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 65.0,
+          "PS": 88,
+          "hp": 87
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "c84ee9e76c",
+      "name": "1.3 XLI",
+      "body": null,
+      "trim": "1.3 XLI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "corolla",
+        "name": "Corolla",
+        "name_en": "Corolla"
+      },
+      "generation": {
+        "slug": "921c2dc40d",
+        "name": "VII (E100)",
+        "platform": "",
+        "start": 1991,
+        "end": 2002,
+        "bodies": [
+          {
+            "slug": "2b346a0aa3",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/15b0e296.jpg"
+          },
+          {
+            "slug": "ddf9029977",
+            "name": "Hatchback, 3d",
+            "image": "https://cdn.wheel-size.com/automobile/body/f37f5e35.jpg"
+          },
+          {
+            "slug": "b67fb3360a",
+            "name": "Liftback",
+            "image": "https://cdn.wheel-size.com/automobile/body/4494eac2.jpg"
+          },
+          {
+            "slug": "6915849303",
+            "name": "Saloon",
+            "image": "https://cdn.wheel-size.com/automobile/body/2916406b.jpg"
+          },
+          {
+            "slug": "f3c89b7be3",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/69519d80.jpg"
+          }
+        ]
+      },
+      "start_year": 1995,
+      "end_year": 1997,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.3",
+        "type": "I4",
+        "power": {
+          "kW": 55.0,
+          "PS": 75,
+          "hp": 74
+        },
+        "code": "2E"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 55.0,
+          "PS": 75,
+          "hp": 74
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 88,
+        "B": 75
+      },
+      "engine.code": {
+        "A": null,
+        "B": "2E"
+      },
+      "engine.capacity": {
+        "A": null,
+        "B": "1.3"
+      },
+      "regions[]": {
+        "A": "eudm",
+        "B": "russia"
+      },
+      "slug": {
+        "A": "7d8a4a5ab2",
+        "B": "c84ee9e76c"
+      },
+      "engine.power.kW": {
+        "A": 65.0,
+        "B": 55.0
+      },
+      "engine.power.hp": {
+        "A": 87,
+        "B": 74
+      },
+      "start_year": {
+        "A": 1992,
+        "B": 1995
+      },
+      "powertrain.engine_power.hp": {
+        "A": 87,
+        "B": 74
+      },
+      "engine.power.PS": {
+        "A": 88,
+        "B": 75
+      },
+      "powertrain.engine_power.kW": {
+        "A": 65.0,
+        "B": 55.0
+      },
+      "end_year": {
+        "A": 1995,
+        "B": 1997
+      }
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-modifications",
+    "name": "2.5",
+    "generation": "V (XA50)",
+    "A_slug": "497fad336e",
+    "B_slug": "ba0a95f8ef",
+    "current_ui_primary_A": "2.5",
+    "current_ui_primary_B": "2.5",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "497fad336e",
+      "name": "2.5",
+      "body": null,
+      "trim": "2.5",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "FWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Icon",
+        "Design",
+        "Excel",
+        "Dynamic",
+        "Comfort",
+        "Business",
+        "Club",
+        "Style",
+        "Lounge"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2025,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 160.0,
+          "PS": 218,
+          "hp": 215
+        },
+        "code": "A25A-FXS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "ba0a95f8ef",
+      "name": "2.5",
+      "body": null,
+      "trim": "2.5",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "LE",
+        "XLE",
+        "XSE",
+        "Limited",
+        "Design",
+        "Excel",
+        "Dynamic",
+        "Comfort",
+        "Club",
+        "Style",
+        "Lounge",
+        "Woodland Edition"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2025,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 163.0,
+          "PS": 222,
+          "hp": 219
+        },
+        "code": "A25A-FXS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "trim_attributes[]": {
+        "A": "FWD",
+        "B": "AWD"
+      },
+      "trim_levels[]": {
+        "A": "Lounge",
+        "B": "Woodland Edition"
+      },
+      "slug": {
+        "A": "497fad336e",
+        "B": "ba0a95f8ef"
+      },
+      "engine.power.kW": {
+        "A": 160.0,
+        "B": 163.0
+      },
+      "engine.power.hp": {
+        "A": 215,
+        "B": 219
+      },
+      "engine.power.PS": {
+        "A": 218,
+        "B": 222
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "1.5 TSI",
+    "generation": "Mk7 (5G) Facelift",
+    "A_slug": "ddeb5989b3",
+    "B_slug": "2a7b128d60",
+    "current_ui_primary_A": "1.5 TSI",
+    "current_ui_primary_B": "1.5 TSI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "ddeb5989b3",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "DADA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "2a7b128d60",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfortline",
+        "Highline"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "96f2d6069d",
+        "name": "Mk7 (5G) Facelift",
+        "platform": "",
+        "start": 2017,
+        "end": 2020,
+        "bodies": [
+          {
+            "slug": "c0167d1ca6",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966027.9030082.jpg"
+          },
+          {
+            "slug": "c87579e736",
+            "name": "Estate, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2017-2020-1701966028.3306224.jpg"
+          }
+        ]
+      },
+      "start_year": 2017,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": null,
+        "type": "I4",
+        "power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "code": "DACA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 150,
+        "B": 131
+      },
+      "engine.code": {
+        "A": "DADA",
+        "B": "DACA"
+      },
+      "slug": {
+        "A": "ddeb5989b3",
+        "B": "2a7b128d60"
+      },
+      "engine.power.kW": {
+        "A": 110.0,
+        "B": 96.0
+      },
+      "engine.power.hp": {
+        "A": 148,
+        "B": 129
+      },
+      "powertrain.engine_power.hp": {
+        "A": 148,
+        "B": 129
+      },
+      "engine.power.PS": {
+        "A": 150,
+        "B": 131
+      },
+      "powertrain.engine_power.kW": {
+        "A": 110.0,
+        "B": 96.0
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "1.5 TSI",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "fbec709157",
+    "B_slug": "2088e90e1b",
+    "current_ui_primary_A": "1.5 TSI",
+    "current_ui_primary_B": "1.5 TSI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "fbec709157",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.5",
+        "type": "I4",
+        "power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "code": "DPBA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "2088e90e1b",
+      "name": "1.5 TSI",
+      "body": null,
+      "trim": "1.5 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.5",
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "DPCA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 131,
+        "B": 150
+      },
+      "engine.code": {
+        "A": "DPBA",
+        "B": "DPCA"
+      },
+      "slug": {
+        "A": "fbec709157",
+        "B": "2088e90e1b"
+      },
+      "engine.power.kW": {
+        "A": 96.0,
+        "B": 110.0
+      },
+      "engine.power.hp": {
+        "A": 129,
+        "B": 148
+      },
+      "powertrain.engine_power.hp": {
+        "A": 129,
+        "B": 148
+      },
+      "engine.power.PS": {
+        "A": 131,
+        "B": 150
+      },
+      "powertrain.engine_power.kW": {
+        "A": 96.0,
+        "B": 110.0
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "2.0 TDI",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "5aca8e04fd",
+    "B_slug": "c95bb733ce",
+    "current_ui_primary_A": "2.0 TDI",
+    "current_ui_primary_B": "2.0 TDI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "5aca8e04fd",
+      "name": "2.0 TDI",
+      "body": null,
+      "trim": "2.0 TDI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Golf",
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "code": "DTRD, DTRB, DSUD"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 85.0,
+          "PS": 116,
+          "hp": 114
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "c95bb733ce",
+      "name": "2.0 TDI",
+      "body": null,
+      "trim": "2.0 TDI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "DSRB, DTSB"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 116,
+        "B": 150
+      },
+      "engine.code": {
+        "A": "DTRD, DTRB, DSUD",
+        "B": "DSRB, DTSB"
+      },
+      "slug": {
+        "A": "5aca8e04fd",
+        "B": "c95bb733ce"
+      },
+      "engine.power.kW": {
+        "A": 85.0,
+        "B": 110.0
+      },
+      "engine.power.hp": {
+        "A": 114,
+        "B": 148
+      },
+      "powertrain.engine_power.hp": {
+        "A": 114,
+        "B": 148
+      },
+      "engine.power.PS": {
+        "A": 116,
+        "B": 150
+      },
+      "powertrain.engine_power.kW": {
+        "A": 85.0,
+        "B": 110.0
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "2.0 TSI",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "fb6a7bfe07",
+    "B_slug": "0513e1a0a3",
+    "current_ui_primary_A": "2.0 TSI",
+    "current_ui_primary_B": "2.0 TSI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "fb6a7bfe07",
+      "name": "2.0 TSI",
+      "body": null,
+      "trim": "2.0 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "GTI",
+        "GTI R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 180.0,
+          "PS": 245,
+          "hp": 241
+        },
+        "code": "DLBA, DRNA, DNPA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 180.0,
+          "PS": 245,
+          "hp": 241
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm",
+        "audm"
+      ]
+    },
+    "raw_B": {
+      "slug": "0513e1a0a3",
+      "name": "2.0 TSI",
+      "body": null,
+      "trim": "2.0 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "R"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 235.0,
+          "PS": 320,
+          "hp": 315
+        },
+        "code": "DSFE, DSFF, DNFG"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 235.0,
+          "PS": 320,
+          "hp": 315
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "audm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 245,
+        "B": 320
+      },
+      "engine.code": {
+        "A": "DLBA, DRNA, DNPA",
+        "B": "DSFE, DSFF, DNFG"
+      },
+      "trim_levels[]": {
+        "A": "GTI R-Line",
+        "B": "R"
+      },
+      "slug": {
+        "A": "fb6a7bfe07",
+        "B": "0513e1a0a3"
+      },
+      "engine.power.kW": {
+        "A": 180.0,
+        "B": 235.0
+      },
+      "engine.power.hp": {
+        "A": 241,
+        "B": 315
+      },
+      "powertrain.engine_power.hp": {
+        "A": 241,
+        "B": 315
+      },
+      "engine.power.PS": {
+        "A": 245,
+        "B": 320
+      },
+      "powertrain.engine_power.kW": {
+        "A": 180.0,
+        "B": 235.0
+      },
+      "end_year": {
+        "A": 2022,
+        "B": 2024
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "1.5 eTSI",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "db512b5b37",
+    "B_slug": "2518d420da",
+    "current_ui_primary_A": "1.5 eTSI",
+    "current_ui_primary_B": "1.5 eTSI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "db512b5b37",
+      "name": "1.5 eTSI",
+      "body": null,
+      "trim": "1.5 eTSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.5",
+        "type": "I4",
+        "power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "code": "DPBA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "mild_hybrid",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "system_power": {
+          "kW": 96.0,
+          "PS": 131,
+          "hp": 129
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "front",
+            "power": {
+              "kW": 9.4,
+              "PS": 13,
+              "hp": 13
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "2518d420da",
+      "name": "1.5 eTSI",
+      "body": null,
+      "trim": "1.5 eTSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.5",
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "DFYA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "mild_hybrid",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "front",
+            "power": {
+              "kW": 9.4,
+              "PS": 13,
+              "hp": 13
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 131,
+        "B": 150
+      },
+      "engine.code": {
+        "A": "DPBA",
+        "B": "DFYA"
+      },
+      "powertrain.system_power.kW": {
+        "A": 96.0,
+        "B": 110.0
+      },
+      "slug": {
+        "A": "db512b5b37",
+        "B": "2518d420da"
+      },
+      "engine.power.kW": {
+        "A": 96.0,
+        "B": 110.0
+      },
+      "engine.power.hp": {
+        "A": 129,
+        "B": 148
+      },
+      "powertrain.system_power.PS": {
+        "A": 131,
+        "B": 150
+      },
+      "powertrain.engine_power.hp": {
+        "A": 129,
+        "B": 148
+      },
+      "engine.power.PS": {
+        "A": 131,
+        "B": 150
+      },
+      "powertrain.engine_power.kW": {
+        "A": 96.0,
+        "B": 110.0
+      },
+      "powertrain.system_power.hp": {
+        "A": 129,
+        "B": 148
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "1.0 TSI",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "3531d0b9e7",
+    "B_slug": "9c216a24d8",
+    "current_ui_primary_A": "1.0 TSI",
+    "current_ui_primary_B": "1.0 TSI",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "3531d0b9e7",
+      "name": "1.0 TSI",
+      "body": null,
+      "trim": "1.0 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Golf",
+        "Life",
+        "Style",
+        "R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.0",
+        "type": "I3",
+        "power": {
+          "kW": 81.0,
+          "PS": 110,
+          "hp": 109
+        },
+        "code": "DLAA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 81.0,
+          "PS": 110,
+          "hp": 109
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "9c216a24d8",
+      "name": "1.0 TSI",
+      "body": null,
+      "trim": "1.0 TSI",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Golf",
+        "Life",
+        "Style"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.0",
+        "type": "I3",
+        "power": {
+          "kW": 66.0,
+          "PS": 90,
+          "hp": 89
+        },
+        "code": "DLAB"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 66.0,
+          "PS": 90,
+          "hp": 89
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.engine_power.PS": {
+        "A": 110,
+        "B": 90
+      },
+      "engine.code": {
+        "A": "DLAA",
+        "B": "DLAB"
+      },
+      "trim_levels[]": {
+        "A": "R-Line",
+        "B": "Style"
+      },
+      "slug": {
+        "A": "3531d0b9e7",
+        "B": "9c216a24d8"
+      },
+      "engine.power.kW": {
+        "A": 81.0,
+        "B": 66.0
+      },
+      "engine.power.hp": {
+        "A": 109,
+        "B": 89
+      },
+      "powertrain.engine_power.hp": {
+        "A": 109,
+        "B": 89
+      },
+      "engine.power.PS": {
+        "A": 110,
+        "B": 90
+      },
+      "powertrain.engine_power.kW": {
+        "A": 81.0,
+        "B": 66.0
+      }
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-modifications",
+    "name": "1.4 TSI eHybrid",
+    "generation": "Mk8 (CD1)",
+    "A_slug": "3bed9f3cd5",
+    "B_slug": "5cf6978d9d",
+    "current_ui_primary_A": "1.4 TSI eHybrid",
+    "current_ui_primary_B": "1.4 TSI eHybrid",
+    "current_ui_secondary": "market / generation (body null)",
+    "raw_A": {
+      "slug": "3bed9f3cd5",
+      "name": "1.4 TSI eHybrid",
+      "body": null,
+      "trim": "1.4 TSI eHybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "GTE",
+        "GTE R-Line"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "1.4",
+        "type": "I4",
+        "power": {
+          "kW": 180.0,
+          "PS": 245,
+          "hp": 241
+        },
+        "code": "DGEA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": {
+          "kW": 180.0,
+          "PS": 245,
+          "hp": 241
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "front",
+            "power": {
+              "kW": 81.0,
+              "PS": 110,
+              "hp": 109
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "raw_B": {
+      "slug": "5cf6978d9d",
+      "name": "1.4 TSI eHybrid",
+      "body": null,
+      "trim": "1.4 TSI eHybrid",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Style"
+      ],
+      "make": {
+        "slug": "volkswagen",
+        "name": "Volkswagen",
+        "name_en": "Volkswagen"
+      },
+      "model": {
+        "slug": "golf",
+        "name": "Golf",
+        "name_en": "Golf"
+      },
+      "generation": {
+        "slug": "687fe34a90",
+        "name": "Mk8 (CD1)",
+        "platform": "",
+        "start": 2019,
+        "end": 2024,
+        "bodies": [
+          {
+            "slug": "4123e5cc43",
+            "name": "Hatchback, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163637.9418178.jpg"
+          },
+          {
+            "slug": "c89f28fe87",
+            "name": "Variant, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/volkswagen-golf-2019-2024-1753163638.5696464.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2024,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "1.4",
+        "type": "I4",
+        "power": {
+          "kW": 150.0,
+          "PS": 204,
+          "hp": 201
+        },
+        "code": "DGEA"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "phev",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": {
+          "kW": 150.0,
+          "PS": 204,
+          "hp": 201
+        },
+        "engine_power_secondary": null,
+        "motors": [
+          {
+            "axle": "front",
+            "power": {
+              "kW": 81.0,
+              "PS": 110,
+              "hp": 109
+            },
+            "code": null
+          }
+        ]
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    "differing_leaf_fields": {
+      "powertrain.system_power.kW": {
+        "A": 180.0,
+        "B": 150.0
+      },
+      "trim_levels[]": {
+        "A": "GTE R-Line",
+        "B": "Style"
+      },
+      "slug": {
+        "A": "3bed9f3cd5",
+        "B": "5cf6978d9d"
+      },
+      "engine.power.kW": {
+        "A": 180.0,
+        "B": 150.0
+      },
+      "engine.power.hp": {
+        "A": 241,
+        "B": 201
+      },
+      "powertrain.system_power.PS": {
+        "A": 245,
+        "B": 204
+      },
+      "engine.power.PS": {
+        "A": 245,
+        "B": 204
+      },
+      "powertrain.system_power.hp": {
+        "A": 241,
+        "B": 201
+      }
+    }
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "efdde87c66",
+    "modification": "Long Range",
+    "body": "",
+    "generation_slug": "efdde87c66",
+    "modification_slug": "5a081c2f38"
+  },
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "efdde87c66",
+    "modification": "Long Range",
+    "body": "",
+    "generation_slug": "efdde87c66",
+    "modification_slug": "0d7499344b"
+  },
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "efdde87c66",
+    "modification": "Standard Range",
+    "body": "",
+    "generation_slug": "efdde87c66",
+    "modification_slug": "fe8e947903"
+  },
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "Facelift",
+    "modification": "Performance",
+    "body": "",
+    "generation_slug": "67797f1f0f",
+    "modification_slug": "4296c050a9"
+  },
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "Facelift",
+    "modification": "Long Range",
+    "body": "",
+    "generation_slug": "67797f1f0f",
+    "modification_slug": "026e4ab9d6"
+  },
+  {
+    "make_slug": "tesla",
+    "model_slug": "model-3",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "Facelift",
+    "modification": "Standard Range",
+    "body": "",
+    "generation_slug": "67797f1f0f",
+    "modification_slug": "be5b2b9767"
+  }
+]

@@ -1,0 +1,138 @@
+{
+  "provider": "wheel_size",
+  "provider_version": "v2",
+  "fetched_at": "2026-10-04T10:53:08.036128+00:00",
+  "raw_response_ref": "sha256:b84ded1479cd7b31897b3100146f854f545b45eb932168289c41c8abbe3bb6e8",
+  "bolt_count": 5,
+  "pcd_mm": 114.3,
+  "center_bore_mm": 64.1,
+  "fastener_type": null,
+  "thread_size": null,
+  "tightening_torque": null,
+  "allowed_wheels": [
+    {
+      "axle": "front",
+      "rim_diameter": 20.0,
+      "rim_width": 9.0,
+      "offset": 34.0,
+      "is_stock": true,
+      "tire": "245/35ZR20"
+    },
+    {
+      "axle": "front",
+      "rim_diameter": 19.0,
+      "rim_width": 8.5,
+      "offset": 35.0,
+      "is_stock": false,
+      "tire": "235/40ZR19"
+    },
+    {
+      "axle": "front",
+      "rim_diameter": 18.0,
+      "rim_width": 8.5,
+      "offset": 35.0,
+      "is_stock": false,
+      "tire": "235/45ZR18"
+    },
+    {
+      "axle": "rear",
+      "rim_diameter": 19.0,
+      "rim_width": 10.0,
+      "offset": 40.0,
+      "is_stock": false,
+      "tire": "275/35ZR19"
+    },
+    {
+      "axle": "front",
+      "rim_diameter": 20.0,
+      "rim_width": 8.5,
+      "offset": 35.0,
+      "is_stock": false,
+      "tire": "235/35ZR20"
+    },
+    {
+      "axle": "rear",
+      "rim_diameter": 20.0,
+      "rim_width": 10.0,
+      "offset": 40.0,
+      "is_stock": false,
+      "tire": "275/30ZR20"
+    }
+  ],
+  "offset_references": [
+    {
+      "axle": "front",
+      "rim_diameter_in": 20.0,
+      "rim_width_j": 9.0,
+      "et_min_mm": 34.0,
+      "et_max_mm": 34.0,
+      "source_offsets_mm": [
+        34.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "stock"
+    },
+    {
+      "axle": "front",
+      "rim_diameter_in": 19.0,
+      "rim_width_j": 8.5,
+      "et_min_mm": 35.0,
+      "et_max_mm": 35.0,
+      "source_offsets_mm": [
+        35.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "approved_non_oem"
+    },
+    {
+      "axle": "front",
+      "rim_diameter_in": 18.0,
+      "rim_width_j": 8.5,
+      "et_min_mm": 35.0,
+      "et_max_mm": 35.0,
+      "source_offsets_mm": [
+        35.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "approved_non_oem"
+    },
+    {
+      "axle": "rear",
+      "rim_diameter_in": 19.0,
+      "rim_width_j": 10.0,
+      "et_min_mm": 40.0,
+      "et_max_mm": 40.0,
+      "source_offsets_mm": [
+        40.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "approved_non_oem"
+    },
+    {
+      "axle": "front",
+      "rim_diameter_in": 20.0,
+      "rim_width_j": 8.5,
+      "et_min_mm": 35.0,
+      "et_max_mm": 35.0,
+      "source_offsets_mm": [
+        35.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "approved_non_oem"
+    },
+    {
+      "axle": "rear",
+      "rim_diameter_in": 20.0,
+      "rim_width_j": 10.0,
+      "et_min_mm": 40.0,
+      "et_max_mm": 40.0,
+      "source_offsets_mm": [
+        40.0
+      ],
+      "reference_type": "derived_interval",
+      "evidence_class": "approved_non_oem"
+    }
+  ],
+  "oem_offset_front": null,
+  "oem_offset_rear": null
+}
