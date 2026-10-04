@@ -1,0 +1,75 @@
+[
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "117a52c786",
+    "axle": "front",
+    "scope": "all supplied wheel rows",
+    "reference_diameters_in": [
+      19.0,
+      20.0,
+      21.0,
+      22.0
+    ],
+    "submitted_hypothetical_diameter_in": 16,
+    "reference_relation": "below",
+    "exact_reference_match": false
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "19e5c5a357",
+    "axle": "front",
+    "scope": "all supplied wheel rows",
+    "reference_diameters_in": [
+      20.0,
+      21.0,
+      22.0
+    ],
+    "submitted_hypothetical_diameter_in": 19,
+    "reference_relation": "below",
+    "exact_reference_match": false
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "5a081c2f38",
+    "axle": "front",
+    "scope": "all supplied wheel rows",
+    "reference_diameters_in": [
+      18.0,
+      19.0,
+      20.0
+    ],
+    "submitted_hypothetical_diameter_in": 19,
+    "reference_relation": "within_bounds",
+    "exact_reference_match": true
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "ddeb5989b3",
+    "axle": "front",
+    "scope": "all supplied wheel rows",
+    "reference_diameters_in": [
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0
+    ],
+    "submitted_hypothetical_diameter_in": 20,
+    "reference_relation": "above",
+    "exact_reference_match": false
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "a7bd8e0eec",
+    "axle": "front",
+    "scope": "all supplied wheel rows",
+    "reference_diameters_in": [
+      17.0,
+      18.0,
+      19.0
+    ],
+    "submitted_hypothetical_diameter_in": 18,
+    "reference_relation": "within_bounds",
+    "exact_reference_match": true
+  }
+]

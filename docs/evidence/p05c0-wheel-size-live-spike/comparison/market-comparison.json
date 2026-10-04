@@ -1,0 +1,36 @@
+{
+  "eudm_slugs": [
+    "af284e7b2d",
+    "b33a1e86a6",
+    "117a52c786",
+    "cae4a57bcd",
+    "f4593152ea",
+    "12991bdfa4",
+    "19e5c5a357",
+    "974ad82995",
+    "fc2890c44d",
+    "70a5e2c25d",
+    "ea6a99ab69",
+    "f8b7e58815",
+    "4355503bc6"
+  ],
+  "usdm_slugs": [
+    "af284e7b2d",
+    "b33a1e86a6",
+    "117a52c786",
+    "cae4a57bcd",
+    "f4593152ea",
+    "12991bdfa4",
+    "19e5c5a357",
+    "974ad82995",
+    "fc2890c44d",
+    "70a5e2c25d",
+    "ea6a99ab69",
+    "f8b7e58815",
+    "4355503bc6"
+  ],
+  "same_ids": true,
+  "same_order": true,
+  "same_wheels_by_id": true,
+  "same_labels_by_id": true
+}
