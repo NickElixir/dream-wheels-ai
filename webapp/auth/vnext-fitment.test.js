@@ -103,7 +103,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     I18N: { ru: { warnings: { fitment: "Предварительная проверка совместимости." }, fitment: { verdictDisclaimer: "Предварительная оценка не является гарантией установки." } } },
     t: key => key === "fitment.verdictTitle" ? "Предварительная техническая проверка" : "Предварительная оценка не является гарантией установки.",
     normalizeFitmentNumber: value => value === "" || value == null ? null : Number(String(value).replace(",", ".")),
-    fitmentCheckForPresentation: () => null,
+    fitmentCheckForPresentation: () => null, fitmentResultBlockingCopy: () => [],
     fitmentMutationsLocked: () => false,
     fitmentUiState: () => ({ nextAction: "complete_vehicle_details", rim: {}, form: { dirty: true } }),
     fitmentContextJob: () => null,
@@ -210,7 +210,7 @@ test("Fitment view renders exactly the four API verdicts and keeps execution fai
   const cases = [
     ["compatible", "Подходит"],
     ["compatible_with_conditions", "Подходит с условиями"],
-    ["unknown", "Недостаточно данных"],
+    ["unknown", "Не можем подтвердить совместимость"],
     ["incompatible", "Не подходит"],
   ];
   for (const [verdict, label] of cases) {
@@ -476,8 +476,8 @@ test("completed preliminary Fitment verdict shows the approved installation disc
     preliminaryDisclaimer: "Предварительная оценка не является гарантией установки.",
     check: { execution_status: "completed", verdict: "unknown", is_current: true },
   });
-  assert.match(completed, /Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра\./);
-  assert.match(completed, /Предварительная оценка не является гарантией установки\./);
+  assert.match(completed, /Перед покупкой уточните совместимость у продавца или в шиномонтаже\./);
+  assert.doesNotMatch(completed, /Предварительная оценка не является гарантией установки\./);
   const failed = fitmentMarkup({
     overview: {}, executionStatus: "failed", preliminaryWarning: false,
     check: { execution_status: "failed" },
@@ -568,7 +568,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentSectionToStep: (value) => ({ vehicle: 1, rim: 2, result: 3 }[value]),
     fitmentContextJob: () => null,
     fitmentUiState: (value) => ({ nextAction: value?.next_action?.kind, rim: { setupState: value?.rim_setup_state, setupMode: value?.setup_mode, front: value?.front_rim, rear: value?.rear_rim } }),
-    fitmentCheckForPresentation: () => null,
+    fitmentCheckForPresentation: () => null, fitmentResultBlockingCopy: () => [],
     fitmentMutationsLocked: () => false,
     demoVehicleTitle: (value) => [value?.make, value?.model].filter(Boolean).join(" "),
     fitmentMarketLabel: (value) => value || "",
@@ -772,7 +772,7 @@ test("an unconfirmed branch cannot leak its draft into Standard canonical summar
   const markup = fitmentMarkup({overview:{},vehicleTitle:"Unsaved vehicle",rimTitle:"Unsaved wheel",rimSpecs:"99J",rimEditing:true,rim:{wheel_width_j:99}});
   const standard = markup.slice(markup.indexOf('<section class="vnext-fitment__standard"'));
   assert.doesNotMatch(standard,/Unsaved|99J/);
-  assert.equal((standard.match(/<strong>—<\/strong>/g)||[]).length,2);
+  assert.doesNotMatch(standard,/ready-summaries|<strong>—<\/strong>/);
 });
 
 test("SKU chooser owns one workspace and suppresses URL task and technical editor", () => {
@@ -789,7 +789,7 @@ test("staggered Result separates different values and conditions, collapses iden
   for (const [rear, count] of [[{...row,axle:"rear"},1],[{...row,axle:"rear",rimValue:"35,125"},1],[{...row,axle:"rear",rimValue:42.125},2],[{...row,axle:"rear",resultLabel:"Нужна проверка",status:"conditional"},2],[{...row,axle:"rear",status:"conditional"},2]]) {
     const markup = fitmentMarkup({...model,fieldEvidence:[row,rear]});
     assert.equal((markup.match(/<table /g)||[]).length,count);
-    assert.match(markup,count===1?/Обе оси — параметры совпадают/:/Задняя ось/);
+    assert.match(markup,count===1?/Одинаково для обеих осей/:/Задняя ось/);
   }
 });
 
@@ -798,8 +798,8 @@ test("RU and EN Result, warning and picker use one locale and preserve punctuati
   const markup=fitmentMarkup(model);
   assert.doesNotMatch(markup,/[А-Яа-яЁё]/);
   assert.match(markup,/35\.125/); assert.match(markup,/33\.275/);
-  assert.match(markup,/Confirm fitment with your installer\./);
-  assert.match(markup,/Not an installation guarantee\./);
+  assert.match(markup,/Before purchasing, confirm compatibility with the seller or an installation shop\./);
+  assert.doesNotMatch(markup,/Not an installation guarantee\./);
   assert.equal(fitmentDisplayValue("ET 33.275 / 35.125"),"ET 33,275 / 35,125");
   const conflict = fitmentMarkup({locale:"en",rimEditing:true,resolver:{conflicts:[{field:"offset_et_mm",current:35.125,suggested:33.275}]}});
   assert.doesNotMatch(conflict,/[А-Яа-яЁё]/);
@@ -838,7 +838,7 @@ test("owner polish conflict chips carry source semantics and retain explicit act
 test("owner polish statuses distinguish local ready from canonical and split staggered lines", () => {
   const local = fitmentMarkup({rimEditing:true,overview:{rim_setup_state:"partial"},rimSaveReadiness:{ready:true}});
   assert.match(local,/object-status[^>]*>Готово к сохранению/);
-  assert.match(local,/ready-summaries[\s\S]*<strong>—<\/strong>/);
+  assert.doesNotMatch(local,/ready-summaries/);
   const saved = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimSaveReadiness:{ready:true}});
   assert.match(saved,/object-status[^>]*>Параметры подтверждены/);
   const changed = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimDraftDirty:true,rimSaveReadiness:{ready:true}});

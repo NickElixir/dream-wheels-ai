@@ -38,3 +38,7 @@ Selected screenshots: [390 RU A](browser-390-ru-A.png), [390 EN B](browser-390-e
 ## Handoff
 
 Fasteners, load rating, physical clearance, C MEDIUM-1 and other post-release findings remain deferred. No extra overall-positive inference, live-provider change or historical mutation introduced. Merge not performed. Ready for focused independent review of A–J, frontend unknown masking, PCD/bolt-count separation and unchanged overall engine/versions after exact-HEAD CI passes.
+
+## Result copy corrective pass
+
+Independent review requested presentation cleanup after `973b9c5`. The [copy corrective report](copy-corrective/report.md) and fresh browser evidence supersede the earlier Result screenshots/copy: unknown is separate from incompatibility, both PCD/bolt fail reasons are shown, Diameter duplicate removed, ET missing-reference copy clarified, empty metadata hidden and disclaimer shortened. The technical P0.5-E backend diff and saved representative API responses are unchanged. Focused copy re-review is required before merge.

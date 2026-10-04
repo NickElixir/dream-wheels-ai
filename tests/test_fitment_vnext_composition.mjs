@@ -121,7 +121,7 @@ for (const locale of ["ru", "en"]) {
     const table = markup.match(/<table[\s\S]*?<\/table>/u)[0];
     assert.equal([...table.matchAll(/<th scope="row">/gu)].length, 6);
     assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "Matches" : "Подходит"}</td>`, "gu"))].length, 4);
-    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "Unknown" : "Не определено"}</td>`, "gu"))].length, 2);
+    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "No data" : "Нет данных"}</td>`, "gu"))].length, 2);
     assert.match(table, /<th scope="row">PCD<\/th>/u);
     assert.ok(table.includes(`<th scope="row">${locale === "en" ? "Bolt count" : "Количество отверстий"}</th>`));
     assert.doesNotMatch(table, /5×112/u);
@@ -143,7 +143,85 @@ test("overall combination warning and missing contextual ET copy remain explicit
   for (const locale of ["ru", "en"]) {
     const copyContext = {locale};
     vm.runInNewContext(`${copy}\nglobalThis.message = fitmentVerdictMessage;`, copyContext);
-    assert.match(copyContext.message({code: "size_not_in_reference"}), locale === "ru" ? /Комбинация диаметра и ширины/u : /diameter and width combination/u);
+    assert.match(copyContext.message({code: "size_not_in_reference"}), locale === "ru" ? /Этот размер не найден/u : /This size is not listed/u);
     assert.match(copyContext.message({code: "vehicle_reference_offset_missing"}), locale === "ru" ? /Для выбранного размера нет справочных данных по ET/u : /No ET reference.*selected size/u);
   }
+});
+
+function resultCopyApi(locale) {
+  const app = fs.readFileSync(path.join(root, "webapp/app.js"), "utf8");
+  const extract = name => {
+    const start = app.indexOf(`function ${name}(`);
+    return app.slice(start, app.indexOf("\nfunction ", start + 1));
+  };
+  const resultContext = {locale, fitmentDisplayValue, normalizeFitmentText: value => String(value ?? "").trim()};
+  vm.runInNewContext(`${extract("formatIdentityNumber")}\n${extract("fitmentVerdictMessage")}\n${extract("fitmentResultBlockingCopy")}\nglobalThis.copy = fitmentResultBlockingCopy; globalThis.message = fitmentVerdictMessage;`, resultContext);
+  return resultContext;
+}
+const responses = JSON.parse(fs.readFileSync(path.join(root, "docs/evidence/p05e-fitment-field-evidence/representative-api.json"), "utf8"));
+
+for (const locale of ["ru", "en"]) {
+  test(`result copy distinguishes unknown and incompatible with backend field evidence (${locale})`, () => {
+    const api = resultCopyApi(locale);
+    for (const scenario of ["A", "B", "J", "compatible", "dia-conditional"]) {
+      const check = responses[scenario];
+      const fieldEvidence = check.field_results.map(item => ({field:item.field, axle:item.axle, code:item.code, status:item.status, vehicleValue:item.vehicle_value, rimValue:item.rim_value}));
+      const blockingIssues = api.copy(check);
+      const markup = context.fitmentMarkup({locale, overview:{}, executionStatus:"completed", check, fieldEvidence, blockingIssues,
+        conditions:check.conditions.map(item => ({label:api.message(item)})), diameterReferences:[{title:"DIAMETER DUPLICATE"}], preliminaryWarning:true});
+      assert.doesNotMatch(markup,/DIAMETER DUPLICATE|vnext-fitment__diameter-reference|В базе недостаточно|ready-summaries/);
+      assert.ok(markup.includes(locale === "ru" ? "Одинаково для обеих осей" : "Same for both axles"));
+      if (["A","B"].includes(scenario)) {
+        assert.ok(markup.includes(locale === "ru" ? "Не можем подтвердить совместимость" : "Compatibility could not be confirmed"));
+        assert.ok(markup.includes(locale === "ru" ? "Что не удалось подтвердить" : "What could not be confirmed"));
+        assert.doesNotMatch(markup,/Почему не подходит|Why it does not fit/);
+        const size = scenario === "A" ? "19″ × 10J" : (locale === "ru" ? "20″ × 8,5J" : "20″ × 8.5J");
+        assert.ok(markup.includes(size));
+        assert.ok(markup.includes(locale === "ru" ? "Нет для этого размера" : "None for this size"));
+      }
+      if (scenario === "J") {
+        assert.equal(blockingIssues.length,2); // front/rear duplicates collapsed, both facts retained
+        assert.ok(markup.includes(locale === "ru" ? "Почему не подходит" : "Why it does not fit"));
+        assert.ok(markup.includes(locale === "ru" ? "Не совпадает количество отверстий: у машины 5, у диска 4." : "Bolt count does not match: vehicle 5, wheel 4."));
+        assert.ok(markup.includes(locale === "ru" ? "PCD не совпадает: у машины 112 мм, у диска 114,3 мм." : "PCD does not match: vehicle 112 mm, wheel 114.3 mm."));
+      }
+      if (scenario === "compatible") assert.doesNotMatch(markup,/vnext-fitment__evidence/);
+      if (scenario === "dia-conditional") assert.ok(markup.includes(locale === "ru" ? "С условием" : "With conditions"));
+      const disclaimer = markup.match(/<footer class="vnext-fitment__commercial-warning">([\s\S]*?)<\/footer>/u)[1];
+      assert.equal([...disclaimer.matchAll(/<p>/gu)].length,1);
+      assert.doesNotMatch(disclaimer,/<small>/u);
+      if (locale === "en") assert.doesNotMatch(markup,/[А-Яа-яЁё]/u);
+    }
+  });
+}
+
+test("summary renders only backend fail codes, preserving single conflicts and other reasons", () => {
+  const api=resultCopyApi("en");
+  for (const code of ["pcd_mismatch","bolt_count_mismatch"]) {
+    const check={verdict:"incompatible",blocking_issues:[{code:"center_bore_too_small"}],field_results:[
+      {code,status:"fail",vehicle_value:"5",rim_value:"4"},
+      {code:code==="pcd_mismatch"?"bolt_count_mismatch":"pcd_mismatch",status:"pass",vehicle_value:"5",rim_value:"4"},
+    ]};
+    const issues=api.copy(check);
+    assert.equal(issues.length,2);
+    assert.equal(issues.filter(item=>item.code===code).length,1);
+    check.verdict="unknown";
+    assert.equal(api.copy(check).length,1); // no inferred mismatch from different values
+  }
+});
+
+test("empty completed metadata is hidden while useful supplied metadata remains", () => {
+  const check={execution_status:"completed",verdict:"compatible"};
+  const empty=context.fitmentMarkup({overview:{},check,canonicalVehicleSummary:"—",canonicalWheelSummary:" "});
+  assert.doesNotMatch(empty,/ready-summaries|<strong>—<\/strong>/u);
+  assert.match(empty,/data-fitment-action="create-image"/u);
+  const partial=context.fitmentMarkup({overview:{},check,canonicalVehicleSummary:"BMW X5, 2021"});
+  assert.match(partial,/<strong>BMW X5, 2021<\/strong>/u);
+  assert.doesNotMatch(partial,/<strong>—<\/strong>/u);
+});
+
+test("ET no-reference copy stays neutral when submitted size is unavailable", () => {
+  const markup=context.fitmentMarkup({overview:{},check:{execution_status:"completed",verdict:"unknown"},fieldEvidence:[{field:"offset_et_mm",status:"unknown",code:"vehicle_reference_offset_missing",vehicleValue:null,rimValue:"45"}]});
+  assert.doesNotMatch(markup,/Нет для этого размера/u);
+  assert.match(markup,/Нет данных/u);
 });

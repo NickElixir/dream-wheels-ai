@@ -4865,7 +4865,15 @@ function fitmentVerdictMessage(item) {
     }
     if (code === "pcd_unknown") return ru ? "Уточните разболтовку колесного диска" : "Clarify the wheel bolt pattern";
     if (code === "center_bore_unknown") return ru ? "Уточните ступичное отверстие" : "Clarify the center bore";
-    if (code === "size_not_in_reference") return ru ? "Комбинация диаметра и ширины отсутствует в справочных данных" : "The diameter and width combination is absent from the reference";
+    if (code === "size_not_in_reference") {
+        const diameter = details.rim_diameter_in;
+        const width = details.rim_width_j;
+        if (diameter != null && width != null) {
+            const size = `${formatIdentityNumber(diameter)}″ × ${formatIdentityNumber(width)}J`;
+            return ru ? `Размер ${size} не найден в справочных данных для этой машины.` : `The ${size} size is not listed in the reference data for this vehicle.`;
+        }
+        return ru ? "Этот размер не найден в справочных данных для этой машины." : "This size is not listed in the reference data for this vehicle.";
+    }
     if (["size_unknown", "allowed_set_empty"].includes(code)) return ru ? "Уточните размер колесного диска" : "Clarify the wheel size";
     if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости — повторите позже" : "The technical compatibility service could not be reached — try again later";
     if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы — попробуйте позже" : "The technical compatibility service is rate-limited — try again later";
@@ -4895,6 +4903,29 @@ function fitmentVerdictMessage(item) {
     const label = normalizeFitmentText(item?.label);
     if (label && !/требуется условие|condition required/i.test(label)) return label.replace(/[.!]$/, "");
     return ru ? "Нужно уточнить технические параметры" : "Technical details need clarification";
+}
+
+function fitmentResultBlockingCopy(check) {
+    const issues = check?.blocking_issues || [];
+    const failures = check?.verdict === "incompatible"
+        ? (check.field_results || []).filter(item => item.status === "fail" && ["pcd_mismatch", "bolt_count_mismatch"].includes(item.code))
+        : [];
+    const replacedCodes = new Set(failures.map(item => item.code));
+    const labels = issues.filter(item => !replacedCodes.has(item.code)).map(item => ({code: item.code, label: fitmentVerdictMessage(item)}));
+    for (const item of failures) {
+        const vehicle = item.vehicle_value;
+        const wheel = item.rim_value;
+        let label = fitmentVerdictMessage(item);
+        if (vehicle != null && wheel != null) {
+            const v = fitmentDisplayValue(vehicle, locale);
+            const w = fitmentDisplayValue(wheel, locale);
+            label = item.code === "bolt_count_mismatch"
+                ? locale === "ru" ? `Не совпадает количество отверстий: у машины ${v}, у диска ${w}.` : `Bolt count does not match: vehicle ${v}, wheel ${w}.`
+                : locale === "ru" ? `PCD не совпадает: у машины ${v} мм, у диска ${w} мм.` : `PCD does not match: vehicle ${v} mm, wheel ${w} mm.`;
+        }
+        labels.push({code: item.code, label});
+    }
+    return labels.filter((item, index) => labels.findIndex(other => other.label === item.label) === index);
 }
 
 function fitmentFieldStateLabel(fieldState) {
@@ -10772,6 +10803,7 @@ function vnextFitmentSnapshot() {
     const fieldEvidence = check && !failedExecution ? fitmentResultFieldItems(check).map((item) => ({
         field: item.field,
         axle: item.axle,
+        code: item.code,
         status: item.status,
         name: (item.field ? fitmentFieldLabel(item.field) : item.label || item.code || "Параметр").replace(/^./u, (first) => first.toLocaleUpperCase()),
         label: fitmentResultFieldCopy(item, check),
@@ -10801,10 +10833,11 @@ function vnextFitmentSnapshot() {
         preliminaryWarning: Boolean(check?.execution_status === "completed" && check?.is_preliminary !== false),
         preliminaryWarningCopy: I18N[locale].warnings.fitment,
         preliminaryDisclaimer: I18N[locale].fitment.verdictDisclaimer,
-        blockingIssues: (failedExecution ? [] : check?.blocking_issues || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
+        blockingIssues: failedExecution ? [] : fitmentResultBlockingCopy(check),
         conditions: (failedExecution ? [] : check?.conditions || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         advisories: (failedExecution ? [] : check?.advisories || []).map((item) => ({ label: fitmentVerdictMessage(item) })),
         missingData: (failedExecution ? [] : [...(check?.missing_fields || []), ...(check?.evidence_summary?.missing_fields || [])])
+            .filter(item => !(item === "provider_allowed_wheels" && check?.blocking_issues?.some(issue => issue.code === "size_not_in_reference")))
             .map(item => ({ label: typeof item === "string" ? fitmentFieldLabel(item) : fitmentVerdictMessage(item) })),
         fieldEvidence,
         diameterReferences: (failedExecution ? [] : check?.diameter_reference_details || []).map(fitmentDiameterPresentation),

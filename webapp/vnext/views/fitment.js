@@ -7,7 +7,7 @@ const button = (label, action, { primary = false, disabled = false, value = "" }
 const verdictLabels = {
   compatible: "Подходит",
   compatible_with_conditions: "Подходит с условиями",
-  unknown: "Недостаточно данных для проверки",
+  unknown: "Не можем подтвердить совместимость",
   incompatible: "Не подходит",
 };
 
@@ -66,12 +66,13 @@ const comparisonFields = [
   ["offset_et_mm", "ET", "ET", " mm"], ["pcd", "PCD", "PCD", " mm"],
   ["bolt_count", "Количество отверстий", "Bolt count", ""], ["center_bore_mm", "DIA", "DIA", " mm"],
 ];
+const hasSummary = value => Boolean(String(value ?? "").trim()) && !/^[—–-]$/.test(String(value).trim());
 const comparisonLabel = (model, ru, en) => model.locale === "en" ? en : ru;
 const comparisonResult = (model, item) => ({
   pass: comparisonLabel(model, "Подходит", "Matches"),
   conditional: comparisonLabel(model, "С условием", "With conditions"),
-  fail: comparisonLabel(model, "Не совпадает", "Mismatch"),
-  unknown: comparisonLabel(model, "Не определено", "Unknown"),
+  fail: comparisonLabel(model, "Не подходит", "Does not match"),
+  unknown: comparisonLabel(model, "Нет данных", "No data"),
 }[item.status] || item.resultLabel || comparisonLabel(model, "Нет данных", "No data"));
 
 function parameters(model, rows) {
@@ -79,7 +80,10 @@ function parameters(model, rows) {
     const item = rows.find(row => row.field === field || row.name === ru || row.name === en) || {};
     const value = raw => raw == null ? comparisonLabel(model, "Нет данных", "No data") : esc(fitmentDisplayValue(raw, model.locale) + (model.locale !== "en" ? unit.replace(" mm", " мм") : unit));
     const result = comparisonResult(model, item);
-    return `<tr tabindex="0"><th scope="row">${comparisonLabel(model, ru, en)}</th><td>${value(item.vehicleValue)}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${item.status === "conditional" ? " vnext-fitment__row-result--conditional" : item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
+    const submittedSizeKnown = ["wheel_diameter_in", "wheel_width_j"].every(name => rows.some(row => row.field === name && row.rimValue != null));
+    const contextualMissing = field === "offset_et_mm" && item.code === "vehicle_reference_offset_missing" && item.vehicleValue == null && submittedSizeKnown;
+    const referenceValue = contextualMissing ? esc(comparisonLabel(model, "Нет для этого размера", "None for this size")) : value(item.vehicleValue);
+    return `<tr tabindex="0"><th scope="row">${comparisonLabel(model, ru, en)}</th><td>${referenceValue}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${item.status === "conditional" ? " vnext-fitment__row-result--conditional" : item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
   }).join("");
 }
 
@@ -94,7 +98,7 @@ function verdict(model) {
   if (check?.execution_status === "completed") {
     const stale = check.is_current === false;
     const verdictLabel = verdictLabels[check.verdict] || "";
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>Данные автомобиля или колесного диска изменились.</p>` : ""}${!stale && check.verdict === "unknown" ? '<p>В базе недостаточно технических данных, чтобы определить совместимость этого диска с автомобилем.</p>' : !stale && model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>Данные автомобиля или колесного диска изменились.</p>` : ""}${!stale && check.verdict === "unknown" ? `<p>${comparisonLabel(model, 'Доступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.', 'The available data is not enough to confirm this wheel size as a whole.')}</p>` : !stale && model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
   }
   const copy = nextActionCopy[model.nextAction] || (model.loading ? "Загружаем данные…" : "Техническая проверка ещё не готова");
   return `<section class="vnext-fitment__verdict"${model.loading ? ' aria-busy="true"' : ""}><p class="vnext-eyebrow">Техническая проверка</p>${model.loading ? loadingStatus(copy) : `<h2>${esc(copy)}</h2>`}${model.checkError ? `<p role="alert">${esc(model.checkError)}</p>` : ""}</section>`;
@@ -119,7 +123,7 @@ function sourceEditor(model) {
 function evidence(model) {
   if (model.check?.execution_status !== "completed" || model.checkStartFailed) return "";
   const seen = new Set();
-  const groups = [["Почему не подходит", model.blockingIssues], ["Что нужно уточнить", model.missingData], ["Условия установки", model.conditions], ["Дополнительная информация", model.advisories]]
+  const groups = [[model.check.verdict === "incompatible" ? "Почему не подходит" : model.check.verdict === "unknown" ? "Что не удалось подтвердить" : "Что нужно уточнить", model.blockingIssues], ["Что нужно уточнить", model.missingData], ["Условия установки", model.conditions], ["Дополнительная информация", model.advisories]]
     .map(([title, items]) => ({ title, items: (items || []).map(item => item.label || item.message || item.code || "").filter(label => {
       if (!label || seen.has(label)) return false;
       seen.add(label); return true;
@@ -127,11 +131,6 @@ function evidence(model) {
   if (!groups.length) return "";
   const blockersAndConditions = groups.some(group => group.title === "Почему не подходит") && groups.some(group => group.title === "Условия установки");
   return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? '<p>Условия установки не отменяют причины несовместимости.</p>' : ""}</section>`;
-}
-
-function diameterReferences(model) {
-  if (model.check?.execution_status !== "completed" || model.checkStartFailed) return "";
-  return (model.diameterReferences || []).map(detail => `<section class="vnext-fitment__diameter-reference"><p class="vnext-eyebrow">${esc(detail.axleLabel)}</p><h3>${esc(detail.title)}</h3>${[detail.referenceCopy, detail.submittedCopy, detail.copy, detail.disclaimer].filter(Boolean).map(text => `<p>${esc(text)}</p>`).join("")}</section>`).join("");
 }
 
 function comparisonTable(model) {
@@ -148,12 +147,12 @@ function comparisonTable(model) {
   const staggered = Boolean(rear.length || (model.resultSetupMode || model.overview?.setup_mode) === "staggered");
   const separateAxles = staggered && (!rear.length || JSON.stringify(comparable(front)) !== JSON.stringify(comparable(rear)));
   const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">${comparisonLabel(model, "Параметр", "Parameter")}</th><th scope="col">${comparisonLabel(model, "Автомобиль", "Vehicle")}</th><th scope="col">${comparisonLabel(model, "Колесный диск", "Wheel")}</th><th scope="col">${comparisonLabel(model, "Результат", "Result")}</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
-  return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? comparisonLabel(model, "Передняя ось", "Front axle") : staggered ? comparisonLabel(model, "Обе оси — параметры совпадают", "Both axles — matching parameters") : comparisonLabel(model, "Параметры колёс", "Wheel parameters"))}${separateAxles ? table(rear, comparisonLabel(model, "Задняя ось", "Rear axle")) : ""}</section>`;
+  return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? comparisonLabel(model, "Передняя ось", "Front axle") : staggered ? comparisonLabel(model, "Одинаково для обеих осей", "Same for both axles") : comparisonLabel(model, "Параметры колёс", "Wheel parameters"))}${separateAxles ? table(rear, comparisonLabel(model, "Задняя ось", "Rear axle")) : ""}</section>`;
 }
 
 function preliminaryWarning(model) {
   if (!model.preliminaryWarning || model.executionStatus !== "completed" || model.check?.execution_status !== "completed") return "";
-  return `<footer class="vnext-fitment__commercial-warning"><p>${esc(model.preliminaryWarningCopy || "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.")}</p><small>${esc(model.preliminaryDisclaimer || "Предварительная оценка не является гарантией установки.")}</small></footer>`;
+  return `<footer class="vnext-fitment__commercial-warning"><p>${esc(comparisonLabel(model, "Это предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.", "This is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop."))}</p></footer>`;
 }
 
 function preview(url, alt, { kind = "vehicle" } = {}) {
@@ -379,8 +378,8 @@ export function fitmentMarkup(model = {}) {
     </div>
     <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
     </fieldset>
-    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + diameterReferences(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
-    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}<div class="vnext-fitment__ready-summaries"><div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary || "—")}</strong></div><div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary || "—")}</strong></div></div><div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
+    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
+    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}${hasSummary(model.canonicalVehicleSummary) || hasSummary(model.canonicalWheelSummary) ? `<div class="vnext-fitment__ready-summaries">${hasSummary(model.canonicalVehicleSummary) ? `<div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary)}</strong></div>` : ""}${hasSummary(model.canonicalWheelSummary) ? `<div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary)}</strong></div>` : ""}</div>` : ""}<div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
     </div>
     ${wheelPickerMarkup(model.wheelPicker ? { ...model.wheelPicker, locale: model.locale } : null)}
   </section>`;
@@ -506,6 +505,8 @@ const fitmentEnglishCopy = {
   "Указано вручную": "Entered manually",
   "Источник не указан": "Source not specified",
   "Почему не подходит": "Why it does not fit",
+  "Что не удалось подтвердить": "What could not be confirmed",
+  "Не можем подтвердить совместимость": "Compatibility could not be confirmed",
   "Что нужно уточнить": "What needs clarification",
   "Условия установки": "Installation conditions",
   "Дополнительная информация": "Additional information",

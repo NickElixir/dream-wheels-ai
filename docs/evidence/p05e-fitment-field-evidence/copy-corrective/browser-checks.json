@@ -1,0 +1,1247 @@
+{
+  "browser": "Bundled Playwright Chromium",
+  "url": "http://127.0.0.1:8779/tests/browser-fixtures/p05e-fitment-field-evidence.html",
+  "scope": "production vnextFitmentSnapshot and renderer/i18n, saved fixture API responses; isolated network",
+  "checks": [
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "10J",
+          "Нет данных"
+        ],
+        [
+          "ET",
+          "Нет для этого размера",
+          "45 мм",
+          "Нет данных"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе можем подтвердить совместимость\n\nДоступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "20″",
+          "Нет данных"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "Нет для этого размера",
+          "45 мм",
+          "Нет данных"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе можем подтвердить совместимость\n\nДоступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.\n\nЧто не удалось подтвердить\nРазмер 20″ × 8,5J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t20″\tНет данных\nШирина\t8,5J\t8,5J\tПодходит\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "114,3 мм",
+          "Не подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "4",
+          "Не подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе подходит\n\nОбнаружено несовпадение технических параметров\n\nПочему не подходит\nPCD не совпадает: у машины 112 мм, у диска 114,3 мм.\nНе совпадает количество отверстий: у машины 5, у диска 4.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t114,3 мм\tНе подходит\nКоличество отверстий\t5\t4\tНе подходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nПодходит\n\nОсновные проверяемые параметры совместимы\n\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "70 мм",
+          "С условием"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nПодходит с условиями\n\nДиск предварительно подходит\n\nУсловия установки\nПотребуются центровочные кольца\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t70 мм\tС условием\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "10J",
+          "No data"
+        ],
+        [
+          "ET",
+          "None for this size",
+          "45 mm",
+          "No data"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatibility could not be confirmed\n\nThe available data is not enough to confirm this wheel size as a whole.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "20″",
+          "No data"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "None for this size",
+          "45 mm",
+          "No data"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatibility could not be confirmed\n\nThe available data is not enough to confirm this wheel size as a whole.\n\nWhat could not be confirmed\nThe 20″ × 8.5J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t20″\tNo data\nWidth\t8.5J\t8.5J\tMatches\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "114.3 mm",
+          "Does not match"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "4",
+          "Does not match"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nIncompatible\n\nA mismatch in technical parameters was found\n\nWhy it does not fit\nPCD does not match: vehicle 112 mm, wheel 114.3 mm.\nBolt count does not match: vehicle 5, wheel 4.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t114.3 mm\tDoes not match\nBolt count\t5\t4\tDoes not match\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatible\n\nThe main checked parameters are compatible\n\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "70 mm",
+          "With conditions"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatible with conditions\n\nThe wheel preliminarily fits\n\nInstallation conditions\nCentering rings are required\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t70 mm\tWith conditions\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "10J",
+          "Нет данных"
+        ],
+        [
+          "ET",
+          "Нет для этого размера",
+          "45 мм",
+          "Нет данных"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе можем подтвердить совместимость\n\nДоступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "20″",
+          "Нет данных"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "Нет для этого размера",
+          "45 мм",
+          "Нет данных"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе можем подтвердить совместимость\n\nДоступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.\n\nЧто не удалось подтвердить\nРазмер 20″ × 8,5J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t20″\tНет данных\nШирина\t8,5J\t8,5J\tПодходит\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "114,3 мм",
+          "Не подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "4",
+          "Не подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nНе подходит\n\nОбнаружено несовпадение технических параметров\n\nПочему не подходит\nPCD не совпадает: у машины 112 мм, у диска 114,3 мм.\nНе совпадает количество отверстий: у машины 5, у диска 4.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t114,3 мм\tНе подходит\nКоличество отверстий\t5\t4\tНе подходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nПодходит\n\nОсновные проверяемые параметры совместимы\n\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "70 мм",
+          "С условием"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Проверка совместимости\nНазад\n\nАвтомобиль\n\nФото недоступно\nExample Stock car\n\nИсточник данных\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nКолесный диск\n\nФото недоступно\nКолесный диск\n\nИсточник данных\nИсточник не указан\n\nИзменить\nРаспознать колесный диск\nИзменить параметры\n\nПараметры подтверждены\n\nТехническая проверка\n\nПодходит с условиями\n\nДиск предварительно подходит\n\nУсловия установки\nПотребуются центровочные кольца\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tКолесный диск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t70 мм\tС условием\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "10J",
+          "No data"
+        ],
+        [
+          "ET",
+          "None for this size",
+          "45 mm",
+          "No data"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatibility could not be confirmed\n\nThe available data is not enough to confirm this wheel size as a whole.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "20″",
+          "No data"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "None for this size",
+          "45 mm",
+          "No data"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatibility could not be confirmed\n\nThe available data is not enough to confirm this wheel size as a whole.\n\nWhat could not be confirmed\nThe 20″ × 8.5J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t20″\tNo data\nWidth\t8.5J\t8.5J\tMatches\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "114.3 mm",
+          "Does not match"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "4",
+          "Does not match"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nIncompatible\n\nA mismatch in technical parameters was found\n\nWhy it does not fit\nPCD does not match: vehicle 112 mm, wheel 114.3 mm.\nBolt count does not match: vehicle 5, wheel 4.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t114.3 mm\tDoes not match\nBolt count\t5\t4\tDoes not match\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatible\n\nThe main checked parameters are compatible\n\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "70 mm",
+          "With conditions"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false,
+      "resultCopy": "Compatibility check\nBack\n\nVehicle\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWheel\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTechnical check\n\nCompatible with conditions\n\nThe wheel preliminarily fits\n\nInstallation conditions\nCentering rings are required\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t70 mm\tWith conditions\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image"
+    }
+  ]
+}
