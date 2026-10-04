@@ -1,0 +1,326 @@
+[
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "create",
+    "text": "Создать примерку\n\nАВТОМОБИЛЬ\n\nЗаменить фото\nФото автомобиля добавлено\n\nДИСК\n\nЗаменить фото\nФото диска добавлено\nДобавить ссылку на товар\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result",
+    "text": "Результат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка\n\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "history",
+    "text": "История\n\n04.10.2026\nZEEKR 007\n\nBBS CI-R / 19 × 8.5J / 04.10.2026\n\nГотово\nОткрыть\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "compatible",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПодходит\n\nОсновные проверяемые параметры совместимы\n\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "conditions",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПодходит с условиями\n\nДиск предварительно подходит\n\nУсловия установки\nПотребуются центровочные кольца\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t70 мм\tС условием\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "unknown",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nНе можем подтвердить совместимость\n\nЭтого размера нет в справочных данных для вашей машины.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nНе подходит\n\nОбнаружено несовпадение технических параметров\n\nПочему не подходит\nPCD не совпадает: у машины 112 мм, у диска 114,3 мм.\nНе совпадает количество отверстий: у машины 5, у диска 4.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t114,3 мм\tНе подходит\nКоличество отверстий\t5\t4\tНе подходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "failed",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПроверку выполнить не удалось\n\nПопробуйте ещё раз.\n\nПодтверждённые данные сохранены.\n\nИзменить параметры\nПроверка совместимости\n\nПроверку выполнить не удалось. Попробуйте ещё раз.\n\nПовторить проверку\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "stale",
+    "text": "Проверка совместимости\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nРезультат больше не актуален\n\nПредыдущий результат: Не можем подтвердить совместимость\n\nДанные автомобиля или диска изменились.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nПредыдущий результат — Одинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить ещё раз\nСоздать изображение\nГлавная\nСоздать\nИстория\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "create",
+    "text": "Create a try-on\n\nCAR\n\nReplace photo\nCar photo added\n\nWHEEL\n\nReplace photo\nWheel photo added\nAdd product link\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result",
+    "text": "Result\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nCreate another version\nПроверить совместимость\nСкачать результат\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка\n\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "history",
+    "text": "History\n\n04.10.2026\nZEEKR 007\n\nBBS CI-R / 19 × 8.5J / 04.10.2026\n\nReady\nОткрыть\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "compatible",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatible\n\nThe main checked parameters are compatible\n\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "conditions",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatible with conditions\n\nThe wheel preliminarily fits\n\nInstallation conditions\nCentering rings are required\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t70 mm\tWith conditions\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "unknown",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "incompatible",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nIncompatible\n\nA mismatch in technical parameters was found\n\nWhy it does not fit\nPCD does not match: vehicle 112 mm, wheel 114.3 mm.\nBolt count does not match: vehicle 5, wheel 4.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t114.3 mm\tDoes not match\nBolt count\t5\t4\tDoes not match\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "failed",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nThe check could not be completed\n\nPlease try again.\n\nConfirmed details are preserved.\n\nEdit parameters\nCompatibility check\n\nThe check could not be completed. Please try again.\n\nRetry check\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "stale",
+    "text": "Compatibility check\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nThe result is no longer current\n\nPrevious result: Compatibility could not be confirmed\n\nVehicle or wheel parameters have changed.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nPrevious result — Same for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck again\nCreate image\nГлавная\nCreate\nHistory\nБаланс\nПомощь",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "create",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nСоздать примерку\n\nАВТОМОБИЛЬ\n\nЗаменить фото\nФото автомобиля добавлено\n\nДИСК\n\nЗаменить фото\nФото диска добавлено\nДобавить ссылку на товар\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nРезультат\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nДИСК\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nСоздать ещё вариант\nПроверить совместимость\nСкачать результат\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "history",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nИстория\n\n04.10.2026\nZEEKR 007\n\nBBS CI-R / 19 × 8.5J / 04.10.2026\n\nГотово\nОткрыть",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "compatible",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПодходит\n\nОсновные проверяемые параметры совместимы\n\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "conditions",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПодходит с условиями\n\nДиск предварительно подходит\n\nУсловия установки\nПотребуются центровочные кольца\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t70 мм\tС условием\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "unknown",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nНе можем подтвердить совместимость\n\nЭтого размера нет в справочных данных для вашей машины.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nНе подходит\n\nОбнаружено несовпадение технических параметров\n\nПочему не подходит\nPCD не совпадает: у машины 112 мм, у диска 114,3 мм.\nНе совпадает количество отверстий: у машины 5, у диска 4.\nОдинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t8,5J\tПодходит\nET\t40–50 мм\t45 мм\tПодходит\nPCD\t112 мм\t114,3 мм\tНе подходит\nКоличество отверстий\t5\t4\tНе подходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка выполнена\nПроверить ещё раз\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "failed",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nПроверку выполнить не удалось\n\nПопробуйте ещё раз.\n\nПодтверждённые данные сохранены.\n\nИзменить параметры\nПроверка совместимости\n\nПроверку выполнить не удалось. Попробуйте ещё раз.\n\nПовторить проверку\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "stale",
+    "text": "DREAM WHEELS AI\nГлавная\nСоздать примерку\nИстория\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nПроверка совместимости\nНазад\n\nАВТОМОБИЛЬ\n\nФото недоступно\nExample Stock car\n\nОткуда данные\nФото автомобиля\n\nЗаменить фото\nРаспознать автомобиль\nУказать вручную\n\nДанные подтверждены\n\nДИСК\n\nФото недоступно\nДиск\n\nОткуда данные\nИсточник не указан\n\nИзменить\nРаспознать диск\nИзменить параметры\n\nПараметры подтверждены\n\nТЕХНИЧЕСКАЯ ПРОВЕРКА\n\nРезультат больше не актуален\n\nПредыдущий результат: Не можем подтвердить совместимость\n\nДанные автомобиля или диска изменились.\n\nЧто не удалось подтвердить\nРазмер 19″ × 10J не найден в справочных данных для этой машины.\nПредыдущий результат — Одинаково для обеих осей\nПараметр\tАвтомобиль\tДиск\tРезультат\nДиаметр\t19″\t19″\tПодходит\nШирина\t8,5J\t10J\tНет данных\nET\tНет для этого размера\t45 мм\tНет данных\nPCD\t112 мм\t112 мм\tПодходит\nКоличество отверстий\t5\t5\tПодходит\nDIA\t66,6 мм\t66,6 мм\tПодходит\n\nЭто предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.\n\nИзменить параметры\nПроверка совместимости\n\nПодтвердите автомобиль и параметры диска.\n\nПроверить ещё раз\nСоздать изображение",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "create",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCreate a try-on\n\nCAR\n\nReplace photo\nCar photo added\n\nWHEEL\n\nReplace photo\nWheel photo added\nAdd product link\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nResult\nОРИГИНАЛ\nРЕЗУЛЬТАТ\n↔\nПРИМЕРКА\n\nZEEKR 007\n\nWHEEL\n\nBBS CI-R\n\n19 × 8.5J\n\nСОЗДАНО\n\n04.10.2026\n\nCreate another version\nПроверить совместимость\nСкачать результат\n\nОценка результата\n\nПомогите улучшить следующие примерки\n\nУдачный результат\nНужна доработка",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "history",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nHistory\n\n04.10.2026\nZEEKR 007\n\nBBS CI-R / 19 × 8.5J / 04.10.2026\n\nReady\nОткрыть",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "compatible",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatible\n\nThe main checked parameters are compatible\n\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "conditions",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatible with conditions\n\nThe wheel preliminarily fits\n\nInstallation conditions\nCentering rings are required\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t70 mm\tWith conditions\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "unknown",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nCompatibility could not be confirmed\n\nThis size is not listed in the reference data for your vehicle.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "incompatible",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nIncompatible\n\nA mismatch in technical parameters was found\n\nWhy it does not fit\nPCD does not match: vehicle 112 mm, wheel 114.3 mm.\nBolt count does not match: vehicle 5, wheel 4.\nSame for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t8.5J\tMatches\nET\t40–50 mm\t45 mm\tMatches\nPCD\t112 mm\t114.3 mm\tDoes not match\nBolt count\t5\t4\tDoes not match\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCheck completed\nCheck again\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "failed",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nThe check could not be completed\n\nPlease try again.\n\nConfirmed details are preserved.\n\nEdit parameters\nCompatibility check\n\nThe check could not be completed. Please try again.\n\nRetry check\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "stale",
+    "text": "DREAM WHEELS AI\nГлавная\nCreate a try-on\nHistory\nБаланс\nПОМОЩЬ\nПоддержка\nКак подготовить фото\nДокументы\nАккаунт\nНастройки профиля\nCompatibility check\nBack\n\nVEHICLE\n\nPhoto unavailable\nExample Stock car\n\nData source\nVehicle photo\n\nReplace photo\nRecognize vehicle\nEnter manually\n\nDetails confirmed\n\nWHEEL\n\nPhoto unavailable\nWheel\n\nData source\nSource not specified\n\nChange\nRecognize wheel\nEdit parameters\n\nParameters confirmed\n\nTECHNICAL CHECK\n\nThe result is no longer current\n\nPrevious result: Compatibility could not be confirmed\n\nVehicle or wheel parameters have changed.\n\nWhat could not be confirmed\nThe 19″ × 10J size is not listed in the reference data for this vehicle.\nPrevious result — Same for both axles\nParameter\tVehicle\tWheel\tResult\nDiameter\t19″\t19″\tMatches\nWidth\t8.5J\t10J\tNo data\nET\tNone for this size\t45 mm\tNo data\nPCD\t112 mm\t112 mm\tMatches\nBolt count\t5\t5\tMatches\nDIA\t66.6 mm\t66.6 mm\tMatches\n\nThis is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop.\n\nEdit parameters\nCompatibility check\n\nConfirm the vehicle and wheel parameters.\n\nCheck again\nCreate image",
+    "overflow": false,
+    "clipped": [],
+    "errors": []
+  }
+]

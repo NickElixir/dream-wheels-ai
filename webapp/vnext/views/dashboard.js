@@ -1,3 +1,4 @@
+import { copy as uiCopy } from "../copy.mjs";
 import { createButton, createIsland, createStatusText } from "../ui/primitives.js";
 
 function createMedia(job, className = "") {
@@ -64,7 +65,7 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
 
   const action = latest.canOpen
     ? createButton({ label: "Открыть", variant: "secondary", onClick: () => openRenderDetail?.(latest.jobId) })
-    : createButton({ label: latest.status === "failed" ? "Попробовать ещё раз" : "Мои примерки", variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
+    : createButton({ label: latest.status === "failed" ? "Попробовать ещё раз" : uiCopy("nav.history"), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
   meta.append(action);
   wrap.append(meta);
   return createIsland(wrap);

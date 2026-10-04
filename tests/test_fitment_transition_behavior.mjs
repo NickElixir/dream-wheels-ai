@@ -1,3 +1,4 @@
+import { copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -52,7 +53,7 @@ function workflowApi() {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`
+    runInCopyContext(`
 const applicationRouteContext = () => null;
 const isApplicationRoute = () => false;
 const safeApplicationReturnPath = () => null;
@@ -162,7 +163,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`
+    runInCopyContext(`
         const applicationRouteContext = () => null;
         const isApplicationRoute = () => false;
         const safeApplicationReturnPath = () => null;
@@ -266,7 +267,7 @@ function pcdProjectionApi() {
         setTimeout, clearTimeout, globalThis: null,
     };
     context.globalThis = context;
-    vm.runInNewContext(`
+    runInCopyContext(`
         const applicationRouteContext = () => null;
         const isApplicationRoute = () => false;
         const safeApplicationReturnPath = () => null;
@@ -1646,7 +1647,7 @@ test("a valid multi-SKU resolver response is a chooser, even without shared top-
     seedSourceSelection(api); api.state.fitmentRimEditing=true;
     await api.resolveFitmentRimSource();
     assert.equal(api.state.fitmentSourceStatusTone,"neutral");
-    assert.match(fitmentMarkup(api.snapshot()),/Выберите колесный диск/);
+    assert.match(fitmentMarkup(api.snapshot()),/Выберите диск/);
     assert.doesNotMatch(fitmentMarkup(api.snapshot()),/data-fitment-source-url|Указать параметры вручную/);
 });
 
@@ -2442,3 +2443,7 @@ test("P0-C1b same-value explicit Vehicle Save still sends Vehicle; Wheel stays i
     assert.equal(submitted.vehicle.year, baseline.vehicle.year);
     assert.equal(api.state.fitmentOverview.vehicle_revision, baseline.vehicle_revision);
 });
+
+function runInCopyContext(script, context = {}, ...options) {
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+}

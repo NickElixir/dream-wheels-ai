@@ -50,7 +50,7 @@ test("Photo Guide uses real frozen reference photography and approved preparatio
   for (const copy of [
     "Покажите автомобиль целиком",
     "Колёса должны быть видны",
-    "Используйте резкий исходник",
+    'copy("photo.sharp.title")',
     "Не меняйте фото перед загрузкой",
   ]) assert.ok(model.includes(copy), `missing Photo Guide rule: ${copy}`);
 });

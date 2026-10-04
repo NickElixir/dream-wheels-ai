@@ -1,3 +1,5 @@
+import { fitmentMarkup } from "../webapp/vnext/views/fitment.js";
+import { COPY, copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -9,9 +11,10 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(root, "webapp/vnext/views/fitment.js"), "utf8")
   .replaceAll("export function ", "function ")
+  .replace(/import \{ copy, unknownVerdictSubtitle \} from "\.\.\/copy\.mjs";/u, "")
   .replace(/import \{ fitmentDisplayValue \} from "\.\.\/fitment-display\.mjs";/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};`);
 const context = {};
-vm.runInNewContext(`${source}\nglobalThis.fitmentMarkup = fitmentMarkup;`, context);
+runInCopyContext(`${source}\nglobalThis.fitmentMarkup = fitmentMarkup;`, context);
 
 test("VNext composition keeps independent source cards and a full-width editor before the result", () => {
   const markup = context.fitmentMarkup({
@@ -142,7 +145,7 @@ test("overall combination warning and missing contextual ET copy remain explicit
   const copy = app.slice(start, app.indexOf("\nfunction ", start + 1));
   for (const locale of ["ru", "en"]) {
     const copyContext = {locale};
-    vm.runInNewContext(`${copy}\nglobalThis.message = fitmentVerdictMessage;`, copyContext);
+    runInCopyContext(`${copy}\nglobalThis.message = fitmentVerdictMessage;`, copyContext);
     assert.match(copyContext.message({code: "size_not_in_reference"}), locale === "ru" ? /Этот размер не найден/u : /This size is not listed/u);
     assert.match(copyContext.message({code: "vehicle_reference_offset_missing"}), locale === "ru" ? /Для выбранного размера нет справочных данных по ET/u : /No ET reference.*selected size/u);
   }
@@ -155,7 +158,7 @@ function resultCopyApi(locale) {
     return app.slice(start, app.indexOf("\nfunction ", start + 1));
   };
   const resultContext = {locale, fitmentDisplayValue, normalizeFitmentText: value => String(value ?? "").trim()};
-  vm.runInNewContext(`${extract("formatIdentityNumber")}\n${extract("fitmentVerdictMessage")}\n${extract("fitmentResultBlockingCopy")}\nglobalThis.copy = fitmentResultBlockingCopy; globalThis.message = fitmentVerdictMessage;`, resultContext);
+  runInCopyContext(`${extract("formatIdentityNumber")}\n${extract("fitmentVerdictMessage")}\n${extract("fitmentResultBlockingCopy")}\nglobalThis.copy = fitmentResultBlockingCopy; globalThis.message = fitmentVerdictMessage;`, resultContext);
   return resultContext;
 }
 const responses = JSON.parse(fs.readFileSync(path.join(root, "docs/evidence/p05e-fitment-field-evidence/representative-api.json"), "utf8"));
@@ -224,4 +227,123 @@ test("ET no-reference copy stays neutral when submitted size is unavailable", ()
   const markup=context.fitmentMarkup({overview:{},check:{execution_status:"completed",verdict:"unknown"},fieldEvidence:[{field:"offset_et_mm",status:"unknown",code:"vehicle_reference_offset_missing",vehicleValue:null,rimValue:"45"}]});
   assert.doesNotMatch(markup,/Нет для этого размера/u);
   assert.match(markup,/Нет данных/u);
+});
+
+function runInCopyContext(script, context = {}, ...options) {
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+}
+
+
+const unknownBase = (locale, codes) => ({ locale, overview: {}, executionStatus: 'completed', check: { execution_status: 'completed', verdict: 'unknown', is_current: true, blocking_issues: codes.map(code => ({code})) } });
+const unknownCases = [['size_not_in_reference','size'],['vehicle_reference_offset_missing','et'],['rim_offset_missing','et'],['center_bore_unknown','dia'],['pcd_unknown','pcd'],['vehicle_variant_required','vehicle'],['vehicle_not_resolved','vehicle'],['size_unknown','wheel'],['rim','wheel']];
+for (const locale of ['ru','en']) {
+  for (const [code, key] of unknownCases) test(`LOW-1 ${locale}: ${code} uses the server reason`, () => {
+    const model = unknownBase(locale, [code]);
+    const expected = copy(`fitment.verdict.unknown.${key}`, locale);
+    assert.equal(unknownVerdictSubtitle(model), expected);
+    assert.ok(fitmentMarkup(model).includes(`<p>${expected}</p>`));
+  });
+  for (const codes of [[], ['future_reason'], ['pcd_unknown','center_bore_unknown'], ['size_not_in_reference','vehicle_reference_offset_missing']]) test(`LOW-1 ${locale}: neutral fallback ${codes}`, () => {
+    assert.equal(unknownVerdictSubtitle(unknownBase(locale,codes)),copy('fitment.verdict.unknown.fallback',locale));
+  });
+  test(`LOW-1 ${locale}: missing fields are authoritative, redundant projection is not another reason`, () => {
+    const model=unknownBase(locale,['pcd_unknown']);
+    model.check.missing_fields=['pcd'];model.check.evidence_summary={missing_fields:['pcd']};
+    assert.equal(unknownVerdictSubtitle(model),copy('fitment.verdict.unknown.pcd',locale));
+    model.check.blocking_issues=[];
+    assert.equal(unknownVerdictSubtitle(model),copy('fitment.verdict.unknown.pcd',locale));
+    model.check.missing_fields.push('future_missing');
+    assert.equal(unknownVerdictSubtitle(model),copy('fitment.verdict.unknown.fallback',locale));
+  });
+  test(`LOW-1 ${locale}: subtitle does not repeat the reason group verbatim`, () => {
+    const model=unknownBase(locale,['center_bore_unknown']);model.blockingIssues=[{label:copy('fitment.verdict.unknown.dia',locale)}];
+    assert.equal(unknownVerdictSubtitle(model),copy('fitment.verdict.unknown.fallback',locale));
+  });
+  for (const state of ['failed','stale']) test(`LOW-1 ${locale}: ${state} has no unknown subtitle`, () => {
+    const model=unknownBase(locale,['size_not_in_reference']);
+    if(state==='failed') {model.executionStatus='failed';model.check.execution_status='failed';} else model.check.is_current=false;
+    assert.equal(unknownVerdictSubtitle(model),'');
+    assert.ok(!fitmentMarkup(model).includes(copy('fitment.verdict.unknown.size',locale)));
+  });
+}
+
+test('LOW-1 mutation: restoring the old universal size subtitle fails the renderer contract', () => {
+  const source=fs.readFileSync(new URL('../webapp/vnext/views/fitment.js',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replaceAll('export function ','function ');
+  const old = 'Доступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.';
+  const context={copy,unknownVerdictSubtitle,fitmentDisplayValue};
+  vm.runInNewContext(source.replace('esc(unknownVerdictSubtitle(model))',JSON.stringify(old))+'\nglobalThis.render = fitmentMarkup;',context);
+  const verify=render=>assert.ok(render(unknownBase('ru',['center_bore_unknown'])).includes(copy('fitment.verdict.unknown.dia','ru')));
+  verify(fitmentMarkup);
+  assert.throws(()=>verify(context.render),assert.AssertionError);
+});
+
+test('fitment shipping modules contain no universal size subtitle or целиком',()=>{
+  for(const name of ['views/fitment.js','copy.mjs']) {
+    const source=fs.readFileSync(new URL(`../webapp/vnext/${name}`,import.meta.url),'utf8');
+    assert.doesNotMatch(source,/целиком|The available data is not enough to confirm this wheel size as a whole/u);
+  }
+});
+
+test('P1 glossary: RU keys contain no internal terms and EN keys are present',()=>{
+  for (const [key, translations] of Object.entries(COPY)) {
+    assert.doesNotMatch(translations.ru,/SKU|идентификац|Источник данных|\bprovider\b|\breference\b|еще|колесн/iu,key);
+    assert.ok(translations.en,key);
+    assert.doesNotMatch(translations.en,/[А-Яа-яЁё]/u,key);
+  }
+  const app=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
+  const context={};vm.runInNewContext(app.slice(app.indexOf('const I18N ='),app.indexOf('function detectLocale()')),context);
+  vm.runInNewContext('globalThis.ruStrings=I18N.ru;',context);
+  const values = value => typeof value === "string" ? [value] : Object.values(value).flatMap(values);
+  for (const text of values(context.ruStrings)) assert.doesNotMatch(text,/SKU|идентификац|Источник данных|еще|колесн/iu);
+});
+
+test('E-03 keyed headings and notices use separate punctuation contracts',()=>{
+  for(const locale of ['ru','en']) {
+    for(const key of ['nav.create','nav.createMobile','nav.history','render.again','fitment.proposed','fitment.identity.edit','fitment.identity.hide']) assert.doesNotMatch(copy(key,locale),/[.!?…]$/u,key);
+    for(const key of ['fitment.variant.notice','support.fitment','fitment.notice.visualTryOn',...['size','et','dia','pcd','vehicle','wheel','fallback'].map(k=>'fitment.verdict.unknown.'+k)]) assert.match(copy(key,locale),/\.$/u,key);
+    const app=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
+    const start=app.indexOf('function t('),end=app.indexOf('\n}',start)+2;
+    const context={I18N:{[locale]:{heading:'Heading.',notice:'Sentence.',creating:'Creating…'}},locale};
+    vm.runInNewContext(app.slice(start,end)+'\nglobalThis.translate=t;',context);
+    assert.equal(context.translate('heading'),'Heading');
+    assert.equal(context.translate('notice',{sentence:true}),'Sentence.');
+    assert.equal(context.translate('creating',{sentence:true}),'Creating…');
+  }
+});
+
+test('E-03 DOM observer preserves sentences and only trims heading/button/status punctuation',()=>{
+  const app=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
+  const start=app.indexOf('function enforceUiCopyRule('),end=app.indexOf('\n}',start)+2;
+  const nodes=[['P','Explanation.',false,false],['SPAN','Notice.',false,false],['H2','Heading.',true,false],['BUTTON','Action.',true,false],['SPAN','Creating…',true,true]].map(([tagName,nodeValue,isLabel,isSentence])=>({nodeValue,parentElement:{tagName,hasAttribute:()=>false,closest:selector=>selector==='[data-i18n-sentence]'?(isSentence?{}:null):(isLabel?{}:null)}}));
+  let index=0; const context={NodeFilter:{SHOW_TEXT:4},document:{createTreeWalker:()=>({nextNode:()=>nodes[index++]})}};
+  vm.runInNewContext(app.slice(start,end)+'\nenforceUiCopyRule({});',context);
+  assert.deepEqual(nodes.map(n=>n.nodeValue),['Explanation.','Notice.','Heading','Action','Creating…']);
+});
+
+test('P1 RU/EN verdict snapshots: compatible, conditions, unknown, incompatible, failed, stale',()=>{
+  const snapshots=JSON.parse(fs.readFileSync(new URL('./evidence/p1-copy/verdict-snapshots.json',import.meta.url),'utf8'));
+  for(const {locale,state,markup} of snapshots) {
+    const model={locale,overview:{},executionStatus:state==='failed'?'failed':'completed',check:{execution_status:state==='failed'?'failed':'completed',verdict:state==='stale'?'unknown':state,is_current:state!=='stale',blocking_issues:[{code:'center_bore_unknown'}]}};
+    assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0],markup,`${locale}/${state}`);
+  }
+});
+
+test('copy keeps the screen renderable when a key is missing', () => {
+  const warnings = [];
+  const original = console.warn;
+  console.warn = message => warnings.push(message);
+  try {
+    for (const key of ['fitment.typo', 'toString', '__proto__']) {
+      assert.equal(copy(key, 'ru'), key);
+      assert.equal(copy(key, 'en'), key);
+    }
+    assert.equal(warnings.length, 6);
+    assert.ok(warnings.every(message => message.startsWith('Unknown copy key: ')));
+  } finally {
+    console.warn = original;
+  }
+});
+
+test('PCD unknown copy uses grammatical Russian', () => {
+  assert.equal(copy('fitment.verdict.unknown.pcd', 'ru'), 'Не хватает данных о разболтовке.');
 });

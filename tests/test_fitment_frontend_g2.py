@@ -119,9 +119,10 @@ def test_missing_vehicle_fields_have_exact_field_level_recovery_copy() -> None:
         "vehicle.make": "Выберите марку автомобиля",
         "vehicle.model": "Выберите модель автомобиля",
         "vehicle.year": "Выберите год автомобиля",
-        "vehicle.market": "Выберите рынок автомобиля",
+        "vehicle.market": 'uiCopy("fitment.market.select", locale)',
     }.items():
-        assert f'"{path}": "{copy}"' in validation
+        expected = f'"{path}": {copy}' if path == "vehicle.market" else f'"{path}": "{copy}"'
+        assert expected in validation
     assert 'input.setAttribute("aria-invalid", "true")' in validation
 
 
@@ -141,7 +142,7 @@ def test_explicit_vehicle_confirmation_sends_prefilled_vehicle_without_starting_
 def test_stale_result_recovery_maps_each_server_action_to_a_focused_next_step() -> None:
     result = _scope(APP_JS, "function renderFitmentV2Result(", "function renderFitment()")
     assert "Результат больше не актуален" in result
-    assert "Данные автомобиля или колесного диска изменились после последней проверки" in APP_JS
+    assert 'uiCopy("fitment.notice.stale", locale)' in APP_JS
     assert "const resultRecovery = deriveResultRecovery(ui.server, check);" in result
     assert "function deriveFitmentNextIntent(overview)" in APP_JS
     recovery = _scope(APP_JS, "const staleRecovery =", "const fitmentEdit =")
@@ -228,10 +229,10 @@ def test_g2_1_precheck_result_is_readiness_only_and_navigation_has_no_mutation()
         "Перейти к автомобилю",
         "Сначала выберите комплектацию автомобиля",
         "Выбрать комплектацию",
-        "Сначала уточните параметры колесного диска",
+        'uiCopy("fitment.notice.clarifyWheel", locale)',
         "Уточнить параметры",
         "Данные готовы для проверки",
-        "Автомобиль и параметры колесного диска подтверждены",
+        'uiCopy("fitment.notice.ready", locale)',
         "Проверить совместимость",
     ):
         assert copy in APP_JS

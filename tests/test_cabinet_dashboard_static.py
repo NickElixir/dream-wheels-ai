@@ -665,7 +665,7 @@ def test_rim_source_status_is_contextual_and_not_a_permanent_pipeline() -> None:
     assert "renderFitmentSourceSteps" not in APP_JS
     assert "fitment-source-steps" not in STYLE_CSS
     assert "data-fitment-source-status" in INDEX_HTML
-    assert "Определяем параметры колесного диска" in APP_JS
+    assert 'uiCopy("fitment.notice.resolvingWheel", locale)' in APP_JS
     assert "Параметры найдены" in APP_JS
 
 

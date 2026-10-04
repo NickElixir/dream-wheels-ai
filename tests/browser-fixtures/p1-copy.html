@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>P1 copy QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css"><link rel="stylesheet" href="../../webapp/vnext/styles/wallet.css">
+<style>html,body{margin:0;background:var(--vnext-canvas)}</style></head><body><div id="fixture" data-vnext-root></div><script type="module">
+const url=new URL('../../webapp/app.js',location.href);
+const source=(await(await fetch(url)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const harness=`
+import {createFitmentView} from "${new URL('../../webapp/vnext/views/fitment.js',location.href)}";
+import {createCreateView} from "${new URL('../../webapp/vnext/views/create.js',location.href)}";
+import {createRenderView} from "${new URL('../../webapp/vnext/views/render.js',location.href)}";
+import {createAppShell} from "${new URL('../../webapp/vnext/shell/app-shell.js',location.href)}";
+const data=await(await fetch("${new URL('../../docs/evidence/p05e-fitment-field-evidence/representative-api.json',location.href)}")).json();
+const scenario=new URLSearchParams(location.search).get('scenario')||'unknown';
+document.documentElement.lang=locale;
+let content,title,activeView='fitment';
+const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
+const result={jobId:'qa-result',status:'completed',title:'ZEEKR 007',rimName:'BBS CI-R',specs:'19 × 8.5J',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:true,createdLabel:'04.10.2026',statusLabel:locale==='en'?'Ready':'Готово',dateLabel:'04.10.2026',reasons:[]};
+if(scenario==='create') {
+ content=createCreateView({locale,files:{car:{previewUrl:result.originalUrl},wheel:{previewUrl:asset('demo-rim-xtrike.jpg')}},consentAccepted:true},{});title=uiCopy('nav.create',locale);activeView='create';
+} else if(scenario==='result'||scenario==='history') {
+ content=createRenderView(scenario==='history'?'history':'result',scenario==='history'?{rows:[{...result,thumbnailUrl:result.resultUrl}]}:result,{});title=scenario==='history'?uiCopy('nav.history',locale):(locale==='en'?'Result':'Результат');activeView='renders';
+} else {
+ const key=scenario==='compatible'?'compatible':scenario==='conditions'?'dia-conditional':scenario==='incompatible'?'J':'A';
+ state.fitmentCheck=structuredClone(data[key]);state.fitmentCheck.is_current=scenario!=='stale';
+ if(scenario==='failed')state.fitmentCheck.execution_status='failed';
+ state.fitmentOverview={vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready',setup_mode:'square',next_action:'run_standard_check',vehicle:{make:'Example',model:'Stock car'}};
+ const model=vnextFitmentSnapshot();content=createFitmentView(model,{});title=locale==='en'?'Compatibility check':'Проверка совместимости';window.qaModel=model;
+}
+document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate(){},authenticated:true}));
+window.qaScenario=scenario;window.qaReady=true;
+`;
+const module=URL.createObjectURL(new Blob([source,harness],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+</script></body></html>

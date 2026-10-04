@@ -1,3 +1,4 @@
+import { copy as uiCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -37,7 +38,7 @@ function runtime({ telegram = false, pathname = "/app/wallet", search = "", appl
     navigator: { language: "ru-RU", userAgent: "test" },
     setTimeout, clearTimeout,
   };
-  vm.runInNewContext(`
+  runInCopyContext(`
 ${source}
 renderDashboard = () => {};
 trackEvent = async () => {};
@@ -338,3 +339,7 @@ test("W-02 cancelled history is not pending or refunded and new checkout remains
   assert.deepEqual(Array.from(model.paymentHistory, item => item.statusLabel), ["Отменён", "Возвращён"]);
   assert.ok(model.topUpPackages.length > 0);
 });
+
+function runInCopyContext(script, context = {}, ...options) {
+  return vm.runInNewContext(script, Object.assign(context, { uiCopy }), ...options);
+}

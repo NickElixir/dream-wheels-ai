@@ -1,3 +1,4 @@
+import { copy as uiCopy } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
     applicationTopLevelReturnPath,
@@ -339,9 +340,9 @@ const I18N = {
         },
         menu: {
             dashboard: "Главная",
-            create: "Примерить диски",
+            create: "Создать примерку",
             wallet: "Баланс",
-            renders: "История рендеров",
+            renders: "История",
             settings: "Настройки",
             support: "Поддержка",
             photoGuide: "Как подготовить фото",
@@ -360,10 +361,10 @@ const I18N = {
         },
         caption: {
             dashboard: "Главная",
-            create: "Создать виртуальную примерку",
+            create: "Создать примерку",
             fitment: "Совместимость",
             wallet: "Баланс",
-            renders: "История рендеров",
+            renders: "История",
             settings: "Настройки",
             support: "Поддержка",
             photoGuide: "Как подготовить фото",
@@ -380,11 +381,11 @@ const I18N = {
             productLinkWarning: "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.",
             carPhoto: "Фото автомобиля",
             carAdded: "Фото автомобиля добавлено",
-            wheelPhoto: "Фото колесного диска",
+            wheelPhoto: "Фото колёсного диска",
             choose: "Нажмите, чтобы выбрать",
             replaceCar: "Заменить фото автомобиля",
-            replaceWheel: "Заменить фото колесного диска",
-            wheelAdded: "Фото колесного диска добавлено",
+            replaceWheel: "Заменить фото колёсного диска",
+            wheelAdded: "Фото колёсного диска добавлено",
             wheelAddedHint: "Фото добавлено",
             productSourceMissing: "Ссылка на товар не добавлена",
             carPreviewAlt: "Превью машины",
@@ -414,7 +415,7 @@ const I18N = {
             carCheck3: "Все колёса попали в кадр",
             carCheck4: "Выбирайте дневной свет",
             carWarning: "Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов",
-            wheelSection: "Фото колесного диска",
+            wheelSection: "Фото колёсного диска",
             wheelTitle: "Сфотографируйте диск лицевой стороной к камере",
             wheelGoodCaption: "Один диск анфас, весь рисунок в фокусе",
             wheelSetCaption: "Комплект дисков, без рук и упаковки",
@@ -447,7 +448,7 @@ const I18N = {
             result: "Готово",
         },
         status: {
-            creating: "Создаём задачу...",
+            creating: "Создаём изображение…",
             startingServer: "Запускаем сервер...",
             coldStart: "Первый запуск может занять до 40 секунд",
             uploading: "Загружаем файлы...",
@@ -498,10 +499,10 @@ const I18N = {
             offset: "Вылет (ET), мм",
             vehicleCard: "Автомобиль",
             vehicleCardMeta: "Определено по фото",
-            rimCard: "Колесный диск",
+            rimCard: "Колёсный диск",
             rimCardMeta: "Часть данных определена по фото",
-            sourceCard: "Источник колесного диска",
-            sourceCardMeta: "Бренд, артикул или ссылка на колесный диск",
+            sourceCard: "Источник колёсного диска",
+            sourceCardMeta: "Бренд, артикул или ссылка на колёсный диск",
             summaryLabel: "Сводка",
             summaryShow: "Показать сводку",
             summaryHide: "Свернуть сводку",
@@ -516,26 +517,26 @@ const I18N = {
             checking: "Проверяем параметры…",
             verdictDisclaimer: "Предварительная оценка не является гарантией установки.",
             notice: "Поля необязательны и не меняют уже созданную виртуальную примерку",
-            compatibilityNotChecked: "Проверка совместимости еще не проведена",
+            compatibilityNotChecked: "Проверка совместимости ещё не проведена.",
             vehicleSection: "Автомобиль",
             vehicleSectionTitle: "Уточнить известные данные",
-            rimSection: "Колесный диск",
+            rimSection: "Колёсный диск",
             rimSectionTitle: "Уточнить параметры",
-            sourceSection: "Источник колесного диска",
+            sourceSection: "Источник колёсного диска",
             sourceSectionTitle: "Сохранить известный источник",
             make: "Марка",
             model: "Модель",
             year: "Год",
             body: "Кузов",
             generation: "Поколение",
-            modification: "Модификация",
+            modification: "Комплектация",
             market: "Рынок",
-            marketVersion: "Версия для рынка",
+            marketVersion: "Рынок",
             rimBrand: "Бренд",
             rimModel: "Модель",
             sku: "Артикул",
             boltCount: "Крепёжных отверстий",
-            productUrl: "Ссылка на колесный диск",
+            productUrl: "Ссылка на колёсный диск",
             save: "Сохранить данные",
             skip: "Не сейчас",
             unavailable: "Для этого результата уточнение параметров пока недоступно",
@@ -545,7 +546,7 @@ const I18N = {
         },
         actions: {
             createRender: "Создать виртуальную примерку",
-            createAnother: "Сделать ещё один",
+            createAnother: "Создать ещё вариант",
             download: "Скачать",
             downloadImage: "Скачать изображение",
             requestingDownload: "Запрашиваем скачивание...",
@@ -680,8 +681,8 @@ const I18N = {
         },
         renders: {
             eyebrow: "Готовые работы",
-            title: "История рендеров",
-            lede: "Результаты и текущие статусы из вашей истории",
+            title: "История",
+            lede: "",
             empty: "Готовых рендеров пока нет. Создайте первую виртуальную примерку на главном экране",
             completed: "Готово",
             processing: "В обработке",
@@ -816,9 +817,9 @@ const I18N = {
         },
         menu: {
             dashboard: "Home",
-            create: "Create render",
+            create: "Create a try-on",
             wallet: "Wallet",
-            renders: "Render history",
+            renders: "History",
             settings: "Settings",
             support: "Support",
             photoGuide: "Photo guide",
@@ -840,7 +841,7 @@ const I18N = {
             create: "Create a try-on",
             fitment: "Fitment",
             wallet: "Balance",
-            renders: "My try-ons",
+            renders: "History",
             settings: "Settings",
             support: "Support",
             photoGuide: "How to prepare a photo",
@@ -924,7 +925,7 @@ const I18N = {
             result: "Done",
         },
         status: {
-            creating: "Creating job...",
+            creating: "Creating an image…",
             startingServer: "Starting server...",
             coldStart: "First launch can take up to 40 seconds",
             uploading: "Uploading files...",
@@ -993,7 +994,7 @@ const I18N = {
             checking: "Checking parameters…",
             verdictDisclaimer: "A preliminary assessment is not an installation guarantee.",
             notice: "These fields are optional and do not change the existing virtual render",
-            compatibilityNotChecked: "The compatibility check has not been run yet",
+            compatibilityNotChecked: "The compatibility check has not been run yet.",
             vehicleSection: "Vehicle",
             vehicleSectionTitle: "Refine known details",
             rimSection: "Wheel",
@@ -1007,7 +1008,7 @@ const I18N = {
             generation: "Generation",
             modification: "Trim",
             market: "Market",
-            marketVersion: "Market version",
+            marketVersion: "Market",
             rimBrand: "Brand",
             rimModel: "Model",
             sku: "SKU",
@@ -1022,7 +1023,7 @@ const I18N = {
         },
         actions: {
             createRender: "Create render",
-            createAnother: "Create another",
+            createAnother: "Create another version",
             download: "Download",
             downloadImage: "Download image",
             requestingDownload: "Requesting download...",
@@ -1158,8 +1159,8 @@ const I18N = {
         },
         renders: {
             eyebrow: "Finished work",
-            title: "My try-ons",
-            lede: "Recent renders saved on this device",
+            title: "History",
+            lede: "",
             empty: "No renders yet. Create your first one on the main screen",
             completed: "Done",
             failed: "Failed",
@@ -1239,9 +1240,9 @@ function detectLocale() {
 
 const locale = detectLocale();
 
-function t(path) {
+function t(path, { sentence = false } = {}) {
     const value = path.split(".").reduce((current, key) => current?.[key], I18N[locale]) ?? path;
-    return typeof value === "string" ? value.replace(/[.!?…:;,]+$/u, "") : value;
+    return typeof value === "string" && !sentence ? value.replace(/[.!?…:;,]+$/u, "") : value;
 }
 
 function resolveApiBaseUrl() {
@@ -2324,7 +2325,7 @@ function guestRenderHistory() {
 function applyTranslations() {
     document.documentElement.lang = locale;
     document.querySelectorAll("[data-i18n]").forEach((el) => {
-        el.textContent = t(el.dataset.i18n);
+        el.textContent = t(el.dataset.i18n, { sentence: el.hasAttribute("data-i18n-sentence") });
     });
     document.querySelectorAll("[data-i18n-alt]").forEach((el) => {
         el.alt = t(el.dataset.i18nAlt);
@@ -2340,6 +2341,9 @@ function enforceUiCopyRule(root = document.getElementById("app")) {
     textNodes.forEach((textNode) => {
         const parent = textNode.parentElement;
         if (!parent || parent.hasAttribute?.("data-fitment-conflict-notice") || /^(SCRIPT|STYLE|PRE|CODE|TEXTAREA|OPTION)$/u.test(parent.tagName)) return;
+        if (parent.closest?.("[data-i18n-sentence]")) return;
+        const headingOrLabel = parent.closest?.("h1,h2,h3,h4,button,.vnext-eyebrow,.vnext-status");
+        if (!headingOrLabel) return;
         const normalized = textNode.nodeValue.replace(/[.!?…:;,]+(\s*)$/u, "$1");
         if (normalized !== textNode.nodeValue) textNode.nodeValue = normalized;
     });
@@ -4072,12 +4076,12 @@ function fitmentFieldLabel(path) {
         "vehicle.model": locale === "ru" ? "модель" : "model",
         "vehicle.year": locale === "ru" ? "год" : "year",
         vehicle_identity: locale === "ru" ? "данные автомобиля" : "vehicle details",
-        pcd: locale === "ru" ? "разболтовка колесного диска" : "wheel bolt pattern",
+        pcd: uiCopy("fitment.field.pcd", locale),
         pcd_mm: "PCD",
-        wheel_size: locale === "ru" ? "размер колесного диска" : "wheel size",
+        wheel_size: uiCopy("fitment.field.wheelSize", locale),
         center_bore: locale === "ru" ? "ступичное отверстие" : "center bore",
-        offset_et: locale === "ru" ? "вылет колесного диска" : "wheel offset",
-        diameter_width: locale === "ru" ? "размер колесного диска" : "wheel size",
+        offset_et: uiCopy("fitment.field.offset", locale),
+        diameter_width: uiCopy("fitment.field.wheelSize", locale),
         provider_allowed_wheels: locale === "ru" ? "допустимый размер диска" : "allowed wheel size",
         "rim.bolt_count": locale === "ru" ? "крепёжных отверстий" : "bolt count",
         "rim.pcd_mm": locale === "ru" ? "разболтовка (PCD)" : "PCD",
@@ -4394,7 +4398,7 @@ function renderFitmentValidation() {
         "vehicle.make": "Выберите марку автомобиля",
         "vehicle.model": "Выберите модель автомобиля",
         "vehicle.year": "Выберите год автомобиля",
-        "vehicle.market": "Выберите рынок автомобиля",
+        "vehicle.market": uiCopy("fitment.market.select", locale),
     };
     for (const path of state.fitmentFormState.missingFields || []) {
         const input = document.querySelector(`[data-fitment-input="${path}"]`);
@@ -4451,7 +4455,7 @@ function deriveFitmentNextIntent(overview) {
     const intents = {
         complete_vehicle_details: { section: "vehicle", intent: "base_edit", label: "Подтвердить данные автомобиля" },
         select_vehicle_variant: { section: "vehicle", intent: "variant_select_required", label: "Выбрать комплектацию" },
-        complete_rim_specs: { section: "rim", intent: "rim_edit", label: "Уточнить параметры колесного диска" },
+        complete_rim_specs: { section: "rim", intent: "rim_edit", label: uiCopy("fitment.action.completeWheel", locale) },
         run_standard_check: { section: "result", intent: "run_check", label: "Проверить ещё раз" },
     };
     return intents[kind] || { section: "vehicle", intent: "summary", label: "" };
@@ -4852,7 +4856,7 @@ function fitmentVerdictMessage(item) {
         return ru ? "Для выбранного размера нет справочных данных по ET" : "No ET reference is available for the selected size";
     }
     if (code === "rim_offset_missing") {
-        return ru ? "Укажите ET колесного диска для технической проверки" : "Enter the wheel ET for the technical check";
+        return uiCopy("fitment.notice.enterEt", locale);
     }
     if (["hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"].includes(code)) {
         return ru ? "Потребуются центровочные кольца" : "Centering rings are required";
@@ -4863,7 +4867,7 @@ function fitmentVerdictMessage(item) {
     if (code === "fastener_unknown") {
         return ru ? "Тип крепежа не подтверждён — проверьте его перед установкой" : "Fastener type is not confirmed — check it before installation";
     }
-    if (code === "pcd_unknown") return ru ? "Уточните разболтовку колесного диска" : "Clarify the wheel bolt pattern";
+    if (code === "pcd_unknown") return uiCopy("fitment.notice.clarifyPcd", locale);
     if (code === "center_bore_unknown") return ru ? "Уточните ступичное отверстие" : "Clarify the center bore";
     if (code === "size_not_in_reference") {
         const diameter = details.rim_diameter_in;
@@ -4874,13 +4878,13 @@ function fitmentVerdictMessage(item) {
         }
         return ru ? "Этот размер не найден в справочных данных для этой машины." : "This size is not listed in the reference data for this vehicle.";
     }
-    if (["size_unknown", "allowed_set_empty"].includes(code)) return ru ? "Уточните размер колесного диска" : "Clarify the wheel size";
+    if (["size_unknown", "allowed_set_empty"].includes(code)) return uiCopy("fitment.notice.clarifySize", locale);
     if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости — повторите позже" : "The technical compatibility service could not be reached — try again later";
     if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы — попробуйте позже" : "The technical compatibility service is rate-limited — try again later";
     if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен" : "The technical compatibility service is temporarily unavailable";
     if (["malformed_response", "internal_execution_error"].includes(code)) return ru ? "Не удалось завершить техническую проверку — повторите позже" : "The technical check could not be completed — try again later";
     if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size" : "The vehicle could not be matched to Wheel‑Size";
-    if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return ru ? "Разболтовка колесного диска не совпадает" : "The wheel bolt pattern does not match";
+    if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return uiCopy("fitment.notice.pcdMismatch", locale);
     if (code === "center_bore_too_small") return ru ? "Ступичное отверстие диска меньше штатного" : "The wheel center bore is smaller than the vehicle hub";
     if (["offset_deviation_check_required", "offset_out_of_range", "et_outside_reference_range"].includes(code)) {
         const referenceMin = details.reference_et_min_mm;
@@ -5235,7 +5239,7 @@ function completeDemoFitmentCheck(check) {
         advisories: [{ code: "PRELIMINARY_TECHNICAL_ASSESSMENT", label: "Предварительная техническая оценка" }],
         field_results: [
             { field: "pcd_mm", label: "Разболтовка", status: "pass" },
-            { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
+            { field: "wheel_size", label: uiCopy("fitment.field.size", locale), status: "pass" },
             { field: "center_bore_mm", label: "Ступичное отверстие", code: "CENTER_BORE_REQUIRES_RING", status: "conditional" },
         ],
     };
@@ -5254,7 +5258,7 @@ function applyDemoResultFixture(overview, verdict) {
         verdict: verdict === "failed" ? null : verdict,
         execution_status: verdict === "failed" ? "failed" : "completed",
         blocking_issues: verdict === "incompatible"
-            ? [{ code: "PCD_MISMATCH", label: "Разболтовка колесного диска не совпадает" }]
+            ? [{ code: "PCD_MISMATCH", label: uiCopy("fitment.pcd.mismatch", locale) }]
             : [],
         conditions: verdict === "compatible_with_conditions" ? completed.conditions : [],
         advisories: verdict === "failed" ? [] : completed.advisories,
@@ -5263,7 +5267,7 @@ function applyDemoResultFixture(overview, verdict) {
             : verdict === "incompatible"
             ? [
                 { field: "pcd_mm", label: "Разболтовка", code: "PCD_MISMATCH", status: "fail" },
-                { field: "wheel_size", label: "Размер колесного диска", status: "pass" },
+                { field: "wheel_size", label: uiCopy("fitment.field.size", locale), status: "pass" },
             ]
             : verdict === "unknown"
                 ? [
@@ -6069,9 +6073,7 @@ function renderFitmentSourceDisclosure(overview, { rimEditing = false } = {}) {
 function fitmentResultCopy(check) {
     const ru = locale === "ru";
     if (!check) return ru ? "Проверка ещё не выполнена" : "The check has not been run";
-    if (check.is_current === false) return ru
-        ? "Данные автомобиля или колесного диска изменились после последней проверки"
-        : "Vehicle or wheel details changed after the last check";
+    if (check.is_current === false) return uiCopy("fitment.notice.stale", locale);
     if (check.execution_status === "queued") return ru ? "Проверка ожидает запуска" : "The check is queued";
     if (check.execution_status === "processing") return ru ? "Проверяем параметры автомобиля и диска" : "Checking the vehicle and wheel details";
     if (check.execution_status === "failed") return fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" });
@@ -6114,13 +6116,13 @@ function fitmentResultPrecheck(ui) {
         },
         complete_rim_specs: {
             title: ru ? "Проверка ещё не выполнена" : "The check has not been run",
-            message: ru ? "Сначала уточните параметры колесного диска" : "First clarify the wheel details",
+            message: uiCopy("fitment.notice.clarifyWheel", locale),
             action: ru ? "Уточнить параметры" : "Clarify wheel details",
             section: "rim",
         },
         run_standard_check: {
             title: ru ? "Данные готовы для проверки" : "Details are ready for the check",
-            message: ru ? "Автомобиль и параметры колесного диска подтверждены" : "The vehicle and wheel details are confirmed",
+            message: uiCopy("fitment.notice.ready", locale),
             action: ru ? "Проверить совместимость" : "Check compatibility",
             actionKind: "run_standard_check",
         },
@@ -6417,7 +6419,7 @@ function renderFitment() {
     if (renderCopy) renderCopy.textContent = "Визуальная примерка";
     if (renderHelper) {
         renderHelper.textContent = incompatibleRender
-            ? "Вы все еще можете создать изображение, чтобы оценить внешний вид дисков"
+            ? uiCopy("fitment.notice.visualTryOn", locale)
             : "Посмотрите, как выбранный диск выглядит на вашем автомобиле";
     }
     if (state.fitmentMessage && state.fitmentActiveSection === "result" && check?.execution_status === "completed") {
@@ -6628,7 +6630,7 @@ function renderFitment() {
     renderFitmentSourceDisclosure(overview, { rimEditing });
     renderFitmentVehicleHelper(ui);
     const rimStateCopy = {
-        empty: "Заполните параметры колесного диска",
+        empty: uiCopy("fitment.wheel.fill", locale),
         partial: "Часть параметров необходимо проверить",
         complete_unconfirmed: "Параметры необходимо подтвердить",
         confirmed_ready: "Параметры диска подтверждены",
@@ -6724,15 +6726,13 @@ function renderFitment() {
         sourceStatus.dataset.tone = state.fitmentSourceStatusTone;
         if (sourceStatusTitle && sourceStatusCopy) {
             if (state.fitmentSourceResolving) {
-                sourceStatusTitle.textContent = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
+                sourceStatusTitle.textContent = uiCopy("fitment.notice.resolvingWheel", locale);
                 sourceStatusCopy.textContent = "";
             } else if (resolverFailure) {
                 sourceStatusTitle.textContent = locale === "ru"
                     ? "Не удалось определить параметры автоматически"
                     : "Wheel parameters could not be determined automatically";
-                sourceStatusCopy.textContent = locale === "ru"
-                    ? "Это не блокирует проверку — укажите параметры колесного диска вручную"
-                    : "This does not block the check — enter the wheel parameters manually";
+                sourceStatusCopy.textContent = uiCopy("fitment.notice.manualWheel", locale);
             } else if (state.fitmentSourceDetected) {
                 sourceStatusTitle.textContent = locale === "ru" ? "Параметры найдены" : "Parameters found";
                 sourceStatusCopy.textContent = locale === "ru"
@@ -7961,7 +7961,7 @@ async function resolveFitmentRimSource({ automatic = false, chooserOnly = false 
         state.fitmentSourceDetected = false;
     }
     state.fitmentSourceVariants = [];
-    state.fitmentSourceStatus = locale === "ru" ? "Определяем параметры колесного диска…" : "Determining wheel parameters…";
+    state.fitmentSourceStatus = uiCopy("fitment.notice.resolvingWheel", locale);
     state.fitmentSourceStatusTone = "neutral";
     renderFitment();
     state.fitmentSourceController?.abort?.();
@@ -8012,7 +8012,7 @@ async function resolveFitmentRimSource({ automatic = false, chooserOnly = false 
             };
             state.fitmentSkuChooserOpen = state.fitmentSourceVariants.length > 0;
             if (!state.fitmentSkuChooserOpen) {
-                state.fitmentMessage = locale === "ru" ? "Другие SKU не найдены" : "No other SKUs were found";
+                state.fitmentMessage = uiCopy("fitment.variant.empty", locale);
                 state.fitmentMessageTone = "neutral";
             }
             state.fitmentSourceOpen = false;
@@ -9239,7 +9239,7 @@ function buildRenderExpiryCohorts() {
             key: item.id || `${item.source}-${item.expiresAt}`,
             credits: Number(item.remainingCredits),
             expiresAt: item.expiresAt,
-            meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : "Пакет примерок"),
+            meta: item.label || (item.source === "starter_grant" ? "Стартовый пакет" : uiCopy("wallet.package", locale)),
         }))
         .sort((left, right) => (left.expiresAt ? Date.parse(left.expiresAt) : Infinity) - (right.expiresAt ? Date.parse(right.expiresAt) : Infinity));
 }
@@ -10184,7 +10184,7 @@ function renderDashboard() {
         const fitmentContext = latestFitmentOverview
             ? fitmentDashboardContext(latestFitmentOverview.current_check)
             : fitmentAvailable(latest)
-                ? { tone: "warning", text: t("fitment.compatibilityNotChecked") }
+                ? { tone: "warning", text: t("fitment.compatibilityNotChecked", { sentence: true }) }
                 : null;
         latestContent.innerHTML = `
             <div class="latest-preview-layout">
@@ -10227,7 +10227,7 @@ function fitmentDashboardContext(check) {
         unknown: { tone: "warning", text: "Совместимость: нужны данные" },
         failed: { tone: "error", text: "Совместимость: проверка временно недоступна" },
     };
-    return contexts[check?.verdict || check?.execution_status] || { tone: "warning", text: t("fitment.compatibilityNotChecked") };
+    return contexts[check?.verdict || check?.execution_status] || { tone: "warning", text: t("fitment.compatibilityNotChecked", { sentence: true }) };
 }
 
 function fitmentReturnAction(overview) {
@@ -10775,7 +10775,7 @@ function vnextFitmentSnapshot() {
         message: marketStatus === "loading" ? "Загружаем рынки…"
             : marketStatus === "failed" ? "Не удалось загрузить рынки"
                 : marketStatus === "no_data" ? "Нет доступных рынков"
-                    : marketStatus === "resolved_multiple" ? "Выберите рынок автомобиля"
+                    : marketStatus === "resolved_multiple" ? uiCopy("fitment.market.select", locale)
                         : !state.fitmentForm?.vehicle?.year ? "Сначала выберите год автомобиля" : "",
     };
     const summaryRim = overview?.front_rim?.rim || overview?.rim || {};
@@ -10788,7 +10788,7 @@ function vnextFitmentSnapshot() {
         if (path === "vehicle.make") fieldErrors[path] = missingFields.has(path) ? "Выберите марку автомобиля" : "Выберите значение из каталога";
         else if (path === "vehicle.model") fieldErrors[path] = missingFields.has(path) ? "Выберите модель автомобиля" : "Выберите значение из каталога";
         else if (path === "vehicle.year") fieldErrors[path] = missingFields.has(path) ? "Выберите год автомобиля" : "Выберите значение из каталога";
-        else if (path === "vehicle.market") fieldErrors[path] = missingFields.has(path) ? "Выберите рынок автомобиля" : "Выберите доступный рынок";
+        else if (path === "vehicle.market") fieldErrors[path] = missingFields.has(path) ? uiCopy("fitment.market.select", locale) : uiCopy("fitment.market.selectAvailable", locale);
         else fieldErrors[path] = `Заполните поле «${fitmentFieldLabel(path)}»`;
     }
     for (const path of rimReadiness.invalid) {
@@ -10893,7 +10893,7 @@ function vnextFitmentSnapshot() {
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
             ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
-            ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), summaryRim.sku ? `SKU ${summaryRim.sku}` : "", overview?.setup_mode === "staggered"
+            ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), summaryRim.sku ? `${uiCopy("wheel.sku", locale)} ${summaryRim.sku}` : "", overview?.setup_mode === "staggered"
                 ? `Передняя ось: ${fitmentRimTechnicalSummary(summaryRim).join(" / ")} – Задняя ось: ${fitmentRimTechnicalSummary(summaryRearRim).join(" / ")}`
                 : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" – ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",

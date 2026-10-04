@@ -1,3 +1,4 @@
+import { copy, unknownVerdictSubtitle } from "../copy.mjs";
 import { fitmentDisplayValue } from "../fitment-display.mjs";
 
 const esc = (value) => String(value ?? "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -14,7 +15,6 @@ const verdictLabels = {
 const nextActionCopy = {
   complete_vehicle_details: "Уточните данные автомобиля",
   select_vehicle_variant: "Выберите комплектацию автомобиля",
-  complete_rim_specs: "Уточните параметры колесного диска",
   run_standard_check: "Данные готовы к проверке",
 };
 
@@ -88,6 +88,7 @@ function parameters(model, rows) {
 }
 
 function verdict(model) {
+  const text = key => copy(key, model.locale);
   const status = model.executionStatus;
   if (model.rimDraftDirty) return `<section class="vnext-fitment__verdict" role="status"><h2>Есть несохранённые изменения</h2><p>Сохраните параметры, чтобы проверить обновлённые данные.</p></section>`;
   if (status === "failed" || model.checkStartFailed) {
@@ -98,26 +99,27 @@ function verdict(model) {
   if (check?.execution_status === "completed") {
     const stale = check.is_current === false;
     const verdictLabel = verdictLabels[check.verdict] || "";
-    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>Данные автомобиля или колесного диска изменились.</p>` : ""}${!stale && check.verdict === "unknown" ? `<p>${comparisonLabel(model, 'Доступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.', 'The available data is not enough to confirm this wheel size as a whole.')}</p>` : !stale && model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
+    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>${esc(text("fitment.wheel.changed"))}</p>` : ""}${!stale && check.verdict === "unknown" ? `<p>${esc(unknownVerdictSubtitle(model))}</p>` : !stale && model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
   }
-  const copy = nextActionCopy[model.nextAction] || (model.loading ? "Загружаем данные…" : "Техническая проверка ещё не готова");
-  return `<section class="vnext-fitment__verdict"${model.loading ? ' aria-busy="true"' : ""}><p class="vnext-eyebrow">Техническая проверка</p>${model.loading ? loadingStatus(copy) : `<h2>${esc(copy)}</h2>`}${model.checkError ? `<p role="alert">${esc(model.checkError)}</p>` : ""}</section>`;
+  const statusCopy = (model.nextAction === "complete_rim_specs" ? text("fitment.wheel.complete") : nextActionCopy[model.nextAction]) || (model.loading ? "Загружаем данные…" : "Техническая проверка ещё не готова");
+  return `<section class="vnext-fitment__verdict"${model.loading ? ' aria-busy="true"' : ""}><p class="vnext-eyebrow">Техническая проверка</p>${model.loading ? loadingStatus(statusCopy) : `<h2>${esc(statusCopy)}</h2>`}${model.checkError ? `<p role="alert">${esc(model.checkError)}</p>` : ""}</section>`;
 }
 
 function sourceEditor(model) {
+  const text = key => copy(key, model.locale);
   const resolver = model.resolver || {};
   const status = resolver.status || "";
   const statusClass = resolver.statusTone === "error" ? " vnext-fitment__notice--error" : "";
-  const resolving = resolver.loading ? loadingStatus("Определяем параметры колесного диска") : "";
-  const retries = resolver.statusTone === "error" && resolver.url ? `<div class="vnext-fitment__actions">${button("Повторить", "resolve-rim", { disabled: resolver.loading })}${button("Указать параметры вручную", "manual-rim")}</div>` : "";
-  const variants = resolver.variants?.length ? `<div class="vnext-fitment__choices"><div class="vnext-fitment__sku-legend" aria-hidden="true"><span>Вариант</span><span class="vnext-fitment__sku-specs"><span>Диаметр</span><span>Ширина</span><span>PCD</span><span>DIA</span><span>ET</span></span><span></span></div><div role="group" aria-label="Варианты колесного диска">${resolver.variants.map((variant, index) => {
+  const resolving = resolver.loading ? loadingStatus(text("fitment.wheel.resolving")) : "";
+  const retries = resolver.statusTone === "error" && resolver.url ? `<div class="vnext-fitment__actions">${button("Повторить", "resolve-rim", { disabled: resolver.loading })}${button(text("fitment.manual"), "manual-rim")}</div>` : "";
+  const variants = resolver.variants?.length ? `<div class="vnext-fitment__choices"><div class="vnext-fitment__sku-legend" aria-hidden="true"><span>Вариант</span><span class="vnext-fitment__sku-specs"><span>Диаметр</span><span>Ширина</span><span>PCD</span><span>DIA</span><span>ET</span></span><span></span></div><div role="group" aria-label="${esc(text("fitment.wheel.variants"))}">${resolver.variants.map((variant, index) => {
     const values = variant.values || {};
     const known = (value, suffix = "") => value === null || value === undefined || value === "" ? "Не определено" : `${wheelDisplay(value, model.locale)}${suffix}`;
     const pcd = values.bolt_count != null && values.pcd_mm != null ? `${values.bolt_count}×${wheelDisplay(values.pcd_mm, model.locale)}` : "Не определено";
     const specs = [["Диаметр", known(values.wheel_diameter_in, "″")], ["Ширина", known(values.wheel_width_j, "J")], ["PCD", pcd], ["DIA", known(values.center_bore_mm)], ["ET", known(values.offset_et_mm)]];
-    return `<button type="button" class="vnext-fitment__sku-row" data-fitment-action="rim-variant" data-value="${index}" aria-pressed="${String(variant.sku === resolver.selectedSku)}"><span class="vnext-fitment__sku-identity">${variant.imageUrl ? `<img src="${esc(variant.imageUrl)}" alt="" class="vnext-fitment__sku-image">` : ""}<span class="vnext-fitment__sku-name">${esc([variant.brand, variant.model].filter(Boolean).join(" ") || `Вариант ${index + 1}`)}</span><span class="vnext-fitment__sku-code">SKU: ${esc(variant.sku || "Не определено")}</span></span><span class="vnext-fitment__sku-specs">${specs.map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("")}</span><span class="vnext-fitment__sku-select">Выбрать</span></button>`;
+    return `<button type="button" class="vnext-fitment__sku-row" data-fitment-action="rim-variant" data-value="${index}" aria-pressed="${String(variant.sku === resolver.selectedSku)}"><span class="vnext-fitment__sku-identity">${variant.imageUrl ? `<img src="${esc(variant.imageUrl)}" alt="" class="vnext-fitment__sku-image">` : ""}<span class="vnext-fitment__sku-name">${esc([variant.brand, variant.model].filter(Boolean).join(" ") || `Вариант ${index + 1}`)}</span><span class="vnext-fitment__sku-code">${esc(text("wheel.sku"))}: ${esc(variant.sku || "Не определено")}</span></span><span class="vnext-fitment__sku-specs">${specs.map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("")}</span><span class="vnext-fitment__sku-select">Выбрать</span></button>`;
   }).join("")}</div></div>` : "";
-  return `<section class="vnext-fitment__source-disclosure">${!variants ? `<button type="button" class="vnext-button vnext-button--secondary" data-fitment-action="toggle-source" aria-expanded="${String(Boolean(resolver.open))}" aria-controls="fitment-source-panel">${resolver.url ? "Изменить ссылку на товар" : "Добавить ссылку на товар"}</button>` : ""}${!variants && resolver.open ? `<div class="vnext-fitment__source-panel" id="fitment-source-panel"><div class="vnext-fitment__section-heading"><h3>Источник колесного диска</h3></div><label class="vnext-fitment__field"><span>Ссылка на товар</span><input type="url" inputmode="url" data-fitment-source-url value="${esc(resolver.url)}" placeholder="https://"></label><div class="vnext-fitment__source-actions">${button("Определить параметры", "resolve-rim", { primary: true, disabled: resolver.loading || !resolver.url })}<p>Необязательно — попробуем получить модель и технические параметры со страницы.</p></div>${resolving}${status ? `<p class="vnext-fitment__notice${statusClass}" role="${resolver.statusTone === "error" ? "alert" : "status"}">${esc(status)}</p>` : ""}${retries}</div>` : ""}${variants}${resolver.chooserOpen ? button("Отмена", "cancel-rim-sku") : ""}${!resolver.open ? resolving + (resolver.statusTone === "error" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(status)}</p>${retries}` : "") : ""}</section>`;
+  return `<section class="vnext-fitment__source-disclosure">${!variants ? `<button type="button" class="vnext-button vnext-button--secondary" data-fitment-action="toggle-source" aria-expanded="${String(Boolean(resolver.open))}" aria-controls="fitment-source-panel">${resolver.url ? "Изменить ссылку на товар" : "Добавить ссылку на товар"}</button>` : ""}${!variants && resolver.open ? `<div class="vnext-fitment__source-panel" id="fitment-source-panel"><div class="vnext-fitment__section-heading"><h3>${esc(text("fitment.wheel.source"))}</h3></div><label class="vnext-fitment__field"><span>Ссылка на товар</span><input type="url" inputmode="url" data-fitment-source-url value="${esc(resolver.url)}" placeholder="https://"></label><div class="vnext-fitment__source-actions">${button("Определить параметры", "resolve-rim", { primary: true, disabled: resolver.loading || !resolver.url })}<p>Необязательно — попробуем получить модель и технические параметры со страницы.</p></div>${resolving}${status ? `<p class="vnext-fitment__notice${statusClass}" role="${resolver.statusTone === "error" ? "alert" : "status"}">${esc(status)}</p>` : ""}${retries}</div>` : ""}${variants}${resolver.chooserOpen ? button("Отмена", "cancel-rim-sku") : ""}${!resolver.open ? resolving + (resolver.statusTone === "error" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(status)}</p>${retries}` : "") : ""}</section>`;
 }
 
 function evidence(model) {
@@ -130,10 +132,11 @@ function evidence(model) {
     }) })).filter(group => group.items.length);
   if (!groups.length) return "";
   const blockersAndConditions = groups.some(group => group.title === "Почему не подходит") && groups.some(group => group.title === "Условия установки");
-  return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? '<p>Условия установки не отменяют причины несовместимости.</p>' : ""}</section>`;
+  return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? `<p>Условия установки не отменяют причины несовместимости.</p>` : ""}</section>`;
 }
 
 function comparisonTable(model) {
+  const text = key => copy(key, model.locale);
   if (model.executionStatus === "failed" || model.check?.execution_status !== "completed") return "";
   const rows = model.fieldEvidence || [];
   const front = rows.filter(row => row.axle !== "rear");
@@ -146,7 +149,7 @@ function comparisonTable(model) {
   });
   const staggered = Boolean(rear.length || (model.resultSetupMode || model.overview?.setup_mode) === "staggered");
   const separateAxles = staggered && (!rear.length || JSON.stringify(comparable(front)) !== JSON.stringify(comparable(rear)));
-  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">${comparisonLabel(model, "Параметр", "Parameter")}</th><th scope="col">${comparisonLabel(model, "Автомобиль", "Vehicle")}</th><th scope="col">${comparisonLabel(model, "Колесный диск", "Wheel")}</th><th scope="col">${comparisonLabel(model, "Результат", "Result")}</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
+  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">${comparisonLabel(model, "Параметр", "Parameter")}</th><th scope="col">${comparisonLabel(model, "Автомобиль", "Vehicle")}</th><th scope="col">${text("wheel.label")}</th><th scope="col">${comparisonLabel(model, "Результат", "Result")}</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
   return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? comparisonLabel(model, "Передняя ось", "Front axle") : staggered ? comparisonLabel(model, "Одинаково для обеих осей", "Same for both axles") : comparisonLabel(model, "Параметры колёс", "Wheel parameters"))}${separateAxles ? table(rear, comparisonLabel(model, "Задняя ось", "Rear axle")) : ""}</section>`;
 }
 
@@ -216,6 +219,7 @@ export function wheelPickerManualValue(field, query) {
 }
 
 function wheelPickerMarkup(picker) {
+  const text = key => copy(key, picker.locale);
   if (!picker) return "";
   const field = picker.path.split(".")[1];
   const label = wheelFieldLabels[field];
@@ -223,10 +227,11 @@ function wheelPickerMarkup(picker) {
   const option = value => `<button type="button" class="vnext-fitment__picker-option" data-wheel-picker-value="${esc(value)}">${esc(wheelDisplay(value, picker.locale))}</button>`;
   const group = (title, values) => values.length ? `<section><h3>${title}</h3><div class="vnext-fitment__picker-options">${values.map(option).join("")}</div></section>` : "";
   const manual = wheelPickerManualValue(field, picker.query);
-  return `<div class="vnext-fitment__picker-scrim" data-wheel-picker-close></div><section class="vnext-fitment__picker" role="dialog" aria-modal="true" aria-labelledby="wheel-picker-title"><div class="vnext-fitment__section-heading"><h2 id="wheel-picker-title">${label}</h2><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-close aria-label="Закрыть выбор ${label}">Закрыть</button></div><label class="vnext-fitment__field"><span>Поиск ${label}</span><input type="text" inputmode="${field === "pcd" ? "text" : "decimal"}" data-wheel-picker-search value="${esc(picker.query)}" placeholder="${field === "pcd" ? "5×112" : "Поиск"}"></label>${group("Точное совпадение",options.exact)}${group(picker.query ? "Похожие значения" : picker.mode === "all" ? "Все значения" : field === "offset_et_mm" ? "Рекомендуемые" : "Значения",options.matches)}${field === "offset_et_mm" ? `<button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-mode>${picker.mode === "all" ? "Рекомендуемые значения" : "Показать все значения"}</button>` : ""}<div class="vnext-fitment__picker-manual"><p>Ручной ввод ${label}${field === "offset_et_mm" ? " от −150 до +150 мм. Без округления." : "."}</p><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-value="${esc(manual ?? "")}" ${manual === null ? "disabled" : ""}>Использовать ${esc(wheelDisplay(picker.query, picker.locale))}</button></div></section>`;
+  return `<div class="vnext-fitment__picker-scrim" data-wheel-picker-close></div><section class="vnext-fitment__picker" role="dialog" aria-modal="true" aria-labelledby="wheel-picker-title"><div class="vnext-fitment__section-heading"><h2 id="wheel-picker-title">${label}</h2><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-close aria-label="Закрыть выбор ${label}">Закрыть</button></div><label class="vnext-fitment__field"><span>Поиск ${label}</span><input type="text" inputmode="${field === "pcd" ? "text" : "decimal"}" data-wheel-picker-search value="${esc(picker.query)}" placeholder="${field === "pcd" ? "5×112" : "Поиск"}"></label>${group("Точное совпадение",options.exact)}${group(picker.query ? "Похожие значения" : picker.mode === "all" ? "Все значения" : field === "offset_et_mm" ? "Рекомендуемые" : "Значения",options.matches)}${field === "offset_et_mm" ? `<button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-mode>${picker.mode === "all" ? "Рекомендуемые значения" : "Показать все значения"}</button>` : ""}<div class="vnext-fitment__picker-manual"><p>Ручной ввод ${label}${field === "offset_et_mm" ? text("fitment.picker.noRounding") : "."}</p><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-value="${esc(manual ?? "")}" ${manual === null ? "disabled" : ""}>Использовать ${esc(wheelDisplay(picker.query, picker.locale))}</button></div></section>`;
 }
 
 function axleFields(model, axle, rim) {
+  const text = key => copy(key, model.locale);
   const prefix = axle === "rear" ? "rear_rim" : "rim";
   const pending = axle === "rear" ? model.rearRimPendingProposals || [] : model.rimPendingProposals || [];
   return `<div class="vnext-fitment__proposal-stack">${Object.entries(wheelFieldLabels).map(([field,label]) => {
@@ -240,15 +245,16 @@ function axleFields(model, axle, rim) {
     const conflict = axle === "front" ? field === "pcd" ? fieldConflict(model, "rim.bolt_count") + fieldConflict(model, "rim.pcd_mm") : fieldConflict(model, path) : "";
     const candidates = axle === "front" ? (model.rimCandidates || []).filter(item => item.field === field && String(item.value) !== String(value)) : [];
     const suggestions = candidates.length ? `<div class="vnext-fitment__suggestions">${candidates.map(item => button(wheelDisplay(item.value, model.locale), "candidate", { value: `${path}|${item.value}` })).join("")}</div>` : "";
-    return `<div class="vnext-fitment__compound-field" data-confirmation-state="${proposed ? "proposed" : value === "" ? "missing" : "confirmed"}"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" data-fitment-focus="${path}" ${errorAttributes} ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить предложение" : value === "" ? "Выбрать" : "Подтверждено"} ${field === "offset_et_mm" && value !== "" ? "" : label + " "}${esc(displayValue)}">${esc(displayValue)}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? '<small>Предложено автоматически</small>' : ""}${suggestions}${conflict}${error ? `<small id="${esc(errorId)}" role="alert">${esc(error)}</small>` : ""}</div>`;
+    return `<div class="vnext-fitment__compound-field" data-confirmation-state="${proposed ? "proposed" : value === "" ? "missing" : "confirmed"}"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" data-fitment-focus="${path}" ${errorAttributes} ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить предложение" : value === "" ? "Выбрать" : "Подтверждено"} ${field === "offset_et_mm" && value !== "" ? "" : label + " "}${esc(displayValue)}">${esc(displayValue)}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? `<small>${esc(text("fitment.proposed"))}</small>` : ""}${suggestions}${conflict}${error ? `<small id="${esc(errorId)}" role="alert">${esc(error)}</small>` : ""}</div>`;
   }).join("")}</div>`;
 }
 
 function vehicleEditor(model, vehicle) {
+  const text = key => copy(key, model.locale);
   const marketState = model.catalogue?.states?.markets || {};
   const marketRequired = marketState.resolution === "selection_required";
   const marketField = marketRequired
-    ? fieldWithCandidates(model, "Версия для рынка", "vehicle.market", vehicle.market, {
+    ? fieldWithCandidates(model, text("fitment.market.label"), "vehicle.market", vehicle.market, {
         options: model.catalogue?.markets || [],
         disabled: !["selected", "selection_required", "resolved_multiple"].includes(marketState.status),
         message: marketState.message || "",
@@ -256,7 +262,7 @@ function vehicleEditor(model, vehicle) {
       }) : "";
   const marketNotice = vehicle.year && ["failed", "no_data"].includes(marketState.status)
     ? `<p class="vnext-fitment__notice${marketState.status === "failed" ? " vnext-fitment__notice--error" : ""}" role="${marketState.status === "failed" ? "alert" : "status"}">${esc(marketState.message)}</p>${marketState.status === "failed" ? button("Повторить", "retry-catalogue", { value: "markets" }) : ""}` : "";
-  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Автомобиль</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? '<p class="vnext-fitment__notice">Проверьте данные в каталоге и выберите точный год автомобиля.</p>' : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
+  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Автомобиль</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? `<p class="vnext-fitment__notice">Проверьте данные в каталоге и выберите точный год автомобиля.</p>` : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
 }
 
 function vehicleRecognition(model) {
@@ -307,7 +313,7 @@ function variantChooser(model) {
 }
 
 function wheelConfirmationProgress(model, axle = "front") {
-  if (model.rimSaveReadiness?.conflicts?.length) return axle === "front" ? '<span data-fitment-conflict-notice>Выберите значение перед сохранением.</span>' : "";
+  if (model.rimSaveReadiness?.conflicts?.length) return axle === "front" ? `<span data-fitment-conflict-notice>Выберите значение перед сохранением.</span>` : "";
   const rim = axle === "rear" ? model.rearRim || {} : model.rim || {};
   const pending = axle === "rear" ? model.rearRimPendingProposals || [] : model.rimPendingProposals || [];
   const count = Object.keys(wheelFieldLabels).filter(field => {
@@ -318,20 +324,22 @@ function wheelConfirmationProgress(model, axle = "front") {
 }
 
 function wheelEditor(model, rim) {
+  const text = key => copy(key, model.locale);
   const chooser = Boolean(model.resolver?.variants?.length);
-  const identity = [rim.brand, rim.model].filter(Boolean).join(" ") || "Параметры колесного диска";
+  const identity = [rim.brand, rim.model].filter(Boolean).join(" ") || text("fitment.wheel.parameters");
   const readiness = model.rimSaveReadiness || { ready: true };
   const identityEditor = model.rimIdentityEditing
     ? `<div class="vnext-fitment__fields">${fieldWithCandidates(model, "Бренд", "rim.brand", rim.brand)}${fieldWithCandidates(model, "Модель", "rim.model", rim.model)}${fieldWithCandidates(model, "Артикул", "rim.sku", rim.sku)}</div>` : "";
   const axle = (which, label) => `<section class="vnext-fitment__axle"><h3>${label}</h3>${axleFields(model, which, which === "rear" ? model.rearRim || {} : rim)}${model.setupMode === "staggered" ? `<p class="vnext-fitment__progress">${wheelConfirmationProgress(model, which)}</p>` : ""}</section>`;
   return `<section class="vnext-fitment__editor" data-fitment-workspace="rim" aria-labelledby="fitment-rim-editor-title">
-    <div class="vnext-fitment__editor-heading"><div><p class="vnext-eyebrow">Параметры колесного диска</p><h2 id="fitment-rim-editor-title" tabindex="-1">${esc(chooser ? "Выберите колесный диск" : identity)}</h2>${!chooser && (model.resolver?.selectedSku || rim.sku) ? `<p class="vnext-fitment__identity-code">SKU ${esc(model.resolver?.selectedSku || rim.sku)}</p>` : ""}</div>${!chooser ? `<div class="vnext-fitment__mode" role="group" aria-label="Параметры по осям">${[ ["uniform", "Одинаковые"], ["staggered", "Разные"] ].map(([value,label]) => `<button type="button" data-fitment-action="setup-mode" data-value="${value}" aria-pressed="${String((model.setupMode || "uniform") === value)}">${label}</button>`).join("")}</div>` : ""}</div>
+    <div class="vnext-fitment__editor-heading"><div><p class="vnext-eyebrow">${esc(text("fitment.wheel.eyebrow"))}</p><h2 id="fitment-rim-editor-title" tabindex="-1">${esc(chooser ? text("fitment.wheel.choose") : identity)}</h2>${!chooser && (model.resolver?.selectedSku || rim.sku) ? `<p class="vnext-fitment__identity-code">${esc(text("wheel.sku"))} ${esc(model.resolver?.selectedSku || rim.sku)}</p>` : ""}</div>${!chooser ? `<div class="vnext-fitment__mode" role="group" aria-label="Параметры по осям">${[ ["uniform", "Одинаковые"], ["staggered", "Разные"] ].map(([value,label]) => `<button type="button" data-fitment-action="setup-mode" data-value="${value}" aria-pressed="${String((model.setupMode || "uniform") === value)}">${label}</button>`).join("")}</div>` : ""}</div>
     ${chooser || model.resolver?.open || !model.resolver?.url ? sourceEditor(model) : ""}
-    ${chooser ? '<p class="vnext-fitment__progress">Выбор SKU не подтверждает технические параметры</p>' : `${identityEditor}<div class="vnext-fitment__axles${model.setupMode === "staggered" ? " vnext-fitment__axles--staggered" : ""}">${axle("front", model.setupMode === "staggered" ? "Передняя ось" : "Обе оси")}${model.setupMode === "staggered" ? axle("rear", "Задняя ось") : ""}</div>${model.setupMode === "staggered" && model.resolver?.canChooseSku ? '<p class="vnext-fitment__progress">SKU относится к передней оси. Задние параметры подтверждаются отдельно.</p>' : ""}${model.rearDraftPreserved ? '<p class="vnext-fitment__progress">Задние параметры сохранены в черновике до сохранения.</p>' : ""}${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${model.setupMode !== "staggered" ? `<p class="vnext-fitment__progress" role="status">${wheelConfirmationProgress(model)}</p>` : ""}${readiness.invalid?.length ? '<p class="vnext-fitment__notice" role="alert">Проверьте числовые параметры диска.</p>' : ""}<div class="vnext-fitment__paired-actions">${button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || !readiness.ready })}${model.resolver?.canChooseSku ? button("Выбрать другой SKU", "choose-rim-sku", { disabled: model.resolver.loading }) : ""}${button(model.rimIdentityEditing ? "Скрыть идентификацию" : "Изменить идентификацию", "toggle-rim-identity")}</div>`}
+    ${chooser ? `<p class="vnext-fitment__progress">${esc(text("fitment.variant.notice"))}</p>` : `${identityEditor}<div class="vnext-fitment__axles${model.setupMode === "staggered" ? " vnext-fitment__axles--staggered" : ""}">${axle("front", model.setupMode === "staggered" ? "Передняя ось" : "Обе оси")}${model.setupMode === "staggered" ? axle("rear", "Задняя ось") : ""}</div>${model.setupMode === "staggered" && model.resolver?.canChooseSku ? `<p class="vnext-fitment__progress">${esc(text("fitment.variant.rearNotice"))}</p>` : ""}${model.rearDraftPreserved ? `<p class="vnext-fitment__progress">Задние параметры сохранены в черновике до сохранения.</p>` : ""}${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${model.setupMode !== "staggered" ? `<p class="vnext-fitment__progress" role="status">${wheelConfirmationProgress(model)}</p>` : ""}${readiness.invalid?.length ? `<p class="vnext-fitment__notice" role="alert">Проверьте числовые параметры диска.</p>` : ""}<div class="vnext-fitment__paired-actions">${button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || !readiness.ready })}${model.resolver?.canChooseSku ? button(text("fitment.variant.choose"), "choose-rim-sku", { disabled: model.resolver.loading }) : ""}${button(model.rimIdentityEditing ? text("fitment.identity.hide") : text("fitment.identity.edit"), "toggle-rim-identity")}</div>`}
   </section>`;
 }
 
 export function fitmentMarkup(model = {}) {
+  const text = key => copy(key, model.locale);
   if (model.loading && !model.overview) return localizeFitmentMarkup(`<section class="vnext-fitment">${loadingStatus("Загружаем совместимость")}</section>`, model.locale);
   if (model.error && !model.overview) return `<section class="vnext-fitment" role="alert"><h2>Не удалось загрузить совместимость</h2><p>${esc(model.error)}</p>${button("Повторить", "reload", { primary: true })}</section>`;
   if (model.vehicleEditing && model.rimEditing) {
@@ -360,26 +368,26 @@ export function fitmentMarkup(model = {}) {
     <div class="vnext-fitment__topline"><h1>Проверка совместимости</h1>${button("Назад", "back")}</div>
     ${authNotice}
     ${model.message ? `<p class="vnext-fitment__notice" data-fitment-save-notice tabindex="-1" role="status">${esc(model.message)}</p>` : ""}
-    <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="Автомобиль и колесный диск">
+    <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">
     <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
-        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : '<h2 id="fitment-vehicle-title">Автомобиль не указан</h2>'}
-        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>Фото автомобиля</strong></p>${button("Заменить фото", "edit-vehicle-photo")}</div>
+        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : `<h2 id="fitment-vehicle-title">Автомобиль не указан</h2>`}
+        <div class="vnext-fitment__source-row"><p><span>${esc(text("fitment.source.label"))}</span><strong>Фото автомобиля</strong></p>${button("Заменить фото", "edit-vehicle-photo")}</div>
         <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="Фото автомобиля">
         <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: !activeEditor && model.overview?.vehicle_state !== "confirmed_ready", disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(!model.overview?.vehicle_identity_id && model.overview?.vehicle_state === "empty" ? "Указать автомобиль" : model.canReselectVehicleVariant ? "Изменить автомобиль" : "Указать вручную", "edit-vehicle")}</div>
         ${configuration}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${variantRequired && model.rimEditing ? button("Выбрать комплектацию", "show-variants") : ""}${vehicleError}
       </section>
-      <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">Колесный диск</p>${preview(model.rimPreview, "Фотография колесного диска", { kind: "wheel" })}
-        ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : '<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">Колесный диск</h2>'}
-        <div class="vnext-fitment__source-row"><p><span>Источник данных</span><strong>${esc(model.rimSourceLabel || "Источник не указан")}</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
-        <div class="vnext-fitment__source-action">${button("Распознать колесный диск", "resolve-rim", { primary: !activeEditor && !model.resolver?.canChooseSku && model.overview?.rim_setup_state !== "confirmed_ready", disabled: !model.resolver?.url || model.resolver?.loading })}${!model.rimEditing ? button("Изменить параметры", "edit-rim") : ""}</div>
+      <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">${esc(text("wheel.label"))}</p>${preview(model.rimPreview, text("fitment.wheel.photo"), { kind: "wheel" })}
+        ${model.rimTitle ? `<h2 id="fitment-rim-title">${esc(model.rimTitle)}</h2>` : `<h2 id="fitment-rim-title" class="vnext-fitment__visually-hidden">${esc(text("wheel.label"))}</h2>`}
+        <div class="vnext-fitment__source-row"><p><span>${esc(text("fitment.source.label"))}</span><strong>${esc(model.rimSourceLabel || "Источник не указан")}</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
+        <div class="vnext-fitment__source-action">${button(text("fitment.wheel.recognize"), "resolve-rim", { primary: !activeEditor && !model.resolver?.canChooseSku && model.overview?.rim_setup_state !== "confirmed_ready", disabled: !model.resolver?.url || model.resolver?.loading })}${!model.rimEditing ? button("Изменить параметры", "edit-rim") : ""}</div>
         <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
     <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
     </fieldset>
     ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
-    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : nextActionCopy[model.nextAction] || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}${hasSummary(model.canonicalVehicleSummary) || hasSummary(model.canonicalWheelSummary) ? `<div class="vnext-fitment__ready-summaries">${hasSummary(model.canonicalVehicleSummary) ? `<div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary)}</strong></div>` : ""}${hasSummary(model.canonicalWheelSummary) ? `<div><span>Колесный диск</span><strong>${esc(model.canonicalWheelSummary)}</strong></div>` : ""}</div>` : ""}<div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
+    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : (model.nextAction === "complete_rim_specs" ? text("fitment.wheel.complete") : nextActionCopy[model.nextAction]) || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}${hasSummary(model.canonicalVehicleSummary) || hasSummary(model.canonicalWheelSummary) ? `<div class="vnext-fitment__ready-summaries">${hasSummary(model.canonicalVehicleSummary) ? `<div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary)}</strong></div>` : ""}${hasSummary(model.canonicalWheelSummary) ? `<div><span>${esc(text("wheel.label"))}</span><strong>${esc(model.canonicalWheelSummary)}</strong></div>` : ""}</div>` : ""}<div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
     </div>
     ${wheelPickerMarkup(model.wheelPicker ? { ...model.wheelPicker, locale: model.locale } : null)}
   </section>`;
@@ -527,14 +535,11 @@ const fitmentEnglishCopy = {
   "Проверка выполнена": "Check completed",
   "Назад": "Back",
   "Автомобиль": "Vehicle",
-  "Колесный диск": "Wheel",
-  "Источник данных": "Data source",
   "Фото автомобиля": "Vehicle photo",
   "Ссылка на товар": "Product link",
   "Изменить": "Change",
   "Заменить фото": "Replace photo",
   "Распознать автомобиль": "Recognize vehicle",
-  "Распознать колесный диск": "Recognize wheel",
   "Указать вручную": "Enter manually",
   "Изменить автомобиль": "Edit vehicle",
   "Изменить параметры": "Edit parameters",
@@ -546,7 +551,6 @@ const fitmentEnglishCopy = {
   "Данные подтверждены": "Details confirmed",
   "Выберите комплектацию автомобиля": "Choose the vehicle version",
   "Уточните данные автомобиля": "Complete the vehicle details",
-  "Уточните параметры колесного диска": "Complete the wheel parameters",
   "Данные готовы к проверке": "Details are ready for checking",
   "Выберите значение перед сохранением.": "Choose a value before saving.",
   "Требуется выбрать значение": "Value selection required",
@@ -561,9 +565,6 @@ const fitmentEnglishCopy = {
   "Проверьте и подтвердите параметры": "Review and confirm parameters",
   "Подтвердите автомобиль и параметры диска.": "Confirm the vehicle and wheel parameters.",
   "Сохранить параметры": "Save parameters",
-  "Выбрать другой SKU": "Choose another SKU",
-  "Изменить идентификацию": "Edit wheel identity",
-  "Скрыть идентификацию": "Hide wheel identity",
   "Одинаковые": "Same",
   "Разные": "Different",
   "Обе оси": "Both axles",
@@ -572,13 +573,9 @@ const fitmentEnglishCopy = {
   "Диаметр": "Diameter",
   "Ширина": "Width",
   "Не выбрано": "Not selected",
-  "Предложено автоматически": "Automatically suggested",
   "Выбрать другое ▾": "Choose another ▾",
   "Все параметры подтверждены": "All parameters confirmed",
-  "SKU относится к передней оси. Задние параметры подтверждаются отдельно.": "SKU applies to the front axle. Rear parameters are confirmed separately.",
   "Задние параметры сохранены в черновике до сохранения.": "Rear parameters are preserved in the draft until saving.",
-  "Выбор SKU не подтверждает технические параметры": "Selecting a SKU does not confirm its technical parameters",
-  "Выберите колесный диск": "Choose the wheel",
   "Отмена": "Cancel",
   "Проверить совместимость": "Check compatibility",
   "Проверить ещё раз": "Check again",
@@ -591,19 +588,16 @@ const fitmentEnglishCopy = {
   "Недостаточно данных для проверки": "Insufficient data for checking",
   "В базе недостаточно технических данных, чтобы определить совместимость этого диска с автомобилем.": "The database has insufficient technical data to determine whether this wheel is compatible with the vehicle.",
   "Результат больше не актуален": "The result is no longer current",
-  "Данные автомобиля или колесного диска изменились.": "Vehicle or wheel parameters have changed.",
   "Подтверждённые данные сохранены.": "Confirmed details are preserved.",
   "Не удалось выполнить проверку": "Unable to complete the check",
   "Проверяем совместимость…": "Checking compatibility…",
   "Параметр": "Parameter",
   "Результат": "Result",
   "Параметры колёс": "Wheel parameters",
-  "Параметры колесного диска": "Wheel parameters",
   "Нет данных": "No data",
   "Не определено": "Undetermined",
   "С условием": "With a condition",
   "Не совпадает": "Mismatch",
-  "Обе оси — параметры совпадают": "Both axles — parameters match",
   "Закрыть": "Close",
   "Точное совпадение": "Exact match",
   "Похожие значения": "Similar values",
@@ -629,8 +623,6 @@ const fitmentEnglishCopy = {
   "Артикул": "SKU",
   "Сохранить автомобиль": "Save vehicle",
   "Подтвердить данные": "Confirm details",
-  "Версия для рынка": "Market version",
-  "Автомобиль и колесный диск": "Vehicle and wheel",
   "Источники и состояние данных": "Sources and data status",
   "Фото недоступно": "Photo unavailable",
   "Состояние параметров неизвестно": "Parameter status is unknown",
@@ -643,13 +635,10 @@ const fitmentEnglishCopy = {
   "для передней оси": "for the front axle",
   "Выбрать другое": "Choose another",
   "Фотография автомобиля": "Vehicle photograph",
-  "Фотография колесного диска": "Wheel photograph",
   "Загружаем совместимость": "Loading compatibility",
   "Не удалось загрузить совместимость": "Unable to load compatibility",
   "Варианты комплектации": "Vehicle versions",
   "Параметры по осям": "Axle configuration",
-  "Варианты колесного диска": "Wheel variants",
-  "Источник колесного диска": "Wheel source",
   "Не удалось загрузить комплектации.": "Unable to load vehicle versions.",
   "Комплектации не найдены.": "Vehicle versions were not found.",
   "Загружаем комплектации автомобиля": "Loading vehicle versions",
@@ -678,7 +667,7 @@ function localizeFitmentMarkup(markup, locale) {
   const translate = text => {
     let value = text;
     for (const [ru, en] of Object.entries(fitmentEnglishCopy).sort((a,b) => b[0].length - a[0].length)) value = value.replaceAll(ru, en);
-    return value.replace(/Осталось подтвердить (\d+) параметр(?:а|ов)?/g, "$1 parameters left to confirm").replaceAll("Предыдущий результат", "Previous result").replaceAll("Подтвердить предложение", "Confirm suggestion").replaceAll("Подтверждено", "Confirmed").replaceAll("Использовать", "Use").replaceAll("Поиск", "Search").replaceAll("Ручной ввод", "Manual input").replaceAll("Без округления", "Without rounding");
+    return value.replace(/Осталось подтвердить (\d+) параметр(?:а|ов)?/g, "$1 parameters left to confirm").replaceAll("Предыдущий результат", "Previous result").replaceAll("Подтвердить предложение", "Confirm suggestion").replaceAll("Подтверждено", "Confirmed").replaceAll("Использовать", "Use").replaceAll("Поиск", "Search").replaceAll("Ручной ввод", "Manual input");
   };
   return markup.replace(/>([^<>]+)</g, (_,text) => `>${translate(text)}<`).replace(/(aria-label|placeholder|alt)="([^"]*)"/g, (_,attr,text) => `${attr}="${translate(text)}"`);
 }
