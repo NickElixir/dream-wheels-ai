@@ -41,7 +41,7 @@ class VariantDisplayDetails(BaseModel):
             return None
         try:
             parsed = float(value)
-        except ValueError:
+        except (ValueError, OverflowError):
             return None
         return parsed if math.isfinite(parsed) and parsed > 0 else None
 
