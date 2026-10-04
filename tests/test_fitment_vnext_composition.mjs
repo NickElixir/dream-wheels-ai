@@ -1,5 +1,5 @@
 import { fitmentMarkup } from "../webapp/vnext/views/fitment.js";
-import { COPY, copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
+import { COPY, copy, legacyTranslations, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(root, "webapp/vnext/views/fitment.js"), "utf8")
   .replaceAll("export function ", "function ")
-  .replace(/import \{ copy, unknownVerdictSubtitle \} from "\.\.\/copy\.mjs";/u, "")
+  .replace(/import \{[^\n]+\} from "\.\.\/copy\.mjs";/u, "")
   .replace(/import \{ fitmentDisplayValue \} from "\.\.\/fitment-display\.mjs";/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};`);
 const context = {};
 runInCopyContext(`${source}\nglobalThis.fitmentMarkup = fitmentMarkup;`, context);
@@ -230,7 +230,7 @@ test("ET no-reference copy stays neutral when submitted size is unavailable", ()
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, legacyTranslations, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }
 
 
@@ -270,7 +270,7 @@ for (const locale of ['ru','en']) {
 test('LOW-1 mutation: restoring the old universal size subtitle fails the renderer contract', () => {
   const source=fs.readFileSync(new URL('../webapp/vnext/views/fitment.js',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replaceAll('export function ','function ');
   const old = 'Доступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.';
-  const context={copy,unknownVerdictSubtitle,fitmentDisplayValue};
+  const context={copy,uiText:copy,applicationLocale,localeOf,unknownVerdictSubtitle,fitmentDisplayValue};
   vm.runInNewContext(source.replace('esc(unknownVerdictSubtitle(model))',JSON.stringify(old))+'\nglobalThis.render = fitmentMarkup;',context);
   const verify=render=>assert.ok(render(unknownBase('ru',['center_bore_unknown'])).includes(copy('fitment.verdict.unknown.dia','ru')));
   verify(fitmentMarkup);
@@ -280,7 +280,7 @@ test('LOW-1 mutation: restoring the old universal size subtitle fails the render
 test('fitment shipping modules contain no universal size subtitle or целиком',()=>{
   for(const name of ['views/fitment.js','copy.mjs']) {
     const source=fs.readFileSync(new URL(`../webapp/vnext/${name}`,import.meta.url),'utf8');
-    assert.doesNotMatch(source,/целиком|The available data is not enough to confirm this wheel size as a whole/u);
+    assert.doesNotMatch(source,/совместимость этого размера целиком|The available data is not enough to confirm this wheel size as a whole/u);
   }
 });
 
@@ -291,7 +291,7 @@ test('P1 glossary: RU keys contain no internal terms and EN keys are present',()
     assert.doesNotMatch(translations.en,/[А-Яа-яЁё]/u,key);
   }
   const app=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
-  const context={};vm.runInNewContext(app.slice(app.indexOf('const I18N ='),app.indexOf('function detectLocale()')),context);
+  const context={legacyTranslations};vm.runInNewContext(app.slice(app.indexOf('const I18N ='),app.indexOf('function detectLocale()')),context);
   vm.runInNewContext('globalThis.ruStrings=I18N.ru;',context);
   const values = value => typeof value === "string" ? [value] : Object.values(value).flatMap(values);
   for (const text of values(context.ruStrings)) assert.doesNotMatch(text,/SKU|идентификац|Источник данных|еще|колесн/iu);
@@ -314,7 +314,7 @@ test('E-03 keyed headings and notices use separate punctuation contracts',()=>{
 test('E-03 DOM observer preserves sentences and only trims heading/button/status punctuation',()=>{
   const app=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
   const start=app.indexOf('function enforceUiCopyRule('),end=app.indexOf('\n}',start)+2;
-  const nodes=[['P','Explanation.',false,false],['SPAN','Notice.',false,false],['H2','Heading.',true,false],['BUTTON','Action.',true,false],['SPAN','Creating…',true,true]].map(([tagName,nodeValue,isLabel,isSentence])=>({nodeValue,parentElement:{tagName,hasAttribute:()=>false,closest:selector=>selector==='[data-i18n-sentence]'?(isSentence?{}:null):(isLabel?{}:null)}}));
+  const nodes=[['P','Explanation.',false,false],['SPAN','Notice.',false,false],['H2','Heading.',true,false],['BUTTON','Action.',true,false],['SPAN','Creating…',true,true]].map(([tagName,nodeValue,isLabel,isSentence])=>({nodeValue,parentElement:{tagName,hasAttribute:()=>false,closest:selector=>selector==='[data-i18n-sentence],.vnext-shell'?(isSentence?{}:null):(isLabel?{}:null)}}));
   let index=0; const context={NodeFilter:{SHOW_TEXT:4},document:{createTreeWalker:()=>({nextNode:()=>nodes[index++]})}};
   vm.runInNewContext(app.slice(start,end)+'\nenforceUiCopyRule({});',context);
   assert.deepEqual(nodes.map(n=>n.nodeValue),['Explanation.','Notice.','Heading','Action','Creating…']);

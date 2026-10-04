@@ -1,4 +1,4 @@
-import { copy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
+import { copy, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(ROOT, "webapp/vnext/views/fitment.js"), "utf8")
   .replaceAll("export function ", "function ")
-  .replace(/import \{ copy, unknownVerdictSubtitle \} from "\.\.\/copy\.mjs";/u, "")
+  .replace(/import \{[^\n]+\} from "\.\.\/copy\.mjs";/u, "")
   .replace(/import \{ fitmentDisplayValue \} from "\.\.\/fitment-display\.mjs";/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};`);
 
 test("refreshing a numeric Wheel field never reads unsupported selection properties", () => {
@@ -97,5 +97,5 @@ test("loading → proposal redraw restores the same recognition heading instead 
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }

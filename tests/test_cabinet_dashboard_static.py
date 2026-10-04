@@ -2,6 +2,12 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+COPY = json.loads(
+    Path("webapp/vnext/copy.mjs")
+    .read_text(encoding="utf-8")
+    .split("export const COPY = ", 1)[1]
+    .split(";\n\n", 1)[0]
+)
 APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
 STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
 INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
@@ -251,7 +257,7 @@ def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
     assert "data-fitment-check" in INDEX_HTML
     assert 'apiUrl("/fitment/checks"' in APP_JS
     assert "compatible_with_conditions" in APP_JS
-    assert "demoLiveActionsUnavailable" in APP_JS
+    assert COPY["legacy.fitment.demoLiveActionsUnavailable"]["ru"]
     assert "shouldUseDemoFitment(state.fitmentJobId)" in APP_JS
     assert "[data-fitment-verdict-blocking-list]" in APP_JS
     assert "`${target}-list`" not in APP_JS
@@ -280,8 +286,8 @@ def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
 
 
 def test_fitment_entrypoint_uses_compatibility_language() -> None:
-    assert 'openFromResult: "Проверить совместимость"' in APP_JS
-    assert 'openFromHistory: "Проверить совместимость"' in APP_JS
+    assert COPY["legacy.fitment.openFromResult"]["ru"] == "Проверить совместимость"
+    assert COPY["legacy.fitment.openFromHistory"]["ru"] == "Проверить совместимость"
     assert "Проверить совместимость автомобиля и диска" not in APP_JS
     result_button = INDEX_HTML.split("data-open-fitment-result", 1)[1].split("</button>", 1)[0]
     assert "Уточнить параметры" not in result_button
@@ -307,7 +313,7 @@ def test_detail_screen_has_one_fitment_editor_cta_and_no_duplicate_new_tryon() -
     detail = APP_JS.split("function renderRenderDetail() {")[1].split("function openRenderDetail")[
         0
     ]
-    assert 'openFromHistory: "Проверить совместимость"' in APP_JS
+    assert COPY["legacy.fitment.openFromHistory"]["ru"] == "Проверить совместимость"
     assert detail.count("data-open-fitment") == 1
     assert "render-expanded-actions" in detail
     assert "Скачать результат" in detail
@@ -548,7 +554,10 @@ def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist
     assert {"source": "/t/", "destination": "/index.html"} in rewrites
     assert not (ROOT / "webapp" / "t" / "index.html").exists()
     assert "Срок действия" in INDEX_HTML
-    assert "Сначала спишутся рендеры с ближайшим сроком действия" in APP_JS
+    assert (
+        COPY["legacy.dashboard.expiryPriority"]["ru"]
+        == "Сначала спишутся рендеры с ближайшим сроком действия"
+    )
     assert "data-dashboard-expiry" in INDEX_HTML
     assert 'data-view="wallet"' in INDEX_HTML
     assert "data-wallet-expiry-rows" in WALLET_VIEW
@@ -644,7 +653,7 @@ def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> No
     assert "dashboard-skeleton-shimmer" in STYLE_CSS
     assert "data-dashboard-primary-action" in INDEX_HTML
     assert "data-dashboard-secondary-action" in INDEX_HTML
-    assert "Открыть последний результат" in APP_JS
+    assert any(pair["ru"] == "Открыть последний результат" for pair in COPY.values())
     assert "latest-preview-layout" in APP_JS
     assert "dashboard-fitment-context" in APP_JS
     assert "fitmentDashboardContext" in APP_JS

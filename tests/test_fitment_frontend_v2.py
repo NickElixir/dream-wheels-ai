@@ -62,11 +62,11 @@ def test_next_action_is_server_owned_and_save_never_starts_check() -> None:
 
 
 def test_f2_state_mappings_and_demo_server_transitions_are_explicit() -> None:
-    assert 'empty: locale === "ru" ? "Не заполнен"' in APP_JS
-    assert 'unconfirmed: locale === "ru" ? "Нужно подтвердить"' in APP_JS
-    assert 'confirmed_incomplete: locale === "ru" ? "Нужно выбрать комплектацию"' in APP_JS
-    assert 'partial: locale === "ru" ? "Нужно уточнить"' in APP_JS
-    assert 'complete_unconfirmed: locale === "ru" ? "Нужно подтвердить"' in APP_JS
+    assert 'empty: uiCopy("bridge.notFilled", locale)' in APP_JS
+    assert 'unconfirmed: uiCopy("bridge.needsConfirmation", locale)' in APP_JS
+    assert 'confirmed_incomplete: uiCopy("bridge.chooseAVehicleVersion", locale)' in APP_JS
+    assert 'partial: uiCopy("bridge.needsClarification", locale)' in APP_JS
+    assert 'complete_unconfirmed: uiCopy("bridge.needsConfirmation", locale)' in APP_JS
     assert 'if (!check) return locale === "ru" ? "Не выполнен"' in APP_JS
     assert 'compatible_with_conditions: locale === "ru" ? "Подходит с условиями"' in APP_JS
     assert (
@@ -200,7 +200,7 @@ def test_result_presentation_mapper_uses_known_codes_without_inventing_reasons()
         '"hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"'
         in verdict_mapper
     )
-    assert "Потребуются центровочные кольца" in verdict_mapper
+    assert 'uiCopy("fitment.reason.centeringRingsAreRequired", locale)' in verdict_mapper
     assert 'uiCopy("fitment.notice.pcdMismatch", locale)' in verdict_mapper
     assert "Ступичное отверстие больше штатного" in field_mapper
     assert 'fieldName === "center_bore_mm" && hasCenterBoreCondition' in field_mapper

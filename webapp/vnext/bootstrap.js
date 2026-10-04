@@ -1,4 +1,4 @@
-import { copy } from "./copy.mjs";
+import { copy as uiText, applicationLocale } from "./copy.mjs";
 import { legacyDashboardSnapshot, legacyOpenAuth, legacyOpenRenderDetail } from "./api/legacy-dashboard.js";
 import { legacyNavigate, legacyOpenExternal } from "./api/legacy-navigation.js";
 import { documentsViewModel } from "./models/documents.js";
@@ -55,19 +55,19 @@ function renderKind(view) {
   return "";
 }
 
-function refreshMountedRender() {
+function refreshMountedRender(locale = applicationLocale()) {
   if (!mountedRoot) return;
   const kind = renderKind(mountedView);
   if (kind && mountedRenderContent?.renderKind === kind) {
     const model = window.dreamwheelsRenderBridge?.snapshot(mountedView === "create" && kind === "result" ? "current-result" : kind) || {};
     if (kind === "processing") {
-      const title = model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку";
+      const title = model.error ? uiText("page.tryOn", locale) : uiText("page.renderProcessing", locale);
       const heading = mountedRoot.querySelector(".vnext-shell__topbar-title");
       if (heading && heading.textContent !== title) heading.textContent = title;
     }
     refreshRenderView(mountedRenderContent, model, renderCallbacks);
   } else if (mountedView === "create") {
-    if (kind || mountedRenderContent) mountSurface("create", { force: true });
+    if (kind || mountedRenderContent) mountSurface("create", { force: true }, locale);
   }
 }
 
@@ -84,8 +84,8 @@ function createCallbacks() {
   };
 }
 
-function renderCreate() {
-  if (renderKind(mountedView) || mountedRenderContent) { refreshMountedRender(); return; }
+function renderCreate(locale = applicationLocale()) {
+  if (renderKind(mountedView) || mountedRenderContent) { refreshMountedRender(locale); return; }
   const bridge = window.dreamwheelsCreateBridge;
   if (!mountedCreateContent || !bridge) return;
   mountedCreateContent = refreshCreateView(mountedCreateContent, bridge.snapshot(), createCallbacks());
@@ -101,18 +101,18 @@ function refreshMountedWallet() {
   refreshWalletView(mountedWalletContent, window.dreamwheelsWalletBridge?.snapshot() || {});
 }
 
-function surfaceDescriptor(view) {
+function surfaceDescriptor(view, locale = applicationLocale()) {
   const kind = renderKind(view);
   if (kind) {
     const model = window.dreamwheelsRenderBridge?.snapshot(view === "create" && kind === "result" ? "current-result" : kind) || {};
     return {
-      title: kind === "history" ? copy("nav.history") : kind === "result" ? "Результат" : model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку",
+      title: kind === "history" ? uiText("nav.history", locale) : kind === "result" ? uiText("page.renderResult", locale) : model.error ? uiText("page.tryOn", locale) : uiText("page.renderProcessing", locale),
       content: createRenderView(kind, model, renderCallbacks),
     };
   }
   if (view === "dashboard") {
     return {
-      title: "Главная",
+      title: uiText("nav.dashboard", locale),
       content: createDashboardView(legacyDashboardSnapshot(), {
         navigate: legacyNavigate,
         openRenderDetail: legacyOpenRenderDetail,
@@ -122,28 +122,28 @@ function surfaceDescriptor(view) {
   }
   if (view === "create") {
     return {
-      title: copy("nav.create"),
+      title: uiText("nav.create", locale),
       content: createCreateView(window.dreamwheelsCreateBridge?.snapshot() || {}, createCallbacks()),
     };
   }
   if (view === "support") {
-    const model = supportViewModel();
+    const model = supportViewModel(locale);
     return { title: model.title, content: createSupportView(model, { navigate: legacyNavigate }) };
   }
   if (view === "photo-guide") {
-    const model = photoGuideViewModel();
+    const model = photoGuideViewModel(locale);
     return { title: model.title, content: createPhotoGuideView(model) };
   }
   if (view === "docs") {
-    const model = documentsViewModel();
+    const model = documentsViewModel(locale);
     return { title: model.title, content: createDocumentsView(model, { openExternal: legacyOpenExternal }) };
   }
   if (view === "fitment") return {
-    title: "Совместимость",
+    title: uiText("page.fitment", locale),
     content: createFitmentView(window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks),
   };
   if (view === "wallet") return {
-    title: "Баланс",
+    title: uiText("nav.wallet", locale),
     content: createWalletView(window.dreamwheelsWalletBridge?.snapshot() || {}, walletCallbacks),
   };
   return null;
@@ -175,17 +175,17 @@ function unmountSurface() {
   legacyHiddenStates = [];
 }
 
-function mountSurface(view, { force = false } = {}) {
+function mountSurface(view, { force = false } = {}, locale = applicationLocale()) {
   const host = document.querySelector(`[data-view="${view}"]`);
   if (!host) return;
   if (!force && mountedRoot === host && mountedView === view) {
-    if (view === "create") renderCreate();
+    if (view === "create") renderCreate(locale);
     else if (view === "fitment") refreshMountedFitment();
     else if (view === "wallet") refreshMountedWallet();
-    else refreshMountedRender();
+    else refreshMountedRender(locale);
     return;
   }
-  const descriptor = surfaceDescriptor(view);
+  const descriptor = surfaceDescriptor(view, locale);
   if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
 
@@ -202,6 +202,7 @@ function mountSurface(view, { force = false } = {}) {
     createRoot.hidden = false;
     mountedShell = createAppShell({
       title: descriptor.title,
+      locale,
       activeView: view === "render-detail" || renderKind(view) === "processing" ? "renders" : view,
       navigate: legacyNavigate,
       content: descriptor.content,
@@ -225,6 +226,7 @@ function mountSurface(view, { force = false } = {}) {
 
   mountedShell = createAppShell({
     title: descriptor.title,
+      locale,
     activeView: view,
     navigate: legacyNavigate,
     content: descriptor.content,
@@ -238,26 +240,28 @@ function mountSurface(view, { force = false } = {}) {
   document.body.classList.add("vnext-surface-active");
 }
 
-function applyView(view) {
-  if (migratedViews.has(view)) mountSurface(view);
+function applyView(view, locale = applicationLocale()) {
+  if (migratedViews.has(view)) mountSurface(view, undefined, locale);
   else unmountSurface();
 }
 
-window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view));
+window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view, applicationLocale()));
 window.addEventListener("dreamwheels:dashboardchange", () => {
   updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated);
-  if (mountedView === "dashboard") mountSurface("dashboard", { force: true });
+  if (mountedView === "dashboard") mountSurface("dashboard", { force: true }, applicationLocale());
 });
-window.addEventListener("dreamwheels:createchange", renderCreate);
-window.addEventListener("dreamwheels:renderchange", refreshMountedRender);
+window.addEventListener("dreamwheels:createchange", () => renderCreate());
+window.addEventListener("dreamwheels:renderchange", () => refreshMountedRender());
 window.addEventListener("dreamwheels:fitmentchange", refreshMountedFitment);
 window.addEventListener("dreamwheels:walletchange", refreshMountedWallet);
 document.addEventListener("DOMContentLoaded", () => {
   for (const view of migratedViews) {
     const host = document.querySelector(`[data-view="${view}"]`);
     if (host && !host.hidden) {
-      mountSurface(view);
+      mountSurface(view, undefined, applicationLocale());
       break;
     }
   }
 });
+
+window.addEventListener("dreamwheels:localechange", () => { if (mountedView) mountSurface(mountedView, { force: true }); });

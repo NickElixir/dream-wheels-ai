@@ -30,8 +30,8 @@
             <button type="button" class="primary-button" data-application-auth-gate-login hidden>Войти</button>
         </div>
     </section>
-    <aside class="desktop-sidebar" aria-label="Навигация кабинета">
-        <button type="button" class="brand-wordmark brand-button" data-nav="dashboard" aria-label="Dream Wheels AI — главная">
+    <aside class="desktop-sidebar" aria-label="Навигация кабинета" data-copy-aria="aria.cabinetNavigation">
+        <button type="button" class="brand-wordmark brand-button" data-nav="dashboard" aria-label="Dream Wheels AI — главная" data-copy-aria="aria.brandHome">
             <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
         </button>
         <nav class="sidebar-nav">
@@ -49,7 +49,7 @@
                 <button type="button" class="sidebar-item" data-nav="docs">Документы</button>
             </div>
         </nav>
-        <button type="button" class="sidebar-account" data-account-block data-nav="settings" aria-label="Открыть аккаунт">
+        <button type="button" class="sidebar-account" data-account-block data-nav="settings" aria-label="Открыть аккаунт" data-copy-aria="aria.openAccount">
             <div class="account-avatar" data-account-avatar>DW</div>
             <div>
                 <div class="account-name" data-account-name>Dream Wheels</div>
@@ -60,7 +60,7 @@
 
     <main id="app">
         <header class="topbar">
-            <button type="button" class="brand-wordmark brand-button mobile-brand" data-nav="dashboard" aria-label="Dream Wheels AI — главная">
+            <button type="button" class="brand-wordmark brand-button mobile-brand" data-nav="dashboard" aria-label="Dream Wheels AI — главная" data-copy-aria="aria.brandHome">
                 <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
             </button>
             <div class="topbar-actions">
@@ -324,7 +324,7 @@
                         </div>
                     </article>
 
-                    <nav class="fitment-flow-nav" data-fitment-navigator aria-label="Разделы проверки">
+                    <nav class="fitment-flow-nav" data-fitment-navigator aria-label="Разделы проверки" data-copy-aria="aria.checkSections">
                         <button type="button" class="fitment-flow-tab active" data-fitment-section-tab="vehicle" aria-selected="true">
                             <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Автомобиль</strong></span><span class="fitment-flow-state" data-fitment-flow-state="vehicle">Требует проверки</span></span>
                         </button>
@@ -482,7 +482,7 @@
                             <div class="fitment-parser-conflicts" data-fitment-parser-conflicts hidden aria-live="polite"></div>
                             <label class="fitment-field fitment-setup-mode">
                                 <span>Комплект дисков</span>
-                                <select data-fitment-setup-mode aria-label="Комплект дисков">
+                                <select data-fitment-setup-mode aria-label="Комплект дисков" data-copy-aria="aria.wheelSetup">
                                     <option value="uniform">Одинаковые параметры спереди и сзади</option>
                                     <option value="staggered">Разные параметры по осям</option>
                                 </select>
@@ -506,7 +506,7 @@
                                 </label>
                                 <label class="fitment-field">
                                     <span>Разболтовка (PCD)</span>
-                                    <select data-fitment-pcd-select aria-label="Разболтовка (PCD)">
+                                    <select data-fitment-pcd-select aria-label="Разболтовка (PCD)" data-copy-aria="aria.pcd">
                                         <option value="">Выберите PCD</option>
                                         <option value="4x98">4×98</option>
                                         <option value="4x100">4×100</option>
@@ -527,7 +527,7 @@
                                         <option value="6x130">6×130</option>
                                         <option value="custom">Другое значение</option>
                                     </select>
-                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.pcd_mm" data-fitment-pcd-custom hidden placeholder="Диаметр PCD, мм">
+                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.pcd_mm" data-fitment-pcd-custom hidden placeholder="Диаметр PCD, мм" data-copy-placeholder="placeholder.pcdDiameter">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.diameter">Диаметр</span>
@@ -535,7 +535,7 @@
                                         <option value="">Выберите диаметр</option>
                                         <option value="custom">Другое значение</option>
                                     </select>
-                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_diameter_in" hidden placeholder="Диаметр, дюймы">
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_diameter_in" hidden placeholder="Диаметр, дюймы" data-copy-placeholder="placeholder.diameter">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.widthShort">Ширина</span>
@@ -543,16 +543,16 @@
                                         <option value="">Выберите ширину</option>
                                         <option value="custom">Другое значение</option>
                                     </select>
-                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_width_j" hidden placeholder="Ширина, J">
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_width_j" hidden placeholder="Ширина, J" data-copy-placeholder="placeholder.width">
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
-                                    <input type="search" inputmode="decimal" list="fitment-dia-options" data-fitment-input="rim.center_bore_mm" autocomplete="off" placeholder="Введите DIA">
+                                    <input type="search" inputmode="decimal" list="fitment-dia-options" data-fitment-input="rim.center_bore_mm" autocomplete="off" placeholder="Введите DIA" data-copy-placeholder="placeholder.dia">
                                     <datalist id="fitment-dia-options"></datalist>
                                 </label>
                                 <label class="fitment-field">
                                     <span data-i18n="fitment.offset">Вылет (ET), мм</span>
-                                    <input type="text" inputmode="decimal" data-fitment-input="rim.offset_et_mm" placeholder="Например, 40">
+                                    <input type="text" inputmode="decimal" data-fitment-input="rim.offset_et_mm" placeholder="Например, 40" data-copy-placeholder="placeholder.et">
                                 </label>
                             </div>
                             <section class="fitment-rear-rim" data-fitment-rear-rim hidden aria-labelledby="fitment-rear-rim-title">
@@ -562,11 +562,11 @@
                                 </div>
                                 <div class="fitment-form-grid">
                                     <label class="fitment-field"><span>Крепёжных отверстий</span><input type="number" inputmode="numeric" step="1" min="3" max="8" data-fitment-input="rear_rim.bolt_count"></label>
-                                    <label class="fitment-field"><span>PCD, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.pcd_mm" placeholder="Например, 114,3"></label>
+                                    <label class="fitment-field"><span>PCD, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.pcd_mm" placeholder="Например, 114,3" data-copy-placeholder="placeholder.rearPcd"></label>
                                     <label class="fitment-field"><span>Диаметр, дюймы</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_diameter_in"></label>
                                     <label class="fitment-field"><span>Ширина, J</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_width_j"></label>
                                     <label class="fitment-field"><span>DIA, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.center_bore_mm"></label>
-                                    <label class="fitment-field"><span>Вылет (ET), мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.offset_et_mm" placeholder="Допустимы десятичные значения"></label>
+                                    <label class="fitment-field"><span>Вылет (ET), мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.offset_et_mm" placeholder="Допустимы десятичные значения" data-copy-placeholder="placeholder.decimal"></label>
                                 </div>
                             </section>
                         </section>
@@ -725,7 +725,7 @@
         </section>
     </main>
 
-    <nav class="mobile-bottom-nav" aria-label="Основная навигация">
+    <nav class="mobile-bottom-nav" aria-label="Основная навигация" data-copy-aria="aria.mainNavigation">
         <button type="button" class="bottom-nav-item active" data-nav="dashboard">Главная</button>
         <button type="button" class="bottom-nav-item" data-nav="create">Создать</button>
         <button type="button" class="bottom-nav-item" data-nav="renders">История</button>
@@ -734,8 +734,8 @@
     </nav>
 
     <div class="more-sheet-backdrop" data-more-backdrop hidden></div>
-    <section class="more-sheet" data-more-sheet hidden aria-label="Ещё">
-        <button type="button" class="sheet-handle" data-more-close aria-label="Закрыть"></button>
+    <section class="more-sheet" data-more-sheet hidden aria-label="Ещё" data-copy-aria="nav.more">
+        <button type="button" class="sheet-handle" data-more-close aria-label="Закрыть" data-copy-aria="auth.close"></button>
         <button type="button" class="sheet-item" data-nav="settings">Аккаунт</button>
         <button type="button" class="sheet-item" data-nav="support">Поддержка</button>
         <button type="button" class="sheet-item" data-nav="photo-guide">Как подготовить фото</button>
@@ -744,7 +744,7 @@
 
     <div class="auth-dialog-backdrop" data-account-link-dialog hidden>
         <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-link-dialog-title">
-            <button type="button" class="auth-dialog-close" data-account-link-close aria-label="Закрыть">×</button>
+            <button type="button" class="auth-dialog-close" data-account-link-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
             <div class="auth-dialog-header">
                 <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
                 <h2 id="account-link-dialog-title" data-account-link-title>Подключить Email</h2>
@@ -768,7 +768,7 @@
 
     <div class="auth-dialog-backdrop" data-account-merge-dialog hidden>
         <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-merge-dialog-title">
-            <button type="button" class="auth-dialog-close" data-account-merge-close aria-label="Закрыть">×</button>
+            <button type="button" class="auth-dialog-close" data-account-merge-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
             <div class="auth-dialog-header">
                 <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
                 <h2 id="account-merge-dialog-title">Объединить аккаунты?</h2>
@@ -788,7 +788,7 @@
 
     <div class="auth-dialog-backdrop" data-auth-dialog hidden>
         <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description">
-            <button type="button" class="auth-dialog-close" data-auth-close aria-label="Закрыть">×</button>
+            <button type="button" class="auth-dialog-close" data-auth-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
             <div class="auth-dialog-header">
                 <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
                     <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
@@ -847,7 +847,7 @@
 
     <div class="auth-dialog-backdrop" data-logout-dialog hidden>
         <section class="auth-dialog auth-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
-            <button type="button" class="auth-dialog-close" data-logout-close aria-label="Закрыть">×</button>
+            <button type="button" class="auth-dialog-close" data-logout-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
             <div class="auth-dialog-header">
                 <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
                     <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>

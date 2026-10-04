@@ -1,16 +1,16 @@
-import { copy } from "../copy.mjs";
+import { copy as uiText, applicationLocale, localeOf } from "../copy.mjs";
 import { createButton, createTextAction } from "../ui/primitives.js";
 
-function imageStage(kind, file, callbacks, disabled, snapshot) {
+function imageStage(kind, file, callbacks, disabled, snapshot, locale = localeOf(snapshot)) {
   const article = document.createElement("article");
   article.className = `vnext-create__object vnext-create__object--${kind}`;
   const heading = document.createElement("div");
   heading.className = "vnext-create__object-heading";
   const label = document.createElement("p");
   label.className = "vnext-eyebrow";
-  label.textContent = kind === "car" ? "Автомобиль" : copy("wheel.label", snapshot.locale);
+  label.textContent = kind === "car" ? uiText("create.vehicle", locale) : uiText("wheel.label", snapshot.locale);
   const action = createTextAction({
-    label: file ? (kind === "car" ? "Заменить фото" : "Заменить фото") : "Добавить фото",
+    label: file ? uiText("create.replacePhoto", locale) : uiText("create.addPhoto", locale),
     onClick: () => callbacks.pickFile?.(kind),
   });
   action.disabled = Boolean(disabled);
@@ -19,18 +19,18 @@ function imageStage(kind, file, callbacks, disabled, snapshot) {
   const stage = document.createElement("button");
   stage.type = "button";
   stage.className = `vnext-create__stage${file ? " is-ready" : " is-empty"}`;
-  stage.setAttribute("aria-label", file ? `Заменить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}` : `Добавить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}`);
+  stage.setAttribute("aria-label", file ? uiText("create.photo.replaceAria", locale, { value0: kind === "car" ? uiText("create.vehicle2", locale) : uiText("wheel.object", snapshot.locale) }) : uiText("create.photo.addAria", locale, { value0: kind === "car" ? uiText("create.vehicle2", locale) : uiText("wheel.object", snapshot.locale) }));
   stage.disabled = Boolean(disabled);
   stage.addEventListener("click", () => callbacks.pickFile?.(kind));
   if (file?.previewUrl) {
     const image = document.createElement("img");
     image.src = file.previewUrl;
-    image.alt = kind === "car" ? "Загруженный автомобиль" : copy("wheel.uploaded", snapshot.locale);
+    image.alt = kind === "car" ? uiText("create.uploadedVehicle", locale) : uiText("wheel.uploaded", snapshot.locale);
     stage.append(image);
   } else {
     const empty = document.createElement("span");
     empty.className = "vnext-create__empty-copy";
-    empty.textContent = kind === "car" ? "Добавьте фото автомобиля" : "Добавьте фото диска";
+    empty.textContent = kind === "car" ? uiText("create.addACarPhoto", locale) : uiText("create.addAWheelPhoto", locale);
     stage.append(empty);
   }
 
@@ -38,8 +38,8 @@ function imageStage(kind, file, callbacks, disabled, snapshot) {
   foot.className = "vnext-create__object-foot";
   const status = document.createElement("span");
   status.textContent = file
-    ? (kind === "car" ? "Фото автомобиля добавлено" : copy("wheel.photoAdded", snapshot.locale))
-    : (kind === "car" ? "Фото автомобиля" : copy("wheel.photo", snapshot.locale));
+    ? (kind === "car" ? uiText("create.carPhotoAdded", locale) : uiText("wheel.photoAdded", snapshot.locale))
+    : (kind === "car" ? uiText("create.vehiclePhoto", locale) : uiText("wheel.photo", snapshot.locale));
   foot.append(status);
   article.append(heading, stage, foot);
   if (kind === "wheel") article.append(wheelSummary(snapshot, callbacks));
@@ -71,11 +71,11 @@ function wheelSummary(snapshot, callbacks) {
   const section = document.createElement("div");
   section.className = "vnext-create__wheel-details";
   section.append(createButton({
-    label: snapshot.sourceEditing ? "Закрыть ссылку" : snapshot.rimProductUrl ? "Изменить ссылку на товар" : "Добавить ссылку на товар",
+    label: snapshot.sourceEditing ? uiText("create.closeLink", localeOf(snapshot)) : snapshot.rimProductUrl ? uiText("create.changeProductLink", localeOf(snapshot)) : uiText("create.addProductLink", localeOf(snapshot)),
     variant: "secondary", disabled: snapshot.submitting,
     onClick: () => callbacks.setSourceEditing?.(!snapshot.sourceEditing),
   }));
-  if (snapshot.rimProductUrl && !snapshot.sourceEditing) section.append(statusLine("Ссылка сохранена", "positive"));
+  if (snapshot.rimProductUrl && !snapshot.sourceEditing) section.append(statusLine(uiText("create.linkSaved", localeOf(snapshot)), "positive"));
   if (snapshot.sourceEditing) section.append(sourceEditor(snapshot, callbacks));
   return section;
 }
@@ -87,7 +87,7 @@ function sourceEditor(snapshot, callbacks) {
   const field = document.createElement("label");
   field.className = "vnext-field";
   const caption = document.createElement("span");
-  caption.textContent = "Ссылка на товар";
+  caption.textContent = uiText("create.productLink", localeOf(snapshot));
   const input = document.createElement("input");
   input.type = "url";
   input.name = "rim_product_url";
@@ -97,7 +97,7 @@ function sourceEditor(snapshot, callbacks) {
   input.value = snapshot.rimProductUrl || "";
   input.setAttribute("aria-invalid", String(Boolean(snapshot.productUrlError)));
   field.append(caption, input);
-  const save = createButton({ label: "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
+  const save = createButton({ label: uiText("create.saveLink", localeOf(snapshot)), variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     callbacks.saveRimProductUrl?.(input.value);
@@ -114,9 +114,9 @@ function sourceEditor(snapshot, callbacks) {
   }
   const helper = document.createElement("p");
   helper.className = "vnext-create__source-helper";
-  helper.textContent = "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.";
+  helper.textContent = uiText("create.productLinkIsOptionalWeWillSaveItFor", localeOf(snapshot));
   form.append(helper);
-  const cancel = createTextAction({ label: "Отмена", onClick: () => callbacks.setSourceEditing?.(false) });
+  const cancel = createTextAction({ label: uiText("create.cancel", localeOf(snapshot)), onClick: () => callbacks.setSourceEditing?.(false) });
   cancel.disabled = Boolean(snapshot.submitting);
   form.append(save, cancel);
   return form;
@@ -128,7 +128,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 
   const pair = document.createElement("div");
   pair.className = "vnext-create__pair";
-  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting, snapshot), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting, snapshot));
+  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting, snapshot, localeOf(snapshot)), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting, snapshot, localeOf(snapshot)));
   page.append(pair);
 
   if (snapshot.bothReady) {
@@ -140,38 +140,38 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
     checkbox.disabled = Boolean(snapshot.submitting);
     checkbox.addEventListener("change", () => callbacks.setConsent?.(checkbox.checked));
     const text = document.createElement("span");
-    text.append(document.createTextNode("Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. "));
+    text.append(document.createTextNode(uiText("create.iConfirmMyRightToUseThesePhotosAnd", localeOf(snapshot))));
     const privacy = document.createElement("a");
     privacy.href = "https://legal.dreamwheels.pro/legal/privacy";
     privacy.target = "_blank";
     privacy.rel = "noopener noreferrer";
-    privacy.textContent = "Политика конфиденциальности";
+    privacy.textContent = uiText("create.privacyPolicy", localeOf(snapshot));
     const separator = document.createTextNode(" · ");
     const consentDocument = document.createElement("a");
     consentDocument.href = "https://legal.dreamwheels.pro/legal/consent";
     consentDocument.target = "_blank";
     consentDocument.rel = "noopener noreferrer";
-    consentDocument.textContent = "Согласие на обработку данных";
+    consentDocument.textContent = uiText("create.dataProcessingConsent", localeOf(snapshot));
     text.append(privacy, separator, consentDocument);
     consent.append(checkbox, text);
     page.append(consent);
   }
 
-  if (snapshot.submitting) page.append(statusLine(snapshot.renderStatus || "Создаём виртуальную примерку", "pending", "Это может занять до 90 секунд."));
+  if (snapshot.submitting) page.append(statusLine(snapshot.renderStatus || uiText("page.renderProcessing", localeOf(snapshot)), "pending", uiText("create.thisMayTakeUpToSeconds", localeOf(snapshot))));
   if (snapshot.renderError) {
     const error = document.createElement("div");
     error.className = "vnext-create__error";
     error.append(statusLine(snapshot.renderError, "negative"));
-    error.append(createButton({ label: snapshot.renderErrorActionLabel || "Повторить", variant: "secondary", onClick: callbacks.handleGenerationError }));
+    error.append(createButton({ label: snapshot.renderErrorActionLabel || uiText("create.retry", localeOf(snapshot)), variant: "secondary", onClick: callbacks.handleGenerationError }));
     page.append(error);
   }
 
   const actions = document.createElement("div");
   actions.className = "vnext-create__actions";
-  const reason = !snapshot.files?.car ? "Добавьте фото автомобиля"
-    : !snapshot.files?.wheel ? "Добавьте фото диска"
-    : !snapshot.consentAccepted ? "Подтвердите согласие на обработку фотографий" : "";
-  actions.append(createButton({ label: "Создать изображение", onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
+  const reason = !snapshot.files?.car ? uiText("create.addACarPhoto", localeOf(snapshot))
+    : !snapshot.files?.wheel ? uiText("create.addAWheelPhoto", localeOf(snapshot))
+    : !snapshot.consentAccepted ? uiText("create.confirmConsentToProcessThePhotos", localeOf(snapshot)) : "";
+  actions.append(createButton({ label: uiText("create.createImage", localeOf(snapshot)), onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
   if (reason) {
     const hint = document.createElement("p");
     hint.className = "vnext-create__source-helper";
@@ -180,31 +180,11 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
     actions.append(hint);
   }
   page.append(actions);
-  if (snapshot.locale === "en") {
-    const translations = {
-      "Автомобиль": "Car", "Добавить фото": "Add photo",
-      "Заменить фото": "Replace photo", "Фото автомобиля": "Car photo",
-      "Фото автомобиля добавлено": "Car photo added",
-      "Добавьте фото автомобиля": "Add a car photo", "Добавьте фото диска": "Add a wheel photo",
-      "Создать изображение": "Create image", "Подтвердите согласие на обработку фотографий": "Confirm consent to process the photos",
-      "Добавить ссылку на товар": "Add product link", "Изменить ссылку на товар": "Edit product link",
-      "Закрыть ссылку": "Close link", "Ссылка на товар": "Product link", "Сохранить ссылку": "Save link",
-      "Ссылка сохранена": "Link saved", "Отмена": "Cancel",
-      "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.": "Product link is optional. We will save it for a later compatibility check.",
-      "Политика конфиденциальности": "Privacy policy", "Согласие на обработку данных": "Data processing consent",
-      "Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. ": "I confirm my right to use these photos and consent to processing them for a visual try-on. ",
-      "Создаём виртуальную примерку": "Creating a visual try-on", "Это может занять до 90 секунд.": "This may take up to 90 seconds.",
-    };
-    const visit = (node) => {
-      if ((node.nodeType === 3 || !node.childNodes.length) && translations[node.textContent]) node.textContent = translations[node.textContent];
-      for (const child of node.childNodes) visit(child);
-    };
-    visit(page);
-  }
+
   return page;
 }
 
-export function refreshCreateView(current, snapshot, callbacks) {
+export function refreshCreateView(current, snapshot, callbacks, locale = applicationLocale()) {
   const values = new Map([...current.querySelectorAll("input[name]")].map((input) => [input.name, input.value]));
   const focused = document.activeElement;
   const focusName = current.contains(focused) ? focused.name : "";

@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -432,4 +433,10 @@ def test_failed_payment_has_terminal_wallet_mapping():
     app_js = Path("webapp/app.js").read_text(encoding="utf-8")
 
     assert 'if (status === "failed" || status === "cancelled" || status === "expired")' in app_js
-    assert 'paymentFail: "Платеж не завершен"' in app_js
+    copy_catalog = json.loads(
+        Path("webapp/vnext/copy.mjs")
+        .read_text(encoding="utf-8")
+        .split("export const COPY = ", 1)[1]
+        .split(";\n\n", 1)[0]
+    )
+    assert copy_catalog["legacy.wallet.paymentFail"]["ru"] == "Платеж не завершен"

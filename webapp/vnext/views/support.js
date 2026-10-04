@@ -1,3 +1,4 @@
+import { copy as uiText } from "../copy.mjs";
 import { createIsland, createTextAction } from "../ui/primitives.js";
 
 function supportMailto(model, message = "") {

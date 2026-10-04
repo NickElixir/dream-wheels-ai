@@ -1,33 +1,34 @@
-import { copy } from "../copy.mjs";
-export function photoGuideViewModel() {
+import { copy as uiText, applicationLocale } from "../copy.mjs";
+export function photoGuideViewModel(locale = applicationLocale()) {
   return Object.freeze({
-    title: "Как подготовить фото",
-    eyebrow: "Визуальная примерка",
-    heroTitle: "Фото должно хорошо показывать автомобиль и колёса",
-    copy: "Чем понятнее исходный кадр, тем проще сохранить форму автомобиля, перспективу и естественное положение нового диска.",
+    locale,
+    title: uiText("nav.photoGuide", locale),
+    eyebrow: uiText("photoguide.visualTryOn", locale),
+    heroTitle: uiText("photoguide.thePhotoShouldClearlyShowTheVehicleAndWheels", locale),
+    copy: uiText("photoguide.aClearOriginalPhotoMakesItEasierToPreserve", locale),
     examples: [
       {
         tone: "good",
-        toneLabel: "Подходит для примерки",
-        title: "Автомобиль виден целиком",
-        copy: "Колёса хорошо различимы, перспектива понятна, кузов не перекрыт другими объектами.",
+        toneLabel: uiText("photoguide.suitableForATryOn", locale),
+        title: uiText("photoguide.theWholeCarIsVisible", locale),
+        copy: uiText("photoguide.theWheelsAreClearlyVisibleThePerspectiveIsClear", locale),
         src: "/assets/photo-guide-good-vnext.jpg",
-        alt: "Серебристый автомобиль полностью в кадре, оба колеса видны, номера размыты",
+        alt: uiText("photoguide.aSilverVehicleFullyInFrameWithBothWheels", locale),
       },
       {
         tone: "bad",
-        toneLabel: "Лучше выбрать другой кадр",
-        title: "Часть машины не попала в кадр",
-        copy: "Когда кузов или колесо обрезаны, результат примерки может быть менее точным.",
+        toneLabel: uiText("photoguide.chooseADifferentPhoto", locale),
+        title: uiText("photoguide.partOfTheVehicleIsOutOfFrame", locale),
+        copy: uiText("photoguide.ifTheBodyOrAWheelIsCroppedThe", locale),
         src: "/assets/photo-guide-bad-vnext.jpg",
-        alt: "Серый автомобиль снят слишком близко, края кузова обрезаны, номер размыт",
+        alt: uiText("photoguide.aGreyVehiclePhotographedTooCloseWithBodyEdges", locale),
       },
     ],
     rules: [
-      ["01", "Покажите автомобиль целиком", "Не обрезайте переднюю и заднюю часть кузова. Оставьте немного пространства вокруг машины."],
-      ["02", "Колёса должны быть видны", "Избегайте кадров, где колёса закрыты бордюром, травой, людьми или другими автомобилями."],
-      ["03", copy("photo.sharp.title"), copy("photo.sharp.copy")],
-      ["04", "Не меняйте фото перед загрузкой", "Сильные фильтры, искусственное размытие и деформация перспективы мешают сохранить реалистичный результат."],
+      ["01", uiText("photoguide.showTheWholeVehicle", locale), uiText("photoguide.doNotCropTheFrontOrRearOfThe", locale)],
+      ["02", uiText("photoguide.theWheelsMustBeVisible", locale), uiText("photoguide.avoidPhotosWhereTheWheelsAreHiddenByA", locale)],
+      ["03", uiText("photo.sharp.title", locale), uiText("photo.sharp.copy", locale)],
+      ["04", uiText("photoguide.doNotEditThePhotoBeforeUploading", locale), uiText("photoguide.heavyFiltersArtificialBlurAndDistortedPerspectiveMakeIt", locale)],
     ],
   });
 }

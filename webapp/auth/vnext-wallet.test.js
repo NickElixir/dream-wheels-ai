@@ -1,3 +1,4 @@
+import { legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import { copy as uiCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
@@ -20,7 +21,7 @@ function runtime({ telegram = false, pathname = "/app/wallet", search = "", appl
   const redirects = [];
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
   const location = new URL(`${pathname}${search}`, "https://example.test");
-  const context = {
+  const context = { legacyTranslations, errorCopy,
     URL, URLSearchParams, Blob, FormData, console,
     applicationRouteContext, applicationTopLevelReturnPath, isApplicationRoute, safeApplicationReturnPath,
     applicationRoute,
@@ -29,7 +30,7 @@ function runtime({ telegram = false, pathname = "/app/wallet", search = "", appl
       addEventListener() {}, querySelector: () => null, querySelectorAll: () => [],
       createElement: () => ({ click() {}, remove() {}, set textContent(value) { this.innerHTML = String(value); } }),
     },
-    window: {
+    window: { addEventListener() {},
       Telegram: telegram ? { WebApp: { expand() {}, platform: "ios" } } : {}, location,
       dispatchEvent() {}, scrollTo() {}, setTimeout, clearTimeout,
       history: { replaceState(_state, _title, path) { location.href = new URL(path, location.origin).href; } },

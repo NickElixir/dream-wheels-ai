@@ -1,19 +1,19 @@
-import { copy as uiCopy } from "../copy.mjs";
+import { copy as uiText, applicationLocale, localeOf } from "../copy.mjs";
 import { createButton, createIsland, createStatusText } from "../ui/primitives.js";
 
-function createMedia(job, className = "") {
+function createMedia(job, className = "", locale = applicationLocale()) {
   const media = document.createElement("div");
   media.className = `vnext-dashboard__media ${className}`.trim();
   if (job?.imageUrl) {
     const image = document.createElement("img");
     image.src = job.imageUrl;
-    image.alt = job.status === "failed" ? job.failureCopy?.sourcePhoto : job.title || "Результат примерки";
+    image.alt = job.status === "failed" ? job.failureCopy?.sourcePhoto : job.title || uiText("dashboard.aiRender", locale);
     image.loading = "lazy";
     media.append(image);
   } else {
     const placeholder = document.createElement("div");
     placeholder.className = "vnext-dashboard__media-placeholder";
-    placeholder.textContent = job?.status === "failed" ? (job.failureCopy?.sourcePhoto || "") : "Виртуальная примерка";
+    placeholder.textContent = job?.status === "failed" ? (job.failureCopy?.sourcePhoto || "") : uiText("page.tryOn", locale);
     media.append(placeholder);
   }
   return media;
@@ -25,23 +25,23 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = "Последний результат";
+  eyebrow.textContent = uiText("dashboard.latestResult", localeOf(model));
   wrap.append(eyebrow);
 
   if (!model.latest) {
     const empty = document.createElement("div");
     empty.className = "vnext-dashboard__empty";
     const title = document.createElement("h3");
-    title.textContent = "Ваша первая примерка";
+    title.textContent = uiText("dashboard.yourFirstTryOn", localeOf(model));
     const copy = document.createElement("p");
-    copy.textContent = "Загрузите фото автомобиля и диска — готовый результат появится здесь.";
-    empty.append(title, copy, createButton({ label: "Создать примерку", variant: "secondary", onClick: () => navigate?.("create") }));
+    copy.textContent = uiText("dashboard.uploadPhotosOfTheVehicleAndWheelTheFinished", localeOf(model));
+    empty.append(title, copy, createButton({ label: uiText("nav.create", localeOf(model)), variant: "secondary", onClick: () => navigate?.("create") }));
     wrap.append(empty);
     return createIsland(wrap);
   }
 
   const latest = model.latest;
-  wrap.append(createMedia(latest, "vnext-dashboard__latest-media"));
+  wrap.append(createMedia(latest, "vnext-dashboard__latest-media", localeOf(model)));
 
   const meta = document.createElement("div");
   meta.className = "vnext-dashboard__latest-meta";
@@ -64,8 +64,8 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
   meta.append(copy);
 
   const action = latest.canOpen
-    ? createButton({ label: "Открыть", variant: "secondary", onClick: () => openRenderDetail?.(latest.jobId) })
-    : createButton({ label: latest.status === "failed" ? "Попробовать ещё раз" : uiCopy("nav.history"), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
+    ? createButton({ label: uiText("dashboard.open", localeOf(model)), variant: "secondary", onClick: () => openRenderDetail?.(latest.jobId) })
+    : createButton({ label: latest.status === "failed" ? uiText("dashboard.tryAgain", localeOf(model)) : uiText("nav.history", localeOf(model)), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
   meta.append(action);
   wrap.append(meta);
   return createIsland(wrap);
@@ -77,14 +77,14 @@ function createBalance(model, { navigate, openAuth } = {}) {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = "Баланс";
+  eyebrow.textContent = uiText("nav.wallet", localeOf(model));
   content.append(eyebrow);
 
   if (!model.authenticated && !model.partialAuth) {
     const copy = document.createElement("p");
     copy.className = "vnext-dashboard__balance-auth";
-    copy.textContent = "Войдите, чтобы увидеть баланс";
-    content.append(copy, createButton({ label: "Войти", variant: "secondary", onClick: openAuth }));
+    copy.textContent = uiText("dashboard.signInToSeeYourBalance", localeOf(model));
+    content.append(copy, createButton({ label: uiText("auth.login", localeOf(model)), variant: "secondary", onClick: openAuth }));
     return createIsland(content);
   }
 
@@ -97,7 +97,7 @@ function createBalance(model, { navigate, openAuth } = {}) {
   unit.className = "vnext-dashboard__object-sub";
   unit.textContent = model.balanceLabel.replace(/^\d+\s+/, "");
   amount.append(strong, unit);
-  line.append(amount, createButton({ label: "Пополнить баланс", variant: "text", onClick: () => navigate?.("wallet") }));
+  line.append(amount, createButton({ label: uiText("dashboard.topUpBalance", localeOf(model)), variant: "text", onClick: () => navigate?.("wallet") }));
   content.append(line);
 
   if (model.expiry.length) {
@@ -105,7 +105,7 @@ function createBalance(model, { navigate, openAuth } = {}) {
     expiry.className = "vnext-dashboard__expiry";
     const label = document.createElement("p");
     label.className = "vnext-eyebrow";
-    label.textContent = "Срок действия";
+    label.textContent = uiText("dashboard.expiryDates", localeOf(model));
     expiry.append(label);
     model.expiry.forEach((item) => {
       const row = document.createElement("div");
@@ -132,13 +132,13 @@ function createRecent(model, { navigate, openRenderDetail } = {}) {
   section.className = "vnext-dashboard__recent";
   const eyebrow = document.createElement("p");
   eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = "Недавние примерки";
+  eyebrow.textContent = uiText("dashboard.recentTryOns", localeOf(model));
   section.append(eyebrow);
 
   if (!model.recent.length) {
     const empty = document.createElement("p");
     empty.className = "vnext-dashboard__object-sub";
-    empty.textContent = "Здесь появятся последние виртуальные примерки.";
+    empty.textContent = uiText("dashboard.yourLatestVirtualTryOnsWillAppearHere", localeOf(model));
     section.append(empty);
     return section;
   }
@@ -148,7 +148,7 @@ function createRecent(model, { navigate, openRenderDetail } = {}) {
   model.recent.forEach((job) => {
     const item = document.createElement("article");
     item.className = "vnext-dashboard__recent-item";
-    item.append(createMedia(job));
+    item.append(createMedia(job, undefined, localeOf(model)));
     const title = document.createElement("strong");
     title.textContent = job.title;
     const meta = document.createElement("span");
@@ -158,7 +158,7 @@ function createRecent(model, { navigate, openRenderDetail } = {}) {
       const open = document.createElement("button");
       open.type = "button";
       open.className = "vnext-dashboard__recent-open";
-      open.textContent = "Открыть";
+      open.textContent = uiText("dashboard.open", localeOf(model));
       open.addEventListener("click", () => openRenderDetail?.(job.jobId));
       item.append(open);
     } else if (job.status !== "completed") {
@@ -185,16 +185,16 @@ export function createDashboardView(model, callbacks = {}) {
   const introCopy = document.createElement("div");
   const eyebrow = document.createElement("p");
   eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = "Новая примерка";
+  eyebrow.textContent = uiText("dashboard.newTryOn", localeOf(model));
   const title = document.createElement("h2");
-  title.setAttribute("aria-label", "Примерьте новые диски на своём автомобиле");
-  ["Примерьте", "новые диски", "на своём автомобиле"].forEach((line) => {
+  title.setAttribute("aria-label", uiText("dashboard.tryNewWheelsOnYourVehicle", localeOf(model)));
+  [uiText("dashboard.try", localeOf(model)), uiText("dashboard.newWheels", localeOf(model)), uiText("dashboard.onYourVehicle", localeOf(model))].forEach((line) => {
     const lineElement = document.createElement("span");
     lineElement.textContent = line;
     title.append(lineElement);
   });
   introCopy.append(eyebrow, title);
-  intro.append(introCopy, createButton({ label: "Создать примерку", onClick: () => callbacks.navigate?.("create") }));
+  intro.append(introCopy, createButton({ label: uiText("nav.create", localeOf(model)), onClick: () => callbacks.navigate?.("create") }));
   page.append(intro);
 
   if (model.loading) {
@@ -204,7 +204,7 @@ export function createDashboardView(model, callbacks = {}) {
     spinner.className = "vnext-spinner";
     spinner.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
-    text.textContent = "Обновляем данные…";
+    text.textContent = uiText("dashboard.updatingDetails", localeOf(model));
     loading.append(spinner, text);
     page.append(loading);
   }

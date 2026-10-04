@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>E-01 i18n QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css"><link rel="stylesheet" href="../../webapp/vnext/styles/wallet.css">
+<link rel="stylesheet" href="../../webapp/style.css"><link rel="stylesheet" href="../../webapp/vnext/styles/auth.css"><style>html,body{margin:0;background:var(--vnext-canvas)}</style></head><body><div id="fixture" data-vnext-root></div><script type="module">
+const url=new URL('../../webapp/app.js',location.href);
+const source=(await(await fetch(url)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const harness=`
+import {createFitmentView} from "${new URL('../../webapp/vnext/views/fitment.js',location.href)}";
+import {createCreateView} from "${new URL('../../webapp/vnext/views/create.js',location.href)}";
+import {createRenderView} from "${new URL('../../webapp/vnext/views/render.js',location.href)}";
+import {createAppShell} from "${new URL('../../webapp/vnext/shell/app-shell.js',location.href)}";
+import {createDashboardView} from "${new URL('../../webapp/vnext/views/dashboard.js',location.href)}";
+import {createWalletView} from "${new URL('../../webapp/vnext/views/wallet.js',location.href)}";
+import {supportViewModel} from "${new URL('../../webapp/vnext/models/support.js',location.href)}";
+import {photoGuideViewModel} from "${new URL('../../webapp/vnext/models/photo-guide.js',location.href)}";
+import {documentsViewModel} from "${new URL('../../webapp/vnext/models/documents.js',location.href)}";
+import {createSupportView} from "${new URL('../../webapp/vnext/views/support.js',location.href)}";
+import {createPhotoGuideView} from "${new URL('../../webapp/vnext/views/photo-guide.js',location.href)}";
+import {createDocumentsView} from "${new URL('../../webapp/vnext/views/documents.js',location.href)}";
+const data=await(await fetch("${new URL('../../docs/evidence/p05e-fitment-field-evidence/representative-api.json',location.href)}")).json();
+const scenario=new URLSearchParams(location.search).get('scenario')||'unknown';
+document.documentElement.lang=locale;
+let content,title,activeView='fitment';
+const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
+const result={jobId:'qa-result',status:'completed',title:'ZEEKR 007',rimName:'BBS CI-R',specs:'19 × 8.5J',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:true,createdLabel:'04.10.2026',statusLabel:locale==='en'?'Ready':'Готово',dateLabel:'04.10.2026',reasons:[]};
+if(scenario.startsWith('auth-')) {
+ const html=await(await fetch("${new URL('../../webapp/index.html',location.href)}")).text();
+ content=new DOMParser().parseFromString(html,'text/html').querySelector('[data-auth-dialog]');
+ document.querySelector('#fixture').append(content);
+ state.authDialogOpen=true;state.authDialogStep=scenario.slice(5);state.authDialogEmail='qa@example.com';
+ state.authDialogCooldownUntil=Date.now()+30000;renderAuthDialog();
+ title=uiCopy('auth.login',locale);activeView='dashboard';
+} else if(['support','photo-guide','docs'].includes(scenario)) {
+ const models={'support':supportViewModel,'photo-guide':photoGuideViewModel,'docs':documentsViewModel};
+ const views={'support':createSupportView,'photo-guide':createPhotoGuideView,'docs':createDocumentsView};
+ const model=models[scenario](locale);content=views[scenario](model,{});title=model.title;activeView=scenario;
+} else if(scenario==='dashboard'||scenario==='logged-out') {
+ content=createDashboardView({locale,authenticated:scenario!=='logged-out',balance:12,balanceLabel:formatRenderCount(12),expiry:[],recent:[],latest:null},{});title=uiCopy('nav.dashboard',locale);activeView='dashboard';
+} else if(scenario==='wallet'||scenario==='pending-payment') {
+ const pkg={amount:500,amountLabel:'500 ₽',creditsLabel:formatRenderCount(5)};
+ content=createWalletView({locale,authenticated:true,cabinetLoaded:true,balance:12,balanceUnit:formatRenderCount(12).replace(/^[0-9]+ +/,''),topUpPackages:[pkg],selectedPackage:pkg,receiptEmail:'qa@example.com',validEmail:true,paymentHistory:[],latestPendingPayment:scenario==='pending-payment'?{...pkg,message:uiCopy('wallet.payment.awaiting',locale)}:null},{});title=uiCopy('nav.wallet',locale);activeView='wallet';
+} else if(['processing','refunded','missing-asset'].includes(scenario)) {
+ const model={...result,locale};
+ if(scenario==='processing')Object.assign(model,{status:'processing',carUrl:result.originalUrl,wheelUrl:asset('demo-rim-xtrike.jpg')});
+ if(scenario==='refunded')Object.assign(model,{status:'failed',failureCopy:renderFailureCopy(),billingMessage:renderBillingMessage({render_billing_status:'refunded'}),resultUrl:''});
+ if(scenario==='missing-asset')Object.assign(model,{resultUrl:'',resultFailed:true,canDownload:false});
+ content=createRenderView(scenario==='processing'?'processing':'result',model,{});title=uiCopy(scenario==='processing'?'page.renderProcessing':'page.renderResult',locale);activeView='renders';
+} else if(scenario==='create') {
+ content=createCreateView({locale,files:{car:{previewUrl:result.originalUrl},wheel:{previewUrl:asset('demo-rim-xtrike.jpg')}},consentAccepted:true},{});title=uiCopy('nav.create',locale);activeView='create';
+} else if(scenario==='result'||scenario==='history') {
+ content=createRenderView(scenario==='history'?'history':'result',scenario==='history'?{rows:[{...result,thumbnailUrl:result.resultUrl}]}:result,{});title=scenario==='history'?uiCopy('nav.history',locale):(locale==='en'?'Result':'Результат');activeView='renders';
+} else {
+ const key=scenario==='compatible'?'compatible':scenario==='conditions'?'dia-conditional':scenario==='incompatible'?'J':'A';
+ state.fitmentCheck=structuredClone(data[key]);state.fitmentCheck.is_current=scenario!=='stale';
+ if(scenario==='failed')state.fitmentCheck.execution_status='failed';
+ state.fitmentOverview={vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready',setup_mode:'square',next_action:'run_standard_check',vehicle:{make:'Example',model:'Stock car'}};
+ const model=vnextFitmentSnapshot();if(scenario==='editor'){model.rimEditing=true;model.rimIdentityEditing=true;model.wheelPicker={locale,field:'offset_et_mm',path:'rim.offset_et_mm',value:35,manual:true};}content=createFitmentView(model,{});title=locale==='en'?'Compatibility check':'Проверка совместимости';window.qaModel=model;
+}
+document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate(){},authenticated:scenario!=='logged-out',locale}));
+window.qaBootstrapSurface=async(view)=>{ document.querySelector('#fixture').dataset.view=view;await import("${new URL('../../webapp/vnext/bootstrap.js',location.href)}");window.dispatchEvent(new CustomEvent('dreamwheels:viewchange',{detail:{view}})); };
+window.qaScenario=scenario;window.qaRemount=(next)=>{ document.documentElement.lang=next;window.dispatchEvent(new CustomEvent('dreamwheels:localechange',{detail:{locale:next}})); };window.qaReady=true;
+`;
+const module=URL.createObjectURL(new Blob([source,harness],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+</script></body></html>

@@ -1,21 +1,22 @@
-import { copy } from "../copy.mjs";
+import { escapeCopy as esc } from "../copy.mjs";
+import { copy as uiText, applicationLocale } from "../copy.mjs";
 const desktopNav = [
-  ["Главная", "dashboard"], ["nav.create", "create"], ["nav.history", "renders"], ["Баланс", "wallet"],
+  ["nav.dashboard", "dashboard"], ["nav.create", "create"], ["nav.history", "renders"], ["nav.wallet", "wallet"],
 ];
-const helpNav = [["Поддержка", "support"], ["Как подготовить фото", "photo-guide"], ["Документы", "docs"]];
-const mobileNav = [["Главная", "dashboard"], ["nav.createMobile", "create"], ["nav.history", "renders"], ["Баланс", "wallet"], ["Помощь", "support"]];
+const helpNav = [["nav.support", "support"], ["nav.photoGuide", "photo-guide"], ["nav.documents", "docs"]];
+const mobileNav = [["nav.dashboard", "dashboard"], ["nav.createMobile", "create"], ["nav.history", "renders"], ["nav.wallet", "wallet"], ["nav.help", "support"]];
 
-function navButton([label, view], activeView, navigate) {
+function navButton([label, view], activeView, navigate, locale) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "vnext-shell__nav-button";
-  button.textContent = label.startsWith("nav.") ? copy(label) : label;
+  button.textContent = uiText(label, locale);
   if (view === activeView) button.setAttribute("aria-current", "page");
   button.addEventListener("click", () => navigate(view));
   return button;
 }
 
-export function createAppShell({ title = "Dream Wheels AI", activeView, navigate, content, authenticated = false, openAuth } = {}) {
+export function createAppShell({ title = "Dream Wheels AI", activeView, navigate, content, authenticated = false, openAuth, locale = applicationLocale() } = {}) {
   const shell = document.createElement("div");
   shell.className = "vnext-shell";
 
@@ -25,31 +26,31 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
 
   const nav = document.createElement("nav");
   nav.className = "vnext-shell__nav";
-  nav.setAttribute("aria-label", "Основная навигация");
-  desktopNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
+  nav.setAttribute("aria-label", uiText("aria.mainNavigation", locale));
+  desktopNav.forEach((item) => nav.append(navButton(item, activeView, navigate, locale)));
 
   const label = document.createElement("div");
   label.className = "vnext-shell__nav-label";
-  label.textContent = "Помощь";
+  label.textContent = uiText("nav.help", locale);
   nav.append(label);
-  helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate)));
+  helpNav.forEach((item) => nav.append(navButton(item, activeView, navigate, locale)));
   sidebar.append(nav);
 
   const account = document.createElement("section");
   account.className = "vnext-shell__account";
-  account.setAttribute("aria-label", "Аккаунт");
+  account.setAttribute("aria-label", uiText("account.label", locale));
   const accountLabel = document.createElement("span");
   accountLabel.className = "vnext-shell__account-label";
-  accountLabel.textContent = "Аккаунт";
+  accountLabel.textContent = uiText("account.label", locale);
   const profileButton = document.createElement("button");
   profileButton.type = "button";
   profileButton.className = "vnext-shell__account-action";
-  profileButton.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
+  profileButton.innerHTML = `<span>${esc(uiText("account.label", locale))}</span><small>${esc(uiText("account.settings", locale))}</small>`;
   profileButton.addEventListener("click", () => navigate?.("settings"));
   const desktopLoginButton = document.createElement("button");
   desktopLoginButton.type = "button";
   desktopLoginButton.className = "vnext-shell__login vnext-shell__login--sidebar";
-  desktopLoginButton.textContent = "Войти";
+  desktopLoginButton.textContent = uiText("auth.login", locale);
   desktopLoginButton.addEventListener("click", () => openAuth?.());
   account.append(accountLabel, profileButton, desktopLoginButton);
   sidebar.append(account);
@@ -67,7 +68,7 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   const mobileLoginButton = document.createElement("button");
   mobileLoginButton.type = "button";
   mobileLoginButton.className = "vnext-shell__login vnext-shell__login--topbar";
-  mobileLoginButton.textContent = "Войти";
+  mobileLoginButton.textContent = uiText("auth.login", locale);
   mobileLoginButton.addEventListener("click", () => openAuth?.());
   topbar.append(pageTitle, mobileLoginButton);
   frame.append(topbar, content);
@@ -77,12 +78,12 @@ export function createAppShell({ title = "Dream Wheels AI", activeView, navigate
   const bottom = document.createElement("nav");
   bottom.className = "vnext-shell__bottom-nav";
   const mobileActiveView = ["support", "photo-guide", "docs"].includes(activeView) ? "support" : activeView;
-  bottom.setAttribute("aria-label", "Основная навигация");
+  bottom.setAttribute("aria-label", uiText("aria.mainNavigation", locale));
   mobileNav.forEach(([labelText, view]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "vnext-shell__bottom-button";
-    button.textContent = labelText.startsWith("nav.") ? copy(labelText) : labelText;
+    button.textContent = uiText(labelText, locale);
     if (view === mobileActiveView) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => navigate(view));
     bottom.append(button);

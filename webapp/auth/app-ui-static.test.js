@@ -1,3 +1,4 @@
+import { COPY } from "../vnext/copy.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -26,8 +27,8 @@ test("Release 1 email auth UI exposes the approved controls and copy", () => {
 });
 
 test("OTP auth UI is a single accessible six-digit input with safe resend actions", () => {
-    assert.match(app, /otpTitle: "Проверьте почту"/);
-    assert.match(app, /otpSentTo: "Мы отправили код на"/);
+    assert.equal(COPY["legacy.auth.otpTitle"].ru, "Проверьте почту");
+    assert.equal(COPY["legacy.auth.otpSentTo"].ru, "Мы отправили код на");
     assert.match(html, /data-auth-otp-destination/);
     assert.match(html, /autocomplete="one-time-code"/);
     assert.match(html, /inputmode="numeric"/);
@@ -37,7 +38,7 @@ test("OTP auth UI is a single accessible six-digit input with safe resend action
     assert.match(html, /data-auth-resend-prompt>Не пришёл код\?/);
     assert.match(html, /data-auth-resend>Отправить ещё раз/);
     assert.match(html, /data-auth-change-email>Изменить почту/);
-    assert.match(app, /resendIn: "Отправить ещё раз через \{seconds\} сек"/);
+    assert.equal(COPY["legacy.auth.resendIn"].ru, "Отправить ещё раз через {seconds} сек");
     assert.match(app, /state\.authDialogStep = "change-email"/);
     assert.match(html, /data-auth-back-to-otp/);
     assert.match(app, /state\.authDialogEmail = state\.authDialogChangeEmailOriginal/);
@@ -58,8 +59,8 @@ test("authenticated account and logout surfaces expose provider-aware safe actio
     assert.match(html, /data-logout-description>После выхода потребуется снова войти/);
     assert.match(html, /data-logout-cancel>Отмена/);
     assert.match(html, /data-logout-confirm>Выйти/);
-    assert.match(app, /providerTelegram: "Telegram"/);
-    assert.match(app, /providerEmail: "Email"/);
+    assert.equal(COPY["legacy.auth.providerTelegram"].ru, "Telegram");
+    assert.equal(COPY["legacy.auth.providerEmail"].ru, "Email");
     assert.match(app, /function openLogoutDialog\(\)/);
     assert.match(app, /function confirmLogout\(\)/);
     assert.match(app, /if \(isFrontendUserAuthenticated\(\)\) \{\s+openLogoutDialog\(\);/);
@@ -69,7 +70,7 @@ test("authenticated account and logout surfaces expose provider-aware safe actio
 
 test("restore gate keeps the session gate independent from cabinet data", () => {
     assert.match(html, /data-application-auth-gate-spinner/);
-    assert.match(app, /restoring: "Открываем приложение…"/);
+    assert.equal(COPY["legacy.auth.restoring"].ru, "Открываем приложение…");
     assert.match(css, /\.application-auth-gate-spinner/);
     assert.match(css, /\.auth-turnstile:has\(iframe\)/);
     assert.match(css, /prefers-reduced-motion: reduce/);
@@ -85,8 +86,8 @@ test("VNext Wallet owns the visible Balance surface while runtime retains paymen
     const walletCss = fs.readFileSync(path.join(webappRoot, "vnext/styles/wallet.css"), "utf8");
     assert.match(html, /data-view="wallet" hidden><\/section>/);
     assert.match(html, /vnext\/styles\/wallet\.css/);
-    assert.match(view, /История пополнений/);
-    assert.match(view, /Email для чека/);
+    assert.match(view, /wallet\.topUpHistory/);
+    assert.match(view, /wallet\.receiptEmail/);
     assert.match(view, /legal\.dreamwheels\.pro/);
     assert.match(view, /data-wallet-pending/);
     assert.match(walletCss, /\.vnext-wallet__history-row/);

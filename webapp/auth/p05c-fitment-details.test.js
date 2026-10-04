@@ -1,3 +1,4 @@
+import { legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -6,7 +7,7 @@ import { fitmentMarkup } from '../vnext/views/fitment.js';
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const extract = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\nfunction ', start + 1)); };
 function presentation(locale) {
-  const context = { locale };
+  const context = { legacyTranslations, errorCopy, locale };
   const dictionary = source.slice(source.indexOf('const I18N ='), source.indexOf('function detectLocale'));
   vm.runInNewContext(`${dictionary}\nconst normalizeFitmentText=value=>String(value??'').trim();const fitmentMarketLabel=()=> 'Europe';\n${extract('fitmentVariantDisplayName')}\n${extract('fitmentPresentationText')}\n${extract('fitmentVariantTechnicalSeries')}\n${extract('formatIdentityNumber')}\nconst t=key=>key.split('.').reduce((o,k)=>o[k],I18N[locale]);\n${extract('fitmentDiameterPresentation')}\nglobalThis.api={variant:fitmentVariantTechnicalSeries,diameter:fitmentDiameterPresentation};`, context);
   return context.api;

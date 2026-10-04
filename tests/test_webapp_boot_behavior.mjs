@@ -1,3 +1,4 @@
+import { legacyTranslations, errorCopy } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
 import assert from "node:assert/strict";
@@ -32,12 +33,13 @@ function bootApi({ savedStorage = storage(), telegram = true, deployedBuild = "n
         querySelectorAll() { return []; },
     };
     const window = {
+        addEventListener() {},
         Telegram: telegram ? { WebApp: { platform: "ios", expand() {} } } : {},
         location: { search: "", reload() { reloads += 1; } },
         scrollTo() {},
     };
     const sessionStorage = savedSession;
-    const context = {
+    const context = { legacyTranslations, errorCopy,
         URL, URLSearchParams, console, document, window,
         fetch: async () => ({ ok: true, async json() { return { build: deployedBuild }; } }),
         localStorage: savedStorage,

@@ -1,4 +1,4 @@
-import { copy as uiCopy } from "./vnext/copy.mjs";
+import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
     applicationTopLevelReturnPath,
@@ -277,959 +277,7 @@ async function checkCurrentBuild() {
     }
 }
 
-const I18N = {
-    ru: {
-        auth: {
-            login: "Войти через Telegram",
-            loginShort: "Войти",
-            loggingIn: "Входим...",
-            preparing: "Подготавливаем вход...",
-            retryTelegram: "Повторить вход через Telegram",
-            logout: "Выйти",
-            failed: "Не удалось войти через Telegram",
-            dashboardLoginPrompt: "Войдите, чтобы увидеть баланс",
-            partialAccess: "Вход выполнен. Кабинет будет доступен после подключения защищённых запросов.",
-            dialogTitle: "Войдите в аккаунт",
-            emailIntro: "Введите электронную почту",
-            emailSubcopy: "Мы пришлём код для входа",
-            changeEmailTitle: "Изменить почту",
-            changeEmailIntro: "Введите другой адрес",
-            changeEmailSubcopy: "Мы отправим на него новый код",
-            emailLabel: "Электронная почта",
-            getCode: "Получить код",
-            getNewCode: "Получить новый код",
-            otpTitle: "Проверьте почту",
-            codeLabel: "Код из письма",
-            otpSentTo: "Мы отправили код на",
-            verify: "Войти",
-            resendPrompt: "Не пришёл код?",
-            resend: "Отправить ещё раз",
-            resendIn: "Отправить ещё раз через {seconds} сек",
-            changeEmail: "Изменить почту",
-            back: "Назад",
-            telegramSecondary: "Продолжить через Telegram",
-            openingTelegram: "Открываем Telegram… Не закрывайте эту страницу.",
-            legalPrivacy: "Продолжая, вы соглашаетесь с политикой конфиденциальности.",
-            invalidEmail: "Введите корректный адрес электронной почты.",
-            invalidOtp: "Неверный код. Проверьте его и попробуйте ещё раз.",
-            expiredOtp: "Срок действия кода истёк. Запросите новый.",
-            rateLimited: "Слишком много попыток. Попробуйте немного позже.",
-            networkError: "Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.",
-            providerError: "Не удалось выполнить вход. Попробуйте ещё раз.",
-            turnstileRequired: "Подтвердите, что вы человек, чтобы получить код.",
-            turnstileUnavailable: "Проверка безопасности недоступна. Попробуйте ещё раз.",
-            sendingCode: "Отправляем код...",
-            checkingCode: "Проверяем код...",
-            signedIn: "Вход выполнен",
-            restoring: "Открываем приложение…",
-            alreadySignedIn: "Вы уже вошли",
-            continue: "Продолжить",
-            switchAccount: "Сменить аккаунт",
-            providerTelegram: "Telegram",
-            providerEmail: "Email",
-            logoutTitle: "Выйти из аккаунта?",
-            logoutDescription: "После выхода потребуется снова войти",
-            cancel: "Отмена",
-            alreadyAuthenticated: "Вы уже вошли. Чтобы использовать другой аккаунт, сначала выйдите.",
-            authenticationInProgress: "Проверяем текущий вход. Попробуйте ещё раз через секунду.",
-            appGateTitle: "Войдите, чтобы открыть приложение",
-            appGateDescription: "Приложение доступно после подтверждения входа.",
-            appGateRestoring: "Проверяем защищённую сессию перед открытием приложения.",
-            sessionExpiredTitle: "Сессия истекла",
-            sessionExpiredDescription: "Войдите снова, чтобы восстановить текущие данные и продолжить. Предыдущее действие не будет запущено автоматически.",
-        },
-        menu: {
-            dashboard: "Главная",
-            create: "Создать примерку",
-            wallet: "Баланс",
-            renders: "История",
-            settings: "Настройки",
-            support: "Поддержка",
-            photoGuide: "Как подготовить фото",
-            docs: "Документы",
-        },
-        dashboard: {
-            lastRender: "Открыть последний результат",
-            startRender: "Создать виртуальную примерку",
-            createRender: "Создать виртуальную примерку",
-            titleLine1: "Примерьте",
-            titleLine2: "новые диски",
-            titleLine3: "на своём автомобиле",
-            lede: "Загрузите два фото – результат будет готов за 1–2 минуты",
-            expiryTitle: "Срок действия",
-            expiryPriority: "Сначала спишутся рендеры с ближайшим сроком действия",
-        },
-        caption: {
-            dashboard: "Главная",
-            create: "Создать примерку",
-            fitment: "Совместимость",
-            wallet: "Баланс",
-            renders: "История",
-            settings: "Настройки",
-            support: "Поддержка",
-            photoGuide: "Как подготовить фото",
-            docs: "Документы",
-        },
-        create: {
-            eyebrow: "Виртуальная примерка",
-            title: "Создать виртуальную примерку",
-            uploadFormat: "Поддерживаемые форматы JPG, PNG и WebP до 10 МБ",
-            detectingVehicle: "Определяем автомобиль",
-            detectingVehicleHint: "Подбираем марку, модель и год по фотографии",
-            productLink: "Ссылка на товар",
-            productLinkOptional: "(необязательно)",
-            productLinkWarning: "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.",
-            carPhoto: "Фото автомобиля",
-            carAdded: "Фото автомобиля добавлено",
-            wheelPhoto: "Фото колёсного диска",
-            choose: "Нажмите, чтобы выбрать",
-            replaceCar: "Заменить фото автомобиля",
-            replaceWheel: "Заменить фото колёсного диска",
-            wheelAdded: "Фото колёсного диска добавлено",
-            wheelAddedHint: "Фото добавлено",
-            productSourceMissing: "Ссылка на товар не добавлена",
-            carPreviewAlt: "Превью машины",
-            wheelPreviewAlt: "Превью диска",
-            footerNotTelegram: "Не в Telegram",
-            detectIdentity: "Определить автомобиль",
-            createRender: "Создать виртуальную примерку",
-        },
-        warnings: {
-            beta: "Dream Wheels находится в бета-режиме. Некоторые функции проходят финальное тестирование, а результат ИИ может содержать визуальные неточности.",
-            parser: "Параметры определены автоматически. Проверьте найденные значения перед технической оценкой.",
-            fitment: "Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.",
-            missingData: "Недостаточно данных для надёжной проверки совместимости. Проверьте отсутствующие параметры диска вручную.",
-            generationUnavailable: "Генерация временно недоступна.",
-        },
-        photoGuide: {
-            eyebrow: "Помощь",
-            title: "Как подготовить фото",
-            carSection: "Фото автомобиля",
-            carTitle: "Покажите автомобиль целиком",
-            carBadLabel: "Лучше переснять",
-            carBadCaption: "Ракурс три четверти и крупный план",
-            carGoodLabel: "Подходит",
-            carGoodCaption: "Сбоку, в дневном свете",
-            carCheck1: "Автомобиль виден целиком",
-            carCheck2: "Снимите сбоку или под небольшим углом",
-            carCheck3: "Все колёса попали в кадр",
-            carCheck4: "Выбирайте дневной свет",
-            carWarning: "Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов",
-            wheelSection: "Фото колёсного диска",
-            wheelTitle: "Сфотографируйте диск лицевой стороной к камере",
-            wheelGoodCaption: "Один диск анфас, весь рисунок в фокусе",
-            wheelSetCaption: "Комплект дисков, без рук и упаковки",
-            wheelCheck1: "Диск снят прямо спереди",
-            wheelCheck2: "Видна вся окружность",
-            wheelCheck3: "Рисунок спиц находится в фокусе",
-            wheelCheck4: "Снимайте без упаковки и рук в кадре",
-            wheelWarning: "Не используйте фото под углом, с сильными отражениями или частично закрытым диском",
-            readyLabel: "Перед загрузкой",
-            format: "Поддерживаемые форматы JPG, PNG и WebP до 10 МБ",
-            readyLink: "Ссылка на товар необязательна",
-            readyAction: "Начать примерку",
-            carBadAlt: "Автомобиль Mercedes снят под углом, такое фото лучше переснять",
-            carGoodAlt: "Автомобиль снят сбоку, оба колеса видны",
-            wheelProductAlt: "Автомобильный диск снят прямо спереди на светлом фоне",
-            wheelRealAlt: "Комплект автомобильных дисков снят сверху без упаковки",
-        },
-        consent: {
-            title: "Использование фотографий",
-            description: "Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации",
-            confirmation: "Я подтверждаю, что имею право использовать выбранные фотографии и соглашаюсь с их обработкой для создания AI-примерки",
-            privacy: "Политика обработки данных",
-            document: "Согласие",
-            cancel: "Отменить и выбрать другие фотографии",
-            compact: "Продолжая, вы подтверждаете право использовать выбранные фотографии",
-            processingTerms: "Условия обработки данных",
-        },
-        steps: {
-            upload: "Загрузка",
-            result: "Готово",
-        },
-        status: {
-            creating: "Создаём изображение…",
-            startingServer: "Запускаем сервер...",
-            coldStart: "Первый запуск может занять до 40 секунд",
-            uploading: "Загружаем файлы...",
-            upTo90: "Это может занять до 90 секунд",
-            generating: "Создаём примерку...",
-        },
-        result: {
-            imageAlt: "Результат примерки",
-            title: "Готово!",
-            caption: "Результат примерки готов",
-        },
-        fitment: {
-            diameterBelow: "Размер меньше справочного диапазона",
-            diameterAbove: "Размер больше справочного диапазона",
-            diameterWithin: "Диаметр внутри справочного диапазона",
-            diameterKnown: "Диаметр есть в справочнике",
-            diameterUnknown: "Нет справочных данных о диаметре",
-            diameterReferences: "Известные справочные диаметры",
-            diameterSelected: "Выбран диаметр",
-            diameterUnconfirmed: "Совместимость этого диаметра не подтверждена справочными данными.",
-            diameterGap: "Выбранный диаметр отсутствует среди известных справочных диаметров.",
-            diameterDisclaimer: "Совпадение диаметра не подтверждает общую совместимость диска.",
-            diameterFront: "Передняя ось",
-            diameterRear: "Задняя ось",
-            eyebrow: "Проверка совместимости",
-            title: "Проверьте, подойдут ли диски",
-            subtitleFallback: "Три понятных шага: подтвердите автомобиль, проверьте параметры диска и получите предварительный вывод",
-            preliminary: "Предварительно",
-            openFromResult: "Проверить совместимость",
-            openFromHistory: "Проверить совместимость",
-            back: "Вернуться к примерке",
-            loading: "Загружаем данные",
-            saveSuccess: "Данные сохранены",
-            stale: "Данные уже изменились в другом окне. Обновите экран и попробуйте ещё раз",
-            readinessReady: "Данных достаточно для будущей проверки",
-            readinessMissing: "Для будущей проверки не хватает данных",
-            readinessUnconfirmed: "Часть полей ещё нужно подтвердить",
-            aiSuggestion: "AI",
-            aiPending: "AI-предположение, нужно подтвердить",
-            userConfirmed: "Подтверждено пользователем",
-            sourceAdded: "Ссылка добавлена",
-            basicsLabel: "Базовые данные",
-            basicsCopy: "Определено по фото — данные требуют подтверждения перед установкой",
-            centerBore: "Диаметр ступичного отверстия",
-            diameter: "Диаметр диска, дюймы",
-            width: "Ориентировочная ширина",
-            widthShort: "Ширина",
-            offset: "Вылет (ET), мм",
-            vehicleCard: "Автомобиль",
-            vehicleCardMeta: "Определено по фото",
-            rimCard: "Колёсный диск",
-            rimCardMeta: "Часть данных определена по фото",
-            sourceCard: "Источник колёсного диска",
-            sourceCardMeta: "Бренд, артикул или ссылка на колёсный диск",
-            summaryLabel: "Сводка",
-            summaryShow: "Показать сводку",
-            summaryHide: "Свернуть сводку",
-            jumpVehicle: "Уточнить →",
-            jumpRim: "Уточнить →",
-            jumpSource: "Добавить →",
-            sourceClose: "Скрыть",
-            sourceResolve: "Добавить источник",
-            findVariants: "Подобрать версию автомобиля",
-            verdictTitle: "Предварительная техническая проверка",
-            check: "Проверить совместимость",
-            checking: "Проверяем параметры…",
-            verdictDisclaimer: "Предварительная оценка не является гарантией установки.",
-            notice: "Поля необязательны и не меняют уже созданную виртуальную примерку",
-            compatibilityNotChecked: "Проверка совместимости ещё не проведена.",
-            vehicleSection: "Автомобиль",
-            vehicleSectionTitle: "Уточнить известные данные",
-            rimSection: "Колёсный диск",
-            rimSectionTitle: "Уточнить параметры",
-            sourceSection: "Источник колёсного диска",
-            sourceSectionTitle: "Сохранить известный источник",
-            make: "Марка",
-            model: "Модель",
-            year: "Год",
-            body: "Кузов",
-            generation: "Поколение",
-            modification: "Комплектация",
-            market: "Рынок",
-            marketVersion: "Рынок",
-            rimBrand: "Бренд",
-            rimModel: "Модель",
-            sku: "Артикул",
-            boltCount: "Крепёжных отверстий",
-            productUrl: "Ссылка на колёсный диск",
-            save: "Сохранить данные",
-            skip: "Не сейчас",
-            unavailable: "Для этого результата уточнение параметров пока недоступно",
-            previewBadge: "Demo",
-            previewNote: "Изменения сохраняются только локально в этой сессии",
-            demoLiveActionsUnavailable: "В демо доступно только ручное уточнение. Создайте примерку, чтобы подобрать версию автомобиля, извлечь параметры по ссылке и запустить техническую проверку.",
-        },
-        actions: {
-            createRender: "Создать виртуальную примерку",
-            createAnother: "Создать ещё вариант",
-            download: "Скачать",
-            downloadImage: "Скачать изображение",
-            requestingDownload: "Запрашиваем скачивание...",
-            downloadCanceled: "Скачивание отменено",
-            downloadStarted: "Скачивание началось",
-            downloadFailed: "Скачать не удалось",
-            share: "Поделиться",
-            preparing: "Готовим...",
-            openingTelegram: "Открываем Telegram",
-            sent: "Отправлено",
-            linkCopied: "Ссылка скопирована",
-            openingLink: "Открываем ссылку",
-            canceled: "Отменено",
-            failed: "Не удалось",
-            openRender: "Открыть",
-        },
-        errors: {
-            generic: "Что-то пошло не так",
-            missingFiles: "Файлы не выбраны — вернитесь и загрузите оба фото",
-            missingIdentity: "Сначала определите и подтвердите данные",
-            missingRimConfirmation: "Подтвердите параметры диска или выберите «Не уверен»",
-            identityAuthTitle: "Нужно войти в аккаунт",
-            identityAuthBody:
-                "Мы не смогли подтвердить вход. Войдите через Telegram и повторите распознавание автомобиля.",
-            identityAuthAction: "Войти через Telegram",
-            identityBackendTitle: "Распознавание временно недоступно",
-            identityBackendBody:
-                "Сервис пока не может обработать фотографии. Попробуйте ещё раз через несколько минут.",
-            identityRetryAction: "Проверить ещё раз",
-            identityGenericTitle: "Не удалось определить данные",
-            identityGenericBody: "Проверьте фото и повторите попытку.",
-            identityConnectionTitle: "Сервис распознавания недоступен",
-            identityConnectionBody: "Не удалось связаться с сервером. Проверьте подключение и повторите попытку.",
-            generationFailed: "Ошибка генерации",
-            timeout: "Превышено время ожидания (>110 с)",
-            requestFailed: "Запрос не удался. Попробуйте ещё раз",
-        },
-        share: {
-            text: "Моя примерка в Dream Wheels AI",
-        },
-        wallet: {
-            eyebrow: "Кабинет",
-            title: "Баланс",
-            lede: "1 рендер — 1 генерация виртуальной примерки",
-            balanceLabel: "Баланс",
-            balanceHint: "Доступно для примерок",
-            topUpCta: "Пополнить",
-            gift: "Подарок",
-            lastInvoiceLabel: "Последняя оплата",
-            lastInvoiceTitle: "Платежей пока нет",
-            lastInvoiceEmpty: "Оплат ещё не было. После первой покупки здесь появится её статус",
-            invoiceAmount: "Сумма",
-            invoiceNumber: "Номер оплаты",
-            invoiceEmail: "Email",
-            invoiceCredits: "Получено",
-            invoiceStatus: "Статус",
-            wizardLabel: "Пополнение",
-            reset: "Изменить выбор",
-            stepAmount: "Сумма",
-            stepEmail: "Email",
-            stepConfirm: "Подтверждение",
-            stepChooseTitle: "Выберите пакет",
-            stepChooseSub: "",
-            chooseAmount: "Выбор суммы",
-            nextToEmail: "Продолжить",
-            modePackage: "Пакет",
-            modeCustom: "Своя сумма",
-            customAmountLabel: "Своя сумма",
-            emailLabel: "Email для чека",
-            emailHint: "Чек будет отправлен на этот email",
-            back: "Назад",
-            nextToConfirm: "Продолжить",
-            confirmAmount: "Сумма",
-            confirmEmail: "Email",
-            confirmCredits: "Будет получено",
-            confirmHint: "",
-            pay: "Оплатить",
-            choosePackage: "Выберите пакет",
-            enterEmail: "Укажите email",
-            paySelected: "Оплатить {amount}",
-            paymentProvider: "Оплата через Robokassa",
-            payWithAmount: "Оплатить",
-            emailPrivacyPrefix: "Email используется для отправки чека и обработки платежа.",
-            privacyDetails: "Подробнее — в Политике обработки персональных данных",
-            securePaymentTitle: "",
-            securePaymentText: "",
-            acceptancePrefix: "Нажимая «Оплатить», вы принимаете",
-            acceptanceAnd: "и",
-            offerLink: "Публичную оферту",
-            refundLink: "Условия возврата",
-            paymentHistory: "История платежей",
-            paymentHistoryHint: "",
-            openHistory: "Открыть",
-            closeHistory: "Скрыть",
-            availableRenders: "Доступные рендеры",
-            availableRendersHint: "Сначала списываются пакеты с ближайшей датой окончания",
-            topUpHistory: "История пополнений",
-            topUpHistoryHint: "",
-            previousPage: "Назад",
-            nextPage: "Далее",
-            pageRange: "{from}-{to} из {total}",
-            emptyHistory: "Платежей пока нет",
-            noPaymentsTitle: "Платежей пока нет",
-            noPaymentsMeta: "История пополнений появится после первой оплаты",
-            creditsTitle: "Ваши рендеры",
-            invalidEmail: "Введите корректный email",
-            loading: "Загружаем кабинет...",
-            refreshInvoice: "Обновить статус",
-            refreshingInvoice: "Обновляем статус оплаты...",
-            openingPayment: "Открываем Robokassa...",
-            paymentSuccess: "Проверяем оплату. Обновляем баланс",
-            paymentFail: "Платеж не завершен",
-            paymentPaid: "Оплачен",
-            paymentFailed: "Ошибка",
-            pendingFresh: "Оплата создана. Если вы вернулись из Robokassa, обновите статус через несколько секунд",
-            pendingStale: "Подтверждение оплаты ещё не получено. Обновите статус позже",
-            authRequired: "Откройте Mini App в Telegram или войдите через Telegram на сайте",
-            fallbackDisabled: "Вход с сайта временно недоступен",
-            starterGrantTitle: "Первый подарок",
-            starterGrantMeta: "{credits}\nПолучено по команде /start",
-            starterGrantBadge: "Подарок",
-            summaryEmptyTitle: "Выберите пакет",
-            summaryEmptyMeta: "Здесь появится выбранный пакет перед оплатой",
-            summaryPackageTitle: "Выбранный пакет",
-            summaryCustomTitle: "Своя сумма",
-            pendingInvoice: "Оплата #{invoiceId}\n{amount}",
-            paidInvoice: "Оплата #{invoiceId}\n{amount}",
-            failedInvoice: "Оплата #{invoiceId}\n{amount}",
-            packageMetaDays: "{creditsLabel}",
-            packageDuration: "30 дней",
-            receiptSummary: "Чек: {email}",
-        },
-        renders: {
-            eyebrow: "Готовые работы",
-            title: "История",
-            lede: "",
-            empty: "Готовых рендеров пока нет. Создайте первую виртуальную примерку на главном экране",
-            completed: "Готово",
-            processing: "В обработке",
-            failed: "Не удалось",
-            open: "Открыть",
-            hide: "Скрыть ▲",
-            retry: "Повторить",
-            createAnother: "Создать ещё вариант",
-            download: "Скачать изображение",
-            generationFailed: "Не удалось создать изображение",
-            notCharged: "Кредит за этот рендер не списан.",
-            sourcePhoto: "Исходное фото автомобиля",
-            sourceUnavailable: "Исходное фото недоступно",
-            assetUnavailable: "Изображение сейчас недоступно",
-            loadingImage: "Загружаем изображение…",
-            failedBadge: "Рендер не создан",
-
-        },
-        settings: {
-            eyebrow: "Параметры кабинета",
-            title: "Настройки",
-            lede: "Формальный экран для будущих параметров профиля и уведомлений",
-            profileTitle: "Профиль Telegram",
-            profileText: "Связан автоматически с Mini App",
-            notificationsTitle: "Уведомления",
-            notificationsText: "Будут добавлены позже",
-            languageTitle: "Язык интерфейса",
-            languageText: "Определяется по Telegram",
-            linked: "Подключено",
-            soon: "Скоро",
-        },
-        support: {
-            eyebrow: "Помощь",
-            title: "Поддержка",
-            lede: "Поможем с оплатой, возвратом или созданием примерки. Обычно отвечаем в течение 24 часов.",
-            telegram: "Telegram",
-            email: "Email",
-            helpSection: "Инструкции",
-            feedbackSection: "Связаться с нами",
-            photoGuideTitle: "Как подготовить фото",
-            photoGuideDescription: "Инструкция по подготовке фотографий перед загрузкой",
-            refundSection: "Возврат средств",
-            refundTitle: "Условия возврата",
-            refundDescription: "Когда доступен возврат и как отправить обращение",
-            refundSla: "Обращения по возвратам рассматриваем в течение 24 часов",
-        },
-        docs: {
-            eyebrow: "Юридическая информация",
-            title: "Документы",
-            lede: "Здесь собраны условия использования сервиса, оплаты, возврата и обработки данных.",
-            offer: "Публичная оферта",
-            offerDescription: "Условия оказания и оплаты услуги",
-            refund: "Условия возврата",
-            refundDescription: "Возврат оплаты и кредитов",
-            privacy: "Политика обработки данных",
-            privacyDescription: "Какие данные мы используем и храним",
-            consent: "Согласие на обработку данных",
-            consentDescription: "Состав данных, цели и отзыв согласия",
-            seller: "Реквизиты и контакты",
-            sellerDescription: "Информация об исполнителе",
-            edition: "Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.",
-        },
-        failed: "Сбой",
-        starter: "Стартовые рендеры",
-        pending: "В ожидании",
-        paid: "Оплачено",
-        created: "Создан",
-        cancelled: "Отменён",
-        refunded: "Возвращён",
-        locale: "RU",
-        credits: "рендеров",
-    },
-    en: {
-        auth: {
-            login: "Log in with Telegram",
-            loginShort: "Log in",
-            loggingIn: "Logging in...",
-            preparing: "Preparing login...",
-            retryTelegram: "Retry Telegram login",
-            logout: "Log out",
-            failed: "Telegram login failed",
-            dashboardLoginPrompt: "Sign in to see your balance",
-            partialAccess: "Signed in. The cabinet will be available after protected requests are connected.",
-            dialogTitle: "Sign in to your account",
-            emailIntro: "Enter your email",
-            emailSubcopy: "We’ll send you a sign-in code",
-            changeEmailTitle: "Change email",
-            changeEmailIntro: "Enter another address",
-            changeEmailSubcopy: "We’ll send a new code there",
-            emailLabel: "Email",
-            getCode: "Get code",
-            getNewCode: "Get new code",
-            otpTitle: "Check your email",
-            codeLabel: "Code from email",
-            otpSentTo: "We sent a code to",
-            verify: "Sign in",
-            resendPrompt: "Didn't get a code?",
-            resend: "Send again",
-            resendIn: "Send again in {seconds}s",
-            changeEmail: "Change email",
-            back: "Back",
-            telegramSecondary: "Continue with Telegram",
-            openingTelegram: "Opening Telegram… Keep this page open.",
-            legalPrivacy: "By continuing, you agree to the privacy policy.",
-            invalidEmail: "Enter a valid email address.",
-            invalidOtp: "The code is incorrect. Check it and try again.",
-            expiredOtp: "The code has expired. Request a new one.",
-            rateLimited: "Too many attempts. Please try again later.",
-            networkError: "Could not reach the server. Check your connection and try again.",
-            providerError: "We could not complete sign-in. Please try again.",
-            turnstileRequired: "Complete the security check to get a code.",
-            turnstileUnavailable: "The security check is unavailable. Please try again.",
-            sendingCode: "Sending code...",
-            checkingCode: "Checking code...",
-            signedIn: "Signed in",
-            restoring: "Opening the app…",
-            alreadySignedIn: "You're already signed in",
-            continue: "Continue",
-            switchAccount: "Switch account",
-            providerTelegram: "Telegram",
-            providerEmail: "Email",
-            logoutTitle: "Sign out of your account?",
-            logoutDescription: "You’ll need to sign in again",
-            cancel: "Cancel",
-            alreadyAuthenticated: "You're already signed in. Sign out first to use another account.",
-            authenticationInProgress: "Checking your current sign-in. Try again in a moment.",
-            appGateTitle: "Sign in to open the app",
-            appGateDescription: "The app is available after you confirm your sign-in.",
-            appGateRestoring: "Checking your protected session before opening the app.",
-            sessionExpiredTitle: "Session expired",
-            sessionExpiredDescription: "Sign in again to restore your current data and continue. The previous action will not run automatically.",
-        },
-        menu: {
-            dashboard: "Home",
-            create: "Create a try-on",
-            wallet: "Wallet",
-            renders: "History",
-            settings: "Settings",
-            support: "Support",
-            photoGuide: "Photo guide",
-            docs: "Documents",
-        },
-        dashboard: {
-            lastRender: "Open latest result",
-            startRender: "Create a try-on",
-            createRender: "Create a try-on",
-            titleLine1: "Try on",
-            titleLine2: "new wheels",
-            titleLine3: "on your vehicle",
-            lede: "Upload two photos – your result will be ready in 1–2 minutes",
-            expiryTitle: "Expiry dates",
-            expiryPriority: "Renders with the nearest expiry date are used first",
-        },
-        caption: {
-            dashboard: "Home",
-            create: "Create a try-on",
-            fitment: "Fitment",
-            wallet: "Balance",
-            renders: "History",
-            settings: "Settings",
-            support: "Support",
-            photoGuide: "How to prepare a photo",
-            docs: "Documents",
-        },
-        create: {
-            eyebrow: "Create a try-on",
-            title: "Create a try-on",
-            uploadFormat: "Supported formats JPG, PNG and WebP up to 10 MB",
-            detectingVehicle: "Identifying the vehicle",
-            detectingVehicleHint: "Matching the make, model, and year from the photo",
-            productLink: "Product link",
-            productLinkOptional: "(optional)",
-            productLinkWarning: "Product link is optional. We will save it for a later compatibility check.",
-            carPhoto: "Vehicle photo",
-            carAdded: "Vehicle photo added",
-            wheelPhoto: "Wheel photo",
-            choose: "Tap to choose",
-            replaceCar: "Replace vehicle photo",
-            replaceWheel: "Replace wheel photo",
-            wheelAdded: "Wheel photo added",
-            wheelAddedHint: "Photo added",
-            productSourceMissing: "Product link not added",
-            carPreviewAlt: "Car preview",
-            wheelPreviewAlt: "Wheel preview",
-            footerNotTelegram: "Not in Telegram",
-            detectIdentity: "Identify the vehicle",
-            createRender: "Create virtual render",
-        },
-        warnings: {
-            beta: "Dream Wheels is in beta. Some features are in final testing, and AI results may contain visual inaccuracies.",
-            parser: "Parameters were detected automatically. Review the values before the technical assessment.",
-            fitment: "This is a preliminary compatibility check. It is based on the available technical parameters. Before buying, confirm compatibility with the seller or an installation centre.",
-            missingData: "There is not enough data for a reliable compatibility check. Review the missing wheel parameters manually.",
-            generationUnavailable: "Generation is temporarily unavailable.",
-        },
-        photoGuide: {
-            eyebrow: "Help",
-            title: "How to prepare photos",
-            carSection: "Car photo",
-            carTitle: "Show the whole vehicle",
-            carBadLabel: "Better retake",
-            carBadCaption: "Three-quarter angle and close-up",
-            carGoodLabel: "Works well",
-            carGoodCaption: "Side view in daylight",
-            carCheck1: "The whole car is visible",
-            carCheck2: "Shoot from the side or a slight angle",
-            carCheck3: "All wheels are in the frame",
-            carCheck4: "Choose daylight",
-            carWarning: "Avoid night shots, strong glare, cropped wheels, and distracting objects",
-            wheelSection: "Wheel photo",
-            wheelTitle: "Photograph the wheel face-on",
-            wheelGoodCaption: "One wheel facing the camera, spokes in focus",
-            wheelSetCaption: "A set of wheels without hands or packaging",
-            wheelCheck1: "Shoot the wheel straight on",
-            wheelCheck2: "The full circle is visible",
-            wheelCheck3: "The spoke pattern is in focus",
-            wheelCheck4: "Shoot without packaging or hands in the frame",
-            wheelWarning: "Avoid angled photos, strong reflections, or a partially covered wheel",
-            readyLabel: "Before upload",
-            format: "Supported formats JPG, PNG and WebP up to 10 MB",
-            readyLink: "A product link is optional",
-            readyAction: "Start a try-on",
-            carBadAlt: "Mercedes photographed at an angle, better to retake",
-            carGoodAlt: "Car photographed from the side with both wheels visible",
-            wheelProductAlt: "Wheel photographed straight on against a light background",
-            wheelRealAlt: "A set of wheels photographed from above without packaging",
-        },
-        consent: {
-            title: "Photo use",
-            description: "To create a try-on, your vehicle and wheel photos will be processed by Dream Wheels AI and an AI generation provider",
-            confirmation: "I confirm that I have the right to use the selected photos and consent to their processing to create an AI try-on",
-            privacy: "Data processing policy",
-            document: "Consent",
-            cancel: "Cancel and choose different photos",
-            compact: "By continuing, you confirm your right to use the selected photos",
-            processingTerms: "Data processing terms",
-        },
-        steps: {
-            upload: "Upload",
-            result: "Done",
-        },
-        status: {
-            creating: "Creating an image…",
-            startingServer: "Starting server...",
-            coldStart: "First launch can take up to 40 seconds",
-            uploading: "Uploading files...",
-            upTo90: "This can take up to 90 seconds",
-            generating: "Generating render...",
-        },
-        result: {
-            imageAlt: "AI render",
-            title: "Done!",
-            caption: "Your render with new wheels is ready",
-        },
-        fitment: {
-            diameterBelow: "Diameter is below the reference range",
-            diameterAbove: "Diameter is above the reference range",
-            diameterWithin: "Diameter is within the reference range",
-            diameterKnown: "Diameter is listed in the reference",
-            diameterUnknown: "No usable diameter reference data",
-            diameterReferences: "Known reference diameters",
-            diameterSelected: "Selected diameter",
-            diameterUnconfirmed: "Reference data does not confirm compatibility of this diameter.",
-            diameterGap: "The selected diameter is not among the known reference diameters.",
-            diameterDisclaimer: "A diameter match does not confirm overall wheel compatibility.",
-            diameterFront: "Front axle",
-            diameterRear: "Rear axle",
-            eyebrow: "Fitment preparation",
-            title: "Basic vehicle parameters",
-            subtitleFallback: "Preliminary data helps prepare a future technical compatibility check",
-            preliminary: "Preliminary",
-            openFromResult: "Check compatibility",
-            openFromHistory: "Check compatibility",
-            back: "Back to render",
-            loading: "Loading details",
-            saveSuccess: "Details saved",
-            stale: "Details were changed in another window. Reload the screen and try again",
-            readinessReady: "Enough data for a future check",
-            readinessMissing: "More data is needed for a future check",
-            readinessUnconfirmed: "Some fields still need confirmation",
-            aiSuggestion: "AI",
-            aiPending: "AI guess, confirmation needed",
-            userConfirmed: "Confirmed by user",
-            sourceAdded: "Link added",
-            basicsLabel: "Basic data",
-            basicsCopy: "Detected from the photo — confirm the data before installation",
-            centerBore: "Center bore",
-            diameter: "Factory diameter",
-            width: "Approximate width",
-            widthShort: "Width",
-            offset: "Approximate ET",
-            vehicleCard: "Vehicle",
-            vehicleCardMeta: "Detected from the photo",
-            rimCard: "Wheel",
-            rimCardMeta: "Some data was detected from the photo",
-            sourceCard: "Wheel source",
-            sourceCardMeta: "Brand, SKU, or wheel link",
-            summaryLabel: "Summary",
-            summaryShow: "Show summary",
-            summaryHide: "Collapse summary",
-            jumpVehicle: "Refine →",
-            jumpRim: "Refine →",
-            jumpSource: "Add →",
-            sourceClose: "Hide",
-            sourceResolve: "Add source",
-            findVariants: "Find vehicle version",
-            verdictTitle: "Preliminary technical check",
-            check: "Check compatibility",
-            checking: "Checking parameters…",
-            verdictDisclaimer: "A preliminary assessment is not an installation guarantee.",
-            notice: "These fields are optional and do not change the existing virtual render",
-            compatibilityNotChecked: "The compatibility check has not been run yet.",
-            vehicleSection: "Vehicle",
-            vehicleSectionTitle: "Refine known details",
-            rimSection: "Wheel",
-            rimSectionTitle: "Refine parameters",
-            sourceSection: "Wheel source",
-            sourceSectionTitle: "Save a known source",
-            make: "Make",
-            model: "Model",
-            year: "Year",
-            body: "Body",
-            generation: "Generation",
-            modification: "Trim",
-            market: "Market",
-            marketVersion: "Market",
-            rimBrand: "Brand",
-            rimModel: "Model",
-            sku: "SKU",
-            boltCount: "Bolt count",
-            productUrl: "Wheel link",
-            save: "Save details",
-            skip: "Not now",
-            unavailable: "Fitment preparation is not available for this result yet",
-            previewBadge: "Demo",
-            previewNote: "Changes are saved locally for this session only",
-            demoLiveActionsUnavailable: "Demo supports manual edits only. Create a render to find a vehicle version, extract wheel parameters from a link, or run a technical check.",
-        },
-        actions: {
-            createRender: "Create render",
-            createAnother: "Create another version",
-            download: "Download",
-            downloadImage: "Download image",
-            requestingDownload: "Requesting download...",
-            downloadCanceled: "Download canceled",
-            downloadStarted: "Download started",
-            downloadFailed: "Download failed",
-            share: "Share",
-            preparing: "Preparing...",
-            openingTelegram: "Opening Telegram",
-            sent: "Sent",
-            linkCopied: "Link copied",
-            openingLink: "Opening link",
-            canceled: "Canceled",
-            failed: "Failed",
-            openRender: "Open",
-        },
-        errors: {
-            generic: "Something went wrong",
-            missingFiles: "Files are missing. Go back and upload both photos",
-            missingIdentity: "Detect and confirm details first",
-            missingRimConfirmation: "Confirm wheel details or choose Not sure",
-            identityAuthTitle: "Telegram login required",
-            identityAuthBody:
-                "We could not confirm your session. Log in with Telegram and try vehicle recognition again.",
-            identityAuthAction: "Log in with Telegram",
-            identityBackendTitle: "Recognition is temporarily unavailable",
-            identityBackendBody:
-                "The service cannot process the photos right now. Try again in a few minutes.",
-            identityRetryAction: "Retry",
-            identityGenericTitle: "Could not recognize the vehicle",
-            identityGenericBody: "Check the photos and try again.",
-            identityConnectionTitle: "Recognition service is unavailable",
-            identityConnectionBody: "Could not reach the server. Check your connection and try again.",
-            generationFailed: "Generation failed",
-            timeout: "Timed out after 110 seconds",
-            requestFailed: "Request failed. Please try again",
-        },
-        share: {
-            text: "My Dream Wheels AI render",
-        },
-        wallet: {
-            eyebrow: "Cabinet",
-            title: "Wallet",
-            lede: "Balance, last invoice, and a three-step payment flow in one place",
-            balanceLabel: "Balance",
-            balanceHint: "Available for try-ons",
-            topUpCta: "Top up",
-            gift: "Gift",
-            lastInvoiceLabel: "Last invoice",
-            lastInvoiceTitle: "No payments yet",
-            lastInvoiceEmpty: "No payments yet. The first purchase will show up here as the last invoice",
-            invoiceAmount: "Amount",
-            invoiceNumber: "Invoice",
-            invoiceEmail: "Email",
-            invoiceCredits: "Renders",
-            invoiceStatus: "Status",
-            wizardLabel: "Top up",
-            reset: "Change selection",
-            stepAmount: "Amount",
-            stepEmail: "Email",
-            stepConfirm: "Confirm",
-            stepChooseTitle: "Choose a package",
-            stepChooseSub: "",
-            chooseAmount: "Amount selection",
-            nextToEmail: "Continue",
-            modePackage: "Package",
-            modeCustom: "Custom",
-            customAmountLabel: "Custom amount",
-            emailLabel: "Receipt email",
-            emailHint: "The receipt will be sent to this email",
-            back: "Back",
-            nextToConfirm: "Continue",
-            confirmAmount: "Amount",
-            confirmEmail: "Email",
-            confirmCredits: "Credits",
-            confirmHint: "",
-            pay: "Pay",
-            choosePackage: "Choose a package",
-            enterEmail: "Enter an email",
-            paySelected: "Pay {amount}",
-            paymentProvider: "Payment via Robokassa",
-            payWithAmount: "Pay",
-            emailPrivacyPrefix: "Email is used to send the receipt and process the payment.",
-            privacyDetails: "Learn more in the Personal Data Processing Policy",
-            securePaymentTitle: "",
-            securePaymentText: "",
-            acceptancePrefix: "By selecting “Pay”, you accept the",
-            acceptanceAnd: "and",
-            offerLink: "Public Offer",
-            refundLink: "Refund Terms",
-            paymentHistory: "Payment history",
-            paymentHistoryHint: "",
-            openHistory: "Open",
-            closeHistory: "Hide",
-            availableRenders: "Available renders",
-            availableRendersHint: "Packages expiring sooner are spent first",
-            topUpHistory: "Top-up history",
-            topUpHistoryHint: "",
-            previousPage: "Back",
-            nextPage: "Next",
-            pageRange: "{from}-{to} of {total}",
-            emptyHistory: "No payments yet",
-            noPaymentsTitle: "No payments yet",
-            noPaymentsMeta: "Top-up history will appear after your first payment",
-            details: "Details",
-            creditsTitle: "Your credits",
-            invalidEmail: "Enter a valid email",
-            loading: "Loading cabinet...",
-            refreshInvoice: "Refresh invoice",
-            refreshingInvoice: "Refreshing invoice status...",
-            openingPayment: "Opening Robokassa...",
-            paymentSuccess: "Checking payment. Refreshing balance",
-            paymentFail: "Payment was not completed",
-            paymentPaid: "Paid",
-            paymentFailed: "Error",
-            pendingFresh: "Invoice created. If you returned from Robokassa, refresh it in a few seconds",
-            pendingStale: "The invoice is still waiting for confirmation. If the payment did not go through, it may stay pending until a final status arrives. Refresh it later",
-            authRequired: "Open the Mini App in Telegram or log in with Telegram on the website",
-            fallbackDisabled: "Web fallback is disabled on the backend",
-            starterGrantTitle: "Starter gift",
-            starterGrantMeta: "{credits} renders\nAdded on /start",
-            starterGrantBadge: "Gift",
-            summaryEmptyTitle: "Choose a package",
-            summaryEmptyMeta: "The selected package will appear here before payment",
-            summaryPackageTitle: "Selected package",
-            summaryCustomTitle: "Custom amount",
-            pendingInvoice: "Invoice #{invoiceId}\n{amount}",
-            paidInvoice: "Invoice #{invoiceId}\n{amount}",
-            failedInvoice: "Invoice #{invoiceId}\n{amount}",
-            packageMetaDays: "{creditsLabel}",
-            packageDuration: "30 days",
-            receiptSummary: "Receipt: {email}",
-        },
-        renders: {
-            eyebrow: "Finished work",
-            title: "History",
-            lede: "",
-            empty: "No renders yet. Create your first one on the main screen",
-            completed: "Done",
-            failed: "Failed",
-            processing: "Processing",
-            retry: "Retry",
-            open: "Open",
-            generationFailed: "Image generation failed",
-            notCharged: "You were not charged for this render.",
-            sourcePhoto: "Original vehicle photo",
-            sourceUnavailable: "Original photo unavailable",
-            assetUnavailable: "Image currently unavailable",
-            loadingImage: "Loading image…",
-            failedBadge: "Render not created",
-        },
-        settings: {
-            eyebrow: "Cabinet settings",
-            title: "Settings",
-            lede: "A formal screen for future profile and notification options",
-            profileTitle: "Telegram profile",
-            profileText: "Linked automatically through the Mini App",
-            notificationsTitle: "Notifications",
-            notificationsText: "Will be added later",
-            languageTitle: "Interface language",
-            languageText: "Detected from Telegram",
-            linked: "Connected",
-            soon: "Soon",
-        },
-        support: {
-            eyebrow: "Help",
-            title: "Support",
-            lede: "We can help with payments, refunds, or creating a try-on. We usually respond within 24 hours.",
-            telegram: "Telegram",
-            email: "Email",
-            helpSection: "Guides",
-            feedbackSection: "Contact us",
-            photoGuideTitle: "How to prepare photos",
-            photoGuideDescription: "Instructions for preparing photos before upload",
-            refundSection: "Refunds",
-            refundTitle: "Refund terms",
-            refundDescription: "When a refund is available and how to request one",
-            refundSla: "Refund requests are reviewed within 24 hours",
-        },
-        docs: {
-            eyebrow: "Legal information",
-            title: "Documents",
-            lede: "Terms for using the service, payments, refunds, and data processing.",
-            offer: "Public offer",
-            offerDescription: "Service and payment terms",
-            refund: "Refund terms",
-            refundDescription: "Payment and credit refunds",
-            privacy: "Data processing policy",
-            privacyDescription: "What data we use and store",
-            consent: "Data processing consent",
-            consentDescription: "Data categories, purposes, and consent withdrawal",
-            seller: "Details and contacts",
-            sellerDescription: "Information about the provider",
-            edition: "These documents apply to Dream Wheels AI. Edition dated June 8, 2026.",
-        },
-        failed: "Failed",
-        starter: "Starter grant",
-        pending: "Pending",
-        paid: "Paid",
-        created: "Created",
-        cancelled: "Cancelled",
-        refunded: "Refunded",
-        locale: "EN",
-        credits: "renders",
-    },
-};
+const I18N = legacyTranslations();
 
 function detectLocale() {
     const telegramLanguage = tg?.initDataUnsafe?.user?.language_code;
@@ -1238,7 +286,15 @@ function detectLocale() {
     return language.startsWith("ru") ? "ru" : "en";
 }
 
-const locale = detectLocale();
+let locale = detectLocale();
+window.addEventListener("dreamwheels:localechange", (event) => {
+    const next = event.detail?.locale;
+    if (next !== "ru" && next !== "en") return;
+    locale = next;
+    document.documentElement.lang = locale;
+    applyTranslations();
+    renderAuthDialog();
+});
 
 function t(path, { sentence = false } = {}) {
     const value = path.split(".").reduce((current, key) => current?.[key], I18N[locale]) ?? path;
@@ -2324,6 +1380,8 @@ function guestRenderHistory() {
 
 function applyTranslations() {
     document.documentElement.lang = locale;
+    document.querySelectorAll("[data-copy-aria]").forEach((el) => el.setAttribute("aria-label", uiCopy(el.dataset.copyAria, locale)));
+    document.querySelectorAll("[data-copy-placeholder]").forEach((el) => el.setAttribute("placeholder", uiCopy(el.dataset.copyPlaceholder, locale)));
     document.querySelectorAll("[data-i18n]").forEach((el) => {
         el.textContent = t(el.dataset.i18n, { sentence: el.hasAttribute("data-i18n-sentence") });
     });
@@ -2341,7 +1399,7 @@ function enforceUiCopyRule(root = document.getElementById("app")) {
     textNodes.forEach((textNode) => {
         const parent = textNode.parentElement;
         if (!parent || parent.hasAttribute?.("data-fitment-conflict-notice") || /^(SCRIPT|STYLE|PRE|CODE|TEXTAREA|OPTION)$/u.test(parent.tagName)) return;
-        if (parent.closest?.("[data-i18n-sentence]")) return;
+        if (parent.closest?.("[data-i18n-sentence],.vnext-shell")) return;
         const headingOrLabel = parent.closest?.("h1,h2,h3,h4,button,.vnext-eyebrow,.vnext-status");
         if (!headingOrLabel) return;
         const normalized = textNode.nodeValue.replace(/[.!?…:;,]+(\s*)$/u, "$1");
@@ -3246,10 +2304,16 @@ function renderAuthDialog() {
     if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
-        if (legalLink) legalLink.textContent = locale === "ru" ? "политикой конфиденциальности" : "privacy policy";
-        legalCopy.firstChild.textContent = locale === "ru" ? "Продолжая, вы соглашаетесь с " : "By continuing, you agree to the ";
-        if (legalLink) legalCopy.lastChild.textContent = locale === "ru" ? "." : ".";
+        if (legalLink) {
+            legalLink.textContent = uiCopy("auth.privacyPolicy", locale);
+            const marker = "__policy_link__";
+            const [before, after] = uiCopy("auth.legal", locale, { policy: marker }).split(marker);
+            legalCopy.replaceChildren(document.createTextNode(before), legalLink, document.createTextNode(after));
+        }
     }
+    document.querySelector("[data-auth-close]")?.setAttribute("aria-label", uiCopy("auth.close", locale));
+    const divider = document.querySelector(".auth-dialog-divider span");
+    if (divider) divider.textContent = uiCopy("auth.or", locale);
     if (telegramAlternative) telegramAlternative.hidden = !isInitialEmailStep;
     emailAlternative.forEach((element) => {
         element.hidden = !isInitialEmailStep;
@@ -3918,10 +2982,12 @@ function topUpMeta(credits) {
 }
 
 function localizeErrorMessage(message) {
+    if (message && typeof message === "object") return errorCopy(message, locale);
+    if (/^[a-z]+(?:_[a-z]+)+$/u.test(message || "")) return errorCopy(message, locale);
     if (locale === "en" && /[А-Яа-яЁё]/.test(message || "")) {
-        return t("errors.requestFailed");
+        return uiCopy("errors.generic", locale);
     }
-    return message || t("errors.generic");
+    return message || uiCopy("errors.generic", locale);
 }
 
 function getIdentityPayload({ includeTelegramUserId = false } = {}) {
@@ -4848,44 +3914,43 @@ function fitmentSubtitle(overview) {
 function fitmentVerdictMessage(item) {
     const details = item?.details || item?.detail || {};
     const code = String(item?.code || item?.reason_code || "").trim().toLowerCase();
-    const ru = locale === "ru";
     if (code === "vehicle_variant_required") {
-        return ru ? "Выберите комплектацию автомобиля по каталогу Wheel‑Size" : "Select the vehicle version from Wheel‑Size";
+        return uiCopy("fitment.reason.selectTheVehicleVersionFromWheelSize", locale);
     }
     if (code === "vehicle_reference_offset_missing") {
-        return ru ? "Для выбранного размера нет справочных данных по ET" : "No ET reference is available for the selected size";
+        return uiCopy("fitment.reason.noETReferenceIsAvailableForTheSelected", locale);
     }
     if (code === "rim_offset_missing") {
         return uiCopy("fitment.notice.enterEt", locale);
     }
     if (["hub_rings_required", "center_bore_requires_ring", "use_specified_centering_ring"].includes(code)) {
-        return ru ? "Потребуются центровочные кольца" : "Centering rings are required";
+        return uiCopy("fitment.reason.centeringRingsAreRequired", locale);
     }
     if (code === "load_rating_unknown") {
-        return ru ? "Рейтинг нагрузки диска не подтверждён — это не влияет на предварительный результат" : "The wheel load rating is not confirmed — it does not affect this preliminary result";
+        return uiCopy("fitment.reason.theWheelLoadRatingIsNotConfirmedIt", locale);
     }
     if (code === "fastener_unknown") {
-        return ru ? "Тип крепежа не подтверждён — проверьте его перед установкой" : "Fastener type is not confirmed — check it before installation";
+        return uiCopy("fitment.reason.fastenerTypeIsNotConfirmedCheckItBefore", locale);
     }
     if (code === "pcd_unknown") return uiCopy("fitment.notice.clarifyPcd", locale);
-    if (code === "center_bore_unknown") return ru ? "Уточните ступичное отверстие" : "Clarify the center bore";
+    if (code === "center_bore_unknown") return uiCopy("fitment.reason.clarifyTheCenterBore", locale);
     if (code === "size_not_in_reference") {
         const diameter = details.rim_diameter_in;
         const width = details.rim_width_j;
         if (diameter != null && width != null) {
             const size = `${formatIdentityNumber(diameter)}″ × ${formatIdentityNumber(width)}J`;
-            return ru ? `Размер ${size} не найден в справочных данных для этой машины.` : `The ${size} size is not listed in the reference data for this vehicle.`;
+            return uiCopy("fitment.reason.theSizeIsNotListedInTheReference", locale, { value0: size });
         }
-        return ru ? "Этот размер не найден в справочных данных для этой машины." : "This size is not listed in the reference data for this vehicle.";
+        return uiCopy("fitment.reason.thisSizeIsNotListedInTheReference", locale);
     }
     if (["size_unknown", "allowed_set_empty"].includes(code)) return uiCopy("fitment.notice.clarifySize", locale);
-    if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return ru ? "Не удалось связаться с сервисом технической проверки совместимости — повторите позже" : "The technical compatibility service could not be reached — try again later";
-    if (["throttled", "quota_exceeded"].includes(code)) return ru ? "Сервис технической проверки временно ограничил запросы — попробуйте позже" : "The technical compatibility service is rate-limited — try again later";
-    if (code === "provider_authentication_failed") return ru ? "Сервис технической проверки временно недоступен" : "The technical compatibility service is temporarily unavailable";
-    if (["malformed_response", "internal_execution_error"].includes(code)) return ru ? "Не удалось завершить техническую проверку — повторите позже" : "The technical check could not be completed — try again later";
-    if (code === "vehicle_not_resolved") return ru ? "Автомобиль не удалось сопоставить с каталогом Wheel‑Size" : "The vehicle could not be matched to Wheel‑Size";
+    if (["provider_unavailable", "network_error", "proxy_error", "provider_timeout"].includes(code)) return uiCopy("fitment.reason.theTechnicalCompatibilityServiceCouldNotBeReached", locale);
+    if (["throttled", "quota_exceeded"].includes(code)) return uiCopy("fitment.reason.theTechnicalCompatibilityServiceIsRateLimitedTry", locale);
+    if (code === "provider_authentication_failed") return uiCopy("fitment.reason.theTechnicalCompatibilityServiceIsTemporarilyUnavailable", locale);
+    if (["malformed_response", "internal_execution_error"].includes(code)) return uiCopy("fitment.reason.theTechnicalCheckCouldNotBeCompletedTry", locale);
+    if (code === "vehicle_not_resolved") return uiCopy("fitment.reason.theVehicleCouldNotBeMatchedToWheel", locale);
     if (["pcd_mismatch", "bolt_count_mismatch"].includes(code)) return uiCopy("fitment.notice.pcdMismatch", locale);
-    if (code === "center_bore_too_small") return ru ? "Ступичное отверстие диска меньше штатного" : "The wheel center bore is smaller than the vehicle hub";
+    if (code === "center_bore_too_small") return uiCopy("fitment.reason.theWheelCenterBoreIsSmallerThanThe", locale);
     if (["offset_deviation_check_required", "offset_out_of_range", "et_outside_reference_range"].includes(code)) {
         const referenceMin = details.reference_et_min_mm;
         const referenceMax = details.reference_et_max_mm;
@@ -4900,13 +3965,11 @@ function fitmentVerdictMessage(item) {
             ? `ET${formattedMin}`
             : `ET${formattedMin}–${formattedMax}`;
         const rim = `ET${formatFitmentNumber(details.rim_et_mm).replace(/\s/g, "")}`;
-        return ru
-            ? `ET диска ${rim}; расчётный диапазон автомобиля ${range}. Перед установкой проверьте внутренний и наружный зазор`
-            : `Wheel ${rim}; vehicle reference range ${range}. Check inner and outer clearances before installation`;
+        return uiCopy("fitment.reason.wheelVehicleReferenceRangeCheckInnerAndOuter", locale, { value0: rim, value1: range });
     }
     const label = normalizeFitmentText(item?.label);
     if (label && !/требуется условие|condition required/i.test(label)) return label.replace(/[.!]$/, "");
-    return ru ? "Нужно уточнить технические параметры" : "Technical details need clarification";
+    return uiCopy("fitment.reason.technicalDetailsNeedClarification", locale);
 }
 
 function fitmentResultBlockingCopy(check) {
@@ -5932,28 +4995,28 @@ function fitmentPreviewMarkup(url, label, { rim = false } = {}) {
 
 function fitmentVehicleProvenance(ui) {
     if (ui.nextAction === "complete_vehicle_details") {
-        return locale === "ru" ? "Нужно подтвердить" : "Needs confirmation";
+        return uiCopy("bridge.needsConfirmation", locale);
     }
     if (ui.nextAction === "select_vehicle_variant") {
-        return locale === "ru" ? "Нужно выбрать комплектацию" : "Choose a vehicle version";
+        return uiCopy("bridge.chooseAVehicleVersion", locale);
     }
     const labels = {
-        empty: locale === "ru" ? "Не заполнен" : "Not filled",
-        unconfirmed: locale === "ru" ? "Нужно подтвердить" : "Needs confirmation",
-        confirmed_incomplete: locale === "ru" ? "Нужно выбрать комплектацию" : "Choose a vehicle version",
-        confirmed_ready: locale === "ru" ? "Подтверждён" : "Confirmed",
+        empty: uiCopy("bridge.notFilled", locale),
+        unconfirmed: uiCopy("bridge.needsConfirmation", locale),
+        confirmed_incomplete: uiCopy("bridge.chooseAVehicleVersion", locale),
+        confirmed_ready: uiCopy("bridge.confirmed", locale),
     };
-    return labels[ui.vehicle.state] || (locale === "ru" ? "Состояние автомобиля не определено" : "Vehicle state is unavailable");
+    return labels[ui.vehicle.state] || (uiCopy("bridge.vehicleStateIsUnavailable", locale));
 }
 
 function fitmentRimProvenance(ui) {
     const labels = {
-        empty: locale === "ru" ? "Не заполнен" : "Not filled",
-        partial: locale === "ru" ? "Нужно уточнить" : "Needs clarification",
-        complete_unconfirmed: locale === "ru" ? "Нужно подтвердить" : "Needs confirmation",
-        confirmed_ready: locale === "ru" ? "Подтверждён" : "Confirmed",
+        empty: uiCopy("bridge.notFilled", locale),
+        partial: uiCopy("bridge.needsClarification", locale),
+        complete_unconfirmed: uiCopy("bridge.needsConfirmation", locale),
+        confirmed_ready: uiCopy("bridge.confirmed", locale),
     };
-    return labels[ui.rim.setupState] || (locale === "ru" ? "Состояние диска не определено" : "Wheel state is unavailable");
+    return labels[ui.rim.setupState] || (uiCopy("bridge.wheelStateIsUnavailable", locale));
 }
 
 function fitmentRimTechnicalSummary(rim = {}) {
@@ -6071,17 +5134,16 @@ function renderFitmentSourceDisclosure(overview, { rimEditing = false } = {}) {
 }
 
 function fitmentResultCopy(check) {
-    const ru = locale === "ru";
-    if (!check) return ru ? "Проверка ещё не выполнена" : "The check has not been run";
+    if (!check) return uiCopy("fitment.reason.theCheckHasNotBeenRun", locale);
     if (check.is_current === false) return uiCopy("fitment.notice.stale", locale);
-    if (check.execution_status === "queued") return ru ? "Проверка ожидает запуска" : "The check is queued";
-    if (check.execution_status === "processing") return ru ? "Проверяем параметры автомобиля и диска" : "Checking the vehicle and wheel details";
+    if (check.execution_status === "queued") return uiCopy("fitment.reason.theCheckIsQueued", locale);
+    if (check.execution_status === "processing") return uiCopy("fitment.reason.checkingTheVehicleAndWheelDetails", locale);
     if (check.execution_status === "failed") return fitmentVerdictMessage({ code: check.error?.code || "provider_unavailable" });
-    if (check.verdict === "compatible") return ru ? "Основные проверяемые параметры совместимы" : "The main checked parameters are compatible";
-    if (check.verdict === "compatible_with_conditions") return ru ? "Диск предварительно подходит" : "The wheel preliminarily fits";
-    if (check.verdict === "unknown") return ru ? "Пока нельзя надёжно определить совместимость" : "Compatibility cannot be determined reliably yet";
-    if (check.verdict === "incompatible") return ru ? "Обнаружено несовпадение технических параметров" : "A mismatch in technical parameters was found";
-    return ru ? "Проверка завершена" : "The check is complete";
+    if (check.verdict === "compatible") return uiCopy("fitment.reason.theMainCheckedParametersAreCompatible", locale);
+    if (check.verdict === "compatible_with_conditions") return uiCopy("fitment.reason.theWheelPreliminarilyFits", locale);
+    if (check.verdict === "unknown") return uiCopy("fitment.reason.compatibilityCannotBeDeterminedReliablyYet", locale);
+    if (check.verdict === "incompatible") return uiCopy("fitment.reason.aMismatchInTechnicalParametersWasFound", locale);
+    return uiCopy("fitment.reason.theCheckIsComplete", locale);
 }
 
 function fitmentResultTitle(check) {
@@ -8787,6 +7849,7 @@ async function parseApiError(response) {
             .join("; ");
     }
     if (detail && typeof detail === "object") {
+        if (detail.code || detail.error_code) return errorCopy(detail, locale);
         return detail.message || detail.msg || JSON.stringify(detail);
     }
     return String(detail || t("failed"));
@@ -9058,6 +8121,7 @@ function vnextWalletSnapshot() {
     const history = getVisibleHistoryItems();
     const latest = getLastInvoice();
     return {
+        locale,
         loading: state.walletLoading,
         cabinetError: state.walletCabinetError,
         cabinetLoaded: state.walletCabinetLoaded,
@@ -10049,6 +9113,7 @@ function vnextDashboardSnapshot() {
         ? localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны")
         : "";
     return {
+        locale,
         balance: state.balance,
         balanceLabel: formatRenderCount(state.balance === null ? 0 : state.balance),
         expiry,
@@ -10719,12 +9784,12 @@ function fitmentWheelSource(overview, job) {
     const rim = overview?.front_rim?.rim || overview?.rim || {};
     try {
         const url = new URL(rim.product_url || "");
-        if (["http:", "https:"].includes(url.protocol)) return { rimSourceLabel: "Ссылка на товар", rimSourceDomain: url.hostname.replace(/^www\./i, "") };
+        if (["http:", "https:"].includes(url.protocol)) return { rimSourceLabel: uiCopy("create.productLink", locale), rimSourceDomain: url.hostname.replace(/^www\./i, "") };
     } catch { /* Legacy contexts can have no source URL. */ }
     const photo = Boolean(job?.assets?.rim_original || fitmentPreviewAsset(job, "rim"));
     const manual = Object.values(overview?.front_rim?.field_states || overview?.rim_field_states || {})
         .some(field => ["user_input", "user_edited", "manual"].includes(field?.source));
-    return { rimSourceLabel: photo ? "Фото диска" : manual ? "Указано вручную" : "Источник не указан", rimSourceDomain: "" };
+    return { rimSourceLabel: photo ? uiCopy("wheel.photo", locale) : manual ? uiCopy("bridge.enteredManually", locale) : uiCopy("fitment.sourceNotSpecified", locale), rimSourceDomain: "" };
 }
 
 function fitmentDiameterPresentation(detail) {
@@ -10772,11 +9837,11 @@ function vnextFitmentSnapshot() {
     const marketState = {
         status: marketStatus || "idle_parent_missing",
         resolution: marketResolution.resolution || "",
-        message: marketStatus === "loading" ? "Загружаем рынки…"
-            : marketStatus === "failed" ? "Не удалось загрузить рынки"
-                : marketStatus === "no_data" ? "Нет доступных рынков"
+        message: marketStatus === "loading" ? uiCopy("fitment.loadingMarkets", locale)
+            : marketStatus === "failed" ? uiCopy("fitment.marketsLoadFailed", locale)
+                : marketStatus === "no_data" ? uiCopy("fitment.marketsEmpty", locale)
                     : marketStatus === "resolved_multiple" ? uiCopy("fitment.market.select", locale)
-                        : !state.fitmentForm?.vehicle?.year ? "Сначала выберите год автомобиля" : "",
+                        : !state.fitmentForm?.vehicle?.year ? uiCopy("fitment.selectYearFirst", locale) : "",
     };
     const summaryRim = overview?.front_rim?.rim || overview?.rim || {};
     const summaryRearRim = overview?.rear_rim?.rim || summaryRim;
@@ -10785,14 +9850,14 @@ function vnextFitmentSnapshot() {
     const fieldErrors = {};
     const rimReadiness = fitmentRimSaveReadiness();
     for (const path of new Set([...invalidFields, ...missingFields])) {
-        if (path === "vehicle.make") fieldErrors[path] = missingFields.has(path) ? "Выберите марку автомобиля" : "Выберите значение из каталога";
-        else if (path === "vehicle.model") fieldErrors[path] = missingFields.has(path) ? "Выберите модель автомобиля" : "Выберите значение из каталога";
-        else if (path === "vehicle.year") fieldErrors[path] = missingFields.has(path) ? "Выберите год автомобиля" : "Выберите значение из каталога";
+        if (path === "vehicle.make") fieldErrors[path] = missingFields.has(path) ? uiCopy("fitment.selectMake", locale) : uiCopy("fitment.selectCatalogValue", locale);
+        else if (path === "vehicle.model") fieldErrors[path] = missingFields.has(path) ? uiCopy("fitment.selectModel", locale) : uiCopy("fitment.selectCatalogValue", locale);
+        else if (path === "vehicle.year") fieldErrors[path] = missingFields.has(path) ? uiCopy("fitment.selectYear", locale) : uiCopy("fitment.selectCatalogValue", locale);
         else if (path === "vehicle.market") fieldErrors[path] = missingFields.has(path) ? uiCopy("fitment.market.select", locale) : uiCopy("fitment.market.selectAvailable", locale);
-        else fieldErrors[path] = `Заполните поле «${fitmentFieldLabel(path)}»`;
+        else fieldErrors[path] = uiCopy("fitment.requiredField", locale, { value0: fitmentFieldLabel(path) });
     }
     for (const path of rimReadiness.invalid) {
-        fieldErrors[path] = path.endsWith("offset_et_mm") ? "ET должен быть от −150 до +150 мм" : "Введите корректное числовое значение";
+        fieldErrors[path] = path.endsWith("offset_et_mm") ? uiCopy("fitment.invalidEt", locale) : uiCopy("fitment.invalidNumber", locale);
     }
     const runtimeError = state.fitmentError ? localizeErrorMessage(state.fitmentError) : "";
     const errorSection = state.fitmentActiveSection || fitmentSectionForAction(overview);
@@ -10805,9 +9870,9 @@ function vnextFitmentSnapshot() {
         axle: item.axle,
         code: item.code,
         status: item.status,
-        name: (item.field ? fitmentFieldLabel(item.field) : item.label || item.code || "Параметр").replace(/^./u, (first) => first.toLocaleUpperCase()),
+        name: (item.field ? fitmentFieldLabel(item.field) : item.label || item.code || uiCopy("fitment.parameter", locale)).replace(/^./u, (first) => first.toLocaleUpperCase()),
         label: fitmentResultFieldCopy(item, check),
-        resultLabel: item.status === "pass" ? "Подходит" : item.status === "conditional" ? "С условием" : item.status === "fail" ? "Не совпадает" : "Не определено",
+        resultLabel: item.status === "pass" ? uiCopy("fitment.compatible", locale) : item.status === "conditional" ? uiCopy("fitment.withConditions", locale) : item.status === "fail" ? uiCopy("bridge.mismatch", locale) : uiCopy("fitment.undetermined", locale),
         vehicleValue: item.vehicle_value ?? item.vehicle ?? null,
         rimValue: item.rim_value ?? item.rim ?? null,
     })) : [];
@@ -10858,7 +9923,7 @@ function vnextFitmentSnapshot() {
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
         activeSection: state.fitmentActiveSection,
         manualVehicleEditing: Boolean(state.fitmentVehicleEditing && ui.nextAction === "select_vehicle_variant"),
-        vehicleStatus: overview?.modification_state === "confirmed" ? "Комплектация подтверждена" : overview?.vehicle_state === "confirmed_ready" ? "Данные подтверждены" : fitmentNextAction(overview) === "select_vehicle_variant" ? "Выберите комплектацию автомобиля" : "Требуется подтверждение",
+        vehicleStatus: overview?.modification_state === "confirmed" ? uiCopy("bridge.vehicleVersionConfirmed", locale) : overview?.vehicle_state === "confirmed_ready" ? uiCopy("bridge.detailsConfirmed", locale) : fitmentNextAction(overview) === "select_vehicle_variant" ? uiCopy("fitment.chooseTheVehicleVersion", locale) : uiCopy("fitment.confirmationRequired", locale),
         vehicleVariantName: overview?.modification_state === "confirmed" ? fitmentSelectedVehicleVariantName(overview) : "",
         vehicleVariantTechnical: overview?.modification_state === "confirmed"
             ? fitmentVariantTechnicalSeries(fitmentSelectedVehicleVariant(overview) || {}, fitmentSelectedVehicleVariantName(overview)) : "",
@@ -10894,7 +9959,7 @@ function vnextFitmentSnapshot() {
             ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
             ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), summaryRim.sku ? `${uiCopy("wheel.sku", locale)} ${summaryRim.sku}` : "", overview?.setup_mode === "staggered"
-                ? `Передняя ось: ${fitmentRimTechnicalSummary(summaryRim).join(" / ")} – Задняя ось: ${fitmentRimTechnicalSummary(summaryRearRim).join(" / ")}`
+                ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
                 : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" – ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
@@ -11186,6 +10251,7 @@ function vnextRenderJob(job) {
     const rim = job?.render_input_snapshot?.rim || {};
     const specs = vnextRimSpecs(rim);
     return {
+        locale,
         jobId: job?.job_id || "", status: job?.status || "queued", title: humanRenderTitle(job),
         vehicleConfirmed: Boolean(job?.vehicle_identity?.is_user_confirmed),
         rimName: [rim.brand, rim.model].filter(Boolean).join(" "), specs,
@@ -11204,19 +10270,19 @@ function vnextRenderJob(job) {
 }
 
 function vnextRenderSnapshot(surface) {
-    if (surface === "history") return {
+    if (surface === "history") return { locale,
         loading: state.renderHistoryLoading, error: state.renderHistoryError,
         rows: state.renderHistory.slice(0, state.renderHistoryVisibleCount).map((job) => {
             const model = vnextRenderJob(job);
-            return { ...model, thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
+            return { locale, ...model, thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
         }), hasMore: state.renderHistory.length > state.renderHistoryVisibleCount,
     };
     if (surface === "processing") {
         const create = vnextCreateSnapshot();
-        return {
+        return { locale,
             retryAction: "generation-retry",
             failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage({ render_billing_status: state.renderBillingStatus }),
-            status: state.renderStatus || "queued", title: locale === "ru" ? "Виртуальная примерка" : "Visual try-on",
+            status: state.renderStatus || "queued", title: uiCopy("page.tryOn", locale),
             rimName: "",
             specs: "",
             carUrl: create.files.car?.previewUrl || "", wheelUrl: create.files.wheel?.previewUrl || "",
@@ -11230,7 +10296,7 @@ function vnextRenderSnapshot(surface) {
     }
     const selectedJobId = surface === "current-result" ? state.jobId : state.renderDetailJobId;
     const job = state.renderHistory.find((item) => item.job_id === selectedJobId);
-    return job ? vnextRenderJob(job) : { loading: state.renderDetailLoading, error: state.renderDetailError };
+    return job ? vnextRenderJob(job) : { locale, loading: state.renderDetailLoading, error: state.renderDetailError };
 }
 
 function prepareVnextRenderAssets() {
