@@ -7,6 +7,7 @@ RenderBillingStatus = Literal["reserved", "charged", "refunded", "unknown"]
 
 
 def billing_evidence_select() -> str:
+    # Finalization records a zero-delta ledger event: reservation already debited the credit.
     return """
         jobs.credit_status, jobs.credit_cost,
         (SELECT SUM(credits_delta) FROM credit_ledger

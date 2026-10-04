@@ -56,3 +56,7 @@ After reconciliation: full backend with the isolated render DSN **716 passed, 10
 Removed the pre-existing unconditional “render will not be charged” availability warning: failed job state, queue exception and network ambiguity all remain insufficient refund evidence.
 
 Exact delivery commit CI is checked on GitHub before the final handoff; results/URL belong to the PR and delivery response to avoid a self-referential report commit SHA. Independent review is still required, and merge is not performed.
+
+## HIGH-1 corrective pass
+
+Independent review found that the previous implementation committed the result asset and attachment before the separate completion/finalize transaction. The earlier finality paragraph did not prove result-publication atomicity. The corrective pass replaces that split commit with one locked transaction for asset insert + result attachment + completed + credit finalize, and moves completion analytics after commit. See [corrective-pass.md](corrective-pass.md) for the injected PostgreSQL rollback, API/share/download checks and updated validation results. The prior validation counts above describe the previous delivery; corrective validation supersedes them for this fix. Focused independent re-review remains required; no merge performed.

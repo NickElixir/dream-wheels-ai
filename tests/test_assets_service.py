@@ -57,10 +57,6 @@ def test_result_asset_gets_public_url(monkeypatch):
 
 
 def test_result_storage_failure_does_not_write_success(monkeypatch):
-    class PoolShouldNotBeUsed:
-        def acquire(self):
-            raise AssertionError("DB must not be touched when result upload fails")
-
     async def fake_upload_render_asset(**_kwargs):
         raise storage.StorageError("upload failed")
 
@@ -68,8 +64,7 @@ def test_result_storage_failure_does_not_write_success(monkeypatch):
 
     with pytest.raises(storage.StorageError):
         asyncio.run(
-            main._save_render_output(
-                PoolShouldNotBeUsed(),
+            main._upload_render_output_candidate(
                 "11111111-1111-1111-1111-111111111111",
                 77,
                 b"result",

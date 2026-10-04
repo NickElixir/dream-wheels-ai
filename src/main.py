@@ -220,21 +220,36 @@ async def _save_legacy_bot_inputs(pool, job_id: str, user_id: int, job_data: dic
             )
 
 
-async def _save_render_output(
-    pool,
+async def _upload_render_output_candidate(
     job_id: str,
     user_id: int,
     img_bytes: bytes,
     content_type: str = "image/jpeg",
-) -> str | None:
-    """Сохранить рендер в постоянное public-хранилище Supabase results."""
-    asset = await assets_service.upload_render_asset(
+) -> assets_service.AssetUpload:
+    """Upload a candidate without publishing any database result reference."""
+    return await assets_service.upload_render_asset(
         owner_user_id=user_id,
         job_id=job_id,
         kind="result",
         data=img_bytes,
         content_type=content_type,
     )
+
+
+async def _discard_render_output_candidate(asset: assets_service.AssetUpload) -> None:
+    try:
+        await assets_service.delete_uploaded_asset(asset)
+    except Exception:
+        logger.exception(
+            "Render candidate cleanup failed job_id=%s user_id=%s",
+            asset.job_id,
+            asset.owner_user_id,
+        )
+
+
+async def _publish_render_output(
+    pool, *, job_id: str, user_id: int, candidate: assets_service.AssetUpload
+) -> bool:
     async with pool.acquire() as conn:
         async with conn.transaction():
             active = await conn.fetchval(
@@ -245,27 +260,23 @@ async def _save_render_output(
             )
             if not active:
                 logger.info("Ignoring late render output job_id=%s user_id=%s", job_id, user_id)
-                try:
-                    await assets_service.delete_uploaded_asset(asset)
-                except Exception:
-                    logger.exception(
-                        "Late render output cleanup failed job_id=%s user_id=%s", job_id, user_id
-                    )
-                return None
-            await assets_service.insert_asset(conn, asset)
-            await conn.execute(
-                """
-                UPDATE jobs
-                SET result_asset_id = $1::uuid,
-                    output_image_url = $2,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = $3::uuid
-                """,
-                asset.id,
-                asset.public_url,
+                return False
+            await assets_service.insert_asset(conn, candidate)
+            completed = await conn.fetchval(
+                "UPDATE jobs SET status = 'completed', result_asset_id = $1::uuid, "
+                "output_image_url = $2, completed_at = CURRENT_TIMESTAMP, "
+                "updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = $3::uuid AND user_id = $4 AND status = 'processing' "
+                "AND credit_status = 'reserved' RETURNING id",
+                candidate.id,
+                candidate.public_url or storage.public_url(candidate.bucket, candidate.storage_key),
                 job_id,
+                user_id,
             )
-    return asset.public_url or storage.public_url(asset.bucket, asset.storage_key)
+            if not completed:
+                raise RuntimeError(f"Render publication lost active job job_id={job_id}")
+            await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
+    return True
 
 
 async def _persist_generation_metadata(pool, job_id: str, result: GenerationResult) -> None:
@@ -397,38 +408,34 @@ async def process_render_job(
     request = build_generation_request(vehicle=vehicle, rim_reference=rim_reference)
     result = await (provider or build_generation_provider()).edit(request)
     await _persist_generation_metadata(pool, job_id, result)
-    output_url = await _save_render_output(
-        pool,
+    candidate = await _upload_render_output_candidate(
         job_id,
         user_id,
         result.image_bytes,
         content_type=result.content_type,
     )
-
-    if output_url is None:
+    try:
+        published = await _publish_render_output(
+            pool, job_id=job_id, user_id=user_id, candidate=candidate
+        )
+    except Exception:
+        await _discard_render_output_candidate(candidate)
+        raise
+    if not published:
+        await _discard_render_output_candidate(candidate)
         return
 
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            completed = await conn.fetchval(
-                "UPDATE jobs SET status = 'completed', output_image_url = $1, "
-                "completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP "
-                "WHERE id = $2::uuid AND user_id = $3 AND status = 'processing' "
-                "AND credit_status = 'reserved' RETURNING id",
-                output_url,
-                job_id,
-                user_id,
-            )
-            if not completed:
-                logger.info("Ignoring late render completion job_id=%s user_id=%s", job_id, user_id)
-                return
-            await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
+    # Telemetry is independent of the committed result and credit outcome.
+    try:
+        async with pool.acquire() as conn:
             await analytics_api.record_system_event(
                 conn,
                 user_id=user_id,
                 event_name="render_completed",
                 properties={"job_id": job_id, "model": result.model},
             )
+    except Exception:
+        logger.exception("Completion analytics failed job_id=%s user_id=%s", job_id, user_id)
     logger.info(
         "✅ Задача %s завершена provider=%s model=%s task_id=%s latency_ms=%s",
         job_id,

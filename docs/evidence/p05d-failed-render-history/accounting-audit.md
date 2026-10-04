@@ -125,3 +125,7 @@ Gate A/B/C/D: backend может построить консервативный
 Owner decision received 2026-10-04: P0.5-D0 закрыт. Runtime correction использует atomic queued claim, guarded completion и locked failure/refund; исходные ссылки остаются evidence audited base, новые проверки документируются в report.md.
 
 Runtime corrections completed after owner decision: terminal queue replay now exits before provider; failure/refund retains one transaction with locked active-state eligibility; successful completion is conditional on processing/reserved; refunded job reservation is rejected. Read-only billing projection requires matching full-cost ledger evidence; default legacy not_charged remains unknown. The unconditional network/queue no-charge warning was removed. See report.md for the reconciled staging base, tests and browser scope. No historical financial mutation occurred.
+
+## Post-review correction: HIGH-1
+
+The audit above remains pinned to the original base. Independent review of delivery `73ef571` found a split commit between result attachment and completion/finalization. The [corrective pass](corrective-pass.md) now makes asset insert, result references, completed and finalize one transaction; completion analytics is after commit and best-effort. Failure/refund remains atomic. Real PostgreSQL fault injection and all three API projections verify failed/refunded with no committed result reference. No historical accounting changes or new owner ambiguity introduced.
