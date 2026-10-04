@@ -31,7 +31,25 @@ Confirmed VehicleIdentity
 - Compatibility is based only on supported technical values and intervals. The engine must not invent tolerances, clearance assumptions, spacer advice, or a positive result from nearby sizes.
 - A provider failure is an operational failure, not technical `unknown`.
 
-The V1 critical wheel fields are PCD, DIA, diameter, width and ET. The engine returns a field-level result with an explanation and combines those results conservatively into the overall verdict.
+The V1 critical wheel fields are bolt count, PCD, DIA, diameter, width and ET. The engine returns a field-level result with an explanation and combines those results conservatively into the overall verdict.
+
+### Release 1 field-independence decision
+
+**Owner decision — 2026-10-04.** Standard Fitment evaluates `bolt_count`, PCD, DIA, diameter, width and ET as **separate technical dimensions**.
+
+One wheel parameter must not become an implicit prerequisite for evaluating another. Provider, selected-modification and axle context may select the relevant reference evidence, but the field-level contract remains independent:
+
+- diameter is evaluated as diameter; width must not change its field result;
+- width is evaluated as width; diameter must not change its field result;
+- ET is evaluated as ET and must not inherit a combined diameter+width match;
+- bolt count and PCD are separate checks even when the UI displays them together as, for example, `5×112`;
+- DIA is evaluated independently using the centre-bore rule.
+
+No dependency between these wheel parameters may be introduced unless a separate physical-fitment rule is explicitly approved with its own evidence contract.
+
+This is the target Release 1 product contract even where the current runtime still contains legacy coupled size logic. Correcting such runtime coupling is separate implementation work and must not redefine this contract.
+
+Fastener hardware — bolt/nut type, thread size and tightening torque — is explicitly outside Release 1 Standard Fitment and remains **DEFERRED / POST-RELEASE**. It must not affect the Release 1 verdict.
 
 ## 2. Standard Fitment — the default free check
 
@@ -83,7 +101,7 @@ Local validation is local: it sends no provider request. The interface highlight
 
 ## 4. RimSpec confirmation
 
-Show `Подтверждено пользователем` only when every critical V1 field is both present and confirmed: PCD, DIA, diameter, width and ET.
+Show `Подтверждено пользователем` only when every critical V1 field is both present and confirmed: bolt count, PCD, DIA, diameter, width and ET.
 
 Otherwise show `Требует уточнения` and name the omissions, for example: `Не заполнены: ET, DIA`.
 
@@ -91,7 +109,7 @@ A partial RimSpec does not necessarily block Standard Fitment. The engine may ev
 
 ### Standard V1 ET rule
 
-Evaluate ET per exact axle, diameter and width against the provider-derived Wheel Size interval:
+Evaluate ET as its own technical dimension against the applicable provider-derived Wheel Size reference for the confirmed vehicle/modification and axle context. Diameter and width are not prerequisites for the ET field result:
 
 ```text
 inside provider-derived interval

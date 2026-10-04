@@ -32,12 +32,13 @@ Vehicle recognition may suggest values, but the user confirms or corrects them:
 Use structured data whenever available:
 
 - brand, model, SKU/article, product URL;
-- diameter and width;
+- diameter;
+- width;
+- bolt count;
 - PCD;
 - ET/offset;
 - DIA/centre bore;
-- fastener seat type;
-- load rating.
+- post-release/future fields when supported: fastener hardware and load rating.
 
 If critical data is unknown, the engine must return `unknown`, not infer certainty from a photo.
 
@@ -62,16 +63,31 @@ Each value includes `source`, `confidence` and `is_user_confirmed` where applica
 | `unknown` | Critical data is absent, ambiguous or outside provider coverage. |
 | `incompatible` | A known parameter conflicts, for example PCD mismatch or insufficient bore. |
 
+## Release 1 Standard Fitment boundary
+
+Release 1 evaluates these wheel parameters as separate technical dimensions:
+
+- bolt count;
+- PCD;
+- DIA / centre bore;
+- diameter;
+- width;
+- ET / offset.
+
+One parameter must not become an implicit prerequisite for evaluating another. In particular, diameter and width are not one combined size check for the target Release 1 contract, and ET is its own field-level check. Provider, selected-modification and axle context may choose the relevant reference evidence, but cross-parameter coupling requires a separately approved physical-fitment rule.
+
+Fastener hardware (bolt/nut type, thread size and tightening torque) and load-rating logic are outside the Release 1 verdict and remain post-release scope.
+
 ## Deterministic rule set v0
 
-Checks are performed on normalized structured values:
+Checks are performed on normalized structured values and return field-level results that are then combined conservatively:
 
+- bolt-count match;
 - PCD match;
-- centre bore compatibility;
-- offset range;
-- allowed diameter/width range;
-- fastener compatibility;
-- load rating when source supports it;
+- centre-bore / DIA compatibility;
+- diameter reference check;
+- width reference check;
+- ET / offset reference check;
 - front/rear axle rules when present.
 
 The rules engine must return reasons, warnings, missing data and source/version information. LLMs may explain results in natural language but must not decide compatibility.
