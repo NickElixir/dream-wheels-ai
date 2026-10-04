@@ -1,0 +1,522 @@
+{
+  "variants": [
+    {
+      "production_year_from": 2017,
+      "production_year_to": 2023,
+      "engine_code": "MDC.BE (DCB)",
+      "engine_capacity_l": 3.0,
+      "engine_type": "V6",
+      "power_kw": 250.0,
+      "power_hp": 335.0,
+      "power_ps": 340.0,
+      "fuel_code": "petrol",
+      "electrification_level": "not_applicable",
+      "make_slug": "porsche",
+      "model_slug": "cayenne",
+      "region": "eudm",
+      "generation": "E3 (9Y)",
+      "modification": "3.0 Turbo",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "2794f6a20e",
+      "modification_slug": "117a52c786"
+    },
+    {
+      "production_year_from": 2019,
+      "production_year_to": 2023,
+      "engine_code": "MDC.BE (DCB)",
+      "engine_capacity_l": 3.0,
+      "engine_type": "V6",
+      "power_kw": 250.0,
+      "power_hp": 335.0,
+      "power_ps": 340.0,
+      "fuel_code": "petrol",
+      "electrification_level": "not_applicable",
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "make_slug": "porsche",
+      "model_slug": "cayenne",
+      "region": "eudm",
+      "generation": "E3 (9Y)",
+      "modification": "3.0 Turbo",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "2794f6a20e",
+      "modification_slug": "19e5c5a357"
+    },
+    {
+      "production_year_from": 2017,
+      "production_year_to": 2020,
+      "engine_code": "DADA",
+      "engine_type": "I4",
+      "power_kw": 110.0,
+      "power_hp": 148.0,
+      "power_ps": 150.0,
+      "fuel_code": "petrol",
+      "electrification_level": "not_applicable",
+      "make_slug": "volkswagen",
+      "model_slug": "golf",
+      "region": "eudm",
+      "generation": "Mk7 (5G) Facelift",
+      "modification": "1.5 TSI",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "96f2d6069d",
+      "modification_slug": "ddeb5989b3"
+    },
+    {
+      "production_year_from": 2017,
+      "production_year_to": 2020,
+      "engine_code": "DACA",
+      "engine_type": "I4",
+      "power_kw": 96.0,
+      "power_hp": 129.0,
+      "power_ps": 131.0,
+      "fuel_code": "petrol",
+      "electrification_level": "not_applicable",
+      "make_slug": "volkswagen",
+      "model_slug": "golf",
+      "region": "eudm",
+      "generation": "Mk7 (5G) Facelift",
+      "modification": "1.5 TSI",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "96f2d6069d",
+      "modification_slug": "2a7b128d60"
+    },
+    {
+      "production_year_from": 2018,
+      "production_year_to": 2023,
+      "power_kw": 340.0,
+      "power_hp": 456.0,
+      "power_ps": 462.0,
+      "fuel_code": "electric",
+      "electrification_level": "bev",
+      "trim_attributes": [
+        "AWD"
+      ],
+      "make_slug": "tesla",
+      "model_slug": "model-3",
+      "region": "eudm",
+      "generation": "efdde87c66",
+      "modification": "Long Range",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "efdde87c66",
+      "modification_slug": "5a081c2f38"
+    },
+    {
+      "production_year_from": 2018,
+      "production_year_to": 2023,
+      "power_kw": 258.0,
+      "power_hp": 346.0,
+      "power_ps": 351.0,
+      "fuel_code": "electric",
+      "electrification_level": "bev",
+      "trim_attributes": [
+        "AWD"
+      ],
+      "make_slug": "tesla",
+      "model_slug": "model-3",
+      "region": "eudm",
+      "generation": "efdde87c66",
+      "modification": "Long Range",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "efdde87c66",
+      "modification_slug": "0d7499344b"
+    },
+    {
+      "production_year_from": 2019,
+      "production_year_to": 2023,
+      "engine_code": "MDC.UA (DCU)",
+      "engine_capacity_l": 4.0,
+      "engine_type": "V8",
+      "power_kw": 500.0,
+      "power_hp": 671.0,
+      "power_ps": 680.0,
+      "fuel_code": "petrol",
+      "electrification_level": "phev",
+      "trim_body_types": [
+        "Coupe"
+      ],
+      "make_slug": "porsche",
+      "model_slug": "cayenne",
+      "region": "eudm",
+      "generation": "E3 (9Y)",
+      "modification": "4.0 Turbo S E-Hybrid",
+      "body": "",
+      "market": "eudm",
+      "generation_slug": "2794f6a20e",
+      "modification_slug": "70a5e2c25d"
+    }
+  ],
+  "checks": [
+    {
+      "modification_slug": "117a52c786",
+      "response": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "mode": "standard",
+        "execution_status": "completed",
+        "verdict": "unknown",
+        "is_preliminary": true,
+        "reasons": [
+          {
+            "rule": "size_offset",
+            "status": "unknown",
+            "reason_code": "size_not_in_reference",
+            "axle": "front",
+            "detail": {
+              "rim_diameter_in": 16,
+              "rim_width_j": 8.5,
+              "reference_sizes": [
+                {
+                  "rim_diameter_in": 19.0,
+                  "rim_width_j": 8.5
+                },
+                {
+                  "rim_diameter_in": 20.0,
+                  "rim_width_j": 9.0
+                },
+                {
+                  "rim_diameter_in": 21.0,
+                  "rim_width_j": 9.5
+                },
+                {
+                  "rim_diameter_in": 22.0,
+                  "rim_width_j": 10.0
+                }
+              ]
+            }
+          }
+        ],
+        "conditions": [],
+        "blocking_issues": [
+          {
+            "code": "size_not_in_reference",
+            "applies_to": [
+              "front"
+            ],
+            "details": {
+              "rim_diameter_in": 16,
+              "rim_width_j": 8.5,
+              "reference_sizes": [
+                {
+                  "rim_diameter_in": 19.0,
+                  "rim_width_j": 8.5
+                },
+                {
+                  "rim_diameter_in": 20.0,
+                  "rim_width_j": 9.0
+                },
+                {
+                  "rim_diameter_in": 21.0,
+                  "rim_width_j": 9.5
+                },
+                {
+                  "rim_diameter_in": 22.0,
+                  "rim_width_j": 10.0
+                }
+              ]
+            }
+          }
+        ],
+        "advisories": [],
+        "diagnostics": [],
+        "missing_fields": [
+          "provider_allowed_wheels"
+        ],
+        "field_results": [
+          {
+            "field": "wheel_diameter_in",
+            "axle": "front",
+            "vehicle_value": "19 / 20 / 21 / 22",
+            "rim_value": "16",
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "wheel_width_j",
+            "axle": "front",
+            "vehicle_value": "8.5 / 9 / 9.5 / 10",
+            "rim_value": "8.5",
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "pcd",
+            "axle": "front",
+            "vehicle_value": "5×130",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "center_bore_mm",
+            "axle": "front",
+            "vehicle_value": "71.6",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "offset_et_mm",
+            "axle": "front",
+            "vehicle_value": null,
+            "rim_value": null,
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "wheel_diameter_in",
+            "axle": "rear",
+            "vehicle_value": "19 / 20 / 21 / 22",
+            "rim_value": "16",
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "wheel_width_j",
+            "axle": "rear",
+            "vehicle_value": "9.5 / 10.5 / 11 / 11.5",
+            "rim_value": "8.5",
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "pcd",
+            "axle": "rear",
+            "vehicle_value": "5×130",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "center_bore_mm",
+            "axle": "rear",
+            "vehicle_value": "71.6",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "offset_et_mm",
+            "axle": "rear",
+            "vehicle_value": null,
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          }
+        ],
+        "diameter_reference_details": [
+          {
+            "axle": "front",
+            "rim_diameter_in": 16.0,
+            "reference_diameters_in": [
+              19.0,
+              20.0,
+              21.0,
+              22.0
+            ],
+            "reference_min_diameter_in": 19.0,
+            "reference_max_diameter_in": 22.0,
+            "reference_relation": "below",
+            "exact_diameter_match": false,
+            "reference_scope": "normalized_allowed_wheels"
+          }
+        ],
+        "versions": {
+          "provider": "wheel_size",
+          "engine": "v2",
+          "rules": "v3"
+        },
+        "error": null,
+        "is_current": true,
+        "input_hash": null,
+        "created_at": null,
+        "evaluated_at": null,
+        "retry_mode": "not_applicable",
+        "retry_at": null
+      }
+    },
+    {
+      "modification_slug": "19e5c5a357",
+      "response": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "mode": "standard",
+        "execution_status": "completed",
+        "verdict": "unknown",
+        "is_preliminary": true,
+        "reasons": [
+          {
+            "rule": "size_offset",
+            "status": "unknown",
+            "reason_code": "size_not_in_reference",
+            "axle": "front",
+            "detail": {
+              "rim_diameter_in": 16,
+              "rim_width_j": 8.5,
+              "reference_sizes": [
+                {
+                  "rim_diameter_in": 20.0,
+                  "rim_width_j": 9.0
+                },
+                {
+                  "rim_diameter_in": 21.0,
+                  "rim_width_j": 9.5
+                },
+                {
+                  "rim_diameter_in": 22.0,
+                  "rim_width_j": 10.0
+                }
+              ]
+            }
+          }
+        ],
+        "conditions": [],
+        "blocking_issues": [
+          {
+            "code": "size_not_in_reference",
+            "applies_to": [
+              "front"
+            ],
+            "details": {
+              "rim_diameter_in": 16,
+              "rim_width_j": 8.5,
+              "reference_sizes": [
+                {
+                  "rim_diameter_in": 20.0,
+                  "rim_width_j": 9.0
+                },
+                {
+                  "rim_diameter_in": 21.0,
+                  "rim_width_j": 9.5
+                },
+                {
+                  "rim_diameter_in": 22.0,
+                  "rim_width_j": 10.0
+                }
+              ]
+            }
+          }
+        ],
+        "advisories": [],
+        "diagnostics": [],
+        "missing_fields": [
+          "provider_allowed_wheels"
+        ],
+        "field_results": [
+          {
+            "field": "wheel_diameter_in",
+            "axle": "front",
+            "vehicle_value": "20 / 21 / 22",
+            "rim_value": "16",
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "wheel_width_j",
+            "axle": "front",
+            "vehicle_value": "9 / 9.5 / 10",
+            "rim_value": "8.5",
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "pcd",
+            "axle": "front",
+            "vehicle_value": "5×130",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "center_bore_mm",
+            "axle": "front",
+            "vehicle_value": "71.6",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "offset_et_mm",
+            "axle": "front",
+            "vehicle_value": null,
+            "rim_value": null,
+            "status": "unknown",
+            "code": "size_not_in_reference"
+          },
+          {
+            "field": "wheel_diameter_in",
+            "axle": "rear",
+            "vehicle_value": "20 / 21 / 22",
+            "rim_value": "16",
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "wheel_width_j",
+            "axle": "rear",
+            "vehicle_value": "10.5 / 11 / 11.5",
+            "rim_value": "8.5",
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "pcd",
+            "axle": "rear",
+            "vehicle_value": "5×130",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "center_bore_mm",
+            "axle": "rear",
+            "vehicle_value": "71.6",
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          },
+          {
+            "field": "offset_et_mm",
+            "axle": "rear",
+            "vehicle_value": null,
+            "rim_value": null,
+            "status": "unknown",
+            "code": null
+          }
+        ],
+        "diameter_reference_details": [
+          {
+            "axle": "front",
+            "rim_diameter_in": 16.0,
+            "reference_diameters_in": [
+              20.0,
+              21.0,
+              22.0
+            ],
+            "reference_min_diameter_in": 20.0,
+            "reference_max_diameter_in": 22.0,
+            "reference_relation": "below",
+            "exact_diameter_match": false,
+            "reference_scope": "normalized_allowed_wheels"
+          }
+        ],
+        "versions": {
+          "provider": "wheel_size",
+          "engine": "v2",
+          "rules": "v3"
+        },
+        "error": null,
+        "is_current": true,
+        "input_hash": null,
+        "created_at": null,
+        "evaluated_at": null,
+        "retry_mode": "not_applicable",
+        "retry_at": null
+      }
+    }
+  ]
+}
