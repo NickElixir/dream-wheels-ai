@@ -31,23 +31,21 @@ Confirmed VehicleIdentity
 - Compatibility is based only on supported technical values and intervals. The engine must not invent tolerances, clearance assumptions, spacer advice, or a positive result from nearby sizes.
 - A provider failure is an operational failure, not technical `unknown`.
 
-The V1 critical wheel fields are bolt count, PCD, DIA, diameter, width and ET. The engine returns a field-level result with an explanation and combines those results conservatively into the overall verdict.
+The V1 critical wheel fields are bolt count, PCD, DIA, diameter, width and ET. The engine combines its critical rule results conservatively into the overall verdict. API presentation separately exposes six field-level results from saved evidence.
 
 ### Release 1 field-independence decision
 
-**Owner decision — 2026-10-04.** Standard Fitment evaluates `bolt_count`, PCD, DIA, diameter, width and ET as **separate technical dimensions**.
+**Owner clarification — P0.5-E, 2026-10-04.**
 
-One wheel parameter must not become an implicit prerequisite for evaluating another. Provider, selected-modification and axle context may select the relevant reference evidence, but the field-level contract remains independent:
+Diameter, Width, ET, PCD, Bolt count and DIA have independent field-level results. A field result must not be copied from another parameter.
 
-- diameter is evaluated as diameter; width must not change its field result;
-- width is evaluated as width; diameter must not change its field result;
-- ET is evaluated as ET and must not inherit a combined diameter+width match;
-- bolt count and PCD are separate checks even when the UI displays them together as, for example, `5×112`;
-- DIA is evaluated independently using the centre-bore rule.
+Reference selection may depend on technical context. In Standard Fitment V1, ET reference is selected for the exact axle + submitted Diameter + submitted Width, using trusted saved values. Missing contextual reference gives `unknown / vehicle_reference_offset_missing`; outside the interval gives `unknown / et_outside_reference_range`, without a physical-clearance inference.
 
-No dependency between these wheel parameters may be introduced unless a separate physical-fitment rule is explicitly approved with its own evidence contract.
+Independent Diameter and Width matches do not prove that their combination is present in the provider-approved size set. For references `19×8.5` and `20×9`, submitted `19×9` can have Diameter=pass and Width=pass, ET=unknown and overall=unknown. The conservative overall `size_offset` rule and `size_not_in_reference` explanation remain unchanged.
 
-This is the target Release 1 product contract even where the current runtime still contains legacy coupled size logic. Correcting such runtime coupling is separate implementation work and must not redefine this contract.
+The presentation contract has six rows per axle: `wheel_diameter_in`, `wheel_width_j`, `offset_et_mm`, `pcd`, `bolt_count`, `center_bore_mm`. `pcd` is the numeric diameter in mm; bolt count is a separate row. Both factual conflicts are shown even if the persisted `bolt_pattern` rule has only one primary reason. Overall unknown does not mask individual row statuses.
+
+Rows and diameter details use saved input/evaluation snapshots only, with existing evidence policy and tolerances. Discrete diameter/width matches can pass; being merely within bounds cannot. The diameter detail exact-match flag follows the same tolerance and trust check as its row; insufficient trusted evidence leaves it unknown (`null`). No live provider/current-input lookup, engine/version change or migration is introduced.
 
 Fastener hardware — bolt/nut type, thread size and tightening torque — is explicitly outside Release 1 Standard Fitment and remains **DEFERRED / POST-RELEASE**. It must not affect the Release 1 verdict.
 
@@ -109,7 +107,7 @@ A partial RimSpec does not necessarily block Standard Fitment. The engine may ev
 
 ### Standard V1 ET rule
 
-Evaluate ET as its own technical dimension against the applicable provider-derived Wheel Size reference for the confirmed vehicle/modification and axle context. Diameter and width are not prerequisites for the ET field result:
+Evaluate ET as its own technical dimension against the applicable provider-derived Wheel Size reference for the confirmed vehicle/modification and axle context. The reference is selected for the exact axle + submitted Diameter + submitted Width. ET has its own status and does not inherit either size field status:
 
 ```text
 inside provider-derived interval

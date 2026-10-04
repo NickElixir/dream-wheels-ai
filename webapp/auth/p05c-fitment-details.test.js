@@ -30,7 +30,8 @@ test('backend diameter relation drives RU/EN copy independently of width', () =>
       assert.equal(JSON.stringify(p.diameter({...detail,rim_width_j:8.5})),JSON.stringify(p.diameter({...detail,rim_width_j:10})));
       const formatted=p.diameter(detail);
       const markup=fitmentMarkup({locale,overview:{},executionStatus:'completed',check:{execution_status:'completed',verdict:'unknown'},diameterReferences:[formatted]});
-      assert.ok(markup.includes(formatted.title));
+      assert.ok(!markup.includes(formatted.title));
+      assert.doesNotMatch(markup,/vnext-fitment__diameter-reference/);
       assert.doesNotMatch(markup,/incompatible|точно не подойдёт|диск не подходит/);
       if (locale==='en') assert.doesNotMatch(formatted.title,/Размер|Диаметр|справоч/);
       if (relation==='within_bounds'&&exact===false) assert.match(formatted.copy,locale==='en'?/not among/:/отсутствует/);

@@ -617,16 +617,16 @@ def test_comparison_uses_saved_axles_rules_and_exact_decimals():
             {
                 "rim_setup": {
                     "front": {
-                        "offset_et_mm": {"value": 33.275},
-                        "wheel_diameter_in": {"value": 18},
-                        "wheel_width_j": {"value": 8},
-                        "bolt_count": {"value": 5},
-                        "pcd_mm": {"value": 112},
+                        "offset_et_mm": {"source": "user_confirmed", "value": 33.275},
+                        "wheel_diameter_in": {"source": "user_confirmed", "value": 18},
+                        "wheel_width_j": {"source": "user_confirmed", "value": 8},
+                        "bolt_count": {"source": "user_confirmed", "value": 5},
+                        "pcd_mm": {"source": "user_confirmed", "value": 112},
                     },
                     "rear": {
-                        "offset_et_mm": {"value": 42.125},
-                        "wheel_diameter_in": {"value": 20},
-                        "wheel_width_j": {"value": 9},
+                        "offset_et_mm": {"source": "user_confirmed", "value": 42.125},
+                        "wheel_diameter_in": {"source": "user_confirmed", "value": 20},
+                        "wheel_width_j": {"source": "user_confirmed", "value": 9},
                     },
                 }
             }
@@ -661,18 +661,21 @@ def test_comparison_uses_saved_axles_rules_and_exact_decimals():
         }
     ]
     fields = fitment_checks_api._comparison_fields(row, rules)
-    assert [item.field for item in fields[:5]] == [
+    assert [item.field for item in fields[:6]] == [
         "wheel_diameter_in",
         "wheel_width_j",
-        "pcd",
-        "center_bore_mm",
         "offset_et_mm",
+        "pcd",
+        "bolt_count",
+        "center_bore_mm",
     ]
-    assert fields[4].rim_value == fields[4].vehicle_value == "33.275"
-    assert fields[9].rim_value == "42.125"
-    assert fields[9].vehicle_value is None
-    assert fields[9].status == "unknown"
-    assert fields[2].rim_value == fields[2].vehicle_value == "5×112"
+    assert len(fields) == 12
+    assert fields[2].rim_value == fields[2].vehicle_value == "33.275"
+    assert fields[8].rim_value == "42.125"
+    assert fields[8].vehicle_value is None
+    assert fields[8].status == "unknown"
+    assert fields[3].rim_value == fields[3].vehicle_value == "112"
+    assert fields[4].rim_value == fields[4].vehicle_value == "5"
     assert fields[0].status == "pass"
     row["is_current"] = False
     assert fitment_checks_api._comparison_fields(row, rules) == fields
@@ -682,7 +685,7 @@ def test_comparison_uses_saved_axles_rules_and_exact_decimals():
 
 def test_completed_legacy_check_has_neutral_missing_comparison_evidence():
     fields = fitment_checks_api._comparison_fields({"execution_status": "completed"}, [])
-    assert len(fields) == 10
+    assert len(fields) == 12
     assert all(
         item.status == "unknown" and item.vehicle_value is None and item.rim_value is None
         for item in fields

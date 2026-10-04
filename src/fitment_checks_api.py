@@ -23,10 +23,24 @@ from src.fitment.context import (
     is_current_snapshot,
 )
 from src.fitment.diameter_reference import DiameterReferenceDetail, diameter_reference_detail
+from src.fitment.field_evidence import (
+    bolt_result,
+    discrete_result,
+    numeric,
+    offset_reference,
+    offset_result,
+    reference_values,
+    saved_field,
+)
 from src.fitment.providers.base import ProviderError
 from src.fitment.providers.wheel_size import WheelSizeProvider
 from src.fitment.rules.engine import run_checks
-from src.fitment.rules.tolerances import ENGINE_VERSION, TOLERANCES_VERSION
+from src.fitment.rules.tolerances import (
+    DIAMETER_TOL_IN,
+    ENGINE_VERSION,
+    TOLERANCES_VERSION,
+    WIDTH_TOL_IN,
+)
 from src.fitment.rules.verdict import assemble_verdict, verdict_vehicle_not_resolved
 from src.fitment.schemas import (
     FieldValue,
@@ -55,7 +69,9 @@ class CheckCreateRequest(BaseModel):
 
 
 class CheckFieldResult(BaseModel):
-    field: Literal["wheel_diameter_in", "wheel_width_j", "pcd", "center_bore_mm", "offset_et_mm"]
+    field: Literal[
+        "wheel_diameter_in", "wheel_width_j", "pcd", "bolt_count", "center_bore_mm", "offset_et_mm"
+    ]
     axle: Literal["front", "rear"]
     vehicle_value: str | None = None
     rim_value: str | None = None
@@ -829,82 +845,87 @@ def _comparison_fields(row: dict, rules: list[dict]) -> list[CheckFieldResult]:
         return []
 
     def number(value: object) -> str | None:
-        if not isinstance(value, int | float):
-            return None
-        text = str(value)
-        return text.removesuffix(".0")
+        value = numeric(value)
+        return str(value).removesuffix(".0") if value is not None else None
 
-    def pattern(count: object, pcd: object) -> str | None:
-        left, right = number(count), number(pcd)
-        return f"{left}×{right}" if left and right else None
-
-    fields = (
-        ("wheel_diameter_in", "size_offset", "rim_diameter"),
-        ("wheel_width_j", "size_offset", "rim_width"),
-        ("pcd", "bolt_pattern", ""),
-        ("center_bore_mm", "center_bore", ""),
-        ("offset_et_mm", "size_offset", ""),
-    )
     output = []
     for axle in ("front", "rear"):
         rim = setup.get(axle) or (setup.get("front") if setup.get("rear") is None else {}) or {}
         if not isinstance(rim, dict):
             rim = {}
-        values = {
-            name: value.get("value") if isinstance(value, dict) else value
-            for name, value in rim.items()
-        }
-        allowed = [item for item in profile.get("allowed_wheels", []) if item.get("axle") == axle]
-        for field, rule_name, reference_name in fields:
-            rule = next(
-                (
-                    item
-                    for item in rules
-                    if item.get("rule") == rule_name and item.get("axle") == axle
-                ),
-                {},
-            )
-            status = {
-                "compatible": "pass",
-                "compatible_with_conditions": "conditional",
-                "incompatible": "fail",
-            }.get(rule.get("status"), "unknown")
-            rim_value = (
-                pattern(values.get("bolt_count"), values.get("pcd_mm"))
-                if field == "pcd"
-                else number(values.get(field))
-            )
-            if field == "pcd":
-                vehicle_value = pattern(profile.get("bolt_count"), profile.get("pcd_mm"))
-            elif reference_name:
-                choices = list(dict.fromkeys(number(item.get(reference_name)) for item in allowed))
-                vehicle_value = " / ".join(value for value in choices if value) or None
-            elif field == "offset_et_mm":
-                refs = [
-                    item
-                    for item in profile.get("offset_references", [])
-                    if item.get("axle") == axle
-                    and item.get("rim_diameter_in") == values.get("wheel_diameter_in")
-                    and item.get("rim_width_j") == values.get("wheel_width_j")
-                ]
-                ref = next(
-                    (item for item in refs if item.get("evidence_class") == "stock"),
-                    refs[0] if refs else {},
+        for field in (
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+            "pcd",
+            "bolt_count",
+            "center_bore_mm",
+        ):
+            input_name = "pcd_mm" if field == "pcd" else field
+            value, trusted = saved_field(rim.get(input_name))
+            if field in {"wheel_diameter_in", "wheel_width_j"}:
+                diameter = field == "wheel_diameter_in"
+                references = reference_values(
+                    profile, axle, "rim_diameter" if diameter else "rim_width"
                 )
+                vehicle_value = " / ".join(number(item) for item in references) or None
+                status, code = discrete_result(
+                    rim.get(field), references, DIAMETER_TOL_IN if diameter else WIDTH_TOL_IN
+                )
+            elif field in {"pcd", "bolt_count"}:
+                vehicle_value = number(profile.get(input_name))
+                status, code = bolt_result(
+                    rim.get(input_name), profile.get(input_name), count=field == "bolt_count"
+                )
+            elif field == "offset_et_mm":
+                ref = offset_reference(profile, rim, axle)
                 lower, upper = number(ref.get("et_min_mm")), number(ref.get("et_max_mm"))
                 vehicle_value = (
-                    (lower if lower == upper else f"{lower}–{upper}") if lower and upper else None
+                    (lower if lower == upper else f"{lower}–{upper}")
+                    if lower is not None and upper is not None
+                    else None
                 )
+                status, code = offset_result(rim.get(field), ref)
+                if (
+                    value is not None
+                    and trusted
+                    and not ref
+                    and any(
+                        saved_field(rim.get(name))[0] is not None
+                        and not saved_field(rim.get(name))[1]
+                        for name in ("wheel_diameter_in", "wheel_width_j")
+                    )
+                ):
+                    code = "conflict_low_evidence"
             else:
+                # DIA retains the persisted independent center-bore rule.
+                rule = next(
+                    (
+                        item
+                        for item in rules
+                        if item.get("rule") == "center_bore" and item.get("axle") == axle
+                    ),
+                    {},
+                )
                 vehicle_value = number(profile.get(field))
+                status = {
+                    "compatible": "pass",
+                    "compatible_with_conditions": "conditional",
+                    "incompatible": "fail",
+                }.get(rule.get("status"), "unknown")
+                code = rule.get("reason_code")
+                if value is None or vehicle_value is None:
+                    status, code = "unknown", "center_bore_unknown"
+                elif not trusted:
+                    status, code = "unknown", "conflict_low_evidence"
             output.append(
                 CheckFieldResult(
                     field=field,
                     axle=axle,
                     vehicle_value=vehicle_value,
-                    rim_value=rim_value,
+                    rim_value=number(value),
                     status=status,
-                    code=rule.get("reason_code"),
+                    code=code,
                 )
             )
     return output
@@ -927,7 +948,19 @@ def _diameter_reference_details(row: dict) -> list[DiameterReferenceDetail]:
         rim = setup.get(axle)
         field = rim.get("wheel_diameter_in") if isinstance(rim, dict) else None
         submitted = field.get("value") if isinstance(field, dict) else field
-        output.append(diameter_reference_detail(submitted, references, axle=axle))
+        detail = diameter_reference_detail(submitted, references, axle=axle)
+        status, code = discrete_result(
+            field,
+            reference_values(profile if isinstance(profile, dict) else {}, axle, "rim_diameter"),
+            DIAMETER_TOL_IN,
+        )
+        # The detail and row use the same discrete tolerance/evidence contract.
+        if status == "pass":
+            detail.reference_relation = "within_bounds"
+        detail.exact_diameter_match = (
+            True if status == "pass" else False if code == "size_not_in_reference" else None
+        )
+        output.append(detail)
     return output
 
 
