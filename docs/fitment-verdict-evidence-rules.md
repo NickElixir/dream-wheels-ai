@@ -9,11 +9,25 @@ This document defines the first safe rule boundary for a **preliminary** detaile
 This is the broader evidence model. The canonical
 [Fitment Verdict V1](fitment/fitment-verdict-v1.md) defines the conservative
 subset and product behaviour for Standard Fitment V1. Its critical fields are
-PCD, DIA, diameter, width and ET. Tyre compatibility, load rating,
-brakes/X-factor, and extended fastener or clearance logic remain outside
-Standard Fitment V1.
+bolt count, PCD, DIA, diameter, width and ET. Tyre compatibility, load rating,
+brakes/X-factor, and fastener hardware (bolt/nut type, thread size and tightening
+torque) remain outside Standard Fitment V1.
 
-For Standard V1, ET is evaluated only for the exact axle, diameter and width: inside the provider-derived interval is compatible for that field; outside the interval is `unknown` with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance; a missing rim ET or provider interval is also `unknown`. Standard V1 does not calculate clearance, so an outside ET must not be returned as `compatible_with_conditions`.
+**Owner decision — 2026-10-04:** Standard V1 evaluates bolt count, PCD, DIA,
+diameter, width and ET as separate technical dimensions. One of these wheel
+parameters must not become an implicit prerequisite for evaluating another.
+Provider, selected-modification and axle context may select the relevant
+reference evidence, but the field-level result remains independent. Any future
+rule that deliberately couples parameters for physical clearance requires a
+separate approved evidence contract.
+
+For Standard V1, ET is evaluated as its own field against the applicable
+provider-derived ET reference for the confirmed vehicle/modification and axle
+context. Outside the available reference is `unknown` with reason
+`et_outside_reference_range` and an advisory to verify inner and outer
+clearance; a missing rim ET or provider reference is also `unknown`. Standard
+V1 does not calculate clearance, so an outside ET must not be returned as
+`compatible_with_conditions`.
 
 ## Separate execution and verdict states
 
@@ -58,10 +72,12 @@ Hard conflicts require E3 or E4 evidence. `compatible` requires E3/E4 for the cr
 
 | Parameter | Confirmed hard conflict -> incompatible | Possible condition -> compatible_with_conditions | Missing/conflicting evidence -> unknown |
 |---|---|---|---|
-| Bolt pattern / PCD | Bolt count or PCD differs from the vehicle hub | None in v1; adapters or redrilling are out of scope | Vehicle or rim PCD unknown |
+| Bolt count | Bolt count differs from the vehicle hub | None in v1; adapters or redrilling are out of scope | Vehicle or rim bolt count unknown |
+| PCD | PCD differs from the vehicle hub | None in v1; adapters or redrilling are out of scope | Vehicle or rim PCD unknown |
 | Center bore / DIA | Wheel bore is smaller than hub bore | Wheel bore larger than hub bore: installation requires a correctly sized centering ring | Hub/bore value unknown |
-| Diameter / width | Provider/OEM profile confirms the wheel/tyre package cannot clear or is unsupported | Package is outside OEM catalogue but provider/rules have sufficient clearance and tyre evidence; requires physical installation check | No tyre/clearance/profile evidence |
-| Offset / ET | Confirmed inner suspension/brake or outer body/steering interference | **Broader evidence model only:** ET outside the provider reference interval with no confirmed hard conflict may require a physical inner and outer clearance check | **Standard V1:** ET outside the interval; ET unknown; or vehicle reference interval unavailable |
+| Diameter | Confirmed physical/OEM evidence proves the diameter cannot be installed | **Broader evidence model only:** a separately approved clearance rule may introduce an explicit condition | **Standard V1:** diameter absent from trustworthy reference evidence or outside known coverage without physical-clearance proof |
+| Width | Confirmed physical/OEM evidence proves the width cannot be installed | **Broader evidence model only:** a separately approved clearance rule may introduce an explicit condition | **Standard V1:** width absent from trustworthy reference evidence or outside known coverage without physical-clearance proof |
+| Offset / ET | Confirmed inner suspension/brake or outer body/steering interference | **Broader evidence model only:** a separately approved clearance rule may introduce an explicit condition | **Standard V1:** ET outside its applicable provider reference; ET unknown; or vehicle ET reference unavailable |
 | Brake clearance | Confirmed wheel design/caliper conflict | Explicit wheel X-factor/caliper evidence says clearance is acceptable with listed configuration | No wheel-design/X-factor or vehicle brake data |
 | Fasteners | Confirmed incompatible mounting hardware/seat with no supported hardware package | Confirmed alternative hardware package, correct seat, thread engagement and installation instructions | Hardware/seat unknown where it is required |
 | Load rating | Wheel rating below the required axle/wheel load | None in v1 | Required or wheel load rating unavailable |
@@ -70,21 +86,25 @@ Hard conflicts require E3 or E4 evidence. `compatible` requires E3/E4 for the cr
 
 ## Practical rules
 
-### PCD
+### Bolt count and PCD
 
-The bolt count and PCD must match the hub. v1 does not recommend wobble bolts, redrilling or multi-PCD adaptation. A mismatch is `incompatible` only when both values are confirmed.
+Bolt count and PCD are separate checks even when they are presented together as a bolt-pattern label such as `5×112`. Each value must independently match the hub. v1 does not recommend wobble bolts, redrilling or multi-PCD adaptation. A mismatch is `incompatible` only when the conflicting value is confirmed.
 
 ### DIA / centre bore
 
 A wheel bore smaller than the vehicle hub cannot mount and is `incompatible`. A larger bore is `compatible_with_conditions`: the user must install a correctly sized centering ring. The product does not infer market availability of that ring.
 
-### ET, width and diameter
+### Diameter, width and ET
 
-For Standard V1, evaluate ET per exact axle, diameter and width. ET inside the provider-derived interval is compatible for that field. ET outside the interval is `unknown`, with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance. Standard V1 does not calculate clearance, so it must not use `compatible_with_conditions` for that case. A missing rim ET or vehicle reference interval is `unknown`.
+For Standard V1, diameter, width and ET are three separate field checks. A diameter result must not depend on the submitted width; a width result must not depend on the submitted diameter; and ET must not inherit a combined diameter+width match.
 
-In the broader evidence model, offset, width and tyre package may be evaluated together and per axle. If future supported evidence proves a specific clearance configuration, that future rule is separate from Standard V1.
+ET is evaluated against its own applicable provider-derived reference for the confirmed vehicle/modification and axle context. ET inside that reference is compatible for the ET field. ET outside it is `unknown`, with reason `et_outside_reference_range` and an advisory to verify inner and outer clearance. Standard V1 does not calculate clearance, so it must not use `compatible_with_conditions` for that case. A missing rim ET or vehicle ET reference is `unknown`.
+
+The broader evidence model may later introduce deliberately coupled physical-clearance rules. Such coupling is outside Standard V1 and requires a separate approved rule and evidence contract; it must not arise implicitly from the provider response shape.
 
 ### Fasteners and spacers
+
+Fastener hardware — bolt/nut type, thread size and tightening torque — is **DEFERRED / POST-RELEASE** and is not an input to the Release 1 Standard Fitment verdict. The broader model may support it later.
 
 Alternative hardware or spacers are conditions only where the exact required configuration is known. The engine must not infer safe thread engagement, seat type, spacer hub-centering or torque from photos.
 
