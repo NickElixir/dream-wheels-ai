@@ -87,7 +87,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
 test("vehicle edits survive Fitment snapshot refresh while the saved summary stays unchanged", () => {
   const app = read("app.js");
   const vehicleHelpers = app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired("))
-    + app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueQueryValue("));
+    + app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueParentReadiness("));
   const snapshot = app.slice(app.indexOf("function fitmentDiameterPresentation("), app.indexOf("function setVnextFitmentField("));
   const setter = app.slice(app.indexOf("function setVnextFitmentField("), app.indexOf("window.dreamwheelsFitmentBridge ="));
   const saved = { make: "Zeekr", model: "001", year: "2023", body: "saved body" };
@@ -528,7 +528,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
   const app = read("app.js");
   const source = [
     app.slice(app.indexOf("function fitmentBaseVehicleAwaitingConfirmation("), app.indexOf("function fitmentVehicleConfirmationRequired(")),
-    app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueQueryValue(")),
+    app.slice(app.indexOf("function fitmentCatalogueSelectionItem("), app.indexOf("function fitmentCatalogueParentReadiness(")),
     app.slice(app.indexOf("function fitmentRimValuesEqual("), app.indexOf("function markRimFieldEdited(")),
     app.slice(app.indexOf("function fitmentNextAction("), app.indexOf("function deriveFitmentNextIntent(")),
     app.slice(app.indexOf("function updateDemoFitmentState("), app.indexOf("function createDemoFitmentCheck(")),

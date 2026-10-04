@@ -1,0 +1,29 @@
+{
+  "base": "260c3516c286dc37c3647a2dca465e05985c38e5",
+  "removedFunctions": [
+    "fitmentCandidatesFor",
+    "fitmentVehicleMeta",
+    "fitmentRimMeta",
+    "fitmentSourceValue",
+    "fitmentSourceBrand",
+    "fitmentSourceSku",
+    "setFitmentOverviewCollapsed",
+    "fitmentCandidateLabel",
+    "renderFitmentCandidates",
+    "fitmentNextStep",
+    "fitmentModificationStateLabel",
+    "fitmentRetryMessage",
+    "renderFitmentLegacy",
+    "fitmentCatalogueErrorMessage",
+    "fitmentCatalogueQueryValue",
+    "formatPcd"
+  ],
+  "functionBodyLinesRemoved": 567,
+  "totalLinesRemoved": 583,
+  "survivingTopLevelNodes": 586,
+  "allSurvivingTopLevelNodesByteIdentical": true,
+  "controlsTestScopeByteIdentical": true,
+  "catalogueTestScopeByteIdentical": true,
+  "beforeSHA256": "6ab4dda622d99f808588312f58c500e0316a50b0030e5b7a7317d94c8cc3361e",
+  "afterSHA256": "d2bb011fca68083acbeebd18ef5fda5fcf86fea507b3130a3f3a111616e50ff7"
+}

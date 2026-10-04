@@ -96,7 +96,7 @@ def test_async_check_polling_and_failed_state_never_become_unknown() -> None:
     assert "queued" in APP_JS and "processing" in APP_JS
     assert "window.setTimeout(poll, POLL_INTERVAL_MS)" in APP_JS
     assert 'execution_status === "failed"' in APP_JS
-    assert "fitmentRetryMessage" in APP_JS
+    assert 'const showRetry = failed && check.retry_mode !== "not_applicable"' in APP_JS
     assert "`failed` is operational" in (ROOT / "docs" / "fitment-api-contract-v1.md").read_text(
         encoding="utf-8"
     )
