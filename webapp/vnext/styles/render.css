@@ -25,7 +25,7 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-result-layout { display:grid; grid-template-columns:minmax(0,76fr) minmax(250px,24fr); gap:24px; align-items:start; }
 .vnext-result-actions .vnext-button { gap:8px; }
 .vnext-result-actions .vnext-button--primary, .vnext-result-actions .vnext-button--secondary, .vnext-result-actions .vnext-button--tertiary { justify-content:center; width:100%; }
-.vnext-result-actions .vnext-button--tertiary { min-height:42px; border-color:var(--vnext-border-strong); background:transparent; color:var(--vnext-text-value); }
+.vnext-result-actions .vnext-button--tertiary { min-height:44px; border-color:var(--vnext-border-strong); background:transparent; color:var(--vnext-text-value); }
 .vnext-result-actions .vnext-button--tertiary:hover, .vnext-result-actions .vnext-button--tertiary:focus-visible { color:var(--vnext-text); }
 .vnext-render-icon { width:16px; height:16px; flex:0 0 auto; }
 .vnext-compare { position:relative; overflow:hidden; border-radius:12px; background:var(--vnext-surface-elevated); aspect-ratio:16/9; --compare:50%; }
@@ -52,7 +52,7 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-rating h3 { margin:0; font-size:17px; font-weight:500; }
 .vnext-rating > p { margin:4px 0 0; font-size:12px; }
 .vnext-rating-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-.vnext-rating-actions .vnext-button { min-height:40px; padding-inline:14px; font-size:13px; }
+.vnext-rating-actions .vnext-button { min-height:44px; padding-inline:14px; font-size:13px; }
 .vnext-rating .is-selected-good { border-color:var(--vnext-border-selected); background:var(--vnext-surface-selected); color:var(--vnext-positive); font-weight:var(--vnext-weight-semibold); }
 .vnext-rating .is-selected-warning { border-color:var(--vnext-border-selected); background:var(--vnext-surface-selected); color:var(--vnext-warning); font-weight:var(--vnext-weight-semibold); }
 .vnext-feedback-reasons { margin-top:14px; }

@@ -156,7 +156,7 @@ test("Result actions keep the primary and Fitment CTAs, expose tertiary download
   assert.match(css, /\.vnext-result-actions \.vnext-button--tertiary:hover[^{]*\{ color:var\(--vnext-text\)/);
   assert.match(css, /\.vnext-result-layout\s*\{[^}]*76fr[^}]*24fr[^}]*gap:24px/);
   assert.match(css, /\.vnext-rating\s*\{[^}]*width:min\(650px,100%\)/);
-  assert.match(css, /\.vnext-rating-actions \.vnext-button\s*\{[^}]*min-height:40px/);
+  assert.match(css, /\.vnext-rating-actions \.vnext-button\s*\{[^}]*min-height:44px/);
   assert.match(css, /\.vnext-compare-handle\s*\{[^}]*width:32px; height:32px/);
   assert.match(css, /\.vnext-shell__main:has\(\.vnext-render--result\)\s*\{ padding-inline:32px; \}/);
 });
