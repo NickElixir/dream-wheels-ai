@@ -68,6 +68,15 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
     : createButton({ label: latest.status === "failed" ? uiText("dashboard.tryAgain", localeOf(model)) : uiText("nav.history", localeOf(model)), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
   meta.append(action);
   wrap.append(meta);
+  if (model.latestFailed) {
+    const notice = document.createElement("p");
+    notice.className = "vnext-dashboard__latest-failed";
+    const [message, ending] = uiText("dashboard.latestFailed", localeOf(model)).split("{history}");
+    notice.append(message);
+    const action = createButton({ label: uiText("dashboard.openHistory", localeOf(model)), variant: "text", onClick: () => navigate?.("renders") });
+    notice.append(action, ending);
+    wrap.append(notice);
+  }
   return createIsland(wrap);
 }
 
@@ -186,7 +195,7 @@ export function createDashboardView(model, callbacks = {}) {
   const eyebrow = document.createElement("p");
   eyebrow.className = "vnext-eyebrow";
   eyebrow.textContent = uiText("dashboard.newTryOn", localeOf(model));
-  const title = document.createElement("h2");
+  const title = document.createElement("h1");
   title.setAttribute("aria-label", uiText("dashboard.tryNewWheelsOnYourVehicle", localeOf(model)));
   [uiText("dashboard.try", localeOf(model)), uiText("dashboard.newWheels", localeOf(model)), uiText("dashboard.onYourVehicle", localeOf(model))].forEach((line) => {
     const lineElement = document.createElement("span");

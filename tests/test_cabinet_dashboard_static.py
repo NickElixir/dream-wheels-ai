@@ -288,10 +288,19 @@ def test_fitment_entrypoint_uses_compatibility_language() -> None:
     assert "Уточнить параметры" not in result_button
 
 
+def app_without_owner_approved_summary_separator() -> str:
+    # P3-B owner explicitly approved a middle dot in this one canonical wheel summary.
+    snapshot = extract_function(APP_JS, "vnextFitmentSnapshot")
+    assert snapshot.count('join(" · ")') == 1
+    return APP_JS.replace(snapshot, snapshot.replace('join(" · ")', 'join(" – ")'))
+
+
 def test_user_facing_ui_never_uses_middle_dot_as_separator() -> None:
     assert "middle dot (`·`)" in (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
     assert "·" not in INDEX_HTML
-    assert "·" not in APP_JS.replace("${title} · ${wheel}", "")
+    assert "·" not in app_without_owner_approved_summary_separator().replace(
+        "${title} · ${wheel}", ""
+    )
 
 
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
@@ -452,7 +461,9 @@ def test_design_code_defines_ui_separator_rules() -> None:
     assert '20" / 8,5J / 5×114,3' in design_code
     assert "Russian decimal values use a comma" in design_code
     assert "Vehicle and rim names use spaces only" in design_code
-    assert " · " not in APP_JS.replace("${title} · ${wheel}", "")
+    assert " · " not in app_without_owner_approved_summary_separator().replace(
+        "${title} · ${wheel}", ""
+    )
     assert "vnextRimSpecs(rim)" in APP_JS
     assert '" / "' in APP_JS
 

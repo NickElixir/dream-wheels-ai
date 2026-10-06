@@ -1,0 +1,18 @@
+{
+  "base": "f97339a",
+  "changed_keys": 1,
+  "changes": [
+    {
+      "key": "dashboard.latestFailed",
+      "before": {
+        "ru": "Последняя примерка не удалась · {history}.",
+        "en": "Your latest try-on failed · {history}."
+      },
+      "after": {
+        "ru": "Последняя примерка не удалась · {history}",
+        "en": "Your latest try-on failed · {history}"
+      },
+      "reason": "Owner corrective L-2: remove trailing period"
+    }
+  ]
+}
