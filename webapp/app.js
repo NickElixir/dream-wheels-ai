@@ -8564,7 +8564,7 @@ function vnextDashboardSnapshot() {
         meta: item.meta || "",
         expiresLabel: expiryLabel(item.expiresAt),
     }));
-    const latest = state.renderHistory[0] || null;
+    const latest = state.renderHistory.find(job => job.status === "completed") || null;
     const dashboardError = state.walletMessageTone === "error" || state.renderHistoryError
         ? localizeErrorMessage(state.renderHistoryError || state.walletMessage || "Данные временно недоступны")
         : "";
@@ -8579,6 +8579,7 @@ function vnextDashboardSnapshot() {
         authenticated: isFrontendUserAuthenticated(),
         partialAuth: isSupabasePartialAuth(),
         latest: vnextDashboardJobViewModel(latest),
+        latestFailed: state.renderHistory.slice(0, latest ? state.renderHistory.indexOf(latest) : state.renderHistory.length).some(job => job.status === "failed"),
         recent: state.renderHistory.slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
     };
 }
@@ -9359,6 +9360,7 @@ function vnextFitmentSnapshot() {
         currentness: check ? { isCurrent: check.is_current !== false, stale: check.is_current === false } : null,
         canRunCheck: Boolean(overview && fitmentNextAction(overview) === "run_standard_check" && !fitmentWheelDraftIsDirty() && !state.fitmentVehicleDirty && !state.fitmentSaving && !state.fitmentSourceResolving && !state.fitmentVehicleVariantApplying && !fitmentMutationsLocked()),
         retryAvailable,
+        retryUnavailableReason: retryAvailable ? "" : uiCopy(check?.retry_mode === "not_applicable" ? "fitment.retry.unavailable" : "fitment.retry.confirmDetails", locale),
         vehicle,
         vehicleForm: fitmentVehicleFormForPresentation(),
         vehicleAwaitingConfirmation: fitmentBaseVehicleAwaitingConfirmation(),
@@ -9403,14 +9405,15 @@ function vnextFitmentSnapshot() {
         },
         rim,
         rimTitle: [summaryRim.brand, summaryRim.model].filter(Boolean).join(" "),
+        rimSku: summaryRim.sku || overview?.front_rim?.selected_variant_sku || "",
         ...fitmentWheelSource(overview, job),
         rimSpecs: fitmentRimTechnicalSummary(rim),
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
             ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
-            ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), summaryRim.sku ? `${uiCopy("wheel.sku", locale)} ${summaryRim.sku}` : "", overview?.setup_mode === "staggered"
+            ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), overview?.setup_mode === "staggered"
                 ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
-                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" – ") : "",
+                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" · ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),
@@ -9694,7 +9697,20 @@ window.dreamwheelsFitmentBridge = {
 let renderAssetPreparationPending = false;
 
 function vnextRimSpecs(rim = {}) {
-    return [rim.wheel_diameter_in != null ? `${rim.wheel_diameter_in}″` : "", rim.wheel_width_j != null ? `${rim.wheel_width_j}J` : "", rim.bolt_count && rim.pcd_mm ? `${rim.bolt_count}×${rim.pcd_mm}` : "", rim.offset_et_mm != null ? `ET ${rim.offset_et_mm}` : "", rim.center_bore_mm != null ? `DIA ${rim.center_bore_mm}` : ""].filter(Boolean).join(" / ");
+    const display = value => fitmentDisplayValue(value, locale);
+    return [rim.wheel_diameter_in != null ? `${display(rim.wheel_diameter_in)}″` : "", rim.wheel_width_j != null ? `${display(rim.wheel_width_j)}J` : "", rim.bolt_count && rim.pcd_mm ? `${rim.bolt_count}×${display(rim.pcd_mm)}` : "", rim.offset_et_mm != null ? `ET ${display(rim.offset_et_mm)}` : "", rim.center_bore_mm != null ? `DIA ${display(rim.center_bore_mm)}` : ""].filter(Boolean).join(" / ");
+}
+
+function vnextHistoryDateLabel(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return uiCopy("history.today", locale);
+    if (date.toDateString() === yesterday.toDateString()) return uiCopy("history.yesterday", locale);
+    return formatShortDate(value);
 }
 
 function vnextRenderJob(job) {
@@ -9704,8 +9720,9 @@ function vnextRenderJob(job) {
         locale,
         jobId: job?.job_id || "", status: job?.status || "queued", title: humanRenderTitle(job),
         vehicleConfirmed: Boolean(job?.vehicle_identity?.is_user_confirmed),
-        rimName: [rim.brand, rim.model].filter(Boolean).join(" "), specs,
-        createdLabel: formatDateTime(job?.created_at), dateLabel: formatShortDate(job?.created_at),
+        rimName: [rim.brand, rim.model].filter(Boolean).join(" "), rimSku: rim.sku || rim.selected_variant_sku || "", specs,
+        createdLabel: formatDateTime(job?.created_at), dateLabel: vnextHistoryDateLabel(job?.created_at),
+        timeLabel: job?.created_at ? new Date(job.created_at).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }) : "",
         failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job?.status), resultUrl: assetUrlForJob(job, "result"),
         originalUrl: assetUrlForJob(job, "original"),

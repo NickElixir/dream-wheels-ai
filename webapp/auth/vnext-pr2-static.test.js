@@ -41,7 +41,7 @@ test("Dashboard headline preserves the copy and renders in the requested three l
   assert.equal(COPY["dashboard.tryNewWheelsOnYourVehicle"].ru, "Примерьте новые диски на своём автомобиле");
   for (const [key, text] of [["dashboard.try", "Примерьте"], ["dashboard.newWheels", "новые диски"], ["dashboard.onYourVehicle", "на своём автомобиле"]]) { assert.ok(view.includes(key)); assert.equal(COPY[key].ru, text); }
   assert.doesNotMatch(view, /Загрузите автомобиль и выберите конкретный колесный диск/);
-  assert.match(css, /\.vnext-dashboard__intro h2 span \{ display: block; \}/);
+  assert.match(css, /\.vnext-dashboard__intro h1 span \{ display: block; \}/);
 });
 
 test("Photo Guide uses real frozen reference photography and approved preparation rules", () => {

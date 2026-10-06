@@ -128,14 +128,14 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
   assert.match(narrowMobile, /\.vnext-compare\s*\{ aspect-ratio:1; \}/);
 });
 
-test("Result actions keep the primary and Fitment CTAs, expose tertiary download, and omit redundant History navigation", () => {
+test("Result actions keep the primary and Fitment CTAs, expose secondary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
   assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
-  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*>Проверить совместимость/);
-  assert.match(markup, /class="vnext-button vnext-button--tertiary[^>]*data-render-action="download"[^>]*><svg[^>]*aria-hidden="true"[^>]*><path[\s\S]*?Скачать результат/);
+  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*><span[^>]*>Проверить совместимость/);
+  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="download"[^>]*><svg[^>]*aria-hidden="true"[^>]*><path[\s\S]*?Скачать/);
   assert.doesNotMatch(markup, /К моим примеркам|Скачать изображение/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="liked"[^>]*>Удачный результат/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="disliked"[^>]*>Нужна доработка/);
@@ -203,8 +203,9 @@ test("Generation Error uses available car/wheel context and preserves its existi
 });
 
 test("History rows share inset and thumbnail grid at mobile widths", () => {
-  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", dateLabel: "25 сентября", createdLabel: "25 сентября, 14:32", statusLabel: "Готово" }] });
-  assert.match(markup, /<h3>ZEEKR 007<\/h3>[\s\S]*?<p>X-Trike \/ 20″ \/ 9J \/ 5×112 \/ 25 сентября, 14:32<\/p>[\s\S]*?<span class="vnext-status vnext-status--positive">Готово<\/span>/);
+  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", dateLabel: "25 сентября", createdLabel: "25 сентября, 14:32", timeLabel: "14:32", statusLabel: "Готово" }] });
+  assert.match(markup, /<h3>ZEEKR 007<\/h3>[\s\S]*?<p>X-Trike · 20″ \/ 9J \/ 5×112<\/p>[\s\S]*?<p class="vnext-history-time">14:32<\/p>/);
+  assert.doesNotMatch(markup, /vnext-status--positive|25 сентября, 14:32/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
   assert.match(css, /\.vnext-history-row h3\s*\{[^}]*color:var\(--vnext-text-value\)/);
   assert.match(css, /\.vnext-history-date\s*\{[^}]*color:var\(--vnext-text-secondary\)/);

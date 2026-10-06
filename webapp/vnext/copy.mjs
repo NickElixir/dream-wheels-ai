@@ -1,4 +1,19 @@
 export const COPY = {
+  "render.downloadShort": {"ru": "Скачать", "en": "Download"},
+  "render.checkShort": {"ru": "Проверить", "en": "Check fit"},
+  "fitment.summary.title": {"ru": "Итог", "en": "Summary"},
+  "fitment.failure.saved": {"ru": "Данные сохранены — вводить их заново не нужно.", "en": "Your details are saved — no need to enter them again."},
+  "fitment.retry.unavailable": {"ru": "Повтор этой проверки недоступен.", "en": "Retry is unavailable for this check."},
+  "fitment.retry.confirmDetails": {"ru": "Для повтора подтвердите данные автомобиля и диска.", "en": "Confirm the vehicle and wheel details to retry."},
+  "fitment.selectEmpty": {"ru": "Выбрать ▾", "en": "Select ▾"},
+  "fitment.selectOther": {"ru": "Выбрать другое ▾", "en": "Select another ▾"},
+  "fitment.selectEmptyAria": {"ru": "Выбрать {label}", "en": "Select {label}"},
+  "fitment.table.autoShort": {"ru": "Авто", "en": "Vehicle"},
+  "history.today": {"ru": "Сегодня", "en": "Today"},
+  "history.yesterday": {"ru": "Вчера", "en": "Yesterday"},
+  "dashboard.latestFailed": {"ru": "Последняя примерка не удалась · {history}.", "en": "Your latest try-on failed · {history}."},
+  "dashboard.openHistory": {"ru": "Открыть историю", "en": "Open History"},
+
   "wallet.legal.acceptance": { "ru": "Продолжая, вы принимаете {offer}, {refund} и {privacy}.", "en": "By continuing, you accept the {offer}, {refund} and {privacy}." },
   "legacy.wallet.details": { "ru": "Подробнее", "en": "Details" },
   "wheel.et": {

@@ -2402,7 +2402,7 @@ test("MEDIUM-1 authoritative reload clears launch failure and current Check wins
         if (execution === "failed") {
             assert.equal(api.state.fitmentCheck.execution_status, "failed");
             assert.match(html, /Проверку выполнить не удалось/);
-            assert.match(html, /Попробуйте ещё раз/);
+            assert.match(html, /Данные сохранены — вводить их заново не нужно/);
             assert.match(html, /Повторить проверку/);
         } else {
             assert.doesNotMatch(html, /Проверку выполнить не удалось/);

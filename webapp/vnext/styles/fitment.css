@@ -283,3 +283,11 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__comparison-table col:nth-child(1) { width: 26%; }
   .vnext-fitment__comparison-table col:nth-child(2), .vnext-fitment__comparison-table col:nth-child(3) { width: 22%; }
 }
+.vnext-fitment__comparison-table th, .vnext-fitment__comparison-table td { word-break:normal; overflow-wrap:normal; }
+.vnext-fitment__table-vehicle-short { display:none; }
+.vnext-shell__main:has(.vnext-fitment) .vnext-shell__topbar-title { display:none; }
+@media(max-width:680px) {
+  .vnext-shell__main:has(.vnext-fitment) .vnext-shell__topbar-title { display:block; }
+  .vnext-fitment__topline h1 { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+}
+@media(max-width:400px) { .vnext-fitment__table-vehicle-full { display:none; } .vnext-fitment__table-vehicle-short { display:inline; } }

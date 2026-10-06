@@ -170,7 +170,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
 test("Wheel decimal controls preserve comma input until exact numeric serialization", () => {
   const markup = fitmentMarkup({ overview: {}, rimEditing: true, rim: { offset_et_mm: "35,125" } });
   assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
-  assert.match(markup, />ET 35,125<\/button>/);
+  assert.match(markup, />35,125<\/button>/);
   const app = read("app.js");
   const normalizer = extractFunction(app, "normalizeFitmentNumber");
   const context = {};
@@ -222,7 +222,7 @@ test("Fitment view renders exactly the four API verdicts and keeps execution fai
   const failed = fitmentMarkup({ jobId: "job-a", overview: {}, executionStatus: "failed", check: { execution_status: "failed" }, error: "Provider is unavailable", retryAvailable: true, canRunCheck: true });
   assert.match(failed, /Проверку выполнить не удалось/);
   assert.doesNotMatch(failed, /Provider is unavailable/);
-  assert.match(failed, /Попробуйте ещё раз/);
+  assert.match(failed, /Данные сохранены — вводить их заново не нужно/);
   assert.doesNotMatch(failed, /Технические данные|Недостаточно данных|Не подходит|Подходит/);
 });
 
@@ -359,7 +359,7 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
   assert.doesNotMatch(unknownAction, /Данные готовы к проверке/);
 
   const ready = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", canRunCheck: true });
-  assert.match(ready, /<section class="vnext-fitment__standard"[^>]*><h2[^>]*>Проверка совместимости<\/h2><p>Данные готовы к проверке<\/p>/);
+  assert.match(ready, /<section class="vnext-fitment__standard"[^>]*><h2[^>]*>Итог<\/h2><p>Данные готовы к проверке<\/p>/);
   assert.match(ready, /data-fitment-action="check"[^>]*>Проверить совместимость<\/button>/);
   assert.doesNotMatch(ready, /<h2>Проверить совместимость<\/h2>/);
 
@@ -764,7 +764,7 @@ test("proposal acceptance is distinguishable and its five-control progress reach
     assert.equal((markup.match(/data-confirmation-state="proposed"/g)||[]).length,count);
     assert.equal((markup.match(/compound--accepted/g)||[]).length,5-count);
     assert.match(markup,count ? new RegExp(`Осталось подтвердить ${count}`) : /Все параметры подтверждены/);
-    assert.match(markup,/20″/); assert.match(markup,/9J/); assert.match(markup,/5×112/); assert.match(markup,/ET 35,125/);
+    assert.match(markup,/20″/); assert.match(markup,/9J/); assert.match(markup,/5×112/); assert.match(markup,/>35,125<\/button>/);
     assert.doesNotMatch(markup,/data-fitment-field="rim\.(brand|model|sku)"/);
   }
 });

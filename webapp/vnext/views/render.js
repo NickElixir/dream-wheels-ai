@@ -39,7 +39,7 @@ export function resultMarkup(model) {
     <div class="vnext-compare-layer vnext-compare-reveal">${media(model.originalUrl, uiText("render.originalPhoto", localeOf(model)), model.jobId, "original", model.originalFailed, model.originalLoading, model.failureCopy, localeOf(model))}</div>
     <span class="vnext-compare-label left">${esc(uiText("render.original", localeOf(model)))}</span><span class="vnext-compare-label right">${esc(uiText("page.renderResult", localeOf(model)))}</span><div class="vnext-compare-divider"></div><div class="vnext-compare-handle" aria-hidden="true">↔</div>
     <input class="vnext-compare-range" type="range" min="0" max="100" value="50" aria-label="${esc(uiText("render.compare.aria", localeOf(model)))}" ${!model.originalUrl || model.originalFailed || !model.resultUrl || model.resultFailed ? "disabled" : ""}>
-  </div>`}<aside class="vnext-result-aside">${model.title ? `<section class="vnext-result-meta"><h3>${model.vehicleConfirmed ? uiText("create.vehicle", localeOf(model)) : uiText("render.tryOn", localeOf(model))}</h3><p class="vnext-result-value">${esc(model.title)}</p></section>` : ""}${model.rimName || model.specs ? `<section class="vnext-result-meta"><h3>${esc(uiText("wheel.label", localeOf(model)))}</h3>${model.rimName ? `<p class="vnext-result-value">${esc(model.rimName)}</p>` : ""}${model.specs ? `<p class="vnext-result-detail">${esc(model.specs)}</p>` : ""}</section>` : ""}${model.createdLabel ? `<section class="vnext-result-meta"><h3>${esc(uiText("render.created", localeOf(model)))}</h3><p class="vnext-result-value vnext-result-value--date">${esc(model.createdLabel)}</p></section>` : ""}<div class="vnext-result-actions">${button(uiText("render.again", localeOf(model)), "repeat", { primary: true, jobId: model.jobId })}${model.canFitment ? button(uiText("fitment.checkCompatibility", localeOf(model)), "fitment", { jobId: model.jobId }) : ""}${button(model.downloading ? uiText("render.loading", localeOf(model)) : uiText("render.downloadResult", localeOf(model)), "download", { tertiary: true, jobId: model.jobId, disabled: model.downloading || !model.canDownload })}${model.originalFailed || model.resultFailed ? button(uiText("render.retryLoadingTheImage", localeOf(model)), "asset-retry", { text: true, jobId: model.jobId }) : ""}</div><p class="vnext-render-notice" role="status">${esc(model.downloadNotice)}</p></aside></div>
+  </div>`}<aside class="vnext-result-aside">${model.title ? `<section class="vnext-result-meta"><h3>${model.vehicleConfirmed ? uiText("create.vehicle", localeOf(model)) : uiText("render.tryOn", localeOf(model))}</h3><p class="vnext-result-value">${esc(model.title)}</p></section>` : ""}${model.rimName || model.specs || model.rimSku ? `<section class="vnext-result-meta"><h3>${esc(uiText("wheel.label", localeOf(model)))}</h3>${model.rimName ? `<p class="vnext-result-value">${esc(model.rimName)}</p>` : ""}${model.rimSku ? `<p class="vnext-result-detail">${esc(uiText("wheel.sku", localeOf(model)))} ${esc(model.rimSku)}</p>` : ""}${model.specs ? `<p class="vnext-result-detail">${esc(model.specs)}</p>` : ""}</section>` : ""}${model.createdLabel ? `<section class="vnext-result-meta"><h3>${esc(uiText("render.created", localeOf(model)))}</h3><p class="vnext-result-value vnext-result-value--date">${esc(model.createdLabel)}</p></section>` : ""}<div class="vnext-result-actions">${button(uiText("render.again", localeOf(model)), "repeat", { primary: true, jobId: model.jobId })}<div class="vnext-result-secondary">${model.canFitment ? `<button type="button" class="vnext-button vnext-button--secondary" data-render-action="fitment" data-job="${esc(model.jobId)}"><span class="vnext-result-check-full">${esc(uiText("fitment.checkCompatibility", localeOf(model)))}</span><span class="vnext-result-check-short">${esc(uiText("render.checkShort", localeOf(model)))}</span></button>` : ""}${button(model.downloading ? uiText("render.loading", localeOf(model)) : uiText("render.downloadShort", localeOf(model)), "download", { jobId: model.jobId, disabled: model.downloading || !model.canDownload })}</div>${model.originalFailed || model.resultFailed ? button(uiText("render.retryLoadingTheImage", localeOf(model)), "asset-retry", { text: true, jobId: model.jobId }) : ""}</div><p class="vnext-render-notice" role="status">${esc(model.downloadNotice)}</p></aside></div>
   <section class="vnext-rating" aria-label="${esc(uiText("render.feedback.title", localeOf(model)))}"><h3>${esc(uiText("render.feedback.title", localeOf(model)))}</h3><p>${esc(uiText("render.feedback.help", localeOf(model)))}</p><div class="vnext-rating-actions">${button(uiText("render.goodResult", localeOf(model)), "feedback", { jobId: model.jobId, value: "liked", disabled: feedback.busy, selected: feedback.sentiment === "liked", tone: "good" })}${button(uiText("render.needsImprovement", localeOf(model)), "feedback", { jobId: model.jobId, value: "disliked", disabled: feedback.busy, selected: feedback.sentiment === "disliked", tone: "warning" })}</div><div class="vnext-feedback-reasons" ${feedback.sentiment !== "disliked" ? "hidden" : ""}><p>${esc(uiText("render.feedback.whatToImprove", localeOf(model)))}</p><div class="vnext-feedback-chips">${(model.reasons || []).map((reason) => button(reason.label, "reason", { jobId: model.jobId, value: reason.code, disabled: feedback.busy, selected: reason.code === feedback.reason })).join("")}</div></div><p class="vnext-feedback-notice" role="status">${esc(feedback.busy ? uiText("render.savingFeedback", localeOf(model)) : feedback.notice)}</p><div class="vnext-feedback-error" role="status" ${!feedback.error ? "hidden" : ""}>${esc(feedback.error)} ${button(uiText("create.retry", localeOf(model)), "feedback-retry", { jobId: model.jobId, disabled: feedback.busy })}</div></section>`;
 }
 
@@ -52,7 +52,7 @@ export function historyMarkup(model) {
     const date = row.dateLabel !== group ? `<h2 class="vnext-history-date">${esc(row.dateLabel)}</h2>` : "";
     group = row.dateLabel;
     const action = row.status === "completed" ? button(uiText("dashboard.open", localeOf(model)), "open", { jobId: row.jobId }) : row.status === "failed" ? button(row.failureCopy?.retry, "retry-create") : "";
-    return `${date}<article class="vnext-history-row" data-row-job="${esc(row.jobId)}">${row.status === "failed" ? `<div class="vnext-render-media">${row.thumbnailUrl && !row.thumbnailFailed ? `<img src="${esc(row.thumbnailUrl)}" alt="${esc(row.failureCopy?.sourcePhoto)}" data-render-image="original" data-job="${esc(row.jobId)}">` : ""}</div>` : media(row.thumbnailUrl, uiText("render.vehicleTryOn", localeOf(model)), row.jobId, row.thumbnailKind, row.thumbnailFailed, row.thumbnailLoading, row.failureCopy, localeOf(model))}<div><h3>${esc(row.status === "completed" ? row.title : row.status === "failed" ? row.failureCopy?.generationFailed : uiText("page.renderProcessing", localeOf(model)))}</h3><p>${esc([row.rimName, row.specs, row.createdLabel].filter(Boolean).join(" / "))}</p><span class="vnext-status vnext-status--${row.status === "completed" ? "positive" : row.status === "failed" ? "negative" : "pending"}">${esc(row.status === "failed" ? row.failureCopy?.failedBadge : row.statusLabel)}</span>${row.status === "failed" && row.billingMessage ? `<p>${esc(row.billingMessage)}</p>` : ""}</div><div class="vnext-history-actions">${action}</div></article>`;
+    return `${date}<article class="vnext-history-row" data-row-job="${esc(row.jobId)}">${row.status === "failed" ? `<div class="vnext-render-media">${row.thumbnailUrl && !row.thumbnailFailed ? `<img src="${esc(row.thumbnailUrl)}" alt="${esc(row.failureCopy?.sourcePhoto)}" data-render-image="original" data-job="${esc(row.jobId)}">` : ""}</div>` : media(row.thumbnailUrl, uiText("render.vehicleTryOn", localeOf(model)), row.jobId, row.thumbnailKind, row.thumbnailFailed, row.thumbnailLoading, row.failureCopy, localeOf(model))}<div><h3>${esc(row.status === "completed" ? row.title : row.status === "failed" ? row.failureCopy?.generationFailed : uiText("page.renderProcessing", localeOf(model)))}</h3><p>${esc([row.rimName, row.specs].filter(Boolean).join(" · "))}</p>${row.timeLabel ? `<p class="vnext-history-time">${esc(row.timeLabel)}</p>` : ""}${row.status !== "completed" ? `<span class="vnext-status vnext-status--${row.status === "completed" ? "positive" : row.status === "failed" ? "negative" : "pending"}">${esc(row.status === "failed" ? row.failureCopy?.failedBadge : row.statusLabel)}</span>` : ""}${row.status === "failed" && row.billingMessage ? `<p>${esc(row.billingMessage)}</p>` : ""}</div><div class="vnext-history-actions">${action}</div></article>`;
   }).join("")}</div>${model.hasMore ? button(uiText("render.showMore", localeOf(model)), "more") : ""}`;
 }
 
@@ -80,6 +80,7 @@ export function refreshRenderView(root, model, callbacks = root.renderCallbacks,
   root.renderCallbacks = callbacks;
   if (root.renderJobId !== model.jobId) {
     root.querySelector("[data-compare]")?.style.removeProperty("--compare");
+    root.querySelector("[data-compare]")?.style.removeProperty("--image-ratio");
     const range = root.querySelector(".vnext-compare-range");
     if (range) range.value = "50";
     root.renderJobId = model.jobId;
@@ -88,6 +89,14 @@ export function refreshRenderView(root, model, callbacks = root.renderCallbacks,
   const next = document.createElement("section");
   next.className = root.className;
   next.innerHTML = markup;
+  if (root.renderKind === "result") {
+    next.querySelectorAll(".vnext-compare .vnext-render-media > span").forEach(status => {
+      if (status.closest(".vnext-compare-reveal") ? !model.originalLoading : !model.resultLoading) return;
+      status.className = "vnext-compare-loading";
+      status.setAttribute("aria-label", uiText("render.loadingImage", localeOf(model)));
+      status.innerHTML = '<i class="vnext-spinner" aria-hidden="true"></i>';
+    });
+  }
   patchNode(root, next);
   return root;
 }
@@ -104,6 +113,14 @@ export function createRenderView(kind, model = {}, callbacks = {}, locale = appl
   root.addEventListener("input", (event) => {
     if (event.target.matches(".vnext-compare-range")) root.querySelector("[data-compare]")?.style.setProperty("--compare", `${event.target.value}%`);
   });
+  root.addEventListener("load", (event) => {
+    const image = event.target;
+    if (image.matches?.("[data-render-image]") && image.naturalWidth && image.naturalHeight) {
+      const result = root.querySelector('.vnext-compare img[data-render-image="result"]');
+      const reference = result?.naturalWidth ? result : image;
+      root.querySelector("[data-compare]")?.style.setProperty("--image-ratio", String(reference.naturalWidth / reference.naturalHeight));
+    }
+  }, true);
   root.addEventListener("error", (event) => {
     if (event.target.matches("[data-render-image]")) root.renderCallbacks?.assetError?.(event.target.dataset.job, event.target.dataset.renderImage);
   }, true);
