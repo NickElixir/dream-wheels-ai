@@ -4507,8 +4507,8 @@ function fitmentRimTechnicalSummary(rim = {}) {
         rim.bolt_count != null && rim.pcd_mm != null ? `${rim.bolt_count}×${fitmentDisplayValue(rim.pcd_mm, locale)}` : "",
     ].filter(Boolean).join(" / ");
     const fit = [
-        rim?.center_bore_mm != null && rim?.center_bore_mm !== "" ? `DIA ${fitmentDisplayValue(rim.center_bore_mm, locale)}` : "",
         rim?.offset_et_mm != null && rim?.offset_et_mm !== "" ? `ET ${fitmentDisplayValue(rim.offset_et_mm, locale)}` : "",
+        rim?.center_bore_mm != null && rim?.center_bore_mm !== "" ? `DIA ${fitmentDisplayValue(rim.center_bore_mm, locale)}` : "",
     ].filter(Boolean).join(" / ");
     return [main, fit].filter(Boolean);
 }

@@ -53,3 +53,23 @@ Before-focused captures route production files from exact base Git blobs into th
 |9 table|before-focused-compatible-* / after-focused-compatible-*|
 |10 favicon|favicon.svg / favicon.ico; root static assets HTTP checks; owner authorization above|
 |12 loading|before-focused-loading-* / after-focused-loading-*; after-focused-loading-320-ru|
+
+## Corrective review on f97339a — pre-edit decisions
+
+|Finding|Confirmed cause|Decision / before evidence|
+|---|---|---|
+|M-1|Portrait ratio applied at desktop without height cap|FIX; corrective/before-portrait-{1440,1024}-*.jpg|
+|M-2|Local canRunCheck blockers trigger fallback retry-unavailable text|FIX display condition/text only; no admission change|
+|M-3|Viewport query ignores narrow desktop action column|FIX container-width labels; corrective/before-result-{1440,1024}-*.jpg|
+|L-1|Hidden Home title leaves border/padding|FIX border/padding ≥681 only; login button appears up to700px, retain topbar to preserve681–700 login|
+|L-2|Notice template ends with period|FIX exactly dashboard.latestFailed RU/EN; no other copy|
+|L-3|Summary, SKU legend/cards and editor use DIA-before-ET|FIX display order only; corrective/before-{compatible,editor,result}-*.jpg|
+|L-7|Fixture raw snake-case field values not mapped to camel-case presentation|FIX harness only; before-compatible screenshots|
+
+L-3 additional audit: fitmentRimTechnicalSummary serves legacy fallback as well as canonical/staggered summaries, so its display order changes there too. vnextRimSpecs already uses ET/DIA and serves Result/History. Dashboard vnextDashboardJobViewModel shows size/PCD only; no ET/DIA pair to reorder. Comparison table already puts ET before DIA. Raw identity maps, numeric-field sets, serialization arrays and confirmation/readiness loops are not visual order and remain unchanged. Editor legend/card labels and DOM/tab order will follow diameter/width/PCD/ET/DIA; picker identifiers/focus keys remain intact.
+
+Accepted limitations unchanged: L-4 Result SKU depends on existing snapshot; L-5 :has support on old WebViews; L-6 not_applicable next-step policy needs a separate product decision.
+
+Legacy HTML exception (L-3): index.html legacy wheel input forms still put DIA before ET (front551/556, rear569/570). These are hidden by the active VNext Fitment surface and are outside this VNext-only corrective; no legacy form/editor migration or input-handling change is introduced. Shared legacy summary formatting is corrected through fitmentRimTechnicalSummary. Plain maps/serialization/confirmation arrays and immutable demo/reference strings retain source order because they are not rendered parameter sequences. No changes to readiness or confirmation order.
+
+Corrective result: all seven listed findings addressed; tests and before/after mapping in corrective/report.md. Container queries replace the earlier viewport-label rule. Default1440 landscape dimensions are unchanged;4:3 cap cases and portrait bounds are separately tested. Existing snapshot-only SKU, older-WebView :has and not_applicable recovery policy remain accepted limitations. No merge.

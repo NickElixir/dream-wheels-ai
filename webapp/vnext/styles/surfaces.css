@@ -168,3 +168,5 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-dashboard__latest-failed { color:var(--vnext-text-secondary); font-size:13px; }
 .vnext-dashboard__latest-failed .vnext-button { display:inline-flex; padding:0; font-size:inherit; }
 @media(max-width:680px) { .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar-title { display:block; } }
+
+@media(min-width:681px) { .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { border-bottom:0; padding-bottom:0; } }

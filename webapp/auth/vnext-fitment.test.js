@@ -16,9 +16,9 @@ test("picker makes the workspace inert and catalogue labels explicitly name cont
   assert.match(markup, /label for="fitment-field-vehicle-make"/);
   assert.match(markup, /id="fitment-field-vehicle-make"/);
   assert.ok(markup.indexOf('role="dialog"') > markup.indexOf('id="fitment-standard-title"'));
-  const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalWheelSummary: "18″ / 8J / 5×112 / DIA 66,6 / ET 35,125", vehicleSpecs: ["2024", "X254"] });
+  const wheel = fitmentMarkup({ rimEditing: true, resolver: { canChooseSku: true, url: "https://example.test" }, canonicalWheelSummary: "18″ / 8J / 5×112 / ET 35,125 / DIA 66,6", vehicleSpecs: ["2024", "X254"] });
   assert.match(wheel, /Выбрать другой вариант/);
-  assert.match(wheel, /DIA 66,6 \/ ET 35,125/);
+  assert.match(wheel, /ET 35,125 \/ DIA 66,6/);
   assert.doesNotMatch(wheel, /SKU[^<]*▾|·/);
 });
 
@@ -442,7 +442,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(variants, /Выберите диск/);
   assert.match(variants, /BBS CI-R/);
   assert.match(variants, /Артикул: A1/);
-  assert.match(variants, /19″[^]*?8,5J[^]*?5×112[^]*?66,6[^]*?35,25/);
+  assert.match(variants, /19″[^]*?8,5J[^]*?5×112[^]*?35,25[^]*?66,6/);
   assert.match(variants, /Выбрать/);
   assert.match(variants, /data-fitment-action="rim-variant"/);
   const missingSpecs = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ sku: "A2", values: {} }] } });

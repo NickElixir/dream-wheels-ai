@@ -8,6 +8,7 @@ import {createFitmentView} from "${new URL('../../webapp/vnext/views/fitment.js'
 import {createDashboardView} from "${new URL('../../webapp/vnext/views/dashboard.js',location.href)}";
 import {createAppShell} from "${new URL('../../webapp/vnext/shell/app-shell.js',location.href)}";
 const scenario=new URLSearchParams(location.search).get('scenario')||'result';
+document.documentElement.lang=locale;
 const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
 const job={job_id:'qa-completed',status:'completed',created_at:new Date().toISOString(),render_input_snapshot:{rim:{brand:'Tech Line',model:'TL901',sku:'2481081',wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:108,center_bore_mm:63.4,offset_et_mm:45}},vehicle_identity:{is_user_confirmed:true},output_image_url:asset('demo-render-zeekr-xtrike.jpg')};
 const projected=vnextRenderJob(job);
@@ -29,9 +30,10 @@ if(scenario.startsWith('result')||scenario==='loading'||scenario==='portrait'){
  const data=await(await fetch("${new URL('../../docs/evidence/p05e-fitment-field-evidence/representative-api.json',location.href)}")).json();
  const check=structuredClone(data[scenario==='compatible'?'compatible':scenario==='conditions'?'dia-conditional':scenario==='incompatible'?'J':'A']);
  check.is_current=scenario!=='stale';if(scenario==='failed')check.execution_status='failed';
- const model={locale,overview:{vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready'},nextAction:'run_standard_check',vehicleTitle:'ZEEKR 007',vehicleVariantName:'EV',canonicalVehicleSummary:'EV – 2023',canonicalWheelSummary:'Tech Line TL901 · '+fitmentRimTechnicalSummary(job.render_input_snapshot.rim).join(' / '),rimTitle:'Tech Line TL901',rimSku:'2481081',rim:job.render_input_snapshot.rim,vehiclePreview:result.originalUrl,rimPreview:asset('demo-rim-xtrike.png'),check,executionStatus:check.execution_status,canRunCheck:true,retryAvailable:scenario!=='failed',rimEditing:scenario==='editor',rimPendingProposals:[],rimSaveReadiness:{ready:true,invalid:[],missing:[],conflicts:[]},fieldEvidence:fitmentResultFieldItems(check),retryUnavailableReason:uiCopy('fitment.retry.unavailable',locale)};
+ const fixtureRim=['compatible','conditions'].includes(scenario)?{...job.render_input_snapshot.rim,pcd_mm:112,center_bore_mm:scenario==='conditions'?70:66.6}:job.render_input_snapshot.rim;
+ const model={locale,overview:{vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready'},nextAction:'run_standard_check',vehicleTitle:'ZEEKR 007',vehicleVariantName:'EV',canonicalVehicleSummary:'EV – 2023',canonicalWheelSummary:'Tech Line TL901 · '+fitmentRimTechnicalSummary(fixtureRim).join(' / '),rimTitle:'Tech Line TL901',rimSku:'2481081',rim:fixtureRim,vehiclePreview:result.originalUrl,rimPreview:asset('demo-rim-xtrike.png'),check,executionStatus:check.execution_status,canRunCheck:true,retryAvailable:scenario!=='failed',rimEditing:scenario==='editor',rimPendingProposals:[],rimSaveReadiness:{ready:true,invalid:[],missing:[],conflicts:[]},fieldEvidence:fitmentResultFieldItems(check).map(row=>({...row,vehicleValue:row.vehicle_value,rimValue:row.rim_value})),retryUnavailableReason:uiCopy('fitment.retry.unavailable',locale)};
  if(scenario==='editor-empty')Object.assign(model,{rimEditing:true,rim:{}});
- content=createFitmentView(model,{});title=uiCopy('fitment.compatibilityCheck',locale);activeView='fitment';
+ content=createFitmentView(model,{setField:(path,value)=>window.qaActions.push({path,value})});title=uiCopy('fitment.compatibilityCheck',locale);activeView='fitment';
 }
 document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate(){},authenticated:true,locale}));window.qaReady=true;
 `;

@@ -11,7 +11,7 @@ export const COPY = {
   "fitment.table.autoShort": {"ru": "Авто", "en": "Vehicle"},
   "history.today": {"ru": "Сегодня", "en": "Today"},
   "history.yesterday": {"ru": "Вчера", "en": "Yesterday"},
-  "dashboard.latestFailed": {"ru": "Последняя примерка не удалась · {history}.", "en": "Your latest try-on failed · {history}."},
+  "dashboard.latestFailed": {"ru": "Последняя примерка не удалась · {history}", "en": "Your latest try-on failed · {history}"},
   "dashboard.openHistory": {"ru": "Открыть историю", "en": "Open History"},
 
   "wallet.legal.acceptance": { "ru": "Продолжая, вы принимаете {offer}, {refund} и {privacy}.", "en": "By continuing, you accept the {offer}, {refund} and {privacy}." },

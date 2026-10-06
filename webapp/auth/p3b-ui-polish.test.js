@@ -22,7 +22,7 @@ test('P3-B Result preserves repeat/check/download order and secondary row withou
 
 test('P3-B failed Fitment has one failure, primary retry and explained disable',()=>{
  for(const retryAvailable of [true,false]){
-  const html=fitmentMarkup({locale:'ru',overview:{},executionStatus:'failed',check:{execution_status:'failed'},nextAction:'run_standard_check',canRunCheck:true,retryAvailable});
+  const html=fitmentMarkup({locale:'ru',overview:{},executionStatus:'failed',check:{execution_status:'failed'},nextAction:'run_standard_check',canRunCheck:true,retryAvailable,retryUnavailableReason:retryAvailable?'':copy('fitment.retry.unavailable','ru')});
   assert.equal(html.split('Проверку выполнить не удалось').length-1,1);
   assert.match(html,/Данные сохранены — вводить их заново не нужно\./);
   assert.match(html,/vnext-button--primary[^>]*data-fitment-action="check"/);
@@ -34,7 +34,7 @@ test('P3-B failed Fitment has one failure, primary retry and explained disable',
 
 test('P3-B summary and separate SKU preserve canonical vehicle summary',()=>{
  for(const sku of ['2481081','']){
-  const html=fitmentMarkup({locale:'ru',overview:{},rimTitle:'Tech Line TL901',rimSku:sku,canonicalVehicleSummary:'EV – 2023',canonicalWheelSummary:'Tech Line TL901 · 19″ / 8J / 5×108 / DIA 63,4 / ET 45'});
+  const html=fitmentMarkup({locale:'ru',overview:{},rimTitle:'Tech Line TL901',rimSku:sku,canonicalVehicleSummary:'EV – 2023',canonicalWheelSummary:'Tech Line TL901 · 19″ / 8J / 5×108 / ET 45 / DIA 63,4'});
   assert.match(html,/>Итог<\/h2>/);assert.match(html,/<strong>EV – 2023<\/strong>/);
   assert.match(html,/<strong>Tech Line TL901 · 19″/);
   if(sku)assert.match(html,/identity-code">Артикул 2481081/);else assert.doesNotMatch(html,/identity-code/);
@@ -82,4 +82,36 @@ test('P3-B Result SKU projects only existing snapshot fields without changing jo
   const job={job_id:'a',status:'completed',created_at:'2026-10-06T10:34:00Z',render_input_snapshot:{rim}};const before=JSON.stringify(job),model=ctx.project(job);
   assert.equal(model.rimSku,rim.sku||rim.selected_variant_sku||'');assert.match(model.timeLabel,/^\d{2}:\d{2}$/);assert.equal(JSON.stringify(job),before);assert.equal(model.status,'completed');
  }
+});
+
+test('P3-B corrective retry explanation is exclusively server supplied',()=>{
+ const stale={locale:'ru',overview:{},executionStatus:'completed',check:{execution_status:'completed',verdict:'compatible',is_current:false},nextAction:'run_standard_check',retryAvailable:true,canRunCheck:false};
+ for(const local of [{rimDraftDirty:true},{saving:true},{checking:true},{rimEditing:true},{vehicleEditing:true},{resolver:{loading:true}},{mutationLocked:true},{}]){
+  const html=fitmentMarkup({...stale,...local});assert.doesNotMatch(html,/vnext-fitment__retry-reason|Повтор этой проверки недоступен/);
+ }
+ for(const key of ['fitment.retry.unavailable','fitment.retry.confirmDetails']){
+  const html=fitmentMarkup({...stale,executionStatus:'failed',check:{execution_status:'failed'},retryAvailable:false,retryUnavailableReason:copy(key,'ru')});
+  assert.match(html,/vnext-fitment__retry-reason/);assert.ok(html.includes(copy(key,'ru')));
+ }
+ const active=fitmentMarkup({...stale,executionStatus:'failed',check:{execution_status:'failed'},canRunCheck:true});
+ assert.doesNotMatch(active,/vnext-fitment__retry-reason/);assert.match(active,/vnext-button--primary[^>]*data-fitment-action="check"[^>]* >Повторить проверку/);
+ const noText=fitmentMarkup({...stale,retryAvailable:false,retryUnavailableReason:''});assert.doesNotMatch(noText,/vnext-fitment__retry-reason/);
+});
+
+test('P3-B corrective technical summary and Result formatter put ET before DIA',()=>{
+ const ctx={locale:'ru',fitmentDisplayValue:(v)=>String(v).replace('.',',')};vm.createContext(ctx);
+ for(const name of ['fitmentRimTechnicalSummary','vnextRimSpecs'])vm.runInContext(extractDeclaration(read('../app.js'),name)+`\nthis.${name}=${name};`,ctx);
+ const rim={wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:108,offset_et_mm:45,center_bore_mm:63.4};
+ const expected='19″ / 8,5J / 5×108 / ET 45 / DIA 63,4';assert.equal(ctx.fitmentRimTechnicalSummary(rim).join(' / '),expected);assert.equal(ctx.vnextRimSpecs(rim),expected);
+});
+
+test('P3-B corrective editor and SKU cards follow diameter width PCD ET DIA',()=>{
+ const rim={wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:112,offset_et_mm:35.25,center_bore_mm:66.6};
+ const editor=fitmentMarkup({locale:'ru',overview:{},rimEditing:true,rim});
+ const fields=[...editor.matchAll(/data-fitment-focus="rim\.([^" ]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(fields,['wheel_diameter_in','wheel_width_j','pcd','offset_et_mm','center_bore_mm']);
+ const sku=fitmentMarkup({locale:'ru',overview:{},rimEditing:true,resolver:{url:'https://example.test',variants:[{sku:'A',values:rim}]}});
+ assert.match(sku,/<span>PCD<\/span><span>ET<\/span><span>DIA<\/span>/);assert.match(sku,/19″[\s\S]*8,5J[\s\S]*5×112[\s\S]*35,25[\s\S]*66,6/);
+ assert.equal(copy('dashboard.latestFailed','ru',{history:'Открыть историю'}),'Последняя примерка не удалась · Открыть историю');
+ assert.equal(copy('dashboard.latestFailed','en',{history:'Open History'}),'Your latest try-on failed · Open History');
 });
