@@ -8,11 +8,11 @@ import { resultMarkup, historyMarkup } from '../vnext/views/render.js';
 import { COPY, copy } from '../vnext/copy.mjs';
 const read=path=>fs.readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('P3-B Result preserves repeat/check/download order and secondary row without Fitment',()=>{
+test('P3-B Result uses download/check/repeat order and secondary row without Fitment',()=>{
  for(const canFitment of [true,false]){
   const html=resultMarkup({locale:'ru',status:'completed',jobId:'a',canFitment,canDownload:true,resultUrl:'/result',originalUrl:'/original',rimName:'BBS',rimSku:'2481081'});
-  assert.ok(html.indexOf('data-render-action="repeat"')<html.indexOf('data-render-action="download"'));
-  if(canFitment)assert.ok(html.indexOf('data-render-action="fitment"')<html.indexOf('data-render-action="download"'));
+  assert.ok(html.indexOf('data-render-action="download"')<html.indexOf('data-render-action="repeat"'));
+  if(canFitment)assert.ok(html.indexOf('data-render-action="download"')<html.indexOf('data-render-action="fitment"'));
   else assert.doesNotMatch(html,/data-render-action="fitment"/);
   assert.match(html,/vnext-result-secondary/);assert.match(html,/Артикул 2481081/);
  }

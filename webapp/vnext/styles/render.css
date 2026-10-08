@@ -212,3 +212,11 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-result-layout > .vnext-result-actions { width:100%; }
 .vnext-result-layout > .vnext-result-actions .vnext-button { width:auto; }
 @media(max-width:760px) { .vnext-result-layout > .vnext-result-actions .vnext-button { width:100%; } }
+
+/* UI-024: wheel first; group current-result actions apart from repeat. */
+.vnext-result-vehicle .vnext-result-value { font-size:20px; }
+.vnext-render p.vnext-result-date { color:var(--vnext-text-secondary); font-size:13px; }
+.vnext-result-layout > .vnext-result-actions { justify-content:space-between; align-items:center; }
+@media(max-width:760px) {
+ .vnext-result-layout > .vnext-result-actions > [data-render-action="repeat"] { margin-top:6px; }
+}
