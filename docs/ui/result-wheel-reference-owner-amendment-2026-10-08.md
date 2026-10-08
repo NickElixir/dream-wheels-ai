@@ -11,3 +11,5 @@ Design-code proposal (not global implementation): links within prose share the e
 UI-023 — owner approved trial of variant1: two input groups above the wide comparison (vehicle/date left, compact wheel reference right), actions in a horizontal row below, rating at bottom. Mobile groups and actions stack vertically. No islands or separators. Supersedes UI-022 sidebar composition.
 
 UI-024 — owner approved trial: wheel group first/left, vehicle and muted date second/right without Created heading. Download primary and compatibility secondary grouped left below comparison; repeat secondary right. Mobile stacks full-width actions, with separation before repeat.
+
+Owner acceptance 08.10.2026: UI-024 Result composition accepted. Treat this version as the approved visual baseline; additional changes require a separately discussed amendment. Next screen: History. Local Chrome desktop/mobile inspected; 232 frontend tests passed. Staging visual rollout and fresh/authenticated generation verification remain outstanding.
