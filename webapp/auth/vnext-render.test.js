@@ -131,7 +131,7 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
 test("Result actions keep the primary and Fitment CTAs, expose secondary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
   assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
-  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
+  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Создано[\s\S]*?25 сентября, 14:32[\s\S]*?Колёсный диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
   assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*><span[^>]*>Проверить совместимость/);
@@ -545,4 +545,26 @@ test("user retry submits a new generation key and preserves the old failed Histo
   assert.equal(app.state.renderHistory[0],old);
   assert.equal(old.status,"failed");
   assert.equal(old.render_billing_status,"refunded");
+});
+
+test("Result wheel reference is optional, escaped, and reports an unavailable photo",()=>{
+ const base={jobId:'A',status:'completed',locale:'ru'};
+ assert.doesNotMatch(resultMarkup(base),/vnext-result-wheel/);
+ const loaded=resultMarkup({...base,wheelUrl:'blob:wheel',wheelAvailable:true});
+ assert.match(loaded,/КОЛ|Колёсный диск/);
+ assert.match(loaded,/src="blob:wheel"[^>]*data-render-image="rim_original"/);
+ const failed=resultMarkup({...base,wheelAvailable:true,wheelFailed:true,failureCopy:{assetUnavailable:'Photo unavailable'}});
+ assert.match(failed,/Photo unavailable/);assert.doesNotMatch(failed,/src="undefined"/);
+});
+
+test("private wheel reference uses Authorization fetch and remains separate from result",async()=>{
+ const app=runtime();const owned={...job('A'),assets:{rim_original:{download_url:'/jobs/A/assets/rim_original/download'}}};
+ app.state.renderHistory=[owned];app.state.renderDetailJobId='A';
+ let request;app.setObjectURL(()=> 'blob:wheel');
+ app.setFetch(async(url,options)=>{request={url,options};return {ok:true,blob:async()=>new Blob(['wheel'])};});
+ assert.equal(await app.ensureAssetBlobUrl(owned,'rim_original'),'blob:wheel');
+ assert.equal(request.url,'/jobs/A/assets/rim_original/download');
+ assert.equal(request.options.headers.Authorization,'Bearer test-token');
+ assert.equal(app.state.renderAssetBlobUrlsByJob.A.result,undefined);
+ assert.equal(app.bridge.snapshot('result').wheelUrl,'blob:wheel');
 });

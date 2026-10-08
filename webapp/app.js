@@ -7788,6 +7788,7 @@ function hasAssetSource(job, kind) {
     if (isGuestRenderJob(job)) return Boolean(guestRenderAssetUrl(job, kind));
     if (kind === "original") return Boolean(originalDisplayKind(job));
     if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
+    if (kind === "rim_original") return Boolean(job?.assets?.rim_original);
     return false;
 }
 
@@ -7821,7 +7822,7 @@ function proxiedAssetUrl(asset) {
 }
 
 function assetErrorKey(kind) {
-    return kind === "original" ? "car_original" : "result";
+    return kind === "original" ? "car_original" : kind === "rim_original" ? "rim_original" : "result";
 }
 
 function hasAssetLoadError(job, kind) {
@@ -7913,7 +7914,7 @@ function handleOriginalDisplayError(jobId) {
 
 async function ensureAssetBlobUrl(job, kind) {
     if (kind === "original") return ensureOriginalDisplayUrl(job);
-    if (!job?.job_id || kind !== "result") return "";
+    if (!job?.job_id || !["result", "rim_original"].includes(kind)) return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
     if (!hasFrontendAuth()) return "";
@@ -7927,7 +7928,7 @@ async function ensureAssetBlobUrl(job, kind) {
     renderDashboard();
 
     try {
-        const assetKey = kind === "original" ? "car_original" : "result";
+        const assetKey = kind === "original" ? "car_original" : kind;
         const response = job.assets?.[assetKey]?.download_url?.startsWith("/")
             ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
             : await fetch(sourceUrl);
@@ -7971,6 +7972,7 @@ function assetUrlForJob(job, kind) {
     if (kind === "original") {
         return originalSignedUrlForJob(job);
     }
+    if (kind === "rim_original") return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.rim_original);
     return assetBlobUrlForJob(job, kind) || resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
 }
 
@@ -9744,6 +9746,10 @@ function vnextRenderJob(job) {
         timeLabel: job?.created_at ? new Date(job.created_at).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }) : "",
         failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job?.status), resultUrl: assetUrlForJob(job, "result"),
+        wheelUrl: assetUrlForJob(job, "rim_original"),
+        wheelAvailable: hasAssetSource(job, "rim_original"),
+        wheelFailed: hasAssetLoadError(job, "rim_original"),
+        wheelLoading: hasAssetSource(job, "rim_original") && !assetUrlForJob(job, "rim_original") && !hasAssetLoadError(job, "rim_original"),
         originalUrl: assetUrlForJob(job, "original"),
         originalFailed: hasAssetLoadError(job, "original"), resultFailed: hasAssetLoadError(job, "result"),
         originalLoading: hasAssetSource(job, "original") && !assetUrlForJob(job, "original") && !hasAssetLoadError(job, "original"),
@@ -9791,7 +9797,7 @@ function prepareVnextRenderAssets() {
         : state.view === "renders" ? state.renderHistory.slice(0, state.renderHistoryVisibleCount)
         : state.view === "create" && state.renderStatus === "completed" ? state.renderHistory.filter((job) => job.job_id === state.jobId) : [];
     for (const job of jobs) {
-        const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result"] : [job.status === "completed" ? "result" : "original"];
+        const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result", "rim_original"] : [job.status === "completed" ? "result" : "original"];
         for (const kind of kinds) if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
     }
     scheduleRenderHistoryPolling();
@@ -9821,7 +9827,7 @@ window.dreamwheelsRenderBridge = {
             if (pending) void submitHistoryFeedback(jobId, pending.sentiment, pending.reason);
         } else if (action === "asset-retry") {
             const job = state.renderHistory.find((item) => item.job_id === jobId);
-            for (const kind of ["original", "result"]) {
+            for (const kind of ["original", "result", "rim_original"]) {
                 if (!job || !hasAssetLoadError(job, kind) || !assetDownloadUrlForJob(job, kind)) continue;
                 if (kind === "original") {
                     delete state.renderAssetSignedUrlsByJob[jobId];

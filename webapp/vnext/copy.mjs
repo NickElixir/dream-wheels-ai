@@ -1,5 +1,6 @@
 export const COPY = {
   "render.downloadShort": {"ru": "Скачать", "en": "Download"},
+  "render.wheelReference": { "ru": "Колёсный диск", "en": "Wheel reference" },
   "render.checkShort": {"ru": "Проверить", "en": "Check fit"},
   "fitment.summary.title": {"ru": "Итог", "en": "Summary"},
   "fitment.failure.saved": {"ru": "Данные сохранены — вводить их заново не нужно.", "en": "Your details are saved — no need to enter them again."},

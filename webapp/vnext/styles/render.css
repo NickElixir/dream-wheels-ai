@@ -179,3 +179,13 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-render--result .vnext-rating { border-top:0; }
 
 @media(min-width:761px) and (max-width:1024px) { .vnext-result-layout > .vnext-compare { align-self:center; } }
+
+/* UI-022: source wheel reference, shared photo styling and explicit action. */
+.vnext-result-wheel { margin:10px 0; max-width:240px; }
+.vnext-result-wheel .vnext-render-media { aspect-ratio:auto; background:transparent; border:0; }
+.vnext-result-wheel img { display:block; width:100%; height:auto; max-height:240px; object-fit:contain; border-radius:12px; }
+.vnext-result-actions .vnext-result-check-full { display:inline; }
+.vnext-result-actions .vnext-result-check-short { display:none; }
+.vnext-result-actions .vnext-result-secondary { grid-template-columns:minmax(0,1fr); }
+.vnext-result-actions .vnext-result-secondary .vnext-button { white-space:normal; }
+@media(max-width:760px) { .vnext-result-wheel { max-width:144px; } .vnext-result-wheel img { max-height:144px; } }
