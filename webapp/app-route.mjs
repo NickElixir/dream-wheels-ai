@@ -1,4 +1,7 @@
 const APP_ROUTE_VIEWS = Object.freeze({
+    "/": "dashboard", "/create": "create", "/history": "renders",
+    "/balance": "wallet", "/account": "settings", "/help": "support",
+    "/help/photos": "photo-guide", "/documents": "docs",
     "/app": "dashboard",
     "/app/new": "create",
     "/app/history": "renders",
@@ -61,20 +64,20 @@ function safeApplicationUrl(input, currentOrigin = globalThis.location?.origin |
 export function applicationRouteView(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
     if (!url) return null;
-    return APP_ROUTE_VIEWS[normalizedPathname(url.pathname)] || null;
+    return routeMatch(normalizedPathname(url.pathname))?.view || null;
 }
 
 export function isApplicationRoute(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
     if (!url) return false;
     const pathname = normalizedPathname(url.pathname);
-    return pathname === "/app" || pathname.startsWith("/app/");
+    return pathname === "/app" || pathname.startsWith("/app/") || pathname !== "/" && Boolean(routeMatch(pathname));
 }
 
 export function safeApplicationReturnPath(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
     const path = normalizedPathname(url?.pathname || "");
-    if (!url || !APP_ROUTE_VIEWS[path]) return null;
+    if (!url || !routeMatch(path)) return null;
     const query = new URLSearchParams();
     APP_ROUTE_QUERY_KEYS.forEach((key) => {
         const value = url.searchParams.get(key);
@@ -98,9 +101,26 @@ export function applicationRouteContext(input = globalThis.location, currentOrig
     if (!url || !returnPath) return null;
     return {
         path,
-        view: APP_ROUTE_VIEWS[path],
+        ...routeMatch(path),
         returnPath,
         market: url.searchParams.get("market") || null,
         query: new URLSearchParams(returnPath.split("?")[1] || ""),
     };
+}
+
+const WEB_PATHS = Object.freeze({dashboard:"/",create:"/create",renders:"/history",wallet:"/balance",settings:"/account",support:"/help","photo-guide":"/help/photos",docs:"/documents"});
+function routeMatch(path) {
+    if (APP_ROUTE_VIEWS[path]) return {view:APP_ROUTE_VIEWS[path]};
+    const match = path.match(/^\/try-ons\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/compatibility)?$/i);
+    return match ? {view:match[2] ? "fitment" : "render-detail",jobId:match[1]} : null;
+}
+export function webRoutePath(view, jobId, input = globalThis.location) {
+    let path = WEB_PATHS[view];
+    if (["render-detail","fitment"].includes(view)) {
+        path = `/try-ons/${jobId}${view === "fitment" ? "/compatibility" : ""}`;
+        if (!routeMatch(path)) return null;
+    }
+    if (!path) return null;
+    const url = locationFrom(input, input?.origin || globalThis.location?.origin);
+    return url ? safeApplicationReturnPath(new URL(path + url.search, url.origin), url.origin) : null;
 }

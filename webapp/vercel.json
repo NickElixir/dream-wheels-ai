@@ -13,9 +13,26 @@
     { "source": "/app/", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/t", "destination": "/index.html" },
-    { "source": "/t/", "destination": "/index.html" }
+    { "source": "/t/", "destination": "/index.html" },
+    { "source": "/create", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" },
+    { "source": "/balance", "destination": "/index.html" },
+    { "source": "/account", "destination": "/index.html" },
+    { "source": "/help", "destination": "/index.html" },
+    { "source": "/help/photos", "destination": "/index.html" },
+    { "source": "/documents", "destination": "/index.html" },
+    { "source": "/try-ons/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    { "source": "/create", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/history", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/balance", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/account", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/help", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/help/photos", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/documents", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/try-ons/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+
     {
       "source": "/",
       "headers": [

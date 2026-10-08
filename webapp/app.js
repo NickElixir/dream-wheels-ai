@@ -1,6 +1,7 @@
 import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
+    webRoutePath,
     applicationTopLevelReturnPath,
     isApplicationRoute,
     safeApplicationReturnPath,
@@ -1976,8 +1977,13 @@ function syncApplicationAuthWall() {
 
 function initializeApplicationRoute() {
     if (HAS_TG || !isApplicationRoute(window.location)) return;
-    state.applicationAuthRequired = true;
     state.applicationRoute = applicationRouteContext(window.location);
+    state.applicationAuthRequired = window.location.pathname.startsWith("/app")
+        || ["renders", "wallet", "settings", "render-detail", "fitment"].includes(state.applicationRoute?.view);
+    if (!state.applicationAuthRequired && state.applicationRoute) {
+        restoreWebRoute();
+        return;
+    }
     if (!state.applicationRoute && window.history?.replaceState) {
         window.history.replaceState({}, "", "/app");
         state.applicationRoute = applicationRouteContext(window.location);
@@ -2012,6 +2018,7 @@ async function bootstrapAuthenticatedApplication() {
         refreshButtonsForCurrentView();
         await loadDashboardData();
         if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        restoreWebRoute();
         state.applicationDataReady = true;
         syncApplicationAuthWall();
         return true;
@@ -7353,6 +7360,7 @@ function setView(view, { refreshData = true } = {}) {
         clearFitmentRuntimeRequests();
     }
     state.view = view;
+    if (typeof syncWebNavigation === "function") syncWebNavigation(view);
     if (HAS_TG && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
         try {
             localStorage.setItem(LAST_TOP_LEVEL_VIEW_STORAGE_KEY, view);
@@ -7360,7 +7368,7 @@ function setView(view, { refreshData = true } = {}) {
             // Navigation remains usable when WebView storage is unavailable.
         }
     }
-    if (state.applicationAuthRequired && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
+    if (state.applicationAuthRequired && window.location.pathname.startsWith("/app") && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
         const target = applicationTopLevelReturnPath(view, window.location);
         if (target && window.history?.replaceState) {
             const current = `${window.location.pathname}${window.location.search}`;
@@ -7370,7 +7378,7 @@ function setView(view, { refreshData = true } = {}) {
         }
     }
     if (view !== "fitment") clearFitmentCheckPolling();
-    if (view !== "renders") clearRenderHistoryPolling();
+    if (!["renders", "render-detail"].includes(view)) clearRenderHistoryPolling();
     document.querySelectorAll("[data-view]").forEach((el) => {
         el.hidden = el.dataset.view !== view;
     });
@@ -7421,6 +7429,7 @@ function lastTelegramTopLevelView() {
 }
 
 function restoreTelegramTopLevelView() {
+    if (!HAS_TG && restoreWebRoute()) return;
     const view = lastTelegramTopLevelView();
     setView(view, { refreshData: false });
     if (view === "renders") scheduleRenderHistoryPolling();
@@ -8367,6 +8376,7 @@ function openRenderDetail(jobId, originView = "renders") {
     state.fitmentOriginView = originView;
     state.renderDetailError = "";
     setView("render-detail");
+    scheduleRenderHistoryPolling();
     void loadFitmentReturnContext(jobId);
     if (!state.renderHistory.some((item) => item.job_id === jobId)) {
         void loadRenderDetailJob(jobId);
@@ -8388,7 +8398,10 @@ async function loadRenderDetailJob(jobId) {
     } finally {
         if (state.renderDetailJobId === jobId) {
             state.renderDetailLoading = false;
-            if (state.view === "render-detail") renderRenderDetail();
+            if (state.view === "render-detail") {
+                renderRenderDetail();
+                scheduleRenderHistoryPolling();
+            }
         }
     }
 }
@@ -8473,6 +8486,7 @@ function clearRenderHistoryPolling() {
 
 function hasProcessingHistoryJobs() {
     return state.renderHistory.some((job) => {
+        if (state.view === "render-detail" && job.job_id !== state.renderDetailJobId) return false;
         const status = job?.status || "processing";
         return status !== "completed" && status !== "failed";
     });
@@ -8480,7 +8494,7 @@ function hasProcessingHistoryJobs() {
 
 function scheduleRenderHistoryPolling() {
     clearRenderHistoryPolling();
-    if (state.view !== "renders" || document.hidden || !hasProcessingHistoryJobs()) return;
+    if (!["renders", "render-detail"].includes(state.view) || document.hidden || !hasProcessingHistoryJobs()) return;
     state.renderHistoryPollTimer = setTimeout(() => {
         void refreshProcessingHistoryJobs();
     }, POLL_INTERVAL_MS);
@@ -8515,11 +8529,12 @@ async function fetchJobStatusForHistory(jobId) {
 }
 
 async function refreshProcessingHistoryJobs() {
-    if (state.view !== "renders" || !hasFrontendAuth()) {
+    if (!["renders", "render-detail"].includes(state.view) || !hasFrontendAuth()) {
         clearRenderHistoryPolling();
         return;
     }
     const processingJobs = state.renderHistory.filter((job) => {
+        if (state.view === "render-detail" && job.job_id !== state.renderDetailJobId) return false;
         const status = job?.status || "processing";
         return status !== "completed" && status !== "failed";
     });
@@ -8536,6 +8551,7 @@ async function refreshProcessingHistoryJobs() {
     });
     renderRenders();
     renderDashboard();
+    if (state.view === "render-detail") renderRenderDetail();
 }
 
 
@@ -9217,6 +9233,9 @@ function notifyCreateBridge() {
 }
 
 function notifyRenderBridge() {
+    if (typeof syncWebNavigation === "function" && state.view === "create" && state.jobId && ["queued", "processing", "completed", "failed"].includes(state.renderStatus)) {
+        syncWebNavigation("render-detail", state.jobId);
+    }
     if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:renderchange"));
     if (!renderAssetPreparationPending && (["renders", "render-detail"].includes(state.view) || state.view === "create" && state.renderStatus === "completed")) {
         renderAssetPreparationPending = true;
@@ -11236,3 +11255,72 @@ document.addEventListener("DOMContentLoaded", async () => {
         restoreTelegramTopLevelView();
     }
 });
+
+// Browser routes are independent of Telegram's persisted top-level navigation.
+let restoringWebRoute = false;
+const webScrollPositions = new Map();
+function syncWebNavigation(view, explicitJobId = "") {
+    if (HAS_TG || restoringWebRoute || typeof window.location?.pathname !== "string") return;
+    if (view === "wallet" && new URLSearchParams(window.location.search).has("payment")) return;
+    const jobId = explicitJobId || (view === "fitment" ? state.fitmentJobId : state.renderDetailJobId);
+    const target = webRoutePath(view, jobId, window.location);
+    if (!target) return;
+    const current = window.location.pathname + window.location.search;
+    if (current !== target) {
+        webScrollPositions.set(current, document.querySelector("#app")?.scrollTop || window.scrollY || 0);
+        window.history.pushState({}, "", target);
+    }
+    state.applicationRoute = applicationRouteContext(window.location);
+    state.applicationAuthReturnPath = target;
+    updateWebRouteAuth(state.applicationRoute);
+}
+function restoreWebRoute() {
+    if (HAS_TG || new URLSearchParams(window.location.search).has("payment")) return false;
+    const route = applicationRouteContext(window.location);
+    if (!route) return false;
+    state.applicationRoute = route;
+    state.applicationAuthReturnPath = route.returnPath;
+    updateWebRouteAuth(route);
+    if (state.applicationAuthRequired && !isApplicationAuthSessionReady()) return true;
+    restoringWebRoute = true;
+    try {
+        if (route.jobId && route.view === "fitment") {
+            void openFitmentView(route.jobId, {originView:"render-detail",suppressAutomaticResolver:true});
+        } else if (route.jobId) openRenderDetail(route.jobId);
+        else {
+            setView(route.view, {refreshData:false});
+            if (route.view === "settings") void loadAccountState();
+            if (route.view === "renders") scheduleRenderHistoryPolling();
+        }
+    } finally { restoringWebRoute = false; }
+    return true;
+}
+window.addEventListener("popstate", () => {
+    if (HAS_TG) return;
+    updateWebRouteAuth(applicationRouteContext(window.location));
+    if (state.applicationAuthRequired && !isApplicationAuthSessionReady()) {
+        state.applicationRoute = applicationRouteContext(window.location);
+        state.applicationAuthReturnPath = state.applicationRoute?.returnPath || "/";
+        renderApplicationAuthGate();
+        return;
+    }
+    restoreWebRoute();
+    requestAnimationFrame(() => {
+        const top = webScrollPositions.get(window.location.pathname + window.location.search) || 0;
+        const scroller = document.querySelector("#app");
+        if (scroller?.scrollTo) scroller.scrollTo({top,behavior:"auto"});
+        else window.scrollTo({top,behavior:"auto"});
+    });
+});
+
+function updateWebRouteAuth(route) {
+    if (!route) return;
+    const required = route.path.startsWith("/app") || ["renders","wallet","settings","render-detail","fitment"].includes(route.view);
+    if (!required) {
+        if (typeof setApplicationShellVisible === "function") setApplicationShellVisible(true);
+        const gate = document.querySelector("[data-application-auth-gate]");
+        if (gate) gate.hidden = true;
+    }
+    state.applicationAuthRequired = required;
+    if (required && typeof syncApplicationAuthWall === "function") syncApplicationAuthWall();
+}
