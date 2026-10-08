@@ -1409,6 +1409,8 @@ export const COPY = {
     "ru": "Что улучшить",
     "en": "What should be improved"
   },
+  "history.failedBadge": { "ru": "Не удалось", "en": "Failed" },
+  "history.creatingBadge": { "ru": "Создаём", "en": "Creating" },
   "history.queued": { "ru": "В очереди", "en": "Queued" },
   "history.failed": { "ru": "Не удалось создать", "en": "Could not create try-on" },
   "history.creating": { "ru": "Создаём примерку", "en": "Creating try-on" },

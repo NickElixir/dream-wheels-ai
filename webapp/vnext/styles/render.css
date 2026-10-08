@@ -239,3 +239,10 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-history-more { display:flex; justify-content:center; margin-top:28px; }
 @media(max-width:1100px) { .vnext-history-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:700px) { .vnext-history-gallery { grid-template-columns:minmax(0,1fr); } }
+
+/* UI-027: status overlays keep the History card captions uniform. */
+.vnext-history-preview { position:relative; }
+.vnext-history-badge { position:absolute; top:10px; left:10px; display:inline-flex; align-items:center; gap:7px; max-width:calc(100% - 20px); padding:5px 8px; border-radius:6px; background:rgba(9,13,16,.84); color:var(--vnext-text); font-size:12px; line-height:1.4; pointer-events:none; }
+.vnext-history-badge.is-failed { color:#d5b77c; }
+.vnext-history-badge .vnext-spinner { width:12px; height:12px; border-width:1.5px; }
+@media(prefers-reduced-motion:reduce) { .vnext-history-badge .vnext-spinner { animation:none; } }

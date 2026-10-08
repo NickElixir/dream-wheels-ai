@@ -460,7 +460,7 @@ test("pure presentation covers real statuses, empty/error, feedback and unavaila
     const markup = historyMarkup({ rows: [{ jobId: "A", status, title: "Zeekr" }] });
     assert.equal(markup.includes('data-render-action="open"'), true);
     if(status !== 'completed') assert.match(markup, /role="status"/);
-    assert.equal(markup.includes('data-render-action="retry-create"'), status === "failed");
+    assert.equal(markup.includes('data-render-action="retry-create"'), false);
   }
   const viewSource = fs.readFileSync(new URL("../vnext/views/render.js", import.meta.url), "utf8");
   assert.doesNotMatch(viewSource, /fetch\(|setInterval\(|setTimeout\(/);
