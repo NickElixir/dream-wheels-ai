@@ -7,3 +7,5 @@ UI-029 — owner approved trial replacing UI-028 composition: balance left, paym
 UI-030 — owner requested a shorter payment history: three payments per page instead of five, newest first; keep previous/next controls for older payments. Supersedes UI-029 page size only.
 
 UI-031 — owner approved trial: content max-width 840px, balance figure and compact expiry summary above top-up, payment history below. Email/payment/legal width max440px, vertically aligned. Remove separate choose-package prompt and duplicate selection display; selected package and payment amount remain visible. Supersedes UI-029 block order, retains three-payment pagination.
+
+UI-032 — owner approved: center the max840px wallet block within the main area beside navigation; keep internal left alignment and mobile full width.
