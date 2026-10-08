@@ -41,6 +41,9 @@ test('navigation pushes once and popstate restores route and scroll without push
  window.location=new URL('/',origin);popstate();
  assert.equal(state.view,'dashboard');assert.equal(positions.at(-1),240);
  assert.equal(opened.length,1);
+ window.location=new URL('/?payment=success',origin);
+ api.syncWebNavigation('wallet');assert.equal(opened.length,1);
+ api.syncWebNavigation('docs');assert.equal(window.location.pathname,'/documents');assert.equal(window.location.search,'');
 });
 
 test('Vercel serves HTML for direct routes without swallowing backend requests',()=>{

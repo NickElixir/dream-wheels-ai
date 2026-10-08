@@ -11261,7 +11261,7 @@ let restoringWebRoute = false;
 const webScrollPositions = new Map();
 function syncWebNavigation(view, explicitJobId = "") {
     if (HAS_TG || restoringWebRoute || typeof window.location?.pathname !== "string") return;
-    if (new URLSearchParams(window.location.search).has("payment")) return;
+    if (view === "wallet" && new URLSearchParams(window.location.search).has("payment")) return;
     const jobId = explicitJobId || (view === "fitment" ? state.fitmentJobId : state.renderDetailJobId);
     const target = webRoutePath(view, jobId, window.location);
     if (!target) return;
