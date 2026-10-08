@@ -203,17 +203,12 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
 });
 
-test("History rows share inset and thumbnail grid at mobile widths", () => {
-  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", dateLabel: "25 сентября", createdLabel: "25 сентября, 14:32", timeLabel: "14:32", statusLabel: "Готово" }] });
-  assert.match(markup, /<h3>ZEEKR 007<\/h3>[\s\S]*?<p>X-Trike · 20″ \/ 9J \/ 5×112<\/p>[\s\S]*?<p class="vnext-history-time">14:32<\/p>/);
-  assert.doesNotMatch(markup, /vnext-status--positive|25 сентября, 14:32/);
-  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
-  assert.match(css, /\.vnext-history-row h3\s*\{[^}]*color:var\(--vnext-text-value\)/);
-  assert.match(css, /\.vnext-history-date\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
-  assert.match(css, /\.vnext-history-row\s*\{[^}]*padding:16px/);
-  assert.match(css, /@media\(max-width:390px\)/);
-  assert.match(css, /\.vnext-history-row\s*\{[^}]*grid-template-columns:88px minmax\(0,1fr\); gap:14px; align-items:start; padding:16px/);
-  assert.match(css, /\.vnext-history-actions\s*\{[^}]*grid-column:2/);
+test("History gallery shows absolute card date, hides specs and grouping, and links the preview", () => {
+  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J", historyCreatedLabel: "25 сентября, 14:32" }], hasMore:true });
+  assert.match(markup, /href="\/try-ons\/A"[^>]*data-render-action="open"/);
+  assert.match(markup, /history-time">25 сентября, 14:32/);
+  assert.doesNotMatch(markup, /X-Trike|20″|history-date|>Открыть</);
+  assert.match(markup, /vnext-history-more/);
 });
 
 test("Processing preserves status hierarchy while separating selected wheel identity from specs", () => {
@@ -463,7 +458,8 @@ test("pure presentation covers real statuses, empty/error, feedback and unavaila
   assert.match(historyMarkup({ error: "network" }), /Повторить/);
   for (const status of ["completed", "processing", "queued", "failed"]) {
     const markup = historyMarkup({ rows: [{ jobId: "A", status, title: "Zeekr" }] });
-    assert.equal(markup.includes('data-render-action="open"'), status === "completed");
+    assert.equal(markup.includes('data-render-action="open"'), true);
+    if(status !== 'completed') assert.match(markup, /role="status"/);
     assert.equal(markup.includes('data-render-action="retry-create"'), status === "failed");
   }
   const viewSource = fs.readFileSync(new URL("../vnext/views/render.js", import.meta.url), "utf8");

@@ -1409,6 +1409,9 @@ export const COPY = {
     "ru": "Что улучшить",
     "en": "What should be improved"
   },
+  "history.queued": { "ru": "В очереди", "en": "Queued" },
+  "history.failed": { "ru": "Не удалось создать", "en": "Could not create try-on" },
+  "history.creating": { "ru": "Создаём примерку", "en": "Creating try-on" },
   "history.loading": {
     "ru": "Загружаем историю…",
     "en": "Loading history…"

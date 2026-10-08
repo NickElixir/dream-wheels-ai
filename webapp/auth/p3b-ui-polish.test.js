@@ -49,10 +49,10 @@ test('P3-B wheel values omit ET prefix and picker labels distinguish empty value
  }
 });
 
-test('P3-B completed History has group date once and time separate from specs',()=>{
- const rows=[1,2].map(id=>({jobId:String(id),status:'completed',title:'Car',rimName:'BBS',specs:'19 × 8,5J',dateLabel:'Сегодня',createdLabel:'Сегодня 10:34',timeLabel:'10:34',statusLabel:'Готово'}));
- const html=historyMarkup({locale:'ru',rows});assert.equal(html.split('Сегодня').length-1,1);
- assert.match(html,/>BBS · 19 × 8,5J<\/p>/);assert.match(html,/history-time">10:34/);assert.doesNotMatch(html,/Готово|vnext-status--positive/);
+test('History has an absolute date per card and omits wheel specs',()=>{
+ const rows=[1,2].map(id=>({jobId:String(id),status:'completed',title:'Car',rimName:'BBS',specs:'19 × 8,5J',historyCreatedLabel:'8 октября, 10:34'}));
+ const html=historyMarkup({locale:'ru',rows});assert.equal(html.split('8 октября').length-1,2);
+ assert.doesNotMatch(html,/BBS|19 ×|Готово|history-date/);
 });
 
 test('P3-B dashboard selects completed while keeping recent statuses and detects newer failed job',()=>{

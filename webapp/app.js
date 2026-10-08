@@ -9761,12 +9761,28 @@ function vnextRenderJob(job) {
     };
 }
 
+function historyGalleryTitle(job) {
+    const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
+    const title = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
+    if (title) return title;
+    // Stable account ordinal remains a separate planned data/API task.
+    return `${locale === "ru" ? "Примерка" : "Try-on"} #${String(job?.job_id || "").slice(0, 6)}`;
+}
+function historyGalleryDate(value) {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString(locale === "ru" ? "ru-RU" : "en-GB", {
+        day:"numeric", month:"long", hour:"2-digit", minute:"2-digit", hour12:false,
+        ...(date.getFullYear() !== new Date().getFullYear() ? {year:"numeric"} : {}),
+    });
+}
+
 function vnextRenderSnapshot(surface) {
     if (surface === "history") return { locale,
         loading: state.renderHistoryLoading, error: state.renderHistoryError,
         rows: state.renderHistory.slice(0, state.renderHistoryVisibleCount).map((job) => {
             const model = vnextRenderJob(job);
-            return { locale, ...model, thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
+            return { locale, ...model, title:historyGalleryTitle(job), historyCreatedLabel:historyGalleryDate(job.created_at), thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
         }), hasMore: state.renderHistory.length > state.renderHistoryVisibleCount,
     };
     if (surface === "processing") {

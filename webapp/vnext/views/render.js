@@ -47,13 +47,10 @@ export function historyMarkup(model) {
   if (model.loading) return `<section class="vnext-render-intro" role="status"><p>${esc(uiText("history.loading", localeOf(model)))}</p></section>`;
   if (model.error) return `<section class="vnext-system-card" role="status"><h2>${esc(uiText("history.unavailable", localeOf(model)))}</h2><p>${esc(model.error)}</p>${button(uiText("create.retry", localeOf(model)), "history-retry", { primary: true })}</section>`;
   if (!model.rows?.length) return `<div class="vnext-system-wrap"><section class="vnext-system-card"><p class="vnext-eyebrow">${esc(uiText("nav.history", localeOf(model)))}</p><h2>${esc(uiText("history.empty.title", localeOf(model)))}</h2><p>${esc(uiText("history.empty.copy", localeOf(model)))}</p>${button(uiText("nav.create", localeOf(model)), "create", { primary: true })}</section></div>`;
-  let group = "";
-  return `<section class="vnext-render-intro"><p></p></section><div class="vnext-history-list">${model.rows.map((row) => {
-    const date = row.dateLabel !== group ? `<h2 class="vnext-history-date">${esc(row.dateLabel)}</h2>` : "";
-    group = row.dateLabel;
-    const action = row.status === "completed" ? button(uiText("dashboard.open", localeOf(model)), "open", { jobId: row.jobId }) : row.status === "failed" ? button(row.failureCopy?.retry, "retry-create") : "";
-    return `${date}<article class="vnext-history-row" data-row-job="${esc(row.jobId)}">${row.status === "failed" ? `<div class="vnext-render-media">${row.thumbnailUrl && !row.thumbnailFailed ? `<img src="${esc(row.thumbnailUrl)}" alt="${esc(row.failureCopy?.sourcePhoto)}" data-render-image="original" data-job="${esc(row.jobId)}">` : ""}</div>` : media(row.thumbnailUrl, uiText("render.vehicleTryOn", localeOf(model)), row.jobId, row.thumbnailKind, row.thumbnailFailed, row.thumbnailLoading, row.failureCopy, localeOf(model))}<div><h3>${esc(row.status === "completed" ? row.title : row.status === "failed" ? row.failureCopy?.generationFailed : uiText("page.renderProcessing", localeOf(model)))}</h3><p>${esc([row.rimName, row.specs].filter(Boolean).join(" · "))}</p>${row.timeLabel ? `<p class="vnext-history-time">${esc(row.timeLabel)}</p>` : ""}${row.status !== "completed" ? `<span class="vnext-status vnext-status--${row.status === "completed" ? "positive" : row.status === "failed" ? "negative" : "pending"}">${esc(row.status === "failed" ? row.failureCopy?.failedBadge : row.statusLabel)}</span>` : ""}${row.status === "failed" && row.billingMessage ? `<p>${esc(row.billingMessage)}</p>` : ""}</div><div class="vnext-history-actions">${action}</div></article>`;
-  }).join("")}</div>${model.hasMore ? button(uiText("render.showMore", localeOf(model)), "more") : ""}`;
+  return `<div class="vnext-history-gallery">${model.rows.map((row) => {
+    const status = row.status === "failed" ? uiText("history.failed", localeOf(model)) : row.status === "queued" ? uiText("history.queued", localeOf(model)) : uiText("history.creating", localeOf(model));
+    return `<article class="vnext-history-card" data-row-job="${esc(row.jobId)}"><a class="vnext-history-link" href="/try-ons/${encodeURIComponent(row.jobId)}" data-render-action="open" data-job="${esc(row.jobId)}">${media(row.thumbnailUrl, uiText("render.vehicleTryOn", localeOf(model)), row.jobId, row.thumbnailKind, row.thumbnailFailed, row.thumbnailLoading, row.failureCopy, localeOf(model))}<div class="vnext-history-title"><h3>${esc(row.title)}</h3><span aria-hidden="true">→</span></div></a><p class="vnext-history-time">${esc(row.historyCreatedLabel || row.createdLabel || [row.dateLabel, row.timeLabel].filter(Boolean).join(", "))}</p>${row.status !== "completed" ? `<p class="vnext-history-state" role="status">${esc(status)}</p>` : ""}${row.status === "failed" ? `${row.billingMessage ? `<p class="vnext-history-billing">${esc(row.billingMessage)}</p>` : ""}${button(row.failureCopy?.retry || uiText("create.retry", localeOf(model)), "retry-create")}` : ""}</article>`;
+  }).join("")}</div>${model.hasMore ? `<div class="vnext-history-more">${button(uiText("render.showMore", localeOf(model)), "more")}</div>` : ""}`;
 }
 
 // Reconcile in place: feedback/polling updates keep the same image, slider,
@@ -108,6 +105,10 @@ export function createRenderView(kind, model = {}, callbacks = {}, locale = appl
   root.addEventListener("click", (event) => {
     const target = event.target.closest("[data-render-action]");
     if (!target || !root.contains(target) || target.disabled) return;
+    if (target.matches("a")) {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
+      event.preventDefault();
+    }
     root.renderCallbacks?.action?.(target.dataset.renderAction, target.dataset.job, target.dataset.value);
   });
   root.addEventListener("input", (event) => {
