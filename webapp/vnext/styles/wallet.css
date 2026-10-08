@@ -141,3 +141,10 @@
 
 /* UI-032: center the bounded wallet within the content area. */
 .vnext-wallet { width: 100%; margin-inline: auto; }
+
+/* UI-033: every wallet section shares a centered 440px column. */
+.vnext-wallet { max-width: 440px; }
+.vnext-wallet__primary { grid-template-columns: 1fr; gap: 24px; }
+.vnext-wallet > .vnext-wallet__topup .vnext-wallet__packages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vnext-wallet__history-main { grid-template-columns: auto auto; gap: 4px 16px; }
+.vnext-wallet__history-main small { grid-column: 1 / -1; }
