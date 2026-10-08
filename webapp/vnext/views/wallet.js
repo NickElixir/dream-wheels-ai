@@ -66,7 +66,10 @@ export function createWalletView(model = {}, callbacks = {}) {
   const primary = root.querySelector(".vnext-wallet__primary");
   const topup = root.querySelector(".vnext-wallet__topup");
   const history = root.querySelector(".vnext-wallet__history");
-  primary.append(history);
+  root.append(history);
+  const balance = root.querySelector(".vnext-wallet__balance");
+  const expiry = balance.querySelector(".vnext-wallet__expiry");
+  primary.append(expiry);
   const checkout = document.createElement("div");
   checkout.className = "vnext-wallet__checkout";
   const field = topup.querySelector(".vnext-wallet__field");
@@ -142,7 +145,7 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
   setHidden("[data-wallet-email-error]", !model.emailError);
   setText("[data-wallet-email-error]", model.emailError);
   const selection = model.selectedPackage;
-  setHidden("[data-wallet-selection-title]", Boolean(selection));
+  setHidden("[data-wallet-selection-title]", true);
   for (const selector of ["[data-wallet-selection-amount]", "[data-wallet-selection-credits]", "[data-wallet-selection-duration]", "[data-wallet-selection-email]"]) setHidden(selector, !selection);
   setText("[data-wallet-selection-amount]", selection?.amountLabel);
   setText("[data-wallet-selection-credits]", selection?.creditsLabel);

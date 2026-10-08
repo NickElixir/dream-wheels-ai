@@ -5,3 +5,5 @@ Owner approved local trial: desktop balance/expiry left and top-up right; mobile
 UI-029 — owner approved trial replacing UI-028 composition: balance left, payment history right, full-width purchase form below. History pages of five with previous/next arrows, page count and disabled boundaries. Four purchase options across desktop, two mobile; receipt email and payment action side by side desktop. No slider animation. Mobile order balance/history/purchase.
 
 UI-030 — owner requested a shorter payment history: three payments per page instead of five, newest first; keep previous/next controls for older payments. Supersedes UI-029 page size only.
+
+UI-031 — owner approved trial: content max-width 840px, balance figure and compact expiry summary above top-up, payment history below. Email/payment/legal width max440px, vertically aligned. Remove separate choose-package prompt and duplicate selection display; selected package and payment amount remain visible. Supersedes UI-029 block order, retains three-payment pagination.
