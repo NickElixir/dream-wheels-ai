@@ -189,3 +189,26 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-result-actions .vnext-result-secondary { grid-template-columns:minmax(0,1fr); }
 .vnext-result-actions .vnext-result-secondary .vnext-button { white-space:normal; }
 @media(max-width:760px) { .vnext-result-wheel { max-width:144px; } .vnext-result-wheel img { max-height:144px; } }
+
+/* UI-023: horizontal input summary, wide comparison, actions below. */
+.vnext-render--result .vnext-result-layout { display:flex; flex-direction:column; gap:24px; }
+.vnext-result-header { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:32px; align-items:center; }
+.vnext-result-vehicle .vnext-result-meta { padding:4px 0; }
+.vnext-result-wheel-summary .vnext-result-meta { display:grid; grid-template-columns:96px minmax(0,1fr); column-gap:16px; align-content:center; }
+.vnext-result-wheel-summary .vnext-result-meta > :not(.vnext-result-wheel) { grid-column:2; }
+.vnext-result-wheel-summary .vnext-result-wheel { grid-column:1; grid-row:1 / span 5; width:96px; margin:0; align-self:center; }
+.vnext-result-wheel-summary .vnext-result-wheel img { max-height:112px; }
+.vnext-result-wheel-summary .vnext-result-meta:not(:has(.vnext-result-wheel)) { display:block; }
+.vnext-render--result .vnext-result-layout > .vnext-compare { width:100%; max-width:100%; max-height:none; align-self:stretch; aspect-ratio:var(--image-ratio,16/9); }
+.vnext-result-layout > .vnext-result-actions { display:flex; flex-wrap:wrap; gap:10px; margin:0; }
+.vnext-result-layout > .vnext-result-actions .vnext-result-secondary { display:flex; flex-wrap:wrap; gap:10px; }
+.vnext-result-layout > .vnext-render-notice:empty { display:none; }
+@media(max-width:760px) {
+ .vnext-result-header { grid-template-columns:minmax(0,1fr); gap:16px; }
+ .vnext-result-layout > .vnext-result-actions, .vnext-result-layout > .vnext-result-actions .vnext-result-secondary { display:grid; grid-template-columns:minmax(0,1fr); width:100%; }
+}
+
+.vnext-result-header { width:100%; }
+.vnext-result-layout > .vnext-result-actions { width:100%; }
+.vnext-result-layout > .vnext-result-actions .vnext-button { width:auto; }
+@media(max-width:760px) { .vnext-result-layout > .vnext-result-actions .vnext-button { width:100%; } }

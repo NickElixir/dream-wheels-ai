@@ -130,7 +130,8 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
 
 test("Result actions keep the primary and Fitment CTAs, expose secondary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
-  assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
+  assert.ok(markup.indexOf('class="vnext-result-header"') < markup.indexOf('class="vnext-compare"'));
+  assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-actions"'));
   assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Создано[\s\S]*?25 сентября, 14:32[\s\S]*?Колёсный диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
   assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
@@ -549,7 +550,7 @@ test("user retry submits a new generation key and preserves the old failed Histo
 
 test("Result wheel reference is optional, escaped, and reports an unavailable photo",()=>{
  const base={jobId:'A',status:'completed',locale:'ru'};
- assert.doesNotMatch(resultMarkup(base),/vnext-result-wheel/);
+ assert.doesNotMatch(resultMarkup(base),/class="vnext-result-wheel"/);
  const loaded=resultMarkup({...base,wheelUrl:'blob:wheel',wheelAvailable:true});
  assert.match(loaded,/КОЛ|Колёсный диск/);
  assert.match(loaded,/src="blob:wheel"[^>]*data-render-image="rim_original"/);
