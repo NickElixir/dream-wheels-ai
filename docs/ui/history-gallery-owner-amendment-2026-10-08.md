@@ -9,3 +9,7 @@ UI-026 — owner approved status trial: ready results have no badge; queued «В
 Chrome local fixtures: 1280px=3, 900px=2, 390px=1 column; no horizontal overflow; card click opens result. Demo data is not live staging history. Frontend tests pass. Visual acceptance and deployment pending.
 
 UI-027 — owner approved trial: queued/creating/failed status becomes a small overlay on the photo; creating has a reduced-motion-aware loading indicator, failed has a muted warm accent. Remove separate status/billing lines and retry button from gallery. Keep titles/dates uniform; clicking failed card opens existing failure detail with retry and billing explanation. Supersedes UI-026 presentation only.
+
+Owner acceptance — 08.10.2026: current History gallery and UI-027 status presentation accepted. Treat as the visual baseline; further changes require a discussed amendment. Local implementation committed; staging rollout remains pending.
+
+Next screen order agreed for planning: Balance → Help pages → Fitment/compatibility pages. Balance restructuring is proposal-only until approved.
