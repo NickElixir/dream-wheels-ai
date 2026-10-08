@@ -7,20 +7,20 @@ const legalOrigin = "https://legal.dreamwheels.pro";
 
 function legalMarkup(locale) {
   const links = Object.fromEntries(["offer", "refund", "privacy"].map(name => [name, `<a href="${legalOrigin}/legal/${name}" target="_blank" rel="noopener noreferrer" data-external-link>${esc(uiText(`wallet.legal.${name}`, locale))}</a>`]));
-  return esc(uiText("wallet.legal.acceptance", locale)).replace(/\{(offer|refund|privacy)\}/g, (_, name) => links[name]);
+  return `${locale === "ru" ? "Продолжая, вы принимаете:" : "By continuing, you accept:"}<ul>${["offer", "refund", "privacy"].map(name => `<li>${links[name]}</li>`).join("")}</ul>`;
 }
 
 function expiryRows(items) {
-  return items.map((item) => `<div class="vnext-wallet__expiry-row"><span>${esc(item.creditsLabel)}${item.meta ? `<small>${esc(item.meta)}</small>` : ""}</span><strong>${esc(item.expiresLabel)}</strong></div>`).join("");
+  return items.map((item) => `<div class="vnext-wallet__expiry-row"><span>${esc(item.creditsLabel)}</span><strong>${esc(item.expiresLabel)}</strong></div>`).join("");
 }
 
 function historyRows(items, locale = applicationLocale()) {
   if (!items.length) return `<p class="vnext-wallet__empty">${esc(uiText("wallet.history.empty", locale))}</p>`;
-  return items.map((item) => `<div class="vnext-wallet__history-row"><div class="vnext-wallet__history-main"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span><small><span>${esc(item.dateLabel)}</span><span>#${esc(item.invoiceId)}</span></small></div><span class="vnext-wallet__history-status vnext-wallet__history-status--${esc(item.tone)}">${esc(item.statusLabel)}</span></div>`).join("");
+  return items.map((item) => `<div class="vnext-wallet__history-row"><div class="vnext-wallet__history-main"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span><small><span>${esc(String(item.dateLabel || "").replace(/(\d{2}:\d{2}):\d{2}/, "$1"))}</span><span>#${esc(item.invoiceId)}</span></small></div><span class="vnext-wallet__history-status vnext-wallet__history-status--${esc(item.tone)}">${esc(item.statusLabel)}</span></div>`).join("");
 }
 
 function packageChoices(items) {
-  return items.map((item) => `<button type="button" class="vnext-wallet__package" data-wallet-package="${esc(item.amount)}" aria-pressed="false"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span></button>`).join("");
+  return items.map((item) => `<button type="button" class="vnext-wallet__package" data-wallet-package="${esc(item.amount)}" aria-pressed="false"><strong>${esc(item.creditsLabel)}</strong><span>${esc(item.amountLabel)}</span></button>`).join("");
 }
 
 export function createWalletView(model = {}, callbacks = {}) {
@@ -51,7 +51,7 @@ export function createWalletView(model = {}, callbacks = {}) {
           <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>${esc(uiText("wallet.chooseAPackage", localeOf(model)))}</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-duration hidden></span><span data-wallet-selection-email hidden></span></div>
           <button type="button" class="vnext-button vnext-button--primary vnext-wallet__pay" data-wallet-action="pay" disabled>${esc(uiText("wallet.proceedToCheckout", localeOf(model)))}</button>
           <p class="vnext-wallet__provider">${esc(uiText("wallet.paymentViaRobokassa", localeOf(model)))}</p>
-          <p class="vnext-wallet__legal">${legalMarkup(localeOf(model))}</p>
+          <div class="vnext-wallet__legal">${legalMarkup(localeOf(model))}</div>
         </section>
       </div>
       <aside class="vnext-wallet__pending" data-wallet-pending hidden aria-label="${esc(uiText("wallet.payment.pendingAria", localeOf(model)))}">
@@ -135,7 +135,7 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
   setText("[data-wallet-selection-email]", selection ? model.receiptEmail || "—" : "");
   const pay = one('[data-wallet-action="pay"]');
   pay.disabled = !authenticated || !selection || !model.validEmail || Boolean(model.interactionBusy);
-  pay.textContent = model.paymentBusy ? uiText("wallet.openingCheckout", locale) : uiText("wallet.proceedToCheckout", locale);
+  pay.textContent = model.paymentBusy ? uiText("wallet.openingCheckout", locale) : (selection ? `${locale === "ru" ? "Оплатить" : "Pay"} ${selection.amountLabel}` : uiText("wallet.proceedToCheckout", locale));
 
   const pending = model.latestPendingPayment;
   setHidden("[data-wallet-pending]", !pending);

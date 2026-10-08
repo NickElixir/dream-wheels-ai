@@ -96,6 +96,10 @@ test("Wallet keeps pending operational state separate from paid and failed histo
   let model = app.bridge.snapshot();
   assert.equal(model.latestPendingPayment.amountLabel, "500 ₽");
   assert.deepEqual(Array.from(model.paymentHistory.slice(0, 3), (item) => item.statusLabel), ["В ожидании", "Оплачен", "Ошибка"]);
+  assert.equal(model.paymentHistory.length, 5);
+  assert.equal(model.hasMoreHistory, true);
+  app.bridge.showMoreHistory();
+  model = app.bridge.snapshot();
   assert.equal(model.paymentHistory.length, 10);
   assert.equal(model.hasMoreHistory, true);
   app.bridge.showMoreHistory();

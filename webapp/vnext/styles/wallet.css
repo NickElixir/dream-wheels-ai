@@ -81,3 +81,22 @@
   .vnext-wallet__history-main small { grid-column: 1 / -1; }
   .vnext-wallet__history-row { align-items: flex-start; }
 }
+
+.vnext-shell__frame:has(.vnext-wallet) .vnext-shell__topbar { border-bottom: 0; }
+.vnext-wallet__main, .vnext-wallet__main:not(:has(.vnext-wallet__pending:not([hidden]))) { grid-template-columns: 1fr; }
+.vnext-wallet__primary { max-width: none; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+.vnext-wallet__balance, .vnext-wallet__expiry-row, .vnext-wallet__history, .vnext-wallet__history-row, .vnext-wallet__selection { border: 0; }
+.vnext-wallet__balance { padding-bottom: 0; }
+.vnext-wallet__topup, .vnext-wallet__history { padding-top: 0; }
+.vnext-wallet__packages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vnext-wallet__package { cursor: pointer; }
+.vnext-wallet__package[aria-pressed="true"] { border-color: var(--vnext-text); }
+.vnext-wallet__field input { width: 100%; }
+.vnext-wallet__selection { padding-top: 0; }
+.vnext-wallet__selection [data-wallet-selection-amount], .vnext-wallet__selection [data-wallet-selection-email] { display: none; }
+.vnext-wallet__legal a { color: var(--vnext-text); text-decoration: underline; }
+.vnext-wallet__legal ul { margin: 8px 0 0; padding-left: 20px; }
+.vnext-wallet__legal li + li { margin-top: 6px; }
+.vnext-wallet__pending { max-width: 560px; }
+.vnext-wallet__history > [data-wallet-action="more"] { display: block; margin: 24px auto 0; min-height: 44px; font-weight: 500; }
+@media (max-width: 900px) { .vnext-wallet__primary { grid-template-columns: 1fr; gap: 36px; } }

@@ -84,7 +84,7 @@ const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
-const PAYMENT_HISTORY_PAGE_SIZE = 10;
+const PAYMENT_HISTORY_PAGE_SIZE = 5;
 const TOPUP_PACKAGES = [
     { amount: 100, credits: 3 },
     { amount: 200, credits: 7 },
