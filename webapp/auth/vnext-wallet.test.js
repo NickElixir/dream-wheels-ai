@@ -100,12 +100,16 @@ test("Wallet keeps pending operational state separate from paid and failed histo
   assert.equal(model.hasMoreHistory, true);
   app.bridge.showMoreHistory();
   model = app.bridge.snapshot();
-  assert.equal(model.paymentHistory.length, 10);
+  assert.equal(model.paymentHistory.length, 5);
   assert.equal(model.hasMoreHistory, true);
   app.bridge.showMoreHistory();
   model = app.bridge.snapshot();
-  assert.equal(model.paymentHistory.length, 12);
+  assert.equal(model.paymentHistory.length, 2);
   assert.equal(model.hasMoreHistory, false);
+  app.bridge.previousHistoryPage();
+  model = app.bridge.snapshot();
+  assert.equal(model.historyPage, 1);
+  assert.equal(model.paymentHistory.length, 5);
   app.state.payments[0].status = "paid";
   assert.equal(app.bridge.snapshot().latestPendingPayment, null);
 });

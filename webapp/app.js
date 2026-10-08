@@ -7519,7 +7519,7 @@ function getVisibleHistoryItems() {
     state.walletHistoryPage = Math.min(Math.max(state.walletHistoryPage, 0), totalPages - 1);
     return {
         items,
-        visibleItems: items.slice(0, (state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE),
+        visibleItems: items.slice(state.walletHistoryPage * PAYMENT_HISTORY_PAGE_SIZE, (state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE),
         totalPages,
         from: items.length ? 1 : 0,
         to: Math.min((state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE, items.length),
@@ -7627,6 +7627,8 @@ function vnextWalletSnapshot() {
             tone: statusTone(item.status),
         })),
         hasMoreHistory: authenticated && history.to < history.items.length,
+        historyPage: state.walletHistoryPage,
+        historyPages: history.totalPages,
         paymentReturnMessage: state.paymentReturnState ? state.walletMessage : "",
         message: state.walletMessage,
         messageTone: state.walletMessageTone,
@@ -7656,6 +7658,10 @@ window.dreamwheelsWalletBridge = {
     },
     showMoreHistory() {
         state.walletHistoryPage += 1;
+        renderWallet();
+    },
+    previousHistoryPage() {
+        state.walletHistoryPage = Math.max(0, state.walletHistoryPage - 1);
         renderWallet();
     },
     login: openAuthDialog,

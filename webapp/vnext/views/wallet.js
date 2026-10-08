@@ -63,6 +63,20 @@ export function createWalletView(model = {}, callbacks = {}) {
     </section>
     <section class="vnext-wallet__history" aria-labelledby="wallet-history-title"><h2 id="wallet-history-title">${esc(uiText("wallet.topUpHistory", localeOf(model)))}</h2><div data-wallet-history></div><button type="button" class="vnext-text-action" data-wallet-action="more" hidden>${esc(uiText("render.showMore", localeOf(model)))}</button></section>`;
 
+  const primary = root.querySelector(".vnext-wallet__primary");
+  const topup = root.querySelector(".vnext-wallet__topup");
+  const history = root.querySelector(".vnext-wallet__history");
+  primary.append(history);
+  const checkout = document.createElement("div");
+  checkout.className = "vnext-wallet__checkout";
+  const field = topup.querySelector(".vnext-wallet__field");
+  field.before(checkout);
+  checkout.append(field, topup.querySelector(".vnext-wallet__selection"), topup.querySelector(".vnext-wallet__pay"));
+  root.querySelector(".vnext-wallet__main").after(topup);
+  history.querySelector("h2").textContent = localeOf(model) === "ru" ? "История платежей" : "Payment history";
+  history.querySelector('[data-wallet-action="more"]').remove();
+  history.insertAdjacentHTML("beforeend", `<nav class="vnext-wallet__pagination" aria-label="${localeOf(model) === "ru" ? "Страницы платежей" : "Payment pages"}"><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="previous" aria-label="${localeOf(model) === "ru" ? "Предыдущая страница" : "Previous page"}">←</button><span data-wallet-page aria-live="polite"></span><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="more" aria-label="${localeOf(model) === "ru" ? "Следующая страница" : "Next page"}">→</button></nav>`);
+
   root.addEventListener("click", (event) => {
     const choice = event.target.closest?.("[data-wallet-package]");
     if (choice && root.contains(choice)) {
@@ -74,6 +88,7 @@ export function createWalletView(model = {}, callbacks = {}) {
     if (action.dataset.walletAction === "pay") callbacks.createPayment?.();
     else if (action.dataset.walletAction === "refresh") callbacks.refreshPayment?.();
     else if (action.dataset.walletAction === "more") callbacks.showMoreHistory?.();
+    else if (action.dataset.walletAction === "previous") callbacks.previousHistoryPage?.();
     else if (action.dataset.walletAction === "login") callbacks.login?.();
   });
   root.querySelector("[data-topup-email]").addEventListener("input", (event) => callbacks.setReceiptEmail?.(event.target.value));
@@ -149,6 +164,11 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
 
   const historyMarkup = !authenticated || !model.cabinetLoaded ? "" : historyRows(model.paymentHistory || [], locale);
   if (one("[data-wallet-history]").innerHTML !== historyMarkup) one("[data-wallet-history]").innerHTML = historyMarkup;
-  setHidden('[data-wallet-action="more"]', !model.hasMoreHistory);
+  const page = model.historyPage || 0;
+  const pages = model.historyPages || 1;
+  setText("[data-wallet-page]", locale === "ru" ? `${page + 1} из ${pages}` : `${page + 1} of ${pages}`);
+  one('[data-wallet-action="previous"]').disabled = page <= 0;
+  one('[data-wallet-action="more"]').disabled = !model.hasMoreHistory;
+  setHidden(".vnext-wallet__pagination", !authenticated || !model.paymentHistory?.length);
   return root;
 }

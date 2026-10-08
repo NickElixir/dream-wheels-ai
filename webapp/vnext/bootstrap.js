@@ -42,6 +42,7 @@ const walletCallbacks = {
   createPayment: () => window.dreamwheelsWalletBridge?.createPayment(),
   refreshPayment: () => window.dreamwheelsWalletBridge?.refreshPayment(),
   showMoreHistory: () => window.dreamwheelsWalletBridge?.showMoreHistory(),
+  previousHistoryPage: () => window.dreamwheelsWalletBridge?.previousHistoryPage(),
   login: legacyOpenAuth,
 };
 
