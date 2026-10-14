@@ -22,7 +22,7 @@ export function photoGuideViewModel(locale = applicationLocale()) {
         copy: uiText("photoguide.ifTheBodyOrAWheelIsCroppedThe", locale),
         src: "/assets/photo-guide-good-vnext.jpg",
         cropped: true,
-        alt: locale === "ru" ? "Тот же серебристый автомобиль: передняя часть и переднее колесо обрезаны" : "The same silver car with its front and front wheel cropped",
+        alt: locale === "ru" ? "Край Porsche справа: автомобиль почти полностью вне кадра, колесо видно лишь частично" : "Edge of the Porsche on the right: almost all of the car and part of its wheel are outside the frame",
       },
     ],
     rulesTitle: locale === "ru" ? "Перед загрузкой проверьте" : "Check before uploading",
