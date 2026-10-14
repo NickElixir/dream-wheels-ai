@@ -51,10 +51,10 @@ test("Photo Guide uses real frozen reference photography and approved preparatio
     "assets/photo-guide-bad-vnext.jpg",
   ]) assert.ok(fs.existsSync(path.join(root, asset)), `missing VNext Photo Guide asset: ${asset}`);
   for (const copy of [
-    "Покажите автомобиль целиком",
-    "Колёса должны быть видны",
-    "Используйте резкое фото",
-    "Не меняйте фото перед загрузкой",
+    "Автомобиль целиком",
+    "Колёса видны",
+    "Фото чёткое",
+    "Без фильтров",
   ]) assert.ok(JSON.stringify(photoGuideViewModel("ru")).includes(copy), `missing Photo Guide rule: ${copy}`);
 });
 

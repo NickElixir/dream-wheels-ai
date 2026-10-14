@@ -20,15 +20,22 @@ export function photoGuideViewModel(locale = applicationLocale()) {
         toneLabel: uiText("photoguide.chooseADifferentPhoto", locale),
         title: uiText("photoguide.partOfTheVehicleIsOutOfFrame", locale),
         copy: uiText("photoguide.ifTheBodyOrAWheelIsCroppedThe", locale),
-        src: "/assets/photo-guide-bad-vnext.jpg",
-        alt: uiText("photoguide.aGreyVehiclePhotographedTooCloseWithBodyEdges", locale),
+        src: "/assets/photo-guide-good-vnext.jpg",
+        cropped: true,
+        alt: locale === "ru" ? "Тот же серебристый автомобиль: передняя часть и переднее колесо обрезаны" : "The same silver car with its front and front wheel cropped",
       },
     ],
-    rules: [
-      ["01", uiText("photoguide.showTheWholeVehicle", locale), uiText("photoguide.doNotCropTheFrontOrRearOfThe", locale)],
-      ["02", uiText("photoguide.theWheelsMustBeVisible", locale), uiText("photoguide.avoidPhotosWhereTheWheelsAreHiddenByA", locale)],
-      ["03", uiText("photo.sharp.title", locale), uiText("photo.sharp.copy", locale)],
-      ["04", uiText("photoguide.doNotEditThePhotoBeforeUploading", locale), uiText("photoguide.heavyFiltersArtificialBlurAndDistortedPerspectiveMakeIt", locale)],
+    rulesTitle: locale === "ru" ? "Перед загрузкой проверьте" : "Check before uploading",
+    rules: locale === "ru" ? [
+      ["", "Автомобиль целиком", "Оставьте немного пространства вокруг кузова."],
+      ["", "Колёса видны", "Их не закрывают бордюр, трава или другие объекты."],
+      ["", "Фото чёткое", "Без сильного смаза и заметной пикселизации."],
+      ["", "Без фильтров", "Загрузите фото без эффектов и изменения перспективы."],
+    ] : [
+      ["", "Whole car visible", "Leave a little space around the body."],
+      ["", "Wheels visible", "Keep curbs, grass and other objects out of the way."],
+      ["", "Sharp photo", "Avoid strong blur and visible pixelation."],
+      ["", "No filters", "Upload without effects or perspective changes."],
     ],
   });
 }

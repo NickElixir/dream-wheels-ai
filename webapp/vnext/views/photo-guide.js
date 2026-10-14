@@ -23,7 +23,7 @@ export function createPhotoGuideView(model) {
     const body = document.createElement("div");
     body.className = "vnext-guide__example-body";
     const visual = document.createElement("div");
-    visual.className = "vnext-guide__visual";
+    visual.className = "vnext-guide__visual" + (example.cropped ? " vnext-guide__visual--cropped" : "");
     const image = document.createElement("img");
     image.src = example.src;
     image.alt = example.alt;
@@ -44,14 +44,19 @@ export function createPhotoGuideView(model) {
   });
   page.append(examples);
 
-  const rules = document.createElement("div");
+  const rulesHeading = document.createElement("h2");
+  rulesHeading.className = "vnext-guide__rules-title";
+  rulesHeading.textContent = model.rulesTitle;
+  page.append(rulesHeading);
+  const rules = document.createElement("ul");
   rules.className = "vnext-guide__rules";
   model.rules.forEach(([number, headingText, copyText]) => {
-    const row = document.createElement("div");
+    const row = document.createElement("li");
     row.className = "vnext-guide__rule";
     const num = document.createElement("div");
     num.className = "vnext-guide__num";
-    num.textContent = number;
+    num.textContent = "✓";
+    num.setAttribute("aria-hidden", "true");
     const body = document.createElement("div");
     const heading = document.createElement("h3");
     heading.textContent = headingText;

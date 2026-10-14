@@ -170,3 +170,12 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 @media(max-width:680px) { .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar-title { display:block; } }
 
 @media(min-width:681px) { .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { border-bottom:0; padding-bottom:0; } }
+
+/* UI-034: photo guidance checklist and same-photo framing example. */
+.vnext-shell__frame:has(.vnext-guide) .vnext-shell__topbar { border-bottom: 0; }
+.vnext-guide__visual--cropped img { transform: scale(1.65); transform-origin: 72% 55%; }
+.vnext-guide__rules-title { margin: 8px 0 -12px; font-size: 22px; font-weight: 500; }
+.vnext-guide__rules { border: 0; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px 40px; }
+.vnext-guide__rule { border: 0; padding: 0; grid-template-columns: 20px minmax(0,1fr); gap: 12px; }
+.vnext-guide__num { font-size: 18px; color: var(--vnext-text-secondary); padding-top: 6px; }
+@media(max-width:700px) { .vnext-guide__rules { grid-template-columns: 1fr; } }
