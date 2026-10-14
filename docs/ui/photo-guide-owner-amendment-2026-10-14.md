@@ -9,3 +9,5 @@ UI-035 — owner correction: previous cropped main vehicle can still be suitable
 UI-036 — owner clarified: use supplied Porsche fragment as-is, contain within 16:10 visual with no additional cropping or invented pixels. Preserve the visible hood/wheel; background fills unused width. Supersedes enlarged CSS crop.
 
 UI-037 — owner approved vertical Porsche fragment as currently contained; preserve it. Replace good photo with supplied Kia Sorento asset. Remove large hero heading/intro paragraph and explanatory paragraphs beneath both examples; retain tone labels/titles/checklist. Add radius12 and white photo-only hover outline/brightness consistent with accepted screens.
+
+UI-038 — owner approved trial: concise side/three-quarter framing intro instead of eyebrow; remove example islands, shorten tone/title labels, keep portrait Porsche uncropped on canvas background. Add wheel-photo guidance and Create action using existing navigation with real /create fallback. Preserve checklist.

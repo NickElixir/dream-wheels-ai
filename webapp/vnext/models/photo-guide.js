@@ -2,6 +2,10 @@ import { copy as uiText, applicationLocale } from "../copy.mjs";
 export function photoGuideViewModel(locale = applicationLocale()) {
   return Object.freeze({
     locale,
+    intro: locale === "ru" ? "Снимите автомобиль сбоку или в три четверти, чтобы кузов и оба колеса были видны" : "Photograph the car from the side or a three-quarter angle, with the body and both wheels visible",
+    wheelTitle: locale === "ru" ? "Фото колёсного диска" : "Wheel photo",
+    wheelCopy: locale === "ru" ? "Покажите диск целиком, желательно спереди. Выберите чёткое фото без предметов, закрывающих спицы." : "Show the entire wheel, preferably from the front. Choose a sharp photo with no objects covering the spokes.",
+    createLabel: uiText("nav.create", locale),
     title: uiText("nav.photoGuide", locale),
     eyebrow: uiText("photoguide.visualTryOn", locale),
     heroTitle: uiText("photoguide.thePhotoShouldClearlyShowTheVehicleAndWheels", locale),
@@ -9,16 +13,16 @@ export function photoGuideViewModel(locale = applicationLocale()) {
     examples: [
       {
         tone: "good",
-        toneLabel: uiText("photoguide.suitableForATryOn", locale),
-        title: uiText("photoguide.theWholeCarIsVisible", locale),
+        toneLabel: locale === "ru" ? "Подходит" : "Suitable",
+        title: locale === "ru" ? "Кузов и оба колеса видны" : "Body and both wheels visible",
         copy: uiText("photoguide.theWheelsAreClearlyVisibleThePerspectiveIsClear", locale),
         src: "/assets/photo-guide-kia-sorento.jpg",
         alt: uiText("photoguide.aSilverVehicleFullyInFrameWithBothWheels", locale),
       },
       {
         tone: "bad",
-        toneLabel: uiText("photoguide.chooseADifferentPhoto", locale),
-        title: uiText("photoguide.partOfTheVehicleIsOutOfFrame", locale),
+        toneLabel: locale === "ru" ? "Лучше переснять" : "Retake the photo",
+        title: locale === "ru" ? "В кадре только часть автомобиля" : "Only part of the car is in frame",
         copy: uiText("photoguide.ifTheBodyOrAWheelIsCroppedThe", locale),
         src: "/assets/photo-guide-porsche-fragment.jpg",
         cropped: true,

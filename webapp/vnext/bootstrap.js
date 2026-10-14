@@ -133,7 +133,7 @@ function surfaceDescriptor(view, locale = applicationLocale()) {
   }
   if (view === "photo-guide") {
     const model = photoGuideViewModel(locale);
-    return { title: model.title, content: createPhotoGuideView(model) };
+    return { title: model.title, content: createPhotoGuideView(model, { navigate: legacyNavigate }) };
   }
   if (view === "docs") {
     const model = documentsViewModel(locale);

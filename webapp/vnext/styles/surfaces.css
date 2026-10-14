@@ -185,3 +185,12 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-guide__visual:hover { box-shadow: 0 0 0 1px var(--vnext-text); }
 .vnext-guide__visual img { transition: filter .15s ease; }
 .vnext-guide__visual:hover img { filter: brightness(1.06); }
+
+/* UI-038: concise introduction, open examples and a completion action. */
+.vnext-guide__copy { padding: 14px 0 0; }
+.vnext-guide__visual--cropped { background: var(--vnext-canvas); }
+.vnext-guide__wheel { max-width: 70ch; }
+.vnext-guide__wheel h2 { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
+.vnext-guide__wheel p { margin: 0; color: var(--vnext-text-secondary); }
+.vnext-guide__create { justify-self: start; text-decoration: none; }
+.vnext-guide__visual--cropped img { width: auto; max-width: 100%; margin-inline: auto; border-radius: 12px; }

@@ -1,20 +1,13 @@
-import { copy as uiText } from "../copy.mjs";
-import { createIsland } from "../ui/primitives.js";
 
-export function createPhotoGuideView(model) {
+export function createPhotoGuideView(model, callbacks = {}) {
   const page = document.createElement("section");
   page.className = "vnext-guide";
 
   const hero = document.createElement("section");
   hero.className = "vnext-static-hero";
-  const eyebrow = document.createElement("p");
-  eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = model.eyebrow;
-  const title = document.createElement("h2");
-  title.textContent = model.heroTitle;
-  const copy = document.createElement("p");
-  copy.textContent = model.copy;
-  hero.append(eyebrow);
+  const intro = document.createElement("p");
+  intro.textContent = model.intro;
+  hero.append(intro);
   page.append(hero);
 
   const examples = document.createElement("div");
@@ -40,7 +33,7 @@ export function createPhotoGuideView(model) {
     paragraph.textContent = example.copy;
     copyWrap.append(tone, heading);
     body.append(visual, copyWrap);
-    examples.append(createIsland(body));
+    examples.append(body);
   });
   page.append(examples);
 
@@ -67,5 +60,22 @@ export function createPhotoGuideView(model) {
     rules.append(row);
   });
   page.append(rules);
+  const wheel = document.createElement("section");
+  wheel.className = "vnext-guide__wheel";
+  const wheelTitle = document.createElement("h2");
+  wheelTitle.textContent = model.wheelTitle;
+  const wheelCopy = document.createElement("p");
+  wheelCopy.textContent = model.wheelCopy;
+  wheel.append(wheelTitle, wheelCopy);
+  const action = document.createElement("a");
+  action.className = "vnext-button vnext-button--primary vnext-guide__create";
+  action.href = "/create";
+  action.textContent = model.createLabel;
+  action.addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !callbacks.navigate) return;
+    event.preventDefault();
+    callbacks.navigate("create");
+  });
+  page.append(wheel, action);
   return page;
 }
