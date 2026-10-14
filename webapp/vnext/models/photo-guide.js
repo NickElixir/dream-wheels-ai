@@ -12,7 +12,7 @@ export function photoGuideViewModel(locale = applicationLocale()) {
         toneLabel: uiText("photoguide.suitableForATryOn", locale),
         title: uiText("photoguide.theWholeCarIsVisible", locale),
         copy: uiText("photoguide.theWheelsAreClearlyVisibleThePerspectiveIsClear", locale),
-        src: "/assets/photo-guide-good-vnext.jpg",
+        src: "/assets/photo-guide-kia-sorento.jpg",
         alt: uiText("photoguide.aSilverVehicleFullyInFrameWithBothWheels", locale),
       },
       {
@@ -20,7 +20,7 @@ export function photoGuideViewModel(locale = applicationLocale()) {
         toneLabel: uiText("photoguide.chooseADifferentPhoto", locale),
         title: uiText("photoguide.partOfTheVehicleIsOutOfFrame", locale),
         copy: uiText("photoguide.ifTheBodyOrAWheelIsCroppedThe", locale),
-        src: "/assets/photo-guide-good-vnext.jpg",
+        src: "/assets/photo-guide-porsche-fragment.jpg",
         cropped: true,
         alt: locale === "ru" ? "Край Porsche справа: автомобиль почти полностью вне кадра, колесо видно лишь частично" : "Edge of the Porsche on the right: almost all of the car and part of its wheel are outside the frame",
       },

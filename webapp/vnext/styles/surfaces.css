@@ -173,9 +173,15 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 
 /* UI-034: photo guidance checklist and same-photo framing example. */
 .vnext-shell__frame:has(.vnext-guide) .vnext-shell__topbar { border-bottom: 0; }
-.vnext-guide__visual--cropped img { transform: scale(4.5); transform-origin: 100% 85%; }
+.vnext-guide__visual--cropped img { object-fit: contain; transform: none; }
 .vnext-guide__rules-title { margin: 8px 0 -12px; font-size: 22px; font-weight: 500; }
 .vnext-guide__rules { border: 0; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px 40px; }
 .vnext-guide__rule { border: 0; padding: 0; grid-template-columns: 20px minmax(0,1fr); gap: 12px; }
 .vnext-guide__num { font-size: 18px; color: var(--vnext-text-secondary); padding-top: 6px; }
 @media(max-width:700px) { .vnext-guide__rules { grid-template-columns: 1fr; } }
+
+/* UI-037: approved image treatment; outline never surrounds captions. */
+.vnext-guide__visual { border-radius: 12px; transition: box-shadow .15s ease; }
+.vnext-guide__visual:hover { box-shadow: 0 0 0 1px var(--vnext-text); }
+.vnext-guide__visual img { transition: filter .15s ease; }
+.vnext-guide__visual:hover img { filter: brightness(1.06); }

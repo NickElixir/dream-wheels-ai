@@ -14,7 +14,7 @@ export function createPhotoGuideView(model) {
   title.textContent = model.heroTitle;
   const copy = document.createElement("p");
   copy.textContent = model.copy;
-  hero.append(eyebrow, title, copy);
+  hero.append(eyebrow);
   page.append(hero);
 
   const examples = document.createElement("div");
@@ -38,7 +38,7 @@ export function createPhotoGuideView(model) {
     heading.textContent = example.title;
     const paragraph = document.createElement("p");
     paragraph.textContent = example.copy;
-    copyWrap.append(tone, heading, paragraph);
+    copyWrap.append(tone, heading);
     body.append(visual, copyWrap);
     examples.append(createIsland(body));
   });
