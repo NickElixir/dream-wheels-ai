@@ -291,3 +291,13 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__topline h1 { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 }
 @media(max-width:400px) { .vnext-fitment__table-vehicle-full { display:none; } .vnext-fitment__table-vehicle-short { display:inline; } }
+
+/* UI-048: shared visual treatment only; no fitment state/action changes. */
+.vnext-fitment__pair { gap: 28px; }
+.vnext-fitment__object, .vnext-fitment__object--editing { padding: 0; border: 0; background: transparent; }
+.vnext-fitment__stage, .vnext-fitment__stage--wheel { background: transparent; border-radius: 12px; }
+.vnext-fitment__stage img { padding: 0; width: auto; max-width: 100%; left: 50%; right: auto; transform: translateX(-50%); border-radius: 12px; }
+.vnext-fitment__source-row .vnext-button { min-height: 36px; font-size: 13px; background: var(--vnext-surface-elevated); color: var(--vnext-text); border-color: var(--vnext-border-strong); border-radius: 8px; }
+.vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__standard { border-radius: 12px; }
+.vnext-shell__frame:has(.vnext-fitment) .vnext-shell__topbar { border-bottom: 0; }
+@media(max-width:700px) { .vnext-fitment__source-row .vnext-button { min-height: 44px; } }
