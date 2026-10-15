@@ -204,3 +204,6 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-support__link strong { display: block; font-size: 16px; font-weight: 500; }
 .vnext-support__link small { display: block; margin-top: 5px; color: var(--vnext-text-secondary); font-size: 14px; overflow-wrap: anywhere; }
 .vnext-support__icon { flex: 0 0 40px; text-align: center; font-size: 23px; }
+
+/* UI-040: halve support link width while retaining mobile fit. */
+.vnext-support--contacts .vnext-support__link { width: 100%; max-width: 350px; box-sizing: border-box; }
