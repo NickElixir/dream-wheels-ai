@@ -1,4 +1,3 @@
-import { copy as uiText, localeOf } from "../copy.mjs";
 export function createDocumentsView(model, { openExternal } = {}) {
   const page = document.createElement("section");
   page.className = "vnext-documents";
@@ -37,10 +36,7 @@ export function createDocumentsView(model, { openExternal } = {}) {
     description.textContent = row.copy;
     body.append(title, description);
 
-    const open = document.createElement("span");
-    open.className = "vnext-documents__open";
-    open.textContent = uiText("dashboard.open", localeOf(model));
-    link.append(icon, body, open);
+    link.append(icon, body);
 
     link.addEventListener("click", (event) => {
       if (!openExternal || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

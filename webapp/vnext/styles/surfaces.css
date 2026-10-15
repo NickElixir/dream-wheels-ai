@@ -221,3 +221,6 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-documents__row:hover h3, .vnext-documents__row:focus-visible h3 { color: var(--vnext-text); }
 .vnext-documents__icon { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; color: var(--vnext-text-secondary); }
 @media (max-width: 700px) { .vnext-documents__row { grid-template-columns: 26px minmax(0,1fr); } .vnext-documents__open { grid-column: 2; } }
+
+/* UI-044: the full document row is the sole opening action. */
+.vnext-documents__row { grid-template-columns: 28px minmax(0, 1fr); }

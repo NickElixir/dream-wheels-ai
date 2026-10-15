@@ -64,7 +64,7 @@ test("Documents keeps four frozen legal rows, existing legal endpoints and no ar
   for (const pathPart of ["/legal/privacy", "/legal/offer", "/legal/refund", "/legal/consent"]) {
     assert.ok(model.includes(pathPart), `missing legal endpoint: ${pathPart}`);
   }
-  assert.match(view, /open\.textContent = uiText\("dashboard\.open"/);
+  assert.doesNotMatch(view, /vnext-documents__open/);
   assert.doesNotMatch(view, /›|→|arrow/i);
   assert.doesNotMatch(view, /fetch\(|state\./);
 });
