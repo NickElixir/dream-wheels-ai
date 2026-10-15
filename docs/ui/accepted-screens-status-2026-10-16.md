@@ -14,3 +14,5 @@ All changes remain local unless explicitly noted; navigation PR269 was merged se
 UI-046 regression: preview mixed Home/Create view modules from home-ui with newer shared surfaces from result-ui. Extract accepted Home/Create rules into approved-home-create.css, scoped to those screens, and load after shared preview surfaces. No new visual design. Consolidation into one release branch must preserve this baseline and reconcile both worktrees before a PR.
 
 Future work retained: stable per-account try-on numbers (server/API/storage), public sharing phase, custom icon design, Balance composition polish. See screen-specific owner-amendment documents for decisions and superseded trials.
+
+UI-047: fixed local Dashboard→Result callback replacing the entire shell with bare result content. Navigate to result scenario through the shared shell instead: desktop menu, mobile menu, header and standard content padding retained. Result composition unchanged.
