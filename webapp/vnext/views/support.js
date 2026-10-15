@@ -1,122 +1,51 @@
-import { copy as uiText } from "../copy.mjs";
-import { createIsland, createTextAction } from "../ui/primitives.js";
-
-function supportMailto(model, message = "") {
-  const subject = encodeURIComponent(model.supportSubject);
-  const body = message.trim() ? `&body=${encodeURIComponent(message.trim())}` : "";
-  return `mailto:${model.supportEmail}?subject=${subject}${body}`;
-}
-
-function createTopic(topic, navigate) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "vnext-support__topic";
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "vnext-support__topic-button";
-
-  const label = document.createElement("span");
-  label.textContent = topic.label;
-  const arrow = document.createElement("span");
-  arrow.className = "vnext-support__topic-arrow";
-  arrow.setAttribute("aria-hidden", "true");
-  arrow.textContent = "›";
-  button.append(label, arrow);
-
-  if (topic.kind === "navigate") {
-    button.addEventListener("click", () => navigate?.(topic.view));
-  } else {
-    const detail = document.createElement("p");
-    detail.className = "vnext-support__topic-detail";
-    detail.textContent = topic.detail || "";
-    detail.hidden = true;
-    button.setAttribute("aria-expanded", "false");
-    button.addEventListener("click", () => {
-      const expanded = button.getAttribute("aria-expanded") === "true";
-      button.setAttribute("aria-expanded", expanded ? "false" : "true");
-      detail.hidden = expanded;
-    });
-    wrapper.append(button, detail);
-    return wrapper;
-  }
-
-  wrapper.append(button);
-  return wrapper;
-}
-
 export function createSupportView(model, { navigate } = {}) {
   const page = document.createElement("section");
-  page.className = "vnext-support";
-
-  const hero = document.createElement("section");
-  hero.className = "vnext-support__hero";
-
-  const eyebrow = document.createElement("p");
-  eyebrow.className = "vnext-support__eyebrow";
-  eyebrow.textContent = model.eyebrow;
-
-  const heading = document.createElement("h2");
-  heading.className = "vnext-support__hero-title";
-  heading.textContent = model.heroTitle;
-
-  const copy = document.createElement("p");
-  copy.className = "vnext-support__hero-copy";
-  copy.textContent = model.copy;
-  hero.append(eyebrow, heading, copy);
-  page.append(hero);
-
-  const grid = document.createElement("div");
-  grid.className = "vnext-support__grid";
-
-  const mainContent = document.createElement("div");
-  const field = document.createElement("div");
-  field.className = "vnext-field";
-
-  const label = document.createElement("label");
-  label.htmlFor = "vnext-support-message";
-  label.textContent = model.messageLabel;
-
-  const textarea = document.createElement("textarea");
-  textarea.id = "vnext-support-message";
-  textarea.placeholder = model.messagePlaceholder;
-  field.append(label, textarea);
-  mainContent.append(field);
-
-  const actions = document.createElement("div");
-  actions.className = "vnext-support__actions";
-  const email = document.createElement("a");
-  email.className = "vnext-button vnext-button--primary";
-  email.textContent = model.supportLabel;
-  email.href = supportMailto(model);
-  textarea.addEventListener("input", () => {
-    email.href = supportMailto(model, textarea.value);
-  });
-  actions.append(email);
-  mainContent.append(actions);
-
-  const mainIsland = createIsland(mainContent);
-  mainIsland.classList.add("vnext-support__main");
-
-  const sideContent = document.createElement("div");
-  const sideTitle = document.createElement("h3");
-  sideTitle.className = "vnext-support__side-title";
-  sideTitle.textContent = model.selfHelpTitle;
-  sideContent.append(sideTitle);
-
-  const topics = document.createElement("div");
-  topics.className = "vnext-support__topics";
-  model.topics.forEach((topic) => topics.append(createTopic(topic, navigate)));
-  sideContent.append(topics);
-
-  const docs = document.createElement("div");
-  docs.className = "vnext-support__documents";
-  docs.append(createTextAction({ label: model.documentsLabel, onClick: () => navigate?.("docs") }));
-  sideContent.append(docs);
-
-  const sideIsland = createIsland(sideContent);
-  sideIsland.classList.add("vnext-support__side");
-
-  grid.append(mainIsland, sideIsland);
-  page.append(grid);
+  page.className = "vnext-support vnext-support--contacts";
+  const ru = model.locale === "ru";
+  function section(title) {
+    const node = document.createElement("section");
+    const heading = document.createElement("h2");
+    heading.textContent = title;
+    node.append(heading);
+    page.append(node);
+    return node;
+  }
+  function link(host, { title, copy, icon, href, view }) {
+    const row = document.createElement("a");
+    row.className = "vnext-support__link";
+    row.href = href;
+    if (view) {
+      row.addEventListener("click", (event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !navigate) return;
+        event.preventDefault();
+        navigate(view);
+      });
+    } else if (href.startsWith("https:")) {
+      row.target = "_blank";
+      row.rel = "noopener noreferrer";
+      row.setAttribute("data-external-link", "");
+    }
+    if (icon) {
+      const mark = document.createElement("span");
+      mark.className = "vnext-support__icon";
+      mark.textContent = icon;
+      mark.setAttribute("aria-hidden", "true");
+      row.append(mark);
+    }
+    const text = document.createElement("span");
+    const heading = document.createElement("strong");
+    heading.textContent = title;
+    const detail = document.createElement("small");
+    detail.textContent = copy;
+    text.append(heading, detail);
+    row.append(text);
+    host.append(row);
+  }
+  const contacts = section(ru ? "Связаться с нами" : "Contact us");
+  link(contacts, { title: "Telegram", copy: "@dreamwheelsai", icon: "💬", href: "https://t.me/dreamwheelsai" });
+  link(contacts, { title: "Email", copy: model.supportEmail, icon: "✉️", href: `mailto:${model.supportEmail}` });
+  const useful = section(ru ? "Полезное" : "Useful links");
+  link(useful, { title: ru ? "Как подготовить фото" : "How to prepare photos", copy: ru ? "Примеры и рекомендации перед загрузкой" : "Examples and tips before uploading", href: "/help/photos", view: "photo-guide" });
+  link(useful, { title: ru ? "Условия возврата" : "Refund policy", copy: ru ? "Когда доступен возврат и как отправить обращение" : "When refunds are available and how to request one", href: "https://legal.dreamwheels.pro/legal/refund" });
   return page;
 }

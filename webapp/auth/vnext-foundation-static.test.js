@@ -62,9 +62,10 @@ test("VNext primitives remain presentation-only and Support matches the frozen p
     "dreamwheelsai@yandex.ru",
   ]) assert.ok(JSON.stringify(supportViewModel("ru")).includes(text), `missing frozen Support copy: ${text}`);
 
-  assert.match(view, /textarea/);
+  assert.doesNotMatch(view, /textarea/);
   assert.match(view, /mailto:/);
-  assert.match(view, /navigate\?\.\("docs"\)/);
+  assert.match(view, /https:\/\/t.me\/dreamwheelsai/);
+  assert.match(view, /\/help\/photos/);
 });
 
 test("VNext shell retains desktop and safe-area mobile layout foundations", () => {
