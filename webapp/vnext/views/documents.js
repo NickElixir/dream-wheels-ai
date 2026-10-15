@@ -8,7 +8,7 @@ export function createDocumentsView(model, { openExternal } = {}) {
   eyebrow.className = "vnext-eyebrow";
   eyebrow.textContent = model.eyebrow;
   const copy = document.createElement("p");
-  copy.textContent = model.copy;
+  copy.textContent = model.copy.replace(/\.\s*$/, "");
   intro.append(eyebrow, copy);
   page.append(intro);
 
@@ -33,7 +33,7 @@ export function createDocumentsView(model, { openExternal } = {}) {
     const title = document.createElement("h3");
     title.textContent = row.title;
     const description = document.createElement("p");
-    description.textContent = row.copy;
+    description.textContent = row.copy.replace(/\.\s*$/, "");
     body.append(title, description);
 
     link.append(icon, body);

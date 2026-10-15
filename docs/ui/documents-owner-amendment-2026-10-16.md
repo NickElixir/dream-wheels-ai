@@ -5,3 +5,5 @@ Owner approved trial: remove horizontal header/list dividers, max700px list, ful
 Support UI-042 accepted for current iteration.
 
 UI-044 — owner requested removal of redundant Open text/action; icon and document text remain one full-row link.
+
+UI-045 — owner requested no trailing full stops in document-page intro and descriptions. Scoped to Documents presentation.
