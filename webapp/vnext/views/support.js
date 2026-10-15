@@ -45,7 +45,7 @@ export function createSupportView(model, { navigate } = {}) {
   link(contacts, { title: "Telegram", copy: "@dreamwheelsai", icon: "💬", href: "https://t.me/dreamwheelsai" });
   link(contacts, { title: "Email", copy: model.supportEmail, icon: "✉️", href: `mailto:${model.supportEmail}` });
   const useful = section(ru ? "Полезное" : "Useful links");
-  link(useful, { title: ru ? "Как подготовить фото" : "How to prepare photos", copy: ru ? "Примеры и рекомендации перед загрузкой" : "Examples and tips before uploading", href: "/help/photos", view: "photo-guide" });
-  link(useful, { title: ru ? "Условия возврата" : "Refund policy", copy: ru ? "Когда доступен возврат и как отправить обращение" : "When refunds are available and how to request one", href: "https://legal.dreamwheels.pro/legal/refund" });
+  link(useful, { title: ru ? "Как подготовить фото" : "How to prepare photos", copy: ru ? "Рекомендации перед загрузкой" : "Examples and tips before uploading", href: "/help/photos", view: "photo-guide" });
+  link(useful, { title: ru ? "Условия возврата" : "Refund policy", copy: ru ? "Когда и как запросить возврат" : "When refunds are available and how to request one", href: "https://legal.dreamwheels.pro/legal/refund" });
   return page;
 }

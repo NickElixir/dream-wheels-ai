@@ -5,3 +5,5 @@ Owner approved old contact-first structure in current style. Preserve Telegram/c
 Photo guide UI-038 accepted for current iteration. Local preview and staging rollout are separate.
 
 UI-040 — owner requested support buttons/links half width: max350px instead of700px; fluid within narrow mobile viewport. Applies to contacts and useful links, unchanged height/icons.
+
+UI-041 — owner approved only shorter RU useful-link descriptions: «Рекомендации перед загрузкой» and «Когда и как запросить возврат». No other proposed mobile changes applied.
