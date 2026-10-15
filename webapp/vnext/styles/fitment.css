@@ -301,3 +301,10 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__standard { border-radius: 12px; }
 .vnext-shell__frame:has(.vnext-fitment) .vnext-shell__topbar { border-bottom: 0; }
 @media(max-width:700px) { .vnext-fitment__source-row .vnext-button { min-height: 44px; } }
+
+/* UI-049: entity islands group their independent data/actions. */
+.vnext-fitment__object { padding: 20px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface); }
+.vnext-fitment__object--editing { border-color: var(--vnext-border-strong); background: var(--vnext-surface-elevated); }
+.vnext-fitment__field-message { font-size: 14px; }
+.vnext-fitment__previous-check { margin-top: 16px; }
+.vnext-fitment__previous-check > summary { cursor: pointer; color: var(--vnext-text-secondary); padding: 12px 0; }
