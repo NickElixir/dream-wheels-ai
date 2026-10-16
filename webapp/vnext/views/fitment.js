@@ -1,6 +1,10 @@
-import { copy as uiText, applicationLocale, localeOf, unknownVerdictSubtitle } from "../copy.mjs";
+import { copy as baseUiText, applicationLocale, localeOf, unknownVerdictSubtitle } from "../copy.mjs";
 import { fitmentDisplayValue } from "../fitment-display.mjs";
 
+const uiText = (key, locale, args) => {
+  const value = key === "wheel.label" && locale === "ru" ? "Колёсный диск" : baseUiText(key, locale, args);
+  return value;
+};
 const esc = (value) => String(value ?? "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 
 const button = (label, action, { primary = false, disabled = false, value = "" } = {}) => `<button type="button" class="vnext-button vnext-button--${primary ? "primary" : "secondary"}" data-fitment-action="${esc(action)}" data-value="${esc(value)}" ${disabled ? "disabled" : ""}>${esc(label)}</button>`;
@@ -414,6 +418,11 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   const next = document.createElement("section");
   next.className = root.className;
   next.innerHTML = markup;
+  next.querySelectorAll(".vnext-fitment__notice, .vnext-fitment__object-status, .vnext-fitment__field-message, .vnext-fitment__progress, .vnext-fitment__object-detail").forEach(node => {
+    for (const child of node.childNodes) {
+      if (child.nodeType === 3) child.textContent = child.textContent.replace(/\.\s*$/, "");
+    }
+  });
   root.replaceChildren(...next.childNodes);
   if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
     const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-active-workspace] h2[tabindex]");
