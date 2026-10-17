@@ -112,7 +112,7 @@ test("Global login entry points reuse authoritative legacy auth state across VNe
   assert.match(shell, /vnext-shell__login--topbar/);
   assert.match(shell, /export function updateAppShellAuth/);
   assert.match(bootstrap, /authenticated: legacyDashboardSnapshot\(\)\.authenticated/);
-  assert.match(bootstrap, /updateAppShellAuth\(mountedShell, legacyDashboardSnapshot\(\)\.authenticated\)/);
+  assert.match(bootstrap, /updateAppShellAuth\(mountedShell, legacyDashboardSnapshot\(\)\.authenticated, legacyDashboardSnapshot\(\)\)/);
   assert.match(bootstrap, /dreamwheels:dashboardchange/);
   assert.match(adapter, /window\.DreamWheelsLegacy\?\.openAuth\?\.\(\)/);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*vnext-shell__login--topbar/);

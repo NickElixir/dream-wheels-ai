@@ -1470,8 +1470,8 @@ function getAccountLabel() {
 }
 
 function getInitials(name) {
-    const normalized = (name || "Dream Wheels").replace("@", "").trim();
-    const parts = normalized.split(/\s+/).filter(Boolean);
+    const normalized = (name || "Dream Wheels").replace(/^@/, "").split("@")[0].trim();
+    const parts = normalized.split(/[\s._-]+/).filter(Boolean);
     if (!parts.length) return "DW";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -1481,7 +1481,7 @@ function getAuthAccountPresentation() {
     const linked = state.accountState?.identities;
     if (linked?.telegram?.linked && linked?.email?.linked) {
         return {
-            identifier: linked.telegram.display || "Dream Wheels",
+            identifier: String(linked.telegram.display || "").startsWith("@") ? linked.telegram.display : linked.email.display || linked.telegram.display || "Dream Wheels",
             provider: "Email + Telegram",
         };
     }
@@ -1511,7 +1511,7 @@ function updateAccountBlock() {
     if (name) name.textContent = account.identifier;
     if (avatar) avatar.textContent = getInitials(account.identifier);
     if (subtitle) {
-        subtitle.textContent = account.provider || uiCopy("account.cabinet", locale);
+        subtitle.textContent = state.balance !== null ? formatRenderCount(state.balance) : state.walletMessageTone === "error" ? (locale === "ru" ? "Баланс недоступен" : "Balance unavailable") : (locale === "ru" ? "Загружаем баланс" : "Loading balance");
     }
 }
 
@@ -1598,7 +1598,7 @@ async function loadAccountState({ silent = false } = {}) {
         if (!response.ok) throw new Error(await parseApiError(response));
         const payload = await response.json();
         state.accountState = payload;
-        updateAccountBlock();
+        emitVNextDashboardChange();
     } catch (error) {
         setAccountPresentation("accountStateError", "account.settings.loadFailed");
     } finally {
@@ -8595,6 +8595,7 @@ function vnextDashboardSnapshot() {
         : "";
     return {
         locale,
+        accountIdentifier: getAuthAccountPresentation().identifier,
         balance: state.balance,
         balanceLabel: formatRenderCount(state.balance === null ? 0 : state.balance),
         expiry,
@@ -8610,6 +8611,7 @@ function vnextDashboardSnapshot() {
 }
 
 function emitVNextDashboardChange() {
+    updateAccountBlock();
     if (typeof CustomEvent !== "function") return;
     window.dispatchEvent(new CustomEvent("dreamwheels:dashboardchange", {
         detail: { viewModel: vnextDashboardSnapshot() },

@@ -57,7 +57,7 @@ test('History has an absolute date per card and omits wheel specs',()=>{
 
 test('P3-B dashboard selects completed while keeping recent statuses and detects newer failed job',()=>{
  const source=read('../app.js');const completed={job_id:'old',status:'completed'},failed={job_id:'new',status:'failed'};
- const ctx={state:{renderHistory:[failed,completed],balance:3},locale:'ru',buildRenderExpiryCohorts:()=>[],formatRenderCount:String,vnextDashboardJobViewModel:x=>x,localizeErrorMessage:String,isFrontendUserAuthenticated:()=>true,isSupabasePartialAuth:()=>false};
+ const ctx={getAuthAccountPresentation:()=>({identifier:"@demo"}),state:{renderHistory:[failed,completed],balance:3},locale:'ru',buildRenderExpiryCohorts:()=>[],formatRenderCount:String,vnextDashboardJobViewModel:x=>x,localizeErrorMessage:String,isFrontendUserAuthenticated:()=>true,isSupabasePartialAuth:()=>false};
  vm.createContext(ctx);vm.runInContext(extractDeclaration(source,'vnextDashboardSnapshot')+'\nthis.snapshot=vnextDashboardSnapshot;',ctx);
  const snap=ctx.snapshot();assert.equal(snap.latest,completed);assert.equal(snap.latestFailed,true);assert.equal(snap.recent[0],failed);
  ctx.state.renderHistory=[failed];assert.equal(ctx.snapshot().latest,null);

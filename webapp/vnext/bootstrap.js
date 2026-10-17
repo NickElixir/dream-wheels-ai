@@ -208,6 +208,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
       navigate: legacyNavigate,
       content: descriptor.content,
       authenticated: legacyDashboardSnapshot().authenticated,
+      accountData: legacyDashboardSnapshot(),
       openAuth: legacyOpenAuth,
     });
     createRoot.replaceChildren(mountedShell);
@@ -232,6 +233,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     navigate: legacyNavigate,
     content: descriptor.content,
     authenticated: legacyDashboardSnapshot().authenticated,
+      accountData: legacyDashboardSnapshot(),
     openAuth: legacyOpenAuth,
   });
   host.replaceChildren(mountedShell);
@@ -248,7 +250,7 @@ function applyView(view, locale = applicationLocale()) {
 
 window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view, applicationLocale()));
 window.addEventListener("dreamwheels:dashboardchange", () => {
-  updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated);
+  updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated, legacyDashboardSnapshot());
   if (mountedView === "dashboard") mountSurface("dashboard", { force: true }, applicationLocale());
 });
 window.addEventListener("dreamwheels:createchange", () => renderCreate());

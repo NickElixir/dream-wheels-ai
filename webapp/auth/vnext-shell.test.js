@@ -101,3 +101,5 @@ test("Fitment is contextual and is not exposed as a global desktop destination",
     assert.deepEqual(navigated, []);
   });
 });
+
+test("account controls show identity and balance and navigate to settings", () => { withDocument(() => {let target;const shell=createAppShell({authenticated:true,accountData:{accountIdentifier:"@nick",balance:29},navigate:view=>target=view,content:new TestElement("section")});const buttons=shell.querySelectorAll(".vnext-shell__account-action");assert.equal(buttons.length,2);for(const button of buttons){assert.match(button.innerHTML,/@nick/);assert.match(button.innerHTML,/29 рендеров/);button.click();assert.equal(target,"settings");}updateAppShellAuth(shell,true,{accountIdentifier:"user@example.com",balance:0});assert.match(buttons[0].innerHTML,/0 рендеров/);updateAppShellAuth(shell,false);assert.ok(buttons.every(button=>button.hidden));});});
