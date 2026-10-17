@@ -9,3 +9,5 @@
 UI-058: Settings uses plain Email/Telegram rows, no card backgrounds/borders or heading divider. Content max700px, compact muted green linked chips matching fitment positive #a8d8bd. Intro shortened, duplicate shared-account note removed; actual operational notices remain. Unlinked rows preserve existing Connect buttons/handlers; linked rows remain non-interactive. Dedicated scoped account.css applies to legacy settings and demo. Demo imports the current account renderer to avoid divergent duplicate copy.
 
 UI-059: remove account-menu arrow; preserve full click target, avatar, identifier and balance. Mobile/desktop browser inspection: no overflow at390px, no backgrounds/borders on provider rows, no duplicate shared-account note. Previous236 frontend tests passed; UI awaits acceptance.
+
+UI-060: provider rows use Support/Documents hover colors and inset border, radius12px,160ms fade; focus-within highlights a row when its actual Connect control is focused. Static linked rows remain non-interactive. No default backgrounds, layout shifts or touch hover; reduced-motion skips transition.

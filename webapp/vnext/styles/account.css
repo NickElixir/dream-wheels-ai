@@ -14,3 +14,14 @@
 .account-settings-panel .form-row .compact-button, .vnext-account-preview .form-row .compact-button { flex: 0 0 auto; align-self: center; width: auto; min-height: 44px; padding: 8px 14px; border: 1px solid var(--vnext-border-strong); border-radius: 8px; background: var(--vnext-surface-elevated); color: var(--vnext-text); font-size: 14px; }
 .account-settings-panel .account-settings-note, .vnext-account-preview .account-settings-note { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--vnext-text-secondary); line-height: 1.5; }
 .vnext-account-preview__demo { margin-top: 24px; color: var(--vnext-text-subtle); font-size: 13px; }
+
+/* UI-060: row feedback matches Support and Documents without persistent cards. */
+.account-settings-panel .form-row, .vnext-account-preview .form-row { position: relative; isolation: isolate; }
+.account-settings-panel .form-row::before, .vnext-account-preview .form-row::before { content: ""; position: absolute; z-index: -1; inset: 0 -12px; border-radius: 12px; background: var(--vnext-surface-elevated); box-shadow: inset 0 0 0 1px var(--vnext-border-strong); opacity: 0; pointer-events: none; transition: opacity 160ms ease; }
+@media(hover:hover) {
+ .account-settings-panel .form-row:hover::before, .vnext-account-preview .form-row:hover::before { opacity: 1; }
+}
+.account-settings-panel .form-row:focus-within::before, .vnext-account-preview .form-row:focus-within::before { opacity: 1; }
+@media(prefers-reduced-motion:reduce) {
+ .account-settings-panel .form-row::before, .vnext-account-preview .form-row::before { transition: none; }
+}
