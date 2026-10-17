@@ -379,9 +379,9 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
     vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
   });
-  assert.match(confirmed, /class="vnext-fitment__version-chip"[^>]*data-fitment-action="reselect-vehicle"/);
-  assert.match(confirmed, /Комплектация: L9 Max AWD/);
-  assert.match(confirmed, /<span>Подтверждено<\/span>/);
+  assert.match(confirmed, /class="vnext-fitment__configuration-row"[^>]*data-fitment-action="reselect-vehicle"/);
+  assert.match(confirmed, /<strong>L9 Max AWD<\/strong>/);
+  assert.match(confirmed, /class="vnext-fitment__confirmed-chip">Подтверждено/);
   assert.doesNotMatch(confirmed, /Комплектация подтверждена/);
   assert.match(confirmed, /L9 Max AWD/);
   assert.match(confirmed, /Изменить комплектацию/);
@@ -923,4 +923,13 @@ test("Fitment separates wheel link import from manual entry and car photo recove
   assert.match(linked, /data-fitment-action="resolve-rim"[^>]*disabled>Получить по ссылке/);
   assert.match(linked, /data-fitment-action="edit-rim" data-value=""[^>]*>Указать вручную/);
   assert.doesNotMatch(linked, /data-fitment-action="edit-vehicle-photo"/);
+});
+
+test("version picker replaces its summary inside the car card", () => {
+  const markup = fitmentMarkup({ vehicleVariantName: "EV", vehicleVariantPickerOpen: true, vehicleVariantMode: "reselect", vehicleVariants: [{label: "AWD", technical: "400 kW"}], selectedVehicleVariant: 0 });
+  const car = markup.slice(markup.indexOf('aria-labelledby="fitment-vehicle-title"'), markup.indexOf('aria-labelledby="fitment-rim-title"'));
+  assert.match(car, /id="fitment-variant-title"/);
+  assert.match(car, /data-fitment-action="cancel-vehicle-reselection"/);
+  assert.equal((markup.match(/id="fitment-variant-title"/g)||[]).length, 1);
+  assert.doesNotMatch(markup, /photo-caption|version-chip/);
 });

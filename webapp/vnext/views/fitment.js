@@ -307,7 +307,7 @@ function activeWorkspace(model) {
   let markup = "";
   if (kind === "vehicle-recognition") markup = vehicleRecognition(model);
   else if (kind === "vehicle-editor") markup = vehicleEditor(model, model.vehicleForm || model.vehicle || {});
-  else if (kind === "vehicle-variant") markup = variantChooser(model);
+  else if (kind === "vehicle-variant") return "";
   else if (kind === "rim-editor") markup = wheelEditor(model, model.rim || {});
   return markup.replace('data-fitment-workspace=', `data-fitment-workspace-kind="${kind}" data-fitment-workspace=`);
 }
@@ -363,8 +363,9 @@ export function fitmentMarkup(model = {}) {
     ? `<span>${esc(uiText("fitment.summary.front", localeOf(model), { value0: sourceStatus(rimSetupState) }))}</span><span>${esc(uiText("fitment.summary.rear", localeOf(model), { value1: sourceStatus(model.rearRimSetupState) }))}</span>`
     : esc(sourceStatus(rimSetupState));
   const vehicleStatus = model.vehicleStatus || uiText("fitment.confirmationRequired", localeOf(model));
-  const versionLabel = uiText("fitment.vehicle.versionChip", localeOf(model), { name: model.vehicleVariantName });
-  const configuration = model.vehicleVariantName ? `<div class="vnext-fitment__configuration">${model.canReselectVehicleVariant ? `<button type="button" class="vnext-fitment__version-chip" data-fitment-action="reselect-vehicle" aria-label="${esc(uiText("fitment.changeVehicleVersion", localeOf(model)))}">${esc(versionLabel)}<span aria-hidden="true">⌄</span></button>` : `<span class="vnext-fitment__version-chip">${esc(versionLabel)}</span>`}${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span>${esc(uiText("fitment.confirmed", localeOf(model)))}</span></div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
+  const inlineVariant = activeWorkspaceKind(model) === "vehicle-variant";
+  const configurationCopy = `<span class="vnext-fitment__configuration-copy"><span class="vnext-fitment__model-label">${esc(text("fitment.vehicleVersion2"))}</span><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span class="vnext-fitment__confirmed-chip">${esc(text("fitment.confirmed"))}</span></span>`;
+  const configuration = inlineVariant ? `<div class="vnext-fitment__configuration vnext-fitment__configuration--open">${variantChooser(model)}</div>` : model.vehicleVariantName ? `<div class="vnext-fitment__configuration">${model.canReselectVehicleVariant ? `<button type="button" class="vnext-fitment__configuration-row" data-fitment-action="reselect-vehicle" aria-label="${esc(text("fitment.changeVehicleVersion"))}" aria-expanded="false">${configurationCopy}<span aria-hidden="true">›</span></button>` : `<div class="vnext-fitment__configuration-row">${configurationCopy}</div>`}</div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
   const vehicleConfirmed = model.overview?.vehicle_state === "confirmed_ready";
   let sourceDomain = model.rimSourceDomain || "";
   if (!sourceDomain && model.resolver?.url) {
@@ -373,7 +374,7 @@ export function fitmentMarkup(model = {}) {
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const completedCurrent = !model.rimDraftDirty && !model.checkStartFailed && model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.checkStartFailed || model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
-  const activeEditor = variantRequired && !model.manualVehicleEditing && !model.rimEditing || model.vehicleEditing || model.rimEditing;
+  const activeEditor = inlineVariant || variantRequired && !model.manualVehicleEditing && !model.rimEditing || model.vehicleEditing || model.rimEditing;
   const checkLabel = retryState ? (model.checkStartFailed || model.executionStatus === "failed") ? uiText("fitment.retryCheck", localeOf(model)) : uiText("fitment.checkAgain", localeOf(model)) : completedCurrent ? uiText("fitment.checkAgain", localeOf(model)) : uiText("fitment.checkCompatibility", localeOf(model));
   const checkAction = (model.rimDraftDirty ? button(uiText("fitment.saveParameters", localeOf(model)), "save-rim", { primary: true, disabled: model.saving || model.checking }) : "") + button(checkLabel, "check", { primary: !model.rimDraftDirty && !completedCurrent && !activeEditor && (model.nextAction === "run_standard_check" || model.checkStartFailed || model.executionStatus === "failed"), disabled: model.rimDraftDirty || !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
   const renderAction = button(uiText("create.createImage", localeOf(model)), "create-image", { primary: completedCurrent && !activeEditor });
@@ -387,7 +388,6 @@ export function fitmentMarkup(model = {}) {
     <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">
     <div class="vnext-fitment__pair" aria-label="${esc(uiText("fitment.sourcesAndDataStatus", localeOf(model)))}">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">${esc(uiText("create.vehicle", localeOf(model)))}</p>${preview(model.vehiclePreview, uiText("fitment.vehiclePhotograph", localeOf(model)), undefined, localeOf(model))}
-        <p class="vnext-fitment__photo-caption">${esc(text("fitment.vehicle.yourPhoto"))}</p>
         <p class="vnext-fitment__model-label">${esc(text("fitment.vehicle.modelLabel"))}</p>
         <h2 id="fitment-vehicle-title">${esc(model.vehicleTitle || text("fitment.carNotSpecified"))}</h2>
         <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="${esc(uiText("create.vehiclePhoto", localeOf(model)))}">
@@ -395,7 +395,6 @@ export function fitmentMarkup(model = {}) {
         ${configuration}${variantRequired && model.rimEditing ? button(uiText("fitment.chooseVehicleVersion", localeOf(model)), "show-variants") : ""}${vehicleError}
       </section>
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">${esc(text("wheel.label"))}</p>${preview(model.rimPreview, text("fitment.wheel.photo"), { kind: "wheel" }, localeOf(model))}
-        <p class="vnext-fitment__photo-caption">${esc(text("fitment.wheel.referenceCaption"))}</p>
         <p class="vnext-fitment__model-label">${esc(text("fitment.wheel.modelLabel"))}</p>
         <h2 id="fitment-rim-title">${esc(model.rimTitle || text("wheel.label"))}</h2>
         ${model.rimSku ? `<p class="vnext-fitment__identity-code">${esc(text("wheel.sku"))} ${esc(model.rimSku)}</p>` : ""}
@@ -435,13 +434,13 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   });
   root.replaceChildren(...next.childNodes);
   if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
-    const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-active-workspace] h2[tabindex]");
+    const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
     heading?.focus({ preventScroll: true });
   } else if (focusSelector) {
     const nextFocus = root.querySelector(focusSelector);
     const focusTarget = nextFocus?.disabled && focused?.dataset.fitmentAction?.startsWith("conflict-")
       ? root.querySelector(`[data-wheel-picker-open="${CSS.escape(focused.dataset.fitmentFocus)}"]`) : nextFocus;
-    (focusTarget || root.querySelector("[data-fitment-active-workspace] h2[tabindex]") || root.querySelector('[data-fitment-action="edit-vehicle"]'))?.focus({ preventScroll: true });
+    (focusTarget || root.querySelector("[data-fitment-workspace] h2[tabindex]") || root.querySelector('[data-fitment-action="edit-vehicle"]'))?.focus({ preventScroll: true });
     if (selection && supportsSelection(nextFocus)) nextFocus.setSelectionRange(...selection);
   }
   return root;

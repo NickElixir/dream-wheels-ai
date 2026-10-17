@@ -330,7 +330,19 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
 .vnext-fitment__source-action .vnext-button { min-height: 44px; padding: 8px 10px; font-size: 14px; line-height: 1.35; }
 .vnext-fitment__source-action .vnext-button:only-child { grid-column: auto; }
 .vnext-fitment__configuration { margin-top: 20px; justify-items: start; gap: 8px; }
-.vnext-fitment__configuration > .vnext-fitment__version-chip { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--vnext-border); border-radius: 999px; background: var(--vnext-surface-selected); color: var(--vnext-text); font: inherit; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
-button.vnext-fitment__version-chip { cursor: pointer; min-height: 44px; }
-button.vnext-fitment__version-chip:hover { border-color: var(--vnext-border-strong); }
-button.vnext-fitment__version-chip:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: 3px; }
+/* UI-053: version selection stays inside the vehicle card. */
+.vnext-fitment__configuration { display: block; }
+.vnext-fitment__configuration-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 16px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface-elevated); color: var(--vnext-text); font: inherit; text-align: left; }
+button.vnext-fitment__configuration-row { cursor: pointer; }
+button.vnext-fitment__configuration-row:hover { border-color: var(--vnext-border-strong); }
+button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: 3px; }
+.vnext-fitment__configuration-copy { display: grid; justify-items: start; gap: 8px; min-width: 0; }
+.vnext-fitment__configuration-copy .vnext-fitment__model-label { margin: 0; }
+.vnext-fitment__configuration-copy strong { font-size: 18px; overflow-wrap: anywhere; }
+.vnext-fitment__configuration-copy small { font-size: 14px; color: var(--vnext-text-secondary); }
+.vnext-fitment__confirmed-chip { padding: 4px 9px; border-radius: 999px; background: var(--vnext-surface-selected); color: var(--vnext-text-secondary); font-size: 13px; }
+.vnext-fitment__configuration--open .vnext-fitment__variant-step { padding: 16px; }
+.vnext-fitment__configuration--open .vnext-fitment__choice { padding: 12px; }
+.vnext-fitment__configuration--open .vnext-fitment__paired-actions { display: flex; }
+.vnext-fitment__configuration--open .vnext-fitment__paired-actions > button { flex: 1 1 120px; padding-inline: 10px; white-space: normal; }
+.vnext-fitment__configuration--open h2 { font-size: 19px; }
