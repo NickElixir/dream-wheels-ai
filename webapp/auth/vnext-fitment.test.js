@@ -153,6 +153,12 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
   assert.equal(model.vehicleForm.modification, "AWD");
   assert.equal(model.vehicleTitle, "Zeekr 001");
   assert.equal(saved.body, "saved body");
+  state.fitmentOverview.vehicle_state = "confirmed_ready";
+  state.fitmentOverview.modification_state = "confirmed";
+  context.fitmentSelectedVehicleVariantName = () => "EV";
+  context.fitmentVariantTechnicalSeries = () => "";
+  context.fitmentSelectedVehicleVariant = () => ({});
+  assert.equal(context.vnextFitmentSnapshot().canonicalVehicleSummary, "Zeekr 001 / EV / 2023");
   const markup = fitmentMarkup(model);
   assert.match(markup, /option value="zeekr" selected/);
   assert.doesNotMatch(markup, /data-fitment-field="vehicle.body"/);

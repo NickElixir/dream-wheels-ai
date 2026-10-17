@@ -9441,7 +9441,7 @@ function vnextFitmentSnapshot() {
             ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
             : fitmentRimTechnicalSummary(summaryRim).join(" / "),
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
-            ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
+            ? [[vehicle.make, vehicle.model].filter(Boolean).join(" "), fitmentSelectedVehicleVariantName(overview), vehicle.year].filter(Boolean).join(" / ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
             ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), overview?.setup_mode === "staggered"
                 ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })

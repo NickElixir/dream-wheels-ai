@@ -88,7 +88,7 @@ function parameters(model, rows) {
     const submittedSizeKnown = ["wheel_diameter_in", "wheel_width_j"].every(name => rows.some(row => row.field === name && row.rimValue != null));
     const contextualMissing = field === "offset_et_mm" && item.code === "vehicle_reference_offset_missing" && item.vehicleValue == null && submittedSizeKnown;
     const referenceValue = contextualMissing ? esc(uiText("fitment.noneForThisSize", model.locale)) : value(item.vehicleValue);
-    return `<tr tabindex="0"><th scope="row">${esc(uiText(key, localeOf(model)))}</th><td>${referenceValue}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${item.status === "conditional" ? " vnext-fitment__row-result--conditional" : item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
+    return `<tr tabindex="0"><th scope="row">${esc(uiText(key, localeOf(model)))}</th><td>${referenceValue}</td><td>${value(item.rimValue)}</td><td class="vnext-fitment__row-result${item.status === "pass" ? " vnext-fitment__row-result--pass" : item.status === "conditional" ? " vnext-fitment__row-result--conditional" : item.status === "fail" ? " vnext-fitment__row-result--fail" : ""}">${esc(result)}</td></tr>`;
   }).join("");
 }
 

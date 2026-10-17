@@ -366,3 +366,11 @@ button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(-
 .vnext-fitment__saved-specs { margin: 8px 0 0; color: var(--vnext-text-secondary); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .vnext-fitment__save-toast { position: fixed; z-index: 100; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 12px 18px; border: 1px solid var(--vnext-border-strong); border-radius: 12px; background: var(--vnext-surface-selected); color: var(--vnext-text); box-shadow: 0 8px 24px #0004; pointer-events: none; }
 @media(max-width:700px) { .vnext-fitment__save-toast { bottom: calc(90px + env(safe-area-inset-bottom)); } }
+
+/* UI-056: emphasize verdict meaning without changing layout. */
+.vnext-fitment { --vnext-fitment-positive: #a8d8bd; --vnext-fitment-warning: #e6c58b; --vnext-fitment-negative: #f0abab; }
+.vnext-fitment__verdict h2 { font-weight: var(--vnext-weight-semibold); }
+.vnext-fitment__verdict--compatible h2, .vnext-fitment__row-result--pass { color: var(--vnext-fitment-positive); }
+.vnext-fitment__verdict--compatible_with_conditions h2, .vnext-fitment__verdict--stale h2, .vnext-fitment__row-result--conditional { color: var(--vnext-fitment-warning); }
+.vnext-fitment__verdict--incompatible h2, .vnext-fitment__verdict--failed h2, .vnext-fitment__row-result--fail { color: var(--vnext-fitment-negative); }
+.vnext-fitment__verdict--unknown h2 { color: var(--vnext-text); }
