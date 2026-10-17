@@ -50,7 +50,7 @@ test("pending check locks the mutation region and keeps Create Image outside it"
   }
   const failed = fitmentMarkup({ executionStatus: "failed", retryAvailable: true, canRunCheck: false });
   assert.match(failed, /data-fitment-action="check"[^>]*disabled/);
-  assert.match(failed, /Изменить параметры/);
+  assert.match(failed, /data-fitment-action="edit-rim"[^>]*>Указать вручную/);
 });
 
 test("ET picker separates recommended/all, prioritizes exact matches and preserves manual decimals", () => {
@@ -74,10 +74,11 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   const proposed = fitmentMarkup({ vehicleRecognition: { status: "proposed", canRecognize: true, candidates: [{ make: "Porsche", model: "Cayenne", year_start: 2020, year_end: 2022 }] } });
   assert.match(proposed, /Porsche Cayenne 2020–2022/);
   assert.match(proposed, /data-fitment-action="recognition-proposal"/);
-  assert.match(proposed, /data-fitment-action="edit-vehicle-photo"/);
+  assert.doesNotMatch(proposed, /data-fitment-action="edit-vehicle-photo"/);
   const failed = fitmentMarkup({ vehicleRecognition: { status: "failed", canRecognize: true } });
   assert.match(failed, /Не удалось распознать автомобиль/);
   assert.match(failed, /Попробовать ещё раз/);
+  assert.match(failed, /data-fitment-action="edit-vehicle-photo"/);
   assert.match(failed, /Указать вручную/);
   assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
   const pending = fitmentMarkup({ vehicleRecognition: { status: "loading", canRecognize: true } });
@@ -378,8 +379,8 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     overview: {}, vehicleVariantName: "L9 Max AWD", canReselectVehicleVariant: true,
     vehicleVariants: [{ label: "L9 Pro AWD" }], vehicleVariantPickerOpen: false,
   });
-  assert.match(confirmed, /<p class="vnext-eyebrow">Комплектация<\/p>/);
-  assert.match(confirmed, /<strong>L9 Max AWD<\/strong>/);
+  assert.match(confirmed, /class="vnext-fitment__version-chip"[^>]*data-fitment-action="reselect-vehicle"/);
+  assert.match(confirmed, /Комплектация: L9 Max AWD/);
   assert.match(confirmed, /<span>Подтверждено<\/span>/);
   assert.doesNotMatch(confirmed, /Комплектация подтверждена/);
   assert.match(confirmed, /L9 Max AWD/);
@@ -909,4 +910,17 @@ test("P0-B completed explanations keep backend groups separate and omit empty/du
   const english = fitmentMarkup({ locale: "en", check: { execution_status: "completed", verdict: "incompatible" }, blockingIssues: [{ label: "PCD mismatch" }], conditions: [{ label: "Use rings" }] });
   assert.match(english, /Why it does not fit|Installation conditions do not override/);
   assert.doesNotMatch(english, /[А-Яа-яЁё]/);
+});
+
+
+test("Fitment separates wheel link import from manual entry and car photo recovery", () => {
+  const manual = fitmentMarkup({ locale: "ru", resolver: {} });
+  assert.match(manual, /data-fitment-action="edit-rim" data-value="source"[^>]*>Добавить ссылку/);
+  assert.doesNotMatch(manual, /data-fitment-action="resolve-rim"/);
+  assert.doesNotMatch(manual, /Распознать диск|Откуда данные/);
+  const linked = fitmentMarkup({ locale: "ru", resolver: { url: "https:\/\/shop.example\/wheel", loading: true } });
+  assert.match(linked, /shop.example/);
+  assert.match(linked, /data-fitment-action="resolve-rim"[^>]*disabled>Получить по ссылке/);
+  assert.match(linked, /data-fitment-action="edit-rim" data-value=""[^>]*>Указать вручную/);
+  assert.doesNotMatch(linked, /data-fitment-action="edit-vehicle-photo"/);
 });

@@ -53,6 +53,50 @@ export const COPY = {
     "ru": "Вариант относится к передней оси. Задние параметры подтверждаются отдельно.",
     "en": "The variant applies to the front axle. Rear parameters are confirmed separately."
   },
+  "fitment.vehicle.yourPhoto": {
+    "ru": "Ваше фото для примерки",
+    "en": "Your try-on photo"
+  },
+  "fitment.vehicle.modelLabel": {
+    "ru": "Модель автомобиля",
+    "en": "Car model"
+  },
+  "fitment.vehicle.identifyPhoto": {
+    "ru": "Определить по фото",
+    "en": "Identify from photo"
+  },
+  "fitment.vehicle.changeModel": {
+    "ru": "Изменить модель",
+    "en": "Change model"
+  },
+  "fitment.vehicle.versionChip": {
+    "ru": "Комплектация: {name}",
+    "en": "Version: {name}"
+  },
+  "fitment.wheel.modelLabel": {
+    "ru": "Модель диска",
+    "en": "Wheel model"
+  },
+  "fitment.wheel.referenceCaption": {
+    "ru": "Фото для примерки",
+    "en": "Try-on reference photo"
+  },
+  "fitment.wheel.getFromLink": {
+    "ru": "Получить по ссылке",
+    "en": "Get from link"
+  },
+  "fitment.wheel.addLink": {
+    "ru": "Добавить ссылку",
+    "en": "Add product link"
+  },
+  "fitment.wheel.productPage": {
+    "ru": "Страница товара",
+    "en": "Product page"
+  },
+  "fitment.wheel.noLink": {
+    "ru": "Характеристики — по ссылке или вручную",
+    "en": "Specifications from a link or entered manually"
+  },
   "fitment.source.label": {
     "ru": "Откуда данные",
     "en": "Data source"

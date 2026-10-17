@@ -321,3 +321,16 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
  .vnext-fitment__object, .vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__result-panel, .vnext-fitment__standard { padding: 16px; }
  .vnext-fitment__source-row .vnext-button { min-height: 44px; }
 }
+
+/* UI-052: distinguish photo references from editable catalogue identities. */
+.vnext-fitment__photo-caption { margin: 8px 0 0; color: var(--vnext-text-subtle); font-size: 14px; line-height: 1.45; }
+.vnext-fitment__model-label { margin: 20px 0 0; color: var(--vnext-text-secondary); font-size: 14px; }
+.vnext-fitment__model-label + h2 { margin-top: 4px; }
+.vnext-fitment__source-action { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.vnext-fitment__source-action .vnext-button { min-height: 44px; padding: 8px 10px; font-size: 14px; line-height: 1.35; }
+.vnext-fitment__source-action .vnext-button:only-child { grid-column: auto; }
+.vnext-fitment__configuration { margin-top: 20px; justify-items: start; gap: 8px; }
+.vnext-fitment__configuration > .vnext-fitment__version-chip { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--vnext-border); border-radius: 999px; background: var(--vnext-surface-selected); color: var(--vnext-text); font: inherit; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+button.vnext-fitment__version-chip { cursor: pointer; min-height: 44px; }
+button.vnext-fitment__version-chip:hover { border-color: var(--vnext-border-strong); }
+button.vnext-fitment__version-chip:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: 3px; }
