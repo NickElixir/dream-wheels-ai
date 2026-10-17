@@ -3747,8 +3747,8 @@ export const COPY = {
     "en": "Account settings"
   },
   "account.settings.lede": {
-    "ru": "Подключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.",
-    "en": "Link Email and Telegram to sign in either way. Your balance, render history and payments stay shared."
+    "ru": "Входите через Email или Telegram — баланс и история останутся общими",
+    "en": "Sign in with Email or Telegram — your balance and history stay shared"
   },
   "account.merge.title": {
     "ru": "Объединить аккаунты?",

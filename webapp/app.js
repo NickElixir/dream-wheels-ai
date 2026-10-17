@@ -1574,13 +1574,9 @@ function renderAccountSettings() {
             : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">${escapeHtml(uiCopy("account.settings.link", locale))}</button>`;
         return `<div class="form-row"><div><strong>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
     };
-    const bothLinked = identities.email?.linked && identities.telegram?.linked;
     container.innerHTML = [
         renderRow("supabase", identities.email || { linked: false }),
         renderRow("telegram", identities.telegram || { linked: false }),
-        bothLinked
-            ? `<div class="account-settings-note">${escapeHtml(uiCopy("account.settings.sharedAccount", locale))}</div>`
-            : "",
         state.accountSettingsNotice
             ? `<div class="account-settings-note">${escapeHtml(state.accountSettingsNotice)}</div>`
             : "",

@@ -110,7 +110,7 @@ export function updateAppShellAuth(shell, authenticated, accountData) {
     button.hidden = !isAuthenticated;
     button.title = `${account.identifier} — ${account.subtitle}`;
     button.setAttribute("aria-label", `${uiText("account.settings", locale)}: ${account.identifier}, ${account.subtitle}`);
-    button.innerHTML = `<span class="vnext-shell__avatar" aria-hidden="true">${esc(account.initials)}</span><span class="vnext-shell__account-copy"><span class="vnext-shell__account-identifier">${esc(account.identifier)}</span><small>${esc(account.subtitle)}</small></span><span class="vnext-shell__account-cue" aria-hidden="true">›</span>`;
+    button.innerHTML = `<span class="vnext-shell__avatar" aria-hidden="true">${esc(account.initials)}</span><span class="vnext-shell__account-copy"><span class="vnext-shell__account-identifier">${esc(account.identifier)}</span><small>${esc(account.subtitle)}</small></span>`;
   });
   const accountLabel = shell.querySelector(".vnext-shell__account-label");
   const profileButton = shell.querySelector(".vnext-shell__account-action");
