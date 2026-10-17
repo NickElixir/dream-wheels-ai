@@ -261,7 +261,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
     rimEditing: true,
     resolver: { url: "https://shop.example.test/wheel", status: "Не удалось определить параметры", statusTone: "error", loading: false, open: true },
   });
-  assert.match(resolver, /Данные диска/);
+  assert.match(resolver, /Ссылка на товар/);
   assert.match(resolver, /Повторить/);
   assert.match(resolver, /Указать параметры вручную/);
 
@@ -274,7 +274,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
     selectedVehicleVariant: 0,
   });
   assert.match(variants, /2\.0 AWD/);
-  assert.match(variants, /Подтвердить комплектацию/);
+  assert.match(variants, />Подтвердить<\/button>/);
   assert.match(variants, /aria-label="Варианты комплектации"/);
   assert.doesNotMatch(variants, /data-fitment-field="vehicle\.make"/);
   const reselectionWhileWheelEditorOpen = fitmentMarkup({
@@ -291,7 +291,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   assert.doesNotMatch(reselectionWhileWheelEditorOpen, /data-fitment-workspace="rim"/);
   const manualRecovery = fitmentMarkup({ overview: {}, nextAction: "select_vehicle_variant", manualVehicleEditing: true, vehicleEditing: true, vehicleForm: { make: "Other" } });
   assert.match(manualRecovery, /data-fitment-field="vehicle\.make"/);
-  assert.doesNotMatch(manualRecovery, /Подтвердить комплектацию/);
+  assert.doesNotMatch(manualRecovery, />Подтвердить<\/button>/);
 });
 
 test("an incompatible Fitment result still offers the existing independent render action", () => {
@@ -344,7 +344,7 @@ test("Fitment action hierarchy follows the active task and keeps Create Image in
   assert.equal(buttonClass(editingCompleted, "save-rim"), "vnext-button vnext-button--primary");
   assert.equal(buttonClass(editingCompleted, "create-image"), "vnext-button vnext-button--secondary");
   assert.match(editingCompleted, /data-fitment-action="check"[^>]*disabled/);
-  assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 1);
+  assert.equal((editingCompleted.match(/data-fitment-action="edit-rim"/g) || []).length, 0);
 });
 
 test("Fitment is summary-first, maps server next_action exactly, and keeps required variants visible", () => {
@@ -370,7 +370,7 @@ test("Fitment is summary-first, maps server next_action exactly, and keeps requi
     vehicleVariantPickerOpen: false, selectedVehicleVariant: 0,
   });
   assert.match(variantRequired, /2\.0 AWD/);
-  assert.match(variantRequired, /Подтвердить комплектацию/);
+  assert.match(variantRequired, />Подтвердить<\/button>/);
   assert.doesNotMatch(variantRequired, /Скрыть комплектации/);
   assert.doesNotMatch(variantRequired, /data-fitment-field="vehicle\.make"/);
   assert.match(variantRequired, /data-fitment-action="edit-vehicle"/);
@@ -430,10 +430,10 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   const base = { overview: {}, rimEditing: true, rim: { brand: "BBS", wheel_diameter_in: 19 }, vehicleForm: { make: "Audi" } };
   const idle = fitmentMarkup({ ...base, resolver: { open: true, url: "", loading: false } });
   assert.match(idle, /data-fitment-source-url/);
-  assert.match(idle, /Определить параметры/);
+  assert.match(idle, /Получить характеристики/);
 
   const loading = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", loading: true, statusTone: "neutral" } });
-  assert.match(loading, /Определяем параметры диска/);
+  assert.match(loading, /Получаем характеристики…/);
   assert.match(loading, /id="fitment-rim-editor-title"[^>]*>BBS/);
   assert.match(loading, /data-fitment-source-url/);
 
@@ -613,7 +613,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     assert.ok(!(snapshot.vehicleEditing && snapshot.rimEditing), `${action}: editors must be mutually exclusive`);
     const markup = fitmentMarkup(snapshot);
     assert.equal((markup.match(/class="vnext-fitment__editor"/g) || []).length > 0, expectedVehicleEditor || expectedRimEditor, `${action}: editor presentation`);
-    assert.equal(markup.includes('data-fitment-action="toggle-source"'), expectedRimEditor, `${action}: wheel source disclosure visibility`);
+    assert.equal(markup.includes('data-fitment-source-url'), true, `${action}: wheel source disclosure visibility`);
     if (action === "select_vehicle_variant") assert.match(markup, /Выберите комплектацию автомобиля/);
   }
   context.setFitmentEditor("vehicle");
@@ -781,7 +781,8 @@ test("an unconfirmed branch cannot leak its draft into Standard canonical summar
 test("SKU chooser owns one workspace and suppresses URL task and technical editor", () => {
   const markup = fitmentMarkup({rimEditing:true,resolver:{open:true,url:"https://shop.test",chooserOpen:true,variants:[{sku:"A",values:{offset_et_mm:35.125}}]}});
   assert.equal((markup.match(/data-fitment-workspace=/g)||[]).length,1);
-  assert.doesNotMatch(markup,/data-fitment-source-url|data-wheel-picker-open|data-fitment-action="save-rim"/);
+  assert.doesNotMatch(markup,/data-wheel-picker-open|data-fitment-action="save-rim"/);
+  assert.match(markup,/id="fitment-product-url" disabled/);
   assert.match(markup,/data-fitment-action="cancel-rim-sku"/);
   assert.match(markup,/35,125/);
 });
@@ -915,12 +916,12 @@ test("P0-B completed explanations keep backend groups separate and omit empty/du
 
 test("Fitment separates wheel link import from manual entry and car photo recovery", () => {
   const manual = fitmentMarkup({ locale: "ru", resolver: {} });
-  assert.match(manual, /data-fitment-action="edit-rim" data-value="source"[^>]*>Добавить ссылку/);
-  assert.doesNotMatch(manual, /data-fitment-action="resolve-rim"/);
+  assert.match(manual, /data-fitment-source-url value=""/);
+  assert.match(manual, /data-fitment-action="resolve-rim"[^>]*disabled/);
   assert.doesNotMatch(manual, /Распознать диск|Откуда данные/);
   const linked = fitmentMarkup({ locale: "ru", resolver: { url: "https:\/\/shop.example\/wheel", loading: true } });
   assert.match(linked, /shop.example/);
-  assert.match(linked, /data-fitment-action="resolve-rim"[^>]*disabled>Получить по ссылке/);
+  assert.match(linked, /data-fitment-action="resolve-rim"[^>]*disabled>Получаем характеристики…/);
   assert.match(linked, /data-fitment-action="edit-rim" data-value=""[^>]*>Указать вручную/);
   assert.doesNotMatch(linked, /data-fitment-action="edit-vehicle-photo"/);
 });

@@ -3707,7 +3707,8 @@ function focusFitmentWorkspace(section = state.fitmentActiveSection) {
     window.requestAnimationFrame(() => {
         const workspace = document.querySelector(`[data-fitment-workspace="${section}"]`);
         if (!workspace) return;
-        workspace.scrollIntoView({ behavior: "auto", block: "start" });
+        const bounds = workspace.getBoundingClientRect();
+        if (bounds.bottom < 0 || bounds.top > window.innerHeight) workspace.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
         const target = workspace.querySelector('h2[tabindex], select:not(:disabled), input:not(:disabled)');
         target?.focus({ preventScroll: true });
     });

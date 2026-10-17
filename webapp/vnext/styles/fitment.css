@@ -346,3 +346,15 @@ button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(-
 .vnext-fitment__configuration--open .vnext-fitment__paired-actions { display: flex; }
 .vnext-fitment__configuration--open .vnext-fitment__paired-actions > button { flex: 1 1 120px; padding-inline: 10px; white-space: normal; }
 .vnext-fitment__configuration--open h2 { font-size: 19px; }
+
+/* UI-054: inline source form and restrained state transitions. */
+.vnext-fitment__link-island { display: grid; gap: 14px; margin-top: 20px; padding: 16px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface-elevated); }
+.vnext-fitment__link-island .vnext-fitment__field { margin: 0; width: 100%; }
+.vnext-fitment__link-island input { width: 100%; min-width: 0; }
+.vnext-fitment__link-island > button { justify-self: start; min-height: 44px; white-space: normal; }
+.vnext-fitment__manual-action { margin-top: 14px; }
+.vnext-fitment__manual-action > button { min-height: 44px; }
+.vnext-fitment__choice { transition: background-color 160ms ease, box-shadow 160ms ease; }
+@media(prefers-reduced-motion:reduce) { .vnext-fitment__choice { transition: none; } }
+
+.vnext-fitment h2[tabindex="-1"]:focus { outline: none; }

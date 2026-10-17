@@ -113,10 +113,6 @@ function verdict(model) {
 function sourceEditor(model) {
   const text = key => uiText(key, model.locale);
   const resolver = model.resolver || {};
-  const status = resolver.status || "";
-  const statusClass = resolver.statusTone === "error" ? " vnext-fitment__notice--error" : "";
-  const resolving = resolver.loading ? loadingStatus(text("fitment.wheel.resolving")) : "";
-  const retries = resolver.statusTone === "error" && resolver.url ? `<div class="vnext-fitment__actions">${button(uiText("create.retry", localeOf(model)), "resolve-rim", { disabled: resolver.loading })}${button(text("fitment.manual"), "manual-rim")}</div>` : "";
   const variants = resolver.variants?.length ? `<div class="vnext-fitment__choices"><div class="vnext-fitment__sku-legend" aria-hidden="true"><span>${esc(uiText("fitment.variant", localeOf(model)))}</span><span class="vnext-fitment__sku-specs"><span>${esc(uiText("fitment.diameter", localeOf(model)))}</span><span>${esc(uiText("fitment.width", localeOf(model)))}</span><span>PCD</span><span>ET</span><span>DIA</span></span><span></span></div><div role="group" aria-label="${esc(text("fitment.wheel.variants"))}">${resolver.variants.map((variant, index) => {
     const values = variant.values || {};
     const known = (value, suffix = "") => value === null || value === undefined || value === "" ? uiText("fitment.undetermined", localeOf(model)) : `${wheelDisplay(value, model.locale)}${suffix}`;
@@ -124,7 +120,7 @@ function sourceEditor(model) {
     const specs = [[uiText("fitment.diameter", localeOf(model)), known(values.wheel_diameter_in, "″")], [uiText("fitment.width", localeOf(model)), known(values.wheel_width_j, "J")], ["PCD", pcd], ["ET", known(values.offset_et_mm)], ["DIA", known(values.center_bore_mm)]];
     return `<button type="button" class="vnext-fitment__sku-row" data-fitment-action="rim-variant" data-value="${index}" aria-pressed="${String(variant.sku === resolver.selectedSku)}"><span class="vnext-fitment__sku-identity">${variant.imageUrl ? `<img src="${esc(variant.imageUrl)}" alt="" class="vnext-fitment__sku-image">` : ""}<span class="vnext-fitment__sku-name">${esc([variant.brand, variant.model].filter(Boolean).join(" ") || uiText("fitment.variant.number", localeOf(model), { value0: index + 1 }))}</span><span class="vnext-fitment__sku-code">${esc(text("wheel.sku"))}: ${esc(variant.sku || uiText("fitment.undetermined", localeOf(model)))}</span></span><span class="vnext-fitment__sku-specs">${specs.map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("")}</span><span class="vnext-fitment__sku-select">${esc(uiText("fitment.select", localeOf(model)))}</span></button>`;
   }).join("")}</div></div>` : "";
-  return `<section class="vnext-fitment__source-disclosure">${!variants ? `<button type="button" class="vnext-button vnext-button--secondary" data-fitment-action="toggle-source" aria-expanded="${String(Boolean(resolver.open))}" aria-controls="fitment-source-panel">${resolver.url ? uiText("create.changeProductLink", localeOf(model)) : uiText("create.addProductLink", localeOf(model))}</button>` : ""}${!variants && resolver.open ? `<div class="vnext-fitment__source-panel" id="fitment-source-panel"><div class="vnext-fitment__section-heading"><h3>${esc(text("fitment.wheel.source"))}</h3></div><label class="vnext-fitment__field"><span>${esc(uiText("create.productLink", localeOf(model)))}</span><input type="url" inputmode="url" data-fitment-source-url value="${esc(resolver.url)}" placeholder="https://"></label><div class="vnext-fitment__source-actions">${button(uiText("fitment.resolveParameters", localeOf(model)), "resolve-rim", { primary: true, disabled: resolver.loading || !resolver.url })}<p>${esc(uiText("fitment.optionalRetrieveTheModelAndTechnicalParametersFromThe", localeOf(model)))}</p></div>${resolving}${status ? `<p class="vnext-fitment__notice${statusClass}" role="${resolver.statusTone === "error" ? "alert" : "status"}">${esc(status)}</p>` : ""}${retries}</div>` : ""}${variants}${resolver.chooserOpen ? button(uiText("create.cancel", localeOf(model)), "cancel-rim-sku") : ""}${!resolver.open ? resolving + (resolver.statusTone === "error" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(status)}</p>${retries}` : "") : ""}</section>`;
+  return `<section class="vnext-fitment__source-disclosure">${variants}${resolver.chooserOpen ? button(uiText("create.cancel", localeOf(model)), "cancel-rim-sku") : ""}</section>`;
 }
 
 function evidence(model) {
@@ -317,9 +313,9 @@ function variantChooser(model) {
   const choices = model.vehicleVariants || [];
   const status = model.vehicleLookup?.status;
   const loading = model.vehicleVariantsLoading || status === "loading";
-  const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || uiText("fitment.variant.number", localeOf(model), { value0: index + 1 }))}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span><span class="vnext-fitment__variant-cue">${index === model.selectedVehicleVariant ? uiText("fitment.selected", localeOf(model)) : uiText("fitment.select", localeOf(model))}</span></button>`).join("");
+  const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || uiText("fitment.variant.number", localeOf(model), { value0: index + 1 }))}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span></button>`).join("");
   const message = status === "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(uiText("fitment.unableToLoadVehicleVersions", localeOf(model)))}</p>${button(uiText("create.retry", localeOf(model)), "load-vehicle-variants")}` : status === "no_match" ? `<p class="vnext-fitment__notice" role="status">${esc(uiText("fitment.vehicleVersionsWereNotFound", localeOf(model)))}</p>` : "";
-  return `<section class="vnext-fitment__variant-step" data-fitment-workspace="vehicle" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleVersion", localeOf(model)))}</p><h2 id="fitment-variant-title" tabindex="-1">${esc(uiText("fitment.chooseAVehicleVersion", localeOf(model)))}</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="${esc(uiText("fitment.vehicleVersions", localeOf(model)))}">${choicesMarkup}${loading ? loadingStatus(uiText("fitment.loadingVehicleVersions", localeOf(model))) : ""}${message}<div class="vnext-fitment__paired-actions">${button(uiText("fitment.confirmVehicleVersion", localeOf(model)), "confirm-vehicle-variant", { primary: true, disabled: model.selectedVehicleVariant == null || !choices[model.selectedVehicleVariant] })}${reselection ? button(uiText("create.cancel", localeOf(model)), "cancel-vehicle-reselection") : button(uiText("fitment.enterManually", localeOf(model)), "manual-vehicle")}</div></div></section>`;
+  return `<section class="vnext-fitment__variant-step" data-fitment-workspace="vehicle" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleVersion2", localeOf(model)))}</p><h2 id="fitment-variant-title" tabindex="-1">${esc(uiText("fitment.chooseAVehicleVersion", localeOf(model)))}</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="${esc(uiText("fitment.vehicleVersions", localeOf(model)))}">${choicesMarkup}${loading ? loadingStatus(uiText("fitment.loadingVehicleVersions", localeOf(model))) : ""}${message}<div class="vnext-fitment__paired-actions">${button(localeOf(model) === "ru" ? "Подтвердить" : "Confirm", "confirm-vehicle-variant", { primary: true, disabled: model.selectedVehicleVariant == null || !choices[model.selectedVehicleVariant] })}${reselection ? button(uiText("create.cancel", localeOf(model)), "cancel-vehicle-reselection") : button(uiText("fitment.enterManually", localeOf(model)), "manual-vehicle")}</div></div></section>`;
 }
 
 function wheelConfirmationProgress(model, axle = "front") {
@@ -367,10 +363,6 @@ export function fitmentMarkup(model = {}) {
   const configurationCopy = `<span class="vnext-fitment__configuration-copy"><span class="vnext-fitment__model-label">${esc(text("fitment.vehicleVersion2"))}</span><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span class="vnext-fitment__confirmed-chip">${esc(text("fitment.confirmed"))}</span></span>`;
   const configuration = inlineVariant ? `<div class="vnext-fitment__configuration vnext-fitment__configuration--open">${variantChooser(model)}</div>` : model.vehicleVariantName ? `<div class="vnext-fitment__configuration">${model.canReselectVehicleVariant ? `<button type="button" class="vnext-fitment__configuration-row" data-fitment-action="reselect-vehicle" aria-label="${esc(text("fitment.changeVehicleVersion"))}" aria-expanded="false">${configurationCopy}<span aria-hidden="true">›</span></button>` : `<div class="vnext-fitment__configuration-row">${configurationCopy}</div>`}</div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
   const vehicleConfirmed = model.overview?.vehicle_state === "confirmed_ready";
-  let sourceDomain = model.rimSourceDomain || "";
-  if (!sourceDomain && model.resolver?.url) {
-    try { sourceDomain = new URL(model.resolver.url).hostname; } catch { /* An incomplete URL remains editable in the source form. */ }
-  }
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : "";
   const completedCurrent = !model.rimDraftDirty && !model.checkStartFailed && model.check?.execution_status === "completed" && model.check.is_current !== false;
   const retryState = model.checkStartFailed || model.executionStatus === "failed" || model.check?.execution_status === "completed" && model.check.is_current === false;
@@ -398,8 +390,13 @@ export function fitmentMarkup(model = {}) {
         <p class="vnext-fitment__model-label">${esc(text("fitment.wheel.modelLabel"))}</p>
         <h2 id="fitment-rim-title">${esc(model.rimTitle || text("wheel.label"))}</h2>
         ${model.rimSku ? `<p class="vnext-fitment__identity-code">${esc(text("wheel.sku"))} ${esc(model.rimSku)}</p>` : ""}
-        <div class="vnext-fitment__source-row"><p>${model.resolver?.url ? `<span>${esc(text("fitment.wheel.productPage"))}</span>${sourceDomain ? `<strong>${esc(sourceDomain)}</strong>` : ""}` : `<span>${esc(text("fitment.wheel.noLink"))}</span>`}</p>${model.resolver?.url ? button(text("fitment.change"), "edit-rim", { value: "source" }) : ""}</div>
-        <div class="vnext-fitment__source-action">${button(text(model.resolver?.url ? "fitment.wheel.getFromLink" : "fitment.wheel.addLink"), model.resolver?.url ? "resolve-rim" : "edit-rim", { value: model.resolver?.url ? "" : "source", disabled: Boolean(model.resolver?.loading) })}${!model.rimEditing ? button(text(model.overview?.rim_setup_state === "confirmed_ready" ? "fitment.editParameters" : "fitment.enterManually"), "edit-rim") : ""}</div>
+        <div class="vnext-fitment__link-island" aria-busy="${Boolean(model.resolver?.loading)}">
+          <label class="vnext-fitment__field" for="fitment-product-url"><span>${localeOf(model) === "ru" ? "Ссылка на товар" : "Product link"}</span><input id="fitment-product-url" ${model.resolver?.variants?.length ? "disabled" : ""} type="url" inputmode="url" data-fitment-source-url value="${esc(model.resolver?.url || "")}" placeholder="${localeOf(model) === "ru" ? "Вставьте ссылку на товар" : "Paste a product link"}"></label>
+          ${button(localeOf(model) === "ru" ? model.resolver?.loading ? "Получаем характеристики…" : model.resolver?.statusTone === "error" ? "Повторить" : "Получить характеристики" : model.resolver?.loading ? "Getting specifications…" : model.resolver?.statusTone === "error" ? "Retry" : "Get specifications", "resolve-rim", { disabled: Boolean(model.resolver?.loading || model.resolver?.variants?.length) || !model.resolver?.url?.trim() })}
+          ${model.resolver?.status ? `<p class="vnext-fitment__notice${model.resolver.statusTone === "error" ? " vnext-fitment__notice--error" : ""}" role="${model.resolver.statusTone === "error" ? "alert" : "status"}">${esc(model.resolver.status)}</p>` : ""}
+          ${model.resolver?.statusTone === "error" ? button(text("fitment.manual"), "manual-rim") : ""}
+        </div>
+        ${!model.rimEditing ? `<div class="vnext-fitment__manual-action">${button(text(model.overview?.rim_setup_state === "confirmed_ready" ? "fitment.editParameters" : "fitment.enterManually"), "edit-rim")}</div>` : ""}
         <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
@@ -416,6 +413,7 @@ export function fitmentMarkup(model = {}) {
 export function refreshFitmentView(root, model, callbacks = root.fitmentCallbacks, locale = applicationLocale()) {
   root.fitmentCallbacks = callbacks;
   const previousWorkspace = root.fitmentWorkspaceKind;
+  const previousConfigurationHeight = root.querySelector(".vnext-fitment__configuration")?.getBoundingClientRect().height;
   const nextWorkspace = activeWorkspaceKind(model);
   root.fitmentModel = model;
   root.fitmentWorkspaceKind = nextWorkspace;
@@ -433,6 +431,14 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     }
   });
   root.replaceChildren(...next.childNodes);
+  if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    const configuration = root.querySelector(".vnext-fitment__configuration");
+    if (configuration && previousConfigurationHeight != null && configuration.animate) {
+      const height = configuration.getBoundingClientRect().height;
+      configuration.animate([{ height: `${previousConfigurationHeight}px`, overflow: "hidden" }, { height: `${height}px`, overflow: "hidden" }], { duration: 240, easing: "cubic-bezier(.2,.7,.3,1)" });
+      configuration.firstElementChild?.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 200, easing: "ease-out" });
+    }
+  }
   if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
     const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
     heading?.focus({ preventScroll: true });
