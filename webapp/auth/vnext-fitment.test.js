@@ -50,7 +50,7 @@ test("pending check locks the mutation region and keeps Create Image outside it"
   }
   const failed = fitmentMarkup({ executionStatus: "failed", retryAvailable: true, canRunCheck: false });
   assert.match(failed, /data-fitment-action="check"[^>]*disabled/);
-  assert.match(failed, /data-fitment-action="edit-rim"[^>]*>Указать вручную/);
+  assert.match(failed, /data-fitment-action="manual-rim"[^>]*>Заполнить вручную/);
 });
 
 test("ET picker separates recommended/all, prioritizes exact matches and preserves manual decimals", () => {
@@ -125,7 +125,7 @@ test("vehicle edits survive Fitment snapshot refresh while the saved summary sta
     fitmentWheelSource: () => ({ rimSourceLabel: "Источник не указан", rimSourceDomain: "" }),
     fitmentWheelDraftIsDirty: () => false,
     demoRimTitle: () => "",
-    fitmentRimTechnicalSummary: () => "",
+    fitmentRimTechnicalSummary: () => [],
     fitmentRimProvenance: () => "",
     rememberFitmentVehicleCatalogueChain() {},
     beginFitmentCatalogueContextChange: () => 1,
@@ -263,7 +263,7 @@ test("Fitment keeps resolver retries, manual recovery, and explicit variant sele
   });
   assert.match(resolver, /Ссылка на товар/);
   assert.match(resolver, /Повторить/);
-  assert.match(resolver, /Указать параметры вручную/);
+  assert.match(resolver, /Заполнить вручную/);
 
   const variants = fitmentMarkup({
     overview: {},
@@ -323,7 +323,7 @@ test("Fitment action hierarchy follows the active task and keeps Create Image in
     const markup = fitmentMarkup({ overview: {}, nextAction: "run_standard_check", executionStatus: "completed", check: { execution_status: "completed", verdict, is_current: true } });
     assert.equal(buttonClass(markup, "create-image"), "vnext-button vnext-button--primary", verdict);
     assert.equal(buttonClass(markup, "check"), "vnext-button vnext-button--secondary", verdict);
-    assert.equal(buttonClass(markup, "edit-rim"), "vnext-button vnext-button--secondary", verdict);
+    assert.equal(buttonClass(markup, "manual-rim"), "vnext-button vnext-button--secondary", verdict);
     assert.equal((markup.match(/data-fitment-action="create-image"/g) || []).length, 1, verdict);
   }
 
@@ -458,7 +458,7 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   const failure = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", status: "Сайт недоступен", statusTone: "error" } });
   assert.match(failure, /Сайт недоступен/);
   assert.match(failure, /data-fitment-action="resolve-rim"/);
-  assert.match(failure, /Указать параметры вручную/);
+  assert.match(failure, /Заполнить вручную/);
   assert.match(failure, />19″<\/button>/);
 });
 
@@ -583,7 +583,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     fitmentCatalogueOptionLabel: (value) => value.label, fitmentPreviewAsset: () => "",
     fitmentWheelSource: () => ({ rimSourceLabel: "Источник не указан", rimSourceDomain: "" }),
     fitmentWheelDraftIsDirty: () => false,
-    demoRimTitle: () => "", fitmentRimTechnicalSummary: () => "", fitmentRimProvenance: () => "",
+    demoRimTitle: () => "", fitmentRimTechnicalSummary: () => [], fitmentRimProvenance: () => "",
     fitmentEffectiveRim: (value) => value.rim || {}, fitmentNextAction: (value) => value?.next_action?.kind,
     beginFitmentCatalogueContextChange() {}, renderFitment() {}, loadFitmentVehicleCatalogue() {},
     persistDemoFitmentOverview() {},
@@ -716,25 +716,17 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
   assert.equal(wheelActive.state.fitmentSourceOpen, true);
   const recoveryMarkup = fitmentMarkup({ overview: {}, rimEditing: true, resolver: { url: wheelActive.state.fitmentForm.rim.product_url, status: wheelActive.state.fitmentSourceStatus, statusTone: "error", loading: false, open: true } });
   assert.match(recoveryMarkup, /Повторить/);
-  assert.match(recoveryMarkup, /Указать параметры вручную/);
+  assert.match(recoveryMarkup, /Заполнить вручную/);
   assert.equal(wheelActive.state.fitmentForm.rim.wheel_diameter_in, "19");
   assert.equal(wheelActive.state.fitmentForm.vehicle.body, "user-edited body");
 });
 
-test("rim status comes from server-owned per-axle state, not next_action", () => {
-  const emptyWhileVehicleIsIncomplete = fitmentMarkup({
-    overview: { rim_setup_state: "empty" }, nextAction: "complete_vehicle_details",
-    frontRimSetupState: "empty", vehicleEditing: true, rimEditing: false,
-  });
-  assert.match(emptyWhileVehicleIsIncomplete, /Параметры не заполнены/);
-  assert.doesNotMatch(emptyWhileVehicleIsIncomplete, /Параметры подтверждены/);
-  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "partial" }), /Не хватает параметров/);
-  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "complete_unconfirmed" }), /Проверьте и подтвердите параметры/);
-  assert.match(fitmentMarkup({ overview: {}, frontRimSetupState: "confirmed_ready" }), /Параметры подтверждены/);
-  const staggered = fitmentMarkup({
-    overview: {}, setupMode: "staggered", frontRimSetupState: "confirmed_ready", rearRimSetupState: "empty",
-  });
-  assert.match(staggered, /Передняя ось: Параметры подтверждены<\/span><span>Задняя ось: Параметры не заполнены/);
+test("wheel card omits permanent confirmation status", () => {
+  for (const state of ["empty", "partial", "confirmed_ready"]) {
+    const markup = fitmentMarkup({overview:{rim_setup_state:state}});
+    assert.doesNotMatch(markup,/data-rim-setup-state|Параметры подтверждены/);
+    assert.match(markup,/data-fitment-action="manual-rim"/);
+  }
 });
 
 test("staggered Fitment does not project front rim candidates into rear axle fields", () => {
@@ -839,17 +831,12 @@ test("owner polish conflict chips carry source semantics and retain explicit act
   }
 });
 
-test("owner polish statuses distinguish local ready from canonical and split staggered lines", () => {
-  const local = fitmentMarkup({rimEditing:true,overview:{rim_setup_state:"partial"},rimSaveReadiness:{ready:true}});
-  assert.match(local,/object-status[^>]*>Готово к сохранению/);
-  assert.doesNotMatch(local,/ready-summaries/);
-  const saved = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimSaveReadiness:{ready:true}});
-  assert.match(saved,/object-status[^>]*>Параметры подтверждены/);
-  const changed = fitmentMarkup({overview:{rim_setup_state:"confirmed_ready"},rimDraftDirty:true,rimSaveReadiness:{ready:true}});
-  assert.match(changed,/object-status[^>]*>Есть несохранённые изменения/);
-  const staggered = fitmentMarkup({setupMode:"staggered",frontRimSetupState:"partial"});
-  assert.match(staggered,/<span>Передняя ось: Не хватает параметров<\/span><span>Задняя ось:/);
-  assert.doesNotMatch(staggered,/Не хватает параметров — Задняя ось/);
+test("saved wheel specifications remain separate from the editing draft", () => {
+  const markup=fitmentMarkup({rimEditing:true,rim:{wheel_width_j:99},savedRimSpecs:"19″ / 8,5J / 5×112 / ET 45 / DIA 66,6"});
+  assert.match(markup,/saved-specs[^>]*>19″ \/ 8,5J \/ 5×112 \/ ET 45 \/ DIA 66,6/);
+  assert.doesNotMatch(markup,/saved-specs[^>]*>99/);
+  const toast=fitmentMarkup({message:"Параметры сохранены",parameterSaveNotice:true});
+  assert.doesNotMatch(toast,/data-fitment-save-notice/);
 });
 
 test("owner polish uses primary check only at authoritative readiness then primary render for current result", () => {
@@ -922,7 +909,7 @@ test("Fitment separates wheel link import from manual entry and car photo recove
   const linked = fitmentMarkup({ locale: "ru", resolver: { url: "https:\/\/shop.example\/wheel", loading: true } });
   assert.match(linked, /shop.example/);
   assert.match(linked, /data-fitment-action="resolve-rim"[^>]*disabled>Получаем характеристики…/);
-  assert.match(linked, /data-fitment-action="edit-rim" data-value=""[^>]*>Указать вручную/);
+  assert.match(linked, /data-fitment-action="manual-rim" data-value=""[^>]*>Заполнить вручную/);
   assert.doesNotMatch(linked, /data-fitment-action="edit-vehicle-photo"/);
 });
 

@@ -358,3 +358,11 @@ button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(-
 @media(prefers-reduced-motion:reduce) { .vnext-fitment__choice { transition: none; } }
 
 .vnext-fitment h2[tabindex="-1"]:focus { outline: none; }
+
+/* UI-055: source controls belong directly to the wheel card. */
+.vnext-fitment__link-island { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.vnext-fitment__link-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.vnext-fitment__link-actions > button { flex: 1 1 160px; min-height: 44px; padding: 8px 10px; white-space: normal; }
+.vnext-fitment__saved-specs { margin: 8px 0 0; color: var(--vnext-text-secondary); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.vnext-fitment__save-toast { position: fixed; z-index: 100; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 12px 18px; border: 1px solid var(--vnext-border-strong); border-radius: 12px; background: var(--vnext-surface-selected); color: var(--vnext-text); box-shadow: 0 8px 24px #0004; pointer-events: none; }
+@media(max-width:700px) { .vnext-fitment__save-toast { bottom: calc(90px + env(safe-area-inset-bottom)); } }

@@ -9369,6 +9369,7 @@ function vnextFitmentSnapshot() {
         checkError: !state.fitmentAuthRequired && errorSection === "result" ? runtimeError : "",
         executionError: check?.execution_status === "failed" ? fitmentResultCopy(check) : "",
         message: state.fitmentMessage || "",
+        parameterSaveNotice: state.fitmentMessageTone === "success" && /^(Параметры сохранены|Отправленные параметры сохранены|Details saved|Submitted details saved)/.test(state.fitmentMessage || ""),
         checkStartFailed: Boolean(state.fitmentCheckStartFailed),
         executionStatus: check?.execution_status || "idle",
         nextAction: fitmentNextAction(overview),
@@ -9436,12 +9437,15 @@ function vnextFitmentSnapshot() {
         rimSku: summaryRim.sku || overview?.front_rim?.selected_variant_sku || "",
         ...fitmentWheelSource(overview, job),
         rimSpecs: fitmentRimTechnicalSummary(rim),
+        savedRimSpecs: overview?.setup_mode === "staggered"
+            ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
+            : fitmentRimTechnicalSummary(summaryRim).join(" / "),
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
             ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
             ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), overview?.setup_mode === "staggered"
                 ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
-                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" · ") : "",
+                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" / ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),

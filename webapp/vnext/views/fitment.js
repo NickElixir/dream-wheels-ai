@@ -352,12 +352,6 @@ export function fitmentMarkup(model = {}) {
     model = { ...model, vehicleEditing: model.activeSection !== "rim", rimEditing: model.activeSection === "rim" };
   }
   const variantRequired = model.nextAction === "select_vehicle_variant";
-  const rimSetupState = model.frontRimSetupState || model.overview?.rim_setup_state || "unknown";
-  const localReady = model.rimSaveReadiness?.ready && (model.rimDraftDirty || model.overview?.rim_setup_state !== "confirmed_ready");
-  const sourceStatus = state => model.rimSaveReadiness?.conflicts?.length ? uiText("fitment.valueSelectionRequired", localeOf(model)) : localReady ? model.rimEditing ? uiText("fitment.readyToSave", localeOf(model)) : uiText("fitment.thereAreUnsavedChanges", localeOf(model)) : model.rimDraftDirty ? uiText("fitment.thereAreUnsavedChanges", localeOf(model)) : rimSetupLabel(state, localeOf(model));
-  const rimStatus = model.setupMode === "staggered"
-    ? `<span>${esc(uiText("fitment.summary.front", localeOf(model), { value0: sourceStatus(rimSetupState) }))}</span><span>${esc(uiText("fitment.summary.rear", localeOf(model), { value1: sourceStatus(model.rearRimSetupState) }))}</span>`
-    : esc(sourceStatus(rimSetupState));
   const vehicleStatus = model.vehicleStatus || uiText("fitment.confirmationRequired", localeOf(model));
   const inlineVariant = activeWorkspaceKind(model) === "vehicle-variant";
   const configurationCopy = `<span class="vnext-fitment__configuration-copy"><span class="vnext-fitment__model-label">${esc(text("fitment.vehicleVersion2"))}</span><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span class="vnext-fitment__confirmed-chip">${esc(text("fitment.confirmed"))}</span></span>`;
@@ -376,7 +370,7 @@ export function fitmentMarkup(model = {}) {
     <div class="vnext-fitment__workspace" ${model.wheelPicker ? "inert" : ""}>
     <div class="vnext-fitment__topline"><h1>${esc(uiText("fitment.compatibilityCheck", localeOf(model)))}</h1>${button(uiText("fitment.back", localeOf(model)), "back")}</div>
     ${authNotice}
-    ${model.message ? `<p class="vnext-fitment__notice" data-fitment-save-notice tabindex="-1" role="status">${esc(model.message)}</p>` : ""}
+    ${model.message && !model.parameterSaveNotice ? `<p class="vnext-fitment__notice" data-fitment-save-notice tabindex="-1" role="status">${esc(model.message)}</p>` : ""}
     <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">
     <div class="vnext-fitment__pair" aria-label="${esc(uiText("fitment.sourcesAndDataStatus", localeOf(model)))}">
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">${esc(uiText("create.vehicle", localeOf(model)))}</p>${preview(model.vehiclePreview, uiText("fitment.vehiclePhotograph", localeOf(model)), undefined, localeOf(model))}
@@ -389,15 +383,14 @@ export function fitmentMarkup(model = {}) {
       <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">${esc(text("wheel.label"))}</p>${preview(model.rimPreview, text("fitment.wheel.photo"), { kind: "wheel" }, localeOf(model))}
         <p class="vnext-fitment__model-label">${esc(text("fitment.wheel.modelLabel"))}</p>
         <h2 id="fitment-rim-title">${esc(model.rimTitle || text("wheel.label"))}</h2>
+        ${model.savedRimSpecs ? `<p class="vnext-fitment__saved-specs">${esc(model.savedRimSpecs)}</p>` : ""}
         ${model.rimSku ? `<p class="vnext-fitment__identity-code">${esc(text("wheel.sku"))} ${esc(model.rimSku)}</p>` : ""}
         <div class="vnext-fitment__link-island" aria-busy="${Boolean(model.resolver?.loading)}">
           <label class="vnext-fitment__field" for="fitment-product-url"><span>${localeOf(model) === "ru" ? "Ссылка на товар" : "Product link"}</span><input id="fitment-product-url" ${model.resolver?.variants?.length ? "disabled" : ""} type="url" inputmode="url" data-fitment-source-url value="${esc(model.resolver?.url || "")}" placeholder="${localeOf(model) === "ru" ? "Вставьте ссылку на товар" : "Paste a product link"}"></label>
-          ${button(localeOf(model) === "ru" ? model.resolver?.loading ? "Получаем характеристики…" : model.resolver?.statusTone === "error" ? "Повторить" : "Получить характеристики" : model.resolver?.loading ? "Getting specifications…" : model.resolver?.statusTone === "error" ? "Retry" : "Get specifications", "resolve-rim", { disabled: Boolean(model.resolver?.loading || model.resolver?.variants?.length) || !model.resolver?.url?.trim() })}
+          <div class="vnext-fitment__link-actions">${button(localeOf(model) === "ru" ? model.resolver?.loading ? "Получаем характеристики…" : model.resolver?.statusTone === "error" ? "Повторить" : "Получить характеристики" : model.resolver?.loading ? "Getting specifications…" : model.resolver?.statusTone === "error" ? "Retry" : "Get specifications", "resolve-rim", { disabled: Boolean(model.resolver?.loading || model.resolver?.variants?.length) || !model.resolver?.url?.trim() })}${button(localeOf(model) === "ru" ? "Заполнить вручную" : "Enter manually", "manual-rim", { disabled: Boolean(model.saving) })}</div>
           ${model.resolver?.status ? `<p class="vnext-fitment__notice${model.resolver.statusTone === "error" ? " vnext-fitment__notice--error" : ""}" role="${model.resolver.statusTone === "error" ? "alert" : "status"}">${esc(model.resolver.status)}</p>` : ""}
-          ${model.resolver?.statusTone === "error" ? button(text("fitment.manual"), "manual-rim") : ""}
         </div>
-        ${!model.rimEditing ? `<div class="vnext-fitment__manual-action">${button(text(model.overview?.rim_setup_state === "confirmed_ready" ? "fitment.editParameters" : "fitment.enterManually"), "edit-rim")}</div>` : ""}
-        <p class="vnext-fitment__object-status" data-rim-setup-state="${esc(rimSetupState)}">${rimStatus}</p>${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
+        ${model.rimError && !model.rimEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}
       </section>
     </div>
     <div class="vnext-fitment__active-editor" data-fitment-active-workspace>${activeWorkspace(model)}</div>
@@ -431,6 +424,18 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     }
   });
   root.replaceChildren(...next.childNodes);
+  if (model.parameterSaveNotice && model.message && model.message !== root.fitmentLastSaveMessage) {
+    root.fitmentToastUntil = Date.now() + 3500;
+  }
+  root.fitmentLastSaveMessage = model.parameterSaveNotice ? model.message : "";
+  if (model.parameterSaveNotice && root.fitmentToastUntil > Date.now()) {
+    const toast = document.createElement("div");
+    toast.className = "vnext-fitment__save-toast";
+    toast.setAttribute("role", "status");
+    toast.textContent = localeOf(model) === "ru" ? "Параметры сохранены" : "Parameters saved";
+    root.append(toast);
+    toast.animate?.([{ opacity: 1 }, { opacity: 1 }], { duration: root.fitmentToastUntil - Date.now() }).finished.then(() => toast.remove()).catch(() => {});
+  }
   if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     const configuration = root.querySelector(".vnext-fitment__configuration");
     if (configuration && previousConfigurationHeight != null && configuration.animate) {
