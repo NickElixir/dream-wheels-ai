@@ -352,10 +352,10 @@ export function fitmentMarkup(model = {}) {
     model = { ...model, vehicleEditing: model.activeSection !== "rim", rimEditing: model.activeSection === "rim" };
   }
   const variantRequired = model.nextAction === "select_vehicle_variant";
-  const vehicleStatus = model.vehicleStatus || uiText("fitment.confirmationRequired", localeOf(model));
+  const vehicleStatus = model.vehicleStatus && model.vehicleStatus !== uiText("fitment.confirmationRequired", localeOf(model)) ? model.vehicleStatus : "";
   const inlineVariant = activeWorkspaceKind(model) === "vehicle-variant";
   const configurationCopy = `<span class="vnext-fitment__configuration-copy"><span class="vnext-fitment__model-label">${esc(text("fitment.vehicleVersion2"))}</span><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span class="vnext-fitment__confirmed-chip">${esc(text("fitment.confirmed"))}</span></span>`;
-  const configuration = inlineVariant ? `<div class="vnext-fitment__configuration vnext-fitment__configuration--open">${variantChooser(model)}</div>` : model.vehicleVariantName ? `<div class="vnext-fitment__configuration">${model.canReselectVehicleVariant ? `<button type="button" class="vnext-fitment__configuration-row" data-fitment-action="reselect-vehicle" aria-label="${esc(text("fitment.changeVehicleVersion"))}" aria-expanded="false">${configurationCopy}<span aria-hidden="true">›</span></button>` : `<div class="vnext-fitment__configuration-row">${configurationCopy}</div>`}</div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
+  const configuration = inlineVariant ? `<div class="vnext-fitment__configuration vnext-fitment__configuration--open">${variantChooser(model)}</div>` : model.vehicleVariantName ? `<div class="vnext-fitment__configuration">${model.canReselectVehicleVariant ? `<button type="button" class="vnext-fitment__configuration-row" data-fitment-action="reselect-vehicle" aria-label="${esc(text("fitment.changeVehicleVersion"))}" aria-expanded="false">${configurationCopy}<span aria-hidden="true">›</span></button>` : `<div class="vnext-fitment__configuration-row">${configurationCopy}</div>`}</div>` : vehicleStatus ? `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>` : "";
   const vehicleConfirmed = model.overview?.vehicle_state === "confirmed_ready";
   const vehicleError = model.vehicleError && !model.vehicleEditing ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert" data-fitment-focus-key="error:vehicle-save">${esc(model.vehicleError)}</p>` : "";
   const completedCurrent = !model.rimDraftDirty && !model.checkStartFailed && model.check?.execution_status === "completed" && model.check.is_current !== false;
@@ -368,7 +368,7 @@ export function fitmentMarkup(model = {}) {
   const checkError = !model.checkStartFailed && model.executionStatus !== "failed" && model.checkError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert" data-fitment-focus-key="error:check-request">${esc(model.checkError)}</p>` : "";
   const markup = `<section class="vnext-fitment">
     <div class="vnext-fitment__workspace" ${model.wheelPicker ? "inert" : ""}>
-    <div class="vnext-fitment__topline"><h1>${esc(uiText("fitment.compatibilityCheck", localeOf(model)))}</h1>${button(uiText("fitment.back", localeOf(model)), "back")}</div>
+    <div class="vnext-fitment__topline"><h1>${esc(uiText("fitment.compatibilityCheck", localeOf(model)))}</h1></div>
     ${authNotice}
     ${model.message && !model.parameterSaveNotice ? `<p class="vnext-fitment__notice" data-fitment-save-notice tabindex="-1" role="status">${esc(model.message)}</p>` : ""}
     <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">

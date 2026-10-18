@@ -19,7 +19,7 @@ test("Release 1 email auth UI exposes the approved controls and copy", () => {
     assert.match(html, /data-auth-send>Получить код/);
     assert.match(html, /class="auth-dialog-divider"/);
     assert.match(html, />или<\/span>/);
-    assert.match(html, /data-auth-telegram-label>Продолжить через Telegram/);
+    assert.match(html, /data-auth-telegram-label>Войти через Telegram/);
     assert.doesNotMatch(html, /Без пароля\. Код действует 10 минут\./);
     assert.match(html, /legal\/privacy/);
     assert.match(html, /aria-describedby="auth-email-error"/);

@@ -496,9 +496,14 @@ const state = {
     expandedJobId: "",
     renderDetailJobId: "",
     renderDetailLoading: false,
+    renderDetailNotFoundJobId: "",
+    repeatRenderPreparing: false,
+    repeatRenderOperation: null,
     renderDetailError: "",
     renderHistoryVisibleCount: 6,
     fitmentJobId: "",
+    fitmentEntryIntent: null,
+    fitmentEntryFocusCleanup: null,
     fitmentContextGeneration: 0,
     fitmentOverviewRequestToken: 0,
     fitmentOriginView: "dashboard",
@@ -2386,7 +2391,7 @@ function renderAuthDialog() {
     if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
     if (verifyButton) verifyButton.textContent = t(state.authDialogBusy && isOtpStep ? "auth.loggingIn" : "auth.verify");
     if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
-    if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
+    if (telegramLabel) telegramLabel.textContent = uiCopy("auth.signInTelegram", locale);
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
         if (legalLink) {
@@ -2450,7 +2455,7 @@ function renderAuthDialog() {
                 ? t("auth.preparing")
                 : telegramLoginRetryAvailable
                     ? t("auth.retryTelegram")
-                : t("auth.telegramSecondary");
+                : uiCopy("auth.signInTelegram", locale);
     }
     document.querySelector("[data-auth-telegram]")?.toggleAttribute(
         "disabled",
@@ -3593,6 +3598,7 @@ function clearFitmentTransientMessage() {
 
 function setFitmentActiveSection(section, { scroll = false } = {}) {
     if (!["vehicle", "rim", "result"].includes(section)) return;
+    if (section !== "rim") clearFitmentEntryIntent();
     if (state.fitmentActiveSection !== section) clearFitmentTransientMessage();
     state.fitmentActiveSection = section;
     state.fitmentActiveStep = fitmentSectionToStep(section);
@@ -3792,6 +3798,7 @@ function restoreFitmentWorkspace() {
 }
 
 function reconcileRequiredFitmentWorkspace() {
+    if (state.fitmentEntryIntent?.editor === "rim") return;
     if (fitmentNextAction() !== "select_vehicle_variant" || state.fitmentActiveSection !== "rim" || !state.fitmentRimEditing) return;
     rememberFitmentWorkspace();
     setFitmentEditor("");
@@ -5680,14 +5687,6 @@ async function revalidateFitmentCatalogueChain(
     const previousMarketStatus = state.fitmentMarketResolution?.status;
     const previousMarket = vehicle.market;
     const parentChange = state.fitmentCatalogueParentChange || {};
-    if (!vehicle.make && !preloaded.makes) {
-        resetFitmentCatalogue("models");
-        resetFitmentCatalogue("years");
-        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
-        validateFitmentForm();
-        renderFitment();
-        return;
-    }
     const makesResult = preloaded.makes || await loadFitmentCatalogue("makes", {}, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!makesResult || makesResult.outcome === "failed") {
@@ -5709,7 +5708,7 @@ async function revalidateFitmentCatalogueChain(
     }
     const remembered = fitmentRememberedVehicleChain({ make: vehicle.make });
     const currentMakeEntry = fitmentCatalogueSelectionItem("makes", vehicle.make, makesResult.items);
-    const rememberedMakeEntry = allowRemembered ? fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items) : null;
+    const rememberedMakeEntry = allowRemembered && vehicle.make ? fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items) : null;
     const makeEntry = currentMakeEntry || rememberedMakeEntry;
     if (!makeEntry) {
         vehicle.make = "";
@@ -5882,6 +5881,8 @@ async function loadFitmentOverview(
     const requestToken = ++state.fitmentOverviewRequestToken;
     const isCurrentRequest = () => isCurrentFitmentRuntimeContext(runtimeContext)
         && requestToken === state.fitmentOverviewRequestToken;
+    const entryIntent = state.fitmentEntryIntent?.jobId === jobId ? state.fitmentEntryIntent : null;
+    const entryFocus = trackFitmentEntryFocus(entryIntent);
     const wheelDraft = preserveWheelDraft ? captureFitmentWheelDraft() : null;
     beginFitmentCatalogueContextChange();
     // After the first Fitment entry, an overview refresh is domain data, not a
@@ -5972,7 +5973,7 @@ async function loadFitmentOverview(
         void loadFitmentCheckHistory(overview);
         void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
-        if (!suppressAutomaticResolver && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
+        if (!suppressAutomaticResolver && !entryIntent && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
             state.fitmentSourceAutoResolvedForJob = jobId;
             markFitmentSourceAutoAttempted(jobId);
             void resolveFitmentRimSource({ automatic: true });
@@ -5984,11 +5985,54 @@ async function loadFitmentOverview(
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         if (isCurrentRequest()) {
+            const restoreEntry = entryIntent && state.fitmentEntryIntent === entryIntent && state.fitmentOverview;
+            const focusEntry = restoreEntry && entryIntent.focusPending && entryFocus.guard.allowed;
+            if (restoreEntry) {
+                state.fitmentRestoreSection = "";
+                setFitmentEditor(entryIntent.editor);
+                state.fitmentActiveSection = entryIntent.editor;
+                state.fitmentActiveStep = fitmentSectionToStep(entryIntent.editor);
+                entryIntent.focusPending = false;
+            }
             state.fitmentLoading = false;
             renderFitment();
-        }
+            if (focusEntry) {
+                window.requestAnimationFrame(() => {
+                    if (entryFocus.guard.allowed && isCurrentRequest() && state.fitmentEntryIntent === entryIntent) {
+                        document.querySelector("#fitment-rim-editor-title")?.focus({ preventScroll: true });
+                    }
+                    entryFocus.cleanup();
+                });
+            } else entryFocus.cleanup();
+        } else entryFocus.cleanup();
     }
     return restoration;
+}
+
+function clearFitmentEntryIntent() {
+    state.fitmentEntryFocusCleanup?.();
+    state.fitmentEntryFocusCleanup = null;
+    state.fitmentEntryIntent = null;
+}
+
+function trackFitmentEntryFocus(intent) {
+    state.fitmentEntryFocusCleanup?.();
+    const guard = { allowed: true };
+    const events = ["keydown", "pointerdown", "input", "focusin"];
+    const cancel = (event) => {
+        if (event?.type === "focusin" && !event.target.matches("button, a, input, select, textarea")) return;
+        guard.allowed = false;
+    };
+    const cleanup = () => {
+        guard.allowed = false;
+        events.forEach(event => document.removeEventListener(event, cancel, true));
+        if (state.fitmentEntryFocusCleanup === cleanup) state.fitmentEntryFocusCleanup = null;
+    };
+    if (intent?.focusPending) {
+        events.forEach(event => document.addEventListener(event, cancel, true));
+        state.fitmentEntryFocusCleanup = cleanup;
+    }
+    return { guard, cleanup: intent?.focusPending ? cleanup : () => {} };
 }
 
 function openFitmentView(
@@ -5997,6 +6041,7 @@ function openFitmentView(
         originView = state.view,
         restoreSection = "",
         suppressAutomaticResolver = false,
+        openRimEditor = false,
     } = {}
 ) {
     if (!jobId) return;
@@ -6070,7 +6115,11 @@ function openFitmentView(
     state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
-    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver }).then(() => hydrateFitmentVehiclePhoto(jobId));
+    state.fitmentEntryIntent = openRimEditor ? { jobId, editor: "rim", focusPending: true } : null;
+    const generation = state.fitmentContextGeneration;
+    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor }).then(() => {
+        if (state.view === "fitment" && state.fitmentJobId === jobId && state.fitmentContextGeneration === generation) void hydrateFitmentVehiclePhoto(jobId);
+    });
 }
 
 function closeFitmentView() {
@@ -7404,6 +7453,8 @@ function setMoreOpen(open) {
 }
 
 function setView(view, { refreshData = true } = {}) {
+    cancelPhotoPreparation();
+    clearFitmentEntryIntent();
     const viewChanged = state.view !== view;
     const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
     if (leavingFitment) {
@@ -8435,6 +8486,8 @@ function openRenderDetail(jobId, originView = "renders") {
     state.renderDetailJobId = jobId;
     state.fitmentOriginView = originView;
     state.renderDetailError = "";
+    state.renderDetailLoading = !state.renderHistory.some(item => item.job_id === jobId);
+    state.renderDetailNotFoundJobId = "";
     setView("render-detail");
     scheduleRenderHistoryPolling();
     void loadFitmentReturnContext(jobId);
@@ -8446,6 +8499,7 @@ function openRenderDetail(jobId, originView = "renders") {
 async function loadRenderDetailJob(jobId) {
     if (!jobId || !hasFrontendAuth()) return;
     state.renderDetailLoading = true;
+    state.renderDetailNotFoundJobId = "";
     state.renderDetailError = "";
     renderRenderDetail();
     try {
@@ -8454,7 +8508,10 @@ async function loadRenderDetailJob(jobId) {
         if (existingIndex >= 0) state.renderHistory[existingIndex] = { ...state.renderHistory[existingIndex], ...job };
         else state.renderHistory.unshift(job);
     } catch (error) {
-        if (state.renderDetailJobId === jobId) state.renderDetailError = localizeErrorMessage(error?.message || t("errors.requestFailed"));
+        if (state.renderDetailJobId === jobId) {
+            state.renderDetailNotFoundJobId = error?.status === 404 ? jobId : "";
+            state.renderDetailError = error?.status === 404 ? "" : localizeErrorMessage(error?.message || t("errors.requestFailed"));
+        }
     } finally {
         if (state.renderDetailJobId === jobId) {
             state.renderDetailLoading = false;
@@ -8470,36 +8527,79 @@ function openBlankTryOn() {
     resetFlow();
 }
 
+function cancelPhotoPreparation() {
+    const operation = state.repeatRenderOperation;
+    if (!operation) return;
+    operation.cancelled = true;
+    operation.abortDraft?.();
+    operation.clearNotice?.();
+    state.repeatRenderOperation = null;
+    state.repeatRenderPreparing = false;
+}
+
 async function repeatRenderWithSavedPhotos(jobId) {
+    if (state.repeatRenderPreparing) return;
     void trackEvent("repeat_render_started", { source_job_id: jobId });
-    const job = state.renderHistory.find((item) => item.job_id === jobId);
-    const car = job?.assets?.car_original;
-    const wheel = job?.assets?.rim_original;
-    if (!car?.download_url || !wheel?.download_url) {
-        setView("create");
-        return;
-    }
+    const ownerView = state.view;
+    const operation = { cancelled: false };
+    state.repeatRenderOperation = operation;
+    const ownsScreen = () => !operation.cancelled && state.repeatRenderOperation === operation && state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
+    const message = (value) => {
+        if (ownerView === "fitment") { state.fitmentMessage = value; notifyFitmentBridge(); }
+        else { state.downloadNoticeByJob[jobId] = value; notifyRenderBridge(); }
+    };
+    operation.clearNotice = () => {
+        if (ownerView === "fitment" && state.fitmentJobId === jobId && state.fitmentMessage === uiCopy("render.preparingPhotos", locale)) state.fitmentMessage = "";
+        if (state.downloadNoticeByJob[jobId] === uiCopy("render.preparingPhotos", locale)) state.downloadNoticeByJob[jobId] = "";
+    };
+    state.repeatRenderPreparing = true;
+    message(uiCopy("render.preparingPhotos", locale));
     try {
+        const job = await fetchJobStatusForHistory(jobId);
+        const car = job?.assets?.car_original;
+        const wheel = job?.assets?.rim_original;
+        if (!car?.download_url || !wheel?.download_url) throw new Error(uiCopy("render.sourcePhotosUnavailable", locale));
         const fetchAsset = async (asset) => {
-            const url = asset.download_url.startsWith("/") ? apiUrl(asset.download_url) : asset.download_url;
-            const response = asset.download_url.startsWith("/")
-                ? await authenticatedFetch(url, { headers: withAuthHeaders() })
-                : await fetch(url);
+            const local = asset.download_url.startsWith("/");
+            const response = local
+                ? await authenticatedFetch(apiUrl(asset.download_url), { headers: withAuthHeaders() })
+                : await fetch(asset.download_url);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
+            if (!blob.size) throw new Error(uiCopy("render.sourcePhotosUnavailable", locale));
             return { blob, name: `${asset.kind}.jpg`, size: blob.size, type: blob.type || "image/jpeg" };
         };
         const [carFile, wheelFile] = await Promise.all([fetchAsset(car), fetchAsset(wheel)]);
+        if (!ownsScreen()) return;
+        const entries = [
+            { kind: "car", file: carFile, bytes: await carFile.blob.arrayBuffer() },
+            { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
+        ];
+        if (!ownsScreen()) return;
+        await saveDraftFiles(entries, { isCurrent: ownsScreen, operation });
+        if (!ownsScreen()) return;
         resetCreateAssets();
         state.files.car = carFile;
         state.files.wheel = wheelFile;
+        state.rimProductUrl = job.render_input_snapshot?.rim?.product_url || "";
         renderPreviewFromFile("car", carFile);
         renderPreviewFromFile("wheel", wheelFile);
+        message("");
+        showCreateScreen("upload");
         setView("create");
         renderCreateInputs();
     } catch (error) {
         console.error("[DW] Unable to restore saved photos", error);
-        setView("create");
+        if (ownsScreen()) message(uiCopy("render.sourcePhotosFailed", locale));
+    } finally {
+        if (state.repeatRenderOperation === operation) {
+            state.repeatRenderPreparing = false;
+            state.repeatRenderOperation = null;
+        }
+        if (!operation.cancelled && state.view === ownerView) {
+            if (ownerView === "fitment") notifyFitmentBridge();
+            else notifyRenderBridge();
+        }
     }
 }
 
@@ -8584,7 +8684,11 @@ async function fetchJobStatusForHistory(jobId) {
     const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
-    if (!response.ok) throw new Error(await parseApiError(response));
+    if (!response.ok) {
+        const error = new Error(await parseApiError(response));
+        error.status = response.status;
+        throw error;
+    }
     return response.json();
 }
 
@@ -9181,6 +9285,32 @@ async function saveDraftFile(kind, file, bytes) {
     db.close();
 }
 
+// Keep the two source photos together: a failed transaction preserves the old draft.
+async function saveDraftFiles(entries, { isCurrent = () => true, operation = null } = {}) {
+    const db = await openDraftDb();
+    if (!db) return;
+    try {
+        if (!isCurrent()) return;
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+            if (operation) operation.abortDraft = () => tx.abort();
+            const store = tx.objectStore(DRAFT_STORE_NAME);
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
+            try {
+                entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
+            } catch (error) {
+                tx.abort();
+                reject(error);
+            }
+        });
+    } finally {
+        if (operation) operation.abortDraft = null;
+        db.close();
+    }
+}
+
 async function loadDraftFile(kind) {
     const db = await openDraftDb();
     if (!db) return null;
@@ -9640,6 +9770,7 @@ window.dreamwheelsFitmentBridge = {
     setSourceUrl(value) { if (fitmentMutationsLocked()) return; setVnextFitmentField("rim.product_url", value); notifyFitmentBridge(); },
     action(action, value = "") {
         if (fitmentMutationsLocked() && !["back", "reload", "login", "create-image"].includes(action)) return;
+        if (["edit-vehicle", "manual-vehicle", "recognize-vehicle", "show-variants", "reselect-vehicle", "save-rim", "check", "run-check"].includes(action)) clearFitmentEntryIntent();
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
@@ -9783,7 +9914,7 @@ window.dreamwheelsFitmentBridge = {
                 state.fitmentError = error?.message || t("errors.requestFailed");
                 renderFitment();
             });
-        } else if (action === "create-image") setView("create");
+        } else if (action === "create-image") void repeatRenderWithSavedPhotos(state.fitmentJobId);
         notifyFitmentBridge();
     },
 };
@@ -9877,7 +10008,11 @@ function vnextRenderSnapshot(surface) {
     }
     const selectedJobId = surface === "current-result" ? state.jobId : state.renderDetailJobId;
     const job = state.renderHistory.find((item) => item.job_id === selectedJobId);
-    return job ? vnextRenderJob(job) : { locale, loading: state.renderDetailLoading, error: state.renderDetailError };
+    return job ? vnextRenderJob(job) : {
+        locale, requestedJobId: selectedJobId,
+        loading: Boolean(selectedJobId) && (state.renderDetailLoading || !state.renderDetailError && state.renderDetailNotFoundJobId !== selectedJobId),
+        error: state.renderDetailError,
+    };
 }
 
 function prepareVnextRenderAssets() {
@@ -9902,12 +10037,15 @@ window.dreamwheelsRenderBridge = {
     action(action, jobId, value) {
         if (action === "history") setView("renders");
         else if (action === "history-retry") void loadRenderHistory();
+        else if (action === "detail-retry") void loadRenderDetailJob(jobId);
         else if (action === "open") openRenderDetail(jobId, "renders");
         else if (action === "more") { state.renderHistoryVisibleCount += 6; renderRenders(); }
         else if (action === "create") openBlankTryOn();
         else if (action === "retry-create") { showCreateScreen("upload"); setView("create"); }
         else if (action === "repeat") void repeatRenderWithSavedPhotos(jobId);
-        else if (action === "fitment") void openFitmentView(jobId, { originView: "render-detail" });
+        else if (action === "fitment" || action === "rim-details") {
+            void openFitmentView(jobId, { originView: "render-detail", openRimEditor: action === "rim-details" });
+        }
         else if (action === "download") void downloadResult({ jobId });
         else if (action === "feedback") void submitHistoryFeedback(jobId, value);
         else if (action === "reason") void submitHistoryFeedback(jobId, "disliked", value);

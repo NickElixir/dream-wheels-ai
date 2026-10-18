@@ -541,7 +541,7 @@ test("runtime Fitment initialization follows next_action and never opens both ob
     extractFunctions(app, ["fitmentRimValuesEqual","fitmentCanonicalRimConflicts","fitmentSourceContextMatchesCurrent","mergeFitmentRimConflicts","fitmentRimPendingProposalFields","fitmentRimFieldsForConfirmation","fitmentRimSaveReadiness"]),
     extractFunctions(app, ["fitmentNextAction","setFitmentEditor","setFitmentEditorsForNextAction"]),
     extractFunction(app, "updateDemoFitmentState"),
-    extractFunction(app, "loadFitmentOverview"),
+    extractFunctions(app, ["clearFitmentEntryIntent", "trackFitmentEntryFocus", "loadFitmentOverview"]),
     extractFunctions(app, ["fitmentDiameterPresentation","vnextFitmentSnapshot"]),
   ].join("\n");
   const state = {
@@ -672,7 +672,7 @@ test("deferred wheel-source failures preserve the active editor, navigation, and
       vnextFitmentSnapshot: () => ({}), setVnextFitmentField() {}, setFitmentVehiclePhoto() {},
     };
     vm.createContext(Object.assign(context, { uiCopy }));
-    vm.runInContext(`${navigation}\n${section}\n${resolver}\n${bridge}`, context);
+    vm.runInContext(`${extractFunction(app, "clearFitmentEntryIntent")}\n${navigation}\n${section}\n${resolver}\n${bridge}`, context);
     return { context, state, rejectRequest, resolveRequest: (...args) => resolveRequest(...args), reject: error => rejectRequest(error) };
   }
 
