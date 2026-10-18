@@ -184,6 +184,17 @@ function unmountSurface() {
   legacyHiddenStates = [];
 }
 
+function restoreSurfaceFocus(host, previous) {
+  if (!previous) return;
+  const candidates = [...host.querySelectorAll("button, a, input, select, h1, h2")];
+  const target = candidates.find(node => !node.disabled && node.tagName === previous.tagName && (
+    previous.id ? node.id === previous.id : previous.name ? node.name === previous.name :
+    node.className === previous.className && (node.getAttribute("aria-label") || node.textContent) === previous.label
+  ));
+  if (target && /^H[12]$/.test(target.tagName)) target.setAttribute("tabindex", "-1");
+  target?.focus({ preventScroll: true });
+}
+
 function mountSurface(view, { force = false } = {}, locale = applicationLocale()) {
   const host = document.querySelector(`[data-view="${view}"]`);
   if (!host) return;
@@ -194,6 +205,9 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     else refreshMountedRender(locale);
     return;
   }
+  const active = document.activeElement;
+  const previousFocus = force && mountedRoot === host && host.contains(active)
+    ? { tagName: active.tagName, id: active.id, name: active.name, className: active.className, label: active.getAttribute("aria-label") || active.textContent } : null;
   const descriptor = surfaceDescriptor(view, locale);
   if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
@@ -228,6 +242,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     mountedWalletContent = createRoot.querySelector(".vnext-shell__frame > .vnext-wallet");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
+    restoreSurfaceFocus(host, previousFocus);
     if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
     else if (view === "fitment") window.dreamwheelsFitmentBridge?.surfaceMounted();
     else if (["renders", "render-detail"].includes(view)) window.dreamwheelsRenderBridge?.prepareAssets();
@@ -249,11 +264,18 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
   mountedRoot = host;
   mountedView = view;
   document.body.classList.add("vnext-surface-active");
+  restoreSurfaceFocus(host, previousFocus);
 }
 
 function applyView(view, locale = applicationLocale()) {
+  const changed = Boolean(mountedView && mountedView !== view);
   if (migratedViews.has(view)) mountSurface(view, undefined, locale);
   else unmountSurface();
+  if (changed && mountedRoot) {
+    const heading = mountedRoot.querySelector("h1");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: true });
+  }
 }
 
 window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view, applicationLocale()));

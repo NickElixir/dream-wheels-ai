@@ -3700,6 +3700,7 @@ function ensureRequiredFitmentVariantLookup() {
 }
 
 function focusFitmentWorkspace(section = state.fitmentActiveSection) {
+    if (document.querySelector("[data-vnext-fitment-root]")) return;
     window.requestAnimationFrame(() => {
         const workspace = document.querySelector(`[data-fitment-workspace="${section}"]`);
         if (!workspace) return;
@@ -7276,7 +7277,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             state.fitmentSaving = false;
             if (state.fitmentFormState.status === "saving") markFitmentDirty();
             renderFitment();
-            if (state.fitmentMessage && state.fitmentMessageTone === "success") {
+            if (state.fitmentMessage && state.fitmentMessageTone === "success" && !document.querySelector("[data-vnext-fitment-root]")) {
                 window.requestAnimationFrame(() => document.querySelector("[data-fitment-save-notice]")?.focus());
             }
         }

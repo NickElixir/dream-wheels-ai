@@ -403,6 +403,26 @@ export function fitmentMarkup(model = {}) {
   return markup;
 }
 
+function focusWorkflowTarget(root, target, scroll = false) {
+  if (!target || target.disabled) return;
+  if (!/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(target.tagName)) target.setAttribute?.("tabindex", "-1");
+  root.fitmentFocusAnchor = target;
+  root.fitmentRestoringFocus = true;
+  target.focus({ preventScroll: true });
+  root.fitmentRestoringFocus = false;
+  const bounds = target.getBoundingClientRect?.();
+  if (scroll && bounds && (bounds.top < 64 || bounds.bottom > (globalThis.innerHeight || 900) - 80)) {
+    target.scrollIntoView?.({ behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  }
+}
+
+function nextFitmentTarget(root, model) {
+  if (model.nextAction === "select_vehicle_variant") return root.querySelector("#fitment-variant-title") || root.querySelector("[data-fitment-action='reselect-vehicle']") || root.querySelector("[data-fitment-action='edit-vehicle']");
+  if (["complete_vehicle_details", "confirm_vehicle"].includes(model.nextAction)) return root.querySelector("#fitment-vehicle-editor-title") || root.querySelector("[data-fitment-action='edit-vehicle']");
+  if (model.nextAction === "complete_rim_specs") return root.querySelector("#fitment-rim-editor-title") || root.querySelector("[data-fitment-action='manual-rim']");
+  return root.querySelector("#fitment-standard-title");
+}
+
 export function refreshFitmentView(root, model, callbacks = root.fitmentCallbacks, locale = applicationLocale()) {
   root.fitmentCallbacks = callbacks;
   const previousWorkspace = root.fitmentWorkspaceKind;
@@ -412,6 +432,11 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   root.fitmentWorkspaceKind = nextWorkspace;
   const focused = root.querySelector(":focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search], :focus[data-fitment-focus], :focus[data-fitment-action], :focus[id^='fitment-']");
   const focusSelector = focused?.dataset.fitmentAction && !focused.dataset.fitmentFocus ? `[data-fitment-action="${CSS.escape(focused.dataset.fitmentAction)}"][data-value="${CSS.escape(focused.dataset.value || "")}"]` : focused?.dataset.fitmentFocus ? `[data-fitment-focus="${CSS.escape(focused.dataset.fitmentFocus)}"]` : focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.id && !focused.dataset.fitmentField ? `#${CSS.escape(focused.id)}` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
+  const action = focused?.dataset.fitmentAction;
+  const completionActions = ["save-rim", "save-vehicle", "confirm-vehicle", "confirm-vehicle-variant", "check", "resolve-rim"];
+  if (!root.fitmentFocusIntent && completionActions.includes(action)) root.fitmentFocusIntent = { action, origin: focused };
+  const active = globalThis.document?.activeElement;
+  if (root.fitmentFocusIntent && active && active !== document.body && active !== root.fitmentFocusAnchor && active !== root.fitmentFocusIntent.origin) root.fitmentFocusIntent = null;
   const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "url", "tel", "password"].includes(input.type);
   const selection = supportsSelection(focused) ? [focused.selectionStart, focused.selectionEnd] : null;
   const markup = fitmentMarkup({ ...model, wheelPicker: root.fitmentPicker });
@@ -444,16 +469,34 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
       configuration.firstElementChild?.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 200, easing: "ease-out" });
     }
   }
-  if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
-    const heading = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="edit-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
-    heading?.focus({ preventScroll: true });
+  const intent = root.fitmentFocusIntent;
+  const busy = Boolean(model.saving || model.checking || ["queued", "processing"].includes(model.executionStatus) || model.resolver?.loading);
+  if (intent && busy) intent.busySeen = true;
+  const saved = intent && (intent.action === "save-rim" ? !model.rimEditing : ["save-vehicle", "confirm-vehicle"].includes(intent.action) ? !model.vehicleEditing : intent.action === "confirm-vehicle-variant" ? !model.vehicleVariantPickerOpen : false);
+  const error = model.rimError || model.vehicleError || model.checkError || model.checkStartFailed || model.resolver?.statusTone === "error";
+  let target;
+  let move = false;
+  if (intent && !busy && error) {
+    target = root.querySelector('[data-fitment-workspace] [role="alert"], .vnext-fitment__link-island [role="alert"], .vnext-fitment__result-panel [role="alert"], [role="alert"]');
+    root.fitmentFocusIntent = null;
+    move = true;
+  } else if (intent && !busy && (saved || intent.action === "resolve-rim" && intent.busySeen && model.rimEditing || intent.action === "check" && model.check?.is_current !== false && model.check?.execution_status === "completed")) {
+    target = intent.action === "check" ? root.querySelector(".vnext-fitment__verdict h2") : intent.action === "resolve-rim" ? root.querySelector("#fitment-rim-editor-title") : nextFitmentTarget(root, model);
+    root.fitmentFocusIntent = null;
+    move = true;
+  } else if (focused?.dataset.fitmentAction && previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
+    target = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="manual-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
+    move = true;
   } else if (focusSelector) {
     const nextFocus = root.querySelector(focusSelector);
-    const focusTarget = nextFocus?.disabled && focused?.dataset.fitmentAction?.startsWith("conflict-")
+    target = nextFocus?.disabled && focused?.dataset.fitmentAction?.startsWith("conflict-")
       ? root.querySelector(`[data-wheel-picker-open="${CSS.escape(focused.dataset.fitmentFocus)}"]`) : nextFocus;
-    (focusTarget || root.querySelector("[data-fitment-workspace] h2[tabindex]") || root.querySelector('[data-fitment-action="edit-vehicle"]'))?.focus({ preventScroll: true });
+    if (target?.disabled) target = root.querySelector("[data-fitment-workspace] h2[tabindex], #fitment-rim-title, #fitment-vehicle-title");
+    if (!target) target = root.querySelector("[data-fitment-workspace] h2[tabindex]") || root.querySelector('[data-fitment-action="edit-vehicle"]');
+    focusWorkflowTarget(root, target);
     if (selection && supportsSelection(nextFocus)) nextFocus.setSelectionRange(...selection);
   }
+  if (move) focusWorkflowTarget(root, target, true);
   return root;
 }
 
@@ -462,6 +505,9 @@ export function createFitmentView(model = {}, callbacks = {}) {
   root.className = "vnext-fitment";
   root.dataset.vnextFitmentRoot = "";
   root.fitmentCallbacks = callbacks;
+  root.addEventListener("focusin", event => {
+    if (root.fitmentFocusIntent && !root.fitmentRestoringFocus && event.target !== root.fitmentFocusAnchor && event.target !== root.fitmentFocusIntent.origin) root.fitmentFocusIntent = null;
+  });
   const redraw = () => refreshFitmentView(root, root.fitmentModel, undefined, localeOf(model));
   const closePicker = () => {
     const path = root.fitmentPicker?.path;
@@ -505,7 +551,11 @@ export function createFitmentView(model = {}, callbacks = {}) {
       return;
     }
     const target = event.target.closest("[data-fitment-action]");
-    if (target && root.contains(target) && !target.disabled) root.fitmentCallbacks?.action?.(target.dataset.fitmentAction, target.dataset.value);
+    if (target && root.contains(target) && !target.disabled) {
+      const action = target.dataset.fitmentAction;
+      if (["save-rim", "save-vehicle", "confirm-vehicle", "confirm-vehicle-variant", "check", "resolve-rim"].includes(action)) root.fitmentFocusIntent = { action, origin: target };
+      root.fitmentCallbacks?.action?.(action, target.dataset.value);
+    }
   });
   root.addEventListener("keydown", (event) => {
     if (!root.fitmentPicker) return;

@@ -74,7 +74,7 @@ test("resolving one PCD conflict focuses the same compound opener while its othe
   assert.equal(focused,true);
 });
 
-test("workspace transitions focus the heading and confirmation returns to summary", () => {
+test("background workspace transitions without an initiating control do not capture focus", () => {
   const seen=[];
   const target={getBoundingClientRect:()=>({height:100}),focus(){seen.push("heading");}};
   const summary={focus(){seen.push("summary");}};
@@ -82,7 +82,7 @@ test("workspace transitions focus the heading and confirmation returns to summar
   const context={CSS:{escape:value=>value},document:{createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
   runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
   for(const model of [{vehicleRecognition:{status:"loading"}},{vehicleEditing:true,vehicleRecognition:{status:"applied"}},{nextAction:"select_vehicle_variant"},{nextAction:"run_standard_check"}])context.refresh(root,model);
-  assert.deepEqual(seen,["heading","heading","heading","summary"]);
+  assert.deepEqual(seen,[]);
 });
 
 test("loading → proposal redraw restores the same recognition heading instead of BODY", () => {
@@ -99,3 +99,20 @@ test("loading → proposal redraw restores the same recognition heading instead 
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, baseUiText: copy, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }
+
+
+for (const [name,patch,targetSelector] of [
+  ["ready wheel save",{rimEditing:false,nextAction:"run_standard_check"},"#fitment-standard-title"],
+  ["wheel save requiring vehicle version",{rimEditing:false,nextAction:"select_vehicle_variant"},"#fitment-variant-title"],
+  ["failed wheel save",{rimEditing:true,rimError:"Save failed"},'[role="alert"]'],
+]) test(`${name} focuses the next meaningful target`,()=>{
+  let selected="";
+  const origin={dataset:{fitmentAction:"save-rim",value:""},tagName:"BUTTON"};
+  const targetFor=selector=>({tagName:"H2",setAttribute(){},focus(){selected=selector;}});
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"rim-editor",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return targetFor(selector);},replaceChildren(){}};
+  const context={CSS:{escape:v=>v},document:{body:{},activeElement:origin,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+  runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,patch);
+  if (targetSelector === '[role="alert"]') assert.match(selected, /role="alert"/);
+  else assert.equal(selected,targetSelector);
+});

@@ -14,11 +14,13 @@ function imageStage(kind, file, callbacks, disabled, snapshot, locale = localeOf
     label: file ? uiText("create.replacePhoto", locale) : uiText("create.addPhoto", locale),
     onClick: () => callbacks.pickFile?.(kind),
   });
+  action.dataset.createFocus = `photo-${kind}`;
   action.disabled = Boolean(disabled);
   heading.append(label, action);
 
   const stage = document.createElement("button");
   stage.type = "button";
+  stage.dataset.createFocus = `stage-${kind}`;
   stage.className = `vnext-create__stage${file ? " is-ready" : " is-empty"}`;
   stage.setAttribute("aria-label", file ? uiText("create.photo.replaceAria", locale, { value0: kind === "car" ? uiText("create.vehicle2", locale) : uiText("wheel.object", snapshot.locale) }) : uiText("create.photo.addAria", locale, { value0: kind === "car" ? uiText("create.vehicle2", locale) : uiText("wheel.object", snapshot.locale) }));
   stage.disabled = Boolean(disabled);
@@ -105,10 +107,12 @@ function sourceEditor(snapshot, callbacks) {
   helper.className = "vnext-create__source-helper";
   helper.textContent = uiText("create.wheelProductLinkHint", localeOf(snapshot));
   form.append(helper);
+  save.dataset.createFocus = "save-link";
   form.append(save);
   if (snapshot.rimProductUrl && !snapshot.productUrlError) {
     const saved = statusLine(uiText("create.linkSaved", localeOf(snapshot)), "positive");
-    input.addEventListener("input", () => { saved.hidden = true; });
+    input.addEventListener("input", () => { saved.hidden = input.value !== (snapshot.rimProductUrl || ""); });
+    saved.hidden = input.value !== (snapshot.rimProductUrl || "");
     form.append(saved);
   }
   return form;
@@ -128,6 +132,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
     consent.className = "vnext-create__consent";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
+    checkbox.dataset.createFocus = "consent";
     checkbox.checked = Boolean(snapshot.consentAccepted);
     checkbox.disabled = Boolean(snapshot.submitting);
     checkbox.addEventListener("change", () => callbacks.setConsent?.(checkbox.checked));
@@ -186,13 +191,15 @@ export function refreshCreateView(current, snapshot, callbacks, locale = applica
   const values = new Map([...current.querySelectorAll("input[name]")].map((input) => [input.name, input.value]));
   const focused = document.activeElement;
   const focusName = current.contains(focused) ? focused.name : "";
+  const focusKey = current.contains(focused) ? focused.dataset?.createFocus : "";
   const selection = focusName ? [focused.selectionStart, focused.selectionEnd] : null;
   const next = createCreateView(snapshot, callbacks);
   current.replaceWith(next);
   for (const input of next.querySelectorAll("input[name]")) {
     if (values.has(input.name)) {
       input.value = values.get(input.name);
-      input.dispatchEvent(new Event("input"));
+      const saved = next.querySelector(".vnext-create__status--positive");
+      if (saved && input.name === "rim_product_url") saved.hidden = input.value !== (snapshot.rimProductUrl || "");
     }
     if (input.name === focusName) {
       input.focus({ preventScroll: true });
@@ -201,5 +208,6 @@ export function refreshCreateView(current, snapshot, callbacks, locale = applica
       }
     }
   }
+  if (focusKey) next.querySelector(`[data-create-focus="${focusKey}"]:not(:disabled)`)?.focus({ preventScroll: true });
   return next;
 }
