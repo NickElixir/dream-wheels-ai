@@ -14,6 +14,8 @@ test("VNext foundation assets are linked from the static app entry", () => {
     "/vnext/styles/tokens.css",
     "/vnext/styles/foundation.css",
     "/vnext/styles/shell.css",
+    "/vnext/styles/approved-home-create.css",
+    "/vnext/styles/account.css",
     "/vnext/bootstrap.js",
   ]) assert.match(html, new RegExp(asset.replace(/[./]/g, "\\$&")));
 
@@ -62,9 +64,10 @@ test("VNext primitives remain presentation-only and Support matches the frozen p
     "dreamwheelsai@yandex.ru",
   ]) assert.ok(JSON.stringify(supportViewModel("ru")).includes(text), `missing frozen Support copy: ${text}`);
 
-  assert.match(view, /textarea/);
+  assert.doesNotMatch(view, /textarea/);
   assert.match(view, /mailto:/);
-  assert.match(view, /navigate\?\.\("docs"\)/);
+  assert.match(view, /https:\/\/t.me\/dreamwheelsai/);
+  assert.match(view, /\/help\/photos/);
 });
 
 test("VNext shell retains desktop and safe-area mobile layout foundations", () => {
@@ -111,7 +114,7 @@ test("Global login entry points reuse authoritative legacy auth state across VNe
   assert.match(shell, /vnext-shell__login--topbar/);
   assert.match(shell, /export function updateAppShellAuth/);
   assert.match(bootstrap, /authenticated: legacyDashboardSnapshot\(\)\.authenticated/);
-  assert.match(bootstrap, /updateAppShellAuth\(mountedShell, legacyDashboardSnapshot\(\)\.authenticated\)/);
+  assert.match(bootstrap, /updateAppShellAuth\(mountedShell, legacyDashboardSnapshot\(\)\.authenticated, legacyDashboardSnapshot\(\)\)/);
   assert.match(bootstrap, /dreamwheels:dashboardchange/);
   assert.match(adapter, /window\.DreamWheelsLegacy\?\.openAuth\?\.\(\)/);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*vnext-shell__login--topbar/);

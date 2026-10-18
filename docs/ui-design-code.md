@@ -92,6 +92,8 @@ The review is incomplete until the changed flow is checked in the browser after 
 - Vehicle and rim names use spaces only: `Toyota Prius`, `OZ Ultraleggera`. Put vehicle year/generation and rim specifications on a separate secondary line instead of joining them with a dash.
 - Use an en dash for explanatory clauses and non-entity status metadata; use commas for natural-language lists.
 
+Owner amendment 18.10.2026: the saved fitment summary uses slashes for both vehicle (`Zeekr 009 / EV / 2023`) and wheel (`X-Trike X-132 / 19″ / 8,5J / 5×112 / ET 45 / DIA 66,6`). The wheel card keeps the model on its primary line and saved specifications on a secondary line. This supersedes the earlier canonical-summary middle-dot exception. Draft values never replace a saved summary before saving.
+
 ## Navigation and motion
 
 Desktop uses a permanent sidebar in a real layout column: Главная, Примерить диски, Мои примерки, Баланс; Support, photo guidance, documents. Mobile follows the same product destinations with compact labels: Главная, Создать, Мои, Баланс, Ещё.

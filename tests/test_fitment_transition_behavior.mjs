@@ -1049,7 +1049,7 @@ test("public Create/Render/Fitment/Wallet bridge methods and snapshots preserve 
         Create: ["snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
         Render: ["snapshot", "prepareAssets", "assetError", "action"],
         Fitment: ["snapshot", "surfaceMounted", "setField", "setVehiclePhoto", "setSourceUrl", "action"],
-        Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "login"],
+        Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "previousHistoryPage", "login"],
     };
     const canonical = () => JSON.stringify({ form: api.state.fitmentForm, overview: api.state.fitmentOverview, check: api.state.fitmentCheck, job: api.state.fitmentJobId, renders: api.state.renderHistory, credits: api.state.creditPackages });
     const before = canonical(), callsBefore = calls.length;
@@ -1730,7 +1730,8 @@ test("a valid multi-SKU resolver response is a chooser, even without shared top-
     await api.resolveFitmentRimSource();
     assert.equal(api.state.fitmentSourceStatusTone,"neutral");
     assert.match(fitmentMarkup(api.snapshot()),/Выберите диск/);
-    assert.doesNotMatch(fitmentMarkup(api.snapshot()),/data-fitment-source-url|Указать параметры вручную/);
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-source-url/);
+    assert.doesNotMatch(fitmentMarkup(api.snapshot()),/Указать параметры вручную/);
 });
 
 test("owner chips require explicit conflict resolution for ET and DIA while preserving canonical values", () => {
@@ -1768,7 +1769,7 @@ for (const [field,current,suggested] of [["offset_et_mm",35.125,33.275],["center
             const markup=fitmentMarkup(snapshot);
             assert.equal((markup.match(/Выберите значение перед сохранением\./g)||[]).length,1);
             assert.doesNotMatch(markup,/Все параметры подтверждены/);
-            assert.match(markup,/Требуется выбрать значение/);
+            assert.match(markup,/data-fitment-conflict-notice/);
             assert.match(markup,/data-fitment-action="save-rim"[^>]*disabled/);
             api.bridge.action(useProposal?"conflict-use":"conflict-keep",useProposal?`${field}|${suggested}`:field);
             snapshot=api.snapshot();
@@ -1778,7 +1779,7 @@ for (const [field,current,suggested] of [["offset_et_mm",35.125,33.275],["center
             assert.equal(snapshot.rimSaveReadiness.ready,true);
             const resolved=fitmentMarkup(snapshot);
             assert.match(resolved,/Все параметры подтверждены/);
-            assert.match(resolved,/Готово к сохранению/);
+            assert.doesNotMatch(resolved,/data-fitment-conflict-notice/);
             assert.doesNotMatch(resolved,/data-fitment-action="save-rim"[^>]*disabled/);
             assert.equal(snapshot.canonicalWheelSummary,"");
             api.state.fitmentRimEditing=false;
@@ -1897,7 +1898,7 @@ for (const scenario of [
     assert.equal(api.state.fitmentOverview.next_action.kind, "select_vehicle_variant");
     assert.equal(api.state.fitmentVehicleVariants.length, 2);
     assert.equal(api.state.fitmentOverview.modification_state === "confirmed", false);
-    assert.match(h1Markup(api), /Подтвердить комплектацию/);
+    assert.match(h1Markup(api), /data-fitment-action="confirm-vehicle-variant"/);
     for (const payload of mutations) {
         assert.equal(Object.hasOwn(payload, "rim"), false);
         assert.equal(Object.hasOwn(payload, "front_rim"), false);

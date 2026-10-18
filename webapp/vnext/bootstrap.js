@@ -14,7 +14,7 @@ import { createRenderView, refreshRenderView } from "./views/render.js";
 import { createFitmentView, refreshFitmentView } from "./views/fitment.js";
 import { createWalletView, refreshWalletView } from "./views/wallet.js";
 
-const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet", "settings"]);
 let mountedRoot = null;
 let mountedView = "";
 let mountedShell = null;
@@ -42,6 +42,7 @@ const walletCallbacks = {
   createPayment: () => window.dreamwheelsWalletBridge?.createPayment(),
   refreshPayment: () => window.dreamwheelsWalletBridge?.refreshPayment(),
   showMoreHistory: () => window.dreamwheelsWalletBridge?.showMoreHistory(),
+  previousHistoryPage: () => window.dreamwheelsWalletBridge?.previousHistoryPage(),
   login: legacyOpenAuth,
 };
 
@@ -132,11 +133,15 @@ function surfaceDescriptor(view, locale = applicationLocale()) {
   }
   if (view === "photo-guide") {
     const model = photoGuideViewModel(locale);
-    return { title: model.title, content: createPhotoGuideView(model) };
+    return { title: model.title, content: createPhotoGuideView(model, { navigate: legacyNavigate }) };
   }
   if (view === "docs") {
     const model = documentsViewModel(locale);
     return { title: model.title, content: createDocumentsView(model, { openExternal: legacyOpenExternal }) };
+  }
+  if (view === "settings") {
+    const content = document.querySelector('[data-view="settings"] .account-settings-panel');
+    return content ? { title: uiText("account.settings.title", locale), content } : null;
   }
   if (view === "fitment") return {
     title: uiText("page.fitment", locale),
@@ -158,6 +163,10 @@ function unmountSurface() {
       [...mountedRoot.children].forEach((child) => {
         if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
       });
+    } else if (mountedView === "settings") {
+      const panel = mountedRoot.querySelector(".account-settings-panel");
+      if (panel) mountedRoot.replaceChildren(panel);
+      delete mountedRoot.dataset.vnextRoot;
     } else if (["renders", "render-detail", "fitment", "wallet"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
     else {
       mountedRoot.replaceChildren();
@@ -175,6 +184,17 @@ function unmountSurface() {
   legacyHiddenStates = [];
 }
 
+function restoreSurfaceFocus(host, previous) {
+  if (!previous) return;
+  const candidates = [...host.querySelectorAll("button, a, input, select, h1, h2")];
+  const target = candidates.find(node => !node.disabled && node.tagName === previous.tagName && (
+    previous.id ? node.id === previous.id : previous.name ? node.name === previous.name :
+    node.className === previous.className && (node.getAttribute("aria-label") || node.textContent) === previous.label
+  ));
+  if (target && /^H[12]$/.test(target.tagName)) target.setAttribute("tabindex", "-1");
+  target?.focus({ preventScroll: true });
+}
+
 function mountSurface(view, { force = false } = {}, locale = applicationLocale()) {
   const host = document.querySelector(`[data-view="${view}"]`);
   if (!host) return;
@@ -185,6 +205,9 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     else refreshMountedRender(locale);
     return;
   }
+  const active = document.activeElement;
+  const previousFocus = force && mountedRoot === host && host.contains(active)
+    ? { tagName: active.tagName, id: active.id, name: active.name, className: active.className, label: active.getAttribute("aria-label") || active.textContent } : null;
   const descriptor = surfaceDescriptor(view, locale);
   if (!descriptor) return;
   if (mountedRoot && mountedRoot !== host) unmountSurface();
@@ -207,6 +230,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
       navigate: legacyNavigate,
       content: descriptor.content,
       authenticated: legacyDashboardSnapshot().authenticated,
+      accountData: legacyDashboardSnapshot(),
       openAuth: legacyOpenAuth,
     });
     createRoot.replaceChildren(mountedShell);
@@ -218,6 +242,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     mountedWalletContent = createRoot.querySelector(".vnext-shell__frame > .vnext-wallet");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
+    restoreSurfaceFocus(host, previousFocus);
     if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
     else if (view === "fitment") window.dreamwheelsFitmentBridge?.surfaceMounted();
     else if (["renders", "render-detail"].includes(view)) window.dreamwheelsRenderBridge?.prepareAssets();
@@ -231,6 +256,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     navigate: legacyNavigate,
     content: descriptor.content,
     authenticated: legacyDashboardSnapshot().authenticated,
+      accountData: legacyDashboardSnapshot(),
     openAuth: legacyOpenAuth,
   });
   host.replaceChildren(mountedShell);
@@ -238,16 +264,23 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
   mountedRoot = host;
   mountedView = view;
   document.body.classList.add("vnext-surface-active");
+  restoreSurfaceFocus(host, previousFocus);
 }
 
 function applyView(view, locale = applicationLocale()) {
+  const changed = Boolean(mountedView && mountedView !== view);
   if (migratedViews.has(view)) mountSurface(view, undefined, locale);
   else unmountSurface();
+  if (changed && mountedRoot) {
+    const heading = mountedRoot.querySelector("h1");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: true });
+  }
 }
 
 window.addEventListener("dreamwheels:viewchange", (event) => applyView(event.detail?.view, applicationLocale()));
 window.addEventListener("dreamwheels:dashboardchange", () => {
-  updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated);
+  updateAppShellAuth(mountedShell, legacyDashboardSnapshot().authenticated, legacyDashboardSnapshot());
   if (mountedView === "dashboard") mountSurface("dashboard", { force: true }, applicationLocale());
 });
 window.addEventListener("dreamwheels:createchange", () => renderCreate());

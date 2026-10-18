@@ -1,5 +1,6 @@
 export const COPY = {
   "render.downloadShort": {"ru": "Скачать", "en": "Download"},
+  "render.wheelReference": { "ru": "Колёсный диск", "en": "Wheel reference" },
   "render.checkShort": {"ru": "Проверить", "en": "Check fit"},
   "fitment.summary.title": {"ru": "Итог", "en": "Summary"},
   "fitment.failure.saved": {"ru": "Данные сохранены — вводить их заново не нужно.", "en": "Your details are saved — no need to enter them again."},
@@ -51,6 +52,50 @@ export const COPY = {
   "fitment.variant.rearNotice": {
     "ru": "Вариант относится к передней оси. Задние параметры подтверждаются отдельно.",
     "en": "The variant applies to the front axle. Rear parameters are confirmed separately."
+  },
+  "fitment.vehicle.yourPhoto": {
+    "ru": "Ваше фото для примерки",
+    "en": "Your try-on photo"
+  },
+  "fitment.vehicle.modelLabel": {
+    "ru": "Модель автомобиля",
+    "en": "Car model"
+  },
+  "fitment.vehicle.identifyPhoto": {
+    "ru": "Определить по фото",
+    "en": "Identify from photo"
+  },
+  "fitment.vehicle.changeModel": {
+    "ru": "Изменить модель",
+    "en": "Change model"
+  },
+  "fitment.vehicle.versionChip": {
+    "ru": "Комплектация: {name}",
+    "en": "Version: {name}"
+  },
+  "fitment.wheel.modelLabel": {
+    "ru": "Модель диска",
+    "en": "Wheel model"
+  },
+  "fitment.wheel.referenceCaption": {
+    "ru": "Фото для примерки",
+    "en": "Try-on reference photo"
+  },
+  "fitment.wheel.getFromLink": {
+    "ru": "Получить по ссылке",
+    "en": "Get from link"
+  },
+  "fitment.wheel.addLink": {
+    "ru": "Добавить ссылку",
+    "en": "Add product link"
+  },
+  "fitment.wheel.productPage": {
+    "ru": "Страница товара",
+    "en": "Product page"
+  },
+  "fitment.wheel.noLink": {
+    "ru": "Характеристики — по ссылке или вручную",
+    "en": "Specifications from a link or entered manually"
   },
   "fitment.source.label": {
     "ru": "Откуда данные",
@@ -117,7 +162,7 @@ export const COPY = {
     "en": "SKU"
   },
   "fitment.wheel.eyebrow": {
-    "ru": "Диск",
+    "ru": "Колёсный диск",
     "en": "Wheel"
   },
   "fitment.verdict.unknown.size": {
@@ -308,6 +353,12 @@ export const COPY = {
     "ru": "Вы всё ещё можете создать изображение, чтобы оценить внешний вид дисков.",
     "en": "You can still create an image to see how the wheels look."
   },
+  "create.wheelProductLink": { "ru": "Ссылка на колёсный диск (необязательно)", "en": "Wheel product link (optional)" },
+  "create.wheelProductLinkHint": { "ru": "Для будущей проверки совместимости с автомобилем", "en": "For a future compatibility check with your vehicle." },
+  "create.wheelHeading": {
+    "ru": "Колёсный диск",
+    "en": "Wheel"
+  },
   "page.tryOn": {
     "ru": "Виртуальная примерка",
     "en": "Create a try-on"
@@ -421,8 +472,8 @@ export const COPY = {
     "en": "Cancel"
   },
   "create.iConfirmMyRightToUseThesePhotosAnd": {
-    "ru": "Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки.",
-    "en": "I confirm my right to use these photos and consent to processing them for a visual try-on."
+    "ru": "У меня есть право использовать эти фото. Я соглашаюсь на их обработку для создания примерки.",
+    "en": "I have the right to use these photos. I consent to processing them to create a visual try-on."
   },
   "create.privacyPolicy": {
     "ru": "Политика конфиденциальности",
@@ -1408,6 +1459,11 @@ export const COPY = {
     "ru": "Что улучшить",
     "en": "What should be improved"
   },
+  "history.failedBadge": { "ru": "Не удалось", "en": "Failed" },
+  "history.creatingBadge": { "ru": "Создаём", "en": "Creating" },
+  "history.queued": { "ru": "В очереди", "en": "Queued" },
+  "history.failed": { "ru": "Не удалось создать", "en": "Could not create try-on" },
+  "history.creating": { "ru": "Создаём примерку", "en": "Creating try-on" },
   "history.loading": {
     "ru": "Загружаем историю…",
     "en": "Loading history…"
@@ -3697,8 +3753,8 @@ export const COPY = {
     "en": "Account settings"
   },
   "account.settings.lede": {
-    "ru": "Подключите Email и Telegram, чтобы входить любым способом. Баланс, история рендеров и оплаты останутся общими.",
-    "en": "Link Email and Telegram to sign in either way. Your balance, render history and payments stay shared."
+    "ru": "Входите через Email или Telegram — баланс и история останутся общими",
+    "en": "Sign in with Email or Telegram — your balance and history stay shared"
   },
   "account.merge.title": {
     "ru": "Объединить аккаунты?",

@@ -1,0 +1,38 @@
+/* UI-058: account providers are plain rows, not independent cards. */
+.account-settings-panel, .vnext-account-preview { width: 100%; max-width: 700px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.account-settings-head { padding: 0 0 24px; border: 0; }
+.account-settings-head > .section-label { display: none; }
+.account-settings-head h1 { margin: 0 0 12px; }
+.vnext-shell .account-settings-head h1 { display: none; }
+.vnext-shell__frame:has(.account-settings-panel) .vnext-shell__topbar { border-bottom: 0; }
+.vnext-shell .account-settings-head { padding: 16px 0; }
+.vnext-shell .account-settings-head .lede { margin: 0; max-width: none; }
+.vnext-shell .account-settings-panel [data-account-settings-content] { padding: 0; }
+.account-settings-head .lede, .vnext-account-preview > p { color: var(--vnext-text-secondary); line-height: 1.5; }
+.vnext-shell__frame:has(.vnext-account-preview) .vnext-shell__topbar { border-bottom: 0; }
+.account-settings-panel [data-account-settings-content], .vnext-account-preview [data-account-settings-content] { display: grid; gap: 12px; }
+.account-settings-panel .form-row, .vnext-account-preview .form-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; padding: 20px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.account-settings-panel .form-row > div, .vnext-account-preview .form-row > div { min-width: 0; }
+.account-settings-panel .form-row strong, .vnext-account-preview .form-row strong { color: var(--vnext-text); font-size: 16px; font-weight: 600; }
+.account-settings-panel .form-row p, .vnext-account-preview .form-row p { margin: 6px 0 0; color: var(--vnext-text-secondary); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.account-settings-panel .form-row .status-pill, .vnext-account-preview .form-row .status-pill { flex: 0 0 auto; align-self: center; width: auto; padding: 5px 10px; min-height: 0; border: 1px solid #8bb9a029; border-radius: 999px; background: #8bb9a00d; color: #a8d8bd; font-size: 13px; line-height: 1.4; font-weight: 500; }
+.account-settings-panel .form-row .compact-button, .vnext-account-preview .form-row .compact-button { flex: 0 0 auto; align-self: center; width: auto; min-height: 44px; padding: 8px 14px; border: 1px solid var(--vnext-border-strong); border-radius: 8px; background: var(--vnext-surface-elevated); color: var(--vnext-text); font-size: 14px; }
+.account-settings-panel .account-settings-note, .vnext-account-preview .account-settings-note { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--vnext-text-secondary); line-height: 1.5; }
+.vnext-account-preview__demo { margin-top: 24px; color: var(--vnext-text-subtle); font-size: 13px; }
+
+/* UI-060: row feedback matches Support and Documents without persistent cards. */
+.account-settings-panel .form-row, .vnext-account-preview .form-row { position: relative; isolation: isolate; }
+.account-settings-panel .form-row::before, .vnext-account-preview .form-row::before { content: ""; position: absolute; z-index: -1; inset: 0 -12px; border-radius: 12px; background: var(--vnext-surface-elevated); box-shadow: inset 0 0 0 1px var(--vnext-border-strong); opacity: 0; pointer-events: none; transition: opacity 160ms ease; }
+@media(hover:hover) {
+ .account-settings-panel .form-row:hover::before, .vnext-account-preview .form-row:hover::before { opacity: 1; }
+}
+.account-settings-panel .form-row:focus-within::before, .vnext-account-preview .form-row:focus-within::before { opacity: 1; }
+@media(prefers-reduced-motion:reduce) {
+ .account-settings-panel .form-row::before, .vnext-account-preview .form-row::before { transition: none; }
+}
+
+/* UI-061: the dashboard hides its title bar but must keep mobile account access. */
+@media(max-width:700px) {
+ .vnext-shell__main:has(.vnext-dashboard) { position: relative; }
+ .vnext-shell[data-authenticated="true"] .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { display: flex; position: absolute; z-index: 1; top: 18px; right: 16px; width: 44px; padding: 0; border: 0; }
+}

@@ -37,11 +37,22 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
     copy.textContent = uiText("dashboard.uploadPhotosOfTheVehicleAndWheelTheFinished", localeOf(model));
     empty.append(title, copy, createButton({ label: uiText("nav.create", localeOf(model)), variant: "secondary", onClick: () => navigate?.("create") }));
     wrap.append(empty);
-    return createIsland(wrap);
+    return wrap;
   }
 
   const latest = model.latest;
-  wrap.append(createMedia(latest, "vnext-dashboard__latest-media", localeOf(model)));
+  const media = createMedia(latest, "vnext-dashboard__latest-media", localeOf(model));
+  if (latest.canOpen) {
+    const preview = document.createElement("button");
+    preview.type = "button";
+    preview.className = "vnext-dashboard__latest-link";
+    preview.setAttribute("aria-label", `${uiText("dashboard.open", localeOf(model))}: ${latest.title}`);
+    preview.append(media);
+    preview.addEventListener("click", () => openRenderDetail?.(latest.jobId));
+    wrap.append(preview);
+  } else {
+    wrap.append(media);
+  }
 
   const meta = document.createElement("div");
   meta.className = "vnext-dashboard__latest-meta";
@@ -50,7 +61,7 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
   title.textContent = latest.title;
   const subtitle = document.createElement("div");
   subtitle.className = "vnext-dashboard__object-sub";
-  subtitle.textContent = [latest.subtitle, latest.meta].filter(Boolean).join(" — ");
+  subtitle.textContent = latest.meta || "";
   copy.append(title, subtitle);
   if (latest.status !== "completed") {
     copy.append(createStatusText({
@@ -63,10 +74,9 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
   }
   meta.append(copy);
 
-  const action = latest.canOpen
-    ? createButton({ label: uiText("dashboard.open", localeOf(model)), variant: "secondary", onClick: () => openRenderDetail?.(latest.jobId) })
-    : createButton({ label: latest.status === "failed" ? uiText("dashboard.tryAgain", localeOf(model)) : uiText("nav.history", localeOf(model)), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
-  meta.append(action);
+  if (!latest.canOpen) {
+    meta.append(createButton({ label: latest.status === "failed" ? uiText("dashboard.tryAgain", localeOf(model)) : uiText("nav.history", localeOf(model)), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") }));
+  }
   wrap.append(meta);
   if (model.latestFailed) {
     const notice = document.createElement("p");
@@ -77,7 +87,7 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
     notice.append(action, ending);
     wrap.append(notice);
   }
-  return createIsland(wrap);
+  return wrap;
 }
 
 function createBalance(model, { navigate, openAuth } = {}) {
@@ -157,20 +167,28 @@ function createRecent(model, { navigate, openRenderDetail } = {}) {
   model.recent.forEach((job) => {
     const item = document.createElement("article");
     item.className = "vnext-dashboard__recent-item";
-    item.append(createMedia(job, undefined, localeOf(model)));
+    const media = createMedia(job, undefined, localeOf(model));
     const title = document.createElement("strong");
     title.textContent = job.title;
     const meta = document.createElement("span");
-    meta.textContent = [job.subtitle, job.meta].filter(Boolean).join(", ");
-    item.append(title, meta);
+    meta.textContent = job.meta || "";
     if (job.canOpen) {
       const open = document.createElement("button");
       open.type = "button";
-      open.className = "vnext-dashboard__recent-open";
-      open.textContent = uiText("dashboard.open", localeOf(model));
+      open.className = "vnext-dashboard__recent-link";
+      open.setAttribute("aria-label", `${uiText("dashboard.open", localeOf(model))}: ${job.title}`);
+      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      arrow.setAttribute("viewBox", "0 0 24 24");
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.innerHTML = '<path d="M4 12h16m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      title.append(arrow);
+      open.append(media, title);
       open.addEventListener("click", () => openRenderDetail?.(job.jobId));
-      item.append(open);
-    } else if (job.status !== "completed") {
+      item.append(open, meta);
+    } else {
+      item.append(media, title, meta);
+    }
+    if (!job.canOpen && job.status !== "completed") {
       item.append(createStatusText({
         label: job.status === "failed" ? job.failureCopy?.generationFailed : job.statusLabel,
         tone: job.status === "failed" ? "negative" : "pending",
@@ -192,9 +210,6 @@ export function createDashboardView(model, callbacks = {}) {
   const intro = document.createElement("section");
   intro.className = "vnext-dashboard__intro";
   const introCopy = document.createElement("div");
-  const eyebrow = document.createElement("p");
-  eyebrow.className = "vnext-eyebrow";
-  eyebrow.textContent = uiText("dashboard.newTryOn", localeOf(model));
   const title = document.createElement("h1");
   title.setAttribute("aria-label", uiText("dashboard.tryNewWheelsOnYourVehicle", localeOf(model)));
   [uiText("dashboard.try", localeOf(model)), uiText("dashboard.newWheels", localeOf(model)), uiText("dashboard.onYourVehicle", localeOf(model))].forEach((line) => {
@@ -202,7 +217,7 @@ export function createDashboardView(model, callbacks = {}) {
     lineElement.textContent = line;
     title.append(lineElement);
   });
-  introCopy.append(eyebrow, title);
+  introCopy.append(title);
   intro.append(introCopy, createButton({ label: uiText("nav.create", localeOf(model)), onClick: () => callbacks.navigate?.("create") }));
   page.append(intro);
 

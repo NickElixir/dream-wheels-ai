@@ -21,7 +21,7 @@ test("VNext composition keeps independent source cards and a full-width editor b
     overview: { vehicle_state: "unconfirmed", rim_setup_state: "confirmed_ready" },
     nextAction: "complete_vehicle_details",
     vehicleTitle: "Zeekr 007", rimTitle: "BBS CI-R",
-    rimSourceDomain: "shop.example.ru", rimEditing: true,
+    rimSourceDomain: "shop.example.ru", resolver: {url:"https://shop.example.ru/wheel"}, rimEditing: true,
     rim: { offset_et_mm: 35.25 },
     check: { execution_status: "completed", verdict: "incompatible", is_current: true },
     canRunCheck: false,
@@ -30,7 +30,7 @@ test("VNext composition keeps independent source cards and a full-width editor b
   assert.ok(markup.indexOf('class="vnext-fitment__active-editor"') < markup.indexOf('class="vnext-fitment__verdict'));
   assert.ok(markup.indexOf('class="vnext-fitment__verdict') < markup.indexOf('class="vnext-fitment__standard"'));
   assert.match(markup, /data-fitment-action="edit-vehicle"/);
-  assert.match(markup, /data-fitment-action="edit-rim"/);
+  assert.match(markup, /data-fitment-action="manual-rim"/);
   assert.match(markup, /data-fitment-action="recognize-vehicle"[^>]*disabled/);
   assert.match(markup, /data-fitment-action="resolve-rim"/);
   assert.match(markup, /shop\.example\.ru/);
@@ -48,7 +48,7 @@ test("a Wheel editor remains the only editor when the server requests a Vehicle 
   });
   assert.match(markup, /data-wheel-picker-open="rim\.offset_et_mm"/);
   assert.doesNotMatch(markup, /class="vnext-fitment__variant-step"/);
-  assert.match(markup, /Выберите комплектацию автомобиля/);
+  assert.match(markup, /Выберите комплектацию/);
   assert.match(markup, /data-fitment-action="edit-vehicle"/);
   assert.match(markup, /data-fitment-action="check"[^>]*disabled/);
 });
@@ -69,7 +69,10 @@ const cases = [
 ];
 for (const [name, model, expected] of cases) test(`single Active Workspace: ${name}`, () => {
   const markup = context.fitmentMarkup(model);
-  assert.deepEqual(workspace(markup), expected === "none" ? [] : [expected]);
+  if (expected === "vehicle-variant") {
+    assert.deepEqual(workspace(markup), []);
+    assert.match(markup, /vnext-fitment__configuration--open[\s\S]*data-fitment-workspace="vehicle"/);
+  } else assert.deepEqual(workspace(markup), expected === "none" ? [] : [expected]);
   assert.equal((markup.match(/data-fitment-active-workspace/g) || []).length,1);
   assert.equal((markup.match(/data-fitment-workspace=/g) || []).length, expected === "none" ? 0 : 1);
   assert.equal((markup.match(/class="vnext-fitment__object(?: |")/g) || []).length,2);
@@ -92,7 +95,7 @@ test("confirmed configuration is a primary value without duplicate status labels
   const markup=context.fitmentMarkup({vehicleStatus:"Комплектация подтверждена",vehicleVariantName:"55 TFSI quattro",vehicleVariantTechnical:"Россия+ · 4M Facelift",canReselectVehicleVariant:true});
   assert.match(markup,/<strong>55 TFSI quattro<\/strong>/);
   assert.match(markup,/<small>Россия\+ · 4M Facelift<\/small>/);
-  assert.match(markup,/<span>Подтверждено<\/span>/);
+  assert.match(markup,/<span class="vnext-fitment__confirmed-chip">Подтверждено<\/span>/);
   assert.doesNotMatch(markup,/Комплектация подтверждена|Комплектация 55/);
 });
 
@@ -123,8 +126,8 @@ for (const locale of ["ru", "en"]) {
     const markup = context.fitmentMarkup({locale, overview: {}, executionStatus: "completed", nextAction: "run_standard_check", check: {execution_status: "completed", verdict: "unknown"}, fieldEvidence, blockingIssues: [{label: "Combination missing from reference"}]});
     const table = markup.match(/<table[\s\S]*?<\/table>/u)[0];
     assert.equal([...table.matchAll(/<th scope="row">/gu)].length, 6);
-    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "Matches" : "Подходит"}</td>`, "gu"))].length, 4);
-    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result">${locale === "en" ? "No data" : "Нет данных"}</td>`, "gu"))].length, 2);
+    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result[^"]*">${locale === "en" ? "Matches" : "Подходит"}</td>`, "gu"))].length, 4);
+    assert.equal([...table.matchAll(new RegExp(`<td class="vnext-fitment__row-result[^"]*">${locale === "en" ? "No data" : "Нет данных"}</td>`, "gu"))].length, 2);
     assert.match(table, /<th scope="row">PCD<\/th>/u);
     assert.ok(table.includes(`<th scope="row">${locale === "en" ? "Bolt count" : "Количество отверстий"}</th>`));
     assert.doesNotMatch(table, /5×112/u);
@@ -230,7 +233,7 @@ test("ET no-reference copy stays neutral when submitted size is unavailable", ()
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, legacyTranslations, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, baseUiText: copy, legacyTranslations, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }
 
 
@@ -270,7 +273,7 @@ for (const locale of ['ru','en']) {
 test('LOW-1 mutation: restoring the old universal size subtitle fails the renderer contract', () => {
   const source=fs.readFileSync(new URL('../webapp/vnext/views/fitment.js',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replaceAll('export function ','function ');
   const old = 'Доступных данных недостаточно, чтобы подтвердить совместимость этого размера целиком.';
-  const context={copy,uiText:copy,applicationLocale,localeOf,unknownVerdictSubtitle,fitmentDisplayValue};
+  const context={copy,uiText:copy,baseUiText:copy,applicationLocale,localeOf,unknownVerdictSubtitle,fitmentDisplayValue};
   vm.runInNewContext(source.replace('esc(unknownVerdictSubtitle(model))',JSON.stringify(old))+'\nglobalThis.render = fitmentMarkup;',context);
   const verify=render=>assert.ok(render(unknownBase('ru',['center_bore_unknown'])).includes(copy('fitment.verdict.unknown.dia','ru')));
   verify(fitmentMarkup);
@@ -325,7 +328,7 @@ test('P1 RU/EN verdict snapshots: compatible, conditions, unknown, incompatible,
   for(const {locale,state,markup} of snapshots) {
     const model={locale,overview:{},executionStatus:state==='failed'?'failed':'completed',check:{execution_status:state==='failed'?'failed':'completed',verdict:state==='stale'?'unknown':state,is_current:state!=='stale',blocking_issues:[{code:'center_bore_unknown'}]}};
     const expected = state === 'failed' ? markup.replace(/<p>[^<]*<\/p><p>[^<]*<\/p><\/section>$/, `<p>${copy('fitment.failure.saved',locale)}</p></section>`) : markup;
-    assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0],expected,`${locale}/${state}`);
+    assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0].replace(/ data-fitment-focus-key="[^"]*"/g, ""),expected,`${locale}/${state}`);
   }
 });
 

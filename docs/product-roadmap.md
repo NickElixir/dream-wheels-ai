@@ -147,3 +147,10 @@ Evaluation baseline, input-quality gate, controlled rendering, and catalog work 
 - Comparison slider or side-by-side comparison.
 - Free-text feedback, analytics dashboard, export, or automatic ML dataset ingestion.
 - Payment-provider switching, hard fitment guarantees, or catalog recommendations without audited data.
+
+## Owner UI release timeline — 08.10.2026
+
+- [x] Cabinet navigation routes: PR #269 merged into staging.
+- [x] Result composition: wheel reference, horizontal input summary, download/check/repeat actions; owner accepted locally 08.10.2026 (UI-024). Staging rollout and live validation pending.
+- [ ] Next UI review: History cards, labels, statuses, empty/error/loading states and result navigation.
+- [ ] Following Result acceptance, separate task/PR: restore «Поделиться» using public share pages and before/after social previews. Keep private `/try-ons/{uuid}` links separate from public share links. Audit the existing `/s/{short_id}` mechanism, owner publishing controls, revocation and old-link compatibility before rollout; support messenger/native sharing with copy-link fallback. No date committed.

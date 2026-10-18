@@ -84,7 +84,7 @@ const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
 const WEBSITE_LOGIN_NONCE_MAX_AGE_MS = 60 * 1000;
 const TOPUP_MIN_AMOUNT = 100;
 const TOPUP_MAX_AMOUNT = 3000;
-const PAYMENT_HISTORY_PAGE_SIZE = 10;
+const PAYMENT_HISTORY_PAGE_SIZE = 3;
 const TOPUP_PACKAGES = [
     { amount: 100, credits: 3 },
     { amount: 200, credits: 7 },
@@ -1470,8 +1470,8 @@ function getAccountLabel() {
 }
 
 function getInitials(name) {
-    const normalized = (name || "Dream Wheels").replace("@", "").trim();
-    const parts = normalized.split(/\s+/).filter(Boolean);
+    const normalized = (name || "Dream Wheels").replace(/^@/, "").split("@")[0].trim();
+    const parts = normalized.split(/[\s._-]+/).filter(Boolean);
     if (!parts.length) return "DW";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -1481,7 +1481,7 @@ function getAuthAccountPresentation() {
     const linked = state.accountState?.identities;
     if (linked?.telegram?.linked && linked?.email?.linked) {
         return {
-            identifier: linked.telegram.display || "Dream Wheels",
+            identifier: String(linked.telegram.display || "").startsWith("@") ? linked.telegram.display : linked.email.display || linked.telegram.display || "Dream Wheels",
             provider: "Email + Telegram",
         };
     }
@@ -1511,7 +1511,7 @@ function updateAccountBlock() {
     if (name) name.textContent = account.identifier;
     if (avatar) avatar.textContent = getInitials(account.identifier);
     if (subtitle) {
-        subtitle.textContent = account.provider || uiCopy("account.cabinet", locale);
+        subtitle.textContent = state.balance !== null ? formatRenderCount(state.balance) : state.walletMessageTone === "error" ? (locale === "ru" ? "Баланс недоступен" : "Balance unavailable") : (locale === "ru" ? "Загружаем баланс" : "Loading balance");
     }
 }
 
@@ -1574,13 +1574,9 @@ function renderAccountSettings() {
             : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">${escapeHtml(uiCopy("account.settings.link", locale))}</button>`;
         return `<div class="form-row"><div><strong>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
     };
-    const bothLinked = identities.email?.linked && identities.telegram?.linked;
     container.innerHTML = [
         renderRow("supabase", identities.email || { linked: false }),
         renderRow("telegram", identities.telegram || { linked: false }),
-        bothLinked
-            ? `<div class="account-settings-note">${escapeHtml(uiCopy("account.settings.sharedAccount", locale))}</div>`
-            : "",
         state.accountSettingsNotice
             ? `<div class="account-settings-note">${escapeHtml(state.accountSettingsNotice)}</div>`
             : "",
@@ -1598,7 +1594,7 @@ async function loadAccountState({ silent = false } = {}) {
         if (!response.ok) throw new Error(await parseApiError(response));
         const payload = await response.json();
         state.accountState = payload;
-        updateAccountBlock();
+        emitVNextDashboardChange();
     } catch (error) {
         setAccountPresentation("accountStateError", "account.settings.loadFailed");
     } finally {
@@ -3704,10 +3700,12 @@ function ensureRequiredFitmentVariantLookup() {
 }
 
 function focusFitmentWorkspace(section = state.fitmentActiveSection) {
+    if (document.querySelector("[data-vnext-fitment-root]")) return;
     window.requestAnimationFrame(() => {
         const workspace = document.querySelector(`[data-fitment-workspace="${section}"]`);
         if (!workspace) return;
-        workspace.scrollIntoView({ behavior: "auto", block: "start" });
+        const bounds = workspace.getBoundingClientRect();
+        if (bounds.bottom < 0 || bounds.top > window.innerHeight) workspace.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
         const target = workspace.querySelector('h2[tabindex], select:not(:disabled), input:not(:disabled)');
         target?.focus({ preventScroll: true });
     });
@@ -7279,7 +7277,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             state.fitmentSaving = false;
             if (state.fitmentFormState.status === "saving") markFitmentDirty();
             renderFitment();
-            if (state.fitmentMessage && state.fitmentMessageTone === "success") {
+            if (state.fitmentMessage && state.fitmentMessageTone === "success" && !document.querySelector("[data-vnext-fitment-root]")) {
                 window.requestAnimationFrame(() => document.querySelector("[data-fitment-save-notice]")?.focus());
             }
         }
@@ -7519,7 +7517,7 @@ function getVisibleHistoryItems() {
     state.walletHistoryPage = Math.min(Math.max(state.walletHistoryPage, 0), totalPages - 1);
     return {
         items,
-        visibleItems: items.slice(0, (state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE),
+        visibleItems: items.slice(state.walletHistoryPage * PAYMENT_HISTORY_PAGE_SIZE, (state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE),
         totalPages,
         from: items.length ? 1 : 0,
         to: Math.min((state.walletHistoryPage + 1) * PAYMENT_HISTORY_PAGE_SIZE, items.length),
@@ -7627,6 +7625,8 @@ function vnextWalletSnapshot() {
             tone: statusTone(item.status),
         })),
         hasMoreHistory: authenticated && history.to < history.items.length,
+        historyPage: state.walletHistoryPage,
+        historyPages: history.totalPages,
         paymentReturnMessage: state.paymentReturnState ? state.walletMessage : "",
         message: state.walletMessage,
         messageTone: state.walletMessageTone,
@@ -7656,6 +7656,10 @@ window.dreamwheelsWalletBridge = {
     },
     showMoreHistory() {
         state.walletHistoryPage += 1;
+        renderWallet();
+    },
+    previousHistoryPage() {
+        state.walletHistoryPage = Math.max(0, state.walletHistoryPage - 1);
         renderWallet();
     },
     login: openAuthDialog,
@@ -7788,6 +7792,7 @@ function hasAssetSource(job, kind) {
     if (isGuestRenderJob(job)) return Boolean(guestRenderAssetUrl(job, kind));
     if (kind === "original") return Boolean(originalDisplayKind(job));
     if (kind === "result") return Boolean(resultUrlForJob(job) || job?.assets?.result);
+    if (kind === "rim_original") return Boolean(job?.assets?.rim_original);
     return false;
 }
 
@@ -7821,7 +7826,7 @@ function proxiedAssetUrl(asset) {
 }
 
 function assetErrorKey(kind) {
-    return kind === "original" ? "car_original" : "result";
+    return kind === "original" ? "car_original" : kind === "rim_original" ? "rim_original" : "result";
 }
 
 function hasAssetLoadError(job, kind) {
@@ -7913,7 +7918,7 @@ function handleOriginalDisplayError(jobId) {
 
 async function ensureAssetBlobUrl(job, kind) {
     if (kind === "original") return ensureOriginalDisplayUrl(job);
-    if (!job?.job_id || kind !== "result") return "";
+    if (!job?.job_id || !["result", "rim_original"].includes(kind)) return "";
     const existingBlobUrl = assetBlobUrlForJob(job, kind);
     if (existingBlobUrl) return existingBlobUrl;
     if (!hasFrontendAuth()) return "";
@@ -7927,7 +7932,7 @@ async function ensureAssetBlobUrl(job, kind) {
     renderDashboard();
 
     try {
-        const assetKey = kind === "original" ? "car_original" : "result";
+        const assetKey = kind === "original" ? "car_original" : kind;
         const response = job.assets?.[assetKey]?.download_url?.startsWith("/")
             ? await authenticatedFetch(sourceUrl, { headers: withAuthHeaders() })
             : await fetch(sourceUrl);
@@ -7971,6 +7976,7 @@ function assetUrlForJob(job, kind) {
     if (kind === "original") {
         return originalSignedUrlForJob(job);
     }
+    if (kind === "rim_original") return assetBlobUrlForJob(job, kind) || proxiedAssetUrl(job.assets?.rim_original);
     return assetBlobUrlForJob(job, kind) || resultUrlForJob(job) || proxiedAssetUrl(job.assets?.result);
 }
 
@@ -8555,6 +8561,15 @@ async function refreshProcessingHistoryJobs() {
 }
 
 
+function homeRenderTitle(job) {
+    const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
+    const model = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
+    if (model) return model;
+    // UI-007: keep the existing short technical ID until account numbering ships.
+    const shortId = String(job?.job_id || job?.id || "").slice(0, 6);
+    return `${locale === "ru" ? "Примерка" : "Try-on"} #${shortId}`;
+}
+
 function vnextDashboardJobViewModel(job) {
     if (!job) return null;
     const resultUrl = job.status === "completed" && isAssetAvailable(job, "result")
@@ -8565,9 +8580,9 @@ function vnextDashboardJobViewModel(job) {
         status: job.status || "pending",
         failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job.status),
-        title: humanRenderTitle(job),
-        subtitle: rimSummaryForJob(job) || "",
-        meta: formatDateTime(job.completed_at || job.created_at),
+        title: homeRenderTitle(job),
+        subtitle: "",
+        meta: formatShortDate(job.completed_at || job.created_at),
         imageUrl: job.status === "failed" && isAssetAvailable(job, "original") ? assetUrlForJob(job, "original") : resultUrl || "",
         canOpen: job.status === "completed",
     };
@@ -8586,6 +8601,7 @@ function vnextDashboardSnapshot() {
         : "";
     return {
         locale,
+        accountIdentifier: getAuthAccountPresentation().identifier,
         balance: state.balance,
         balanceLabel: formatRenderCount(state.balance === null ? 0 : state.balance),
         expiry,
@@ -8596,11 +8612,12 @@ function vnextDashboardSnapshot() {
         partialAuth: isSupabasePartialAuth(),
         latest: vnextDashboardJobViewModel(latest),
         latestFailed: state.renderHistory.slice(0, latest ? state.renderHistory.indexOf(latest) : state.renderHistory.length).some(job => job.status === "failed"),
-        recent: state.renderHistory.slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
+        recent: state.renderHistory.filter(job => !latest || job.job_id !== latest.job_id).slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
     };
 }
 
 function emitVNextDashboardChange() {
+    updateAccountBlock();
     if (typeof CustomEvent !== "function") return;
     window.dispatchEvent(new CustomEvent("dreamwheels:dashboardchange", {
         detail: { viewModel: vnextDashboardSnapshot() },
@@ -9360,6 +9377,7 @@ function vnextFitmentSnapshot() {
         checkError: !state.fitmentAuthRequired && errorSection === "result" ? runtimeError : "",
         executionError: check?.execution_status === "failed" ? fitmentResultCopy(check) : "",
         message: state.fitmentMessage || "",
+        parameterSaveNotice: state.fitmentMessageTone === "success" && /^(Параметры сохранены|Отправленные параметры сохранены|Details saved|Submitted details saved)/.test(state.fitmentMessage || ""),
         checkStartFailed: Boolean(state.fitmentCheckStartFailed),
         executionStatus: check?.execution_status || "idle",
         nextAction: fitmentNextAction(overview),
@@ -9427,12 +9445,15 @@ function vnextFitmentSnapshot() {
         rimSku: summaryRim.sku || overview?.front_rim?.selected_variant_sku || "",
         ...fitmentWheelSource(overview, job),
         rimSpecs: fitmentRimTechnicalSummary(rim),
+        savedRimSpecs: overview?.setup_mode === "staggered"
+            ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
+            : fitmentRimTechnicalSummary(summaryRim).join(" / "),
         canonicalVehicleSummary: overview?.vehicle_state === "confirmed_ready" && overview?.modification_state === "confirmed"
-            ? [fitmentSelectedVehicleVariantName(overview) || [vehicle.make, vehicle.model].filter(Boolean).join(" "), vehicle.year].filter(Boolean).join(" – ") : "",
+            ? [[vehicle.make, vehicle.model].filter(Boolean).join(" "), fitmentSelectedVehicleVariantName(overview), vehicle.year].filter(Boolean).join(" / ") : "",
         canonicalWheelSummary: overview?.rim_setup_state === "confirmed_ready"
             ? [[summaryRim.brand, summaryRim.model].filter(Boolean).join(" "), overview?.setup_mode === "staggered"
                 ? uiCopy("fitment.axleSummary", locale, { value0: fitmentRimTechnicalSummary(summaryRim).join(" / "), value1: fitmentRimTechnicalSummary(summaryRearRim).join(" / ") })
-                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" · ") : "",
+                : fitmentRimTechnicalSummary(summaryRim).join(" / ")].filter(Boolean).join(" / ") : "",
         setupMode: state.fitmentForm?.setup_mode || overview?.setup_mode || "uniform",
         rearRim: state.fitmentForm?.rear_rim || overview?.rear_rim || {},
         rimEditing: Boolean(state.fitmentRimEditing),
@@ -9744,6 +9765,10 @@ function vnextRenderJob(job) {
         timeLabel: job?.created_at ? new Date(job.created_at).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }) : "",
         failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job?.status), resultUrl: assetUrlForJob(job, "result"),
+        wheelUrl: assetUrlForJob(job, "rim_original"),
+        wheelAvailable: hasAssetSource(job, "rim_original"),
+        wheelFailed: hasAssetLoadError(job, "rim_original"),
+        wheelLoading: hasAssetSource(job, "rim_original") && !assetUrlForJob(job, "rim_original") && !hasAssetLoadError(job, "rim_original"),
         originalUrl: assetUrlForJob(job, "original"),
         originalFailed: hasAssetLoadError(job, "original"), resultFailed: hasAssetLoadError(job, "result"),
         originalLoading: hasAssetSource(job, "original") && !assetUrlForJob(job, "original") && !hasAssetLoadError(job, "original"),
@@ -9755,12 +9780,28 @@ function vnextRenderJob(job) {
     };
 }
 
+function historyGalleryTitle(job) {
+    const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
+    const title = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
+    if (title) return title;
+    // Stable account ordinal remains a separate planned data/API task.
+    return `${locale === "ru" ? "Примерка" : "Try-on"} #${String(job?.job_id || "").slice(0, 6)}`;
+}
+function historyGalleryDate(value) {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString(locale === "ru" ? "ru-RU" : "en-GB", {
+        day:"numeric", month:"long", hour:"2-digit", minute:"2-digit", hour12:false,
+        ...(date.getFullYear() !== new Date().getFullYear() ? {year:"numeric"} : {}),
+    });
+}
+
 function vnextRenderSnapshot(surface) {
     if (surface === "history") return { locale,
         loading: state.renderHistoryLoading, error: state.renderHistoryError,
         rows: state.renderHistory.slice(0, state.renderHistoryVisibleCount).map((job) => {
             const model = vnextRenderJob(job);
-            return { locale, ...model, thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
+            return { locale, ...model, title:historyGalleryTitle(job), historyCreatedLabel:historyGalleryDate(job.created_at), thumbnailUrl: model.status === "completed" ? model.resultUrl : model.originalUrl, thumbnailKind: model.status === "completed" ? "result" : "original", thumbnailFailed: model.status === "completed" ? model.resultFailed : model.originalFailed, thumbnailLoading: model.status === "completed" ? model.resultLoading : model.originalLoading };
         }), hasMore: state.renderHistory.length > state.renderHistoryVisibleCount,
     };
     if (surface === "processing") {
@@ -9791,7 +9832,7 @@ function prepareVnextRenderAssets() {
         : state.view === "renders" ? state.renderHistory.slice(0, state.renderHistoryVisibleCount)
         : state.view === "create" && state.renderStatus === "completed" ? state.renderHistory.filter((job) => job.job_id === state.jobId) : [];
     for (const job of jobs) {
-        const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result"] : [job.status === "completed" ? "result" : "original"];
+        const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result", "rim_original"] : [job.status === "completed" ? "result" : "original"];
         for (const kind of kinds) if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
     }
     scheduleRenderHistoryPolling();
@@ -9821,7 +9862,7 @@ window.dreamwheelsRenderBridge = {
             if (pending) void submitHistoryFeedback(jobId, pending.sentiment, pending.reason);
         } else if (action === "asset-retry") {
             const job = state.renderHistory.find((item) => item.job_id === jobId);
-            for (const kind of ["original", "result"]) {
+            for (const kind of ["original", "result", "rim_original"]) {
                 if (!job || !hasAssetLoadError(job, kind) || !assetDownloadUrlForJob(job, kind)) continue;
                 if (kind === "original") {
                     delete state.renderAssetSignedUrlsByJob[jobId];

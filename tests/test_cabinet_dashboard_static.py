@@ -288,19 +288,17 @@ def test_fitment_entrypoint_uses_compatibility_language() -> None:
     assert "Уточнить параметры" not in result_button
 
 
-def app_without_owner_approved_summary_separator() -> str:
-    # P3-B owner explicitly approved a middle dot in this one canonical wheel summary.
+def app_without_legacy_title_separator() -> str:
     snapshot = extract_function(APP_JS, "vnextFitmentSnapshot")
-    assert snapshot.count('join(" · ")') == 1
-    return APP_JS.replace(snapshot, snapshot.replace('join(" · ")', 'join(" – ")'))
+    assert 'join(" · ")' not in snapshot
+    assert 'join(" / ")' in snapshot
+    return APP_JS.replace("${title} · ${wheel}", "")
 
 
 def test_user_facing_ui_never_uses_middle_dot_as_separator() -> None:
     assert "middle dot (`·`)" in (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
     assert "·" not in INDEX_HTML
-    assert "·" not in app_without_owner_approved_summary_separator().replace(
-        "${title} · ${wheel}", ""
-    )
+    assert "·" not in app_without_legacy_title_separator()
 
 
 def test_fitment_panel_collapses_hidden_status_islands() -> None:
@@ -461,9 +459,7 @@ def test_design_code_defines_ui_separator_rules() -> None:
     assert '20" / 8,5J / 5×114,3' in design_code
     assert "Russian decimal values use a comma" in design_code
     assert "Vehicle and rim names use spaces only" in design_code
-    assert " · " not in app_without_owner_approved_summary_separator().replace(
-        "${title} · ${wheel}", ""
-    )
+    assert " · " not in app_without_legacy_title_separator()
     assert "vnextRimSpecs(rim)" in APP_JS
     assert '" / "' in APP_JS
 
@@ -636,7 +632,7 @@ def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> 
         "withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`)" not in APP_JS
     )
     assert "walletHistoryPage" in APP_JS
-    assert "PAYMENT_HISTORY_PAGE_SIZE = 10" in APP_JS
+    assert "PAYMENT_HISTORY_PAGE_SIZE = 3" in APP_JS
     assert 'data-wallet-action="more"' in WALLET_VIEW
     assert "data-wallet-history-pager" not in INDEX_HTML
     assert "vnext-wallet__history-row" in WALLET_CSS

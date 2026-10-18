@@ -8,11 +8,11 @@ import { resultMarkup, historyMarkup } from '../vnext/views/render.js';
 import { COPY, copy } from '../vnext/copy.mjs';
 const read=path=>fs.readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('P3-B Result preserves repeat/check/download order and secondary row without Fitment',()=>{
+test('P3-B Result uses download/check/repeat order and secondary row without Fitment',()=>{
  for(const canFitment of [true,false]){
   const html=resultMarkup({locale:'ru',status:'completed',jobId:'a',canFitment,canDownload:true,resultUrl:'/result',originalUrl:'/original',rimName:'BBS',rimSku:'2481081'});
-  assert.ok(html.indexOf('data-render-action="repeat"')<html.indexOf('data-render-action="download"'));
-  if(canFitment)assert.ok(html.indexOf('data-render-action="fitment"')<html.indexOf('data-render-action="download"'));
+  assert.ok(html.indexOf('data-render-action="download"')<html.indexOf('data-render-action="repeat"'));
+  if(canFitment)assert.ok(html.indexOf('data-render-action="download"')<html.indexOf('data-render-action="fitment"'));
   else assert.doesNotMatch(html,/data-render-action="fitment"/);
   assert.match(html,/vnext-result-secondary/);assert.match(html,/Артикул 2481081/);
  }
@@ -49,17 +49,21 @@ test('P3-B wheel values omit ET prefix and picker labels distinguish empty value
  }
 });
 
-test('P3-B completed History has group date once and time separate from specs',()=>{
- const rows=[1,2].map(id=>({jobId:String(id),status:'completed',title:'Car',rimName:'BBS',specs:'19 × 8,5J',dateLabel:'Сегодня',createdLabel:'Сегодня 10:34',timeLabel:'10:34',statusLabel:'Готово'}));
- const html=historyMarkup({locale:'ru',rows});assert.equal(html.split('Сегодня').length-1,1);
- assert.match(html,/>BBS · 19 × 8,5J<\/p>/);assert.match(html,/history-time">10:34/);assert.doesNotMatch(html,/Готово|vnext-status--positive/);
+test('History has an absolute date per card and omits wheel specs',()=>{
+ const rows=[1,2].map(id=>({jobId:String(id),status:'completed',title:'Car',rimName:'BBS',specs:'19 × 8,5J',historyCreatedLabel:'8 октября, 10:34'}));
+ const html=historyMarkup({locale:'ru',rows});assert.equal(html.split('8 октября').length-1,2);
+ assert.doesNotMatch(html,/BBS|19 ×|Готово|history-date/);
 });
 
 test('P3-B dashboard selects completed while keeping recent statuses and detects newer failed job',()=>{
  const source=read('../app.js');const completed={job_id:'old',status:'completed'},failed={job_id:'new',status:'failed'};
- const ctx={state:{renderHistory:[failed,completed],balance:3},locale:'ru',buildRenderExpiryCohorts:()=>[],formatRenderCount:String,vnextDashboardJobViewModel:x=>x,localizeErrorMessage:String,isFrontendUserAuthenticated:()=>true,isSupabasePartialAuth:()=>false};
+ const ctx={getAuthAccountPresentation:()=>({identifier:"@demo"}),state:{renderHistory:[failed,completed],balance:3},locale:'ru',buildRenderExpiryCohorts:()=>[],formatRenderCount:String,vnextDashboardJobViewModel:x=>x,localizeErrorMessage:String,isFrontendUserAuthenticated:()=>true,isSupabasePartialAuth:()=>false};
  vm.createContext(ctx);vm.runInContext(extractDeclaration(source,'vnextDashboardSnapshot')+'\nthis.snapshot=vnextDashboardSnapshot;',ctx);
  const snap=ctx.snapshot();assert.equal(snap.latest,completed);assert.equal(snap.latestFailed,true);assert.equal(snap.recent[0],failed);
+ assert.equal(snap.recent.includes(completed),false);
+ const older=[1,2,3].map(n=>({job_id:'older-'+n,status:'completed'}));
+ ctx.state.renderHistory=[completed,...older];assert.deepEqual(Array.from(ctx.snapshot().recent),older);
+ ctx.state.renderHistory=[completed];assert.equal(ctx.snapshot().recent.length,0);
  ctx.state.renderHistory=[failed];assert.equal(ctx.snapshot().latest,null);
 });
 

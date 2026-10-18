@@ -56,3 +56,15 @@ body.vnext-surface-active #app { width: 100%; max-width: none; min-height: 100vh
   .vnext-shell__bottom-button { min-height: 44px; border: 0; border-radius: 7px; background: transparent; color: var(--vnext-text-subtle); padding: 0 4px; font-size: 10px; font-weight: var(--vnext-weight-medium); }
   .vnext-shell__bottom-button[aria-current="page"] { color: var(--vnext-text); background: var(--vnext-surface-selected); }
 }
+
+/* UI-057: account identity and available renders share one settings target. */
+.vnext-shell__account-action { display: flex; align-items: center; gap: 10px; padding: 10px 8px; min-width: 0; border-radius: 12px; cursor: pointer; font: inherit; }
+.vnext-shell__account-action .vnext-shell__avatar { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border: 1px solid var(--vnext-border); border-radius: 10px; background: var(--vnext-surface-selected); color: var(--vnext-text); font-size: 12px; font-weight: 600; }
+.vnext-shell__account-copy { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.vnext-shell__account-identifier { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--vnext-text); font-size: 13px; }
+.vnext-shell__account-action small { font-size: 12px; color: var(--vnext-text-secondary); }
+.vnext-shell__account-action--mobile { display: none; }
+@media(max-width:700px) {
+ .vnext-shell__account-action--mobile { display: flex; flex: 0 0 auto; width: 44px; height: 44px; padding: 4px; }
+ .vnext-shell__account-action--mobile .vnext-shell__account-copy { display: none; }
+}

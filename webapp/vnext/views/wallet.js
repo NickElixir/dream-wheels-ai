@@ -7,20 +7,20 @@ const legalOrigin = "https://legal.dreamwheels.pro";
 
 function legalMarkup(locale) {
   const links = Object.fromEntries(["offer", "refund", "privacy"].map(name => [name, `<a href="${legalOrigin}/legal/${name}" target="_blank" rel="noopener noreferrer" data-external-link>${esc(uiText(`wallet.legal.${name}`, locale))}</a>`]));
-  return esc(uiText("wallet.legal.acceptance", locale)).replace(/\{(offer|refund|privacy)\}/g, (_, name) => links[name]);
+  return `${locale === "ru" ? "Продолжая, вы принимаете:" : "By continuing, you accept:"}<ul>${["offer", "refund", "privacy"].map(name => `<li>${links[name]}</li>`).join("")}</ul>`;
 }
 
 function expiryRows(items) {
-  return items.map((item) => `<div class="vnext-wallet__expiry-row"><span>${esc(item.creditsLabel)}${item.meta ? `<small>${esc(item.meta)}</small>` : ""}</span><strong>${esc(item.expiresLabel)}</strong></div>`).join("");
+  return items.map((item) => `<div class="vnext-wallet__expiry-row"><span>${esc(item.creditsLabel)}</span><strong>${esc(item.expiresLabel)}</strong></div>`).join("");
 }
 
 function historyRows(items, locale = applicationLocale()) {
   if (!items.length) return `<p class="vnext-wallet__empty">${esc(uiText("wallet.history.empty", locale))}</p>`;
-  return items.map((item) => `<div class="vnext-wallet__history-row"><div class="vnext-wallet__history-main"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span><small><span>${esc(item.dateLabel)}</span><span>#${esc(item.invoiceId)}</span></small></div><span class="vnext-wallet__history-status vnext-wallet__history-status--${esc(item.tone)}">${esc(item.statusLabel)}</span></div>`).join("");
+  return items.map((item) => `<div class="vnext-wallet__history-row"><div class="vnext-wallet__history-main"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span><small><span>${esc(String(item.dateLabel || "").replace(/(\d{2}:\d{2}):\d{2}/, "$1"))}</span><span>#${esc(item.invoiceId)}</span></small></div><span class="vnext-wallet__history-status vnext-wallet__history-status--${esc(item.tone)}">${esc(item.statusLabel)}</span></div>`).join("");
 }
 
 function packageChoices(items) {
-  return items.map((item) => `<button type="button" class="vnext-wallet__package" data-wallet-package="${esc(item.amount)}" aria-pressed="false"><strong>${esc(item.amountLabel)}</strong><span>${esc(item.creditsLabel)}</span></button>`).join("");
+  return items.map((item) => `<button type="button" class="vnext-wallet__package" data-wallet-package="${esc(item.amount)}" aria-pressed="false"><strong>${esc(item.creditsLabel)}</strong><span>${esc(item.amountLabel)}</span></button>`).join("");
 }
 
 export function createWalletView(model = {}, callbacks = {}) {
@@ -51,7 +51,7 @@ export function createWalletView(model = {}, callbacks = {}) {
           <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>${esc(uiText("wallet.chooseAPackage", localeOf(model)))}</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-duration hidden></span><span data-wallet-selection-email hidden></span></div>
           <button type="button" class="vnext-button vnext-button--primary vnext-wallet__pay" data-wallet-action="pay" disabled>${esc(uiText("wallet.proceedToCheckout", localeOf(model)))}</button>
           <p class="vnext-wallet__provider">${esc(uiText("wallet.paymentViaRobokassa", localeOf(model)))}</p>
-          <p class="vnext-wallet__legal">${legalMarkup(localeOf(model))}</p>
+          <div class="vnext-wallet__legal">${legalMarkup(localeOf(model))}</div>
         </section>
       </div>
       <aside class="vnext-wallet__pending" data-wallet-pending hidden aria-label="${esc(uiText("wallet.payment.pendingAria", localeOf(model)))}">
@@ -62,6 +62,23 @@ export function createWalletView(model = {}, callbacks = {}) {
       </aside>
     </section>
     <section class="vnext-wallet__history" aria-labelledby="wallet-history-title"><h2 id="wallet-history-title">${esc(uiText("wallet.topUpHistory", localeOf(model)))}</h2><div data-wallet-history></div><button type="button" class="vnext-text-action" data-wallet-action="more" hidden>${esc(uiText("render.showMore", localeOf(model)))}</button></section>`;
+
+  const primary = root.querySelector(".vnext-wallet__primary");
+  const topup = root.querySelector(".vnext-wallet__topup");
+  const history = root.querySelector(".vnext-wallet__history");
+  root.append(history);
+  const balance = root.querySelector(".vnext-wallet__balance");
+  const expiry = balance.querySelector(".vnext-wallet__expiry");
+  primary.append(expiry);
+  const checkout = document.createElement("div");
+  checkout.className = "vnext-wallet__checkout";
+  const field = topup.querySelector(".vnext-wallet__field");
+  field.before(checkout);
+  checkout.append(field, topup.querySelector(".vnext-wallet__selection"), topup.querySelector(".vnext-wallet__pay"));
+  root.querySelector(".vnext-wallet__main").after(topup);
+  history.querySelector("h2").textContent = localeOf(model) === "ru" ? "История платежей" : "Payment history";
+  history.querySelector('[data-wallet-action="more"]').remove();
+  history.insertAdjacentHTML("beforeend", `<nav class="vnext-wallet__pagination" aria-label="${localeOf(model) === "ru" ? "Страницы платежей" : "Payment pages"}"><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="previous" aria-label="${localeOf(model) === "ru" ? "Предыдущая страница" : "Previous page"}">←</button><span data-wallet-page aria-live="polite"></span><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="more" aria-label="${localeOf(model) === "ru" ? "Следующая страница" : "Next page"}">→</button></nav>`);
 
   root.addEventListener("click", (event) => {
     const choice = event.target.closest?.("[data-wallet-package]");
@@ -74,6 +91,7 @@ export function createWalletView(model = {}, callbacks = {}) {
     if (action.dataset.walletAction === "pay") callbacks.createPayment?.();
     else if (action.dataset.walletAction === "refresh") callbacks.refreshPayment?.();
     else if (action.dataset.walletAction === "more") callbacks.showMoreHistory?.();
+    else if (action.dataset.walletAction === "previous") callbacks.previousHistoryPage?.();
     else if (action.dataset.walletAction === "login") callbacks.login?.();
   });
   root.querySelector("[data-topup-email]").addEventListener("input", (event) => callbacks.setReceiptEmail?.(event.target.value));
@@ -127,7 +145,7 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
   setHidden("[data-wallet-email-error]", !model.emailError);
   setText("[data-wallet-email-error]", model.emailError);
   const selection = model.selectedPackage;
-  setHidden("[data-wallet-selection-title]", Boolean(selection));
+  setHidden("[data-wallet-selection-title]", true);
   for (const selector of ["[data-wallet-selection-amount]", "[data-wallet-selection-credits]", "[data-wallet-selection-duration]", "[data-wallet-selection-email]"]) setHidden(selector, !selection);
   setText("[data-wallet-selection-amount]", selection?.amountLabel);
   setText("[data-wallet-selection-credits]", selection?.creditsLabel);
@@ -135,7 +153,7 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
   setText("[data-wallet-selection-email]", selection ? model.receiptEmail || "—" : "");
   const pay = one('[data-wallet-action="pay"]');
   pay.disabled = !authenticated || !selection || !model.validEmail || Boolean(model.interactionBusy);
-  pay.textContent = model.paymentBusy ? uiText("wallet.openingCheckout", locale) : uiText("wallet.proceedToCheckout", locale);
+  pay.textContent = model.paymentBusy ? uiText("wallet.openingCheckout", locale) : (selection ? `${locale === "ru" ? "Оплатить" : "Pay"} ${selection.amountLabel}` : uiText("wallet.proceedToCheckout", locale));
 
   const pending = model.latestPendingPayment;
   setHidden("[data-wallet-pending]", !pending);
@@ -149,6 +167,11 @@ export function refreshWalletView(root, model = {}, locale = localeOf(model)) {
 
   const historyMarkup = !authenticated || !model.cabinetLoaded ? "" : historyRows(model.paymentHistory || [], locale);
   if (one("[data-wallet-history]").innerHTML !== historyMarkup) one("[data-wallet-history]").innerHTML = historyMarkup;
-  setHidden('[data-wallet-action="more"]', !model.hasMoreHistory);
+  const page = model.historyPage || 0;
+  const pages = model.historyPages || 1;
+  setText("[data-wallet-page]", locale === "ru" ? `${page + 1} из ${pages}` : `${page + 1} of ${pages}`);
+  one('[data-wallet-action="previous"]').disabled = page <= 0;
+  one('[data-wallet-action="more"]').disabled = !model.hasMoreHistory;
+  setHidden(".vnext-wallet__pagination", !authenticated || !model.paymentHistory?.length);
   return root;
 }

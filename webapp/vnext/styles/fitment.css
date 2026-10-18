@@ -291,3 +291,86 @@ body.vnext-surface-active [data-view="fitment"] > :not([data-vnext-surface-root]
   .vnext-fitment__topline h1 { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 }
 @media(max-width:400px) { .vnext-fitment__table-vehicle-full { display:none; } .vnext-fitment__table-vehicle-short { display:inline; } }
+
+/* UI-048: shared visual treatment only; no fitment state/action changes. */
+.vnext-fitment__pair { gap: 28px; }
+.vnext-fitment__object, .vnext-fitment__object--editing { padding: 0; border: 0; background: transparent; }
+.vnext-fitment__stage, .vnext-fitment__stage--wheel { background: transparent; border-radius: 12px; }
+.vnext-fitment__stage img { padding: 0; width: auto; max-width: 100%; left: 50%; right: auto; transform: translateX(-50%); border-radius: 12px; }
+.vnext-fitment__source-row .vnext-button { min-height: 36px; font-size: 13px; background: var(--vnext-surface-elevated); color: var(--vnext-text); border-color: var(--vnext-border-strong); border-radius: 8px; }
+.vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__standard { border-radius: 12px; }
+.vnext-shell__frame:has(.vnext-fitment) .vnext-shell__topbar { border-bottom: 0; }
+@media(max-width:700px) { .vnext-fitment__source-row .vnext-button { min-height: 44px; } }
+
+/* UI-049: entity islands group their independent data/actions. */
+.vnext-fitment__object { padding: 20px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface); }
+.vnext-fitment__object--editing { border-color: var(--vnext-border-strong); background: var(--vnext-surface-elevated); }
+.vnext-fitment__field-message { font-size: 14px; }
+.vnext-fitment__previous-check { margin-top: 16px; }
+.vnext-fitment__previous-check > summary { cursor: pointer; color: var(--vnext-text-secondary); padding: 12px 0; }
+
+/* UI-051: approved style alignment without flow changes. */
+.vnext-fitment__object, .vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__result-panel, .vnext-fitment__standard { padding: 24px; border-radius: 12px; }
+.vnext-fitment__source-row p, .vnext-fitment__source-row small, .vnext-fitment__object-detail, .vnext-fitment__identity-code, .vnext-fitment__progress, .vnext-fitment__configuration > small, .vnext-fitment__configuration > span, .vnext-fitment__choice-copy small, .vnext-fitment__field-message { font-size: 14px; line-height: 1.45; }
+.vnext-fitment__field > label, .vnext-fitment__field > span, .vnext-fitment__compound-field > span { font-size: 15px; }
+.vnext-fitment__source-row .vnext-button { min-height: 36px; padding-inline: 13px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+.vnext-fitment__choice, .vnext-fitment__sku-row { border-radius: 12px; }
+.vnext-fitment__choice:hover, .vnext-fitment__sku-row:hover { background: var(--vnext-surface-elevated); box-shadow: inset 0 0 0 1px var(--vnext-border-strong); }
+.vnext-fitment__choice[aria-pressed="true"], .vnext-fitment__sku-row[aria-pressed="true"] { background: var(--vnext-surface-selected); box-shadow: inset 0 0 0 1px var(--vnext-border-selected); }
+@media(max-width:700px) {
+ .vnext-fitment__object, .vnext-fitment__editor, .vnext-fitment__variant-step, .vnext-fitment__recognition, .vnext-fitment__result-panel, .vnext-fitment__standard { padding: 16px; }
+ .vnext-fitment__source-row .vnext-button { min-height: 44px; }
+}
+
+/* UI-052: distinguish photo references from editable catalogue identities. */
+.vnext-fitment__photo-caption { margin: 8px 0 0; color: var(--vnext-text-subtle); font-size: 14px; line-height: 1.45; }
+.vnext-fitment__model-label { margin: 20px 0 0; color: var(--vnext-text-secondary); font-size: 14px; }
+.vnext-fitment__model-label + h2 { margin-top: 4px; }
+.vnext-fitment__source-action { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.vnext-fitment__source-action .vnext-button { min-height: 44px; padding: 8px 10px; font-size: 14px; line-height: 1.35; }
+.vnext-fitment__source-action .vnext-button:only-child { grid-column: auto; }
+.vnext-fitment__configuration { margin-top: 20px; justify-items: start; gap: 8px; }
+/* UI-053: version selection stays inside the vehicle card. */
+.vnext-fitment__configuration { display: block; }
+.vnext-fitment__configuration-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 16px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface-elevated); color: var(--vnext-text); font: inherit; text-align: left; }
+button.vnext-fitment__configuration-row { cursor: pointer; }
+button.vnext-fitment__configuration-row:hover { border-color: var(--vnext-border-strong); }
+button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(--vnext-focus); outline-offset: 3px; }
+.vnext-fitment__configuration-copy { display: grid; justify-items: start; gap: 8px; min-width: 0; }
+.vnext-fitment__configuration-copy .vnext-fitment__model-label { margin: 0; }
+.vnext-fitment__configuration-copy strong { font-size: 18px; overflow-wrap: anywhere; }
+.vnext-fitment__configuration-copy small { font-size: 14px; color: var(--vnext-text-secondary); }
+.vnext-fitment__confirmed-chip { padding: 4px 9px; border-radius: 999px; background: var(--vnext-surface-selected); color: var(--vnext-text-secondary); font-size: 13px; }
+.vnext-fitment__configuration--open .vnext-fitment__variant-step { padding: 16px; }
+.vnext-fitment__configuration--open .vnext-fitment__choice { padding: 12px; }
+.vnext-fitment__configuration--open .vnext-fitment__paired-actions { display: flex; }
+.vnext-fitment__configuration--open .vnext-fitment__paired-actions > button { flex: 1 1 120px; padding-inline: 10px; white-space: normal; }
+.vnext-fitment__configuration--open h2 { font-size: 19px; }
+
+/* UI-054: inline source form and restrained state transitions. */
+.vnext-fitment__link-island { display: grid; gap: 14px; margin-top: 20px; padding: 16px; border: 1px solid var(--vnext-border); border-radius: 12px; background: var(--vnext-surface-elevated); }
+.vnext-fitment__link-island .vnext-fitment__field { margin: 0; width: 100%; }
+.vnext-fitment__link-island input { width: 100%; min-width: 0; }
+.vnext-fitment__link-island > button { justify-self: start; min-height: 44px; white-space: normal; }
+.vnext-fitment__manual-action { margin-top: 14px; }
+.vnext-fitment__manual-action > button { min-height: 44px; }
+.vnext-fitment__choice { transition: background-color 160ms ease, box-shadow 160ms ease; }
+@media(prefers-reduced-motion:reduce) { .vnext-fitment__choice { transition: none; } }
+
+.vnext-fitment h2[tabindex="-1"]:focus { outline: none; }
+
+/* UI-055: source controls belong directly to the wheel card. */
+.vnext-fitment__link-island { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.vnext-fitment__link-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.vnext-fitment__link-actions > button { flex: 1 1 160px; min-height: 44px; padding: 8px 10px; white-space: normal; }
+.vnext-fitment__saved-specs { margin: 8px 0 0; color: var(--vnext-text-secondary); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.vnext-fitment__save-toast { position: fixed; z-index: 100; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 12px 18px; border: 1px solid var(--vnext-border-strong); border-radius: 12px; background: var(--vnext-surface-selected); color: var(--vnext-text); box-shadow: 0 8px 24px #0004; pointer-events: none; }
+@media(max-width:700px) { .vnext-fitment__save-toast { bottom: calc(90px + env(safe-area-inset-bottom)); } }
+
+/* UI-056: emphasize verdict meaning without changing layout. */
+.vnext-fitment { --vnext-fitment-positive: #a8d8bd; --vnext-fitment-warning: #e6c58b; --vnext-fitment-negative: #f0abab; }
+.vnext-fitment__verdict h2 { font-weight: var(--vnext-weight-semibold); }
+.vnext-fitment__verdict--compatible h2, .vnext-fitment__row-result--pass { color: var(--vnext-fitment-positive); }
+.vnext-fitment__verdict--compatible_with_conditions h2, .vnext-fitment__verdict--stale h2, .vnext-fitment__row-result--conditional { color: var(--vnext-fitment-warning); }
+.vnext-fitment__verdict--incompatible h2, .vnext-fitment__verdict--failed h2, .vnext-fitment__row-result--fail { color: var(--vnext-fitment-negative); }
+.vnext-fitment__verdict--unknown h2 { color: var(--vnext-text); }

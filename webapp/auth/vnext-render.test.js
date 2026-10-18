@@ -130,19 +130,20 @@ test("Result keeps its desktop grid and stacks comparison before a bounded aside
 
 test("Result actions keep the primary and Fitment CTAs, expose secondary download, and omit redundant History navigation", () => {
   const markup = resultMarkup({ jobId: "A", status: "completed", title: "ZEEKR 007", vehicleConfirmed: true, rimName: "X-Trike", specs: "20″ / 9J / 5×112", createdLabel: "25 сентября, 14:32", resultUrl: "/result", originalUrl: "/original", canFitment: true, canDownload: true });
-  assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-aside"'));
-  assert.match(markup, /Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?Диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Создано[\s\S]*?25 сентября, 14:32/);
+  assert.ok(markup.indexOf('class="vnext-result-header"') < markup.indexOf('class="vnext-compare"'));
+  assert.ok(markup.indexOf('class="vnext-compare"') < markup.indexOf('class="vnext-result-actions"'));
+  assert.match(markup, /Колёсный диск[\s\S]*?X-Trike[\s\S]*?20″ \/ 9J \/ 5×112[\s\S]*?Автомобиль[\s\S]*?ZEEKR 007[\s\S]*?25 сентября, 14:32/);
   assert.ok(markup.indexOf('aria-label="Оценка результата"') > markup.indexOf('class="vnext-result-layout"'));
-  assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
+  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="repeat"[^>]*>Создать ещё вариант/);
   assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="fitment"[^>]*><span[^>]*>Проверить совместимость/);
-  assert.match(markup, /class="vnext-button vnext-button--secondary[^>]*data-render-action="download"[^>]*><svg[^>]*aria-hidden="true"[^>]*><path[\s\S]*?Скачать/);
+  assert.match(markup, /class="vnext-button vnext-button--primary[^>]*data-render-action="download"[^>]*><svg[^>]*aria-hidden="true"[^>]*><path[\s\S]*?Скачать/);
   assert.doesNotMatch(markup, /К моим примеркам|Скачать изображение/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="liked"[^>]*>Удачный результат/);
   assert.match(markup, /data-render-action="feedback"[^>]*data-value="disliked"[^>]*>Нужна доработка/);
   assert.match(markup, /class="vnext-result-value">ZEEKR 007/);
   assert.match(markup, /class="vnext-result-value">X-Trike/);
   assert.match(markup, /class="vnext-result-detail">20″ \/ 9J \/ 5×112/);
-  assert.match(markup, /class="vnext-result-value vnext-result-value--date">25 сентября, 14:32/);
+  assert.match(markup, /class="vnext-result-date">25 сентября, 14:32/);
   assert.doesNotMatch(markup, /class="vnext-result-aside"><p class="vnext-eyebrow">Виртуальная примерка/);
   assert.doesNotMatch(markup, /👍|👎/);
   const sparse = resultMarkup({ jobId: "B", status: "completed", resultUrl: "/result", originalUrl: "/original" });
@@ -202,17 +203,12 @@ test("Generation Error uses available car/wheel context and preserves its existi
   assert.ok(markup.indexOf('class="vnext-generation-media"') < markup.indexOf('class="vnext-generation-aside"'));
 });
 
-test("History rows share inset and thumbnail grid at mobile widths", () => {
-  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J / 5×112", dateLabel: "25 сентября", createdLabel: "25 сентября, 14:32", timeLabel: "14:32", statusLabel: "Готово" }] });
-  assert.match(markup, /<h3>ZEEKR 007<\/h3>[\s\S]*?<p>X-Trike · 20″ \/ 9J \/ 5×112<\/p>[\s\S]*?<p class="vnext-history-time">14:32<\/p>/);
-  assert.doesNotMatch(markup, /vnext-status--positive|25 сентября, 14:32/);
-  const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
-  assert.match(css, /\.vnext-history-row h3\s*\{[^}]*color:var\(--vnext-text-value\)/);
-  assert.match(css, /\.vnext-history-date\s*\{[^}]*color:var\(--vnext-text-secondary\)/);
-  assert.match(css, /\.vnext-history-row\s*\{[^}]*padding:16px/);
-  assert.match(css, /@media\(max-width:390px\)/);
-  assert.match(css, /\.vnext-history-row\s*\{[^}]*grid-template-columns:88px minmax\(0,1fr\); gap:14px; align-items:start; padding:16px/);
-  assert.match(css, /\.vnext-history-actions\s*\{[^}]*grid-column:2/);
+test("History gallery shows absolute card date, hides specs and grouping, and links the preview", () => {
+  const markup = historyMarkup({ rows: [{ jobId: "A", status: "completed", title: "ZEEKR 007", rimName: "X-Trike", specs: "20″ / 9J", historyCreatedLabel: "25 сентября, 14:32" }], hasMore:true });
+  assert.match(markup, /href="\/try-ons\/A"[^>]*data-render-action="open"/);
+  assert.match(markup, /history-time">25 сентября, 14:32/);
+  assert.doesNotMatch(markup, /X-Trike|20″|history-date|>Открыть</);
+  assert.match(markup, /vnext-history-more/);
 });
 
 test("Processing preserves status hierarchy while separating selected wheel identity from specs", () => {
@@ -462,8 +458,9 @@ test("pure presentation covers real statuses, empty/error, feedback and unavaila
   assert.match(historyMarkup({ error: "network" }), /Повторить/);
   for (const status of ["completed", "processing", "queued", "failed"]) {
     const markup = historyMarkup({ rows: [{ jobId: "A", status, title: "Zeekr" }] });
-    assert.equal(markup.includes('data-render-action="open"'), status === "completed");
-    assert.equal(markup.includes('data-render-action="retry-create"'), status === "failed");
+    assert.equal(markup.includes('data-render-action="open"'), true);
+    if(status !== 'completed') assert.match(markup, /role="status"/);
+    assert.equal(markup.includes('data-render-action="retry-create"'), false);
   }
   const viewSource = fs.readFileSync(new URL("../vnext/views/render.js", import.meta.url), "utf8");
   assert.doesNotMatch(viewSource, /fetch\(|setInterval\(|setTimeout\(/);
@@ -545,4 +542,26 @@ test("user retry submits a new generation key and preserves the old failed Histo
   assert.equal(app.state.renderHistory[0],old);
   assert.equal(old.status,"failed");
   assert.equal(old.render_billing_status,"refunded");
+});
+
+test("Result wheel reference is optional, escaped, and reports an unavailable photo",()=>{
+ const base={jobId:'A',status:'completed',locale:'ru'};
+ assert.doesNotMatch(resultMarkup(base),/class="vnext-result-wheel"/);
+ const loaded=resultMarkup({...base,wheelUrl:'blob:wheel',wheelAvailable:true});
+ assert.match(loaded,/КОЛ|Колёсный диск/);
+ assert.match(loaded,/src="blob:wheel"[^>]*data-render-image="rim_original"/);
+ const failed=resultMarkup({...base,wheelAvailable:true,wheelFailed:true,failureCopy:{assetUnavailable:'Photo unavailable'}});
+ assert.match(failed,/Photo unavailable/);assert.doesNotMatch(failed,/src="undefined"/);
+});
+
+test("private wheel reference uses Authorization fetch and remains separate from result",async()=>{
+ const app=runtime();const owned={...job('A'),assets:{rim_original:{download_url:'/jobs/A/assets/rim_original/download'}}};
+ app.state.renderHistory=[owned];app.state.renderDetailJobId='A';
+ let request;app.setObjectURL(()=> 'blob:wheel');
+ app.setFetch(async(url,options)=>{request={url,options};return {ok:true,blob:async()=>new Blob(['wheel'])};});
+ assert.equal(await app.ensureAssetBlobUrl(owned,'rim_original'),'blob:wheel');
+ assert.equal(request.url,'/jobs/A/assets/rim_original/download');
+ assert.equal(request.options.headers.Authorization,'Bearer test-token');
+ assert.equal(app.state.renderAssetBlobUrlsByJob.A.result,undefined);
+ assert.equal(app.bridge.snapshot('result').wheelUrl,'blob:wheel');
 });

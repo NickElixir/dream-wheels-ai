@@ -29,6 +29,11 @@ class ElementStub {
     visit(this);
     return result;
   }
+  querySelector(selector) {
+    if (selector === ".vnext-create__status--positive") return this.find(n => n.className?.includes("vnext-create__status--positive"));
+    const key = selector.match(/data-create-focus="([^"]+)"/);
+    return key ? this.find(n => n.dataset.createFocus === key[1] && !n.disabled) : null;
+  }
   dispatchEvent(event) { this.listeners[event.type]?.(event); }
   focus() { document.activeElement = this; }
   setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
@@ -81,7 +86,7 @@ test('legacy recognition/provider states and verdicts cannot gate visual render'
 
 test('product URL save delegates storage and explains deferred Fitment ownership',()=>{
   let saved;const view=createCreateView({...ready,sourceEditing:true},{saveRimProductUrl:value=>saved=value});
-  assert.match(view.allText,/Сохраним её для последующей проверки совместимости/);
+  assert.match(view.allText,/Для будущей проверки совместимости с автомобилем/);
   assert.doesNotMatch(view.allText,/Определить параметры|Получаем данные/);
   const input=view.find(n=>n.name==='rim_product_url');input.value='https://shop.example/wheel';
   view.find(n=>n.textContent==='Сохранить ссылку').listeners.click();
@@ -96,7 +101,7 @@ test('picker and consent callbacks remain functional',()=>{
 
 test('Create preserves RU/EN language selection',()=>{
   const view=createCreateView({...ready,locale:'en',sourceEditing:true});
-  assert.match(view.allText,/Create image/);assert.match(view.allText,/later compatibility check/);
+  assert.match(view.allText,/Create image/);assert.match(view.allText,/compatibility check/);
   assert.doesNotMatch(view.allText,/Ссылка на товар|Создать изображение/);
 });
 
@@ -107,4 +112,25 @@ test('invalid optional URL has accessible field feedback while Create stays enab
   assert.equal(field.attributes['aria-invalid'],'true');
   assert.equal(field.attributes['aria-describedby'],'create-product-url-error');
   assert.equal(view.find(node=>node.tagName==='button' && node.textContent==='Создать изображение').disabled,false);
+});
+
+
+test("saved product URL feedback survives refresh without synthetic input, then follows user edits", () => {
+  const snapshot = {...ready, rimProductUrl:"https://example.com/wheel"};
+  let view = createCreateView(snapshot);
+  let events=0;
+  view.find(n=>n.name==="rim_product_url").addEventListener("input",()=>events++);
+  view=refreshCreateView(view,snapshot,{});
+  const input=view.find(n=>n.name==="rim_product_url");
+  const saved=view.find(n=>n.className?.includes("vnext-create__status--positive"));
+  assert.equal(events,0);
+  assert.equal(saved.hidden,false);
+  input.value="https://example.com/other";input.dispatchEvent(new Event("input"));
+  assert.equal(saved.hidden,true);
+});
+
+for (const key of ["consent","photo-car","stage-wheel","save-link"]) test(`Create retains ${key} focus on redraw`,()=>{
+  let view=createCreateView(ready);view.find(n=>n.dataset.createFocus===key).focus();
+  view=refreshCreateView(view,ready,{});
+  assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus===key));
 });
