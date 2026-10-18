@@ -31,7 +31,7 @@ export function processingMarkup(model) {
 export function resultMarkup(model) {
   if (!model.jobId) {
     if (model.loading) return `<section class="vnext-system-card" role="status" aria-busy="true"><div class="vnext-render-loading"><i class="vnext-spinner" aria-hidden="true"></i><span>${esc(uiText("render.loadingTryOn", localeOf(model)))}</span></div></section>`;
-    return `<section class="vnext-system-card vnext-result-recovery" role="status"><h1>${esc(uiText(model.error ? "render.detailLoadFailed" : "render.tryOnNotFound", localeOf(model)))}</h1>${model.error ? `<p>${esc(model.error)}</p>` : `<p>${esc(uiText("render.tryOnNotFoundHint", localeOf(model)))}</p>`}<div class="vnext-result-recovery-actions">${model.requestedJobId ? button(uiText("create.retry", localeOf(model)), "detail-retry", { jobId: model.requestedJobId }) : ""}${button(uiText("render.backToMyTryOns", localeOf(model)), "history")}</div></section>`;
+    return `<section class="vnext-system-card vnext-result-recovery" role="status"><h1 tabindex="-1">${esc(uiText(model.error ? "render.detailLoadFailed" : "render.tryOnNotFound", localeOf(model)))}</h1>${model.error ? `<p>${esc(model.error)}</p>` : `<p>${esc(uiText("render.tryOnNotFoundHint", localeOf(model)))}</p>`}<div class="vnext-result-recovery-actions">${model.requestedJobId ? button(uiText("create.retry", localeOf(model)), "detail-retry", { jobId: model.requestedJobId }) : ""}${button(uiText("render.backToMyTryOns", localeOf(model)), "history")}</div></section>`;
   }
   if (model.status !== "completed") return processingMarkup(model);
   const feedback = model.feedback || {};

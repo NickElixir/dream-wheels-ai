@@ -171,3 +171,9 @@ for (const userMoved of [false,true]) {
     assert.equal(focusCalls,userMoved?0:1);
   });
 }
+
+test('error heading declares programmatic focusability in reconciled markup', () => {
+  for (const locale of ['ru','en']) for(const error of ['', 'Request failed']) {
+    assert.match(resultMarkup({locale,error,requestedJobId:'missing'}),/<h1 tabindex="-1">/);
+  }
+});
