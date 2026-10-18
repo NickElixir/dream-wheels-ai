@@ -2263,6 +2263,62 @@ function loadAuthDialogTurnstile() {
     document.head.append(script);
 }
 
+function syncAuthDialogFocus(dialog) {
+    const session = dialog.authFocusSession;
+    const visible = (element) => element?.isConnected && !element.closest("[hidden], [inert]")
+        && !element.disabled && element.getClientRects().length > 0;
+    if (!state.authDialogOpen) {
+        if (!session) return;
+        document.removeEventListener("keydown", session.keydown, true);
+        document.removeEventListener("focusin", session.focusin, true);
+        session.background.forEach((wasInert, element) => { element.inert = wasInert; });
+        delete dialog.authFocusSession;
+        const returnTarget = visible(session.opener) ? session.opener
+            : [...document.querySelectorAll("[data-application-auth-gate-login], [data-website-auth-button], [data-dashboard-auth-login], .vnext-shell__login, .vnext-shell__account-action")].find(visible);
+        returnTarget?.focus({ preventScroll: true });
+        return;
+    }
+    const controls = () => [...dialog.querySelectorAll('button, input, select, textarea, a[href], iframe, [tabindex]')]
+        .filter(element => element.tabIndex >= 0 && visible(element));
+    const focusInside = () => {
+        const preferred = dialog.querySelector(state.authDialogStep === "restored" ? "[data-auth-continue]"
+            : state.authDialogStep === "otp" ? "[data-auth-otp]" : "[data-auth-email]");
+        (visible(preferred) ? preferred : controls()[0])?.focus({ preventScroll: true });
+    };
+    if (!session) {
+        const nextSession = { opener: document.activeElement, background: new Map() };
+        nextSession.keydown = (event) => {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!state.authDialogBusy && !state.websiteLoginPending) closeAuthDialog();
+            } else if (event.key === "Tab") {
+                const items = controls();
+                const first = items[0];
+                const last = items[items.length - 1];
+                if (!first) { event.preventDefault(); return; }
+                if (!dialog.contains(document.activeElement) || event.shiftKey && document.activeElement === first
+                    || !event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    (event.shiftKey ? last : first).focus();
+                }
+            }
+        };
+        nextSession.focusin = (event) => { if (!dialog.contains(event.target)) focusInside(); };
+        dialog.authFocusSession = nextSession;
+        document.addEventListener("keydown", nextSession.keydown, true);
+        document.addEventListener("focusin", nextSession.focusin, true);
+    }
+    // The shell may be replaced while authentication is open; isolate new siblings too.
+    for (const element of document.body.children) {
+        if (element === dialog || element.contains(dialog)) continue;
+        const background = dialog.authFocusSession.background;
+        if (!background.has(element)) background.set(element, element.inert);
+        element.inert = true;
+    }
+    if (!dialog.contains(document.activeElement) || !visible(document.activeElement)) focusInside();
+}
+
 function renderAuthDialog() {
     const dialog = document.querySelector("[data-auth-dialog]");
     const emailForm = document.querySelector("[data-auth-email-form]");
@@ -2277,7 +2333,6 @@ function renderAuthDialog() {
     const otpDestination = document.querySelector("[data-auth-otp-destination]");
     const descriptionLine1 = document.querySelector("[data-auth-description-line1]");
     const descriptionLine2 = document.querySelector("[data-auth-description-line2]");
-    const resendPrompt = document.querySelector("[data-auth-resend-prompt]");
     const telegramAlternative = document.querySelector("[data-auth-telegram]");
     const emailAlternative = document.querySelectorAll("[data-auth-email-alternative]");
     const initialOnly = document.querySelectorAll("[data-auth-initial-only]");
@@ -2306,7 +2361,7 @@ function renderAuthDialog() {
                 : isChangeEmailStep
                     ? t("auth.changeEmailTitle")
                     : t("auth.dialogTitle");
-    if (description) description.hidden = isRestoredStep;
+    if (description) description.hidden = !isRestoringStep && !isChangeEmailStep;
     if (descriptionLine1) descriptionLine1.textContent = isOtpStep
         ? t("auth.otpSentTo")
         : isRestoringStep
@@ -2333,10 +2388,9 @@ function renderAuthDialog() {
     if (emailLabel) emailLabel.textContent = t("auth.emailLabel");
     if (otpLabel) otpLabel.textContent = t("auth.codeLabel");
     if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
-    if (verifyButton) verifyButton.textContent = t("auth.verify");
+    if (verifyButton) verifyButton.textContent = t(state.authDialogBusy && isOtpStep ? "auth.loggingIn" : "auth.verify");
     if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
     if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
-    if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
         if (legalLink) {
@@ -2356,6 +2410,8 @@ function renderAuthDialog() {
     initialOnly.forEach((element) => {
         element.hidden = !isInitialEmailStep;
     });
+    const otpSentCopy = document.querySelector("[data-auth-otp-sent-copy]");
+    if (otpSentCopy) otpSentCopy.textContent = t("auth.otpSentTo");
     if (otpDestination) {
         otpDestination.textContent = isOtpStep && state.authDialogEmail
             ? maskAuthEmail(state.authDialogEmail)
@@ -2408,6 +2464,7 @@ function renderAuthDialog() {
     document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
     updateAuthDialogCooldown();
     if (state.authDialogOpen && ["email", "change-email"].includes(state.authDialogStep)) loadAuthDialogTurnstile();
+    syncAuthDialogFocus(dialog);
 }
 
 function openAuthDialog() {
@@ -2439,6 +2496,7 @@ function openAuthDialog() {
         });
     }
     window.requestAnimationFrame(() => {
+        if (!state.authDialogOpen) return;
         const selector = state.authDialogStep === "restored"
             ? "[data-auth-continue]"
             : state.authDialogStep === "otp"

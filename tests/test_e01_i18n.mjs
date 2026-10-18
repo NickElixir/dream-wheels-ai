@@ -62,7 +62,7 @@ test('E-01: error codes are localized, unknown codes are neutral and safe text i
 test('P2-A: legacy catalogue digest is a secondary reviewed-change detector',()=>{
  const canonical=value=>value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
  // Semantic groups, leaves, intentional empties and concepts are checked independently below.
- assert.equal(createHash('sha256').update(JSON.stringify(canonical(legacyTranslations()))).digest('hex'),'fca177956b5d3d0c516c55301831048ad5a9b1a1905e793df69fd514b1d49c50');
+ assert.equal(createHash('sha256').update(JSON.stringify(canonical(legacyTranslations()))).digest('hex'),'43546374ddf20aa94c5eca5d73edfe94e119e296218ec166090428fa78614d54');
 });
 
 test('E-01 corrective: every dynamic reason/error mapping exists and resolves in RU/EN',()=>{

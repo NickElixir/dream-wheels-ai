@@ -790,16 +790,13 @@
     </div>
 
     <div class="auth-dialog-backdrop" data-auth-dialog hidden>
-        <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" aria-describedby="auth-dialog-description">
+        <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
             <button type="button" class="auth-dialog-close" data-auth-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
             <div class="auth-dialog-header">
-                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
-                    <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
-                </p>
                 <h2 id="auth-dialog-title" data-auth-dialog-title>Войдите в аккаунт</h2>
-                <div id="auth-dialog-description" class="auth-dialog-description" data-auth-dialog-description>
-                    <p data-auth-description-line1>Введите электронную почту</p>
-                    <p data-auth-description-line2>Мы пришлём код для входа</p>
+                <div id="auth-dialog-description" class="auth-dialog-description" data-auth-dialog-description hidden>
+                    <p data-auth-description-line1></p>
+                    <p data-auth-description-line2></p>
                 </div>
             </div>
             <form class="auth-dialog-form" data-auth-email-form novalidate>
@@ -814,18 +811,17 @@
             </form>
             <div class="auth-dialog-divider" data-auth-email-alternative data-auth-initial-only aria-hidden="true"><span>или</span></div>
             <form class="auth-dialog-form" data-auth-otp-form hidden>
+                <div class="auth-dialog-destination-group">
+                    <p id="auth-otp-destination" class="auth-dialog-otp-destination"><span data-auth-otp-sent-copy>Код отправлен на</span> <strong data-auth-otp-destination></strong></p>
+                    <button type="button" class="link-button auth-dialog-tertiary" data-auth-change-email>Изменить почту</button>
+                </div>
                 <label class="auth-dialog-label" for="auth-otp-input">Код из письма</label>
-                <p class="auth-dialog-otp-destination" data-auth-otp-destination></p>
-                <input id="auth-otp-input" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" aria-describedby="auth-otp-error" pattern="[0-9]{6}" maxlength="6" data-auth-otp>
+                <input id="auth-otp-input" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" aria-describedby="auth-otp-destination auth-otp-error" pattern="[0-9]{6}" maxlength="6" data-auth-otp>
                 <p id="auth-otp-error" class="auth-dialog-field-error" data-auth-otp-error role="alert" aria-live="polite" hidden></p>
                 <button type="submit" class="primary-button auth-dialog-primary" data-auth-verify>Войти</button>
                 <div class="auth-dialog-resend-row">
-                    <span data-auth-resend-prompt>Не пришёл код?</span>
-                    <button type="button" class="link-button" data-auth-resend>Отправить ещё раз</button>
+                    <button type="button" class="link-button" data-auth-resend>Отправить повторно</button>
                     <span class="auth-dialog-cooldown" data-auth-cooldown aria-live="polite"></span>
-                </div>
-                <div class="auth-dialog-actions">
-                    <button type="button" class="link-button auth-dialog-tertiary" data-auth-change-email>Изменить почту</button>
                 </div>
             </form>
             <div class="auth-dialog-restored" data-auth-restored-state hidden>

@@ -1873,16 +1873,16 @@ export const COPY = {
     "en": "Get new code"
   },
   "legacy.auth.otpTitle": {
-    "ru": "Проверьте почту",
-    "en": "Check your email"
+    "ru": "Введите код",
+    "en": "Enter the code"
   },
   "legacy.auth.codeLabel": {
     "ru": "Код из письма",
     "en": "Code from email"
   },
   "legacy.auth.otpSentTo": {
-    "ru": "Мы отправили код на",
-    "en": "We sent a code to"
+    "ru": "Код отправлен на",
+    "en": "Code sent to"
   },
   "legacy.auth.verify": {
     "ru": "Войти",
@@ -1893,11 +1893,11 @@ export const COPY = {
     "en": "Didn't get a code?"
   },
   "legacy.auth.resend": {
-    "ru": "Отправить ещё раз",
+    "ru": "Отправить повторно",
     "en": "Send again"
   },
   "legacy.auth.resendIn": {
-    "ru": "Отправить ещё раз через {seconds} сек",
+    "ru": "Отправить повторно через {seconds} с",
     "en": "Send again in {seconds}s"
   },
   "legacy.auth.changeEmail": {
