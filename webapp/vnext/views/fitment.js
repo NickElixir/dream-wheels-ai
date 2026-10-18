@@ -368,7 +368,7 @@ export function fitmentMarkup(model = {}) {
   const checkError = !model.checkStartFailed && model.executionStatus !== "failed" && model.checkError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert" data-fitment-focus-key="error:check-request">${esc(model.checkError)}</p>` : "";
   const markup = `<section class="vnext-fitment">
     <div class="vnext-fitment__workspace" ${model.wheelPicker ? "inert" : ""}>
-    <div class="vnext-fitment__topline"><h1>${esc(uiText("fitment.compatibilityCheck", localeOf(model)))}</h1></div>
+    <div class="vnext-fitment__topline"><h1 id="fitment-page-title" tabindex="-1">${esc(uiText("fitment.compatibilityCheck", localeOf(model)))}</h1></div>
     ${authNotice}
     ${model.message && !model.parameterSaveNotice ? `<p class="vnext-fitment__notice" data-fitment-save-notice tabindex="-1" role="status">${esc(model.message)}</p>` : ""}
     <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">

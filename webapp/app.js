@@ -5979,7 +5979,7 @@ async function loadFitmentOverview(
         void loadFitmentCheckHistory(overview);
         void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
-        if (!suppressAutomaticResolver && !entryIntent && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
+        if (!suppressAutomaticResolver && !entryIntent?.editor && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
             state.fitmentSourceAutoResolvedForJob = jobId;
             markFitmentSourceAutoAttempted(jobId);
             void resolveFitmentRimSource({ automatic: true });
@@ -5993,19 +5993,19 @@ async function loadFitmentOverview(
         if (isCurrentRequest()) {
             const restoreEntry = entryIntent && state.fitmentEntryIntent === entryIntent && state.fitmentOverview;
             const focusEntry = restoreEntry && entryIntent.focusPending && entryFocus.guard.allowed;
-            if (restoreEntry) {
+            if (restoreEntry && entryIntent.editor) {
                 state.fitmentRestoreSection = "";
                 setFitmentEditor(entryIntent.editor);
                 state.fitmentActiveSection = entryIntent.editor;
                 state.fitmentActiveStep = fitmentSectionToStep(entryIntent.editor);
-                entryIntent.focusPending = false;
             }
+            if (restoreEntry) entryIntent.focusPending = false;
             state.fitmentLoading = false;
             renderFitment();
             if (focusEntry) {
                 window.requestAnimationFrame(() => {
                     if (entryFocus.guard.allowed && isCurrentRequest() && state.fitmentEntryIntent === entryIntent) {
-                        document.querySelector("#fitment-rim-editor-title")?.focus({ preventScroll: true });
+                        document.querySelector(entryIntent.editor ? "#fitment-rim-editor-title" : "#fitment-page-title")?.focus({ preventScroll: true });
                     }
                     entryFocus.cleanup();
                 });
@@ -6121,7 +6121,7 @@ function openFitmentView(
     state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
-    state.fitmentEntryIntent = openRimEditor ? { jobId, editor: "rim", focusPending: true } : null;
+    state.fitmentEntryIntent = { jobId, editor: openRimEditor ? "rim" : "", focusPending: true };
     const generation = state.fitmentContextGeneration;
     void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor }).then(() => {
         if (state.view === "fitment" && state.fitmentJobId === jobId && state.fitmentContextGeneration === generation) void hydrateFitmentVehiclePhoto(jobId);

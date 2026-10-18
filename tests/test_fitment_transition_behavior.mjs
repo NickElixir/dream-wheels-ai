@@ -148,7 +148,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         addEventListener(type, listener) { interactionListeners.set(type, listener); },
         removeEventListener(type) { interactionListeners.delete(type); },
         querySelector(selector) {
-            if (selector === "#fitment-rim-editor-title") return {focus() { focused = selector; }};
+            if (["#fitment-rim-editor-title", "#fitment-page-title"].includes(selector)) return {focus() { focused = selector; }};
             return vnext && selector === "[data-vnext-fitment-root]" ? element() : null;
         }, querySelectorAll() { return []; },
         createElement: element,
@@ -2605,3 +2605,29 @@ test("leaving rim entry removes interaction listeners before a delayed response"
     assert.equal(harness.focused(),"");
     assert.equal(harness.api.state.view,"settings");
 });
+
+for (const userMoved of [false, true]) {
+    test(`ordinary compatibility navigation focuses page without overriding vehicle workflow; moved=${userMoved}`, async () => {
+        let overview, release;
+        const pending=new Promise(resolve=>{release=resolve;});
+        const harness=navigationApi({vnext:true,routes:{
+            "GET /api/backend/jobs/behavior-job/fitment":async()=>{await pending;return response(200,overview);},
+        }});
+        overview=overviewFor(harness.api,"complete_vehicle_details");
+        const vehicleBefore=JSON.stringify(overview.vehicle);
+        const baselineListeners=harness.listeners();
+        harness.api.openFitmentView("behavior-job",{originView:"render-detail"});
+        if(userMoved)harness.interact();
+        release();await new Promise(resolve=>setTimeout(resolve,10));
+        assert.equal(harness.api.state.fitmentVehicleEditing,true);
+        assert.equal(harness.api.state.fitmentRimEditing,false);
+        assert.equal(JSON.stringify(harness.api.state.fitmentOverview.vehicle),vehicleBefore);
+        assert.equal(harness.focused(),userMoved?"":"#fitment-page-title");
+        assert.equal(harness.api.state.fitmentEntryIntent.focusPending,false);
+        assert.equal(harness.listeners(),baselineListeners);
+        assert.match(fitmentMarkup(harness.api.snapshot()),/<h1 id="fitment-page-title" tabindex="-1">/);
+        for(let i=0;i<5;i++)await harness.api.loadFitmentOverview("behavior-job");
+        assert.equal(harness.api.state.fitmentVehicleEditing,true);
+        assert.equal(harness.focused(),userMoved?"":"#fitment-page-title");
+    });
+}
