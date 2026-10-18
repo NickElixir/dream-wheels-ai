@@ -348,3 +348,19 @@
     font-size: 27px;
   }
 }
+
+.application-auth-gate-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.application-auth-gate-status .application-auth-gate-spinner {
+  flex: 0 0 22px;
+}
+
+.application-auth-gate[data-restoring="true"] .application-auth-gate-title {
+  font-size: clamp(19px, 5.2vw, 27px);
+  white-space: nowrap;
+}
