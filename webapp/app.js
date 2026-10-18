@@ -1929,14 +1929,10 @@ function renderApplicationAuthGate() {
         ? t("auth.restoring")
         : expired
             ? t("auth.sessionExpiredTitle")
-            : t("auth.appGateTitle");
+            : t("auth.dialogTitle");
     if (copy) {
-        copy.textContent = restoring
-            ? t("auth.appGateRestoring")
-            : expired
-                ? t("auth.sessionExpiredDescription")
-                : t("auth.appGateDescription");
-        copy.hidden = false;
+        copy.textContent = expired ? t("auth.sessionExpiredDescription") : "";
+        copy.hidden = !expired;
     }
     if (spinner) spinner.hidden = !restoring;
     if (login) {

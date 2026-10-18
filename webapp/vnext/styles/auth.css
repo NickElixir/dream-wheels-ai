@@ -300,3 +300,51 @@
 @media (max-width: 700px) {
   [data-auth-dialog] .auth-dialog { padding-inline: 16px; }
 }
+
+/* Entry and session restoration use the same frame as the sign-in dialog. */
+.application-auth-gate {
+  padding: 12px;
+}
+
+.application-auth-gate-card {
+  display: grid;
+  gap: 24px;
+  max-width: 480px;
+  padding: 30px;
+  text-align: left;
+}
+
+.application-auth-gate-card .application-auth-gate-wordmark,
+.application-auth-gate-card .application-auth-gate-title,
+.application-auth-gate-card .application-auth-gate-copy,
+.application-auth-gate-card .application-auth-gate-spinner {
+  margin: 0;
+}
+
+.application-auth-gate-wordmark .brand-light {
+  color: var(--vnext-text);
+}
+
+.application-auth-gate-wordmark .brand-dim {
+  color: var(--vnext-text-subtle);
+}
+
+.application-auth-gate-card .application-auth-gate-title {
+  font-size: 29px;
+  line-height: 1.12;
+}
+
+.application-auth-gate-card .primary-button {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+}
+
+@media (max-width: 700px) {
+  .application-auth-gate-card {
+    padding: 24px 16px;
+  }
+  .application-auth-gate-card .application-auth-gate-title {
+    font-size: 27px;
+  }
+}
