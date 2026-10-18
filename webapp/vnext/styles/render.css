@@ -246,3 +246,12 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-history-badge.is-failed { color:#d5b77c; }
 .vnext-history-badge .vnext-spinner { width:12px; height:12px; border-width:1.5px; }
 @media(prefers-reduced-motion:reduce) { .vnext-history-badge .vnext-spinner { animation:none; } }
+
+.vnext-render-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--vnext-text-secondary);
+}
+.vnext-render-loading .vnext-spinner { flex-shrink: 0; }
+.vnext-result-wheel-summary .vnext-button { margin-top: 12px; }

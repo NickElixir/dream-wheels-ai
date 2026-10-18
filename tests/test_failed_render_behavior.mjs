@@ -72,3 +72,40 @@ test('network or queue ambiguity never promises a refund', () => {
     assert.doesNotMatch(context.error.title,/не будет списан|not be charged/);
   }
 });
+
+test('result distinguishes pending load, request failure and confirmed missing job', () => {
+  const loading = resultMarkup({loading:true, locale:'ru'});
+  assert.match(loading,/vnext-render-loading/);
+  assert.match(loading,/vnext-spinner/);
+  assert.doesNotMatch(loading,/Примерка не найдена/);
+  const error = resultMarkup({error:'Network unavailable', requestedJobId:'job-1', locale:'ru'});
+  assert.match(error,/data-render-action="detail-retry"/);
+  assert.doesNotMatch(error,/Примерка не найдена/);
+  assert.match(resultMarkup({locale:'ru'}),/Примерка не найдена/);
+});
+
+test('wheel without model and parameters has a standard fitment action', () => {
+  const html = resultMarkup(model('completed','charged','ru',{wheelUrl:'https://source.test/wheel',canFitment:true}));
+  assert.match(html,/Модель и параметры не указаны/);
+  assert.match(html,/data-render-action="rim-details"/);
+  const known = resultMarkup(model('completed','charged','ru',{wheelUrl:'https://source.test/wheel',rimName:'X-Trike X-132',canFitment:true}));
+  assert.doesNotMatch(known,/Модель и параметры не указаны/);
+});
+
+for (const scenario of ['success','asset-failure','left-screen']) {
+  test(`restore selected source photos: ${scenario}`, async () => {
+    const calls=[];
+    const state={view:'fitment',fitmentJobId:'selected',files:{car:'old-car',wheel:'old-wheel'},downloadNoticeByJob:{}};
+    const context={state,locale:'ru',uiCopy:copy,trackEvent:async()=>{},console:{error(){}},
+      fetchJobStatusForHistory:async()=>({assets:{car_original:{download_url:'https://assets/car',kind:'car'},rim_original:{download_url:'https://assets/wheel',kind:'rim'}}}),
+      fetch:async url=>{ if(scenario==='left-screen') state.view='wallet'; return {ok:scenario!=='asset-failure',blob:async()=>new Blob([url])}; },
+      parseApiError:async()=> 'Asset unavailable',saveDraftFiles:async entries=>calls.push(['persist',entries.length]),
+      resetCreateAssets:()=>calls.push(['reset']),renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
+      setView:view=>{state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+    vm.runInNewContext(fn('repeatRenderWithSavedPhotos'),context);
+    await context.repeatRenderWithSavedPhotos('selected');
+    assert.equal(state.repeatRenderPreparing,false);
+    if(scenario==='success') {assert.equal(state.view,'create');assert.equal(state.files.car.name,'car.jpg');assert.deepEqual(calls,[['persist',2],['reset']]);}
+    else {assert.equal(state.files.car,'old-car');assert.equal(state.files.wheel,'old-wheel');assert.equal(calls.length,0);assert.notEqual(state.view,'create');}
+  });
+}

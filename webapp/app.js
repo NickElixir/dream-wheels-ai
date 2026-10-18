@@ -496,6 +496,8 @@ const state = {
     expandedJobId: "",
     renderDetailJobId: "",
     renderDetailLoading: false,
+    renderDetailNotFoundJobId: "",
+    repeatRenderPreparing: false,
     renderDetailError: "",
     renderHistoryVisibleCount: 6,
     fitmentJobId: "",
@@ -5680,14 +5682,6 @@ async function revalidateFitmentCatalogueChain(
     const previousMarketStatus = state.fitmentMarketResolution?.status;
     const previousMarket = vehicle.market;
     const parentChange = state.fitmentCatalogueParentChange || {};
-    if (!vehicle.make && !preloaded.makes) {
-        resetFitmentCatalogue("models");
-        resetFitmentCatalogue("years");
-        state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
-        validateFitmentForm();
-        renderFitment();
-        return;
-    }
     const makesResult = preloaded.makes || await loadFitmentCatalogue("makes", {}, { contextVersion });
     if (contextVersion !== state.fitmentCatalogueContextVersion) return;
     if (!makesResult || makesResult.outcome === "failed") {
@@ -5709,7 +5703,7 @@ async function revalidateFitmentCatalogueChain(
     }
     const remembered = fitmentRememberedVehicleChain({ make: vehicle.make });
     const currentMakeEntry = fitmentCatalogueSelectionItem("makes", vehicle.make, makesResult.items);
-    const rememberedMakeEntry = allowRemembered ? fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items) : null;
+    const rememberedMakeEntry = allowRemembered && vehicle.make ? fitmentCatalogueSelectionItem("makes", remembered.make, makesResult.items) : null;
     const makeEntry = currentMakeEntry || rememberedMakeEntry;
     if (!makeEntry) {
         vehicle.make = "";
@@ -8435,6 +8429,8 @@ function openRenderDetail(jobId, originView = "renders") {
     state.renderDetailJobId = jobId;
     state.fitmentOriginView = originView;
     state.renderDetailError = "";
+    state.renderDetailLoading = !state.renderHistory.some(item => item.job_id === jobId);
+    state.renderDetailNotFoundJobId = "";
     setView("render-detail");
     scheduleRenderHistoryPolling();
     void loadFitmentReturnContext(jobId);
@@ -8446,6 +8442,7 @@ function openRenderDetail(jobId, originView = "renders") {
 async function loadRenderDetailJob(jobId) {
     if (!jobId || !hasFrontendAuth()) return;
     state.renderDetailLoading = true;
+    state.renderDetailNotFoundJobId = "";
     state.renderDetailError = "";
     renderRenderDetail();
     try {
@@ -8454,7 +8451,10 @@ async function loadRenderDetailJob(jobId) {
         if (existingIndex >= 0) state.renderHistory[existingIndex] = { ...state.renderHistory[existingIndex], ...job };
         else state.renderHistory.unshift(job);
     } catch (error) {
-        if (state.renderDetailJobId === jobId) state.renderDetailError = localizeErrorMessage(error?.message || t("errors.requestFailed"));
+        if (state.renderDetailJobId === jobId) {
+            state.renderDetailNotFoundJobId = error?.status === 404 ? jobId : "";
+            state.renderDetailError = error?.status === 404 ? "" : localizeErrorMessage(error?.message || t("errors.requestFailed"));
+        }
     } finally {
         if (state.renderDetailJobId === jobId) {
             state.renderDetailLoading = false;
@@ -8471,35 +8471,57 @@ function openBlankTryOn() {
 }
 
 async function repeatRenderWithSavedPhotos(jobId) {
+    if (state.repeatRenderPreparing) return;
     void trackEvent("repeat_render_started", { source_job_id: jobId });
-    const job = state.renderHistory.find((item) => item.job_id === jobId);
-    const car = job?.assets?.car_original;
-    const wheel = job?.assets?.rim_original;
-    if (!car?.download_url || !wheel?.download_url) {
-        setView("create");
-        return;
-    }
+    const ownerView = state.view;
+    const ownsScreen = () => state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
+    const message = (value) => {
+        if (ownerView === "fitment") { state.fitmentMessage = value; notifyFitmentBridge(); }
+        else { state.downloadNoticeByJob[jobId] = value; notifyRenderBridge(); }
+    };
+    state.repeatRenderPreparing = true;
+    message(uiCopy("render.preparingPhotos", locale));
     try {
+        const job = await fetchJobStatusForHistory(jobId);
+        const car = job?.assets?.car_original;
+        const wheel = job?.assets?.rim_original;
+        if (!car?.download_url || !wheel?.download_url) throw new Error(uiCopy("render.sourcePhotosUnavailable", locale));
         const fetchAsset = async (asset) => {
-            const url = asset.download_url.startsWith("/") ? apiUrl(asset.download_url) : asset.download_url;
-            const response = asset.download_url.startsWith("/")
-                ? await authenticatedFetch(url, { headers: withAuthHeaders() })
-                : await fetch(url);
+            const local = asset.download_url.startsWith("/");
+            const response = local
+                ? await authenticatedFetch(apiUrl(asset.download_url), { headers: withAuthHeaders() })
+                : await fetch(asset.download_url);
             if (!response.ok) throw new Error(await parseApiError(response));
             const blob = await response.blob();
+            if (!blob.size) throw new Error(uiCopy("render.sourcePhotosUnavailable", locale));
             return { blob, name: `${asset.kind}.jpg`, size: blob.size, type: blob.type || "image/jpeg" };
         };
         const [carFile, wheelFile] = await Promise.all([fetchAsset(car), fetchAsset(wheel)]);
+        if (!ownsScreen()) return;
+        await saveDraftFiles([
+            { kind: "car", file: carFile, bytes: await carFile.blob.arrayBuffer() },
+            { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
+        ]);
+        if (!ownsScreen()) return;
         resetCreateAssets();
         state.files.car = carFile;
         state.files.wheel = wheelFile;
+        state.rimProductUrl = job.render_input_snapshot?.rim?.product_url || "";
         renderPreviewFromFile("car", carFile);
         renderPreviewFromFile("wheel", wheelFile);
+        message("");
+        showCreateScreen("upload");
         setView("create");
         renderCreateInputs();
     } catch (error) {
         console.error("[DW] Unable to restore saved photos", error);
-        setView("create");
+        if (ownsScreen()) message(uiCopy("render.sourcePhotosFailed", locale));
+    } finally {
+        state.repeatRenderPreparing = false;
+        if (ownsScreen()) {
+            if (ownerView === "fitment") notifyFitmentBridge();
+            else notifyRenderBridge();
+        }
     }
 }
 
@@ -8584,7 +8606,11 @@ async function fetchJobStatusForHistory(jobId) {
     const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}`, { includeIdentity: true }), {
         headers: withAuthHeaders(),
     });
-    if (!response.ok) throw new Error(await parseApiError(response));
+    if (!response.ok) {
+        const error = new Error(await parseApiError(response));
+        error.status = response.status;
+        throw error;
+    }
     return response.json();
 }
 
@@ -9179,6 +9205,24 @@ async function saveDraftFile(kind, file, bytes) {
         tx.onerror = () => reject(tx.error);
     });
     db.close();
+}
+
+// Keep the two source photos together: a failed transaction preserves the old draft.
+async function saveDraftFiles(entries) {
+    const db = await openDraftDb();
+    if (!db) return;
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+            const store = tx.objectStore(DRAFT_STORE_NAME);
+            entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
+        });
+    } finally {
+        db.close();
+    }
 }
 
 async function loadDraftFile(kind) {
@@ -9783,7 +9827,7 @@ window.dreamwheelsFitmentBridge = {
                 state.fitmentError = error?.message || t("errors.requestFailed");
                 renderFitment();
             });
-        } else if (action === "create-image") setView("create");
+        } else if (action === "create-image") void repeatRenderWithSavedPhotos(state.fitmentJobId);
         notifyFitmentBridge();
     },
 };
@@ -9877,7 +9921,11 @@ function vnextRenderSnapshot(surface) {
     }
     const selectedJobId = surface === "current-result" ? state.jobId : state.renderDetailJobId;
     const job = state.renderHistory.find((item) => item.job_id === selectedJobId);
-    return job ? vnextRenderJob(job) : { locale, loading: state.renderDetailLoading, error: state.renderDetailError };
+    return job ? vnextRenderJob(job) : {
+        locale, requestedJobId: selectedJobId,
+        loading: Boolean(selectedJobId) && (state.renderDetailLoading || !state.renderDetailError && state.renderDetailNotFoundJobId !== selectedJobId),
+        error: state.renderDetailError,
+    };
 }
 
 function prepareVnextRenderAssets() {
@@ -9902,12 +9950,15 @@ window.dreamwheelsRenderBridge = {
     action(action, jobId, value) {
         if (action === "history") setView("renders");
         else if (action === "history-retry") void loadRenderHistory();
+        else if (action === "detail-retry") void loadRenderDetailJob(jobId);
         else if (action === "open") openRenderDetail(jobId, "renders");
         else if (action === "more") { state.renderHistoryVisibleCount += 6; renderRenders(); }
         else if (action === "create") openBlankTryOn();
         else if (action === "retry-create") { showCreateScreen("upload"); setView("create"); }
         else if (action === "repeat") void repeatRenderWithSavedPhotos(jobId);
-        else if (action === "fitment") void openFitmentView(jobId, { originView: "render-detail" });
+        else if (action === "fitment" || action === "rim-details") {
+            void openFitmentView(jobId, { originView: "render-detail", restoreSection: action === "rim-details" ? "rim" : "" });
+        }
         else if (action === "download") void downloadResult({ jobId });
         else if (action === "feedback") void submitHistoryFeedback(jobId, value);
         else if (action === "reason") void submitHistoryFeedback(jobId, "disliked", value);

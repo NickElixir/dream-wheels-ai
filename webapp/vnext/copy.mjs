@@ -1,4 +1,10 @@
 export const COPY = {
+  "render.preparingPhotos": { "ru": "Загружаем фото…", "en": "Loading photos…" },
+  "render.sourcePhotosUnavailable": { "ru": "Исходные фото недоступны", "en": "Source photos are unavailable" },
+  "render.sourcePhotosFailed": { "ru": "Не удалось загрузить фото. Повторите действие", "en": "Could not load photos. Try again" },
+  "render.wheelDetailsMissing": { "ru": "Модель и параметры не указаны", "en": "Model and specifications are not provided" },
+  "render.enterWheelDetails": { "ru": "Указать данные диска", "en": "Enter wheel details" },
+  "render.detailLoadFailed": { "ru": "Не удалось загрузить примерку", "en": "Could not load the try-on" },
   "render.downloadShort": {"ru": "Скачать", "en": "Download"},
   "render.wheelReference": { "ru": "Колёсный диск", "en": "Wheel reference" },
   "render.checkShort": {"ru": "Проверить", "en": "Check fit"},

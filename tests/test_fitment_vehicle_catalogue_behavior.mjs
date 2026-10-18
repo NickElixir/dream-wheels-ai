@@ -428,3 +428,14 @@ test("owner Market gate auto-resolves one provider market then invalidates it fo
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
 }
+
+test("fresh empty vehicle loads makes without requesting dependent catalogues", async () => {
+    const harness = createHarness({ catalogue: CATALOGUE });
+    seedState(harness, { market: "", make: "", model: "", year: "" });
+    harness.api.resetFitmentCatalogue("makes", { status: "idle" });
+    const version = harness.api.beginFitmentCatalogueContextChange();
+    await harness.api.revalidateFitmentCatalogueChain(version);
+    assert.deepEqual(harness.calls.map(call => call.kind), ["makes"]);
+    assert.equal(harness.api.state.fitmentCatalogue.makes.status, "loaded");
+    assert.equal(harness.api.state.fitmentForm.vehicle.make, "");
+});
