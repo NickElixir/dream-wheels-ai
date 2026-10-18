@@ -9215,10 +9215,15 @@ async function saveDraftFiles(entries) {
         await new Promise((resolve, reject) => {
             const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
             const store = tx.objectStore(DRAFT_STORE_NAME);
-            entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
             tx.oncomplete = resolve;
             tx.onerror = () => reject(tx.error);
             tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
+            try {
+                entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
+            } catch (error) {
+                tx.abort();
+                reject(error);
+            }
         });
     } finally {
         db.close();

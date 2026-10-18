@@ -109,3 +109,13 @@ for (const scenario of ['success','asset-failure','left-screen']) {
     else {assert.equal(state.files.car,'old-car');assert.equal(state.files.wheel,'old-wheel');assert.equal(calls.length,0);assert.notEqual(state.view,'create');}
   });
 }
+
+test('draft photo pair aborts together if a write fails synchronously', async () => {
+  let writes=0, aborted=false, closed=false;
+  const tx={objectStore:()=>({put(){if(++writes===2)throw new Error('write failed');}}),abort(){aborted=true;}};
+  const context={openDraftDb:async()=>({transaction:()=>tx,close(){closed=true;}}),DRAFT_STORE_NAME:'draft'};
+  vm.runInNewContext(fn('saveDraftFiles'),context);
+  await assert.rejects(context.saveDraftFiles([{kind:'car',file:{}},{kind:'wheel',file:{}}]),/write failed/);
+  assert.equal(aborted,true);
+  assert.equal(closed,true);
+});
