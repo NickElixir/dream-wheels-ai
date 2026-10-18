@@ -109,10 +109,43 @@ for (const [name,patch,targetSelector] of [
   let selected="";
   const origin={dataset:{fitmentAction:"save-rim",value:""},tagName:"BUTTON"};
   const targetFor=selector=>({tagName:"H2",setAttribute(){},focus(){selected=selector;}});
-  const root={className:"vnext-fitment",fitmentWorkspaceKind:"rim-editor",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return targetFor(selector);},replaceChildren(){}};
+  const root={className:"vnext-fitment",fitmentFocusIntent:{action:"save-rim",origin},fitmentWorkspaceKind:"rim-editor",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return targetFor(selector);},replaceChildren(){}};
   const context={CSS:{escape:v=>v},document:{body:{},activeElement:origin,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
   runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
   context.refresh(root,patch);
   if (targetSelector === '[role="alert"]') assert.match(selected, /role="alert"/);
   else assert.equal(selected,targetSelector);
+});
+
+
+test("focused check button without activation never creates a completion intent",()=>{
+  let selected="";
+  const origin={dataset:{fitmentAction:"check",value:""},tagName:"BUTTON"};
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"none",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return {tagName:"BUTTON",focus(){selected=selector;}};},replaceChildren(){}};
+  const context={CSS:{escape:v=>v},document:{body:{},activeElement:origin,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+  runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,{check:{execution_status:"completed",is_current:true,verdict:"compatible"}});
+  assert.equal(root.fitmentFocusIntent,undefined);
+  assert.equal(selected,'[data-fitment-action="check"][data-value=""]');
+});
+
+for(const key of ["rim-error-0","verdict-heading-0"]) test(`${key} retains its focus on repeated redraw`,()=>{
+  let selected="";
+  const active={dataset:{fitmentFocusKey:key},tagName:key.includes("error")?"P":"H2"};
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"none",querySelector(selector){if(selector.startsWith(":focus"))return active;if(selector===".vnext-fitment__configuration")return null;return {tagName:active.tagName,setAttribute(){},focus(){selected=selector;}};},replaceChildren(){}};
+  const context={CSS:{escape:v=>v},document:{body:{},activeElement:active,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+  runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,{});
+  assert.equal(selected,`[data-fitment-focus-key="${key}"]`);
+});
+
+
+test("background workspace change preserves a focused action without activation",()=>{
+  let selected="";
+  const origin={dataset:{fitmentAction:"resolve-rim",value:""},tagName:"BUTTON"};
+  const root={className:"vnext-fitment",fitmentWorkspaceKind:"none",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return {tagName:"BUTTON",focus(){selected=selector;}};},replaceChildren(){}};
+  const context={CSS:{escape:v=>v},document:{body:{},activeElement:origin,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+  runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+  context.refresh(root,{vehicleEditing:true,resolver:{url:"https://example.com/wheel"}});
+  assert.equal(selected,'[data-fitment-action="resolve-rim"][data-value=""]');
 });

@@ -21,3 +21,17 @@ Browser artifacts are in task outputs/focus-fixes-2026-10-18
 New automated cases cover saved URL feedback, four Create focus identities and save completion destinations; background transitions now explicitly assert no unsolicited focus capture
 Remaining scope: real network/OAuth/Telegram WebView and account modal focus are not certified by this component verification
 No merge, deployment or production operation performed
+
+## Second review corrections
+
+Review base: fe1fc47d97fe59fdf755c4353722e9a62ac14891
+
+- Removed completion intent inference from the focused control during refresh; only the actual action handler records completion intent
+- Workspace transitions likewise distinguish synchronous explicit action handling from background redraw
+- Error messages and verdict headings have repeatable semantic focus keys, preserved after their DOM nodes are replaced
+- Added four unit cases for focus without activation, background workspace changes, and alert/verdict redraw retention; earlier completion tests now seed an explicit activation intent
+- Added focus-regression.html using actual component modules and the browser DOM, without mocks or API calls; serve the repository root and open /docs/evidence/ui-owner-audit-2026-10-18/focus-regression.html
+- At both 1440 and 390 px, compare old fe1fc47 against the corrected module: the old code fails the reported cases, the corrected code passes; completion, cancellation, picker Escape and late-response protection remain covered
+- Each focused error/verdict is redrawn five times to verify retention beyond the first completion render
+
+This page verifies component focus behavior, not real API integration or Telegram WebView
