@@ -1,4 +1,5 @@
 export const COPY = {
+  "auth.signInTelegram": { "ru": "Войти через Telegram", "en": "Sign in with Telegram" },
   "render.preparingPhotos": { "ru": "Загружаем фото…", "en": "Loading photos…" },
   "render.sourcePhotosUnavailable": { "ru": "Исходные фото недоступны", "en": "Source photos are unavailable" },
   "render.sourcePhotosFailed": { "ru": "Не удалось загрузить фото. Повторите действие", "en": "Could not load photos. Try again" },

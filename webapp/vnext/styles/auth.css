@@ -217,6 +217,7 @@
 }
 
 [data-auth-dialog] .auth-dialog-telegram {
+  color: var(--vnext-text-value);
   border: 1px solid var(--vnext-border-strong);
   border-radius: 8px;
   background: var(--vnext-surface-elevated);

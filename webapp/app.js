@@ -2388,7 +2388,7 @@ function renderAuthDialog() {
     if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
     if (verifyButton) verifyButton.textContent = t(state.authDialogBusy && isOtpStep ? "auth.loggingIn" : "auth.verify");
     if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
-    if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
+    if (telegramLabel) telegramLabel.textContent = uiCopy("auth.signInTelegram", locale);
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
         if (legalLink) {
@@ -2452,7 +2452,7 @@ function renderAuthDialog() {
                 ? t("auth.preparing")
                 : telegramLoginRetryAvailable
                     ? t("auth.retryTelegram")
-                : t("auth.telegramSecondary");
+                : uiCopy("auth.signInTelegram", locale);
     }
     document.querySelector("[data-auth-telegram]")?.toggleAttribute(
         "disabled",
