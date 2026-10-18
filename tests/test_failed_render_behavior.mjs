@@ -152,3 +152,22 @@ test('confirmed missing result offers retry for the same job', () => {
   assert.match(html,/Примерка не найдена/);
   assert.match(html,/data-render-action="detail-retry" data-job="missing-job"/);
 });
+
+for (const userMoved of [false,true]) {
+  test(`async result error transfers only owned navigation focus; moved=${userMoved}`, () => {
+    const bootstrap=fs.readFileSync(new URL('../webapp/vnext/bootstrap.js',import.meta.url),'utf8');
+    const external={};let focusCalls=0;
+    const document={activeElement:null};
+    const heading={setAttribute(){},focus(){focusCalls++;document.activeElement=this;}};
+    const pageHeading={};
+    document.activeElement=userMoved?external:pageHeading;
+    const content={renderKind:'result',contains:()=>false,querySelector:()=>heading};
+    const context={document,mountedRoot:{querySelector:()=>pageHeading},mountedView:'render-detail',mountedRenderContent:content,
+      applicationLocale:()=> 'ru',renderKind:()=> 'result',window:{dreamwheelsRenderBridge:{snapshot:()=>({requestedJobId:'missing',locale:'ru'})}},
+      renderCallbacks:{},refreshRenderView(){}};
+    vm.runInNewContext(extractFunction(bootstrap,'refreshMountedRender'),context);
+    context.refreshMountedRender();context.refreshMountedRender();
+    assert.equal(document.activeElement,userMoved?external:heading);
+    assert.equal(focusCalls,userMoved?0:1);
+  });
+}

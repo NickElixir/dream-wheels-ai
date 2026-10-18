@@ -42,6 +42,7 @@ test("setView keeps the browser URL and application route aligned only for top-l
     };
     const context = {
         state,
+        clearFitmentEntryIntent() {},
         window,
         document: { querySelectorAll: () => [], querySelector: () => null },
         HAS_TG: false,

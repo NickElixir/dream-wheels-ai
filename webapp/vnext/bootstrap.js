@@ -66,7 +66,17 @@ function refreshMountedRender(locale = applicationLocale()) {
       const heading = mountedRoot.querySelector(".vnext-shell__topbar-title");
       if (heading && heading.textContent !== title) heading.textContent = title;
     }
+    const pageHeading = mountedRoot.querySelector(".vnext-shell__topbar-title");
+    const active = document.activeElement;
+    const ownsHeadingFocus = active === pageHeading;
+    const retryFocused = mountedRenderContent.contains(active) && active?.dataset.renderAction === "detail-retry";
     refreshRenderView(mountedRenderContent, model, renderCallbacks);
+    const errorHeading = mountedRenderContent.querySelector(".vnext-result-recovery h1");
+    const focusTarget = ownsHeadingFocus && errorHeading ? errorHeading : retryFocused && model.loading ? pageHeading : null;
+    if (focusTarget) {
+      focusTarget.setAttribute("tabindex", "-1");
+      focusTarget.focus({ preventScroll: true });
+    }
   } else if (mountedView === "create") {
     if (kind || mountedRenderContent) mountSurface("create", { force: true }, locale);
   }

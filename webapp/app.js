@@ -502,6 +502,8 @@ const state = {
     renderDetailError: "",
     renderHistoryVisibleCount: 6,
     fitmentJobId: "",
+    fitmentEntryIntent: null,
+    fitmentEntryFocusCleanup: null,
     fitmentContextGeneration: 0,
     fitmentOverviewRequestToken: 0,
     fitmentOriginView: "dashboard",
@@ -3596,6 +3598,7 @@ function clearFitmentTransientMessage() {
 
 function setFitmentActiveSection(section, { scroll = false } = {}) {
     if (!["vehicle", "rim", "result"].includes(section)) return;
+    if (section !== "rim") clearFitmentEntryIntent();
     if (state.fitmentActiveSection !== section) clearFitmentTransientMessage();
     state.fitmentActiveSection = section;
     state.fitmentActiveStep = fitmentSectionToStep(section);
@@ -3795,6 +3798,7 @@ function restoreFitmentWorkspace() {
 }
 
 function reconcileRequiredFitmentWorkspace() {
+    if (state.fitmentEntryIntent?.editor === "rim") return;
     if (fitmentNextAction() !== "select_vehicle_variant" || state.fitmentActiveSection !== "rim" || !state.fitmentRimEditing) return;
     rememberFitmentWorkspace();
     setFitmentEditor("");
@@ -5877,6 +5881,8 @@ async function loadFitmentOverview(
     const requestToken = ++state.fitmentOverviewRequestToken;
     const isCurrentRequest = () => isCurrentFitmentRuntimeContext(runtimeContext)
         && requestToken === state.fitmentOverviewRequestToken;
+    const entryIntent = state.fitmentEntryIntent?.jobId === jobId ? state.fitmentEntryIntent : null;
+    const entryFocus = trackFitmentEntryFocus(entryIntent);
     const wheelDraft = preserveWheelDraft ? captureFitmentWheelDraft() : null;
     beginFitmentCatalogueContextChange();
     // After the first Fitment entry, an overview refresh is domain data, not a
@@ -5967,7 +5973,7 @@ async function loadFitmentOverview(
         void loadFitmentCheckHistory(overview);
         void loadRenderHistory({ silent: true });
         if (fitmentCheckIsPending(state.fitmentCheck)) pollFitmentCheck(state.fitmentCheck.id, fitmentCheckContextKey());
-        if (!suppressAutomaticResolver && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
+        if (!suppressAutomaticResolver && !entryIntent && restoration !== "restored" && fitmentEffectiveRim(overview).product_url && !fitmentEffectiveRim(overview).product_url_auto_resolve_attempted && state.fitmentSourceAutoResolvedForJob !== jobId && !fitmentSourceAutoAttempted(jobId)) {
             state.fitmentSourceAutoResolvedForJob = jobId;
             markFitmentSourceAutoAttempted(jobId);
             void resolveFitmentRimSource({ automatic: true });
@@ -5979,11 +5985,54 @@ async function loadFitmentOverview(
         state.fitmentError = error?.message || t("errors.requestFailed");
     } finally {
         if (isCurrentRequest()) {
+            const restoreEntry = entryIntent && state.fitmentEntryIntent === entryIntent && state.fitmentOverview;
+            const focusEntry = restoreEntry && entryIntent.focusPending && entryFocus.guard.allowed;
+            if (restoreEntry) {
+                state.fitmentRestoreSection = "";
+                setFitmentEditor(entryIntent.editor);
+                state.fitmentActiveSection = entryIntent.editor;
+                state.fitmentActiveStep = fitmentSectionToStep(entryIntent.editor);
+                entryIntent.focusPending = false;
+            }
             state.fitmentLoading = false;
             renderFitment();
-        }
+            if (focusEntry) {
+                window.requestAnimationFrame(() => {
+                    if (entryFocus.guard.allowed && isCurrentRequest() && state.fitmentEntryIntent === entryIntent) {
+                        document.querySelector("#fitment-rim-editor-title")?.focus({ preventScroll: true });
+                    }
+                    entryFocus.cleanup();
+                });
+            } else entryFocus.cleanup();
+        } else entryFocus.cleanup();
     }
     return restoration;
+}
+
+function clearFitmentEntryIntent() {
+    state.fitmentEntryFocusCleanup?.();
+    state.fitmentEntryFocusCleanup = null;
+    state.fitmentEntryIntent = null;
+}
+
+function trackFitmentEntryFocus(intent) {
+    state.fitmentEntryFocusCleanup?.();
+    const guard = { allowed: true };
+    const events = ["keydown", "pointerdown", "input", "focusin"];
+    const cancel = (event) => {
+        if (event?.type === "focusin" && !event.target.matches("button, a, input, select, textarea")) return;
+        guard.allowed = false;
+    };
+    const cleanup = () => {
+        guard.allowed = false;
+        events.forEach(event => document.removeEventListener(event, cancel, true));
+        if (state.fitmentEntryFocusCleanup === cleanup) state.fitmentEntryFocusCleanup = null;
+    };
+    if (intent?.focusPending) {
+        events.forEach(event => document.addEventListener(event, cancel, true));
+        state.fitmentEntryFocusCleanup = cleanup;
+    }
+    return { guard, cleanup: intent?.focusPending ? cleanup : () => {} };
 }
 
 function openFitmentView(
@@ -6066,37 +6115,11 @@ function openFitmentView(
     state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
+    state.fitmentEntryIntent = openRimEditor ? { jobId, editor: "rim", focusPending: true } : null;
     const generation = state.fitmentContextGeneration;
-    let focusAllowed = true;
-    const cancelFocus = (event) => {
-        if (event?.type === "focusin" && !event.target.matches("button, a, input, select, textarea")) return;
-        focusAllowed = false;
-    };
-    const focusEvents = ["keydown", "pointerdown", "input", "focusin"];
-    const cleanupFocus = () => {
-        if (openRimEditor) focusEvents.forEach(event => document.removeEventListener(event, cancelFocus, true));
-    };
-    if (openRimEditor) focusEvents.forEach(event => document.addEventListener(event, cancelFocus, true));
     void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor }).then(() => {
-        if (state.view !== "fitment" || state.fitmentJobId !== jobId || state.fitmentContextGeneration !== generation) {
-            cleanupFocus();
-            return;
-        }
-        if (openRimEditor && state.fitmentOverview) {
-            state.fitmentRestoreSection = "";
-            setFitmentEditor("rim");
-            setFitmentActiveSection("rim", { scroll: focusAllowed });
-            window.requestAnimationFrame(() => {
-                if (focusAllowed && state.view === "fitment" && state.fitmentContextGeneration === generation) {
-                    document.querySelector("#fitment-rim-editor-title")?.focus({ preventScroll: true });
-                }
-                cleanupFocus();
-            });
-        } else {
-            cleanupFocus();
-        }
-        void hydrateFitmentVehiclePhoto(jobId);
-    }).catch(cleanupFocus);
+        if (state.view === "fitment" && state.fitmentJobId === jobId && state.fitmentContextGeneration === generation) void hydrateFitmentVehiclePhoto(jobId);
+    });
 }
 
 function closeFitmentView() {
@@ -7431,6 +7454,7 @@ function setMoreOpen(open) {
 
 function setView(view, { refreshData = true } = {}) {
     cancelPhotoPreparation();
+    clearFitmentEntryIntent();
     const viewChanged = state.view !== view;
     const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
     if (leavingFitment) {
@@ -9746,6 +9770,7 @@ window.dreamwheelsFitmentBridge = {
     setSourceUrl(value) { if (fitmentMutationsLocked()) return; setVnextFitmentField("rim.product_url", value); notifyFitmentBridge(); },
     action(action, value = "") {
         if (fitmentMutationsLocked() && !["back", "reload", "login", "create-image"].includes(action)) return;
+        if (["edit-vehicle", "manual-vehicle", "recognize-vehicle", "show-variants", "reselect-vehicle", "save-rim", "check", "run-check"].includes(action)) clearFitmentEntryIntent();
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();

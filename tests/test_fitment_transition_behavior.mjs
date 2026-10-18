@@ -199,7 +199,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
             rebaseFitmentTransientVehicleDraft,
             fitmentDraftMatchesOverview,
-            openFitmentView,
+            openFitmentView, setView,
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
@@ -222,7 +222,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
-    return { api: context.__navigationApi, calls, sessionStorage, focused: () => focused, interact: () => interactionListeners.get("keydown")?.() };
+    return { api: context.__navigationApi, calls, sessionStorage, listeners: () => interactionListeners.size, focused: () => focused, interact: () => interactionListeners.get("keydown")?.() };
 }
 
 function pcdProjectionApi({ vnext = false, language = "ru", resultDom = false } = {}) {
@@ -2562,3 +2562,46 @@ for (const userMoved of [false, true]) {
         assert.doesNotMatch(html,/data-fitment-workspace="vehicle"/);
     });
 }
+
+test("rim entry survives overview error, real retry action and clean background reload", async () => {
+    let overview, attempt=0;
+    const harness=navigationApi({vnext:true,routes:{
+        "GET /api/backend/jobs/behavior-job/fitment":()=>++attempt===1?response(503,{detail:"temporary"}):response(200,overview),
+    }});
+    overview=overviewFor(harness.api,"complete_vehicle_details");
+    const baselineListeners=harness.listeners();
+    harness.api.openFitmentView("behavior-job",{openRimEditor:true});
+    await new Promise(resolve=>setTimeout(resolve,10));
+    assert.equal(harness.api.state.fitmentOverview,null);
+    assert.equal(harness.listeners(),baselineListeners);
+    harness.api.bridge.action("reload");
+    await new Promise(resolve=>setTimeout(resolve,10));
+    assert.equal(harness.api.state.fitmentRimEditing,true);
+    assert.equal(harness.api.state.fitmentVehicleEditing,false);
+    assert.equal(harness.focused(),"#fitment-rim-editor-title");
+    for(let i=0;i<5;i++)await harness.api.loadFitmentOverview("behavior-job");
+    assert.equal(harness.api.state.fitmentRimEditing,true);
+    assert.equal(harness.api.state.fitmentActiveSection,"rim");
+    harness.api.bridge.action("edit-vehicle");
+    await harness.api.loadFitmentOverview("behavior-job");
+    assert.equal(harness.api.state.fitmentEntryIntent,null);
+    assert.equal(harness.api.state.fitmentVehicleEditing,true);
+});
+
+test("leaving rim entry removes interaction listeners before a delayed response", async () => {
+    let resolve,overview;
+    const pending=new Promise(done=>{resolve=done;});
+    const harness=navigationApi({vnext:true,routes:{
+        "GET /api/backend/jobs/behavior-job/fitment":async()=>{await pending;return response(200,overview);},
+    }});
+    overview=overviewFor(harness.api,"complete_vehicle_details");
+    const baselineListeners=harness.listeners();
+    harness.api.openFitmentView("behavior-job",{openRimEditor:true});
+    assert.equal(harness.listeners(),baselineListeners+4);
+    harness.api.setView("settings",{refreshData:false});
+    assert.equal(harness.listeners(),baselineListeners);
+    assert.equal(harness.api.state.fitmentEntryIntent,null);
+    resolve();await new Promise(done=>setTimeout(done,10));
+    assert.equal(harness.focused(),"");
+    assert.equal(harness.api.state.view,"settings");
+});
