@@ -56,11 +56,17 @@ test("setView keeps the browser URL and application route aligned only for top-l
         refreshButtonsForCurrentView() {},
     };
     const setView = runInNewContext(
-        `${sourceBetween("function setView(", "function lastTelegramTopLevelView()")}; setView`,
+        `${sourceBetween("function cancelPhotoPreparation()", "async function repeatRenderWithSavedPhotos(")}
+${sourceBetween("function setView(", "function lastTelegramTopLevelView()")}; setView`,
         context,
     );
 
+    const operation = { cancelled: false };
+    state.repeatRenderOperation = operation;
+    state.repeatRenderPreparing = true;
     setView("renders", { refreshData: false });
+    assert.equal(operation.cancelled, true);
+    assert.equal(state.repeatRenderPreparing, false);
     assert.equal(window.location.pathname, "/app/history");
     assert.equal(window.location.search, "?market=ru");
     assert.equal(state.applicationRoute.view, "renders");

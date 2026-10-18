@@ -138,12 +138,19 @@ function response(status, body = {}) {
 
 function navigationApi({ routes = {}, vnext = false } = {}) {
     const calls = [];
+    const interactionListeners = new Map();
+    let focused = "";
     const localStorage = storage();
     const sessionStorage = storage();
     const document = {
         documentElement: { dataset: { appBuild: "navigation-test" } },
         head: { append() {} }, body: element(), hidden: false,
-        addEventListener() {}, querySelector(selector) { return vnext && selector === "[data-vnext-fitment-root]" ? element() : null; }, querySelectorAll() { return []; },
+        addEventListener(type, listener) { interactionListeners.set(type, listener); },
+        removeEventListener(type) { interactionListeners.delete(type); },
+        querySelector(selector) {
+            if (selector === "#fitment-rim-editor-title") return {focus() { focused = selector; }};
+            return vnext && selector === "[data-vnext-fitment-root]" ? element() : null;
+        }, querySelectorAll() { return []; },
         createElement: element,
     };
     const window = {
@@ -215,7 +222,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             navigateFitmentRecovery,
             renderedWorkspace: () => globalThis.__fitmentRenderedWorkspace
         };`, context);
-    return { api: context.__navigationApi, calls, sessionStorage };
+    return { api: context.__navigationApi, calls, sessionStorage, focused: () => focused, interact: () => interactionListeners.get("keydown")?.() };
 }
 
 function pcdProjectionApi({ vnext = false, language = "ru", resultDom = false } = {}) {
@@ -2529,4 +2536,29 @@ test("P0-C1b same-value explicit Vehicle Save still sends Vehicle; Wheel stays i
 
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
+}
+
+for (const userMoved of [false, true]) {
+    test(`explicit result-to-rim navigation overrides required vehicle editor; focus moved=${userMoved}`, async () => {
+        let overview;
+        let resolve;
+        const pending = new Promise(done => { resolve = done; });
+        const harness = navigationApi({vnext:true,routes:{
+            "GET /api/backend/jobs/behavior-job/fitment": async () => {await pending;return response(200,overview);},
+        }});
+        overview = overviewFor(harness.api,"complete_vehicle_details");
+        const vehicleBefore = JSON.stringify(overview.vehicle);
+        harness.api.openFitmentView("behavior-job",{originView:"render-detail",openRimEditor:true});
+        if (userMoved) harness.interact();
+        resolve();
+        await new Promise(done => setTimeout(done,10));
+        assert.equal(harness.api.state.fitmentActiveSection,"rim");
+        assert.equal(harness.api.state.fitmentRimEditing,true);
+        assert.equal(harness.api.state.fitmentVehicleEditing,false);
+        assert.equal(JSON.stringify(harness.api.state.fitmentOverview.vehicle),vehicleBefore);
+        assert.equal(harness.focused(),userMoved ? "" : "#fitment-rim-editor-title");
+        const html = fitmentMarkup(harness.api.snapshot());
+        assert.match(html,/data-fitment-workspace="rim"/);
+        assert.doesNotMatch(html,/data-fitment-workspace="vehicle"/);
+    });
 }

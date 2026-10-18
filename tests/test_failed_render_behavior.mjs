@@ -119,3 +119,36 @@ test('draft photo pair aborts together if a write fails synchronously', async ()
   assert.equal(aborted,true);
   assert.equal(closed,true);
 });
+
+test('leaving and returning cannot revive photo preparation; a new action can succeed', async () => {
+  let release;
+  const waiting=new Promise(resolve=>{release=resolve;});
+  let persisted=0;
+  const state={view:'fitment',fitmentJobId:'selected',files:{car:'old-car',wheel:'old-wheel'},downloadNoticeByJob:{}};
+  const context={state,locale:'ru',uiCopy:copy,trackEvent:async()=>{},console:{error(){}},
+    fetchJobStatusForHistory:async()=>{await waiting;return {assets:{car_original:{download_url:'https://assets/car',kind:'car'},rim_original:{download_url:'https://assets/wheel',kind:'rim'}}};},
+    fetch:async url=>({ok:true,blob:async()=>new Blob([url])}),saveDraftFiles:async()=>{persisted++;},
+    resetCreateAssets:()=>{},renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
+    setView:view=>{context.cancelPhotoPreparation();state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+  vm.runInNewContext(fn('cancelPhotoPreparation')+'\n'+fn('repeatRenderWithSavedPhotos'),context);
+  const first=context.repeatRenderWithSavedPhotos('selected');
+  context.setView('wallet');context.setView('fitment');
+  release();await first;
+  assert.equal(state.view,'fitment');assert.equal(state.files.car,'old-car');assert.equal(persisted,0);
+  await context.repeatRenderWithSavedPhotos('selected');
+  assert.equal(state.view,'create');assert.equal(persisted,1);
+});
+
+test('cancelled draft preparation after opening IndexedDB never starts a write', async () => {
+  let current=true, writes=0, closed=false;
+  const context={openDraftDb:async()=>{current=false;return {transaction(){writes++;},close(){closed=true;}}},DRAFT_STORE_NAME:'draft'};
+  vm.runInNewContext(fn('saveDraftFiles'),context);
+  await context.saveDraftFiles([{kind:'car',file:{}}],{isCurrent:()=>current});
+  assert.equal(writes,0);assert.equal(closed,true);
+});
+
+test('confirmed missing result offers retry for the same job', () => {
+  const html=resultMarkup({locale:'ru',requestedJobId:'missing-job'});
+  assert.match(html,/Примерка не найдена/);
+  assert.match(html,/data-render-action="detail-retry" data-job="missing-job"/);
+});

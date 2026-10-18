@@ -1,4 +1,5 @@
 export const COPY = {
+  "render.tryOnNotFoundHint": { "ru": "Проверьте ссылку или попробуйте загрузить примерку ещё раз", "en": "Check the link or try loading this try-on again" },
   "auth.signInTelegram": { "ru": "Войти через Telegram", "en": "Sign in with Telegram" },
   "render.preparingPhotos": { "ru": "Загружаем фото…", "en": "Loading photos…" },
   "render.sourcePhotosUnavailable": { "ru": "Исходные фото недоступны", "en": "Source photos are unavailable" },

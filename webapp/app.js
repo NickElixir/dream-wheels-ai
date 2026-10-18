@@ -498,6 +498,7 @@ const state = {
     renderDetailLoading: false,
     renderDetailNotFoundJobId: "",
     repeatRenderPreparing: false,
+    repeatRenderOperation: null,
     renderDetailError: "",
     renderHistoryVisibleCount: 6,
     fitmentJobId: "",
@@ -5991,6 +5992,7 @@ function openFitmentView(
         originView = state.view,
         restoreSection = "",
         suppressAutomaticResolver = false,
+        openRimEditor = false,
     } = {}
 ) {
     if (!jobId) return;
@@ -6064,7 +6066,37 @@ function openFitmentView(
     state.fitmentModificationRetryVariant = null;
     setView("fitment");
     persistFitmentNavigationContext();
-    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver }).then(() => hydrateFitmentVehiclePhoto(jobId));
+    const generation = state.fitmentContextGeneration;
+    let focusAllowed = true;
+    const cancelFocus = (event) => {
+        if (event?.type === "focusin" && !event.target.matches("button, a, input, select, textarea")) return;
+        focusAllowed = false;
+    };
+    const focusEvents = ["keydown", "pointerdown", "input", "focusin"];
+    const cleanupFocus = () => {
+        if (openRimEditor) focusEvents.forEach(event => document.removeEventListener(event, cancelFocus, true));
+    };
+    if (openRimEditor) focusEvents.forEach(event => document.addEventListener(event, cancelFocus, true));
+    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor }).then(() => {
+        if (state.view !== "fitment" || state.fitmentJobId !== jobId || state.fitmentContextGeneration !== generation) {
+            cleanupFocus();
+            return;
+        }
+        if (openRimEditor && state.fitmentOverview) {
+            state.fitmentRestoreSection = "";
+            setFitmentEditor("rim");
+            setFitmentActiveSection("rim", { scroll: focusAllowed });
+            window.requestAnimationFrame(() => {
+                if (focusAllowed && state.view === "fitment" && state.fitmentContextGeneration === generation) {
+                    document.querySelector("#fitment-rim-editor-title")?.focus({ preventScroll: true });
+                }
+                cleanupFocus();
+            });
+        } else {
+            cleanupFocus();
+        }
+        void hydrateFitmentVehiclePhoto(jobId);
+    }).catch(cleanupFocus);
 }
 
 function closeFitmentView() {
@@ -7398,6 +7430,7 @@ function setMoreOpen(open) {
 }
 
 function setView(view, { refreshData = true } = {}) {
+    cancelPhotoPreparation();
     const viewChanged = state.view !== view;
     const leavingFitment = viewChanged && state.view === "fitment" && view !== "fitment";
     if (leavingFitment) {
@@ -8470,14 +8503,30 @@ function openBlankTryOn() {
     resetFlow();
 }
 
+function cancelPhotoPreparation() {
+    const operation = state.repeatRenderOperation;
+    if (!operation) return;
+    operation.cancelled = true;
+    operation.abortDraft?.();
+    operation.clearNotice?.();
+    state.repeatRenderOperation = null;
+    state.repeatRenderPreparing = false;
+}
+
 async function repeatRenderWithSavedPhotos(jobId) {
     if (state.repeatRenderPreparing) return;
     void trackEvent("repeat_render_started", { source_job_id: jobId });
     const ownerView = state.view;
-    const ownsScreen = () => state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
+    const operation = { cancelled: false };
+    state.repeatRenderOperation = operation;
+    const ownsScreen = () => !operation.cancelled && state.repeatRenderOperation === operation && state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
     const message = (value) => {
         if (ownerView === "fitment") { state.fitmentMessage = value; notifyFitmentBridge(); }
         else { state.downloadNoticeByJob[jobId] = value; notifyRenderBridge(); }
+    };
+    operation.clearNotice = () => {
+        if (ownerView === "fitment" && state.fitmentJobId === jobId && state.fitmentMessage === uiCopy("render.preparingPhotos", locale)) state.fitmentMessage = "";
+        if (state.downloadNoticeByJob[jobId] === uiCopy("render.preparingPhotos", locale)) state.downloadNoticeByJob[jobId] = "";
     };
     state.repeatRenderPreparing = true;
     message(uiCopy("render.preparingPhotos", locale));
@@ -8498,10 +8547,12 @@ async function repeatRenderWithSavedPhotos(jobId) {
         };
         const [carFile, wheelFile] = await Promise.all([fetchAsset(car), fetchAsset(wheel)]);
         if (!ownsScreen()) return;
-        await saveDraftFiles([
+        const entries = [
             { kind: "car", file: carFile, bytes: await carFile.blob.arrayBuffer() },
             { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
-        ]);
+        ];
+        if (!ownsScreen()) return;
+        await saveDraftFiles(entries, { isCurrent: ownsScreen, operation });
         if (!ownsScreen()) return;
         resetCreateAssets();
         state.files.car = carFile;
@@ -8517,8 +8568,11 @@ async function repeatRenderWithSavedPhotos(jobId) {
         console.error("[DW] Unable to restore saved photos", error);
         if (ownsScreen()) message(uiCopy("render.sourcePhotosFailed", locale));
     } finally {
-        state.repeatRenderPreparing = false;
-        if (ownsScreen()) {
+        if (state.repeatRenderOperation === operation) {
+            state.repeatRenderPreparing = false;
+            state.repeatRenderOperation = null;
+        }
+        if (!operation.cancelled && state.view === ownerView) {
             if (ownerView === "fitment") notifyFitmentBridge();
             else notifyRenderBridge();
         }
@@ -9208,12 +9262,14 @@ async function saveDraftFile(kind, file, bytes) {
 }
 
 // Keep the two source photos together: a failed transaction preserves the old draft.
-async function saveDraftFiles(entries) {
+async function saveDraftFiles(entries, { isCurrent = () => true, operation = null } = {}) {
     const db = await openDraftDb();
     if (!db) return;
     try {
+        if (!isCurrent()) return;
         await new Promise((resolve, reject) => {
             const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+            if (operation) operation.abortDraft = () => tx.abort();
             const store = tx.objectStore(DRAFT_STORE_NAME);
             tx.oncomplete = resolve;
             tx.onerror = () => reject(tx.error);
@@ -9226,6 +9282,7 @@ async function saveDraftFiles(entries) {
             }
         });
     } finally {
+        if (operation) operation.abortDraft = null;
         db.close();
     }
 }
@@ -9962,7 +10019,7 @@ window.dreamwheelsRenderBridge = {
         else if (action === "retry-create") { showCreateScreen("upload"); setView("create"); }
         else if (action === "repeat") void repeatRenderWithSavedPhotos(jobId);
         else if (action === "fitment" || action === "rim-details") {
-            void openFitmentView(jobId, { originView: "render-detail", restoreSection: action === "rim-details" ? "rim" : "" });
+            void openFitmentView(jobId, { originView: "render-detail", openRimEditor: action === "rim-details" });
         }
         else if (action === "download") void downloadResult({ jobId });
         else if (action === "feedback") void submitHistoryFeedback(jobId, value);

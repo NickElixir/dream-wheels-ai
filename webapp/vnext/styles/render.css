@@ -71,7 +71,7 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-history-actions { display:flex; justify-content:flex-end; }
 .vnext-system-wrap { display:grid; place-items:center; min-height:56vh; }
 .vnext-system-card { width:min(620px,100%); padding:28px; border:1px solid var(--vnext-border); border-radius:10px; background:var(--vnext-surface); }
-.vnext-system-card h2 { margin:0; font-size:28px; font-weight:500; letter-spacing:-.03em; }
+.vnext-system-card h1, .vnext-system-card h2 { margin:0; font-size:28px; font-weight:500; letter-spacing:-.03em; }
 .vnext-system-card p { margin:8px 0 22px; }
 .vnext-system-mark { color:var(--vnext-warning); font-size:26px; margin-bottom:12px; }
 .vnext-generation-error { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr); gap:32px; align-items:start; min-height:0; }
@@ -255,3 +255,8 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 }
 .vnext-render-loading .vnext-spinner { flex-shrink: 0; }
 .vnext-result-wheel-summary .vnext-button { margin-top: 12px; }
+
+.vnext-result-recovery-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.vnext-shell:has(.vnext-result-recovery) .vnext-shell__topbar-title { display: none; }
+.vnext-result-recovery p { margin-top: 12px; }

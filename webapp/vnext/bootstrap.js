@@ -272,7 +272,7 @@ function applyView(view, locale = applicationLocale()) {
   if (migratedViews.has(view)) mountSurface(view, undefined, locale);
   else unmountSurface();
   if (changed && mountedRoot) {
-    const heading = mountedRoot.querySelector("h1");
+    const heading = mountedRoot.querySelector(".vnext-result-recovery h1") || mountedRoot.querySelector("h1");
     heading?.setAttribute("tabindex", "-1");
     heading?.focus({ preventScroll: true });
   }
