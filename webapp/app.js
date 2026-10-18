@@ -8560,6 +8560,15 @@ async function refreshProcessingHistoryJobs() {
 }
 
 
+function homeRenderTitle(job) {
+    const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
+    const model = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
+    if (model) return model;
+    // UI-007: keep the existing short technical ID until account numbering ships.
+    const shortId = String(job?.job_id || job?.id || "").slice(0, 6);
+    return `${locale === "ru" ? "Примерка" : "Try-on"} #${shortId}`;
+}
+
 function vnextDashboardJobViewModel(job) {
     if (!job) return null;
     const resultUrl = job.status === "completed" && isAssetAvailable(job, "result")
@@ -8570,9 +8579,9 @@ function vnextDashboardJobViewModel(job) {
         status: job.status || "pending",
         failureCopy: renderFailureCopy(), billingMessage: renderBillingMessage(job),
         statusLabel: statusLabel(job.status),
-        title: humanRenderTitle(job),
-        subtitle: rimSummaryForJob(job) || "",
-        meta: formatDateTime(job.completed_at || job.created_at),
+        title: homeRenderTitle(job),
+        subtitle: "",
+        meta: formatShortDate(job.completed_at || job.created_at),
         imageUrl: job.status === "failed" && isAssetAvailable(job, "original") ? assetUrlForJob(job, "original") : resultUrl || "",
         canOpen: job.status === "completed",
     };
@@ -8602,7 +8611,7 @@ function vnextDashboardSnapshot() {
         partialAuth: isSupabasePartialAuth(),
         latest: vnextDashboardJobViewModel(latest),
         latestFailed: state.renderHistory.slice(0, latest ? state.renderHistory.indexOf(latest) : state.renderHistory.length).some(job => job.status === "failed"),
-        recent: state.renderHistory.slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
+        recent: state.renderHistory.filter(job => !latest || job.job_id !== latest.job_id).slice(0, 3).map(vnextDashboardJobViewModel).filter(Boolean),
     };
 }
 

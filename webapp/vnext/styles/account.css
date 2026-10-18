@@ -3,6 +3,11 @@
 .account-settings-head { padding: 0 0 24px; border: 0; }
 .account-settings-head > .section-label { display: none; }
 .account-settings-head h1 { margin: 0 0 12px; }
+.vnext-shell .account-settings-head h1 { display: none; }
+.vnext-shell__frame:has(.account-settings-panel) .vnext-shell__topbar { border-bottom: 0; }
+.vnext-shell .account-settings-head { padding: 16px 0; }
+.vnext-shell .account-settings-head .lede { margin: 0; max-width: none; }
+.vnext-shell .account-settings-panel [data-account-settings-content] { padding: 0; }
 .account-settings-head .lede, .vnext-account-preview > p { color: var(--vnext-text-secondary); line-height: 1.5; }
 .vnext-shell__frame:has(.vnext-account-preview) .vnext-shell__topbar { border-bottom: 0; }
 .account-settings-panel [data-account-settings-content], .vnext-account-preview [data-account-settings-content] { display: grid; gap: 12px; }
@@ -24,4 +29,10 @@
 .account-settings-panel .form-row:focus-within::before, .vnext-account-preview .form-row:focus-within::before { opacity: 1; }
 @media(prefers-reduced-motion:reduce) {
  .account-settings-panel .form-row::before, .vnext-account-preview .form-row::before { transition: none; }
+}
+
+/* UI-061: the dashboard hides its title bar but must keep mobile account access. */
+@media(max-width:700px) {
+ .vnext-shell__main:has(.vnext-dashboard) { position: relative; }
+ .vnext-shell[data-authenticated="true"] .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { display: flex; position: absolute; z-index: 1; top: 18px; right: 16px; width: 44px; padding: 0; border: 0; }
 }

@@ -162,7 +162,7 @@ export const COPY = {
     "en": "SKU"
   },
   "fitment.wheel.eyebrow": {
-    "ru": "Диск",
+    "ru": "Колёсный диск",
     "en": "Wheel"
   },
   "fitment.verdict.unknown.size": {
@@ -353,6 +353,12 @@ export const COPY = {
     "ru": "Вы всё ещё можете создать изображение, чтобы оценить внешний вид дисков.",
     "en": "You can still create an image to see how the wheels look."
   },
+  "create.wheelProductLink": { "ru": "Ссылка на колёсный диск (необязательно)", "en": "Wheel product link (optional)" },
+  "create.wheelProductLinkHint": { "ru": "Для будущей проверки совместимости с автомобилем", "en": "For a future compatibility check with your vehicle." },
+  "create.wheelHeading": {
+    "ru": "Колёсный диск",
+    "en": "Wheel"
+  },
   "page.tryOn": {
     "ru": "Виртуальная примерка",
     "en": "Create a try-on"
@@ -466,8 +472,8 @@ export const COPY = {
     "en": "Cancel"
   },
   "create.iConfirmMyRightToUseThesePhotosAnd": {
-    "ru": "Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки.",
-    "en": "I confirm my right to use these photos and consent to processing them for a visual try-on."
+    "ru": "У меня есть право использовать эти фото. Я соглашаюсь на их обработку для создания примерки.",
+    "en": "I have the right to use these photos. I consent to processing them to create a visual try-on."
   },
   "create.privacyPolicy": {
     "ru": "Политика конфиденциальности",

@@ -60,6 +60,10 @@ test('P3-B dashboard selects completed while keeping recent statuses and detects
  const ctx={getAuthAccountPresentation:()=>({identifier:"@demo"}),state:{renderHistory:[failed,completed],balance:3},locale:'ru',buildRenderExpiryCohorts:()=>[],formatRenderCount:String,vnextDashboardJobViewModel:x=>x,localizeErrorMessage:String,isFrontendUserAuthenticated:()=>true,isSupabasePartialAuth:()=>false};
  vm.createContext(ctx);vm.runInContext(extractDeclaration(source,'vnextDashboardSnapshot')+'\nthis.snapshot=vnextDashboardSnapshot;',ctx);
  const snap=ctx.snapshot();assert.equal(snap.latest,completed);assert.equal(snap.latestFailed,true);assert.equal(snap.recent[0],failed);
+ assert.equal(snap.recent.includes(completed),false);
+ const older=[1,2,3].map(n=>({job_id:'older-'+n,status:'completed'}));
+ ctx.state.renderHistory=[completed,...older];assert.deepEqual(Array.from(ctx.snapshot().recent),older);
+ ctx.state.renderHistory=[completed];assert.equal(ctx.snapshot().recent.length,0);
  ctx.state.renderHistory=[failed];assert.equal(ctx.snapshot().latest,null);
 });
 

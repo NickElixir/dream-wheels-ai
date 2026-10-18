@@ -14,7 +14,7 @@ import { createRenderView, refreshRenderView } from "./views/render.js";
 import { createFitmentView, refreshFitmentView } from "./views/fitment.js";
 import { createWalletView, refreshWalletView } from "./views/wallet.js";
 
-const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet"]);
+const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet", "settings"]);
 let mountedRoot = null;
 let mountedView = "";
 let mountedShell = null;
@@ -139,6 +139,10 @@ function surfaceDescriptor(view, locale = applicationLocale()) {
     const model = documentsViewModel(locale);
     return { title: model.title, content: createDocumentsView(model, { openExternal: legacyOpenExternal }) };
   }
+  if (view === "settings") {
+    const content = document.querySelector('[data-view="settings"] .account-settings-panel');
+    return content ? { title: uiText("account.settings.title", locale), content } : null;
+  }
   if (view === "fitment") return {
     title: uiText("page.fitment", locale),
     content: createFitmentView(window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks),
@@ -159,6 +163,10 @@ function unmountSurface() {
       [...mountedRoot.children].forEach((child) => {
         if (child.dataset.createScreen) child.hidden = child.dataset.createScreen !== screen;
       });
+    } else if (mountedView === "settings") {
+      const panel = mountedRoot.querySelector(".account-settings-panel");
+      if (panel) mountedRoot.replaceChildren(panel);
+      delete mountedRoot.dataset.vnextRoot;
     } else if (["renders", "render-detail", "fitment", "wallet"].includes(mountedView)) mountedRoot.querySelector(":scope > [data-vnext-surface-root]")?.remove();
     else {
       mountedRoot.replaceChildren();

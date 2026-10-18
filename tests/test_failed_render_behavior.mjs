@@ -18,13 +18,17 @@ for (const locale of ['ru','en']) {
   for (const billing of ['refunded','unknown','reserved','charged',undefined]) {
     test(`failed ${billing} ${locale}: one failure, safe billing, source photo`, () => {
       const job = model('failed',billing,locale);
-      for (const html of [resultMarkup(job), processingMarkup(job), historyMarkup({rows:[{...job, thumbnailUrl:job.originalUrl, thumbnailKind:'original'}]})]) {
+      for (const html of [resultMarkup(job), processingMarkup(job)]) {
         assert.equal(html.split(job.failureCopy.generationFailed).length-1,1);
         assert.equal(html.includes(locale==='ru'?'Кредит за этот рендер не списан':'You were not charged'),billing==='refunded');
         assert.doesNotMatch(html,/временно недоступно|temporarily unavailable|Результат примерки/);
         assert.match(html,/data-render-image="original"/);
         assert.match(html,/data-render-action="retry-create"/);
       }
+      const card = historyMarkup({locale,rows:[{...job, thumbnailUrl:job.originalUrl, thumbnailKind:'original'}]});
+      assert.ok(card.includes(copy('history.failedBadge',locale)));
+      assert.match(card,/data-render-image="original"/);
+      assert.doesNotMatch(card,/data-render-action="retry-create"|Кредит за этот рендер не списан|You were not charged/);
     });
   }
   test(`completed missing result ${locale} stays an asset failure`, () => {

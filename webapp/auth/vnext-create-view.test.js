@@ -81,7 +81,7 @@ test('legacy recognition/provider states and verdicts cannot gate visual render'
 
 test('product URL save delegates storage and explains deferred Fitment ownership',()=>{
   let saved;const view=createCreateView({...ready,sourceEditing:true},{saveRimProductUrl:value=>saved=value});
-  assert.match(view.allText,/Сохраним её для последующей проверки совместимости/);
+  assert.match(view.allText,/Для будущей проверки совместимости с автомобилем/);
   assert.doesNotMatch(view.allText,/Определить параметры|Получаем данные/);
   const input=view.find(n=>n.name==='rim_product_url');input.value='https://shop.example/wheel';
   view.find(n=>n.textContent==='Сохранить ссылку').listeners.click();
@@ -96,7 +96,7 @@ test('picker and consent callbacks remain functional',()=>{
 
 test('Create preserves RU/EN language selection',()=>{
   const view=createCreateView({...ready,locale:'en',sourceEditing:true});
-  assert.match(view.allText,/Create image/);assert.match(view.allText,/later compatibility check/);
+  assert.match(view.allText,/Create image/);assert.match(view.allText,/compatibility check/);
   assert.doesNotMatch(view.allText,/Ссылка на товар|Создать изображение/);
 });
 

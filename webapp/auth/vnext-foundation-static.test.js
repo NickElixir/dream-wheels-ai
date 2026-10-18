@@ -14,6 +14,8 @@ test("VNext foundation assets are linked from the static app entry", () => {
     "/vnext/styles/tokens.css",
     "/vnext/styles/foundation.css",
     "/vnext/styles/shell.css",
+    "/vnext/styles/approved-home-create.css",
+    "/vnext/styles/account.css",
     "/vnext/bootstrap.js",
   ]) assert.match(html, new RegExp(asset.replace(/[./]/g, "\\$&")));
 
