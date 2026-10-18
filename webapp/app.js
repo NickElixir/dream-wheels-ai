@@ -4506,6 +4506,10 @@ async function ensureFitmentPreviewAsset(job, kind) {
     const assetKey = kind === "vehicle" ? "car_original" : "rim_original";
     const asset = job.assets?.[assetKey];
     if (!asset?.download_url || state.renderAssetBlobUrlsByJob[job.job_id]?.[assetKey]) return;
+    const requestKey = `${job.job_id}:${assetKey}`;
+    state.fitmentPreviewRequests ||= new Set();
+    if (state.fitmentPreviewRequests.has(requestKey)) return;
+    state.fitmentPreviewRequests.add(requestKey);
     const sourceUrl = asset.download_url.startsWith("/")
         ? apiUrl(asset.download_url)
         : asset.download_url;
@@ -4524,6 +4528,8 @@ async function ensureFitmentPreviewAsset(job, kind) {
         renderFitment();
     } catch {
         // The context remains useful without a preview if the protected asset is unavailable.
+    } finally {
+        state.fitmentPreviewRequests.delete(requestKey);
     }
 }
 
@@ -9022,6 +9028,10 @@ async function requestRenderHistory({ silent = false } = {}) {
         renderRenders();
         renderDashboard();
         if (state.view === "render-detail") renderRenderDetail();
+        if (state.view === "fitment") {
+            window.dreamwheelsFitmentBridge.surfaceMounted();
+            renderFitment();
+        }
         scheduleRenderHistoryPolling();
     }
 }
@@ -9448,6 +9458,9 @@ function notifyRenderBridge() {
 }
 
 function notifyFitmentBridge() {
+    if (state.fitmentJobId && state.fitmentOverview) {
+        state.fitmentContextByJob[state.fitmentJobId] = state.fitmentOverview;
+    }
     if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:fitmentchange"));
 }
 
@@ -9939,7 +9952,9 @@ function vnextHistoryDateLabel(value) {
 }
 
 function vnextRenderJob(job) {
-    const rim = job?.render_input_snapshot?.rim || {};
+    const overview = state.fitmentJobId === job?.job_id && state.fitmentOverview
+        ? state.fitmentOverview : state.fitmentContextByJob?.[job?.job_id];
+    const rim = overview ? fitmentEffectiveRim(overview) : job?.render_input_snapshot?.rim || {};
     const specs = vnextRimSpecs(rim);
     return {
         locale,
@@ -10006,7 +10021,9 @@ function vnextRenderSnapshot(surface) {
             } : null,
         };
     }
-    const selectedJobId = surface === "current-result" ? state.jobId : state.renderDetailJobId;
+    const route = state.applicationRoute || applicationRouteContext(window.location);
+    const selectedJobId = surface === "current-result" ? state.jobId
+        : state.renderDetailJobId || (route?.view === "render-detail" ? route.jobId : "");
     const job = state.renderHistory.find((item) => item.job_id === selectedJobId);
     return job ? vnextRenderJob(job) : {
         locale, requestedJobId: selectedJobId,
