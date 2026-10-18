@@ -328,7 +328,7 @@ test('P1 RU/EN verdict snapshots: compatible, conditions, unknown, incompatible,
   for(const {locale,state,markup} of snapshots) {
     const model={locale,overview:{},executionStatus:state==='failed'?'failed':'completed',check:{execution_status:state==='failed'?'failed':'completed',verdict:state==='stale'?'unknown':state,is_current:state!=='stale',blocking_issues:[{code:'center_bore_unknown'}]}};
     const expected = state === 'failed' ? markup.replace(/<p>[^<]*<\/p><p>[^<]*<\/p><\/section>$/, `<p>${copy('fitment.failure.saved',locale)}</p></section>`) : markup;
-    assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0],expected,`${locale}/${state}`);
+    assert.equal(fitmentMarkup(model).match(/<section class="vnext-fitment__verdict[\s\S]*?<\/section>/u)[0].replace(/ data-fitment-focus-key="[^"]*"/g, ""),expected,`${locale}/${state}`);
   }
 });
 

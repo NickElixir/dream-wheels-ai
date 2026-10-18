@@ -129,7 +129,7 @@ test("focused check button without activation never creates a completion intent"
   assert.equal(selected,'[data-fitment-action="check"][data-value=""]');
 });
 
-for(const key of ["rim-error-0","verdict-heading-0"]) test(`${key} retains its focus on repeated redraw`,()=>{
+for(const key of ["error:rim-save","check-verdict"]) test(`${key} retains its focus on repeated redraw`,()=>{
   let selected="";
   const active={dataset:{fitmentFocusKey:key},tagName:key.includes("error")?"P":"H2"};
   const root={className:"vnext-fitment",fitmentWorkspaceKind:"none",querySelector(selector){if(selector.startsWith(":focus"))return active;if(selector===".vnext-fitment__configuration")return null;return {tagName:active.tagName,setAttribute(){},focus(){selected=selector;}};},replaceChildren(){}};

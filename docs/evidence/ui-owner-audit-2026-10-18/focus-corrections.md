@@ -35,3 +35,15 @@ Review base: fe1fc47d97fe59fdf755c4353722e9a62ac14891
 - Each focused error/verdict is redrawn five times to verify retention beyond the first completion render
 
 This page verifies component focus behavior, not real API integration or Telegram WebView
+
+## Third review corrections
+
+Review base: a80d0c71212d99f895f25b5a644fc85d295075a1
+
+- Field alerts use the stable field path/ID; general alerts use explicit purpose keys, with distinct check execution/status/request identities
+- Removed positional error keys entirely; insertion or removal of adjacent errors cannot reuse the focused message identity
+- When an alert disappears, restore its enabled field/picker or owning block heading, without focusing another alert
+- Expanded the real DOM regression page to 21 checks at each of 1440 and 390 px, including disappearing make error, inserted/removed adjacent errors, disabled field fallback and disappearing save error beside validation
+- The previous HEAD fails four new checks at each width; the corrected module passes all 21, with no browser runtime errors
+
+Real API, OAuth and Telegram WebView acceptance remains separate; no merge or deployment performed
