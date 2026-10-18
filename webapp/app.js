@@ -2277,7 +2277,6 @@ function renderAuthDialog() {
     const otpDestination = document.querySelector("[data-auth-otp-destination]");
     const descriptionLine1 = document.querySelector("[data-auth-description-line1]");
     const descriptionLine2 = document.querySelector("[data-auth-description-line2]");
-    const resendPrompt = document.querySelector("[data-auth-resend-prompt]");
     const telegramAlternative = document.querySelector("[data-auth-telegram]");
     const emailAlternative = document.querySelectorAll("[data-auth-email-alternative]");
     const initialOnly = document.querySelectorAll("[data-auth-initial-only]");
@@ -2306,7 +2305,7 @@ function renderAuthDialog() {
                 : isChangeEmailStep
                     ? t("auth.changeEmailTitle")
                     : t("auth.dialogTitle");
-    if (description) description.hidden = isRestoredStep;
+    if (description) description.hidden = !isRestoringStep && !isChangeEmailStep;
     if (descriptionLine1) descriptionLine1.textContent = isOtpStep
         ? t("auth.otpSentTo")
         : isRestoringStep
@@ -2333,10 +2332,9 @@ function renderAuthDialog() {
     if (emailLabel) emailLabel.textContent = t("auth.emailLabel");
     if (otpLabel) otpLabel.textContent = t("auth.codeLabel");
     if (sendButton) sendButton.textContent = isChangeEmailStep ? t("auth.getNewCode") : t("auth.getCode");
-    if (verifyButton) verifyButton.textContent = t("auth.verify");
+    if (verifyButton) verifyButton.textContent = t(state.authDialogBusy && isOtpStep ? "auth.loggingIn" : "auth.verify");
     if (changeEmailButton) changeEmailButton.textContent = t("auth.changeEmail");
     if (telegramLabel) telegramLabel.textContent = t("auth.telegramSecondary");
-    if (resendPrompt) resendPrompt.textContent = t("auth.resendPrompt");
     if (legalCopy) {
         const legalLink = legalCopy.querySelector("a");
         if (legalLink) {
@@ -2356,6 +2354,8 @@ function renderAuthDialog() {
     initialOnly.forEach((element) => {
         element.hidden = !isInitialEmailStep;
     });
+    const otpSentCopy = document.querySelector("[data-auth-otp-sent-copy]");
+    if (otpSentCopy) otpSentCopy.textContent = t("auth.otpSentTo");
     if (otpDestination) {
         otpDestination.textContent = isOtpStep && state.authDialogEmail
             ? maskAuthEmail(state.authDialogEmail)

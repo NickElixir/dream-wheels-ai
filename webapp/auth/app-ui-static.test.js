@@ -12,8 +12,8 @@ const app = fs.readFileSync(path.join(webappRoot, "app.js"), "utf8");
 test("Release 1 email auth UI exposes the approved controls and copy", () => {
     assert.match(html, /DREAM<\/span><span class="brand-dim">WHEELS AI/);
     assert.match(html, /data-auth-dialog-title>Войдите в аккаунт/);
-    assert.match(html, /data-auth-description-line1>Введите электронную почту/);
-    assert.match(html, /data-auth-description-line2>Мы пришлём код для входа/);
+    assert.match(html, /data-auth-dialog-description hidden/);
+    assert.doesNotMatch(html.slice(html.indexOf("data-auth-dialog hidden")), /data-auth-description-line[12]>[^<]+/);
     assert.doesNotMatch(html, /Введите электронную почту —/);
     assert.match(html, /placeholder="name@example\.com"/);
     assert.match(html, /data-auth-send>Получить код/);
@@ -27,18 +27,18 @@ test("Release 1 email auth UI exposes the approved controls and copy", () => {
 });
 
 test("OTP auth UI is a single accessible six-digit input with safe resend actions", () => {
-    assert.equal(COPY["legacy.auth.otpTitle"].ru, "Проверьте почту");
-    assert.equal(COPY["legacy.auth.otpSentTo"].ru, "Мы отправили код на");
+    assert.equal(COPY["legacy.auth.otpTitle"].ru, "Введите код");
+    assert.equal(COPY["legacy.auth.otpSentTo"].ru, "Код отправлен на");
     assert.match(html, /data-auth-otp-destination/);
     assert.match(html, /autocomplete="one-time-code"/);
     assert.match(html, /inputmode="numeric"/);
     assert.match(html, /maxlength="6"/);
-    assert.match(html, /aria-describedby="auth-otp-error"/);
+    assert.match(html, /aria-describedby="auth-otp-destination auth-otp-error"/);
     assert.match(html, /data-auth-otp-error/);
-    assert.match(html, /data-auth-resend-prompt>Не пришёл код\?/);
-    assert.match(html, /data-auth-resend>Отправить ещё раз/);
+    assert.doesNotMatch(html, /data-auth-resend-prompt/);
+    assert.match(html, /data-auth-resend>Отправить повторно/);
     assert.match(html, /data-auth-change-email>Изменить почту/);
-    assert.equal(COPY["legacy.auth.resendIn"].ru, "Отправить ещё раз через {seconds} сек");
+    assert.equal(COPY["legacy.auth.resendIn"].ru, "Отправить повторно через {seconds} с");
     assert.match(app, /state\.authDialogStep = "change-email"/);
     assert.match(html, /data-auth-back-to-otp/);
     assert.match(app, /state\.authDialogEmail = state\.authDialogChangeEmailOriginal/);
