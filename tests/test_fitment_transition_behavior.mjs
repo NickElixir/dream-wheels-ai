@@ -154,12 +154,12 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         createElement: element,
     };
     const window = {
-        Telegram: { Login: {} }, location: { search: "" }, innerWidth: 1280,
+        Telegram: { Login: {} }, location: { search: "", href: "https://test.local/", origin: "https://test.local" }, innerWidth: 1280,
         setTimeout, clearTimeout, requestAnimationFrame(callback) { callback(); },
         addEventListener() {}, scrollTo() {}, open() {},
     };
     const context = {
-        AbortController, URL, URLSearchParams, Blob, File, FormData, console, document, window,
+        AbortController, URL, URLSearchParams, Blob, File, FormData, crypto:globalThis.crypto, console, document, window,
         fetch: async (url, options = {}) => {
             const key = `${options.method || "GET"} ${new URL(url, "https://test.local").pathname}`;
             calls.push(key);
@@ -175,6 +175,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         const isApplicationRoute = () => false;
         const safeApplicationReturnPath = () => null;
         ${APP_SOURCE_FOR_VM}
+        const realRenderFitment = renderFitment;
         globalThis.__fitmentRenderedWorkspace = "";
         renderFitment = () => { globalThis.__fitmentRenderedWorkspace = state.fitmentActiveSection; };
         loadFitmentVehicleCatalogue = () => {};
@@ -199,7 +200,8 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
             rebaseFitmentTransientVehicleDraft,
             fitmentDraftMatchesOverview,
-            openFitmentView, setView,
+            openFitmentView, setView, openRenderDetail, loadFitmentReturnContext, vnextRenderJob,
+            useRealFitmentRendering() { renderFitment = realRenderFitment; },
             loadFitmentOverview, loadFitmentVehicleVariants, applyFitmentVehicleVariant,
             replaceFitmentVehicleVariant, saveFitment, setFitmentActiveSection, demoServerTransition,
             fitmentCanonicalRimConflicts, fitmentRimPendingProposalFields, fitmentRimSaveReadiness,
@@ -2629,5 +2631,64 @@ for (const userMoved of [false, true]) {
         for(let i=0;i<5;i++)await harness.api.loadFitmentOverview("behavior-job");
         assert.equal(harness.api.state.fitmentVehicleEditing,true);
         assert.equal(harness.focused(),userMoved?"":"#fitment-page-title");
+    });
+}
+
+for (const oldFirst of [false,true]) {
+    test(`late result context cannot replace saved wheel after A/B/A navigation; old response first=${oldFirst}`,async()=>{
+        let releaseOld,releaseNew,overview,saved,other,reads=0;
+        const oldResponse=new Promise(resolve=>{releaseOld=resolve;});
+        const newResponse=new Promise(resolve=>{releaseNew=resolve;});
+        const {api,calls}=navigationApi({vnext:true,routes:{
+            "GET /api/backend/jobs/behavior-job/fitment":()=>{
+                reads++;
+                if(reads===1)return oldResponse;
+                if(reads===2)return response(200,structuredClone(overview));
+                return newResponse;
+            },
+            "GET /api/backend/jobs/other-job/fitment":()=>response(200,structuredClone(other)),
+            "PATCH /api/backend/jobs/behavior-job/fitment":()=>response(200,structuredClone(saved)),
+        }});
+        overview=overviewFor(api,"complete_rim_specs");
+        overview.rim={...overview.rim,brand:'BBS',model:'OLD',sku:'OLD-SKU'};
+        overview.front_rim={rim:{...overview.rim},revision:1,field_states:{}};
+        saved=structuredClone(overview);
+        saved.rim={...saved.rim,model:'NEW-SAVED',sku:'NEW-SKU'};
+        saved.front_rim={...saved.front_rim,rim:{...saved.rim},revision:2};
+        saved.rim_revision=overview.rim_revision+1;
+        other={...structuredClone(overview),job_id:'other-job'};
+        const job={job_id:'behavior-job',status:'completed',render_input_snapshot:{rim:{model:'SNAPSHOT'}}};
+        api.state.renderHistory=[job,{job_id:'other-job',status:'completed'}];
+        api.useRealFitmentRendering();
+        api.openRenderDetail('behavior-job');
+        assert.equal(reads,1);
+        api.openFitmentView('behavior-job',{openRimEditor:true});
+        await new Promise(resolve=>setTimeout(resolve,10));
+        api.setVnextFitmentField('rim.model','NEW-SAVED');
+        await api.saveFitment(undefined,{owner:'rim'});
+        assert.ok(calls.includes('PATCH /api/backend/jobs/behavior-job/fitment'));
+        assert.equal(api.state.fitmentContextByJob['behavior-job'].front_rim.rim.model,'NEW-SAVED');
+        api.openFitmentView('other-job');
+        await new Promise(resolve=>setTimeout(resolve,10));
+        api.openRenderDetail('behavior-job');
+        assert.equal(api.vnextRenderJob(job).rimName,'BBS NEW-SAVED');
+        const freshToken=api.state.fitmentContextLoadingByJob['behavior-job'];
+        if(oldFirst){
+            releaseOld(response(200,overview));
+            await new Promise(resolve=>setTimeout(resolve,10));
+            assert.equal(api.state.fitmentContextLoadingByJob['behavior-job'],freshToken,'old finally preserves newer request ownership');
+            assert.equal(api.vnextRenderJob(job).rimName,'BBS NEW-SAVED');
+            const before=reads;await api.loadFitmentReturnContext('behavior-job');assert.equal(reads,before,'fresh request is still deduplicated');
+            releaseNew(response(200,saved));
+        }else{
+            releaseNew(response(200,saved));
+            await new Promise(resolve=>setTimeout(resolve,10));
+            releaseOld(response(200,overview));
+        }
+        await new Promise(resolve=>setTimeout(resolve,10));
+        assert.equal(api.vnextRenderJob(job).rimName,'BBS NEW-SAVED');
+        assert.equal(api.vnextRenderJob(job).rimSku,'NEW-SKU');
+        assert.equal(reads,3,'return starts a fresh request despite obsolete pending read');
+        assert.equal(api.state.fitmentContextLoadingByJob['behavior-job'],undefined);
     });
 }

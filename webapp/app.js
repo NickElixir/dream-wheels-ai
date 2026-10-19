@@ -8962,17 +8962,23 @@ function fitmentReturnAction(overview) {
 
 async function loadFitmentReturnContext(jobId) {
     if (!jobId || shouldUseDemoFitment(jobId) || state.fitmentContextLoadingByJob[jobId]) return;
-    state.fitmentContextLoadingByJob[jobId] = true;
+    const request = {};
+    state.fitmentContextLoadingByJob[jobId] = request;
     try {
         const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true }), {
             headers: withAuthHeaders(),
         });
         if (!response.ok) return;
-        state.fitmentContextByJob[jobId] = await response.json();
+        const overview = await response.json();
+        if (state.fitmentContextLoadingByJob[jobId] === request) {
+            state.fitmentContextByJob[jobId] = overview;
+        }
     } catch {
         // The editor itself remains available; its authoritative context loads on entry.
     } finally {
-        delete state.fitmentContextLoadingByJob[jobId];
+        if (state.fitmentContextLoadingByJob[jobId] === request) {
+            delete state.fitmentContextLoadingByJob[jobId];
+        }
         renderRenderDetail();
         renderDashboard();
     }
@@ -9460,6 +9466,8 @@ function notifyRenderBridge() {
 function notifyFitmentBridge() {
     if (state.fitmentJobId && state.fitmentOverview) {
         state.fitmentContextByJob[state.fitmentJobId] = state.fitmentOverview;
+        // Canonical editor updates supersede reads started before this publication.
+        delete state.fitmentContextLoadingByJob[state.fitmentJobId];
     }
     if (typeof CustomEvent === "function") window.dispatchEvent(new CustomEvent("dreamwheels:fitmentchange"));
 }
