@@ -451,10 +451,10 @@ test("Fitment parser states stay in wheel context and preserve the existing fiel
   assert.match(variants, /BBS CI-R/);
   assert.match(variants, /Артикул: A1/);
   assert.match(variants, /19″[^]*?8,5J[^]*?5×112[^]*?35,25[^]*?66,6/);
-  assert.match(variants, /Выбрать/);
+  assert.doesNotMatch(variants, /vnext-fitment__sku-select|>Выбрать</);
   assert.match(variants, /data-fitment-action="rim-variant"/);
   const missingSpecs = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", variants: [{ sku: "A2", values: {} }] } });
-  assert.equal((missingSpecs.match(/Не определено/g) || []).length, 5);
+  assert.equal((missingSpecs.match(/Нет данных/g) || []).length, 5);
 
   const conflict = fitmentMarkup({ ...base, resolver: { open: true, url: "https:\/\/shop.example.test\/wheel", conflicts: [{ field: "offset_et_mm", current: 40, suggested: 45 }] } });
   assert.match(conflict, /aria-label="Текущее значение ET: 40"/);
@@ -926,4 +926,18 @@ test("version picker replaces its summary inside the car card", () => {
   assert.match(car, /data-fitment-action="cancel-vehicle-reselection"/);
   assert.equal((markup.match(/id="fitment-variant-title"/g)||[]).length, 1);
   assert.doesNotMatch(markup, /photo-caption|version-chip/);
+});
+
+test('wheel variant cards require an explicit SKU and expose one selected card without nested actions', () => {
+  const model = {locale:'ru',rimEditing:true,resolver:{chooserOpen:true,variants:[
+    {sku:null,values:{}},{sku:'SKU-A',values:{}},{sku:'SKU-B',values:{}},
+  ]}};
+  const unselected=fitmentMarkup(model);
+  assert.equal((unselected.match(/class="vnext-fitment__sku-row"[^>]*aria-pressed="false"/g)||[]).length,3);
+  assert.doesNotMatch(unselected,/class="vnext-fitment__sku-row"[^>]*aria-pressed="true"/);
+  const selected=fitmentMarkup({...model,resolver:{...model.resolver,selectedSku:'SKU-B'}});
+  assert.equal((selected.match(/class="vnext-fitment__sku-row"[^>]*aria-pressed="true"/g)||[]).length,1);
+  assert.match(selected,/data-value="2" aria-pressed="true"/);
+  assert.doesNotMatch(selected,/vnext-fitment__sku-select|>Выбрать</);
+  assert.doesNotMatch(selected,/vnext-fitment__sku-check|✓/);
 });

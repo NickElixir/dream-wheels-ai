@@ -254,7 +254,7 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
   color: var(--vnext-text-secondary);
 }
 .vnext-render-loading .vnext-spinner { flex-shrink: 0; }
-.vnext-result-wheel-summary .vnext-button { margin-top: 12px; }
+.vnext-result-wheel-summary .vnext-button { margin-top: 12px; justify-self: start; width: auto; min-height: 38px; padding: 0 12px; font-size: 14px; }
 
 .vnext-result-recovery-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 

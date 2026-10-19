@@ -23,7 +23,7 @@ const scenarios={
 "manual-vehicle":{vehicleEditing:true},
 "vehicle-multi-market":{vehicleEditing:true,vehicleForm:{make:"mercedes",model:"glc",year:"2024",market:""},catalogue:{makes:[{value:"mercedes",label:"Mercedes-Benz"}],models:[{value:"glc",label:"GLC"}],years:[{value:"2024",label:"2024"}],markets:[{value:"EU",label:"Европа"},{value:"CN",label:"Китай"}],states:{makes:{status:"selected"},models:{status:"selected"},years:{status:"selected"},markets:{status:"selection_required",resolution:"selection_required"}}}},
 "required-variant":{nextAction:"select_vehicle_variant",vehicleVariantPickerOpen:true,vehicleVariants:[{label:"GLC 200 4MATIC",technical:"X254 / 2024 / EU"},{label:"GLC 300 4MATIC",technical:"X254 / 2024 / EU"}],selectedVehicleVariant:0},
-"multi-sku":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",open:false,chooserOpen:true,selectedSku:"SKU-A",variants:[{brand:"BBS",model:"CI-R",sku:"SKU-A",values:wheel},{brand:"BBS",model:"CI-R",sku:"SKU-B",values:{...wheel,wheel_width_j:8.5,offset_et_mm:33.275,center_bore_mm:null}},{brand:"BBS",model:"CI-R",sku:"SKU-C",values:{...wheel,wheel_width_j:10,offset_et_mm:42.125123}}]}},
+"multi-sku":{rimEditing:true,resolver:{url:"https://shop.example.test/bbs-ci-r",open:false,chooserOpen:true,selectedSku:null,variants:[{brand:"BBS",model:"CI-R",sku:"SKU-A",values:wheel},{brand:"BBS",model:"CI-R",sku:"SKU-B",values:{...wheel,wheel_width_j:8.5,offset_et_mm:33.275,center_bore_mm:null}},{brand:"BBS",model:"CI-R",sku:"SKU-C",values:{...wheel,wheel_width_j:10,offset_et_mm:42.125123}}]}},
 "all-proposals":{rimEditing:true,rimPendingProposals:fields},
 "partial-acceptance":{rimEditing:true,rimPendingProposals:fields.slice(3)},
 "all-confirmed":{rimEditing:true,rimPendingProposals:[]},
@@ -36,6 +36,7 @@ const scenarios={
 "both-ready":{overview:{vehicle_state:"confirmed_ready",rim_setup_state:"confirmed_ready"},vehicleStatus:"Комплектация подтверждена",nextAction:"run_standard_check",canRunCheck:true,canonicalVehicleSummary:"Mercedes-Benz GLC 2024 — GLC 200 4MATIC",canonicalWheelSummary:"BBS CI-R — 20″ / 9J / 5×112 / DIA 66,6 / ET 35,125"},
 "compatible":{},"compatible_with_conditions":{},"incompatible":{},"unknown":{},"stale":{},"failed":{},"staggered-result-identical":{},"staggered-result-different":{}
 };
+scenarios["multi-sku-selected"]={...structuredClone(scenarios["multi-sku"]),resolver:{...structuredClone(scenarios["multi-sku"].resolver),selectedSku:"SKU-B"}};
 const select=document.querySelector('#scenario');for(const name of Object.keys(scenarios)){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}
 let model;let root;
 function updateReadiness(){
@@ -54,7 +55,7 @@ function show(){
  }
  updateReadiness();
  model.canonicalWheelSummary=model.canonicalWheelSummary?.replaceAll(model.locale==="en"?',':'.',model.locale==="en"?'.':',');
- if(!root){root=createFitmentView(model,{action(action,value){if(action==="conflict-use"||action==="conflict-keep"){const [field,valueText]=value.split("|");if(action==="conflict-use")model.rim[field]=Number(valueText);model.resolver.conflicts=model.resolver.conflicts.filter(c=>c.field!==field);updateReadiness();refreshFitmentView(root,model);}if(action==="accept-rim-proposal"){const field=value.split('.')[1];model.rimPendingProposals=(model.rimPendingProposals||[]).filter(f=>field==="pcd"?!["bolt_count","pcd_mm"].includes(f):f!==field);updateReadiness();refreshFitmentView(root,model);} }});document.querySelector('#fitment').append(root);}else{root.fitmentPicker=null;refreshFitmentView(root,model);}
+ if(!root){root=createFitmentView(model,{action(action,value){if(action==="rim-variant"){const variant=model.resolver.variants[Number(value)];if(!variant)return;model.rim={...model.rim,...variant.values};model.resolver.selectedSku=variant.sku;model.resolver.variants=[];model.resolver.chooserOpen=false;model.rimPendingProposals=fields.filter(field=>variant.values[field]!=null);updateReadiness();refreshFitmentView(root,model);return;}if(action==="conflict-use"||action==="conflict-keep"){const [field,valueText]=value.split("|");if(action==="conflict-use")model.rim[field]=Number(valueText);model.resolver.conflicts=model.resolver.conflicts.filter(c=>c.field!==field);updateReadiness();refreshFitmentView(root,model);}if(action==="accept-rim-proposal"){const field=value.split('.')[1];model.rimPendingProposals=(model.rimPendingProposals||[]).filter(f=>field==="pcd"?!["bolt_count","pcd_mm"].includes(f):f!==field);updateReadiness();refreshFitmentView(root,model);} }});document.querySelector('#fitment').append(root);}else{root.fitmentPicker=null;refreshFitmentView(root,model);}
  // A preset dialog uses the same production picker and modal behavior.
  if(model.wheelPicker){root.fitmentPicker=model.wheelPicker;refreshFitmentView(root,model);root.querySelector('[data-wheel-picker-search]')?.focus();}
 }

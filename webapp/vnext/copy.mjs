@@ -5,7 +5,7 @@ export const COPY = {
   "render.sourcePhotosUnavailable": { "ru": "Исходные фото недоступны", "en": "Source photos are unavailable" },
   "render.sourcePhotosFailed": { "ru": "Не удалось загрузить фото. Повторите действие", "en": "Could not load photos. Try again" },
   "render.wheelDetailsMissing": { "ru": "Модель и параметры не указаны", "en": "Model and specifications are not provided" },
-  "render.enterWheelDetails": { "ru": "Указать данные диска", "en": "Enter wheel details" },
+  "render.enterWheelDetails": { "ru": "Указать модель", "en": "Specify model" },
   "render.detailLoadFailed": { "ru": "Не удалось загрузить примерку", "en": "Could not load the try-on" },
   "render.downloadShort": {"ru": "Скачать", "en": "Download"},
   "render.wheelReference": { "ru": "Колёсный диск", "en": "Wheel reference" },
@@ -50,8 +50,8 @@ export const COPY = {
     "en": "Hide"
   },
   "fitment.variant.notice": {
-    "ru": "Выбор варианта не подтверждает параметры — проверьте их ниже.",
-    "en": "Selecting a variant does not confirm its parameters — check them below."
+    "ru": "После выбора проверьте и сохраните параметры.",
+    "en": "After choosing a variant, review and save its parameters."
   },
   "fitment.variant.choose": {
     "ru": "Выбрать другой вариант",
