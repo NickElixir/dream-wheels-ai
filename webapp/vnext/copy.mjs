@@ -50,8 +50,8 @@ export const COPY = {
     "en": "Hide"
   },
   "fitment.variant.notice": {
-    "ru": "Выбор варианта не подтверждает параметры — проверьте их ниже.",
-    "en": "Selecting a variant does not confirm its parameters — check them below."
+    "ru": "После выбора проверьте и сохраните параметры.",
+    "en": "After choosing a variant, review and save its parameters."
   },
   "fitment.variant.choose": {
     "ru": "Выбрать другой вариант",
