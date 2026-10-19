@@ -462,18 +462,6 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     node.dataset.fitmentFocusKey = "check-verdict";
   });
   root.replaceChildren(...next.childNodes);
-  if (model.parameterSaveNotice && model.message && model.message !== root.fitmentLastSaveMessage) {
-    root.fitmentToastUntil = Date.now() + 3500;
-  }
-  root.fitmentLastSaveMessage = model.parameterSaveNotice ? model.message : "";
-  if (model.parameterSaveNotice && root.fitmentToastUntil > Date.now()) {
-    const toast = document.createElement("div");
-    toast.className = "vnext-fitment__save-toast";
-    toast.setAttribute("role", "status");
-    toast.textContent = localeOf(model) === "ru" ? "Параметры сохранены" : "Parameters saved";
-    root.append(toast);
-    toast.animate?.([{ opacity: 1 }, { opacity: 1 }], { duration: root.fitmentToastUntil - Date.now() }).finished.then(() => toast.remove()).catch(() => {});
-  }
   if (previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     const configuration = root.querySelector(".vnext-fitment__configuration");
     if (configuration && previousConfigurationHeight != null && configuration.animate) {
