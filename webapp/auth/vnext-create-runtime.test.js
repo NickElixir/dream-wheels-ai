@@ -35,6 +35,7 @@ notifyCreateBridge = () => {};
 haptic = () => {};
 trackEvent = async () => {};
 saveDraftFile = async () => {};
+persistCreateProductUrl = async () => {};
 sleep = async () => {};
 loadRenderHistory = async () => {};
 openRenderDetail = () => {};
@@ -43,6 +44,7 @@ getIdentityPayload = () => ({ init_data: 'test-init-data' });
 apiUrl = (path) => path;
 globalThis.api = { state, bridge: window.dreamwheelsCreateBridge, handleFileSelected, submitJob, resetCreateAssets,
   setFetch: (fetcher) => { authenticatedFetch = fetcher; },
+  setPersistUrl: (persist) => { persistCreateProductUrl = persist; },
   setRender: (render) => { submitJob = render; },
   setFitment: (fitment) => { openFitmentView = fitment; }
 };`, context);
@@ -78,7 +80,7 @@ test('Create uploads assets then creates a render without vehicle or resolver',a
     }
     return reply(200,{status:'completed',result_url:'/result.jpg'});
   });
-  app.bridge.saveRimProductUrl('https://shop.example/wheel');
+  await app.bridge.saveRimProductUrl('https://shop.example/wheel');
   assert.equal(calls.length,0);
   await app.submitJob();
   assert.deepEqual(calls,['/identity/assets','/jobs/from-assets','/jobs/job']);
@@ -117,9 +119,9 @@ test('replacement while asset upload is in flight discards response and never cr
   assert.deepEqual(calls,['/identity/assets']);assert.equal(app.state.createAssetDraftId,'');
 });
 
-test('URL saves and consent changes never invoke recognition',()=>{
+test('URL saves and consent changes never invoke recognition',async()=>{
   const app=prepared();app.setFetch(()=>{throw new Error('must not send');});
-  app.bridge.saveRimProductUrl('https://shop.example/wheel');app.bridge.setConsent(true);
+  await app.bridge.saveRimProductUrl('https://shop.example/wheel');app.bridge.setConsent(true);
   assert.equal(app.state.rimProductUrl,'https://shop.example/wheel');
   assert.equal('resolveIdentity' in app.bridge,false);assert.equal('chooseVehicle' in app.bridge,false);
 });
@@ -203,7 +205,7 @@ test('photo replacement during recovery upload prevents old creation from taking
 
 for(const value of ['', '  https://shop.example/wheel  ', 'garbage URL']) test(`optional URL is safe for render: ${value || 'empty'}`, async () => {
   const app=prepared(); let sent;
-  app.bridge.setSourceEditing(true); app.bridge.saveRimProductUrl(value);
+  app.bridge.setSourceEditing(true); await app.bridge.saveRimProductUrl(value);
   const valid=value.trim().startsWith('https://');
   assert.equal(app.state.rimProductUrl,valid?value.trim():'');
   assert.equal(Boolean(app.bridge.snapshot().productUrlError),value==='garbage URL');
@@ -217,9 +219,9 @@ for(const value of ['', '  https://shop.example/wheel  ', 'garbage URL']) test(`
   assert.equal(app.state.renderStatus,'completed');
 });
 
-test('invalid URL cannot replace last saved valid URL',()=>{
-  const app=prepared();app.bridge.saveRimProductUrl('https://shop.example/item');
-  app.bridge.setSourceEditing(true);app.bridge.saveRimProductUrl('not-a-link');
+test('invalid URL cannot replace last saved valid URL',async()=>{
+  const app=prepared();await app.bridge.saveRimProductUrl('https://shop.example/item');
+  app.bridge.setSourceEditing(true);await app.bridge.saveRimProductUrl('not-a-link');
   assert.equal(app.state.rimProductUrl,'https://shop.example/item');
   assert(app.bridge.snapshot().productUrlError);assert.equal(app.state.vnextCreateSourceEditing,true);
 });
@@ -248,7 +250,27 @@ test('an unrelated 404 does not trigger draft recovery',async()=>{
   assert.equal(app.state.createAssetDraftId,'draft');assert(app.state.createIdempotencyKey);
 });
 
-for(const value of ['https:///bad','javascript:alert(1)','shop.example.com/item','https://user:pass@shop.example/item'])test(`unsupported optional URL is not committed: ${value}`,()=>{
-  const app=prepared();app.bridge.saveRimProductUrl(value);
+for(const value of ['https:///bad','javascript:alert(1)','shop.example.com/item','https://user:pass@shop.example/item'])test(`unsupported optional URL is not committed: ${value}`,async()=>{
+  const app=prepared();await app.bridge.saveRimProductUrl(value);
   assert.equal(app.state.rimProductUrl,'');assert(app.bridge.snapshot().productUrlError);
+});
+
+
+test('generation waits for pending URL commit and uses that link',async()=>{
+  const app=prepared();let release;const calls=[];
+  app.setPersistUrl(()=>new Promise(resolve=>{release=resolve;}));
+  app.setFetch(async(path,options)=>{
+    calls.push(path);
+    if(path==='/identity/assets')return reply(200,{draft_id:'draft'});
+    if(path==='/jobs/from-assets'){
+      assert.equal(JSON.parse(options.body).rim.product_url,'https://shop.example/new-wheel');
+      return reply(200,{job_id:'job',status:'queued'});
+    }
+    return reply(200,{status:'completed',result_url:'/result.jpg'});
+  });
+  const saving=app.bridge.saveRimProductUrl('https://shop.example/new-wheel');
+  const generating=app.submitJob();
+  assert.equal(calls.length,0);
+  release();await saving;await generating;
+  assert.deepEqual(calls,['/identity/assets','/jobs/from-assets','/jobs/job']);
 });

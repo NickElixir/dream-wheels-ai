@@ -2692,3 +2692,62 @@ for (const oldFirst of [false,true]) {
         assert.equal(api.state.fitmentContextLoadingByJob['behavior-job'],undefined);
     });
 }
+
+
+for (const explicit of [false, true]) test(`multiple-market hydration preserves ${explicit ? "explicit" : "canonical"} market through wheel save`, async () => {
+    let saved;
+    const { api } = navigationApi({ routes: {
+        "PATCH /api/backend/jobs/behavior-job/fitment": () => response(200, saved),
+    } });
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle = { ...overview.vehicle, make: "Yema", model: "EC70", year: 2019, market: "chdm" };
+    overview.rim = {...overview.rim,wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:114.3,offset_et_mm:38,center_bore_mm:73.1};
+    overview.front_rim = {...overview.front_rim,rim:overview.rim,field_states:Object.fromEntries(Object.entries(overview.rim).map(([field,value])=>[field,{value,state:"confirmed"}]))};
+    seed(api, overview, "rim");
+    if (explicit) api.setVnextFitmentField("vehicle.market", "eudm");
+    const preloaded = cataloguePreload();
+    preloaded.markets = { outcome: "success", resolution: "multiple", items: [{value:"chdm",label:"China"},{value:"eudm",label:"Europe"}] };
+    await api.revalidateFitmentCatalogueChain(0, { preloaded });
+    assert.equal(api.state.fitmentForm.vehicle.market, explicit ? "eudm" : "chdm");
+    if (explicit) {
+        assert.equal(api.state.fitmentVehicleDirty, true);
+        const model = api.snapshot();
+        assert.match(fitmentMarkup(model), /Есть несохранённые изменения/);
+        return;
+    }
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    api.persistFitmentTransientDraft("navigation");
+    seed(api, overview, "rim");
+    api.restoreFitmentTransientDraft({ reason: "navigation", overview });
+    assert.equal(api.state.fitmentVehicleDirty, false);
+    saved = structuredClone(overview);
+    saved.rim_revision += 1;
+    api.state.fitmentCheck = {id:"previous-check",execution_status:"completed",is_current:true};
+    api.bridge.action("manual-rim");
+    await api.saveVnextFitment("rim");
+    const model = api.snapshot();
+    assert.equal(model.canRunCheck, true);
+    assert.equal(model.rimDraftDirty, false);
+    assert.equal(model.vehicleDraftDirty, false);
+    assert.doesNotMatch(fitmentMarkup(model).match(/<button[^>]*data-fitment-action="check"[^>]*>/)?.[0] || "", /disabled/);
+});
+
+test("selecting incomplete new wheel never inherits saved identity or confirmed geometry", () => {
+    const {api} = navigationApi();
+    const overview = overviewFor(api,"run_standard_check",{confirmedVariant:true});
+    const rim = {...overview.rim,brand:"VORSTEINER",model:"LK013",sku:"OLD-SKU",wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:114.3,offset_et_mm:38,center_bore_mm:73.1};
+    overview.rim = rim;
+    overview.front_rim = {...overview.front_rim,rim,source_fingerprint:"old-product",selected_variant_sku:"OLD-SKU",field_states:Object.fromEntries(Object.entries(rim).map(([field,value])=>[field,{value,state:"confirmed"}]))};
+    seed(api,overview,"rim");
+    api.state.fitmentSourceChooserIdentity={sourceFingerprint:"new-product",sourceUrl:"https://shop.example.test/enkei"};
+    api.state.fitmentSourceVariants=[{sku:null,values:{brand:"Enkei",bolt_count:5,pcd_mm:114.3}}];
+    api.selectFitmentRimVariant(0);
+    assert.equal(api.state.fitmentForm.rim.brand,"Enkei");
+    assert.equal(api.state.fitmentForm.rim.model,"");
+    assert.equal(api.state.fitmentForm.rim.sku,"");
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in,"");
+    assert.ok(api.fitmentRimPendingProposalFields().includes("pcd_mm"));
+    assert.equal(api.fitmentRimSaveReadiness().ready,false);
+    assert.equal(api.state.fitmentOverview.front_rim.rim.model,"LK013");
+    assert.equal(api.state.fitmentSourceConflicts.some(conflict => conflict.field === "brand"), false);
+});
