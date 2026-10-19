@@ -2751,3 +2751,26 @@ test("selecting incomplete new wheel never inherits saved identity or confirmed 
     assert.equal(api.state.fitmentOverview.front_rim.rim.model,"LK013");
     assert.equal(api.state.fitmentSourceConflicts.some(conflict => conflict.field === "brand"), false);
 });
+
+for (const acceptFirst of [false,true]) test(`URL replacement invalidates new SKU data despite old canonical confirmations; accepted=${acceptFirst}`,async()=>{
+    let patches=0;
+    const {api}=navigationApi({routes:{'PATCH /api/backend/jobs/behavior-job/fitment':()=>{patches++;return response(500,{});}}});
+    const overview=overviewFor(api,'run_standard_check',{confirmedVariant:true});
+    const rim={...overview.rim,brand:'OLD',model:'SAVED',wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:114.3,offset_et_mm:38,center_bore_mm:73.1};
+    overview.rim=rim;
+    overview.front_rim={...overview.front_rim,rim,source_fingerprint:'old-product',selected_variant_sku:'OLD',field_states:Object.fromEntries(Object.entries(rim).map(([field,value])=>[field,{value,state:'confirmed'}]))};
+    seed(api,overview,'rim');
+    api.state.fitmentSourceChooserIdentity={sourceFingerprint:'new-product',sourceUrl:'https://shop.example/new'};
+    api.state.fitmentForm.rim.product_url='https://shop.example/new';
+    api.state.fitmentSourceVariants=[{sku:'NEW',values:{...rim,brand:'NEW',model:'SKU',wheel_diameter_in:21,wheel_width_j:10}}];
+    api.selectFitmentRimVariant(0);
+    if(acceptFirst)api.bridge.action('accept-rim-proposal','rim.wheel_diameter_in');
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in,21);
+    api.setVnextFitmentField('rim.product_url','https://shop.example/other');
+    assert.equal(api.state.fitmentForm.rim.wheel_diameter_in,'');
+    assert.equal(api.state.fitmentForm.rim.wheel_width_j,'');
+    assert.equal(api.fitmentRimSaveReadiness().ready,false);
+    await api.saveVnextFitment('rim');
+    assert.equal(patches,0);
+    assert.equal(api.state.fitmentOverview.front_rim.rim.wheel_diameter_in,20);
+});

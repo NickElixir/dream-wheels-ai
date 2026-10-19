@@ -6516,9 +6516,8 @@ function invalidateFitmentRimSourceContext() {
     state.fitmentSourceResolving = false;
     const proposals = state.fitmentSourceProposalContexts || {};
     const accepted = state.fitmentSourceAcceptedContexts || {};
-    const canonicalStates = state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
     for (const fieldName of new Set([...Object.keys(proposals), ...Object.keys(accepted)])) {
-        if (state.fitmentRimManualFields.includes(fieldName) || canonicalStates[fieldName]?.state === "confirmed") continue;
+        if (state.fitmentRimManualFields.includes(fieldName)) continue;
         state.fitmentForm.rim[fieldName] = "";
     }
     state.fitmentSourceIdentity = { ...identity, sourceFingerprint: null, selectedVariantSku: null, variantState: "none", sourceUrl: null };
@@ -10584,11 +10583,19 @@ function createProductUrlValue(value) {
 
 
 async function submitJob() {
-    try {
-        while (state.createProductUrlSavePromise) await state.createProductUrlSavePromise;
-    } catch { return; }
     if (state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
     const inputVersion = state.createInputVersion;
+    const carFile = state.files.car;
+    const wheelFile = state.files.wheel;
+    const ownsInput = () => inputVersion === state.createInputVersion
+        && carFile === state.files.car && wheelFile === state.files.wheel;
+    try {
+        while (state.createProductUrlSavePromise) {
+            await state.createProductUrlSavePromise;
+            if (!ownsInput()) return;
+        }
+    } catch { return; }
+    if (!ownsInput() || state.submitting || !state.photoConsentAccepted) return;
     state.submitting = true;
     state.renderBillingStatus = "unknown";
     state.renderStatus = "queued";
@@ -10813,6 +10820,8 @@ function classifyGenerationError(message, language = locale) {
 }
 
 function handleFileSelected(kind, file) {
+    // Selecting a replacement cancels pending Create before its bytes are ready.
+    state.createInputVersion += 1;
     void trackEvent("upload_started", { asset_kind: kind });
     file.arrayBuffer().then((buffer) => {
         resetCreateAssets();

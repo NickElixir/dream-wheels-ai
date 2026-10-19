@@ -274,3 +274,30 @@ test('generation waits for pending URL commit and uses that link',async()=>{
   release();await saving;await generating;
   assert.deepEqual(calls,['/identity/assets','/jobs/from-assets','/jobs/job']);
 });
+
+for (const kind of ['car','wheel']) for (const delayedBytes of [false,true]) test(`photo replacement cancels generation waiting for URL commit: ${kind}, delayed bytes=${delayedBytes}`,async()=>{
+  const app=prepared();let release;const calls=[];
+  app.setPersistUrl(()=>new Promise(resolve=>{release=resolve;}));
+  app.setFetch(async(path,options)=>{
+    calls.push(path);
+    if(path==='/identity/assets'){
+      assert.equal(options.body.get(`${kind}_image`).name,'NEW-PHOTO.png');
+      return reply(200,{draft_id:'new-draft'});
+    }
+    if(path==='/jobs/from-assets')return reply(200,{job_id:'new-job',status:'queued'});
+    return reply(200,{status:'completed',result_url:'/result.jpg'});
+  });
+  const saving=app.bridge.saveRimProductUrl('https://shop.example/new-wheel');
+  const generating=app.submitJob();
+  const replacement=new Blob(['new-photo'],{type:'image/png'});replacement.name='NEW-PHOTO.png';
+  const bytes=await replacement.arrayBuffer();let releasePhoto;
+  if(delayedBytes)replacement.arrayBuffer=()=>new Promise(resolve=>{releasePhoto=()=>resolve(bytes);});
+  app.handleFileSelected(kind,replacement);
+  if(!delayedBytes)while(app.state.files[kind].name!=='NEW-PHOTO.png')await new Promise(resolve=>setImmediate(resolve));
+  release();await saving;await generating;
+  assert.deepEqual(calls,[],'an old Create action must not send any upload or generation request');
+  if(delayedBytes){releasePhoto();while(app.state.files[kind].name!=='NEW-PHOTO.png')await new Promise(resolve=>setImmediate(resolve));}
+  assert.equal(app.state.submitting,false);
+  await app.submitJob();
+  assert.deepEqual(calls,['/identity/assets','/jobs/from-assets','/jobs/new-job']);
+});
