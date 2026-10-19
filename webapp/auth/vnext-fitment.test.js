@@ -939,5 +939,5 @@ test('wheel variant cards require an explicit SKU and expose one selected card w
   assert.equal((selected.match(/class="vnext-fitment__sku-row"[^>]*aria-pressed="true"/g)||[]).length,1);
   assert.match(selected,/data-value="2" aria-pressed="true"/);
   assert.doesNotMatch(selected,/vnext-fitment__sku-select|>Выбрать</);
-  assert.match(selected,/vnext-fitment__sku-check" aria-hidden="true"/);
+  assert.doesNotMatch(selected,/vnext-fitment__sku-check|✓/);
 });
