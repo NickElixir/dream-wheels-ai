@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staging draft integrity regression</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css"><link rel="stylesheet" href="../../webapp/vnext/styles/create.css">
+<style>body{margin:0;background:#080d10;color:#eef0f1;font-family:sans-serif}nav,pre{padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}nav a{color:inherit;margin-right:16px}</style></head>
+<body><nav aria-label="Regression scenarios"><a href="?scenario=fitment">Market and save</a><a href="?scenario=sku">Incomplete SKU</a><a href="?scenario=create">Persistent link</a><a href="?scenario=pending">Pending Create</a><a href="?scenario=sku-url">SKU URL change</a></nav><pre id="qa-status" role="status">Starting runtime</pre><main id="app"><section data-view="fitment"></section><section data-view="create" hidden></section><section data-view="settings" hidden></section></main>
+<script type="module">
+const scenario=new URLSearchParams(location.search).get('scenario')||'fitment';
+const source=(await (await fetch('../../webapp/app.js')).text())
+ .replaceAll('from "./',`from "${location.origin}/webapp/`)
+ .replace('"dream-wheels-upload-draft"','"dream-wheels-regression-draft"');
+// The production runtime, bridge, renderer and IndexedDB functions remain real.
+// Only external network responses and unrelated dashboard loading are controlled.
+const setup=`
+syncApplicationAuthWall=()=>{};
+state.applicationAuthRequired=false;state.frontendAuthState={protectedApiReady:true};
+loadRenderHistory=async()=>{};loadFitmentVehicleCatalogue=()=>{};
+const qaScenario=${JSON.stringify(scenario)};
+const qaOverview=buildDefaultDemoFitmentOverview();
+qaOverview.job_id="regression-job";qaOverview.next_action={kind:"run_standard_check"};
+qaOverview.vehicle={make:"Yema",model:"EC70",year:2019,market:"chdm",is_user_confirmed:true};
+qaOverview.vehicle_state="confirmed_ready";qaOverview.modification_state="confirmed";
+qaOverview.selected_modification={modification:"EV"};
+qaOverview.rim={brand:"VORSTEINER",model:"LK013",sku:"OLD-SKU",product_url:"https://shop.example.test/old",wheel_diameter_in:20,wheel_width_j:9,bolt_count:5,pcd_mm:114.3,offset_et_mm:38,center_bore_mm:73.1};
+qaOverview.front_rim={rim:{...qaOverview.rim},source_fingerprint:"old-product",selected_variant_sku:"OLD-SKU",field_states:Object.fromEntries(Object.entries(qaOverview.rim).map(([field,value])=>[field,{value,state:"confirmed"}]))};
+qaOverview.rim_setup_state="confirmed_ready";
+qaOverview.current_check={id:"old-check",execution_status:"completed",is_current:true,verdict:"incompatible"};
+state.fitmentJobId="regression-job";state.fitmentOverview=qaOverview;state.fitmentCheck=qaOverview.current_check;
+state.fitmentForm=fitmentFormFromOverview(qaOverview);state.fitmentFormState.baseline=cloneFitmentForm(state.fitmentForm);state.fitmentActiveSection="rim";
+const qaRequests=[];
+window.fetch=async(url,options={})=>{
+ qaRequests.push({path:String(url),method:options.method||"GET"});
+ let body={jobs:[]};
+ if(String(url).includes('/identity/assets'))body={draft_id:"test-upload"};
+ if(String(url).includes('/jobs/from-assets'))body={job_id:"test-generation",status:"completed"};
+ if(String(url).endsWith('/jobs/test-generation'))body={job_id:"test-generation",status:"completed"};
+ if(options.method==="PATCH"){const saved=structuredClone(qaOverview);saved.rim_revision+=1;saved.current_check=null;body=saved;}
+ else if(String(url).includes('/fitment/checks/'))body={...qaOverview.current_check,is_current:false};
+ else if(String(url).includes('/fitment/checks'))body={checks:[]};
+ return new Response(JSON.stringify(body),{status:200,headers:{'Content-Type':'application/json'}});
+};
+if(["create","pending"].includes(qaScenario)){
+ const pixel=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0));
+ if(!await loadDraftFile("wheel"))await saveDraftFiles(["car","wheel"].map(kind=>({kind,file:{name:kind+".png",size:pixel.length,type:"image/png"},bytes:pixel.buffer})));
+ await hydrateFilesFromDraft();state.view="create";
+ if(qaScenario==="pending"){
+   state.photoConsentAccepted=true;
+   const realPersist=persistCreateProductUrl;
+   let releaseWrite;
+   const holdWrite=new Promise(resolve=>{releaseWrite=resolve;});
+   persistCreateProductUrl=async(...args)=>{await realPersist(...args);await holdWrite;};
+   const replace=document.createElement("button");replace.textContent="Replace wheel while waiting";
+   replace.onclick=()=>{const file=new Blob([pixel],{type:"image/png"});file.name="NEW-WHEEL.png";handleFileSelected("wheel",file);};
+   const finish=document.createElement("button");finish.textContent="Complete URL write";finish.onclick=releaseWrite;
+   document.querySelector("nav").append(replace,finish);
+ }
+ document.querySelector('[data-view="fitment"]').hidden=true;document.querySelector('[data-view="create"]').hidden=false;
+}else{
+ state.view="fitment";
+ if(["sku","sku-url"].includes(qaScenario)){
+   setFitmentEditor("rim");state.fitmentSourceChooserIdentity={sourceFingerprint:"new-product",sourceUrl:"https://shop.example.test/new"};
+   state.fitmentSourceVariants=qaScenario==="sku-url"?[{sku:"NEW",values:{brand:"Enkei",model:"RPF1",wheel_diameter_in:21,wheel_width_j:10,bolt_count:5,pcd_mm:114.3,offset_et_mm:40,center_bore_mm:75}}]:[{sku:null,values:{brand:"Enkei",bolt_count:5,pcd_mm:114.3}}];
+   if(qaScenario==="sku-url")state.fitmentForm.rim.product_url="https://shop.example.test/new";
+ }else{
+   await revalidateFitmentCatalogueChain(0,{preloaded:{makes:{outcome:"success",items:[{value:"Yema",label:"Yema"}]},models:{outcome:"success",items:[{value:"EC70",label:"EC70"}]},years:{outcome:"success",items:[{value:"2019",label:"2019"}]},markets:{outcome:"success",resolution:"multiple",items:[{value:"chdm",label:"China"},{value:"eudm",label:"Europe"}]}}});
+ }
+}
+window.addEventListener("qa-redraw",()=>["create","pending"].includes(qaScenario)?notifyCreateBridge():notifyFitmentBridge());
+setInterval(()=>{
+ const m=vnextFitmentSnapshot();document.querySelector('#qa-status').textContent=["create","pending"].includes(qaScenario)?JSON.stringify({savedUrl:state.rimProductUrl,error:state.createProductUrlError||"",photos:Object.values(state.files).filter(f=>f?.blob).length,wheel:state.files.wheel?.name,requests:qaRequests.filter(r=>r.path.endsWith("/identity/assets")||r.path.endsWith("/jobs/from-assets"))}):JSON.stringify({market:state.fitmentForm.vehicle.market,canRun:m.canRunCheck,wheelDirty:m.rimDraftDirty,vehicleDirty:m.vehicleDraftDirty,missing:m.rimSaveReadiness.missing,pending:m.rimPendingProposals});
+},100);
+`;
+try{
+ await import(URL.createObjectURL(new Blob([source+'\n'+setup],{type:'text/javascript'})));
+ await import('../../webapp/vnext/bootstrap.js');
+ window.dispatchEvent(new CustomEvent('dreamwheels:viewchange',{detail:{view:['create','pending'].includes(scenario)?'create':'fitment'}}));
+ const redraw=document.createElement('button');redraw.textContent='Five background redraws';redraw.onclick=()=>{for(let i=0;i<5;i++)window.dispatchEvent(new Event('qa-redraw'));};document.querySelector('nav').append(redraw);
+}catch(error){document.querySelector('#qa-status').textContent='FAIL: '+error.stack;}
+</script></body></html>

@@ -479,6 +479,8 @@ const state = {
     createIdempotencyKey: "",
     vnextCreateSourceEditing: false,
     rimProductUrl: "",
+    createProductUrlSaveToken: 0,
+    createProductUrlSavePromise: null,
     createProductUrlError: "",
     jobId: null,
     resultUrl: null,
@@ -5816,7 +5818,11 @@ async function revalidateFitmentCatalogueChain(
             ...marketResult, status: "resolved_single", items: [],
         };
     } else {
-        const explicitMarket = previousMarketStatus === "selected"
+        const canonicalVehicle = state.fitmentOverview?.vehicle || {};
+        const sameSavedVehicle = fitmentVehicleValuesEquivalent({ ...vehicle, market: canonicalVehicle.market }, canonicalVehicle);
+        const preserveCurrentMarket = previousMarketStatus === "selected"
+            || sameSavedVehicle && !parentChange.makeChanged && !parentChange.modelChanged && !vehicleWasDirty;
+        const explicitMarket = preserveCurrentMarket && previousMarket
             ? previousMarket
             : allowRemembered ? rememberedYear.lastExplicitMarket : "";
         const rememberedMarket = fitmentCatalogueSelectionItem("markets", explicitMarket, marketResult.items);
@@ -6295,7 +6301,7 @@ function fitmentSourceErrorMessage(error) {
         : "Wheel parameters could not be determined automatically";
 }
 
-function applyRimSourceValues(values, context = {}) {
+function applyRimSourceValues(values, context = {}, { replaceCanonical = false } = {}) {
     const appliedFields = [];
     const proposals = { ...(state.fitmentSourceProposalContexts || {}) };
     const accepted = { ...(state.fitmentSourceAcceptedContexts || {}) };
@@ -6321,7 +6327,7 @@ function applyRimSourceValues(values, context = {}) {
             delete accepted[fieldName];
             continue;
         }
-        if (canonicalStates[fieldName]?.state === "confirmed") {
+        if (!replaceCanonical && canonicalStates[fieldName]?.state === "confirmed") {
             delete proposals[fieldName];
             delete accepted[fieldName];
             continue;
@@ -6510,9 +6516,8 @@ function invalidateFitmentRimSourceContext() {
     state.fitmentSourceResolving = false;
     const proposals = state.fitmentSourceProposalContexts || {};
     const accepted = state.fitmentSourceAcceptedContexts || {};
-    const canonicalStates = state.fitmentOverview?.front_rim?.field_states || state.fitmentOverview?.rim_field_states || {};
     for (const fieldName of new Set([...Object.keys(proposals), ...Object.keys(accepted)])) {
-        if (state.fitmentRimManualFields.includes(fieldName) || canonicalStates[fieldName]?.state === "confirmed") continue;
+        if (state.fitmentRimManualFields.includes(fieldName)) continue;
         state.fitmentForm.rim[fieldName] = "";
     }
     state.fitmentSourceIdentity = { ...identity, sourceFingerprint: null, selectedVariantSku: null, variantState: "none", sourceUrl: null };
@@ -6543,13 +6548,28 @@ function selectFitmentRimVariant(index) {
     const context = { ...(state.fitmentSourceChooserIdentity || state.fitmentSourceIdentity), selectedVariantSku: variant.sku || null };
     state.fitmentSourceChooserIdentity = null;
     state.fitmentSkuChooserOpen = false;
-    const appliedFields = applyRimSourceValues(variant.values, context);
+    const canonical = fitmentSourceIdentityFromOverview(state.fitmentOverview);
+    const replaceCanonical = context.sourceFingerprint !== canonical.sourceFingerprint
+        || context.selectedVariantSku !== canonical.selectedVariantSku
+        || ["brand", "model"].some(field => variant.values?.[field]
+            && !fitmentRimValuesEqual(variant.values[field], fitmentEffectiveRim(state.fitmentOverview)[field]));
+    if (replaceCanonical) {
+        // A different product cannot inherit confirmed identity or geometry from
+        // the saved wheel. Explicit edits in this draft still belong to the user.
+        for (const field of Object.keys(state.fitmentForm.rim)) {
+            if (field === "product_url" || state.fitmentRimManualFields.includes(field)) continue;
+            state.fitmentForm.rim[field] = "";
+        }
+        state.fitmentSourceProposalContexts = {};
+        state.fitmentSourceAcceptedContexts = {};
+    }
+    const appliedFields = applyRimSourceValues(variant.values, context, { replaceCanonical });
     const manualConflicts = (state.fitmentSourceConflicts || []).filter((conflict) => conflict.origin === "manual");
     state.fitmentSourceAppliedFields = appliedFields;
     state.fitmentSourceDetected = Object.keys(variant.values || {}).length > 0;
     state.fitmentSourceVariants = [];
     state.fitmentSourceConflicts = mergeFitmentRimConflicts(
-        fitmentCanonicalRimConflicts(variant.values, variant.conflicts), manualConflicts,
+        fitmentCanonicalRimConflicts(replaceCanonical ? {} : variant.values, variant.conflicts), manualConflicts,
     );
     state.fitmentSourceIdentity = { ...state.fitmentSourceIdentity, ...context, variantState: "selected" };
     state.fitmentSourceStatus = appliedFields.length
@@ -8559,6 +8579,7 @@ async function repeatRenderWithSavedPhotos(jobId) {
         if (state.downloadNoticeByJob[jobId] === uiCopy("render.preparingPhotos", locale)) state.downloadNoticeByJob[jobId] = "";
     };
     state.repeatRenderPreparing = true;
+    state.createProductUrlSaveToken += 1;
     message(uiCopy("render.preparingPhotos", locale));
     try {
         const job = await fetchJobStatusForHistory(jobId);
@@ -8582,7 +8603,7 @@ async function repeatRenderWithSavedPhotos(jobId) {
             { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
         ];
         if (!ownsScreen()) return;
-        await saveDraftFiles(entries, { isCurrent: ownsScreen, operation });
+        await saveDraftFiles(entries, { isCurrent: ownsScreen, operation, productUrl: job.render_input_snapshot?.rim?.product_url || "" });
         if (!ownsScreen()) return;
         resetCreateAssets();
         state.files.car = carFile;
@@ -9295,6 +9316,7 @@ async function saveDraftFile(kind, file, bytes) {
             type: file.type,
             bytes,
         });
+        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value: "" });
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -9302,7 +9324,7 @@ async function saveDraftFile(kind, file, bytes) {
 }
 
 // Keep the two source photos together: a failed transaction preserves the old draft.
-async function saveDraftFiles(entries, { isCurrent = () => true, operation = null } = {}) {
+async function saveDraftFiles(entries, { isCurrent = () => true, operation = null, productUrl = "" } = {}) {
     const db = await openDraftDb();
     if (!db) return;
     try {
@@ -9316,6 +9338,7 @@ async function saveDraftFiles(entries, { isCurrent = () => true, operation = nul
             tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
             try {
                 entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
+                store.put({ kind: "product-url", value: productUrl });
             } catch (error) {
                 tx.abort();
                 reject(error);
@@ -9352,13 +9375,44 @@ async function deleteDraftFile(kind) {
     await new Promise((resolve, reject) => {
         const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
         tx.objectStore(DRAFT_STORE_NAME).delete(kind);
+        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).delete("product-url");
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
     db.close();
 }
 
+async function persistCreateProductUrl(value, isCurrent = () => true) {
+    const db = await openDraftDb();
+    if (!db) throw new Error("Draft storage unavailable");
+    try {
+        if (!isCurrent()) return;
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+            tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value });
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
+        });
+    } finally { db.close(); }
+}
+
 async function hydrateFilesFromDraft() {
+    const urlToken = state.createProductUrlSaveToken;
+    try {
+        const db = await openDraftDb();
+        if (db) {
+            try {
+                const entry = await new Promise((resolve, reject) => {
+                    const request = db.transaction(DRAFT_STORE_NAME, "readonly").objectStore(DRAFT_STORE_NAME).get("product-url");
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                if (urlToken === state.createProductUrlSaveToken && !state.rimProductUrl) state.rimProductUrl = createProductUrlValue(entry?.value || "") || "";
+            } finally { db.close(); }
+        }
+    } catch { /* Photos remain recoverable when optional metadata cannot be read. */ }
+
     for (const kind of ["car", "wheel"]) {
         if (state.files[kind]?.blob) continue;
         try {
@@ -9672,6 +9726,7 @@ function vnextFitmentSnapshot() {
         rearRimPendingProposals: fitmentRimPendingProposalFields("rear"),
         rimSaveReadiness: rimReadiness,
         rimDraftDirty: fitmentWheelDraftIsDirty(),
+        vehicleDraftDirty: Boolean(state.fitmentVehicleDirty),
         rearDraftPreserved: Boolean(state.fitmentRearDraftInitialized && state.fitmentForm?.setup_mode === "uniform"),
         resolver: {
             chooserOpen: Boolean(state.fitmentSkuChooserOpen),
@@ -10141,7 +10196,7 @@ window.dreamwheelsCreateBridge = {
         notifyCreateBridge();
     },
     setSourceEditing(enabled) { state.vnextCreateSourceEditing = Boolean(enabled); notifyCreateBridge(); },
-    saveRimProductUrl(value) {
+    async saveRimProductUrl(value) {
         const url = createProductUrlValue(value);
         state.createProductUrlError = url === undefined
             ? (locale === "ru" ? "Укажите корректную ссылку на товар" : "Enter a valid product link") : "";
@@ -10149,8 +10204,22 @@ window.dreamwheelsCreateBridge = {
             notifyCreateBridge();
             return;
         }
-        state.rimProductUrl = url || "";
-        state.vnextCreateSourceEditing = false;
+        const token = ++state.createProductUrlSaveToken;
+        const wheel = state.files.wheel;
+        const isCurrent = () => token === state.createProductUrlSaveToken && state.files.wheel === wheel && !state.repeatRenderPreparing;
+        const pending = persistCreateProductUrl(url || "", isCurrent);
+        state.createProductUrlSavePromise = pending;
+        try {
+            await pending;
+            if (!isCurrent()) return;
+            state.rimProductUrl = url || "";
+            state.vnextCreateSourceEditing = false;
+        } catch {
+            if (!isCurrent()) return;
+            state.createProductUrlError = locale === "ru" ? "Не удалось сохранить ссылку. Попробуйте ещё раз." : "Could not save the link. Please try again.";
+        } finally {
+            if (state.createProductUrlSavePromise === pending) state.createProductUrlSavePromise = null;
+        }
         renderCreateInputs();
     },
     surfaceMounted() { hideMainButton(); setBackButton(null); },
@@ -10304,6 +10373,7 @@ function resetFlow() {
     state.submitting = false;
     state.files = { car: null, wheel: null };
     state.rimProductUrl = "";
+    state.createProductUrlSaveToken += 1;
     resetCreateAssets();
     revokePreviewUrl("car");
     revokePreviewUrl("wheel");
@@ -10515,6 +10585,17 @@ function createProductUrlValue(value) {
 async function submitJob() {
     if (state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
     const inputVersion = state.createInputVersion;
+    const carFile = state.files.car;
+    const wheelFile = state.files.wheel;
+    const ownsInput = () => inputVersion === state.createInputVersion
+        && carFile === state.files.car && wheelFile === state.files.wheel;
+    try {
+        while (state.createProductUrlSavePromise) {
+            await state.createProductUrlSavePromise;
+            if (!ownsInput()) return;
+        }
+    } catch { return; }
+    if (!ownsInput() || state.submitting || !state.photoConsentAccepted) return;
     state.submitting = true;
     state.renderBillingStatus = "unknown";
     state.renderStatus = "queued";
@@ -10739,10 +10820,12 @@ function classifyGenerationError(message, language = locale) {
 }
 
 function handleFileSelected(kind, file) {
+    // Selecting a replacement cancels pending Create before its bytes are ready.
+    state.createInputVersion += 1;
     void trackEvent("upload_started", { asset_kind: kind });
     file.arrayBuffer().then((buffer) => {
         resetCreateAssets();
-        if (kind === "wheel") state.rimProductUrl = "";
+        if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
         state.files[kind] = {
             blob: new Blob([buffer], { type: file.type }),
             name: file.name,
@@ -10761,7 +10844,7 @@ function handleFileSelected(kind, file) {
 
 function clearSelectedFile(kind) {
     state.files[kind] = null;
-    if (kind === "wheel") state.rimProductUrl = "";
+    if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
     resetCreateAssets();
     revokePreviewUrl(kind);
     resetPreviewGeometry(kind);
