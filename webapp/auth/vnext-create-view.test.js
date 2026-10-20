@@ -134,3 +134,45 @@ for (const key of ["consent","photo-car","stage-wheel","save-link"]) test(`Creat
   view=refreshCreateView(view,ready,{});
   assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus===key));
 });
+
+test('untouched Create URL receives late draft hydration and subsequent canonical updates', () => {
+  let view = createCreateView(ready);
+  view.find(n => n.name === 'rim_product_url').focus();
+  for (const url of ['https://shop.test/saved', 'https://shop.test/replaced']) {
+    view = refreshCreateView(view, {...ready, rimProductUrl: url}, {});
+    const input = view.find(n => n.name === 'rim_product_url');
+    assert.equal(input.value, url);
+    assert.equal(document.activeElement, input);
+    assert.equal(view.querySelector('.vnext-create__status--positive').hidden, false);
+  }
+});
+
+for (const edited of ['https://shop.test/unsaved', '']) test(`late hydration preserves user edit ${edited || '(cleared)'}`, () => {
+  let view = createCreateView(ready);
+  const input = view.find(n => n.name === 'rim_product_url');
+  input.value = 'https://shop.test/typing';
+  input.dispatchEvent(new Event('input'));
+  input.value = edited;
+  input.dispatchEvent(new Event('input'));
+  view = refreshCreateView(view, ready, {});
+  for (let i = 0; i < 5; i++) {
+    view = refreshCreateView(view, {...ready, rimProductUrl: 'https://shop.test/saved'}, {});
+    assert.equal(view.find(n => n.name === 'rim_product_url').value, edited);
+    assert.equal(view.querySelector('.vnext-create__status--positive').hidden, true);
+  }
+});
+
+test('failed URL save retains text with inline error; successful save adopts canonical updates', () => {
+  let view = createCreateView(ready);
+  const input = view.find(n => n.name === 'rim_product_url');
+  input.value = 'https://shop.test/new';
+  input.dispatchEvent(new Event('input'));
+  view = refreshCreateView(view, {...ready, productUrlError: 'Не удалось сохранить ссылку. Попробуйте ещё раз.'}, {});
+  assert.equal(view.find(n => n.name === 'rim_product_url').value, input.value);
+  assert.equal(view.find(n => n.attributes.role === 'alert').tagName, 'p');
+  assert.equal(view.querySelector('.vnext-create__status--positive'), null);
+  view = refreshCreateView(view, {...ready, rimProductUrl: input.value}, {});
+  assert.equal(view.querySelector('.vnext-create__status--positive').hidden, false);
+  view = refreshCreateView(view, {...ready, rimProductUrl: 'https://shop.test/canonical'}, {});
+  assert.equal(view.find(n => n.name === 'rim_product_url').value, 'https://shop.test/canonical');
+});
