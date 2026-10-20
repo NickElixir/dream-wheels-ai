@@ -1,6 +1,8 @@
 import { copy as uiText, applicationLocale, localeOf } from "../copy.mjs";
 import { createButton } from "../ui/primitives.js";
 
+const sourceInputState = new WeakMap();
+
 function imageStage(kind, file, callbacks, disabled, snapshot, locale = localeOf(snapshot)) {
   const article = document.createElement("article");
   article.className = `vnext-create__object vnext-create__object--${kind}`;
@@ -86,6 +88,13 @@ function sourceEditor(snapshot, callbacks) {
   input.autocomplete = "url";
   input.placeholder = "https://";
   input.value = snapshot.rimProductUrl || "";
+  const inputState = { savedValue: input.value, edited: false };
+  sourceInputState.set(input, inputState);
+  input.addEventListener("input", () => {
+    inputState.edited = true;
+    const saved = form.querySelector(".vnext-create__status--positive");
+    if (saved) saved.hidden = input.value !== inputState.savedValue;
+  });
   input.setAttribute("aria-invalid", String(Boolean(snapshot.productUrlError)));
   field.append(caption, input);
   const save = createButton({ label: uiText("create.saveLink", localeOf(snapshot)), variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
@@ -111,7 +120,6 @@ function sourceEditor(snapshot, callbacks) {
   form.append(save);
   if (snapshot.rimProductUrl && !snapshot.productUrlError) {
     const saved = statusLine(uiText("create.linkSaved", localeOf(snapshot)), "positive");
-    input.addEventListener("input", () => { saved.hidden = input.value !== (snapshot.rimProductUrl || ""); });
     saved.hidden = input.value !== (snapshot.rimProductUrl || "");
     form.append(saved);
   }
@@ -188,7 +196,12 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 }
 
 export function refreshCreateView(current, snapshot, callbacks, locale = applicationLocale()) {
-  const values = new Map([...current.querySelectorAll("input[name]")].map((input) => [input.name, input.value]));
+  const values = new Map([...current.querySelectorAll("input[name]")]
+    .filter((input) => {
+      const state = sourceInputState.get(input);
+      return !state || state.edited || input.value !== state.savedValue;
+    })
+    .map((input) => [input.name, { value: input.value, savedValue: sourceInputState.get(input)?.savedValue }]));
   const focused = document.activeElement;
   const focusName = current.contains(focused) ? focused.name : "";
   const focusKey = current.contains(focused) ? focused.dataset?.createFocus : "";
@@ -197,7 +210,11 @@ export function refreshCreateView(current, snapshot, callbacks, locale = applica
   current.replaceWith(next);
   for (const input of next.querySelectorAll("input[name]")) {
     if (values.has(input.name)) {
-      input.value = values.get(input.name);
+      const previous = values.get(input.name);
+      input.value = previous.value;
+      const state = sourceInputState.get(input);
+      // An unchanged empty snapshot must not erase an intentional clear before hydration.
+      if (state) state.edited = input.value !== state.savedValue || previous.savedValue === state.savedValue;
       const saved = next.querySelector(".vnext-create__status--positive");
       if (saved && input.name === "rim_product_url") saved.hidden = input.value !== (snapshot.rimProductUrl || "");
     }
