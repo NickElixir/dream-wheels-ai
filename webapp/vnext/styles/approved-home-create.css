@@ -123,6 +123,10 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 
 .vnext-create__status--positive strong { color: var(--vnext-positive); }
 
+.vnext-create__source-form > .vnext-create__status--positive { border: 0; padding: 0; font-size: 13px; }
+
+.vnext-create__source-form > .vnext-create__status--positive strong { font-weight: var(--vnext-weight-regular); }
+
 .vnext-create__error { display: grid; gap: var(--vnext-space-3); }
 
 .vnext-create__actions { display: flex; flex-wrap: wrap; gap: var(--vnext-space-3); padding-top: var(--vnext-space-2); }
