@@ -11,7 +11,7 @@ from typing import Any
 _SPACE_RE = re.compile(r"\s+")
 _KEY_RE = re.compile(r"[^a-z0-9]+")
 _MARKING_SIZE_RE = re.compile(
-    r"(?P<width>\d{1,2}(?:[.,]\d)?)\s*J?\s*[xх×]\s*(?P<diameter>\d{2})\b",
+    r"(?<![\d.,])(?P<width>\d{1,2}(?:[.,]\d)?)\s*J?\s*[xх×]\s*(?P<diameter>\d{2})(?![\d.,])\b",
     re.IGNORECASE,
 )
 _MARKING_ET_RE = re.compile(r"\bET\s*(?P<et>-?\d{1,3})\b", re.IGNORECASE)
@@ -137,6 +137,7 @@ class ExtractedCandidate:
 class ExtractedVariant:
     candidates: tuple[ExtractedCandidate, ...]
     relation_sources: tuple[str, ...]
+    variant_id: str | None = None
     parent_ids: tuple[str, ...] = ()
     source_url: str | None = None
 
@@ -927,6 +928,38 @@ def _looks_like_product(mapping: dict[str, Any]) -> bool:
     return has_identity and (has_specs or any(key in normalized for key in _SKU_KEYS))
 
 
+def _shopify_product(value: dict[str, Any]) -> dict[str, Any]:
+    """Read Shopify option tuples without applying width-first J-marking rules."""
+    value = dict(value)
+    title = _clean_text(value.get("title")) or ""
+    brand = _clean_text(value.get("vendor")) or ""
+    model = title[len(brand) :].strip() if title.lower().startswith(brand.lower() + " ") else title
+    if model and len(model) <= 80:
+        value.setdefault("model", model)
+    normalized_variants = []
+    for variant in value.get("variants", []):
+        if not isinstance(variant, dict):
+            continue
+        variant = dict(variant)
+        option = variant.get("option1") or variant.get("public_title") or variant.get("title") or ""
+        match = re.fullmatch(
+            r"\s*(\d{2}(?:[.,]\d+)?)\s*[x×х]\s*(\d{1,2}(?:[.,]\d+)?)"
+            r"\s*/\s*([4-6])\s*[x×х]\s*(\d{2,3}(?:[.,]\d+)?)"
+            r"(?:\s*/\s*([+-]\d{1,3}(?:[.,]\d+)?))?\s*",
+            str(option),
+            re.I,
+        )
+        if match:
+            for field, raw in zip(
+                ("diameter", "width", "boltCount", "pcd", "offset"), match.groups(), strict=True
+            ):
+                if raw is not None:
+                    variant.setdefault(field, raw)
+        normalized_variants.append(variant)
+    value["variants"] = normalized_variants
+    return value
+
+
 def _extract_embedded_json(data: Any, source: str) -> ExtractedPage:
     primary: list[ExtractedCandidate] = []
     variants: list[ExtractedVariant] = []
@@ -955,8 +988,17 @@ def _extract_embedded_json(data: Any, source: str) -> ExtractedPage:
         if not isinstance(value, dict):
             return
 
+        is_shopify_product = (
+            isinstance(value.get("vendor"), str)
+            and isinstance(value.get("title"), str)
+            and isinstance(value.get("options"), list)
+            and isinstance(value.get("variants"), list)
+        )
+        if is_shopify_product:
+            value = _shopify_product(value)
+
         normalized_key = _normalized_key(key)
-        is_product_slot = normalized_key in _PRODUCT_KEYS
+        is_product_slot = normalized_key in _PRODUCT_KEYS or is_shopify_product
         is_variant_slot = in_variant_list or normalized_key in _VARIANT_KEYS
         looks_product = _looks_like_product(value)
         current_parent = parent_product
@@ -987,6 +1029,7 @@ def _extract_embedded_json(data: Any, source: str) -> ExtractedPage:
                             inherited_model=inherited_model,
                         )
                     ),
+                    variant_id=_clean_identifier(value.get("id")),
                     relation_sources=(f"{source}_variants",),
                     parent_ids=tuple(sorted(parent_ids)),
                     source_url=_mapping_url(value),
@@ -1019,7 +1062,7 @@ def _merge_pages(pages: list[ExtractedPage]) -> ExtractedPage:
         image_urls.extend(page.image_urls)
     return ExtractedPage(
         tuple(candidates),
-        tuple(variants),
+        tuple(dict.fromkeys(variants)),
         tuple(sorted(group_ids)),
         tuple(dict.fromkeys(image_urls)),
     )

@@ -224,3 +224,79 @@ def test_product_image_is_extracted_from_product_metadata() -> None:
 def test_product_image_fetch_rejects_non_public_or_non_https_urls_before_network() -> None:
     with pytest.raises(RimUrlSecurityError):
         asyncio.run(fetch_public_rim_image("http://127.0.0.1/wheel.png"))
+
+
+def test_battlecraft_shopify_variants_preserve_sizes_and_identity() -> None:
+    from pathlib import Path
+
+    html = (Path(__file__).parent / "fixtures/rim_url/battlecraft-rpf1.html").read_text()
+    result = _resolve_document(
+        "https://shop.test/rpf1", "https://shop.test/rpf1", extract_rim_document(html)
+    )
+    assert result.selection_required
+    assert len(result.variants) == 5
+    expected = [
+        (17, 7, 4, 100, 43),
+        (17, 8.5, 5, 114.3, 30),
+        (18, 10.5, 5, 114.3, 15),
+        (18, 8.5, 5, 114.3, 30),
+        (18, 9.5, 5, 114.3, 15),
+    ]
+    for variant, (diameter, width, count, pcd, offset) in zip(
+        result.variants, expected, strict=True
+    ):
+        assert variant.values == {
+            "brand": "Enkei",
+            "model": "RPF1 SBC",
+            "wheel_diameter_in": diameter,
+            "wheel_width_j": width,
+            "bolt_count": count,
+            "pcd_mm": pcd,
+            "offset_et_mm": offset,
+        }
+        assert variant.sku is None
+        assert not variant.conflicts
+
+
+def test_shopify_distinct_ids_with_same_geometry_remain_separate() -> None:
+    import json
+
+    product = {
+        "id": "parent",
+        "title": "Enkei RPF1 SBC",
+        "vendor": "Enkei",
+        "options": ["Size"],
+        "variants": [
+            {"id": 1, "sku": "", "title": "18x10.5 / 5x114.3 / -15"},
+            {"id": 2, "sku": "", "title": "18x10.5 / 5x114.3 / -15"},
+        ],
+    }
+    document = extract_rim_document(json.dumps(product), content_type="application/json")
+    result = _resolve_document("https://shop.test/rpf1", "https://shop.test/rpf1", document)
+    assert len(result.variants) == 2
+    for variant in result.variants:
+        assert variant.values["offset_et_mm"] == -15
+        assert variant.values["wheel_diameter_in"] == 18
+        assert variant.values["wheel_width_j"] == 10.5
+        assert "center_bore_mm" not in variant.values
+
+
+def test_shopify_missing_offset_does_not_invent_parameters() -> None:
+    import json
+
+    product = {
+        "id": "parent",
+        "title": "Enkei RPF1 SBC",
+        "vendor": "Enkei",
+        "options": ["Size"],
+        "variants": [{"id": 1, "sku": "", "title": "18x10.5 / 5x114.3"}],
+    }
+    result = _resolve_document(
+        "https://shop.test/rpf1",
+        "https://shop.test/rpf1",
+        extract_rim_document(json.dumps(product), content_type="application/json"),
+    )
+    assert result.values["wheel_diameter_in"] == 18
+    assert result.values["wheel_width_j"] == 10.5
+    assert "offset_et_mm" not in result.values
+    assert "center_bore_mm" not in result.values

@@ -437,7 +437,13 @@ def _build_variants(extracted: ExtractedPage) -> tuple[RimUrlVariant, ...]:
                     )
                 )
         sku = next((item.value for item in candidates if item.field == "sku"), None)
-        identity = str(sku) if sku is not None else extracted_variant.source_url or str(index)
+        identity = (
+            str(sku)
+            if sku is not None
+            else str((extracted_variant.parent_ids, extracted_variant.variant_id))
+            if extracted_variant.variant_id
+            else extracted_variant.source_url or str(index)
+        )
         by_identity.setdefault(identity, []).extend(candidates)
 
     variants: list[RimUrlVariant] = []
