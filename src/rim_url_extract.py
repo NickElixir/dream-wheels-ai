@@ -11,7 +11,7 @@ from typing import Any
 _SPACE_RE = re.compile(r"\s+")
 _KEY_RE = re.compile(r"[^a-z0-9]+")
 _MARKING_SIZE_RE = re.compile(
-    r"(?<![\d.,])(?P<width>\d{1,2}(?:[.,]\d)?)\s*J?\s*[xх×]\s*(?P<diameter>\d{2})(?![\d.,])\b",
+    r"(?<![\d.,])(?P<width>\d{1,2}(?:[.,]\d)?)\s*J?\s*[xх×]\s*(?P<diameter>\d{2})(?!\d|[.,]\d)\b",
     re.IGNORECASE,
 )
 _MARKING_ET_RE = re.compile(r"\bET\s*(?P<et>-?\d{1,3})\b", re.IGNORECASE)

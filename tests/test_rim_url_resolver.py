@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -300,3 +301,27 @@ def test_shopify_missing_offset_does_not_invent_parameters() -> None:
     assert result.values["wheel_width_j"] == 10.5
     assert "offset_et_mm" not in result.values
     assert "center_bore_mm" not in result.values
+
+
+@pytest.mark.parametrize("separator", [",", ".", ";", ":", ")", "", " / "])
+def test_width_first_size_allows_punctuation_after_diameter(separator: str) -> None:
+    document = extract_rim_document(
+        json.dumps({"@type": "Product", "name": f"Wheel 8.5Jx18{separator} ET35"}),
+        content_type="application/json",
+    )
+    result = _resolve_document("https://shop.test/wheel", "https://shop.test/wheel", document)
+    assert result.values["wheel_diameter_in"] == 18
+    assert result.values["wheel_width_j"] == 8.5
+    assert result.values["offset_et_mm"] == 35
+
+
+@pytest.mark.parametrize("size", ["18x10.5", "18x10,5", "8.5Jx18.5", "8.5Jx18,5", "8.5Jx180"])
+def test_width_first_size_does_not_extract_partial_decimal_or_integer(size: str) -> None:
+    document = extract_rim_document(
+        json.dumps({"@type": "Product", "name": f"Wheel {size} ET35"}),
+        content_type="application/json",
+    )
+    result = _resolve_document("https://shop.test/wheel", "https://shop.test/wheel", document)
+    assert "wheel_diameter_in" not in result.values
+    assert "wheel_width_j" not in result.values
+    assert result.values["offset_et_mm"] == 35
