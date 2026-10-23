@@ -8746,13 +8746,17 @@ async function refreshProcessingHistoryJobs() {
 }
 
 
-function homeRenderTitle(job) {
+function accountTryOnTitle(job) {
     const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
     const model = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
     if (model) return model;
-    // UI-007: keep the existing short technical ID until account numbering ships.
-    const shortId = String(job?.job_id || job?.id || "").slice(0, 6);
-    return `${locale === "ru" ? "Примерка" : "Try-on"} #${shortId}`;
+    const title = locale === "ru" ? "Примерка" : "Try-on";
+    const number = job?.try_on_number;
+    return Number.isSafeInteger(number) && number > 0 ? `${title} #${number}` : title;
+}
+
+function homeRenderTitle(job) {
+    return accountTryOnTitle(job);
 }
 
 function vnextDashboardJobViewModel(job) {
@@ -10021,7 +10025,7 @@ function vnextRenderJob(job) {
     const specs = vnextRimSpecs(rim);
     return {
         locale,
-        jobId: job?.job_id || "", status: job?.status || "queued", title: humanRenderTitle(job),
+        jobId: job?.job_id || "", status: job?.status || "queued", title: accountTryOnTitle(job),
         vehicleConfirmed: Boolean(job?.vehicle_identity?.is_user_confirmed),
         rimName: [rim.brand, rim.model].filter(Boolean).join(" "), rimSku: rim.sku || rim.selected_variant_sku || "", specs,
         createdLabel: formatDateTime(job?.created_at), dateLabel: vnextHistoryDateLabel(job?.created_at),
@@ -10044,12 +10048,9 @@ function vnextRenderJob(job) {
 }
 
 function historyGalleryTitle(job) {
-    const vehicle = job?.vehicle_identity?.is_user_confirmed ? job.vehicle_identity : null;
-    const title = [vehicle?.make, vehicle?.model].filter(Boolean).join(" ");
-    if (title) return title;
-    // Stable account ordinal remains a separate planned data/API task.
-    return `${locale === "ru" ? "Примерка" : "Try-on"} #${String(job?.job_id || "").slice(0, 6)}`;
+    return accountTryOnTitle(job);
 }
+
 function historyGalleryDate(value) {
     const date = new Date(value);
     if (!value || Number.isNaN(date.getTime())) return "";

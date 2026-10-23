@@ -7,7 +7,7 @@ import {applicationRouteContext} from '../webapp/app-route.mjs';
 const source=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
 const fn=name=>extractFunction(source,name);
 function projection(state) {
- const ctx={state,locale:'ru',FEEDBACK_REASONS:[],vnextRimSpecs:rim=>String(rim.et??''),humanRenderTitle:()=>'',formatDateTime:()=>'',vnextHistoryDateLabel:()=>'',renderFailureCopy:()=>({}),renderBillingMessage:()=>'',statusLabel:()=>'',assetUrlForJob:()=>'',hasAssetLoadError:()=>false,hasAssetSource:()=>false,fitmentAvailable:()=>false,isAssetAvailable:()=>false,feedbackSentimentForJob:()=>'',feedbackReasonForJob:()=>''};
+ const ctx={state,locale:'ru',FEEDBACK_REASONS:[],vnextRimSpecs:rim=>String(rim.et??''),accountTryOnTitle:()=>'',formatDateTime:()=>'',vnextHistoryDateLabel:()=>'',renderFailureCopy:()=>({}),renderBillingMessage:()=>'',statusLabel:()=>'',assetUrlForJob:()=>'',hasAssetLoadError:()=>false,hasAssetSource:()=>false,fitmentAvailable:()=>false,isAssetAvailable:()=>false,feedbackSentimentForJob:()=>'',feedbackReasonForJob:()=>''};
  Object.assign(state,{downloadNoticeByJob:{},feedbackBusyByJob:{},feedbackErrorByJob:{},feedbackNoticeByJob:{}});
  vm.runInNewContext(`${fn('fitmentEffectiveRim')}\n${fn('vnextRenderJob')}\nthis.project=vnextRenderJob;`,ctx);return ctx.project;
 }
