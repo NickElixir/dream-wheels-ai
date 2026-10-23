@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UI-007 — account try-on numbering</title>
-<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/dashboard.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css">
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/approved-home-create.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css">
 <style>body{background:var(--vnext-canvas);color:var(--vnext-text);font-family:var(--vnext-font);margin:0}main{max-width:1100px;margin:auto;padding:24px 16px}nav{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}select{padding:10px}#checks{white-space:pre-wrap}img{max-width:100%}</style></head>
 <body><main><nav><select id="language" aria-label="Language"><option>ru</option><option>en</option></select><select id="screen" aria-label="Screen"><option>home</option><option>history</option><option>result</option></select><select id="variant" aria-label="Title"><option value="number">Number</option><option value="vehicle">Confirmed vehicle</option><option value="missing">Missing number</option></select></nav><p id="checks" role="status"></p><div id="view"></div></main>
 <script type="module">
