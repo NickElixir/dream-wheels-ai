@@ -183,3 +183,31 @@ def test_account_linking_moves_publication_ownership(monkeypatch):
     connection.execute.assert_awaited_once_with(
         "UPDATE shared_result_publications SET owner_user_id = $1 WHERE owner_user_id = $2", 1, 2
     )
+
+
+def test_cleared_current_fields_do_not_resurrect_render_snapshot():
+    row = {
+        "front_rim_spec_id": "rim",
+        "rim_model": "Current",
+        "rim_offset_et_mm": None,
+        "render_input_snapshot": {"rim": {"model": "Old", "offset_et_mm": 45}},
+    }
+    snapshot = api.publication_snapshot(row)
+    assert snapshot["rim"]["offset_et_mm"] is None
+    assert snapshot["rim"]["model"] == "Current"
+
+
+def test_rear_rim_and_vehicle_characteristics_change_publication_fingerprint():
+    row = {
+        "vehicle_model": "Car",
+        "vehicle_body": "Sedan",
+        "is_staggered": True,
+        "rear_rim_offset_et_mm": 35,
+        "render_input_snapshot": {},
+    }
+    first = api.snapshot_fingerprint(api.publication_snapshot(row))
+    row["rear_rim_offset_et_mm"] = 40
+    second = api.snapshot_fingerprint(api.publication_snapshot(row))
+    assert first != second
+    row["vehicle_body"] = "Wagon"
+    assert second != api.snapshot_fingerprint(api.publication_snapshot(row))

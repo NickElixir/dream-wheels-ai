@@ -35,25 +35,44 @@ def publication_snapshot(row: dict) -> dict:
         snapshot = json.loads(snapshot)
     vehicle = snapshot.get("vehicle") or {}
     rim = snapshot.get("rim") or {}
+    vehicle_fields = ("make", "model", "year", "generation", "modification", "body", "market")
+    rim_fields = (
+        "brand",
+        "model",
+        "sku",
+        "selected_variant_sku",
+        "wheel_diameter_in",
+        "wheel_width_j",
+        "bolt_count",
+        "pcd_mm",
+        "center_bore_mm",
+        "offset_et_mm",
+    )
+    current_vehicle = bool(row.get("vehicle_identity_id")) or any(
+        row.get("vehicle_" + key) is not None for key in vehicle_fields
+    )
+    current_rim = bool(row.get("front_rim_spec_id")) or any(
+        row.get("rim_" + key) is not None for key in rim_fields
+    )
     car = {
-        key: row.get("vehicle_" + key) or vehicle.get(key)
-        for key in ("make", "model", "year", "generation", "modification")
+        key: row.get("vehicle_" + key) if current_vehicle else vehicle.get(key)
+        for key in vehicle_fields
     }
-    wheel = {
-        key: row.get("rim_" + key) if row.get("rim_" + key) is not None else rim.get(key)
-        for key in (
-            "brand",
-            "model",
-            "sku",
-            "wheel_diameter_in",
-            "wheel_width_j",
-            "bolt_count",
-            "pcd_mm",
-            "center_bore_mm",
-            "offset_et_mm",
+    wheel = {key: row.get("rim_" + key) if current_rim else rim.get(key) for key in rim_fields}
+    rear = (
+        {key: row.get("rear_rim_" + key) for key in rim_fields} if row.get("is_staggered") else None
+    )
+    return json.loads(
+        json.dumps(
+            {
+                "vehicle": car,
+                "rim": wheel,
+                "rear_rim": rear,
+                "is_staggered": bool(row.get("is_staggered")),
+            },
+            default=str,
         )
-    }
-    return json.loads(json.dumps({"vehicle": car, "rim": wheel}, default=str))
+    )
 
 
 def snapshot_fingerprint(snapshot: dict) -> str:
@@ -177,24 +196,31 @@ async def _publication(ident: str) -> dict:
     return dict(row)
 
 
-def _labels(snapshot: dict) -> tuple[str, str]:
-    car = " ".join(str(v) for v in snapshot["vehicle"].values() if v)
-    rim = snapshot["rim"]
+def _rim_label(rim: dict) -> str:
     wheel = " ".join(str(rim.get(k)) for k in ("brand", "model") if rim.get(k))
     specs = []
-    for key, label in (
-        ("wheel_diameter_in", "″"),
-        ("wheel_width_j", "J"),
-        ("offset_et_mm", " ET"),
-        ("center_bore_mm", " DIA"),
+    for key, prefix, suffix in (
+        ("wheel_diameter_in", "", "″"),
+        ("wheel_width_j", "", "J"),
+        ("offset_et_mm", "ET ", ""),
+        ("center_bore_mm", "DIA ", ""),
     ):
         if rim.get(key) is not None:
-            specs.append(str(rim[key]).replace(".", ",") + label)
+            specs.append(prefix + str(rim[key]).replace(".", ",") + suffix)
     if rim.get("bolt_count") and rim.get("pcd_mm"):
         specs.append(f"{rim['bolt_count']}×{rim['pcd_mm']}".replace(".", ","))
-    return car or "Автомобиль не указан", " / ".join(
-        filter(None, [wheel, *specs])
-    ) or "Диск не указан"
+    sku = rim.get("sku") or rim.get("selected_variant_sku")
+    if sku:
+        specs.append("Артикул " + str(sku))
+    return " / ".join(filter(None, [wheel, *specs])) or "Диск не указан"
+
+
+def _labels(snapshot: dict) -> tuple[str, str]:
+    car = " ".join(str(v) for v in snapshot["vehicle"].values() if v)
+    wheel = _rim_label(snapshot["rim"])
+    if snapshot.get("is_staggered") and snapshot.get("rear_rim"):
+        wheel = "Передняя ось: " + wheel + "; задняя ось: " + _rim_label(snapshot["rear_rim"])
+    return car or "Автомобиль не указан", wheel
 
 
 @router.get("/p/{ident}", response_class=HTMLResponse)
