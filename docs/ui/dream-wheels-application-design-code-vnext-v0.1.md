@@ -131,7 +131,7 @@ These describe the frozen radius language; exact CSS values and exceptions are d
 
 ### Borders
 
-Use thin low-contrast graphite-grey borders and dividers. Status or selection should not default to full accent outlines.
+Use thin low-contrast graphite-grey borders. Decorative content dividers are prohibited by the shared-publication amendment below. Status or selection should not default to full accent outlines.
 
 ### Elevation
 
@@ -1139,3 +1139,7 @@ Each row keeps:
 Payment status is plain semantic text, not a pill and not a colored dot.
 
 The history remains expandable with `Показать ещё`.
+
+## Shared-result and divider amendment — approved 2026-10-23
+
+See [shared-result publications](../shared-result-publications.md) for the approved Result action grouping, public-page header and publication lifecycle. Its design-code reconciliation supersedes earlier decorative-divider recommendations across desktop and mobile. Structural navigation boundaries, genuine table separators, control/card outlines, focus rings and the functional slider boundary remain. Public pages have a compact header boundary and no cabinet navigation or repeated footer branding.

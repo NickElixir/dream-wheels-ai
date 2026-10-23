@@ -30,7 +30,7 @@ An implementation must not infer a new user-visible pattern from this document. 
 8. **Backend candidate collections are not standalone UI entities.** Do not expose internal candidate arrays as a separate “candidates” section.
 9. **Candidate suggestions belong to their matching field or choice.** Selecting one updates that field through the existing runtime setter.
 10. **Rounded choice surfaces are selective.** Use them for selectable variants/candidates, whole clickable choices, or object ownership where grouping needs a surface—not for every content block.
-11. **Divider rows organize static information.** Use them for metadata, label/value pairs, technical evidence, dates, and static specifications.
+11. **Spacing organizes static information.** Use spacing and typography for metadata and label/value pairs. Keep separators only in real tables and structural navigation boundaries.
 12. **Fitment is summary-first with progressive disclosure.** Show the vehicle and wheel summaries, their statuses, the technical-check state, and the contextual action first. Open an editor only for the object requiring intervention or after an explicit edit action.
 13. **Fitment readiness copy follows backend `next_action`.** Map `complete_vehicle_details`, `select_vehicle_variant`, `complete_rim_specs`, and `run_standard_check` to their approved user-facing instructions. Do not infer “ready” merely because no check exists.
 14. **New user-visible patterns require explicit approval.** If implementation requires a pattern outside the governing approved specification, stop and request a decision.
@@ -39,3 +39,7 @@ An implementation must not infer a new user-visible pattern from this document. 
 ## Scope boundary
 
 These rules govern presentation and interaction hierarchy only. They do not authorize changes to backend behavior, database schema, API contracts, Fitment verdict semantics, render permission, identity lifecycle, credits/payments, authentication, or production deployment. Existing domain and server-owned state remain authoritative.
+
+## Shared-result and divider amendment — approved 2026-10-23
+
+See [shared-result publications](../shared-result-publications.md) for the approved Result action grouping, public-page header and publication lifecycle. Its design-code reconciliation supersedes earlier decorative-divider recommendations across desktop and mobile. Structural navigation boundaries, genuine table separators, control/card outlines, focus rings and the functional slider boundary remain. Public pages have a compact header boundary and no cabinet navigation or repeated footer branding.

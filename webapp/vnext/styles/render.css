@@ -260,3 +260,16 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 
 .vnext-shell:has(.vnext-result-recovery) .vnext-shell__topbar-title { display: none; }
 .vnext-result-recovery p { margin-top: 12px; }
+
+/* Approved result action groups: export left, continuation right. */
+.vnext-result-layout > .vnext-result-actions { display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap; }
+.vnext-result-actions .vnext-result-export,.vnext-result-actions .vnext-result-continue { display:flex;align-items:center;gap:8px; }
+.vnext-result-actions .vnext-result-continue { margin-left:auto; }
+.vnext-result-layout > .vnext-result-actions .vnext-button { width:auto;min-height:44px;white-space:nowrap; }
+@media(max-width:760px) {
+ .vnext-result-layout > .vnext-result-actions { display:grid;grid-template-columns:minmax(0,1fr);gap:12px; }
+ .vnext-result-actions .vnext-result-export { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+ .vnext-result-actions .vnext-result-continue { display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-left:0; }
+ .vnext-result-layout > .vnext-result-actions .vnext-button { width:100%;min-width:0;justify-content:center;white-space:normal; }
+}
+@media(max-width:340px) { .vnext-result-actions .vnext-result-export { grid-template-columns:minmax(0,1fr); } }

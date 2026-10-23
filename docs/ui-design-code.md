@@ -297,3 +297,7 @@ provider-derived interval being `unknown`, not a conditional positive result.
 ## Implementation handoff
 
 Codex must read `docs/product-roadmap.md`, this file, `docs/sprint-3-ui.md`, `docs/adr/0003-render-feedback-data-boundary.md`, and `docs/render-feedback-api-contract-v1.md` before Sprint 3 work. Historical Sprint 3 documents are context, not authority to override the current canonical terminology or an unfrozen Result/History reuse specification. Do not turn prototype data into a frontend source of truth.
+
+## Shared-result and divider amendment — approved 2026-10-23
+
+See [shared-result publications](shared-result-publications.md) for the approved Result action grouping, public-page header and publication lifecycle. Its design-code reconciliation supersedes earlier decorative-divider recommendations across desktop and mobile. Structural navigation boundaries, genuine table separators, control/card outlines, focus rings and the functional slider boundary remain. Public pages have a compact header boundary and no cabinet navigation or repeated footer branding.
