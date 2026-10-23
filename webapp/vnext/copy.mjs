@@ -1,4 +1,7 @@
 export const COPY = {
+  "render.share": {"ru":"Поделиться","en":"Share"},
+  "render.preparingShare": {"ru":"Подготовка…","en":"Preparing…"},
+  "render.shareRetry": {"ru":"Повторить отправку","en":"Retry sharing"},
   "render.tryOnNotFoundHint": { "ru": "Проверьте ссылку или попробуйте загрузить примерку ещё раз", "en": "Check the link or try loading this try-on again" },
   "auth.signInTelegram": { "ru": "Войти через Telegram", "en": "Sign in with Telegram" },
   "render.preparingPhotos": { "ru": "Загружаем фото…", "en": "Loading photos…" },

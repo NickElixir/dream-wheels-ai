@@ -10014,6 +10014,30 @@ function vnextHistoryDateLabel(value) {
     return formatShortDate(value);
 }
 
+const publicationRequests = new Set();
+const publicationErrors = new Set();
+async function publishRender(jobId) {
+    if (!jobId || publicationRequests.has(jobId)) return;
+    publicationRequests.add(jobId);
+    publicationErrors.delete(jobId);
+    notifyRenderBridge();
+    try {
+        const response = await authenticatedFetch(apiUrl(`/jobs/${jobId}/publications`, { includeIdentity: true }), {
+            method: "POST", headers: withAuthHeaders(),
+        });
+        if (!response.ok) throw new Error("Publication unavailable");
+        const data = await response.json();
+        const destination = new URL(data.url);
+        if (destination.protocol !== "https:" && destination.hostname !== "127.0.0.1" && destination.hostname !== "localhost") throw new Error("Invalid publication URL");
+        window.location.assign(destination.href);
+    } catch {
+        publicationErrors.add(jobId);
+    } finally {
+        publicationRequests.delete(jobId);
+        notifyRenderBridge();
+    }
+}
+
 function vnextRenderJob(job) {
     const overview = state.fitmentJobId === job?.job_id && state.fitmentOverview
         ? state.fitmentOverview : state.fitmentContextByJob?.[job?.job_id];
@@ -10037,6 +10061,7 @@ function vnextRenderJob(job) {
         originalLoading: hasAssetSource(job, "original") && !assetUrlForJob(job, "original") && !hasAssetLoadError(job, "original"),
         resultLoading: hasAssetSource(job, "result") && !assetUrlForJob(job, "result") && !hasAssetLoadError(job, "result"),
         canFitment: fitmentAvailable(job), canDownload: job?.status === "completed" && isAssetAvailable(job, "result"),
+        sharing: publicationRequests.has(job?.job_id), shareError: publicationErrors.has(job?.job_id),
         downloading: state.downloading, downloadNotice: state.downloadNoticeByJob[job?.job_id] || "",
         feedback: { sentiment: feedbackSentimentForJob(job), reason: feedbackReasonForJob(job), busy: Boolean(state.feedbackBusyByJob[job?.job_id]), error: state.feedbackErrorByJob[job?.job_id] ? localizeErrorMessage(state.feedbackErrorByJob[job.job_id]) : "", notice: state.feedbackNoticeByJob[job?.job_id] || "" },
         reasons: FEEDBACK_REASONS,
@@ -10126,6 +10151,7 @@ window.dreamwheelsRenderBridge = {
         else if (action === "fitment" || action === "rim-details") {
             void openFitmentView(jobId, { originView: "render-detail", openRimEditor: action === "rim-details" });
         }
+        else if (action === "share") void publishRender(jobId);
         else if (action === "download") void downloadResult({ jobId });
         else if (action === "feedback") void submitHistoryFeedback(jobId, value);
         else if (action === "reason") void submitHistoryFeedback(jobId, "disliked", value);

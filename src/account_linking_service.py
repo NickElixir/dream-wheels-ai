@@ -229,6 +229,7 @@ async def _move_owned_rows(
 ) -> None:
     ownership = (
         ("assets", "owner_user_id"),
+        ("shared_result_publications", "owner_user_id"),
         ("vehicle_identities", "owner_user_id"),
         ("rim_specs", "owner_user_id"),
         ("rim_setups", "owner_user_id"),

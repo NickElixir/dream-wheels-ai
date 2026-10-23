@@ -17,6 +17,7 @@ from src import (
     identity_api,
     jobs_api,
     payments_api,
+    publications_api,
     redis_client,
     share_api,
     storage,
@@ -119,6 +120,7 @@ app.include_router(fitment_checks_api.router)
 app.include_router(jobs_api.router)
 app.include_router(payments_api.router)
 app.include_router(share_api.router)
+app.include_router(publications_api.router)
 
 
 def build_generation_provider() -> GenerationProvider:

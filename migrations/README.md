@@ -104,3 +104,5 @@ Alembic интегрируется с SQLAlchemy/asyncpg, отслеживает
 Если работаешь через Claude Code с подключённым Supabase MCP, можно применять миграции через `mcp__supabase__apply_migration` — Claude передаёт SQL в Management API. Это удобно для автоматизации, но **не заменяет ручную проверку** SQL Editor для критичных изменений.
 
 - Before deploying source viewer delivery, apply `0037_car_display_assets.sql` in staging after independent review. No backfill or bucket policy changes. Roll back application code without removing additive indexes or the expanded kind constraint.
+
+- `0041_shared_result_publications.sql` — server-only immutable publication snapshots with independent opaque IDs; apply before deploying the publication writer. See `docs/shared-result-publications.md`.
