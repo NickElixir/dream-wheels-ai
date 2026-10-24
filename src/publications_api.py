@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import secrets
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated
@@ -206,7 +207,9 @@ def _rim_label(rim: dict) -> str:
         ("center_bore_mm", "DIA ", ""),
     ):
         if rim.get(key) is not None:
-            specs.append(prefix + str(rim[key]).replace(".", ",") + suffix)
+            specs.append(
+                prefix + format(Decimal(str(rim[key])).normalize(), "f").replace(".", ",") + suffix
+            )
     if rim.get("bolt_count") and rim.get("pcd_mm"):
         specs.append(f"{rim['bolt_count']}×{rim['pcd_mm']}".replace(".", ","))
     sku = rim.get("sku") or rim.get("selected_variant_sku")
@@ -216,7 +219,8 @@ def _rim_label(rim: dict) -> str:
 
 
 def _labels(snapshot: dict) -> tuple[str, str]:
-    car = " ".join(str(v) for v in snapshot["vehicle"].values() if v)
+    vehicle = snapshot["vehicle"]
+    car = " ".join(str(vehicle[key]) for key in ("make", "model", "year") if vehicle.get(key))
     wheel = _rim_label(snapshot["rim"])
     if snapshot.get("is_staggered") and snapshot.get("rear_rim"):
         wheel = "Передняя ось: " + wheel + "; задняя ось: " + _rim_label(snapshot["rear_rim"])
