@@ -211,3 +211,19 @@ def test_rear_rim_and_vehicle_characteristics_change_publication_fingerprint():
     assert first != second
     row["vehicle_body"] = "Wagon"
     assert second != api.snapshot_fingerprint(api.publication_snapshot(row))
+
+
+def test_public_vehicle_label_has_stable_order_and_no_provider_codes():
+    snapshot = {
+        "vehicle": {
+            "market": "chdm",
+            "modification": "3884067862 EV",
+            "year": 2025,
+            "model": "009",
+            "make": "Zeekr",
+        },
+        "rim": {"brand": "Wheel", "wheel_diameter_in": "20.0", "wheel_width_j": "9.00"},
+    }
+    car, wheel = api._labels(snapshot)
+    assert car == "Zeekr 009 2025"
+    assert "20″" in wheel and "9J" in wheel
