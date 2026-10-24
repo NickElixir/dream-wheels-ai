@@ -116,3 +116,5 @@ Alembic интегрируется с SQLAlchemy/asyncpg, отслеживает
 Откат приложения: вернуть предыдущий код, оставить добавленные колонки, индекс и триггер; данные не перенумеровывать. Полный откат схемы требует отдельной миграции и согласования. Staging-приёмка: create → history/detail → reload, два аккаунта, объединение Email/Telegram и сохранность UUID-ссылок.
 
 Локальная проверка на отдельной тестовой PostgreSQL: `TEST_DATABASE_URL=<dedicated test database> python3 -m pytest -q tests/test_try_on_numbers_postgres.py`. Тест создаёт/удаляет только изолированную схему; не передавать URL рабочей базы. В CI он запускается на временной PostgreSQL service.
+
+- `0041_shared_result_publications.sql` — server-only immutable publication snapshots with independent opaque IDs; apply before deploying the publication writer. See `docs/shared-result-publications.md`.
