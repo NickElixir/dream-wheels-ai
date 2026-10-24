@@ -253,11 +253,16 @@ async def _move_owned_rows(
     # This update is deliberately last: render_feedback follows through the
     # ON UPDATE CASCADE composite FK installed by migration 0034.
     if await _relation_exists(conn, "jobs"):
-        await conn.execute(
-            "UPDATE jobs SET user_id = $1 WHERE user_id = $2",
-            survivor_user_id,
+        jobs = await conn.fetch(
+            "SELECT id FROM jobs WHERE user_id = $1 ORDER BY created_at, id FOR UPDATE",
             source_user_id,
         )
+        for job in jobs:
+            await conn.execute(
+                "UPDATE jobs SET user_id = $1 WHERE id = $2",
+                survivor_user_id,
+                job["id"],
+            )
 
 
 async def _merge_credit_accounts(

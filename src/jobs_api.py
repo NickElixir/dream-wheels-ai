@@ -122,6 +122,7 @@ class JobCreateRequest(BaseModel):
 
 class JobCreateResponse(BaseModel):
     job_id: str
+    try_on_number: int | None = Field(default=None, gt=0)
     status: str
 
 
@@ -154,6 +155,7 @@ class JobFeedbackEnvelope(BaseModel):
 
 class JobStatusResponse(BaseModel):
     job_id: str | None = None
+    try_on_number: int | None = Field(default=None, gt=0)
     status: str
     render_billing_status: RenderBillingStatus = "unknown"
     output_image_url: str | None = None
@@ -171,6 +173,7 @@ class JobStatusDetailedResponse(BaseModel):
     """Расширенный ответ для webapp polling: + url рендера + текст ошибки."""
 
     job_id: str
+    try_on_number: int | None = Field(default=None, gt=0)
     status: str
     render_billing_status: RenderBillingStatus = "unknown"
     result_url: str | None = None
@@ -207,6 +210,7 @@ class VehicleIdentitySummary(BaseModel):
 
 class JobHistoryItem(BaseModel):
     job_id: str
+    try_on_number: int | None = Field(default=None, gt=0)
     status: str
     render_billing_status: RenderBillingStatus = "unknown"
     created_at: datetime
@@ -2094,6 +2098,18 @@ async def _compensate_queue_publish_failure(
         )
 
 
+async def _created_job_response(job_id: str, user_id: int) -> JobCreateResponse:
+    async with db.get_pool().acquire() as conn:
+        number = await conn.fetchval(
+            "SELECT try_on_number FROM jobs WHERE id = $1::uuid AND user_id = $2",
+            job_id,
+            user_id,
+        )
+    if number is None:
+        raise HTTPException(status_code=409, detail="Create retry in progress")
+    return JobCreateResponse(job_id=job_id, status="queued", try_on_number=number)
+
+
 @router.post("", response_model=JobCreateResponse)
 async def create_job(request: JobCreateRequest):
     """Создание задачи из бота — приходят Telegram file URL'ы."""
@@ -2170,7 +2186,7 @@ async def create_job(request: JobCreateRequest):
         raise HTTPException(
             status_code=503, detail="Job queue is temporarily unavailable"
         ) from queue_err
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return await _created_job_response(job_id, user_id)
 
 
 @router.post("/upload", response_model=JobCreateResponse)
@@ -2244,7 +2260,7 @@ async def upload_job(
             f"♻️  Idempotent replay: user_id={user_id} "
             f"key={idempotency_key} → job={existing_job_id}"
         )
-        return JobCreateResponse(job_id=existing_job_id, status="queued")
+        return await _created_job_response(existing_job_id, user_id)
 
     logger.info(
         f"📥 /jobs/upload user_id={user_id} job={job_id} "
@@ -2381,7 +2397,7 @@ async def upload_job(
             status_code=503, detail="Job queue is temporarily unavailable"
         ) from queue_err
 
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return await _created_job_response(job_id, user_id)
 
 
 @router.post("/from-assets", response_model=JobCreateResponse)
@@ -2427,7 +2443,7 @@ async def create_job_from_assets(
             request.idempotency_key,
             existing_job_id,
         )
-        return JobCreateResponse(job_id=existing_job_id, status="queued")
+        return await _created_job_response(existing_job_id, user_id)
 
     try:
         async with pool.acquire() as conn:
@@ -2641,7 +2657,7 @@ async def create_job_from_assets(
         ) from queue_err
 
     logger.info("✅ Sprint 2 job %s создан из draft_id=%s", job_id, request.draft_id)
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return await _created_job_response(job_id, user_id)
 
 
 @router.get("", response_model=JobHistoryResponse)
@@ -2668,6 +2684,7 @@ async def list_jobs(
             f"""
             SELECT
                 jobs.id::text AS job_id,
+                jobs.try_on_number,
                 jobs.status,
                 {billing_evidence_select()},
                 jobs.created_at,
@@ -2698,6 +2715,7 @@ async def list_jobs(
     history = [
         JobHistoryItem(
             job_id=row["job_id"],
+            try_on_number=row.get("try_on_number"),
             status=row["status"],
             render_billing_status=render_billing_status(row),
             created_at=row["created_at"],
@@ -2754,6 +2772,7 @@ async def get_job_status(
             f"""
             SELECT
                 jobs.id::text AS job_id,
+                jobs.try_on_number,
                 jobs.status,
                 {billing_evidence_select()},
                 jobs.created_at,
@@ -2780,6 +2799,7 @@ async def get_job_status(
     return _preserve_feedback_reason(
         JobStatusResponse(
             job_id=row["job_id"],
+            try_on_number=row.get("try_on_number"),
             status=row["status"],
             render_billing_status=render_billing_status(row),
             output_image_url=row["output_image_url"],
@@ -2819,6 +2839,7 @@ async def get_job_status_detailed(
             f"""
             SELECT
                 jobs.id::text AS job_id,
+                jobs.try_on_number,
                 jobs.status,
                 {billing_evidence_select()},
                 jobs.output_image_url,
@@ -2844,6 +2865,7 @@ async def get_job_status_detailed(
     return _preserve_feedback_reason(
         JobStatusDetailedResponse(
             job_id=job_id,
+            try_on_number=row.get("try_on_number"),
             status=row["status"],
             render_billing_status=render_billing_status(row),
             result_url=row["output_image_url"],

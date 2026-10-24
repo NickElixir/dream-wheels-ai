@@ -27,6 +27,7 @@ def _base_asset_fields(prefix: str, *, kind: str | None = None) -> dict:
 def _job_row(**overrides) -> dict:
     row = {
         "job_id": "11111111-1111-4111-8111-111111111111",
+        "try_on_number": 12,
         "status": "completed",
         "created_at": datetime(2026, 6, 29, tzinfo=UTC),
         "completed_at": datetime(2026, 6, 29, tzinfo=UTC),
@@ -463,3 +464,35 @@ def test_billing_evidence_is_consistent_across_read_surfaces(monkeypatch, path, 
     job = body["jobs"][0] if path == "/jobs" else body
     assert job["render_billing_status"] == expected
     assert "secret" not in response.text and "internal.test" not in response.text
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/jobs",
+        "/jobs/11111111-1111-4111-8111-111111111111",
+        "/jobs/11111111-1111-4111-8111-111111111111/status",
+    ],
+)
+def test_job_number_is_exposed_only_by_owner_scoped_reads(monkeypatch, path):
+    class Conn:
+        async def fetch(self, query, *args):
+            assert "jobs.try_on_number" in query
+            assert "jobs.user_id = $1" in query
+            assert args[0] == 10
+            return [_job_row()]
+
+        async def fetchrow(self, query, *args):
+            assert "jobs.try_on_number" in query
+            assert "jobs.user_id = $2" in query
+            assert args[1] == 10
+            return _job_row()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get(path)
+    assert response.status_code == 200
+    value = response.json()
+    if path == "/jobs":
+        value = value["jobs"][0]
+    assert value["try_on_number"] == 12

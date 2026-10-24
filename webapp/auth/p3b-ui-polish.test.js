@@ -80,7 +80,7 @@ test('P3-B new localized keys have EN without Cyrillic',()=>{
 });
 
 test('P3-B Result SKU projects only existing snapshot fields without changing job state',()=>{
- const ctx={publicationRequests:new Set(),publicationErrors:new Set(),locale:'ru',state:{downloadNoticeByJob:{},feedbackBusyByJob:{},feedbackErrorByJob:{},feedbackNoticeByJob:{}},FEEDBACK_REASONS:[],vnextRimSpecs:()=> '19″ / 8,5J',humanRenderTitle:()=> 'Car',formatDateTime:String,vnextHistoryDateLabel:()=> 'Сегодня',renderFailureCopy:()=>({}),renderBillingMessage:()=>'',statusLabel:()=>'',assetUrlForJob:()=>'',hasAssetLoadError:()=>false,hasAssetSource:()=>false,fitmentAvailable:()=>false,isAssetAvailable:()=>false,feedbackSentimentForJob:()=>'',feedbackReasonForJob:()=>''};
+ const ctx={publicationRequests:new Set(),publicationErrors:new Set(),locale:'ru',state:{downloadNoticeByJob:{},feedbackBusyByJob:{},feedbackErrorByJob:{},feedbackNoticeByJob:{}},FEEDBACK_REASONS:[],vnextRimSpecs:()=> '19″ / 8,5J',accountTryOnTitle:()=> 'Car',formatDateTime:String,vnextHistoryDateLabel:()=> 'Сегодня',renderFailureCopy:()=>({}),renderBillingMessage:()=>'',statusLabel:()=>'',assetUrlForJob:()=>'',hasAssetLoadError:()=>false,hasAssetSource:()=>false,fitmentAvailable:()=>false,isAssetAvailable:()=>false,feedbackSentimentForJob:()=>'',feedbackReasonForJob:()=>''};
  vm.createContext(ctx);vm.runInContext(extractDeclaration(read('../app.js'),'vnextRenderJob')+'\nthis.project=vnextRenderJob;',ctx);
  for(const rim of [{sku:'2481081'},{selected_variant_sku:'2481081'},{}]){
   const job={job_id:'a',status:'completed',created_at:'2026-10-06T10:34:00Z',render_input_snapshot:{rim}};const before=JSON.stringify(job),model=ctx.project(job);

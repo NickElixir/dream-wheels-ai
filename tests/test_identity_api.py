@@ -79,6 +79,8 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
 
     class FakeConn:
         async def fetchval(self, query: str, *args):
+            if "SELECT try_on_number FROM jobs" in query:
+                return 12
             assert "INSERT INTO render_input_drafts" in query
             calls.append(("insert_draft", args))
             return "11111111-1111-4111-8111-111111111111"
@@ -354,6 +356,8 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
             }
 
         async def fetchval(self, query: str, *args):
+            if "SELECT try_on_number FROM jobs" in query:
+                return 12
             if "INSERT INTO vehicle_identities" in query:
                 calls.append(("insert_vehicle_identity", args))
                 return "22222222-2222-4222-8222-222222222222"

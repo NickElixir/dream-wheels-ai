@@ -49,6 +49,7 @@ async def database(monkeypatch, status="queued", credit_status="reserved"):
         async with pool.acquire() as conn:
             await conn.execute("""
                 CREATE TABLE jobs (id uuid PRIMARY KEY, user_id int, status text,
+                    try_on_number bigint DEFAULT 1,
                     credit_status text, credit_cost int DEFAULT 1, updated_at timestamptz,
                     completed_at timestamptz, error_code text, error_message text,
                     output_image_url text, result_asset_id uuid,

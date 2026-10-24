@@ -61,6 +61,10 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(
             return False
 
     class FakeConn:
+        async def fetchval(self, query, *args):
+            assert "SELECT try_on_number FROM jobs" in query
+            return 12
+
         def transaction(self):
             return FakeTransaction()
 
@@ -155,6 +159,30 @@ def test_upload_job_inserts_job_before_assets_and_links_asset_ids(
     )
 
     assert response.status == "queued"
+    assert response.try_on_number == 12
+    before_replay = len(calls)
+    replay = asyncio.run(
+        jobs_api.upload_job(
+            car_image=UploadFile(
+                file=BytesIO(car_data),
+                filename="car.jpg",
+                headers=Headers({"content-type": "image/jpeg"}),
+            ),
+            wheel_image=UploadFile(
+                file=BytesIO(b"wheel-bytes"),
+                filename="wheel.jpg",
+                headers=Headers({"content-type": "image/jpeg"}),
+            ),
+            idempotency_key="idem-key-1",
+            init_data="init-data",
+            telegram_user_id=None,
+            authorization=None,
+        )
+    )
+    assert replay.job_id == response.job_id
+    assert replay.try_on_number == response.try_on_number
+    assert [call[0] for call in calls[before_replay:]] == ["resolve_principal"]
+    calls = calls[:before_replay]
     expected = [
         "resolve_principal",
         "tx_enter",
