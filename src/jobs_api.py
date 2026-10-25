@@ -3955,6 +3955,7 @@ async def save_fitment_details(
     assert auth is not None
 
     vehicle_updates = request.vehicle.model_dump(exclude_unset=True)
+    vehicle_updates.pop("confirmed_fields", None)
     front_request = request.front_rim or request.rim
     rear_request = request.rear_rim
     rim_updates = front_request.model_dump(exclude_unset=True)
@@ -4043,26 +4044,6 @@ async def save_fitment_details(
             core_vehicle_fields = {"make", "model", "year", "market"}
             core_changed = set(vehicle_changed).intersection(core_vehicle_fields)
             modification_state, _, _, _ = _modification_from_row(row)
-            if vehicle_values and not core_changed and modification_state == "confirmed":
-                # A RimSpec-only client may still send a stale vehicle form
-                # (for example after a transient draft conflict). The exact
-                # selected modification is server-owned and can only change
-                # through the variant-selection endpoint.
-                for field_name in ("body", "generation", "modification"):
-                    row_key = vehicle_row_keys[field_name]
-                    if row[row_key] not in (None, ""):
-                        vehicle_values[field_name] = row[row_key]
-                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
-            if core_changed:
-                # A prior generation/modification belongs to the old canonical
-                # vehicle context and cannot remain visible as current.
-                vehicle_values["body"] = None
-                vehicle_values["generation"] = None
-                vehicle_values["modification"] = None
-
-            vehicle_changed = (
-                _changed_payload(row, vehicle_values, vehicle_row_keys) if vehicle_values else {}
-            )
             vehicle_confirmed = (
                 _confirmation_payload(
                     row,
@@ -4087,7 +4068,9 @@ async def save_fitment_details(
             ):
                 raise HTTPException(status_code=422, detail={"code": "vehicle_details_required"})
             needs_catalogue_validation = complete_vehicle_context and bool(
-                core_changed or set(vehicle_confirmed).intersection(core_vehicle_fields)
+                core_changed
+                or set(vehicle_confirmed).intersection(core_vehicle_fields)
+                or request.vehicle.confirmed_fields
             )
             catalogue_selection: dict[str, str | int] | None = None
             if needs_catalogue_validation:
@@ -4120,6 +4103,35 @@ async def save_fitment_details(
                     },
                     vehicle_row_keys,
                     row["vehicle_field_provenance"],
+                )
+
+            # Compare canonical catalogue values before invalidating a selected
+            # version: a slug and its display label can be the same vehicle.
+            core_changed = set(vehicle_changed).intersection(core_vehicle_fields)
+            if vehicle_values:
+                for field in ("body", "generation", "modification"):
+                    if core_changed:
+                        vehicle_values[field] = None
+                    elif modification_state == "confirmed":
+                        vehicle_values[field] = row[vehicle_row_keys[field]]
+                vehicle_changed = _changed_payload(row, vehicle_values, vehicle_row_keys)
+
+            if request.vehicle.confirmed_fields:
+                # Explicit form submission confirms the exact validated catalogue
+                # values in the same transaction; resolver proposals never set this.
+                if catalogue_selection is None:
+                    raise HTTPException(
+                        status_code=422, detail={"code": "vehicle_details_required"}
+                    )
+                vehicle_confirmed.update(
+                    {
+                        field: vehicle_values[field]
+                        for field in request.vehicle.confirmed_fields
+                        if field in vehicle_changed
+                        or not _is_user_confirmed_provenance(
+                            _field_provenance_value(row["vehicle_field_provenance"], field)
+                        )
+                    }
                 )
 
             vehicle_provenance = row["vehicle_field_provenance"] or {}

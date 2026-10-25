@@ -177,6 +177,17 @@ class FitmentVehicleUpdate(BaseModel):
     modification: str | None = None
     market: str | None = None
 
+    confirmed_fields: list[Literal["make", "model", "year", "market"]] = Field(
+        default_factory=list, max_length=4
+    )
+
+    @model_validator(mode="after")
+    def bind_confirmations_to_submitted_values(self) -> FitmentVehicleUpdate:
+        for field_name in self.confirmed_fields:
+            if field_name not in self.model_fields_set or getattr(self, field_name) is None:
+                raise ValueError("confirmed_fields must reference non-null values in this request")
+        return self
+
     @field_validator("make", "model", "body", "generation", "modification", "market", mode="before")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:

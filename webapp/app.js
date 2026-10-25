@@ -1136,13 +1136,25 @@ function restoreFitmentWheelDraft(draft, overview) {
 }
 
 function fitmentComparableVehicle(vehicle = {}) {
+    const canonical = state.fitmentOverview?.vehicle || {};
+    const selection = fitmentSelectedVehicleVariant() || {};
+    const key = value => normalizeFitmentText(value)?.toLocaleLowerCase() || "";
+    const identity = (kind, value, saved, slug) => {
+        const item = fitmentCatalogueSelectionItem(kind, value, fitmentCatalogueItems(kind));
+        const canonicalItem = fitmentCatalogueSelectionItem(kind, saved, fitmentCatalogueItems(kind));
+        if (key(value) === key(saved) || slug && key(value) === key(slug)
+            || item && canonicalItem && fitmentOptionValue(item) === fitmentOptionValue(canonicalItem)) return key(saved);
+        return key(item ? fitmentOptionValue(item) : value);
+    };
+    const make = identity("makes", vehicle.make, canonical.make, selection.make_slug);
+    const sameMake = make === key(canonical.make);
     const market = normalizeFitmentText(vehicle.market)?.toLocaleLowerCase() || "";
     const knownRegion = FITMENT_REGIONS.find(([code, label]) => (
         code.toLocaleLowerCase() === market || label.toLocaleLowerCase() === market
     ));
     return {
-        make: normalizeFitmentText(vehicle.make)?.toLocaleLowerCase() || "",
-        model: normalizeFitmentText(vehicle.model)?.toLocaleLowerCase() || "",
+        make,
+        model: sameMake ? identity("models", vehicle.model, canonical.model, selection.model_slug) : key(vehicle.model),
         year: normalizeFitmentNumber(vehicle.year),
         market: FITMENT_MARKET_VALUE_ALIASES[market] || knownRegion?.[0] || market,
     };
@@ -1161,7 +1173,8 @@ function fitmentDraftPayload(reason) {
         createdAt: now,
         expiresAt: now + FITMENT_TRANSIENT_DRAFT_TTL_MS,
         baseline: fitmentRevisionBaseline(),
-        form: cloneFitmentForm(state.fitmentForm),
+        form: { ...cloneFitmentForm(state.fitmentForm), vehicle: state.fitmentVehicleDirty
+            ? { ...state.fitmentForm.vehicle } : { ...fitmentFormFromOverview(state.fitmentOverview).vehicle } },
         formState: {
             status: fitmentFormIsDirty() ? "dirty" : "clean",
             validation: state.fitmentFormState.validation,
@@ -1315,7 +1328,7 @@ function restoreFitmentTransientDraft({ reason, overview = state.fitmentOverview
         return "replaced";
     }
     const authoritativeVehicle = fitmentFormFromOverview(overview).vehicle;
-    const vehicleEquivalent = fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
+    const vehicleEquivalent = draft.vehicleDirty === false || fitmentVehicleValuesEquivalent(draft.form.vehicle, authoritativeVehicle);
     state.fitmentForm = cloneFitmentForm(draft.form);
     if (vehicleEquivalent) state.fitmentForm.vehicle = authoritativeVehicle;
     state.fitmentActiveStep = Number.isInteger(draft.activeStep) ? draft.activeStep : state.fitmentActiveStep;
@@ -3176,7 +3189,7 @@ function fitmentWheelDraftIsDirty() {
 
 function fitmentFormIsDirty() {
     return fitmentWheelDraftIsDirty()
-        || JSON.stringify(state.fitmentForm?.vehicle) !== JSON.stringify(state.fitmentFormState.baseline?.vehicle);
+        || !fitmentVehicleValuesEquivalent(state.fitmentForm?.vehicle, state.fitmentFormState.baseline?.vehicle);
 }
 
 function markFitmentDirty() {
@@ -3420,7 +3433,7 @@ function validateFitmentForm() {
 
 function fitmentBaseVehicleAwaitingConfirmation() {
     const overview = state.fitmentOverview;
-    return overview?.vehicle_state === "unconfirmed"
+    return ["unconfirmed", "confirmed_incomplete"].includes(overview?.vehicle_state)
         && fitmentNextAction(overview) === "complete_vehicle_details"
         && !state.fitmentVehicleDirty
         && ["make", "model", "year", "market"].every((field) => (
@@ -4051,7 +4064,7 @@ function renderFitmentVerdictGroup(sectionTarget, listTarget, items, kind) {
     }
 }
 
-function fitmentPayload({ includeVehicle = true, includeWheel = true, confirmWheelFields = false } = {}) {
+function fitmentPayload({ includeVehicle = true, includeWheel = true, confirmWheelFields = false, confirmVehicleFields = false } = {}) {
     const confirmations = confirmWheelFields ? { confirmed_fields: fitmentRimFieldsForConfirmation("front") } : {};
     const rearConfirmations = confirmWheelFields ? { confirmed_fields: fitmentRimFieldsForConfirmation("rear") } : {};
     const payload = {
@@ -4100,6 +4113,7 @@ function fitmentPayload({ includeVehicle = true, includeWheel = true, confirmWhe
     };
     if (includeVehicle) {
         payload.vehicle = {
+            ...(confirmVehicleFields ? { confirmed_fields: ["make", "model", "year", "market"] } : {}),
             make: normalizeFitmentText(state.fitmentForm.vehicle.make),
             model: normalizeFitmentText(state.fitmentForm.vehicle.model),
             year: normalizeFitmentNumber(state.fitmentForm.vehicle.year),
@@ -6531,7 +6545,7 @@ function markVehicleFieldEdited(path) {
     if (!path?.startsWith("vehicle.")) return;
     const baselineVehicle = state.fitmentFormState.baseline?.vehicle;
     state.fitmentVehicleDirty = !baselineVehicle
-        || JSON.stringify(state.fitmentForm.vehicle) !== JSON.stringify(baselineVehicle);
+        || !fitmentVehicleValuesEquivalent(state.fitmentForm.vehicle, baselineVehicle);
 }
 
 function selectFitmentRimVariant(index) {
@@ -7235,6 +7249,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
         includeVehicle: savingVehicle,
         includeWheel: !savingVehicle,
         confirmWheelFields,
+        confirmVehicleFields: savingVehicle,
     });
     // Catalogue controls may hold slugs. Re-confirm the canonical spelling only
     // when the actual form values still match the saved Vehicle configuration.
@@ -7245,8 +7260,8 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             canonicalCatalogueValues[field] = fitmentOptionValue(fitmentCatalogueSelectionItem(kind, canonical[field], fitmentCatalogueItems(kind))) || canonical[field];
         }
         if (fitmentVehicleValuesEquivalent(state.fitmentForm.vehicle, canonicalCatalogueValues)) {
-            payload.vehicle = Object.fromEntries(["make", "model", "year", "market"]
-                .map(field => [field, canonical[field] ?? null]));
+            payload.vehicle = { ...payload.vehicle, ...Object.fromEntries(["make", "model", "year", "market"]
+                .map(field => [field, canonical[field] ?? null])) };
         }
     }
     if (confirmingVehicle && !payload.vehicle) return;
@@ -7364,7 +7379,7 @@ async function saveFitment(event, { owner = "", confirmWheelFields = false, inte
             state.fitmentFormState.status = "dirty";
             persistFitmentTransientDraft("navigation");
         }
-        if (savedFromSection === "rim") setFitmentEditor(fitmentWheelDraftIsDirty() ? "rim" : "");
+        if (savedFromSection === "rim" && fitmentWheelDraftIsDirty()) setFitmentEditor("rim");
         if (savedFromSection === "vehicle") rebaseFitmentTransientVehicleDraft(overview);
         const nextAction = fitmentNextAction(overview);
         void loadRenderHistory({ silent: true });
@@ -9685,6 +9700,7 @@ function vnextFitmentSnapshot() {
         vehicleVariantMode: state.fitmentModificationLookupMode,
         vehicleCandidates: [],
         vehicleVariantsLoading: state.fitmentVehicleVariantsLoading,
+        vehicleVariantApplying: Boolean(state.fitmentVehicleVariantApplying),
         vehicleVariants: (state.fitmentVehicleVariants || []).map((variant, index) => ({
             label: fitmentVariantDisplayName(variant, index),
             technical: fitmentVariantTechnicalSeries(variant, fitmentVariantDisplayName(variant, index)),
