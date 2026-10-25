@@ -78,7 +78,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   const failed = fitmentMarkup({ vehicleRecognition: { status: "failed", canRecognize: true } });
   assert.match(failed, /Не удалось распознать автомобиль/);
   assert.match(failed, /Попробовать ещё раз/);
-  assert.match(failed, /data-fitment-action="edit-vehicle-photo"/);
+  assert.doesNotMatch(failed, /data-fitment-action="edit-vehicle-photo"|data-fitment-vehicle-photo/);
   assert.match(failed, /Указать вручную/);
   assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
   const pending = fitmentMarkup({ vehicleRecognition: { status: "loading", canRecognize: true } });
@@ -940,4 +940,13 @@ test('wheel variant cards require an explicit SKU and expose one selected card w
   assert.match(selected,/data-value="2" aria-pressed="true"/);
   assert.doesNotMatch(selected,/vnext-fitment__sku-select|>Выбрать</);
   assert.doesNotMatch(selected,/vnext-fitment__sku-check|✓/);
+});
+
+for (const locale of ["ru", "en"]) test(`Vehicle save readiness preserves the visible action (${locale})`, () => {
+  const base = { locale, vehicleEditing: true, vehicleForm: { make: "BMW", model: "5 Series", year: 2024 }, catalogue: { states: { markets: { resolution: "selection_required" } } } };
+  for (const patch of [{}, { vehicleForm: { make: "BMW" } }, { vehicleSaveReady: false, vehicleForm: { ...base.vehicleForm, market: "EU" } }]) {
+    const markup = fitmentMarkup({ ...base, ...patch });
+    assert.match(markup, /data-fitment-action="save-vehicle"[^>]*disabled/);
+  }
+  assert.doesNotMatch(fitmentMarkup({ ...base, vehicleSaveReady: true, vehicleForm: { ...base.vehicleForm, market: "EU" } }), /data-fitment-action="save-vehicle"[^>]*disabled/);
 });

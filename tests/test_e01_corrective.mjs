@@ -76,11 +76,23 @@ test('starter cohorts preserve filtering, order, credits and provider labels in 
   assert.equal(rows.length,2);assert.equal(rows[0].key,'custom');assert.equal(rows[0].meta,'User label');assert.equal(rows[1].meta,copy('wallet.starterPackage',language));assert.equal(rows[1].credits,3);
  }
 });
-test('Fitment rejects invalid photo types and oversized files with localized copy before storage',async()=>{
- for(const language of ['ru','en'])for(const file of [{type:'image/gif',size:1},{type:'image/png',size:10*1024*1024+1}]){
-  let renders=0,aborts=0;
-  const state={fitmentJobId:'A',fitmentRecognitionToken:0,fitmentRecognitionController:{abort(){aborts++;}}};
-  const context=runtime(['setFitmentVehiclePhoto'],{locale:language,state,fitmentMutationsLocked:()=>false,renderFitment(){renders++;}});
-  await context.setFitmentVehiclePhoto(file);assert.equal(state.fitmentRecognition.status,'failed');assert.equal(state.fitmentRecognition.message,copy('fitment.vehicle.photo.invalid',language));assert.equal(state.fitmentJobId,'A');assert.equal(renders,1);assert.equal(aborts,1);assert.equal(state.fitmentVehiclePhoto,undefined);
- }
+test('existing try-ons cannot replace the original vehicle photo',()=>{
+ assert.doesNotMatch(source,/function setFitmentVehiclePhoto|function hydrateFitmentVehiclePhoto|fitmentVehiclePhotoUrl/);
+});
+
+for (const language of ['ru','en']) test(`recognition fetches the canonical photo with Telegram identity (${language})`,async()=>{
+ const calls=[];
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0,fitmentVehiclePhoto:new Blob(['obsolete'])};
+ const context=runtime(['recognizeFitmentVehicle'],{locale:language,state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),fitmentPreviewAsset:()=>'',apiUrl:(url,options)=>url+(options?.includeIdentity?'?init_data=test-credential':''),withAuthHeaders:()=>({}),getIdentityPayload:()=>({init_data:'test-credential'}),authenticatedFetch:async(url,options)=>{calls.push({url,options});return url.includes('/assets/')?{ok:true,status:200,blob:async()=>new Blob(['canonical'],{type:'image/jpeg'})}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:{make:'BMW'}}})};}});
+ await context.recognizeFitmentVehicle();
+ assert.equal(calls.length,2);assert.match(calls[0].url,/\/assets\/car_original\/download\?init_data=/);
+ assert.equal(await calls[1].options.body.get('car_image').text(),'canonical');
+ assert.equal(state.fitmentRecognition.status,'proposed');
+});
+
+test('photo download failure never invokes recognition and has its own error state',async()=>{
+ let requests=0;
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const context=runtime(['recognizeFitmentVehicle'],{state,AbortController,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),authenticatedFetch:async()=>{requests++;return {ok:false,status:503};}});
+ await context.recognizeFitmentVehicle();assert.equal(requests,1);assert.equal(state.fitmentRecognition.photoUnavailable,true);assert.match(state.fitmentRecognition.message,/загрузить фото/);
 });

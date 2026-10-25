@@ -1,4 +1,7 @@
 export const COPY = {
+  "render.originalLoadFailed": { "ru": "Не удалось загрузить оригинал", "en": "Could not load the original photo" },
+  "render.resultLoadFailed": { "ru": "Не удалось загрузить результат", "en": "Could not load the result image" },
+  "render.wheelLoadFailed": { "ru": "Не удалось загрузить фото диска", "en": "Could not load the wheel photo" },
   "render.share": {"ru":"Поделиться","en":"Share"},
   "render.preparingShare": {"ru":"Подготовка…","en":"Preparing…"},
   "render.shareRetry": {"ru":"Повторить отправку","en":"Retry sharing"},
@@ -519,12 +522,12 @@ export const COPY = {
     "en": "Latest result"
   },
   "dashboard.yourFirstTryOn": {
-    "ru": "Ваша первая примерка",
-    "en": "Your first try-on"
+    "ru": "Здесь будет ваша первая примерка",
+    "en": "Your first try-on will appear here"
   },
   "dashboard.uploadPhotosOfTheVehicleAndWheelTheFinished": {
-    "ru": "Загрузите фото автомобиля и диска — готовый результат появится здесь.",
-    "en": "Upload photos of the vehicle and wheel — the finished result will appear here."
+    "ru": "После создания здесь появится результат",
+    "en": "Your result will appear here once created"
   },
   "dashboard.open": {
     "ru": "Открыть",
@@ -1107,8 +1110,8 @@ export const COPY = {
     "en": "Try-on queued"
   },
   "render.generatingRender": {
-    "ru": "Создаём примерку…",
-    "en": "Creating the try-on…"
+    "ru": "Генерируем изображение",
+    "en": "Generating image"
   },
   "render.thisCanTakeUpToSeconds": {
     "ru": "Это может занять до 90 секунд",
@@ -2432,8 +2435,8 @@ export const COPY = {
     "en": "This may take up to 90 seconds."
   },
   "legacy.status.generating": {
-    "ru": "Создаём примерку…",
-    "en": "Creating the try-on…"
+    "ru": "Генерируем изображение",
+    "en": "Generating image"
   },
   "legacy.result.imageAlt": {
     "ru": "Результат примерки",

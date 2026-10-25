@@ -1,0 +1,32 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mobile owner fixes — local QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/approved-home-create.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css"><link rel="stylesheet" href="../../webapp/vnext/styles/account.css">
+<style>body{margin:0;background:var(--vnext-canvas)}.qa-nav{display:flex;gap:12px;padding:8px 16px;flex-wrap:wrap}.qa-nav a{color:var(--vnext-text-secondary)}</style></head><body><nav class="qa-nav"><a href="?screen=home">Home</a><a href="?screen=processing">Processing</a><a href="?screen=fitment">Fitment</a><a href="?screen=account">Account</a><button id="redraw" type="button">5 redraw</button></nav><div id="fixture" data-vnext-root></div>
+<script type="module">
+import {createAppShell} from '../../webapp/vnext/shell/app-shell.js';
+import {createDashboardView} from '../../webapp/vnext/views/dashboard.js?owner-final-20261025';
+import {createRenderView} from '../../webapp/vnext/views/render.js?owner-final-20261025-v2';
+import {createFitmentView,refreshFitmentView} from '../../webapp/vnext/views/fitment.js';
+import {copy} from '../../webapp/vnext/copy.mjs';
+const query=new URLSearchParams(location.search),locale=query.get('locale')||'ru',screen=query.get('screen')||'home';
+const asset=name=>new URL('../../webapp/assets/'+name,location.href).href;
+let content,title,activeView,model;
+if(screen==='home'){
+content=createDashboardView({locale,authenticated:false,latest:null,recent:[],expiry:[]},{});title=copy('nav.dashboard',locale);activeView='dashboard';
+}else if(screen==='processing'){
+content=createRenderView('processing',{locale,status:'queued',title:'Примерка #48',carUrl:asset('demo-vehicle-zeekr.jpg'),wheelUrl:asset('demo-rim-xtrike.png')},{});title=copy('page.renderProcessing',locale);activeView='render-detail';
+}else if(screen==='account'){
+// Run the production account renderer against local identities, without auth/API calls.
+content=document.createElement('section');content.className='account-settings-panel';content.innerHTML='<div data-account-settings-content></div>';document.querySelector('#fixture').append(content);
+const sourceUrl=new URL('../../webapp/app.js',location.href),source=(await(await fetch(sourceUrl)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,sourceUrl)}"`);
+const module=URL.createObjectURL(new Blob([source,`\nstate.accountState={identities:{email:{linked:true},telegram:{linked:true,display:'@test_account'}}};state.accountStateLoading=false;locale='${locale}';renderAccountSettings();`],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+title=copy('account.settings',locale);activeView='settings';
+}else{
+model={locale,overview:{vehicle_state:'confirmed_ready',modification_state:'confirmed'},nextAction:'run_standard_check',vehicleTitle:'BMW 5 Series',vehiclePreview:asset('demo-vehicle-zeekr.jpg'),rimPreview:asset('demo-rim-xtrike.png'),vehicleEditing:false,vehicleForm:{make:'BMW',model:'5 Series',year:2024,market:'EU'},vehicleSaveReady:true,catalogue:{makes:[{value:'BMW',label:'BMW'}],models:[{value:'5 Series',label:'5 Series'}],years:[{value:'2024',label:'2024'}],states:{}},vehicleVariants:[{label:'520d xDrive',technical:'2020–2024'}],selectedVehicleVariant:0};
+const refresh=()=>refreshFitmentView(content,model);
+content=createFitmentView(model,{action(action){if(action==='edit-vehicle'){model.vehicleEditing=true;model.rimEditing=false;refresh();}if(action==='save-vehicle'){model.saving=true;refresh();setTimeout(()=>{model.saving=false;model.vehicleEditing=false;model.nextAction='select_vehicle_variant';refresh();},100);} },setField(path,value){model.vehicleForm[path.split('.')[1]]=value;model.vehicleSaveReady=['make','model','year'].every(key=>model.vehicleForm[key]);refresh();}});
+window.qaRedraw=()=>{for(let i=0;i<5;i++)refresh();};title=copy('fitment.compatibilityCheck',locale);activeView='fitment';
+}
+document.querySelector('#redraw').addEventListener("mousedown",event=>event.preventDefault());
+document.querySelector('#redraw').addEventListener("click",()=>window.qaRedraw?.());
+document.querySelector('#fixture').append(createAppShell({title,activeView,content,authenticated:screen!=='home',locale,navigate(){}}));window.qaReady=true;
+</script></body></html>

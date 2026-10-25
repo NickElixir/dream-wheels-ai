@@ -104,12 +104,13 @@ function runInCopyContext(script, context = {}, ...options) {
 for (const [name,patch,targetSelector] of [
   ["ready wheel save",{rimEditing:false,nextAction:"run_standard_check"},"#fitment-standard-title"],
   ["wheel save requiring vehicle version",{rimEditing:false,nextAction:"select_vehicle_variant"},"#fitment-variant-title"],
+  ["vehicle save requiring vehicle version",{vehicleEditing:false,nextAction:"select_vehicle_variant", completedVehicleSave:true},"#fitment-variant-title"],
   ["failed wheel save",{rimEditing:true,rimError:"Save failed"},'[role="alert"]'],
 ]) test(`${name} focuses the next meaningful target`,()=>{
   let selected="";
   const origin={dataset:{fitmentAction:"save-rim",value:""},tagName:"BUTTON"};
   const targetFor=selector=>({tagName:"H2",setAttribute(){},focus(){selected=selector;}});
-  const root={className:"vnext-fitment",fitmentFocusIntent:{action:"save-rim",origin},fitmentWorkspaceKind:"rim-editor",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration")return null;return targetFor(selector);},replaceChildren(){}};
+  const root={className:"vnext-fitment",fitmentFocusIntent:{action:patch.completedVehicleSave?"save-vehicle":"save-rim",origin},fitmentWorkspaceKind:"rim-editor",querySelector(selector){if(selector.startsWith(":focus"))return origin;if(selector===".vnext-fitment__configuration" || selector.includes("aria-invalid") || selector.includes('[role="alert"]') && !patch.rimError)return null;return targetFor(selector);},replaceChildren(){}};
   const context={CSS:{escape:v=>v},document:{body:{},activeElement:origin,createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
   runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
   context.refresh(root,patch);
@@ -148,4 +149,29 @@ test("background workspace change preserves a focused action without activation"
   runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
   context.refresh(root,{vehicleEditing:true,resolver:{url:"https://example.com/wheel"}});
   assert.equal(selected,'[data-fitment-action="resolve-rim"][data-value=""]');
+});
+
+test("refreshing a URL field never reads unsupported selection properties", () => {
+  const numberInput = {
+    dataset: { fitmentField: "rim.product_url" },
+    type: "url",
+    get selectionStart() { throw new DOMException("unsupported", "InvalidStateError"); },
+    get selectionEnd() { throw new DOMException("unsupported", "InvalidStateError"); },
+    focus() {},
+    setSelectionRange() { throw new DOMException("unsupported", "InvalidStateError"); },
+  };
+  const root = {
+    className: "vnext-fitment", fitmentCallbacks: {},
+    querySelector(selector) {
+      return selector.startsWith(":focus") || selector.includes("rim.product_url") ? numberInput : null;
+    },
+    replaceChildren() {},
+  };
+  const context = {
+    DOMException,
+    CSS: { escape: (value) => value },
+    document: { createElement: () => ({ className: "", innerHTML: "", childNodes: [], querySelectorAll: () => [] }) },
+  };
+  runInCopyContext(`${source}\nglobalThis.refreshFitmentView = refreshFitmentView;`, context);
+  assert.doesNotThrow(() => context.refreshFitmentView(root, { loading: true }));
 });

@@ -149,7 +149,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         removeEventListener(type) { interactionListeners.delete(type); },
         querySelector(selector) {
             if (["#fitment-rim-editor-title", "#fitment-page-title"].includes(selector)) return {focus() { focused = selector; }};
-            return vnext && selector === "[data-vnext-fitment-root]" ? element() : null;
+            return vnext && selector === "[data-vnext-fitment-root]" ? { ...element(), requestFormFocus(kind) { focused = `form:${kind}`; } } : null;
         }, querySelectorAll() { return []; },
         createElement: element,
     };
@@ -163,6 +163,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
         fetch: async (url, options = {}) => {
             const key = `${options.method || "GET"} ${new URL(url, "https://test.local").pathname}`;
             calls.push(key);
+            if (key === "GET /api/backend/jobs/behavior-job/assets/car_original/download" && !routes[key]) return { ...response(200), blob: async () => new Blob(["original"], { type: "image/jpeg" }) };
             const handler = routes[key];
             return typeof handler === "function" ? handler(options, url) : handler || response(404, { detail: key });
         },
@@ -209,7 +210,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             selectFitmentRimVariant,
             bridge: window.dreamwheelsFitmentBridge, saveVnextFitment, setVnextFitmentField,
             snapshot: vnextFitmentSnapshot, fitmentWheelDraftIsDirty, fitmentWheelSource, buildRenderExpiryCohorts, vnextDashboardSnapshot,
-            recognizeFitmentVehicle, useFitmentRecognitionProposal, setFitmentVehiclePhoto,
+            recognizeFitmentVehicle, useFitmentRecognitionProposal,
             runFitmentCheck, fitmentMutationsLocked, clearFitmentCheckPolling, clearFitmentRuntimeRequests, reconcileRequiredFitmentWorkspace,
             useRealVariantLookup() { ensureRequiredFitmentVariantLookup = globalThis.__realEnsureRequiredFitmentVariantLookup; },
             realLoadFitmentCheckHistory,
@@ -1057,7 +1058,7 @@ test("public Create/Render/Fitment/Wallet bridge methods and snapshots preserve 
     const expected = {
         Create: ["snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
         Render: ["snapshot", "prepareAssets", "assetError", "action"],
-        Fitment: ["snapshot", "surfaceMounted", "setField", "setVehiclePhoto", "setSourceUrl", "action"],
+        Fitment: ["snapshot", "surfaceMounted", "setField", "setSourceUrl", "action"],
         Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "previousHistoryPage", "login"],
     };
     const canonical = () => JSON.stringify({ form: api.state.fitmentForm, overview: api.state.fitmentOverview, check: api.state.fitmentCheck, job: api.state.fitmentJobId, renders: api.state.renderHistory, credits: api.state.creditPackages });
@@ -1366,7 +1367,7 @@ test("resolver compares proposals with confirmed Wheel values without changing c
     assert.equal(api.state.fitmentOverview.front_rim.rim.offset_et_mm, 35.125);
 });
 
-test("photo replacement and recognition remain local until catalogue/variant Save", async () => {
+test("recognition uses the original photo and remains local until catalogue/variant Save", async () => {
     let api, revision, formData;
     ({ api } = navigationApi({ routes: {
         "POST /api/backend/identity/fitment/behavior-job/vehicle-proposal": options => {
@@ -1379,12 +1380,13 @@ test("photo replacement and recognition remain local until catalogue/variant Sav
     revision = initial.vehicle_revision;
     const canonical = JSON.stringify(api.state.fitmentOverview);
     const beforeVehicle = JSON.stringify(api.state.fitmentForm.vehicle);
-    await api.setFitmentVehiclePhoto(new File(["test"], "photo.png", { type: "image/png" }));
+
     assert.equal(JSON.stringify(api.state.fitmentOverview), canonical);
+    api.state.renderHistory = [{job_id:"behavior-job",assets:{car_original:{download_url:"/jobs/behavior-job/assets/car_original/download"}}}];
     await api.recognizeFitmentVehicle();
     assert.equal(api.state.fitmentRecognition.status, "proposed");
     assert.equal(formData.get("expected_vehicle_revision"), String(revision));
-    assert.equal(formData.get("car_image").type, "image/png");
+    assert.equal(formData.get("car_image").type, "image/jpeg");
     assert.equal(JSON.stringify(api.state.fitmentForm.vehicle), beforeVehicle);
     api.useFitmentRecognitionProposal(0);
     assert.equal(api.state.fitmentForm.vehicle.make, "Porsche");
@@ -2087,6 +2089,7 @@ test("Wheel → recognition → Vehicle preserves the Wheel draft and canonical 
     api.state.fitmentVehiclePhoto=new File(["test"],"car.jpg",{type:"image/jpeg"});
     revision=api.state.fitmentOverview.vehicle_revision;
     const canonical=JSON.stringify(api.state.fitmentOverview);
+    api.state.renderHistory = [{job_id:"behavior-job",assets:{car_original:{download_url:"/jobs/behavior-job/assets/car_original/download"}}}];
     await api.recognizeFitmentVehicle();
     assert.equal(api.state.fitmentRimEditing,false);
     assert.match(fitmentMarkup(api.snapshot()),/data-fitment-workspace-kind="vehicle-recognition"/);
@@ -2107,7 +2110,9 @@ test("a recognition reply after switching to Wheel does not reopen Vehicle works
     }});
     seed(api,overviewFor(api,"complete_vehicle_details"),"vehicle");
     api.state.fitmentVehiclePhoto=new File(["test"],"car.jpg",{type:"image/jpeg"});
+    api.state.renderHistory = [{job_id:"behavior-job",assets:{car_original:{download_url:"/jobs/behavior-job/assets/car_original/download"}}}];
     const pending=api.recognizeFitmentVehicle();
+    while (!finish) await new Promise(resolve => setTimeout(resolve, 0));
     api.bridge.action("edit-rim");
     finish(response(200,{vehicle_revision:api.state.fitmentOverview.vehicle_revision,vehicle:{primary:{make:"Audi",model:"Q8",year:2020}}}));
     await pending;
@@ -2558,7 +2563,7 @@ for (const userMoved of [false, true]) {
         assert.equal(harness.api.state.fitmentRimEditing,true);
         assert.equal(harness.api.state.fitmentVehicleEditing,false);
         assert.equal(JSON.stringify(harness.api.state.fitmentOverview.vehicle),vehicleBefore);
-        assert.equal(harness.focused(),userMoved ? "" : "#fitment-rim-editor-title");
+        assert.equal(harness.focused(),userMoved ? "" : "form:rim");
         const html = fitmentMarkup(harness.api.snapshot());
         assert.match(html,/data-fitment-workspace="rim"/);
         assert.doesNotMatch(html,/data-fitment-workspace="vehicle"/);
@@ -2580,7 +2585,7 @@ test("rim entry survives overview error, real retry action and clean background 
     await new Promise(resolve=>setTimeout(resolve,10));
     assert.equal(harness.api.state.fitmentRimEditing,true);
     assert.equal(harness.api.state.fitmentVehicleEditing,false);
-    assert.equal(harness.focused(),"#fitment-rim-editor-title");
+    assert.equal(harness.focused(),"form:rim");
     for(let i=0;i<5;i++)await harness.api.loadFitmentOverview("behavior-job");
     assert.equal(harness.api.state.fitmentRimEditing,true);
     assert.equal(harness.api.state.fitmentActiveSection,"rim");
@@ -2773,4 +2778,17 @@ for (const acceptFirst of [false,true]) test(`URL replacement invalidates new SK
     await api.saveVnextFitment('rim');
     assert.equal(patches,0);
     assert.equal(api.state.fitmentOverview.front_rim.rim.wheel_diameter_in,20);
+});
+
+test('vehicle save readiness immediately reflects a background catalogue reload',()=>{
+ const {api}=navigationApi();seed(api,overviewFor(api,'complete_vehicle_details'),'vehicle');
+ api.state.fitmentForm.vehicle={make:'lada',model:'vesta',year:2020,market:'russia'};seedH1Catalogue(api);
+ api.state.fitmentFormState.validation='valid';
+ assert.equal(api.snapshot().vehicleSaveReady,true);
+ for(const kind of ['makes','models','years']){
+  api.state.fitmentCatalogue[kind].status='loading';
+  assert.equal(api.snapshot().vehicleSaveReady,false,kind);
+  api.state.fitmentCatalogue[kind].status='loaded';
+ }
+ api.state.fitmentMarketResolution.status='loading';assert.equal(api.snapshot().vehicleSaveReady,false);
 });

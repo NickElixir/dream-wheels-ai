@@ -35,7 +35,7 @@ function createLatest(model, { navigate, openRenderDetail } = {}) {
     title.textContent = uiText("dashboard.yourFirstTryOn", localeOf(model));
     const copy = document.createElement("p");
     copy.textContent = uiText("dashboard.uploadPhotosOfTheVehicleAndWheelTheFinished", localeOf(model));
-    empty.append(title, copy, createButton({ label: uiText("nav.create", localeOf(model)), variant: "secondary", onClick: () => navigate?.("create") }));
+    empty.append(title, copy);
     wrap.append(empty);
     return wrap;
   }

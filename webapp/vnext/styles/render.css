@@ -11,7 +11,7 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
 .vnext-processing-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr); gap:18px; align-items:start; }
 .vnext-processing-card { background:var(--vnext-surface); border:1px solid var(--vnext-border); border-radius:10px; padding:18px; }
 .vnext-processing-card > .vnext-render-media { aspect-ratio:16/10; height:auto; margin-bottom:18px; }
-.vnext-processing-status { display:flex; gap:12px; padding-top:18px; border-top:1px solid var(--vnext-border); }
+.vnext-processing-status { display:flex; gap:12px; }
 .vnext-processing-status .vnext-spinner { flex-shrink:0; }
 .vnext-processing-status strong { font-size:18px; font-weight:500; }
 .vnext-processing-status p { margin:5px 0 0; font-size:13px; }
@@ -273,3 +273,14 @@ body.vnext-surface-active [data-view="render-detail"] > :not([data-vnext-surface
  .vnext-result-layout > .vnext-result-actions .vnext-button { width:100%;min-width:0;justify-content:center;white-space:normal; }
 }
 @media(max-width:340px) { .vnext-result-actions .vnext-result-export { grid-template-columns:minmax(0,1fr); } }
+
+/* Recovery belongs to the failed image, independently of the result actions. */
+.vnext-media-recovery { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; text-align:center; min-width:0; }
+.vnext-media-recovery p { margin:0; color:var(--vnext-text-secondary); font-size:14px; line-height:1.4; overflow-wrap:anywhere; }
+.vnext-media-recovery .vnext-button { width:auto; min-height:44px; padding:8px 16px; flex:none; }
+.vnext-compare--asset-error { --compare:50% !important; }
+.vnext-compare--asset-error .vnext-compare-range { pointer-events:none; }
+.vnext-compare-reveal .vnext-media-recovery { position:absolute; inset:0 50% 0 0; background:var(--vnext-surface-elevated); }
+.vnext-result-wheel .vnext-media-recovery { padding:8px; gap:8px; }
+.vnext-result-wheel .vnext-media-recovery p { font-size:12px; }
+.vnext-render-asset-unavailable > .vnext-media-recovery { margin-bottom:16px; }

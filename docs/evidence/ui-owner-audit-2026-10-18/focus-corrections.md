@@ -1,9 +1,15 @@
-# Review corrections and focus — 18.10.2026
+# Focus contract — updated 25.10.2026
+
+Current policy: explicit form openings focus the first required empty enabled control, or the first editable control when complete. Vehicle version opening focuses the selected or first enabled choice. Editor headings are fallbacks only while controls are unavailable. Page navigation, informational sections and the Summary retain heading focus.
+
+See `docs/ui/form-focus-policy-2026-10-25.md` for the complete owner-approved policy. The historical verification notes below describe earlier iterations, not a requirement to stop at editor headings.
+
+## Historical corrections — 18.10.2026
 
 Corrections to PR270 after independent review of 66f68f0
 
 - P2: Create URL feedback survives refresh; restoring input values no longer dispatches a synthetic input event; actual edits hide saved feedback, unsaved values survive subsequent refresh
-- P3: saved Wheel no longer targets removed edit-rim; successful save targets Summary or required Vehicle/version editor according to next_action
+- P3: saved Wheel no longer targets removed edit-rim; successful save targets Summary or required Vehicle/version input according to next_action
 - Create consent/photo/source actions have stable focus identities across redraw
 - Fitment records a pending action while its control is disabled; completion focuses errors/next step/current verdict only while the user still owns that interaction
 - Moving to another control cancels completion focus; background workspace changes preserve the current field

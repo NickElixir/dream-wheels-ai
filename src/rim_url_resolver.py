@@ -615,11 +615,16 @@ async def resolve_rim_product_url(
                             urljoin(current_url, response.headers["Location"]), policy
                         )
                         continue
-                    if not 200 <= response.status < 300 or (
-                        response.content_type.lower()
-                        not in {"text/html", "application/xhtml+xml", "application/json"}
-                        and not response.content_type.lower().endswith("+json")
-                    ):
+                    if not 200 <= response.status < 300:
+                        raise RimUrlError(
+                            "Product page is unavailable",
+                            reason_code="rim_source_page_unavailable",
+                        )
+                    if response.content_type.lower() not in {
+                        "text/html",
+                        "application/xhtml+xml",
+                        "application/json",
+                    } and not response.content_type.lower().endswith("+json"):
                         raise RimUrlError(
                             "Product page is not available as a supported document",
                             reason_code="rim_source_unsupported_document",
