@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Result — inline image recovery</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/render.css">
+<style>body{margin:0;background:var(--vnext-canvas);color:var(--vnext-text);font-family:var(--vnext-font)}main{max-width:1120px;padding:24px 16px;margin:auto}nav{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px}nav select,nav button{padding:8px}nav small{width:100%;color:var(--vnext-text-secondary)}h1{font-size:28px;margin:0}#qa-status{font-size:12px;color:var(--vnext-text-secondary)}</style></head>
+<body><main><nav><select aria-label="Ошибка" id="failure"><option value="original">Оригинал</option><option value="result">Результат</option><option value="rim_original">Фото диска</option><option value="all">Все фото</option></select><select aria-label="Язык" id="language"><option value="ru">RU</option><option value="en">EN</option></select><button id="reset">Вернуть ошибку</button><small>Локальная демонстрация: управляемая ошибка загрузки, генерация не запускается</small></nav><h1>Результат</h1><div id="view"></div><p id="qa-status" role="status"></p></main>
+<script type="module">
+import {createRenderView,refreshRenderView} from '../../webapp/vnext/views/render.js';
+const urls={original:new URL('../../webapp/assets/demo-vehicle-zeekr.jpg',location.href).href,result:new URL('../../webapp/assets/demo-render-zeekr-xtrike.jpg',location.href).href,rim_original:new URL('../../webapp/assets/demo-rim-xtrike.png',location.href).href};
+const fields={original:['originalFailed','originalLoading','originalUrl'],result:['resultFailed','resultLoading','resultUrl'],rim_original:['wheelFailed','wheelLoading','wheelUrl']};
+let model,root,revision=0;
+const status=document.querySelector('#qa-status');
+function refresh(){if(root)refreshRenderView(root,model);else{root=createRenderView('result',model,{action:retry});document.querySelector('#view').append(root);}}
+function reset(){revision++;model={locale:document.querySelector('#language').value,jobId:'local-preview',status:'completed',title:'Примерка #48',createdLabel:'22 окт., 12:05',rimName:'X’trike X-129',specs:'20″ / 9J / 5×114,3',wheelAvailable:true,canDownload:true,canFitment:true,reasons:[],failureCopy:{assetUnavailable:'Изображение недоступно',sourcePhoto:'Исходное фото'}};
+for(const [kind,[failed,loading,url]]of Object.entries(fields)){model[failed]=['all',kind].includes(document.querySelector('#failure').value);model[loading]=false;model[url]=urls[kind];}
+status.textContent='';refresh();}
+function retry(action,jobId,kind){if(action!=='asset-retry')return;const [failed,loading,url]=fields[kind],attempt=revision;model[failed]=false;model[loading]=true;model[url]='';status.textContent=`Повторяется только: ${kind}`;refresh();setTimeout(()=>{if(attempt!==revision)return;model[loading]=false;model[url]=urls[kind];refresh();status.textContent=`Восстановлено: ${kind}. Новая генерация не запускалась`;},700);}
+for(const id of ['failure','language','reset'])document.querySelector('#'+id).addEventListener(id==='reset'?'click':'change',reset);
+reset();
+</script></body></html>

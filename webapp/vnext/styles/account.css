@@ -36,3 +36,11 @@
  .vnext-shell__main:has(.vnext-dashboard) { position: relative; }
  .vnext-shell[data-authenticated="true"] .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { display: flex; position: absolute; z-index: 1; top: 18px; right: 16px; width: 44px; padding: 0; border: 0; }
 }
+
+.account-provider-title { display: inline-flex; align-items: center; gap: 8px; }
+.account-provider-title svg { width: 20px; height: 20px; flex: 0 0 20px; }
+@media(max-width:700px) {
+ .vnext-shell[data-authenticated="false"] .vnext-shell__main:has(.vnext-dashboard) .vnext-shell__topbar { position: absolute; z-index: 1; top: 18px; right: 16px; padding: 0; border: 0; }
+ .vnext-shell[data-authenticated="false"] .vnext-dashboard { padding-top: 0; }
+ .vnext-shell[data-authenticated="false"] .vnext-dashboard__intro > div { padding-right: 84px; }
+}

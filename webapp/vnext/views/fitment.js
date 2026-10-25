@@ -30,11 +30,12 @@ function field(label, path, value, { type = "text", options = null, disabled = f
   placeholder ||= uiText("fitment.field.notSelected", locale);
   const invalid = Boolean(error);
   const id = `fitment-field-${path.replaceAll(".", "-")}`;
-  const inputAttributes = ` id="${esc(id)}" ${invalid ? ' aria-invalid="true" aria-describedby="fitment-error-' + esc(path.replaceAll(".", "-")) + '"' : ""} ${disabled ? "disabled" : ""}`;
+  const descriptionIds = [message ? `${id}-status` : "", invalid ? `fitment-error-${path.replaceAll(".", "-")}` : ""].filter(Boolean).join(" ");
+  const inputAttributes = ` id="${esc(id)}" ${invalid ? 'aria-invalid="true"' : ""} ${descriptionIds ? `aria-describedby="${esc(descriptionIds)}"` : ""} ${disabled ? "disabled" : ""}`;
   const control = options
     ? `<select data-fitment-field="${esc(path)}"${inputAttributes}><option value="">${esc(placeholder)}</option>${options.map((option) => `<option value="${esc(option.value)}" ${String(option.value) === String(value ?? "") ? "selected" : ""}>${esc(option.label)}</option>`).join("")}</select>`
     : `<input type="${type === "number" ? "text" : type}"${type === "number" ? ' inputmode="decimal"' : ""} data-fitment-field="${esc(path)}" value="${esc(value)}"${inputAttributes}>`;
-  return `<div class="vnext-fitment__field${invalid ? " vnext-fitment__field--invalid" : ""}"><label for="${esc(id)}">${esc(label)}</label>${control}${message ? `<small class="vnext-fitment__field-message" role="status">${esc(message)}${retry ? ` ${button(uiText("create.retry", locale), "retry-catalogue", { value: retry })}` : ""}</small>` : ""}${invalid ? `<small class="vnext-fitment__field-error" id="fitment-error-${esc(path.replaceAll(".", "-"))}" data-fitment-error-field="${esc(path)}" role="alert">${esc(error)}</small>` : ""}</div>`;
+  return `<div class="vnext-fitment__field${invalid ? " vnext-fitment__field--invalid" : ""}"><label for="${esc(id)}">${esc(label)}</label>${control}${message ? `<small class="vnext-fitment__field-message" id="${esc(id)}-status" role="${retry ? "alert" : "status"}"${retry ? ' tabindex="-1"' : ""}>${esc(message)}${retry ? ` ${button(uiText("create.retry", locale), "retry-catalogue", { value: retry })}` : ""}</small>` : ""}${invalid ? `<small class="vnext-fitment__field-error" id="fitment-error-${esc(path.replaceAll(".", "-"))}" data-fitment-error-field="${esc(path)}" role="alert">${esc(error)}</small>` : ""}</div>`;
 }
 
 function fieldConflict(model, path) {
@@ -264,7 +265,7 @@ function vehicleEditor(model, vehicle) {
       }) : "";
   const marketNotice = vehicle.year && ["failed", "no_data"].includes(marketState.status)
     ? `<p class="vnext-fitment__notice${marketState.status === "failed" ? " vnext-fitment__notice--error" : ""}" data-fitment-focus-key="error:vehicle-market" role="${marketState.status === "failed" ? "alert" : "status"}">${esc(marketState.message)}</p>${marketState.status === "failed" ? button(uiText("create.retry", localeOf(model)), "retry-catalogue", { value: "markets" }) : ""}` : "";
-  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("create.vehicle", localeOf(model)))}</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">${esc(uiText("fitment.enterVehicleDetails", localeOf(model)))}</h2></div><p class="vnext-fitment__notice">${localeOf(model) === "ru" ? "Выбирайте по порядку — варианты следующего поля появятся после выбора предыдущего" : "Choose in order — the next field loads its options after your selection"}</p><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", uiText("fitment.make", localeOf(model)), "vehicle.make", vehicle.make)}${catalogueField(model, "models", uiText("fitment.model", localeOf(model)), "vehicle.model", vehicle.model)}${catalogueField(model, "years", uiText("fitment.year", localeOf(model)), "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? `<p class="vnext-fitment__notice">${esc(uiText("fitment.verifyTheCatalogueDetailsAndSelectTheExactVehicle", localeOf(model)))}</p>` : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert" data-fitment-focus-key="error:vehicle-save">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button(uiText("fitment.returnToVehicleVersionSelection", localeOf(model)), "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? uiText("fitment.confirmDetails", localeOf(model)) : uiText("fitment.saveVehicle", localeOf(model)), model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
+  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("create.vehicle", localeOf(model)))}</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">${esc(uiText("fitment.enterVehicleDetails", localeOf(model)))}</h2></div><p class="vnext-fitment__notice">${localeOf(model) === "ru" ? "Выбирайте по порядку — варианты следующего поля появятся после выбора предыдущего" : "Choose in order — the next field loads its options after your selection"}</p><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", uiText("fitment.make", localeOf(model)), "vehicle.make", vehicle.make)}${catalogueField(model, "models", uiText("fitment.model", localeOf(model)), "vehicle.model", vehicle.model)}${catalogueField(model, "years", uiText("fitment.year", localeOf(model)), "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? `<p class="vnext-fitment__notice">${esc(uiText("fitment.verifyTheCatalogueDetailsAndSelectTheExactVehicle", localeOf(model)))}</p>` : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert" data-fitment-focus-key="error:vehicle-save">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button(uiText("fitment.returnToVehicleVersionSelection", localeOf(model)), "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? uiText("fitment.confirmDetails", localeOf(model)) : uiText("fitment.saveVehicle", localeOf(model)), model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving || model.vehicleSaveReady === false || !vehicle.make || !vehicle.model || !vehicle.year || marketRequired && !vehicle.market })}</section>`;
 }
 
 function vehicleRecognition(model) {
@@ -273,14 +274,14 @@ function vehicleRecognition(model) {
     const ru = localeOf(model) === "ru";
     return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем автомобиль по фото" : "Identifying the car from your photo"}</h2>${loadingStatus(ru ? "Ищем марку и модель" : "Finding the make and model")}<p>${ru ? "Комплектацию предложим уточнить после распознавания" : "We will ask you to confirm the version after identification"}</p></section>`;
   }
-  const heading = recognition.status === "loading" ? uiText("fitment.recognizingTheVehicle", localeOf(model)) : recognition.status === "failed" ? uiText("fitment.unableToRecognizeTheVehicle", localeOf(model)) : uiText("fitment.recognizedFromThePhoto", localeOf(model));
+  const heading = recognition.photoUnavailable ? (localeOf(model) === "ru" ? "Не удалось загрузить фото автомобиля" : "Could not load the vehicle photo") : recognition.status === "loading" ? uiText("fitment.recognizingTheVehicle", localeOf(model)) : recognition.status === "failed" ? uiText("fitment.unableToRecognizeTheVehicle", localeOf(model)) : uiText("fitment.recognizedFromThePhoto", localeOf(model));
   const candidates = (recognition.candidates || []).map((item, index) => {
     const identity = [item.make, item.model].filter(Boolean).join(" ");
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));
     return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
   }).join("");
   const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : recognition.status === "failed"
-    ? `${recognition.message ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}${button(uiText("create.replacePhoto", localeOf(model)), "edit-vehicle-photo")}</div>`
+    ? `${recognition.message ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
     : `<p>${esc(uiText("fitment.selectTheRecognizedVehicleToVerifyItsDetailsIn", localeOf(model)))}</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
   return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
 }
@@ -376,7 +377,6 @@ export function fitmentMarkup(model = {}) {
       <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">${esc(uiText("create.vehicle", localeOf(model)))}</p>${preview(model.vehiclePreview, uiText("fitment.vehiclePhotograph", localeOf(model)), undefined, localeOf(model))}
         <p class="vnext-fitment__model-label">${esc(text("fitment.vehicle.modelLabel"))}</p>
         <h2 id="fitment-vehicle-title">${esc(model.vehicleTitle || text("fitment.carNotSpecified"))}</h2>
-        <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="${esc(uiText("create.vehiclePhoto", localeOf(model)))}">
         <div class="vnext-fitment__source-action">${button(text("fitment.vehicle.identifyPhoto"), "recognize-vehicle", { disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(text(vehicleConfirmed ? "fitment.vehicle.changeModel" : "fitment.enterManually"), "edit-vehicle")}</div>
         ${configuration}${variantRequired && model.rimEditing ? button(uiText("fitment.chooseVehicleVersion", localeOf(model)), "show-variants") : ""}${vehicleError}
       </section>
@@ -411,27 +411,97 @@ function focusWorkflowTarget(root, target, scroll = false) {
   target.focus({ preventScroll: true });
   root.fitmentRestoringFocus = false;
   const bounds = target.getBoundingClientRect?.();
-  if (scroll && bounds && (bounds.top < 64 || bounds.bottom > (globalThis.innerHeight || 900) - 80)) {
+  const viewportTop = globalThis.visualViewport?.offsetTop || 0;
+  const viewportBottom = viewportTop + (globalThis.visualViewport?.height || globalThis.innerHeight || 900);
+  if (scroll && bounds && (bounds.top < viewportTop + 64 || bounds.bottom > viewportBottom - 80)) {
     target.scrollIntoView?.({ behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
   }
 }
 
-function nextFitmentTarget(root, model) {
-  if (model.nextAction === "select_vehicle_variant") return root.querySelector("#fitment-variant-title") || root.querySelector("[data-fitment-action='reselect-vehicle']") || root.querySelector("[data-fitment-action='edit-vehicle']");
-  if (["complete_vehicle_details", "confirm_vehicle"].includes(model.nextAction)) return root.querySelector("#fitment-vehicle-editor-title") || root.querySelector("[data-fitment-action='edit-vehicle']");
-  if (model.nextAction === "complete_rim_specs") return root.querySelector("#fitment-rim-editor-title") || root.querySelector("[data-fitment-action='manual-rim']");
-  return root.querySelector("#fitment-standard-title");
+function fitmentFormTarget(root, kind, model) {
+  const enabled = node => node && !node.disabled && !node.closest?.('[hidden], [inert]');
+  const all = selector => [...(root.querySelectorAll?.(selector) || [])];
+  const heading = root.querySelector(kind === "variant" ? "#fitment-variant-title" : kind === "url" ? "#fitment-rim-title" : `#fitment-${kind}-editor-title`);
+  let controls = [];
+  let missing = [];
+  let loading = false;
+  if (kind === "variant") {
+    controls = all('[data-fitment-action="vehicle-variant"]');
+    const selected = controls.find(node => enabled(node) && node.getAttribute("aria-pressed") === "true");
+    return { target: selected || controls.find(enabled) || root.querySelector('[data-fitment-workspace="vehicle"] [role="alert"]') || heading, pending: !controls.some(enabled) && !["failed", "no_match"].includes(model.vehicleLookup?.status) };
+  }
+  if (kind === "url") return { target: root.querySelector('[data-fitment-source-url]:not(:disabled)') || heading, pending: false };
+  if (kind === "vehicle") {
+    controls = all('[data-fitment-workspace="vehicle"] [data-fitment-field]');
+    missing = controls.filter(node => !String(node.value ?? "").trim());
+    loading = Object.values(model.catalogue?.states || {}).some(item => ["loading", "blocked"].includes(item.status));
+  } else {
+    controls = all('[data-fitment-workspace="rim"] [data-fitment-field], [data-fitment-workspace="rim"] [data-wheel-picker-open]');
+    missing = controls.filter(node => {
+      const path = node.dataset.wheelPickerOpen;
+      if (!path) return false;
+      const [scope, field] = path.split(".");
+      const rim = scope === "rear_rim" ? model.rearRim : model.rim;
+      return field === "pcd" ? !rim?.bolt_count || !rim?.pcd_mm : rim?.[field] === "" || rim?.[field] == null;
+    });
+    loading = Boolean(model.resolver?.loading);
+  }
+  const failed = kind === "vehicle" && Object.values(model.catalogue?.states || {}).some(item => item.status === "failed");
+  const error = failed ? root.querySelector('[data-fitment-workspace="vehicle"] [role="alert"]') : null;
+  const target = missing.find(enabled) || error || controls.find(enabled) || heading;
+  return { target, pending: !controls.some(enabled) && loading };
 }
+
+function clearFitmentFormFocus(root) {
+  root.fitmentFormFocusIntent?.cleanup?.();
+  root.fitmentFormFocusIntent = null;
+}
+
+function beginFitmentFormFocus(root, kind, origin = document.activeElement) {
+  clearFitmentFormFocus(root);
+  const intent = { kind, origin, jobId: root.fitmentModel?.jobId, cleanup: null };
+  const cancel = event => {
+    if (root.fitmentRestoringFocus) return;
+    if (event.type === "focusin" && (event.target === root.fitmentFocusAnchor || event.target === intent.origin)) return;
+    clearFitmentFormFocus(root);
+  };
+  const events = ["pointerdown", "keydown", "input", "focusin"];
+  intent.cleanup = () => events.forEach(name => document.removeEventListener?.(name, cancel, true));
+  root.fitmentFormFocusIntent = intent;
+  events.forEach(name => document.addEventListener?.(name, cancel, true));
+}
+
+function applyFitmentFormFocus(root, model) {
+  const intent = root.fitmentFormFocusIntent;
+  if (!intent) return false;
+  if (intent.jobId !== model.jobId) { clearFitmentFormFocus(root); return false; }
+  const { target, pending } = fitmentFormTarget(root, intent.kind, model);
+  if (target && target !== document.activeElement) focusWorkflowTarget(root, target, true);
+  if (!pending) clearFitmentFormFocus(root);
+  return true;
+}
+
+const fitmentFormAction = (action, value = "") => {
+  if (["edit-vehicle", "manual-vehicle", "recognition-proposal", "retry-catalogue"].includes(action)) return "vehicle";
+  if (action === "recovery") return ({ complete_vehicle_details: "vehicle", confirm_vehicle: "vehicle", complete_rim_specs: "rim", select_vehicle_variant: "variant" })[value] || "";
+  if (["edit-rim-source", "toggle-source"].includes(action) || action === "edit-rim" && value === "source") return "url";
+  if (["edit-rim", "manual-rim"].includes(action)) return "rim";
+  if (["show-variants", "reselect-vehicle", "load-vehicle-variants"].includes(action)) return "variant";
+  return "";
+};
 
 export function refreshFitmentView(root, model, callbacks = root.fitmentCallbacks, locale = applicationLocale()) {
   root.fitmentCallbacks = callbacks;
+  if (root.fitmentModel?.jobId !== model.jobId) clearFitmentFormFocus(root);
   const previousWorkspace = root.fitmentWorkspaceKind;
   const previousConfigurationHeight = root.querySelector(".vnext-fitment__configuration")?.getBoundingClientRect().height;
   const nextWorkspace = activeWorkspaceKind(model);
   root.fitmentModel = model;
   root.fitmentWorkspaceKind = nextWorkspace;
-  const focused = root.querySelector(":focus[data-fitment-focus-key], :focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search], :focus[data-fitment-focus], :focus[data-fitment-action], :focus[id^='fitment-']");
-  const focusSelector = focused?.dataset.fitmentFocusKey ? `[data-fitment-focus-key="${CSS.escape(focused.dataset.fitmentFocusKey)}"]` : focused?.dataset.fitmentAction && !focused.dataset.fitmentFocus ? `[data-fitment-action="${CSS.escape(focused.dataset.fitmentAction)}"][data-value="${CSS.escape(focused.dataset.value || "")}"]` : focused?.dataset.fitmentFocus ? `[data-fitment-focus="${CSS.escape(focused.dataset.fitmentFocus)}"]` : focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.id && !focused.dataset.fitmentField ? `#${CSS.escape(focused.id)}` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
+  const activeControl = globalThis.document?.activeElement;
+  const focused = root.contains?.(activeControl) && activeControl?.matches?.('[data-fitment-focus-key], [data-fitment-field], [data-fitment-source-url], [data-wheel-picker-search], [data-wheel-picker-open], [data-fitment-focus], [data-fitment-action], [id^="fitment-"]')
+    ? activeControl : root.querySelector(":focus[data-fitment-focus-key], :focus[data-fitment-field], :focus[data-fitment-source-url], :focus[data-wheel-picker-search], :focus[data-wheel-picker-open], :focus[data-fitment-focus], :focus[data-fitment-action], :focus[id^='fitment-']");
+  const focusSelector = focused?.dataset.wheelPickerOpen ? `[data-wheel-picker-open="${CSS.escape(focused.dataset.wheelPickerOpen)}"]` : focused?.dataset.fitmentFocusKey ? `[data-fitment-focus-key="${CSS.escape(focused.dataset.fitmentFocusKey)}"]` : focused?.dataset.fitmentAction && !focused.dataset.fitmentFocus ? `[data-fitment-action="${CSS.escape(focused.dataset.fitmentAction)}"][data-value="${CSS.escape(focused.dataset.value || "")}"]` : focused?.dataset.fitmentFocus ? `[data-fitment-focus="${CSS.escape(focused.dataset.fitmentFocus)}"]` : focused?.dataset.fitmentField ? `[data-fitment-field="${CSS.escape(focused.dataset.fitmentField)}"]` : focused?.id && !focused.dataset.fitmentField ? `#${CSS.escape(focused.id)}` : focused?.hasAttribute?.("data-wheel-picker-search") ? "[data-wheel-picker-search]" : focused ? "[data-fitment-source-url]" : "";
   const errorField = focused?.dataset.fitmentErrorField;
   const owner = focused?.closest?.("[data-fitment-workspace]")?.dataset.fitmentWorkspace;
   const ownerHeading = focused?.closest?.("[aria-labelledby]")?.getAttribute("aria-labelledby")?.split(" ")[0];
@@ -444,7 +514,7 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   ].filter(Boolean);
   const active = globalThis.document?.activeElement;
   if (root.fitmentFocusIntent && active && active !== document.body && active !== root.fitmentFocusAnchor && active !== root.fitmentFocusIntent.origin) root.fitmentFocusIntent = null;
-  const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "url", "tel", "password"].includes(input.type);
+  const supportsSelection = (input) => input?.tagName === "TEXTAREA" || input?.tagName === "INPUT" && ["text", "search", "tel", "password"].includes(input.type);
   const selection = supportsSelection(focused) ? [focused.selectionStart, focused.selectionEnd] : null;
   const markup = fitmentMarkup({ ...model, wheelPicker: root.fitmentPicker });
   const next = document.createElement("section");
@@ -474,21 +544,22 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
   const busy = Boolean(model.saving || model.checking || ["queued", "processing"].includes(model.executionStatus) || model.resolver?.loading);
   if (intent && busy) intent.busySeen = true;
   const saved = intent && (intent.action === "save-rim" ? !model.rimEditing : ["save-vehicle", "confirm-vehicle"].includes(intent.action) ? !model.vehicleEditing : intent.action === "confirm-vehicle-variant" ? !model.vehicleVariantPickerOpen : false);
-  const error = model.rimError || model.vehicleError || model.checkError || model.checkStartFailed || model.resolver?.statusTone === "error";
+  const error = intent && !busy && ["save-rim", "save-vehicle", "confirm-vehicle"].includes(intent.action) && Object.keys(model.fieldErrors || {}).length || model.rimError || model.vehicleError || model.checkError || model.checkStartFailed || model.resolver?.statusTone === "error";
   let target;
   let move = false;
   if (intent && !busy && error) {
-    target = root.querySelector('[data-fitment-workspace] [role="alert"], .vnext-fitment__link-island [role="alert"], .vnext-fitment__result-panel [role="alert"], [role="alert"]');
+    target = root.querySelector('[data-fitment-workspace] [aria-invalid="true"]:not(:disabled)') || root.querySelector('[data-fitment-workspace] [role="alert"], .vnext-fitment__link-island [role="alert"], .vnext-fitment__result-panel [role="alert"], [role="alert"]');
     root.fitmentFocusIntent = null;
     move = true;
   } else if (intent && !busy && (saved || intent.action === "resolve-rim" && intent.busySeen && model.rimEditing || intent.action === "check" && model.check?.is_current !== false && model.check?.execution_status === "completed")) {
-    target = intent.action === "check" ? root.querySelector(".vnext-fitment__verdict h2") : intent.action === "resolve-rim" ? root.querySelector("#fitment-rim-editor-title") : nextFitmentTarget(root, model);
+    const kind = intent.action === "check" ? "" : intent.action === "resolve-rim" ? "rim" : model.nextAction === "select_vehicle_variant" ? "variant" : ["complete_vehicle_details", "confirm_vehicle"].includes(model.nextAction) ? "vehicle" : model.nextAction === "complete_rim_specs" ? "rim" : "";
     root.fitmentFocusIntent = null;
-    move = true;
-  } else if (root.fitmentWorkspaceAction && previousWorkspace !== undefined && previousWorkspace !== nextWorkspace) {
+    if (kind) beginFitmentFormFocus(root, kind);
+    else { target = intent.action === "check" ? root.querySelector(".vnext-fitment__verdict h2") : root.querySelector("#fitment-standard-title"); move = true; }
+  } else if (root.fitmentWorkspaceAction && !fitmentFormAction(root.fitmentWorkspaceAction) && previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !root.fitmentFormFocusIntent) {
     target = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="manual-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
     move = true;
-  } else if (focusSelector) {
+  } else if (focusSelector && !root.fitmentFormFocusIntent && !root.fitmentReturningFocus) {
     const nextFocus = root.querySelector(focusSelector);
     target = nextFocus?.disabled && focused?.dataset.fitmentAction?.startsWith("conflict-")
       ? root.querySelector(`[data-wheel-picker-open="${CSS.escape(focused.dataset.fitmentFocus)}"]`) : nextFocus;
@@ -501,7 +572,7 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     focusWorkflowTarget(root, target);
     if (selection && supportsSelection(nextFocus)) nextFocus.setSelectionRange(...selection);
   }
-  if (move) focusWorkflowTarget(root, target, true);
+  if (!root.fitmentReturningFocus && !applyFitmentFormFocus(root, model) && move) focusWorkflowTarget(root, target, true);
   return root;
 }
 
@@ -510,6 +581,8 @@ export function createFitmentView(model = {}, callbacks = {}) {
   root.className = "vnext-fitment";
   root.dataset.vnextFitmentRoot = "";
   root.fitmentCallbacks = callbacks;
+  root.cancelFormFocus = () => { clearFitmentFormFocus(root); root.fitmentFocusIntent = null; };
+  root.requestFormFocus = kind => { beginFitmentFormFocus(root, kind); applyFitmentFormFocus(root, root.fitmentModel); };
   root.addEventListener("focusin", event => {
     if (root.fitmentFocusIntent && !root.fitmentRestoringFocus && event.target !== root.fitmentFocusAnchor && event.target !== root.fitmentFocusIntent.origin) root.fitmentFocusIntent = null;
   });
@@ -517,17 +590,15 @@ export function createFitmentView(model = {}, callbacks = {}) {
   const closePicker = () => {
     const path = root.fitmentPicker?.path;
     root.fitmentPicker = null;
-    redraw();
-    if (path) root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`)?.focus();
+    root.fitmentReturningFocus = true;
+    try { redraw(); } finally { root.fitmentReturningFocus = false; }
+    if (path) focusWorkflowTarget(root, root.querySelector(root.fitmentPickerOpener || `[data-wheel-picker-open="${CSS.escape(path)}"]`), true);
   };
   root.addEventListener("click", (event) => {
-    if (event.target.closest('[data-fitment-action="edit-vehicle-photo"]')) {
-      root.fitmentCallbacks?.action?.("edit-vehicle-photo");
-      root.querySelector("[data-fitment-vehicle-photo]")?.click();
-      return;
-    }
     const opener = event.target.closest("[data-wheel-picker-open], [data-fitment-action='open-wheel-picker']");
     if (opener) {
+      clearFitmentFormFocus(root);
+      root.fitmentPickerOpener = opener.dataset.wheelPickerOpen ? `[data-wheel-picker-open="${CSS.escape(opener.dataset.wheelPickerOpen)}"]` : `[data-fitment-focus="${CSS.escape(opener.dataset.fitmentFocus || opener.dataset.value)}"]`;
       root.fitmentPicker = { path: opener.dataset.wheelPickerOpen || opener.dataset.value, query: "", mode: "recommended" };
       redraw();
       root.querySelector("[data-wheel-picker-search]")?.focus();
@@ -546,26 +617,56 @@ export function createFitmentView(model = {}, callbacks = {}) {
       const value = picked.dataset.wheelPickerValue;
       const [scope, fieldName] = path.split(".");
       root.fitmentPicker = null;
-      if (fieldName === "pcd") {
-        const [count, pcd] = value.split("×");
-        root.fitmentCallbacks?.setField?.(`${scope}.bolt_count`, count);
-        root.fitmentCallbacks?.setField?.(`${scope}.pcd_mm`, pcd);
-      } else root.fitmentCallbacks?.setField?.(path, value);
-      redraw();
-      root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`)?.focus();
+      root.fitmentReturningFocus = true;
+      try {
+        if (fieldName === "pcd") {
+          const [count, pcd] = value.split("×");
+          root.fitmentCallbacks?.setField?.(`${scope}.bolt_count`, count);
+          root.fitmentCallbacks?.setField?.(`${scope}.pcd_mm`, pcd);
+        } else root.fitmentCallbacks?.setField?.(path, value);
+        redraw();
+      } finally { root.fitmentReturningFocus = false; }
+      focusWorkflowTarget(root, root.querySelector(root.fitmentPickerOpener) || root.querySelector(`[data-wheel-picker-open="${CSS.escape(path)}"]`), true);
       return;
     }
     const target = event.target.closest("[data-fitment-action]");
     if (target && root.contains(target) && !target.disabled) {
       const action = target.dataset.fitmentAction;
+      clearFitmentFormFocus(root);
+      root.fitmentFocusIntent = null;
+      const form = fitmentFormAction(action, target.dataset.value);
+      if (form) {
+        root.fitmentFormReturnAction = action === "manual-vehicle" ? "show-variants" : "";
+        beginFitmentFormFocus(root, form, target);
+        root.fitmentFormOpener = `[data-fitment-action="${CSS.escape(action)}"][data-value="${CSS.escape(target.dataset.value || "")}"]`;
+      }
+      if (["reselect-vehicle", "choose-rim-sku"].includes(action)) root.fitmentFormOpener = `[data-fitment-action="${action}"]`;
       if (["save-rim", "save-vehicle", "confirm-vehicle", "confirm-vehicle-variant", "check", "resolve-rim"].includes(action)) root.fitmentFocusIntent = { action, origin: target };
       root.fitmentWorkspaceAction = action;
+      root.fitmentReturningFocus = action.startsWith("cancel-");
       try { root.fitmentCallbacks?.action?.(action, target.dataset.value); }
-      finally { root.fitmentWorkspaceAction = null; }
+      finally { root.fitmentWorkspaceAction = null; root.fitmentReturningFocus = false; }
+      if (action.startsWith("cancel-")) {
+        clearFitmentFormFocus(root);
+        if (root.fitmentFormOpener) focusWorkflowTarget(root, root.querySelector(root.fitmentFormOpener), true);
+      }
     }
   });
   root.addEventListener("keydown", (event) => {
-    if (!root.fitmentPicker) return;
+    if (!root.fitmentPicker) {
+      if (event.key === "Escape" && root.fitmentFormOpener && (root.fitmentModel.vehicleEditing || root.fitmentModel.rimEditing || root.fitmentModel.vehicleVariantPickerOpen)) {
+        clearFitmentFormFocus(root);
+        root.fitmentFocusIntent = null;
+        root.fitmentReturningFocus = true;
+        try {
+          if (!root.querySelector(root.fitmentFormOpener) && root.fitmentFormReturnAction) root.fitmentCallbacks?.action?.(root.fitmentFormReturnAction);
+          else if (root.fitmentModel.vehicleVariantPickerOpen) root.fitmentCallbacks?.action?.("cancel-vehicle-reselection");
+        } finally { root.fitmentReturningFocus = false; }
+        const opener = root.querySelector(root.fitmentFormOpener);
+        if (opener) { event.preventDefault(); focusWorkflowTarget(root, opener, true); }
+      }
+      return;
+    }
     if (event.key === "Escape") { event.preventDefault(); closePicker(); }
     if (event.key === "Tab") {
       const items = [...root.querySelectorAll('[role="dialog"] button:not(:disabled), [role="dialog"] input')];
@@ -580,12 +681,6 @@ export function createFitmentView(model = {}, callbacks = {}) {
   };
   root.addEventListener("input", (event) => { if (event.target.tagName !== "SELECT") changeField(event); });
   root.addEventListener("change", (event) => { if (event.target.tagName === "SELECT") changeField(event); });
-  root.addEventListener("change", (event) => {
-    if (event.target.matches("[data-fitment-vehicle-photo]") && event.target.files?.[0]) {
-      root.fitmentCallbacks?.setVehiclePhoto?.(event.target.files[0]);
-      event.target.value = "";
-    }
-  });
   root.addEventListener("input", (event) => {
     if (event.target.matches("[data-wheel-picker-search]") && root.fitmentPicker) {
       root.fitmentPicker.query = event.target.value;

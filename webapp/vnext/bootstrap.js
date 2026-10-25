@@ -165,6 +165,7 @@ function surfaceDescriptor(view, locale = applicationLocale()) {
 }
 
 function unmountSurface() {
+  mountedFitmentContent?.cancelFormFocus?.();
   document.body.classList.remove("vnext-surface-active");
   if (mountedRoot) {
     if (mountedView === "create") {
@@ -194,13 +195,25 @@ function unmountSurface() {
   legacyHiddenStates = [];
 }
 
+function surfaceFocusSelector(node) {
+  for (const name of ["data-fitment-focus-key", "data-fitment-field", "data-wheel-picker-open", "data-fitment-focus", "data-fitment-source-url", "data-wheel-picker-search", "data-fitment-action", "data-wheel-picker-value"]) {
+    if (!node?.hasAttribute?.(name)) continue;
+    const value = node.getAttribute(name);
+    const selector = value ? `[${name}="${CSS.escape(value)}"]` : `[${name}]`;
+    return name === "data-fitment-action" && node.hasAttribute("data-value") ? `${selector}[data-value="${CSS.escape(node.getAttribute("data-value"))}"]` : selector;
+  }
+  return "";
+}
+
 function restoreSurfaceFocus(host, previous) {
   if (!previous) return;
   const candidates = [...host.querySelectorAll("button, a, input, select, h1, h2")];
-  const target = candidates.find(node => !node.disabled && node.tagName === previous.tagName && (
+  let target = previous.selector ? host.querySelector(previous.selector) : candidates.find(node => !node.disabled && node.tagName === previous.tagName && (
     previous.id ? node.id === previous.id : previous.name ? node.name === previous.name :
     node.className === previous.className && (node.getAttribute("aria-label") || node.textContent) === previous.label
   ));
+  if ((!target || target.disabled) && previous.owner) target = host.querySelector(`#${CSS.escape(previous.owner)}`);
+  if (target?.disabled) return;
   if (target && /^H[12]$/.test(target.tagName)) target.setAttribute("tabindex", "-1");
   target?.focus({ preventScroll: true });
 }
@@ -217,9 +230,17 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
   }
   const active = document.activeElement;
   const previousFocus = force && mountedRoot === host && host.contains(active)
-    ? { tagName: active.tagName, id: active.id, name: active.name, className: active.className, label: active.getAttribute("aria-label") || active.textContent } : null;
+    ? { tagName: active.tagName, id: active.id, name: active.name, className: active.className, label: active.getAttribute("aria-label") || active.textContent, selector: surfaceFocusSelector(active), owner: active.closest("[data-fitment-workspace]")?.getAttribute("aria-labelledby") } : null;
+  const previousFitment = force && mountedView === "fitment" && view === "fitment" ? mountedFitmentContent : null;
   const descriptor = surfaceDescriptor(view, locale);
   if (!descriptor) return;
+  if (previousFitment) {
+    descriptor.content.fitmentPicker = previousFitment.fitmentPicker ? { ...previousFitment.fitmentPicker } : null;
+    descriptor.content.fitmentPickerOpener = previousFitment.fitmentPickerOpener;
+    descriptor.content.fitmentFormOpener = previousFitment.fitmentFormOpener;
+    descriptor.content.fitmentFormReturnAction = previousFitment.fitmentFormReturnAction;
+    refreshFitmentView(descriptor.content, window.dreamwheelsFitmentBridge?.snapshot() || {}, fitmentCallbacks, locale);
+  }
   if (mountedRoot && mountedRoot !== host) unmountSurface();
 
   if (["create", "renders", "render-detail", "fitment", "wallet"].includes(view)) {
@@ -243,6 +264,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
       accountData: legacyDashboardSnapshot(),
       openAuth: legacyOpenAuth,
     });
+    mountedFitmentContent?.cancelFormFocus?.();
     createRoot.replaceChildren(mountedShell);
     createRoot.dataset.vnextRoot = view;
     mountedRoot = host;

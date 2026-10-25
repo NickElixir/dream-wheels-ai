@@ -213,10 +213,10 @@ test("History gallery shows absolute card date, hides specs and grouping, and li
 
 test("Processing preserves status hierarchy while separating selected wheel identity from specs", () => {
   const markup = processingMarkup({ status: "processing", title: "ZEEKR 007", rimName: "X-Trike X-132", specs: "20″ / 9J / 5×112 / ET 0", carUrl: "/car.jpg", wheelUrl: "/wheel.jpg" });
-  assert.match(markup, /<h2>Создаём виртуальную примерку<\/h2>/);
-  assert.match(markup, /<strong>Создаём примерку…<\/strong>/);
-  assert.match(markup, /class="vnext-render-object">ZEEKR 007/);
-  assert.match(markup, /class="vnext-processing-wheel-name">X-Trike X-132/);
+  assert.doesNotMatch(markup, /<h2>|Результат появится|В очереди/);
+  assert.match(markup, /<strong>Генерируем изображение<\/strong>/);
+  assert.match(markup, /class="vnext-render-object">X-Trike X-132/);
+  assert.doesNotMatch(markup, /ZEEKR 007/);
   assert.match(markup, /class="vnext-processing-wheel-specs">20″ \/ 9J \/ 5×112 \/ ET 0/);
   const css = fs.readFileSync(new URL("../vnext/styles/render.css", import.meta.url), "utf8");
   assert.match(css, /\.vnext-render-object\s*\{[^}]*color:var\(--vnext-text-value\)/);
@@ -445,7 +445,7 @@ for (const failure of ["401", "404", "network"]) test(`download ${failure} is re
 });
 
 test("pure presentation covers real statuses, empty/error, feedback and unavailable media without API/polling", () => {
-  for (const status of ["queued", "processing"]) assert.match(processingMarkup({ status }), /Создаём виртуальную примерку/);
+  for (const status of ["queued", "processing"]) assert.match(processingMarkup({ status }), /Генерируем изображение/);
   assert.match(processingMarkup({ error: { title: "Недостаточно рендеров", actionLabel: "Пополнить счёт" } }), /Недостаточно рендеров/);
   assert.match(resultMarkup({ jobId: "A", status: "completed", resultUrl: "/result", originalUrl: "/original", feedback: { sentiment: "disliked", error: "failure" } }), /vnext-compare-range/);
   const app = runtime();
@@ -564,4 +564,46 @@ test("private wheel reference uses Authorization fetch and remains separate from
  assert.equal(request.options.headers.Authorization,'Bearer test-token');
  assert.equal(app.state.renderAssetBlobUrlsByJob.A.result,undefined);
  assert.equal(app.bridge.snapshot('result').wheelUrl,'blob:wheel');
+});
+
+test("Result image recovery identifies each failed asset and stays out of primary actions", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = resultMarkup({locale,jobId:"A",status:"completed",originalUrl:"/original",resultUrl:"/result",wheelUrl:"/wheel",wheelAvailable:true,originalFailed:true,resultFailed:true,wheelFailed:true});
+    for (const kind of ["original", "result", "rim_original"]) {
+      assert.match(markup, new RegExp(`data-render-action="asset-retry"[^>]*data-job="A"[^>]*data-value="${kind}"`));
+    }
+    assert.doesNotMatch(markup.slice(markup.indexOf('<div class="vnext-result-actions">')), /asset-retry/);
+    assert.match(markup, locale === "ru" ? /Не удалось загрузить оригинал/ : /Could not load the original photo/);
+  }
+});
+
+test("targeted image retry preserves other failures and does not reload healthy assets", async () => {
+  const app=runtime(); const a=job("A");
+  a.assets.rim_original={download_url:"/wheel",available:true};
+  app.state.renderHistory=[a];app.state.view="render-detail";app.state.renderDetailJobId="A";
+  app.bridge.assetError("A","result");app.bridge.assetError("A","rim_original");
+  const requests=[];app.setObjectURL(()=>"blob:recovered");
+  app.setFetch(async url=>{requests.push(url);return {ok:true,blob:async()=>new Blob(["image"])};});
+  app.bridge.action("asset-retry","A","result");
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(app.state.renderAssetErrorsByJob.A.result,false);
+  assert.equal(app.state.renderAssetErrorsByJob.A.rim_original,true);
+  assert.equal(requests.filter(url=>String(url)==='/jobs/A/download').length,1);
+  assert.equal(requests.filter(url=>String(url).includes('wheel')).length,0);
+});
+
+test("processing selected wheel never falls back to the try-on number", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = processingMarkup({ locale, status: "queued", title: "Примерка #48" });
+    assert.doesNotMatch(markup, /Примерка #48/);
+    assert.match(markup, new RegExp('class="vnext-render-object">' + copy("fitment.wheel.eyebrow", locale)));
+  }
+});
+
+test("original recovery region exists while both images fail and throughout retry", () => {
+  for (const patch of [{ originalFailed:true }, { originalLoading:true }, { originalUrl:"/original.jpg" }]) {
+    const markup=resultMarkup({jobId:"A",status:"completed",resultFailed:true,...patch});
+    assert.match(markup,/tabindex="-1" data-asset-media="original"/);
+    assert.equal((markup.match(/data-asset-media="original"/g)||[]).length,1);
+  }
 });

@@ -370,3 +370,5 @@ button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(-
 .vnext-fitment__verdict--compatible_with_conditions h2, .vnext-fitment__verdict--stale h2, .vnext-fitment__row-result--conditional { color: var(--vnext-fitment-warning); }
 .vnext-fitment__verdict--incompatible h2, .vnext-fitment__verdict--failed h2, .vnext-fitment__row-result--fail { color: var(--vnext-fitment-negative); }
 .vnext-fitment__verdict--unknown h2 { color: var(--vnext-text); }
+
+.vnext-fitment .vnext-button--primary:disabled { background: var(--vnext-surface); color: var(--vnext-text-subtle); border-color: var(--vnext-border); opacity: 1; }

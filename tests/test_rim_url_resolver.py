@@ -91,6 +91,48 @@ def test_fetcher_consumes_fragmented_product_and_image_responses(monkeypatch, me
     asyncio.run(check())
 
 
+@pytest.mark.parametrize(
+    "status,content_type,reason",
+    [
+        (403, "text/html", "rim_source_page_unavailable"),
+        (439, "text/html", "rim_source_page_unavailable"),
+        (200, "image/jpeg", "rim_source_unsupported_document"),
+    ],
+)
+def test_product_page_access_errors_are_distinct_from_document_errors(
+    monkeypatch, status, content_type, reason
+) -> None:
+    class Response:
+        headers = None
+
+        async def __aenter__(self):
+            self.status = status
+            self.content_type = content_type
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    class Session:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        def get(self, *args, **kwargs):
+            return Response()
+
+    monkeypatch.setattr(rim_url_resolver.aiohttp, "TCPConnector", lambda **kwargs: None)
+    monkeypatch.setattr(rim_url_resolver.aiohttp, "ClientSession", Session)
+    with pytest.raises(rim_url_resolver.RimUrlError) as error:
+        asyncio.run(rim_url_resolver.resolve_rim_product_url("https://shop.example/product"))
+    assert error.value.reason_code == reason
+
+
 @pytest.mark.parametrize("data,limit", [(b"", 8), (b"12345678", 8), (b"123456789abcdef", 8)])
 def test_bounded_reader_preserves_empty_exact_limit_and_oversize_detection(data, limit) -> None:
     async def check() -> None:

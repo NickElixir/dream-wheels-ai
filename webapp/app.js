@@ -526,9 +526,6 @@ const state = {
     // Vehicle and RimSpec edits have separate mutation boundaries. A RimSpec
     // save must never replay the vehicle payload from a stale draft.
     fitmentVehicleDirty: false,
-    fitmentVehiclePhoto: null,
-    fitmentVehiclePhotoUrl: "",
-    fitmentVehiclePhotoToken: 0,
     fitmentRecognition: { status: "idle", candidates: [] },
     fitmentRecognitionToken: 0,
     fitmentRecognitionController: null,
@@ -1579,7 +1576,10 @@ function renderAccountSettings() {
         const action = identity.linked
             ? `<span class="status-pill success">${escapeHtml(uiCopy("account.settings.linked", locale))}</span>`
             : `<button type="button" class="ghost-button compact-button" data-account-link="${provider}">${escapeHtml(uiCopy("account.settings.link", locale))}</button>`;
-        return `<div class="form-row"><div><strong>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
+        const icon = provider === "telegram"
+            ? '<path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Z" fill="currentColor"/>'
+            : '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/>';
+        return `<div class="form-row"><div><strong class="account-provider-title"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">${icon}</svg>${title}</strong><p>${escapeHtml(description)}</p></div>${action}</div>`;
     };
     container.innerHTML = [
         renderRow("supabase", identities.email || { linked: false }),
@@ -2272,6 +2272,7 @@ function syncAuthDialogFocus(dialog) {
         && !element.disabled && element.getClientRects().length > 0;
     if (!state.authDialogOpen) {
         if (!session) return;
+        session.pendingFocusCleanup?.();
         document.removeEventListener("keydown", session.keydown, true);
         document.removeEventListener("focusin", session.focusin, true);
         session.background.forEach((wasInert, element) => { element.inert = wasInert; });
@@ -2491,22 +2492,15 @@ function openAuthDialog() {
     void warmWebsiteLoginResources();
     renderAuthDialog();
     if (state.authDialogStep === "restoring") {
+        const focusSession = document.querySelector("[data-auth-dialog]")?.authFocusSession;
         void frontendAuthController()?.initialize?.().then(() => {
-            if (!state.authDialogOpen || state.authDialogStep !== "restoring") return;
+            if (!state.authDialogOpen || state.authDialogStep !== "restoring" || document.querySelector("[data-auth-dialog]")?.authFocusSession !== focusSession) return;
             const next = frontendAuthController()?.getState?.() || {};
             state.authDialogStep = next.status === "AUTHENTICATED" && next.principalVerified ? "restored" : "email";
             renderAuthDialog();
         });
     }
-    window.requestAnimationFrame(() => {
-        if (!state.authDialogOpen) return;
-        const selector = state.authDialogStep === "restored"
-            ? "[data-auth-continue]"
-            : state.authDialogStep === "otp"
-                ? "[data-auth-otp]"
-                : "[data-auth-email]";
-        document.querySelector(selector)?.focus();
-    });
+
 }
 
 function closeAuthDialog() {
@@ -2791,6 +2785,35 @@ function maskAuthEmail(email) {
     return `${visible}${mask}@${domain}`;
 }
 
+function trackAuthDialogFocusAction() {
+    const dialog = document.querySelector("[data-auth-dialog]");
+    const session = dialog?.authFocusSession;
+    session?.pendingFocusCleanup?.();
+    const origin = document.activeElement;
+    const guard = { allowed: true, ownsDialog: () => state.authDialogOpen && dialog?.authFocusSession === session };
+    const cancel = event => { if (event.type !== "focusin" || event.target !== origin) { guard.allowed = false; guard.cleanup(); } };
+    const events = ["pointerdown", "keydown", "input", "focusin"];
+    guard.cleanup = () => {
+        events.forEach(name => document.removeEventListener(name, cancel, true));
+        if (session?.pendingFocusCleanup === guard.cleanup) delete session.pendingFocusCleanup;
+    };
+    if (session) session.pendingFocusCleanup = guard.cleanup;
+    events.forEach(name => document.addEventListener(name, cancel, true));
+    return guard;
+}
+
+function focusAuthDialogError() {
+    const selector = state.authDialogEmailError ? "[data-auth-email]" : state.authDialogOtpError ? "[data-auth-otp]" : document.querySelector("[data-auth-message]")?.dataset.tone === "error" ? "[data-auth-message]" : "";
+    const target = selector && document.querySelector(selector);
+    if (!target || target.closest("[hidden]")) return;
+    if (selector === "[data-auth-message]") target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    const bounds = target.getBoundingClientRect();
+    const top = window.visualViewport?.offsetTop || 0;
+    const bottom = top + (window.visualViewport?.height || window.innerHeight);
+    if (bounds.top < top + 16 || bounds.bottom > bottom - 16) target.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+
 async function requestFrontendEmailOtp({ resend = false } = {}) {
     const controller = frontendAuthController();
     const email = String(state.authDialogEmail || "").trim();
@@ -2812,16 +2835,18 @@ async function requestFrontendEmailOtp({ resend = false } = {}) {
     state.authDialogBusy = true;
     setAuthDialogMessage(t("auth.sendingCode"));
     renderAuthDialog();
+    const focusGuard = trackAuthDialogFocusAction();
     try {
         await controller.requestEmailOtp(email, state.authDialogTurnstileToken);
+        if (!focusGuard.ownsDialog()) return;
         state.authDialogStep = "otp";
         state.authDialogOtp = "";
         startAuthDialogCooldown();
         setAuthDialogMessage("");
         resetAuthDialogTurnstile();
         renderAuthDialog();
-        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
     } catch (error) {
+        if (!focusGuard.ownsDialog()) return;
         if (error?.code === "ALREADY_AUTHENTICATED") {
             state.authDialogStep = "restored";
             setAuthDialogMessage("");
@@ -2830,9 +2855,13 @@ async function requestFrontendEmailOtp({ resend = false } = {}) {
         }
         setAuthDialogMessage(authErrorMessage(error?.code), true);
     } finally {
+        const moveFocus = focusGuard.allowed;
+        focusGuard.cleanup();
+        if (!focusGuard.ownsDialog()) return;
         state.authDialogBusy = false;
         renderAuthDialog();
         updateWebsiteAuthUi();
+        if (moveFocus) focusAuthDialogError();
     }
 }
 
@@ -2852,8 +2881,10 @@ async function verifyFrontendEmailOtp() {
     state.authDialogBusy = true;
     setAuthDialogMessage(t("auth.checkingCode"));
     renderAuthDialog();
+    const focusGuard = trackAuthDialogFocusAction();
     try {
         const result = await controller.verifyEmailOtp(email, otp);
+        if (!focusGuard.ownsDialog()) return;
         if (!isSupabaseFrontendAuth()) {
             setAuthDialogMessage(t("auth.providerError"), true);
             return;
@@ -2863,6 +2894,7 @@ async function verifyFrontendEmailOtp() {
         if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
         else await loadDashboardData({ silent: true });
     } catch (error) {
+        if (!focusGuard.ownsDialog()) return;
         if (error?.code === "invalid_otp" || error?.code === "expired_otp") {
             state.authDialogOtpError = authErrorMessage(error?.code);
             setAuthDialogMessage("");
@@ -2870,9 +2902,13 @@ async function verifyFrontendEmailOtp() {
             setAuthDialogMessage(authErrorMessage(error?.code), true);
         }
     } finally {
+        const moveFocus = focusGuard.allowed;
+        focusGuard.cleanup();
+        if (!focusGuard.ownsDialog()) return;
         state.authDialogBusy = false;
         renderAuthDialog();
         updateWebsiteAuthUi();
+        if (moveFocus) focusAuthDialogError();
     }
 }
 
@@ -6011,7 +6047,8 @@ async function loadFitmentOverview(
             if (focusEntry) {
                 window.requestAnimationFrame(() => {
                     if (entryFocus.guard.allowed && isCurrentRequest() && state.fitmentEntryIntent === entryIntent) {
-                        document.querySelector(entryIntent.editor ? "#fitment-rim-editor-title" : "#fitment-page-title")?.focus({ preventScroll: true });
+                        if (entryIntent.editor) document.querySelector("[data-vnext-fitment-root]")?.requestFormFocus?.(entryIntent.editor);
+                        else document.querySelector("#fitment-page-title")?.focus({ preventScroll: true });
                     }
                     entryFocus.cleanup();
                 });
@@ -6059,9 +6096,6 @@ function openFitmentView(
     if (!jobId) return;
     state.fitmentContextGeneration += 1;
     clearFitmentRuntimeRequests();
-    if (state.fitmentVehiclePhotoUrl) URL.revokeObjectURL(state.fitmentVehiclePhotoUrl);
-    state.fitmentVehiclePhoto = null;
-    state.fitmentVehiclePhotoUrl = "";
     state.fitmentRecognition = { status: "idle", candidates: [] };
     state.fitmentJobId = jobId;
     state.fitmentSaving = false;
@@ -6128,10 +6162,7 @@ function openFitmentView(
     setView("fitment");
     persistFitmentNavigationContext();
     state.fitmentEntryIntent = { jobId, editor: openRimEditor ? "rim" : "", focusPending: true };
-    const generation = state.fitmentContextGeneration;
-    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor }).then(() => {
-        if (state.view === "fitment" && state.fitmentJobId === jobId && state.fitmentContextGeneration === generation) void hydrateFitmentVehiclePhoto(jobId);
-    });
+    void loadFitmentOverview(jobId, { restoreReason: "navigation", suppressAutomaticResolver: suppressAutomaticResolver || openRimEditor });
 }
 
 function closeFitmentView() {
@@ -6149,56 +6180,6 @@ function closeFitmentView() {
     setView(originView);
 }
 
-function fitmentVehiclePhotoKey(jobId = state.fitmentJobId) {
-    return `fitment-vehicle-photo:${jobId}`;
-}
-
-async function hydrateFitmentVehiclePhoto(jobId) {
-    if (jobId !== state.fitmentJobId || !state.fitmentOverview) return;
-    const runtimeContext = captureFitmentRuntimeContext(jobId);
-    try {
-        const key = fitmentVehiclePhotoKey(jobId);
-        const descriptor = JSON.parse(sessionStorage.getItem(key) || "null");
-        if (!Number.isFinite(descriptor?.expiresAt) || descriptor.expiresAt <= Date.now()) return;
-        const draft = await loadDraftFile(key);
-        if (!draft || !isCurrentFitmentRuntimeContext(runtimeContext) || state.fitmentVehiclePhoto) return;
-        state.fitmentVehiclePhoto = draft.blob;
-        state.fitmentVehiclePhotoUrl = URL.createObjectURL(draft.blob);
-        renderFitment();
-    } catch {
-        // The saved form remains recoverable when photo storage is unavailable.
-    }
-}
-
-async function setFitmentVehiclePhoto(file) {
-    if (fitmentMutationsLocked()) return;
-    if (!file || !state.fitmentJobId) return;
-    state.fitmentRecognitionToken += 1;
-    state.fitmentRecognitionController?.abort();
-    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
-        state.fitmentRecognition = { status: "failed", candidates: [], message: uiCopy("fitment.vehicle.photo.invalid", locale) };
-        renderFitment();
-        return;
-    }
-    const photoToken = ++state.fitmentVehiclePhotoToken;
-    const jobId = state.fitmentJobId;
-    if (state.fitmentVehiclePhotoUrl) URL.revokeObjectURL(state.fitmentVehiclePhotoUrl);
-    state.fitmentVehiclePhoto = file;
-    state.fitmentVehiclePhotoUrl = URL.createObjectURL(file);
-    state.fitmentRecognition = { status: "idle", candidates: [] };
-    persistFitmentTransientDraft("navigation");
-    renderFitment();
-    try {
-        const key = fitmentVehiclePhotoKey(jobId);
-        const bytes = await file.arrayBuffer();
-        if (photoToken !== state.fitmentVehiclePhotoToken || jobId !== state.fitmentJobId) return;
-        await saveDraftFile(key, file, bytes);
-        sessionStorage.setItem(key, JSON.stringify({ expiresAt: Date.now() + FITMENT_TRANSIENT_DRAFT_TTL_MS }));
-    } catch {
-        // Recognition can use the in-memory photo if browser storage is full.
-    }
-}
-
 async function recognizeFitmentVehicle() {
     if (fitmentMutationsLocked()) return;
     if (!state.fitmentOverview || state.fitmentRecognition.status === "loading") return;
@@ -6214,18 +6195,24 @@ async function recognizeFitmentVehicle() {
     persistFitmentNavigationContext();
     renderFitment();
     focusFitmentWorkspace("vehicle");
+    let photoLoaded = false;
     try {
-        let photo = state.fitmentVehiclePhoto;
-        if (!photo) {
-            const job = fitmentContextJob();
-            const url = job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle");
-            if (!url) throw new Error("vehicle_photo_unavailable");
-            const response = url.startsWith("/")
-                ? await authenticatedFetch(apiUrl(url), { headers: withAuthHeaders(), signal: controller.signal })
-                : await fetch(url, { signal: controller.signal });
-            if (!response.ok) throw new Error("vehicle_photo_unavailable");
-            photo = await response.blob();
+        const job = fitmentContextJob();
+        const url = job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle");
+        if (!url) throw new Error("vehicle_photo_unavailable");
+        const photoResponse = url.startsWith("/")
+            ? await authenticatedFetch(apiUrl(url, { includeIdentity: true }), { headers: withAuthHeaders(), signal: controller.signal })
+            : await fetch(url, { signal: controller.signal });
+        if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+        if (photoResponse.status === 401) {
+            state.fitmentRecognition = { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
+            showFitmentAuthRequired();
+            return;
         }
+        if (!photoResponse.ok) throw new Error("vehicle_photo_unavailable");
+        const photo = await photoResponse.blob();
+        if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+        photoLoaded = true;
         const body = new FormData();
         body.append("car_image", photo, "vehicle.jpg");
         body.append("expected_vehicle_revision", String(revision));
@@ -6252,7 +6239,7 @@ async function recognizeFitmentVehicle() {
             : { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
@@ -6296,6 +6283,11 @@ function releaseFitmentSourceAutoAttempt(jobId) {
 }
 
 function fitmentSourceErrorMessage(error) {
+    if (["rim_source_fetch_failed", "rim_source_page_unavailable"].includes(error?.code)) {
+        return locale === "ru"
+            ? "Не удалось открыть страницу товара. Укажите параметры вручную или попробуйте другую ссылку."
+            : "Could not open the product page. Enter the parameters manually or try another link.";
+    }
     return locale === "ru"
         ? "Не удалось определить параметры автоматически"
         : "Wheel parameters could not be determined automatically";
@@ -6637,6 +6629,7 @@ async function resolveFitmentRimSource({ automatic = false, chooserOnly = false 
             }
         );
         if (!response.ok) {
+            const detail = response.clone ? await response.clone().json().catch(() => null) : null;
             const message = await parseApiError(response);
             if (automatic && response.status === 503 && message === "Rim URL resolver is disabled") {
                 releaseFitmentSourceAutoAttempt(runtimeContext.jobId);
@@ -6646,7 +6639,9 @@ async function resolveFitmentRimSource({ automatic = false, chooserOnly = false 
                 showFitmentAuthRequired();
                 return;
             }
-            throw new Error(message);
+            const error = new Error(message);
+            error.code = detail?.detail?.code || "";
+            throw error;
         }
         if (!isCurrentRequest()) return;
         const result = await response.json();
@@ -6979,7 +6974,6 @@ function clearFitmentRuntimeRequests() {
     state.fitmentCheckHistoryLoading = false;
     state.fitmentWorkspaceReturn = null;
     state.fitmentOverviewRequestToken += 1;
-    state.fitmentVehiclePhotoToken += 1;
     state.fitmentRecognitionToken += 1;
     state.fitmentRecognitionController?.abort();
     state.fitmentRecognitionController = null;
@@ -9663,14 +9657,20 @@ function vnextFitmentSnapshot() {
         retryUnavailableReason: retryAvailable ? "" : uiCopy(check?.retry_mode === "not_applicable" ? "fitment.retry.unavailable" : "fitment.retry.confirmDetails", locale),
         vehicle,
         vehicleForm: fitmentVehicleFormForPresentation(),
+        vehicleSaveReady: ["makes", "models", "years"].every(kind => {
+            const field = { makes: "make", models: "model", years: "year" }[kind];
+            return fitmentCatalogueFieldState(kind, state.fitmentForm?.vehicle?.[field], locale).state === "selected";
+        }) && (state.fitmentMarketResolution?.status === "resolved_single"
+            ? Boolean(state.fitmentForm?.vehicle?.market && state.fitmentMarketResolution.resolved_market?.value === state.fitmentForm.vehicle.market)
+            : state.fitmentMarketResolution?.status === "selected" && Boolean(fitmentCatalogueSelectionItem("markets", state.fitmentForm?.vehicle?.market, state.fitmentMarketResolution.items || []))),
         vehicleAwaitingConfirmation: fitmentBaseVehicleAwaitingConfirmation(),
         vehicleTitle: [vehicle.make, vehicle.model].filter(Boolean).join(" "),
         vehicleSpecs: [vehicle.year, vehicle.body, vehicle.generation, vehicle.modification, fitmentMarketLabel(vehicle.market)].filter(Boolean),
-        vehiclePreview: state.fitmentVehiclePhotoUrl || fitmentPreviewAsset(job, "vehicle"),
+        vehiclePreview: fitmentPreviewAsset(job, "vehicle"),
         vehicleRecognition: {
             ...(state.fitmentRecognition?.revision !== undefined && state.fitmentRecognition.revision !== overview?.vehicle_revision
                 ? { status: "idle", candidates: [] } : state.fitmentRecognition),
-            canRecognize: Boolean(state.fitmentOverview && (state.fitmentVehiclePhoto || job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle"))),
+            canRecognize: Boolean(state.fitmentOverview && (job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle"))),
         },
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
         activeSection: state.fitmentActiveSection,
@@ -9824,6 +9824,7 @@ async function saveVnextFitment(owner, { intent = "" } = {}) {
         setFitmentEditor("rim");
         state.fitmentActiveSection = "rim";
         renderFitment();
+        if (document.querySelector("[data-vnext-fitment-root]")) return;
         const first = [...readiness.missing, ...readiness.invalid, ...readiness.pending,
             ...readiness.conflicts.map(field => /^(rim|rear_rim)\./.test(field) ? field : `rim.${field}`)][0];
         window.requestAnimationFrame(() => {
@@ -9846,7 +9847,6 @@ window.dreamwheelsFitmentBridge = {
         }
     },
     setField: setVnextFitmentField,
-    setVehiclePhoto: setFitmentVehiclePhoto,
     setSourceUrl(value) { if (fitmentMutationsLocked()) return; setVnextFitmentField("rim.product_url", value); notifyFitmentBridge(); },
     action(action, value = "") {
         if (fitmentMutationsLocked() && !["back", "reload", "login", "create-image"].includes(action)) return;
@@ -9854,7 +9854,6 @@ window.dreamwheelsFitmentBridge = {
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
-        else if (action === "edit-vehicle-photo") persistFitmentTransientDraft("navigation");
         else if (action === "recognize-vehicle") void recognizeFitmentVehicle();
         else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
@@ -9884,7 +9883,6 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "manual-vehicle") {
             setFitmentEditor("vehicle");
             setFitmentActiveSection("vehicle", { scroll: true });
-            requestAnimationFrame(() => document.querySelector('[data-fitment-field="vehicle.make"]')?.focus());
         }
         else if (action === "show-variants") {
             rememberFitmentWorkspace();
@@ -10161,9 +10159,12 @@ window.dreamwheelsRenderBridge = {
             if (pending) void submitHistoryFeedback(jobId, pending.sentiment, pending.reason);
         } else if (action === "asset-retry") {
             const job = state.renderHistory.find((item) => item.job_id === jobId);
-            for (const kind of ["original", "result", "rim_original"]) {
+            const kinds = ["original", "result", "rim_original"].filter((kind) => !value || kind === value);
+            for (const kind of kinds) {
                 if (!job || !hasAssetLoadError(job, kind) || !assetDownloadUrlForJob(job, kind)) continue;
+                if (state.renderAssetErrorsByJob[jobId]) delete state.renderAssetErrorsByJob[jobId][assetErrorKey(kind)];
                 if (kind === "original") {
+                    delete state.renderAssetSignedRetryByJob[jobId];
                     delete state.renderAssetSignedUrlsByJob[jobId];
                     void ensureOriginalDisplayUrl(job, { force: true });
                     continue;
@@ -10173,7 +10174,6 @@ window.dreamwheelsRenderBridge = {
                 if (state.renderAssetBlobUrlsByJob[jobId]) delete state.renderAssetBlobUrlsByJob[jobId][kind];
                 void ensureAssetBlobUrl(job, kind);
             }
-            state.renderAssetErrorsByJob[jobId] = {};
             notifyRenderBridge();
             prepareVnextRenderAssets();
         } else if (action === "generation-retry") window.dreamwheelsCreateBridge.handleGenerationError();
@@ -10982,7 +10982,6 @@ function bindEvents() {
         resetAuthDialogTurnstile();
         setAuthDialogMessage("");
         renderAuthDialog();
-        window.requestAnimationFrame(() => document.querySelector("[data-auth-email]")?.focus());
     });
     document.querySelector("[data-auth-back-to-otp]")?.addEventListener("click", () => {
         state.authDialogStep = "otp";
@@ -10994,7 +10993,6 @@ function bindEvents() {
         state.authDialogOtpError = "";
         setAuthDialogMessage("");
         renderAuthDialog();
-        window.requestAnimationFrame(() => document.querySelector("[data-auth-otp]")?.focus());
     });
     const authTelegramButton = document.querySelector("[data-auth-telegram]");
     authTelegramButton?.addEventListener("click", startAuthDialogTelegramLogin);
