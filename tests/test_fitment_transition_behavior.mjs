@@ -198,7 +198,7 @@ function navigationApi({ routes = {}, vnext = false } = {}) {
             useRealValidation() { validateFitmentForm = globalThis.__realValidateFitmentForm; },
             fitmentEffectiveRim, fitmentRimSpecs, fitmentFormIsDirty: globalThis.__fitmentFormIsDirty, fitmentPayload, revalidateFitmentCatalogueChain,
             deriveVehicleWorkspaceMode, fitmentVehicleWorkspaceMode,
-            persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft,
+            persistFitmentTransientDraft, restoreFitmentTransientDraft, discardFitmentTransientDraft, fitmentDraftPayload, fitmentTransientDraftKey,
             rebaseFitmentTransientVehicleDraft,
             fitmentDraftMatchesOverview,
             openFitmentView, setView, openRenderDetail, loadFitmentReturnContext, vnextRenderJob,
@@ -1858,7 +1858,7 @@ test("H1-A canonical catalogue labels map to stable selectors without changing c
 for (const scenario of [
     { name: "H1-B/C/D/G single market", make: "lada", model: "vesta", labelMake: "LADA", labelModel: "Vesta", market: "russia", multi: false },
     { name: "H1-B/C/E/G multi market", make: "lexus", model: "rx", labelMake: "Lexus", labelModel: "RX", market: "usdm", multi: true },
-]) test(`${scenario.name}: Save then explicit Confirm keeps selection and completed Wheel intact`, async () => {
+]) test(`${scenario.name}: one manual Save confirms catalogue fields and opens variants, preserving Wheel`, async () => {
     const mutations = [];
     let overview;
     const { api, calls } = navigationApi({ vnext: true, routes: {
@@ -1866,10 +1866,10 @@ for (const scenario of [
             const payload = JSON.parse(options.body);
             mutations.push(payload);
             overview = structuredClone(overview);
-            overview.vehicle = { ...overview.vehicle, make: scenario.labelMake, model: scenario.labelModel, year: 2020, market: scenario.market, is_user_confirmed: mutations.length === 2 };
+            overview.vehicle = { ...overview.vehicle, make: scenario.labelMake, model: scenario.labelModel, year: 2020, market: scenario.market, is_user_confirmed: true };
             overview.vehicle_revision += 1;
-            overview.vehicle_state = mutations.length === 1 ? "unconfirmed" : "confirmed_incomplete";
-            overview.next_action = { kind: mutations.length === 1 ? "complete_vehicle_details" : "select_vehicle_variant" };
+            overview.vehicle_state = "confirmed_ready";
+            overview.next_action = { kind: "select_vehicle_variant" };
             return response(200, overview);
         },
         "POST /api/backend/jobs/behavior-job/fitment/vehicle-variants": (_options, url) => {
@@ -1892,20 +1892,12 @@ for (const scenario of [
     api.state.fitmentVehicleDirty = true;
     api.state.fitmentVehicleEditing = true;
     assert.match(h1Markup(api), /data-fitment-action="save-vehicle"[^>]*>Сохранить автомобиль/);
-    await api.saveVnextFitment("vehicle");
-    assert.equal(mutations.length, 1);
-    assert.equal(api.state.fitmentOverview.vehicle_state, "unconfirmed");
-    assertH1Selection(api, scenario.make, scenario.model, "2020", scenario.market);
-    assert.match(h1Markup(api), /data-fitment-action="confirm-vehicle"[^>]*>Подтвердить данные/);
-    assert.equal(h1Markup(api).includes('data-fitment-field="vehicle.market"'), scenario.multi);
-    assert.equal(calls.some(call => call.includes("vehicle-variants")), false);
     api.useRealVariantLookup();
     await api.saveVnextFitment("vehicle");
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(mutations.length, 2);
-    assert.deepEqual(mutations[1].vehicle, { make: scenario.labelMake, model: scenario.labelModel, year: 2020, market: scenario.market });
-    assert.equal(mutations[1].expected_vehicle_revision, mutations[0].expected_vehicle_revision + 1);
-    assert.equal(api.state.fitmentOverview.vehicle_state, "confirmed_incomplete");
+    assert.equal(mutations.length, 1);
+    assert.deepEqual(mutations[0].vehicle.confirmed_fields, ["make", "model", "year", "market"]);
+    assert.equal(api.state.fitmentOverview.vehicle_state, "confirmed_ready");
     assert.equal(api.state.fitmentOverview.next_action.kind, "select_vehicle_variant");
     assert.equal(api.state.fitmentVehicleVariants.length, 2);
     assert.equal(api.state.fitmentOverview.modification_state === "confirmed", false);
@@ -2006,7 +1998,7 @@ for (const section of ["vehicle", "rim", "result"]) test(`Final HIGH T1–T4/T7:
         "PATCH /api/backend/jobs/behavior-job/fitment": options => {
             const payload = JSON.parse(options.body);
             payloads.push(payload);
-            assert.deepEqual(payload.vehicle,{make:"LADA",model:"Vesta",year:2020,market:"russia"});
+            assert.deepEqual(payload.vehicle,{confirmed_fields:["make","model","year","market"],make:"LADA",model:"Vesta",year:2020,market:"russia"});
             return response(200,{...api.state.fitmentOverview,vehicle_revision:3,vehicle_state:"confirmed_incomplete",vehicle:{...api.state.fitmentOverview.vehicle,is_user_confirmed:true},next_action:{kind:"select_vehicle_variant"}});
         },
     }});
@@ -2791,4 +2783,53 @@ test('vehicle save readiness immediately reflects a background catalogue reload'
   api.state.fitmentCatalogue[kind].status='loaded';
  }
  api.state.fitmentMarketResolution.status='loading';assert.equal(api.snapshot().vehicleSaveReady,false);
+});
+
+for (const oldDraft of [false, true]) test(`BMW catalogue identifiers survive a cold restore as clean; legacy=${oldDraft}`, async () => {
+    const { api, sessionStorage } = navigationApi();
+    const overview = overviewFor(api, "run_standard_check", { confirmedVariant: true });
+    overview.vehicle = {make:"BMW",model:"5 Series",year:2017,market:"eudm"};
+    overview.selected_modification = {...overview.selected_modification,make_slug:"bmw",model_slug:"5-series"};
+    seed(api,overview,"result");
+    const preloaded={makes:{outcome:"success",items:[{value:"bmw",label:"BMW"}]},models:{outcome:"success",items:[{value:"5-series",label:"5 Series"}]},years:{outcome:"success",items:[{value:"2017",label:"2017"}]},markets:{outcome:"success",resolution:"multiple",items:[{value:"eudm",label:"Europe"},{value:"usdm",label:"USA"}]}};
+    await api.revalidateFitmentCatalogueChain(0,{preloaded});
+    assert.equal(api.state.fitmentForm.vehicle.model,"5-series");
+    assert.equal(api.fitmentFormIsDirty(),false);
+    api.persistFitmentTransientDraft("navigation");
+    if(oldDraft){
+        const draft=api.fitmentDraftPayload("navigation");
+        draft.form.vehicle={...draft.form.vehicle,make:"bmw",model:"5-series"};
+        sessionStorage.setItem(api.fitmentTransientDraftKey(),JSON.stringify(draft));
+    }
+    seed(api,overview,"result");
+    api.state.fitmentCatalogue={makes:{status:"idle",items:[]},models:{status:"idle",items:[]},years:{status:"idle",items:[]}};
+    assert.equal(api.restoreFitmentTransientDraft({reason:"navigation",overview}),"restored");
+    assert.equal(api.state.fitmentVehicleDirty,false);
+    assert.equal(api.fitmentFormIsDirty(),false);
+    assert.equal(api.snapshot().canRunCheck,true);
+});
+
+test("real unsaved market changes survive cold restore and block the check",()=>{
+    const {api}=navigationApi();
+    const overview=overviewFor(api,"run_standard_check",{confirmedVariant:true});
+    overview.vehicle={make:"BMW",model:"5 Series",year:2017,market:"eudm"};
+    seed(api,overview,"vehicle");
+    api.setVnextFitmentField("vehicle.market","usdm");
+    api.persistFitmentTransientDraft("navigation");
+    seed(api,overview,"result");
+    api.restoreFitmentTransientDraft({reason:"navigation",overview});
+    assert.equal(api.state.fitmentForm.vehicle.market,"usdm");
+    assert.equal(api.state.fitmentVehicleDirty,true);
+    assert.equal(api.snapshot().canRunCheck,false);
+});
+
+test("edited recognition suggestions keep the explicit confirmation label without submitting",()=>{
+    const {api,calls}=navigationApi();
+    const overview=overviewFor(api,"complete_vehicle_details");
+    seed(api,overview,"vehicle");
+    api.state.fitmentRecognition={status:"applied",revision:overview.vehicle_revision};
+    api.state.fitmentVehicleEditing=true;
+    api.setVnextFitmentField("vehicle.market","eudm");
+    assert.match(fitmentMarkup(api.snapshot()),/data-fitment-action="save-vehicle"[^>]*>Подтвердить данные/);
+    assert.equal(calls.some(call=>call.startsWith("PATCH")),false);
 });

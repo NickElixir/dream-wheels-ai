@@ -301,6 +301,19 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch, stagge
             )
             assert len(await intents()) == 6
 
+            manual_job = await new_job()
+            manual = {**values, "confirmed_fields": ["make", "model", "year", "market"]}
+            one_save = await save(manual, 0, manual_job)
+            assert one_save.vehicle_state == "confirmed_ready"
+            assert one_save.next_action.kind == "select_vehicle_variant"
+            assert all(field.is_user_confirmed for field in one_save.vehicle_field_states.values())
+            assert len(await intents(manual_job)) == 1
+            edited = await save({**manual, "market": "usdm"}, one_save.vehicle_revision, manual_job)
+            assert edited.vehicle_state == "confirmed_ready"
+            assert edited.vehicle.market == "usdm"
+            assert edited.next_action.kind == "select_vehicle_variant"
+            assert edited.vehicle_revision == one_save.vehicle_revision + 1
+
             # Failure of the intent insert must roll back first identity creation, attachment,
             # and the mutation event that was already inserted in this same transaction.
             failed_job = await new_job()
@@ -309,7 +322,7 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch, stagge
                 "CREATE FUNCTION reject_intent() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.event_type='vehicle_confirmation_intent' THEN RAISE EXCEPTION 'test intent failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_intent BEFORE INSERT ON fitment_change_events FOR EACH ROW EXECUTE FUNCTION reject_intent()"
             )
             with pytest.raises(asyncpg.RaiseError, match="test intent failure"):
-                await save(values, 0, failed_job)
+                await save(manual, 0, failed_job)
             assert (
                 await admin.fetchval(
                     "SELECT vehicle_identity_id FROM jobs WHERE id=$1::uuid", failed_job
@@ -338,7 +351,8 @@ def test_local_vehicle_confirmation_persistence_and_rollback(monkeypatch, stagge
             all_outcomes = [json.loads(e["changes"])["outcome"] for e in await intents()]
             assert all_outcomes.count("saved") == 2
             assert all_outcomes.count("confirmed") == 4
-            assert len(audit_rows) == 4
+            assert sum(str(row["job_id"]) == job for row in audit_rows) == 4
+            assert sum(str(row["job_id"]) == manual_job for row in audit_rows) == 2
             assert first_intent["id"] not in {r["confirmation_event_id"] for r in audit_rows}
             assert all(row["actor_user_id"] == owner for row in audit_rows)
             print(
