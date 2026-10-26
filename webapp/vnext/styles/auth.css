@@ -10,6 +10,13 @@
   background: var(--vnext-canvas);
 }
 
+[data-auth-dialog] .account-avatar {
+  border-color: var(--vnext-border);
+  background: var(--vnext-surface-selected);
+  color: var(--vnext-text);
+  font-weight: var(--vnext-weight-semibold);
+}
+
 .application-auth-gate-card {
   width: min(480px, calc(100vw - 32px));
   border: 1px solid var(--vnext-border);

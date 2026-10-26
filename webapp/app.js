@@ -11601,6 +11601,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     renderCreateInputs();
     refreshButtonsForCurrentView();
+    window.dispatchEvent(new Event("dreamwheels:runtimeready"));
     await authReady;
     if (state.applicationAuthRequired) {
         syncApplicationAuthWall();

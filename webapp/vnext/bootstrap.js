@@ -274,6 +274,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
     mountedWalletContent = createRoot.querySelector(".vnext-shell__frame > .vnext-wallet");
     mountedView = view;
     document.body.classList.add("vnext-surface-active");
+    window.dispatchEvent(new Event("dreamwheels:surfaceready"));
     restoreSurfaceFocus(host, previousFocus);
     if (view === "create") window.dreamwheelsCreateBridge?.surfaceMounted();
     else if (view === "fitment") window.dreamwheelsFitmentBridge?.surfaceMounted();
@@ -296,6 +297,7 @@ function mountSurface(view, { force = false } = {}, locale = applicationLocale()
   mountedRoot = host;
   mountedView = view;
   document.body.classList.add("vnext-surface-active");
+  window.dispatchEvent(new Event("dreamwheels:surfaceready"));
   restoreSurfaceFocus(host, previousFocus);
 }
 
