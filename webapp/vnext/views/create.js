@@ -183,7 +183,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
     : !snapshot.files?.wheel ? uiText("create.addAWheelPhoto", localeOf(snapshot))
     : !snapshot.consentAccepted ? uiText("create.confirmConsentToProcessThePhotos", localeOf(snapshot)) : "";
   actions.append(createButton({ label: uiText("create.createImage", localeOf(snapshot)), onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
-  if (reason) {
+  if (reason && snapshot.files?.car) {
     const hint = document.createElement("p");
     hint.className = "vnext-create__source-helper";
     hint.setAttribute("role", "status");

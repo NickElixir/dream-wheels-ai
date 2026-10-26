@@ -64,7 +64,7 @@ jobs:
         run: node --test tests/test_fitment_transition_behavior.mjs
 
       - name: Fitment composition and focus tests
-        run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_form_focus.mjs tests/test_e01_i18n.mjs tests/test_e01_corrective.mjs tests/test_source_extract.mjs
+        run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_form_focus.mjs tests/test_startup.mjs tests/test_e01_i18n.mjs tests/test_e01_corrective.mjs tests/test_source_extract.mjs
 
       - name: Failed render behavioral tests
         run: node --test tests/test_failed_render_behavior.mjs tests/test_create_draft_metadata.mjs

@@ -1,11 +1,27 @@
 <!DOCTYPE html>
-<html lang="ru" data-app-build="__BUILD_ID__">
+<html lang="ru" data-app-build="__BUILD_ID__" data-ui-startup="loading">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0a0b0e">
     <title>Dream Wheels AI</title>
+    <style>
+        html[data-ui-startup] { background: #090d10; }
+        html[data-ui-startup] body > :not([data-ui-startup-screen]):not(script):not(noscript) { display: none !important; }
+        [data-ui-startup-screen] { display: none; }
+        html[data-ui-startup] [data-ui-startup-screen] { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; padding: 24px; box-sizing: border-box; color: #f2f4f5; background: #090d10; font: 16px/1.5 system-ui, sans-serif; }
+        [data-ui-startup-screen] .startup-wordmark { margin: 0 0 24px; font-size: 13px; font-weight: 600; letter-spacing: .15em; }
+        [data-ui-startup-screen] .startup-wordmark span { color: #7f8c95; }
+        [data-ui-startup-screen] .startup-status { display: flex; align-items: center; gap: 12px; }
+        [data-ui-startup-screen] .startup-spinner { width: 20px; height: 20px; flex: 0 0 20px; border: 2px solid #42515c; border-top-color: #f2f4f5; border-radius: 50%; animation: startup-spin 1s linear infinite; }
+        [data-ui-startup-screen] a { color: inherit; }
+        [data-ui-startup-screen] [data-startup-error], [data-ui-startup-screen] [data-startup-retry] { display: none; }
+        html[data-ui-startup="error"] [data-startup-loading] { display: none; }
+        html[data-ui-startup="error"] [data-startup-error], html[data-ui-startup="error"] [data-startup-retry] { display: block; }
+        @keyframes startup-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { [data-ui-startup-screen] .startup-spinner { animation: none; } }
+    </style>
     <link rel="preconnect" href="https://oauth.telegram.org">
     <link rel="dns-prefetch" href="//oauth.telegram.org">
     <link rel="stylesheet" href="/style.css?v=__BUILD_ID__">
@@ -19,9 +35,17 @@
     <link rel="stylesheet" href="/vnext/styles/wallet.css?v=__BUILD_ID__">
     <link rel="stylesheet" href="/vnext/styles/approved-home-create.css?v=__BUILD_ID__">
     <link rel="stylesheet" href="/vnext/styles/account.css?v=__BUILD_ID__">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+    <section data-ui-startup-screen aria-live="polite" aria-label="Dream Wheels AI">
+        <p class="startup-wordmark">DREAM<span>WHEELS AI</span></p>
+        <div class="startup-status" data-startup-loading><span class="startup-spinner" aria-hidden="true"></span><span data-startup-label>Открываем приложение…</span></div>
+        <p data-startup-error>Не удалось открыть приложение</p>
+        <a href="" data-startup-retry>Повторить</a>
+        <noscript><p>Для открытия приложения включите JavaScript</p></noscript>
+    </section>
+    <script src="/startup.js?v=__BUILD_ID__"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <section class="application-auth-gate" data-application-auth-gate hidden aria-live="polite">
         <div class="application-auth-gate-card">
             <p class="application-auth-gate-wordmark brand-wordmark" aria-label="Dream Wheels AI">
@@ -176,6 +200,7 @@
                         </label>
                         <div class="preview" data-preview="car" hidden>
                             <div class="preview-media" data-preview-media="car">
+                                <!-- hidden until the selected car receives its blob URL -->
                                 <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
                             </div>
                             <p class="photo-upload-status" data-i18n="create.carAdded">Фото автомобиля добавлено</p>
@@ -192,6 +217,7 @@
                         </label>
                         <div class="preview" data-preview="wheel" hidden>
                             <div class="preview-media" data-preview-media="wheel">
+                                <!-- hidden until the selected wheel receives its blob URL -->
                                 <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
                             </div>
                             <p class="photo-upload-status" data-i18n="create.wheelAdded">Фото колесного диска добавлено</p>
@@ -256,6 +282,7 @@
                     <pre class="status-debug" data-status-debug hidden></pre>
                 </div>
                 <div class="result-block" data-result hidden>
+                    <!-- result stays hidden until its protected image is loaded -->
                     <img data-result-img hidden alt="AI render" data-i18n-alt="result.imageAlt" class="result-image">
                     <div class="result-actions">
                         <button type="button" class="ghost-button compact-button" data-download-result data-i18n="actions.download" hidden>Скачать</button>
