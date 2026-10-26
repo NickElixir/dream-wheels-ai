@@ -21,6 +21,7 @@ from src.config import (
     ROBOKASSA_PAYMENT_URL,
     ROBOKASSA_TEST_PASSWORD1,
     ROBOKASSA_TEST_PASSWORD2,
+    STARTER_GRANT_CREDITS,
     STARTER_GRANT_TTL_DAYS,
 )
 from src.credits_service import create_credit_package, get_balance
@@ -271,7 +272,24 @@ async def get_starter_grant_for_user(
         logger.warning("⚠️ credit_ledger lookup failed; starter grant history skipped")
         return None
     if row is None:
-        return None
+        if STARTER_GRANT_CREDITS <= 0:
+            return None
+        try:
+            account = await conn.fetchrow(
+                """
+                SELECT trial_used_at
+                FROM user_credit_accounts
+                WHERE user_id = $1 AND trial_used_at IS NOT NULL
+                """,
+                user_id,
+            )
+        except asyncpg.PostgresError:
+            logger.exception("Starter grant history fallback failed user_id=%s", user_id)
+            return None
+        if account is None or account["trial_used_at"] is None:
+            return None
+        # Historical metadata only: never infer remaining credits or create a package.
+        row = {"credits_delta": STARTER_GRANT_CREDITS, "created_at": account["trial_used_at"]}
     return {
         "credits": int(row["credits_delta"]),
         "created_at": row["created_at"].isoformat(),
