@@ -35,7 +35,7 @@ async def create_credit_package(
     user_id: int,
     source: str,
     credits: int,
-    expires_at: datetime,
+    expires_at: datetime | None,
     idempotency_key: str,
     related_payment_id: str | None = None,
 ) -> None:
@@ -69,7 +69,7 @@ async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> i
         SELECT id, remaining_credits, expires_at
         FROM credit_packages
         WHERE user_id = $1 AND remaining_credits > 0 AND expires_at <= CURRENT_TIMESTAMP
-        ORDER BY expires_at, created_at
+        ORDER BY expires_at NULLS LAST, created_at
         FOR UPDATE
         """,
         user_id,
@@ -122,8 +122,8 @@ async def list_credit_packages(
         """
         SELECT id, source, remaining_credits, expires_at, created_at
         FROM credit_packages
-        WHERE user_id = $1 AND remaining_credits > 0 AND expires_at > CURRENT_TIMESTAMP
-        ORDER BY expires_at, created_at
+        WHERE user_id = $1 AND remaining_credits > 0 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        ORDER BY expires_at NULLS LAST, created_at
         """,
         user_id,
     )
@@ -132,7 +132,7 @@ async def list_credit_packages(
             "id": str(row["id"]),
             "source": row["source"],
             "remaining_credits": int(row["remaining_credits"]),
-            "expires_at": row["expires_at"].isoformat(),
+            "expires_at": row["expires_at"].isoformat() if row["expires_at"] else None,
         }
         for row in rows
     ]
@@ -538,6 +538,13 @@ async def _expire_starter_grant_if_due(
     if expires_at > datetime.now(UTC):
         return balance
 
+    if not await _credit_packages_table_missing(conn) and await conn.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM credit_packages WHERE user_id=$1 AND source='legacy_balance')",
+        user_id,
+    ):
+        # The cutover has replaced this historical grant with a permanent balance.
+        return balance
+
     if await _has_starter_grant_expiration_ledger_entry(conn, user_id):
         return balance
 
@@ -720,7 +727,7 @@ async def reconcile_credit_account_balance(
         FROM credit_packages
         WHERE user_id = $1
           AND remaining_credits > 0
-          AND expires_at > CURRENT_TIMESTAMP
+          AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
         """,
         user_id,
     )
@@ -784,8 +791,8 @@ async def reserve_job_credit(
     packages = await conn.fetch(
         """
         SELECT id, remaining_credits FROM credit_packages
-        WHERE user_id = $1 AND remaining_credits > 0 AND expires_at > CURRENT_TIMESTAMP
-        ORDER BY expires_at, created_at FOR UPDATE
+        WHERE user_id = $1 AND remaining_credits > 0 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        ORDER BY expires_at NULLS LAST, created_at FOR UPDATE
         """,
         user_id,
     )
@@ -946,7 +953,7 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
         FROM credit_package_allocations AS allocation
         WHERE allocation.job_id = $1::uuid
           AND allocation.package_id = package.id
-          AND package.expires_at > CURRENT_TIMESTAMP
+          AND (package.expires_at IS NULL OR package.expires_at > CURRENT_TIMESTAMP)
         RETURNING allocation.credits
         """,
         job_id,

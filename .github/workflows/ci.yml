@@ -126,3 +126,8 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
         run: pytest -q tests/test_try_on_numbers_postgres.py
+
+      - name: Verify permanent legacy credit cutover on isolated PostgreSQL
+        env:
+          TEST_CREDIT_CUTOVER_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: pytest -q tests/test_legacy_credit_cutover_postgres.py
