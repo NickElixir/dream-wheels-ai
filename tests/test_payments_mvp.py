@@ -7,7 +7,7 @@ import asyncpg
 import pytest
 from fastapi.testclient import TestClient
 
-from src import auth, payments_api
+from src import auth, payments_api, payments_service
 from src.auth_principal import AuthPrincipal
 from src.main import app
 from src.payments_service import (
@@ -158,9 +158,11 @@ def test_get_starter_grant_legacy_fallback_does_not_match_any_manual_adjustment(
             assert "FROM user_credit_accounts" in query
             return None
 
-    payload = asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123))
+    conn = FakeConn()
+    payload = asyncio.run(get_starter_grant_for_user(conn, user_id=123))
 
     assert payload is None
+    assert conn.calls == 3
 
 
 def test_create_topup_requires_init_data_when_dev_auth_disabled():
@@ -419,3 +421,73 @@ def test_verify_result_signature_accepts_test_mode_without_is_test_flag(monkeypa
         )
         is True
     )
+
+
+@pytest.mark.parametrize("legacy_schema", [False, True])
+def test_starter_grant_account_history_fallback(legacy_schema):
+    class FakeConn:
+        def __init__(self):
+            self.calls = 0
+
+        async def fetchrow(self, query, user_id):
+            self.calls += 1
+            assert user_id == 123
+            if legacy_schema and self.calls == 1:
+                raise asyncpg.UndefinedColumnError("event_type missing")
+            if "FROM credit_ledger" in query:
+                return None
+            assert "FROM user_credit_accounts" in query
+            assert "trial_used_at IS NOT NULL" in query
+            return {"trial_used_at": datetime(2026, 6, 19, 9)}
+
+    conn = FakeConn()
+    payload = asyncio.run(get_starter_grant_for_user(conn, user_id=123))
+    assert payload == {
+        "credits": payments_service.STARTER_GRANT_CREDITS,
+        "created_at": "2026-06-19T09:00:00",
+        "expires_at": "2026-07-19T09:00:00",
+    }
+    assert conn.calls == (3 if legacy_schema else 2)
+
+
+def test_starter_grant_fallback_database_failure_returns_no_history():
+    class FakeConn:
+        async def fetchrow(self, query, *_args):
+            if "FROM credit_ledger" in query:
+                return None
+            raise asyncpg.UndefinedColumnError("trial_used_at missing")
+
+    assert asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123)) is None
+
+
+@pytest.mark.parametrize("account", [None, {"trial_used_at": None}])
+def test_starter_grant_fallback_requires_recorded_trial(account):
+    class FakeConn:
+        async def fetchrow(self, query, *_args):
+            if "FROM credit_ledger" in query:
+                return None
+            return account
+
+    assert asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123)) is None
+
+
+def test_starter_grant_disabled_fallback_does_not_query_account(monkeypatch):
+    monkeypatch.setattr(payments_service, "STARTER_GRANT_CREDITS", 0)
+
+    class FakeConn:
+        async def fetchrow(self, query, *_args):
+            assert "FROM credit_ledger" in query
+            return None
+
+    assert asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123)) is None
+
+
+def test_starter_grant_ledger_takes_precedence_over_account():
+    class FakeConn:
+        async def fetchrow(self, query, *_args):
+            assert "FROM credit_ledger" in query
+            return {"credits_delta": 7, "created_at": datetime(2026, 1, 1)}
+
+    payload = asyncio.run(get_starter_grant_for_user(FakeConn(), user_id=123))
+    assert payload["credits"] == 7
+    assert payload["created_at"] == "2026-01-01T00:00:00"
