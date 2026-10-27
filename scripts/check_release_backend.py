@@ -13,8 +13,10 @@ def verify_release(data: dict[str, object], sha: str) -> None:
         raise ValueError("Expected a full commit SHA")
     if data.get("status") != "ok" or data.get("commit") != sha:
         raise ValueError("Production backend is not serving the requested commit")
-    if data.get("payments_test_mode") is not False:
-        raise ValueError("Production release requires the approved live payment profile")
+    if data.get("payments_enabled") is not False:
+        raise ValueError("Production frontend publication requires payments to be disabled")
+    if not isinstance(data.get("payments_test_mode"), bool):
+        raise ValueError("Production payment mode must be reported")
     if data.get("maintenance") is not True or any(
         data.get(key) is not False
         for key in ("worker_enabled", "bot_enabled", "payment_timeout_enabled")

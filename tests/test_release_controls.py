@@ -29,6 +29,7 @@ def test_maintenance_blocks_requests_before_any_route(monkeypatch):
             data = response.json()
             assert data["commit"] == "a" * 40
             assert data["maintenance"] is True
+            assert data["payments_enabled"] is main.PAYMENTS_ENABLED
             assert data["worker_enabled"] is False
             assert data["bot_enabled"] is False
             assert data["payment_timeout_enabled"] is False
@@ -44,15 +45,19 @@ def test_release_gate_rejects_wrong_commit_and_writers():
         commit=sha,
         maintenance=True,
         payments_test_mode=False,
+        payments_enabled=False,
         worker_enabled=False,
         bot_enabled=False,
         payment_timeout_enabled=False,
     )
     verify_release(valid, sha)
+    verify_release(valid | {"payments_test_mode": True}, sha)
     for key, value in [
         ("commit", "b" * 40),
         ("maintenance", False),
-        ("payments_test_mode", True),
+        ("payments_test_mode", None),
+        ("payments_enabled", True),
+        ("payments_enabled", None),
         ("worker_enabled", True),
         ("bot_enabled", True),
         ("payment_timeout_enabled", True),
