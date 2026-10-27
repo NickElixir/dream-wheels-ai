@@ -51,7 +51,8 @@ const defaultSessionController = Object.freeze({
 
 function configuredHostIsAllowed(hostname = "") {
     if (["localhost", "127.0.0.1"].includes(hostname)) return true;
-    if (hostname === "dreamwheels.pro") return true;
+    if (["dreamwheels.pro", "app.dreamwheels.pro", "dream-wheels-ai-webapp.vercel.app",
+        "dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app"].includes(hostname)) return true;
     if (hostname === "dream-wheels-ai-webapp-staging.vercel.app") return true;
     return /^dream-wheels-ai-webapp-git-feature-auth-v11-integration-[a-z0-9-]+\.vercel\.app$/u.test(hostname);
 }

@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": ".",
+  "buildCommand": "node scripts/build-public-config.mjs",
   "git": {
     "deploymentEnabled": false
   },

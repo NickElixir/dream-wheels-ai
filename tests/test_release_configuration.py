@@ -27,7 +27,8 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert "workflow_dispatch:" in workflow
     assert "github.ref_name == 'staging'" in workflow
     assert "github.ref_name == 'main'" in workflow
-    assert 'git diff --name-only "$BEFORE_SHA" "$AFTER_SHA"' in workflow
+    assert "verify-production-backend" in workflow
+    assert "inputs.deploy_admin" in workflow
     assert workflow.count("vercel deploy --prebuilt") == 4
     assert "dream-wheels-ai-staging" not in workflow
     assert "STAGING_BACKEND_URL" in workflow
@@ -50,10 +51,7 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
     assert "missing or mismatched; refusing deployment" in workflow
     assert 'env_file=".vercel/.env.production.local"' in workflow
     assert 'env_file=".vercel/.env.preview.local"' in workflow
-    assert "BEFORE_SHA: ${{ github.event.before }}" in workflow
-    assert "AFTER_SHA: ${{ github.sha }}" in workflow
     assert "fetch-depth: 0" in workflow
-    assert 'git ls-tree -r --name-only "$AFTER_SHA"' in workflow
     assert "working-directory: webapp" not in workflow
     assert "working-directory: admin" not in workflow
     assert workflow.count("- name: Stamp webapp build metadata") == 3
@@ -66,7 +64,7 @@ def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
 def test_docs_only_push_does_not_deploy_frontends() -> None:
     workflow = (ROOT / ".github" / "workflows" / "deploy-frontends.yml").read_text(encoding="utf-8")
     push_trigger = workflow.split("  push:\n", 1)[1].split("  workflow_dispatch:", 1)[0]
-    assert "branches: [main, staging]" in push_trigger
+    assert "branches: [staging]" in push_trigger
     assert "paths-ignore:" in push_trigger
     assert "'docs/**'" in push_trigger
     assert "'*.md'" in push_trigger
