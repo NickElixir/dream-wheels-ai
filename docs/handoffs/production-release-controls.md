@@ -9,6 +9,12 @@ production controls.
 
 ## Browser auth configuration
 
+Approved application hostname: `app.dreamwheels.pro`; the apex stays with the
+marketing landing. DNS is authoritative at REG.RU. Vercel currently recommends
+the CNAME `app` -> `43d023301dfd8b35.vercel-dns-017.com.` for this project;
+recheck the project recommendation before editing DNS. Host allowlisting alone
+does not configure Supabase redirects, Turnstile or Telegram login domains.
+
 `webapp/scripts/build-public-config.mjs` runs as the Vercel webapp buildCommand.
 It overwrites the local staging-only harness config in the deployment artifact
 using public env values. SUPABASE_URL must match EXPECTED_SUPABASE_URL pinned by

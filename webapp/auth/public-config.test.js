@@ -12,10 +12,10 @@ test('public config pins the target project and excludes all server credentials'
   assert.throws(() => publicConfig({ ...production, SUPABASE_PUBLISHABLE_KEY: 'sb_secret_forbidden' }));
   assert.throws(() => publicConfig({ ...production, TURNSTILE_SITE_KEY: '' }));
 });
-test('both canonical production Vercel domains allow the reviewed auth flow', () => {
+test('approved production and staging domains allow the reviewed auth flow', () => {
   const old = globalThis.location;
   try {
-    for (const hostname of ['dream-wheels-ai-webapp.vercel.app', 'dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app', 'dream-wheels-ai-webapp-staging.vercel.app']) {
+    for (const hostname of ['app.dreamwheels.pro', 'dream-wheels-ai-webapp.vercel.app', 'dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app', 'dream-wheels-ai-webapp-staging.vercel.app']) {
       globalThis.location = { hostname };
       assert.equal(isMainWebAppAuthEnabled({ mainWebAppEnabled: true }), true);
     }
