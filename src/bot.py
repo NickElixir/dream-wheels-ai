@@ -17,6 +17,8 @@ from src import db
 from src.config import (
     API_BASE_URL,
     API_INTERNAL_TOKEN,
+    APP_MAINTENANCE,
+    BOT_ENABLED,
     BOT_TOKEN,
     LEGAL_BASE_URL,
     REDIS_URL,
@@ -389,7 +391,10 @@ async def _post_shutdown(_application: Application) -> None:
     await db.close_pool()
 
 
-def main():
+def main() -> None:
+    if APP_MAINTENANCE or not BOT_ENABLED:
+        logger.info("Telegram bot disabled by runtime profile")
+        return
     logger.info("Запуск Telegram-бота...")
     application = (
         Application.builder()

@@ -1,18 +1,28 @@
 name: Deploy Frontends
 
-# This workflow is intentionally prepared locally during Stage B1. It becomes
-# active only after the file is reviewed, committed, and pushed in Stage B2.
-# Vercel-native Git deployments must be disabled per project before activation.
+# Staging publishes automatically; production is an intentional, backend-gated release.
+# Vercel-native Git deployments must stay disabled per project.
 on:
   push:
-    branches: [main, staging]
+    branches: [staging]
     paths-ignore:
       - 'docs/**'
       - '*.md'
   workflow_dispatch:
     inputs:
+      target:
+        description: Intentional deployment target (production requires verified backend)
+        type: choice
+        options: [preview, production]
+        default: preview
+        required: true
+      deploy_admin:
+        description: Also deploy the reviewed admin artifact in this production release
+        type: boolean
+        default: false
+        required: true
       ref:
-        description: Branch, tag, or commit to deploy as an intentional preview
+        description: Preview ref, or exact current-main ref for production
         required: true
         default: staging
         type: string
@@ -26,7 +36,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: vercel-frontend-${{ inputs.ref || github.ref_name }}
+  group: vercel-frontend-${{ inputs.target == 'production' && 'production' || inputs.ref || github.ref_name }}
   cancel-in-progress: false
 
 env:
@@ -40,7 +50,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.target != 'production' && inputs.ref || github.sha }}
     permissions:
       contents: read
 
@@ -123,6 +133,7 @@ jobs:
 
       - name: Build staging artifact
         env:
+          EXPECTED_SUPABASE_URL: https://hnawojlnfoaccinlgjyn.supabase.co
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
@@ -146,19 +157,47 @@ jobs:
           curl --fail --silent --show-error --max-time 30 \
             "https://dream-wheels-ai-webapp-staging.vercel.app/api/backend/health"
 
-  deploy-production:
-    name: Deploy production frontend
+  verify-production-backend:
+    name: Verify production backend release
     needs: ci
     if: >-
-      github.event_name == 'push' &&
-      github.ref_name == 'main'
+      github.event_name == 'workflow_dispatch' &&
+      inputs.target == 'production' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin current main and verify matching backend
+        id: release
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
+        run: |
+          test "$REQUESTED_REF" = "$DISPATCH_SHA"
+          git fetch origin main
+          release_sha="$(git rev-parse HEAD)"
+          test "$release_sha" = "$(git rev-parse origin/main)"
+          python3 scripts/check_release_backend.py "$release_sha"
+          echo "sha=$release_sha" >> "$GITHUB_OUTPUT"
+
+  deploy-production:
+    name: Deploy production frontend
+    needs: [ci, verify-production-backend]
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.target == 'production' && github.ref_name == 'main'
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Checkout tested commit
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.verify-production-backend.outputs.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -195,6 +234,7 @@ jobs:
 
       - name: Build production artifact
         env:
+          EXPECTED_SUPABASE_URL: https://qmgyccghsbdpehiybjae.supabase.co
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
@@ -208,50 +248,28 @@ jobs:
         run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
 
   deploy-admin:
-    name: Deploy admin when admin paths changed
-    needs: ci
+    name: Deploy admin when explicitly selected
+    needs: [ci, verify-production-backend]
     if: >-
-      github.event_name == 'push' &&
-      github.ref_name == 'main'
+      github.event_name == 'workflow_dispatch' &&
+      inputs.target == 'production' && github.ref_name == 'main' && inputs.deploy_admin
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Checkout tested commit
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.verify-production-backend.outputs.sha }}
           fetch-depth: 0
 
-      - name: Detect admin-relevant changes
-        id: paths
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          AFTER_SHA: ${{ github.sha }}
-        run: |
-          zero_sha="0000000000000000000000000000000000000000"
-          if [ "$BEFORE_SHA" = "$zero_sha" ]; then
-            changed_files="$(git ls-tree -r --name-only "$AFTER_SHA")"
-          else
-            git cat-file -e "${BEFORE_SHA}^{commit}"
-            changed_files="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
-          fi
-          if printf '%s\n' "$changed_files" | grep -q '^admin/'; then
-            echo "admin=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "admin=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/setup-node@v4
-        if: steps.paths.outputs.admin == 'true'
         with:
           node-version: 24
 
       - name: Install pinned Vercel CLI
-        if: steps.paths.outputs.admin == 'true'
         run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
 
       - name: Build admin artifact
-        if: steps.paths.outputs.admin == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -261,7 +279,6 @@ jobs:
           vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy exactly one admin artifact
-        if: steps.paths.outputs.admin == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -271,7 +288,7 @@ jobs:
   deploy-preview:
     name: Manual preview deployment
     needs: ci
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.target != 'production'
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -315,6 +332,7 @@ jobs:
 
       - name: Build preview artifact
         env:
+          EXPECTED_SUPABASE_URL: https://hnawojlnfoaccinlgjyn.supabase.co
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_STAGING_PROJECT_ID }}
