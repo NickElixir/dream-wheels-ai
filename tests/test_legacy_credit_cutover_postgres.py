@@ -22,6 +22,12 @@ def test_permanent_balance_cutover(monkeypatch):
 
     async def run():
         admin = await asyncpg.connect(dsn)
+        await admin.execute(
+            "DO $$ BEGIN "
+            "IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF; "
+            "IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated; END IF; "
+            "END $$"
+        )
         name = "credit_cutover_" + uuid4().hex
         await admin.execute(f'CREATE DATABASE "{name}"')
         target = urlsplit(dsn)._replace(path="/" + name).geturl()
