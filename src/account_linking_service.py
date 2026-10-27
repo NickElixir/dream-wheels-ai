@@ -286,7 +286,7 @@ async def _merge_credit_accounts(
             SELECT COALESCE(SUM(remaining_credits), 0)
             FROM credit_packages
             WHERE user_id = $1
-              AND expires_at > CURRENT_TIMESTAMP
+              AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
             """,
             survivor_user_id,
         )

@@ -356,3 +356,17 @@ test("W-02 cancelled history is not pending or refunded and new checkout remains
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { uiCopy }), ...options);
 }
+
+test("Wallet shows permanent migrated credits after expiring packages without inventing an expiry", () => {
+  const app = runtime();
+  app.state.balance = 5;
+  app.state.creditPackages = [
+    { id: "legacy", remainingCredits: 3, expiresAt: "", source: "legacy_balance" },
+    { id: "purchase", remainingCredits: 2, expiresAt: "2099-10-12T00:00:00Z", source: "purchase" },
+  ];
+  const model = app.bridge.snapshot();
+  assert.deepEqual(Array.from(model.expiryCohorts, (item) => item.creditsLabel), ["2 рендера", "3 рендера"]);
+  assert.equal(model.expiryCohorts[1].expiresLabel, "без срока");
+  app.bridge.selectPackage(500);
+  assert.equal(app.bridge.snapshot().selectedPackage.durationLabel, "30 дней");
+});
