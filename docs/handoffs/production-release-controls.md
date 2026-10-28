@@ -62,7 +62,9 @@ main SHA>) launched from main. CI runs before the shared backend gate.
 
 The gate refuses a non-current-main checkout or a backend whose /health/release
 commit differs. It also requires maintenance=true and worker/bot/payment timer
-flags false, plus the approved live payment profile (payments_test_mode=false). Frontend and optional admin then check out exactly that verified SHA.
+flags false, and explicitly requires payments_enabled=false. The backend must
+report its payment mode; test or live mode can be used while payments are disabled.
+Frontend and optional admin then check out exactly that verified SHA.
 Admin publication is opt-in (deploy_admin=true), rather than inferred from a
 push-only before SHA. Manual preview remains separate and targets staging config.
 
