@@ -231,7 +231,7 @@ export function createFrontendAuthController({
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            if (!response?.ok) throw new Error("principal_probe_failed");
+            if (!response?.ok) throw await backendAuthError(response);
             const payload = await response.json().catch(() => null);
             if (!probeStillCurrent()) return getState();
             if (payload?.authenticated !== true || payload.authority !== "supabase") {
@@ -267,8 +267,8 @@ export function createFrontendAuthController({
                 principalVerified: false,
                 protectedApiReady: false,
                 sessionPresent: true,
-                errorCode: "NETWORK_ERROR",
-                interactionState: AUTH_INTERACTION_STATES.RESTORING,
+                errorCode: error?.code === "MAINTENANCE" ? "MAINTENANCE" : "NETWORK_ERROR",
+                interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
                 authenticationSource: null,
                 account: null,
             }, "ME_UNAVAILABLE");
@@ -339,6 +339,12 @@ export function createFrontendAuthController({
         return error;
     }
 
+    async function backendAuthError(response) {
+        const payload = await response?.json?.().catch(() => null);
+        return authRequestError(response?.status === 503 && /maintenance/i.test(String(payload?.detail || ""))
+            ? "MAINTENANCE" : "NETWORK_ERROR");
+    }
+
     async function bootstrapSupabaseAccount() {
         const accessToken = await sessionController.getAccessToken();
         if (!accessToken) throw authRequestError("SESSION_EXPIRED");
@@ -347,7 +353,7 @@ export function createFrontendAuthController({
             headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (response?.status === 401) throw authRequestError("SESSION_EXPIRED");
-        if (!response?.ok) throw authRequestError("NETWORK_ERROR");
+        if (!response?.ok) throw await backendAuthError(response);
         const payload = typeof response?.json === "function"
             ? await response.json().catch(() => null)
             : null;
@@ -488,8 +494,11 @@ export function createFrontendAuthController({
         if (state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified) {
             throw authRequestError("ALREADY_AUTHENTICATED");
         }
+        if (state.status === AUTH_SESSION_STATES.SESSION_EXPIRED) {
+            await sessionController.signOut();
+        }
         if (state.status === AUTH_SESSION_STATES.BOOTSTRAPPING || state.sessionPresent) {
-            throw authRequestError("AUTHENTICATION_IN_PROGRESS");
+            throw authRequestError(state.errorCode || "AUTHENTICATION_IN_PROGRESS");
         }
         const result = await otpRequest(email, captchaToken);
         setState({
@@ -513,7 +522,7 @@ export function createFrontendAuthController({
         }
         if (!(state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified)) {
             setState({ interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED }, "OTP_SESSION_MISSING");
-            throw authRequestError("SESSION_EXPIRED");
+            throw authRequestError(state.errorCode || "SESSION_EXPIRED");
         }
         setState({
             interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,

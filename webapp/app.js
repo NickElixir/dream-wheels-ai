@@ -1566,6 +1566,12 @@ function accountProviderLabel(provider) {
 }
 
 function renderAccountSettings() {
+    const logout = document.querySelector("[data-account-logout]");
+    if (logout) {
+        logout.hidden = HAS_TG || !isFrontendUserAuthenticated();
+        const label = logout.querySelector("span");
+        if (label) label.textContent = t("auth.logout");
+    }
     const container = document.querySelector("[data-account-settings-content]");
     if (!container) return;
     if (state.accountStateLoading) {
@@ -2179,6 +2185,8 @@ function authErrorMessage(code) {
         session_missing: t("auth.providerError"),
         ALREADY_AUTHENTICATED: t("auth.alreadyAuthenticated"),
         AUTHENTICATION_IN_PROGRESS: t("auth.authenticationInProgress"),
+        MAINTENANCE: t("auth.maintenance"),
+        NETWORK_ERROR: t("auth.finishFailed"),
         SESSION_EXPIRED: t("auth.sessionExpiredTitle"),
     }[code] || t("auth.providerError");
 }
@@ -2298,7 +2306,8 @@ function syncAuthDialogFocus(dialog) {
     const controls = () => [...dialog.querySelectorAll('button, input, select, textarea, a[href], iframe, [tabindex]')]
         .filter(element => element.tabIndex >= 0 && visible(element));
     const focusInside = () => {
-        const preferred = dialog.querySelector(state.authDialogStep === "restored" ? "[data-auth-continue]"
+        const preferred = dialog.querySelector(state.frontendAuthState?.sessionPresent && state.frontendAuthState?.status === "NETWORK_ERROR" ? "[data-auth-retry]"
+            : state.authDialogStep === "restored" ? "[data-auth-continue]"
             : state.authDialogStep === "otp" ? "[data-auth-otp]" : "[data-auth-email]");
         (visible(preferred) ? preferred : controls()[0])?.focus({ preventScroll: true });
     };
@@ -2362,12 +2371,23 @@ function renderAuthDialog() {
     dialog.dataset.vnextAuthStep = state.authDialogStep;
     const isInitialEmailStep = state.authDialogOpen && state.authDialogStep === "email";
     const isChangeEmailStep = state.authDialogOpen && state.authDialogStep === "change-email";
-    const isEmailStep = isInitialEmailStep || isChangeEmailStep;
+    const recovering = Boolean(state.frontendAuthState?.sessionPresent && !isFrontendUserAuthenticated()
+        && state.frontendAuthState?.status !== "SESSION_EXPIRED");
+    const isEmailStep = (isInitialEmailStep || isChangeEmailStep) && !recovering;
     const isOtpStep = state.authDialogOpen && state.authDialogStep === "otp";
     const isRestoredStep = state.authDialogOpen && state.authDialogStep === "restored";
     const isRestoringStep = state.authDialogOpen && state.authDialogStep === "restoring";
     emailForm.hidden = !isEmailStep;
-    otpForm.hidden = !isOtpStep;
+    const retry = document.querySelector("[data-auth-retry]");
+    if (retry) {
+        retry.hidden = !recovering;
+        retry.disabled = state.authDialogBusy || state.frontendAuthState?.status === "BOOTSTRAPPING";
+        retry.textContent = t("auth.retrySession");
+    }
+    if (recovering) setAuthDialogMessage(state.frontendAuthState?.status === "BOOTSTRAPPING"
+        ? t("auth.finishing") : authErrorMessage(state.frontendAuthState?.errorCode || "NETWORK_ERROR"),
+        state.frontendAuthState?.status !== "BOOTSTRAPPING");
+    otpForm.hidden = !isOtpStep || recovering;
     if (restoredState) restoredState.hidden = !isRestoredStep;
     if (title) title.textContent = state.authDialogStep === "otp"
         ? t("auth.otpTitle")
@@ -2420,12 +2440,12 @@ function renderAuthDialog() {
     document.querySelector("[data-auth-close]")?.setAttribute("aria-label", uiCopy("auth.close", locale));
     const divider = document.querySelector(".auth-dialog-divider span");
     if (divider) divider.textContent = uiCopy("auth.or", locale);
-    if (telegramAlternative) telegramAlternative.hidden = !isInitialEmailStep;
+    if (telegramAlternative) telegramAlternative.hidden = !isInitialEmailStep || recovering;
     emailAlternative.forEach((element) => {
-        element.hidden = !isInitialEmailStep;
+        element.hidden = !isInitialEmailStep || recovering;
     });
     initialOnly.forEach((element) => {
-        element.hidden = !isInitialEmailStep;
+        element.hidden = !isInitialEmailStep || recovering;
     });
     const otpSentCopy = document.querySelector("[data-auth-otp-sent-copy]");
     if (otpSentCopy) otpSentCopy.textContent = t("auth.otpSentTo");
@@ -2480,7 +2500,7 @@ function renderAuthDialog() {
     document.querySelector("[data-auth-continue]")?.toggleAttribute("disabled", state.authDialogBusy);
     document.querySelector("[data-auth-switch]")?.toggleAttribute("disabled", state.authDialogBusy);
     updateAuthDialogCooldown();
-    if (state.authDialogOpen && ["email", "change-email"].includes(state.authDialogStep)) loadAuthDialogTurnstile();
+    if (isEmailStep) loadAuthDialogTurnstile();
     syncAuthDialogFocus(dialog);
 }
 
@@ -2516,6 +2536,30 @@ function openAuthDialog() {
 
 }
 
+async function retryFrontendSession() {
+    if (state.authDialogBusy) return;
+    state.authDialogBusy = true;
+    renderAuthDialog();
+    const guard = trackAuthDialogFocusAction();
+    try {
+        await frontendAuthController()?.probeCurrentUser();
+        if (!guard.ownsDialog()) return;
+        if (isFrontendUserAuthenticated()) {
+            closeAuthDialog();
+            if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
+            else await loadDashboardData({ silent: true });
+        }
+    } finally {
+        const moveFocus = guard.allowed;
+        guard.cleanup();
+        if (guard.ownsDialog()) {
+            state.authDialogBusy = false;
+            renderAuthDialog();
+            if (moveFocus) focusAuthDialogError();
+        }
+    }
+}
+
 function closeAuthDialog() {
     state.authDialogOpen = false;
     state.authDialogBusy = false;
@@ -2545,6 +2589,7 @@ function handleFrontendAuthState(nextState, event = null) {
             renderAuthDialog();
         }
     }
+    if (state.authDialogOpen) renderAuthDialog();
     updateWebsiteAuthUi();
     renderWalletStatus();
     renderDashboard();
@@ -10948,6 +10993,7 @@ function bindEvents() {
         if (isAuthIntegrationEnabled()) openAuthDialog();
         else void loginWithTelegram();
     });
+    document.querySelector("[data-auth-retry]")?.addEventListener("click", retryFrontendSession);
     document.querySelector("[data-auth-close]")?.addEventListener("click", closeAuthDialog);
     document.querySelector("[data-auth-continue]")?.addEventListener("click", continueWithRestoredSession);
     document.querySelector("[data-auth-switch]")?.addEventListener("click", switchFromRestoredSession);
@@ -11279,6 +11325,10 @@ function bindEvents() {
     });
 
     document.addEventListener("click", (event) => {
+        if (event.target.closest("[data-account-logout]")) {
+            openLogoutDialog();
+            return;
+        }
         const accountLinkButton = event.target.closest("[data-account-link]");
         if (accountLinkButton) {
             const provider = accountLinkButton.dataset.accountLink;
