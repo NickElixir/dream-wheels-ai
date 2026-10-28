@@ -629,3 +629,57 @@ test("main WebApp keeps Supabase UI auth separate from the legacy protected API 
     assert.match(appSource, /const accessToken = getWebsiteAuthToken\(\);/u);
     assert.doesNotMatch(appSource, /function withAuthHeaders[\s\S]*?getAccessToken\(\)/u);
 });
+
+for (const endpoint of ["/auth/me", "/auth/bootstrap"]) test(`maintenance at ${endpoint} preserves session and retries without OTP`, async () => {
+    const session = fakeSessionController({sessionPresent: true});
+    let unavailable = true;
+    let otpCalls = 0;
+    const auth = createFrontendAuthController({
+        sessionController: session, integrationEnabled: () => true,
+        otpRequest: async () => { otpCalls++; },
+        fetchImpl: async url => unavailable && url.endsWith(endpoint)
+            ? {ok: false, status: 503, json: async () => ({detail: "Service temporarily unavailable for maintenance"})}
+            : url.endsWith("/auth/me") ? okMeResponse() : okBootstrapResponse(),
+    });
+    await auth.initialize();
+    assert.equal(auth.getState().errorCode, "MAINTENANCE");
+    assert.equal(auth.getState().sessionPresent, true);
+    assert.equal(auth.getState().protectedApiReady, false);
+    await assert.rejects(auth.requestEmailOtp("person@example.test"), {code: "MAINTENANCE"});
+    assert.equal(otpCalls, 0);
+    unavailable = false;
+    await auth.probeCurrentUser();
+    assert.equal(auth.getState().principalVerified, true);
+    assert.equal(auth.getState().errorCode, null);
+    assert.equal(otpCalls, 0);
+});
+test("a generic 503 is retryable network failure, not maintenance", async () => {
+    const auth = createFrontendAuthController({sessionController: fakeSessionController({sessionPresent: true}), integrationEnabled: () => true,
+        fetchImpl: async () => ({ok: false, status: 503, json: async () => ({detail:"upstream unavailable"})})});
+    await auth.initialize();
+    assert.equal(auth.getState().errorCode,"NETWORK_ERROR");
+    assert.notEqual(auth.getState().interactionState,"restoring");
+});
+test("accepted OTP followed by maintenance reports maintenance instead of an expired code", async () => {
+    const session = fakeSessionController();
+    let otpCalls=0;
+    const auth=createFrontendAuthController({sessionController:session,integrationEnabled:()=>true,
+        otpVerify:async()=>{otpCalls++;session.emitAuthEvent("SIGNED_IN","user-1");},
+        fetchImpl:async()=>({ok:false,status:503,json:async()=>({detail:"Service temporarily unavailable for maintenance"})})});
+    await auth.initialize();
+    await assert.rejects(auth.verifyEmailOtp("person@example.test","123456"),{code:"MAINTENANCE"});
+    assert.equal(auth.getState().sessionPresent,true);
+    assert.equal(otpCalls,1);
+});
+
+test("a genuinely rejected session can explicitly request a new code", async () => {
+    const session=fakeSessionController({sessionPresent:true});
+    let calls=0;
+    const auth=createFrontendAuthController({sessionController:session,integrationEnabled:()=>true,
+        fetchImpl:async()=>({ok:false,status:401}),otpRequest:async()=>{calls++;}});
+    await auth.initialize();
+    await auth.requestEmailOtp('person@example.test','test-captcha');
+    assert.equal(calls,1);
+    assert.equal(auth.getState().sessionPresent,false);
+    assert.equal(auth.getState().interactionState,'otp_requested');
+});
