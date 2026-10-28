@@ -1,0 +1,1042 @@
+[
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1024,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 768,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "create",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "processing",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": [
+      {
+        "action": "download",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      },
+      {
+        "action": "feedback",
+        "height": 44
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "refunded",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "missing-asset",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "compatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  }
+]

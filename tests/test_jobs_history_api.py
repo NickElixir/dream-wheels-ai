@@ -1,0 +1,498 @@
+from datetime import UTC, datetime
+
+import pytest
+from fastapi.testclient import TestClient
+
+from src import jobs_api
+from src.auth_principal import AuthPrincipal
+from src.main import app
+
+client = TestClient(app)
+
+
+def _base_asset_fields(prefix: str, *, kind: str | None = None) -> dict:
+    return {
+        f"{prefix}_asset_id": f"00000000-0000-4000-8000-00000000000{len(prefix)}" if kind else None,
+        f"{prefix}_asset_kind": kind,
+        f"{prefix}_asset_bucket": "results" if kind == "result" else "raw",
+        f"{prefix}_asset_storage_key": f"users/10/jobs/job/{kind}/asset.jpg" if kind else None,
+        f"{prefix}_asset_content_type": "image/jpeg" if kind else None,
+        f"{prefix}_asset_size_bytes": 123 if kind else None,
+        f"{prefix}_asset_width": None,
+        f"{prefix}_asset_height": None,
+        f"{prefix}_asset_created_at": datetime(2026, 6, 29, tzinfo=UTC) if kind else None,
+    }
+
+
+def _job_row(**overrides) -> dict:
+    row = {
+        "job_id": "11111111-1111-4111-8111-111111111111",
+        "try_on_number": 12,
+        "status": "completed",
+        "created_at": datetime(2026, 6, 29, tzinfo=UTC),
+        "completed_at": datetime(2026, 6, 29, tzinfo=UTC),
+        "output_image_url": "https://example.test/result.jpg",
+        "fitment_available": True,
+        "error_code": None,
+        "error_message": None,
+        "generation_provider": "reve",
+        "provider_request_id": "safe-id",
+        "feedback_sentiment": None,
+        "feedback_reason": None,
+        "feedback_created_at": None,
+        "feedback_updated_at": None,
+        "render_input_snapshot": None,
+        "vehicle_identity_make": None,
+        "vehicle_identity_model": None,
+        "vehicle_identity_year": None,
+        "vehicle_identity_year_start": None,
+        "vehicle_identity_year_end": None,
+        "vehicle_identity_is_user_confirmed": False,
+    }
+    row.update(_base_asset_fields("car", kind="car_original"))
+    row.update(_base_asset_fields("rim", kind="rim_original"))
+    row.update(_base_asset_fields("result", kind="result"))
+    row.update(overrides)
+    return row
+
+
+class FakeAcquire:
+    def __init__(self, conn):
+        self.conn = conn
+
+    async def __aenter__(self):
+        return self.conn
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class FakePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def acquire(self):
+        return FakeAcquire(self.conn)
+
+
+def _patch_auth(monkeypatch, *, user_id: int = 10) -> None:
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return AuthPrincipal(
+            user_id=user_id,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
+    monkeypatch.setattr(
+        jobs_api,
+        "_resolve_jobs_auth",
+        fake_resolve_jobs_auth,
+    )
+
+
+def test_history_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetch(self, query: str, *args):
+            calls.append((query, args))
+            assert "WHERE jobs.user_id = $1" in query
+            return [_job_row()]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert calls[0][1] == (10, 5, 0)
+    body = response.json()
+    assert body["jobs"][0]["job_id"] == "11111111-1111-4111-8111-111111111111"
+    assert set(body["jobs"][0]["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_history_parses_jsonb_snapshot_string(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='{"vehicle":{"make":"Lexus"}}')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] == {"vehicle": {"make": "Lexus"}}
+
+
+def test_history_exposes_current_confirmed_identity_without_rewriting_snapshot(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    render_input_snapshot={
+                        "vehicle": {"make": "Zeer", "model": "Zeer 1", "year": 2023}
+                    },
+                    vehicle_identity_make="Acura",
+                    vehicle_identity_model="ADX",
+                    vehicle_identity_year=2025,
+                    vehicle_identity_is_user_confirmed=True,
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    body = response.json()["jobs"][0]
+    assert body["render_input_snapshot"]["vehicle"]["model"] == "Zeer 1"
+    assert body["vehicle_identity"] == {
+        "make": "Acura",
+        "model": "ADX",
+        "year": 2025,
+        "year_start": None,
+        "year_end": None,
+        "is_user_confirmed": True,
+    }
+
+
+def test_history_keeps_unconfirmed_identity_as_non_authoritative(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    render_input_snapshot={"vehicle": {"make": "Zeer", "model": "Zeer 1"}},
+                    vehicle_identity_make="Acura",
+                    vehicle_identity_model="ADX",
+                    vehicle_identity_is_user_confirmed=False,
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["vehicle_identity"]["is_user_confirmed"] is False
+
+
+def test_history_drops_non_object_snapshot_payload(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [_job_row(render_input_snapshot='["unexpected"]')]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["render_input_snapshot"] is None
+
+
+def test_history_accepts_website_bearer_without_identity_query(monkeypatch):
+    auth_calls: dict[str, str | None] = {}
+
+    async def fake_resolve_jobs_auth(**kwargs):
+        auth_calls.update(kwargs)
+        return AuthPrincipal(
+            user_id=10,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
+    class FakeConn:
+        async def fetch(self, *_args):
+            return [_job_row()]
+
+    monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", fake_resolve_jobs_auth)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get(
+        "/jobs?limit=5&offset=0", headers={"Authorization": "Bearer website-token"}
+    )
+
+    assert response.status_code == 200
+    assert auth_calls["init_data"] is None
+    assert auth_calls["telegram_user_id"] is None
+    assert auth_calls["authorization"] == "Bearer website-token"
+
+
+def test_job_detail_returns_404_for_non_owner(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            assert "AND jobs.user_id = $2" in query
+            assert args[1] == 10
+            return None
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111?telegram_user_id=123")
+
+    assert response.status_code == 404
+
+
+def test_failed_job_status_returns_error_metadata_for_owner(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _job_row(
+                status="failed",
+                output_image_url=None,
+                completed_at=None,
+                error_code="StorageError",
+                error_message="Storage upload failed",
+                **_base_asset_fields("result"),
+            )
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/status?telegram_user_id=123")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "failed"
+    assert body["error_code"] == "StorageError"
+    assert body["error"] == "Image generation failed. Please try again."
+    assert body["render_billing_status"] == "unknown"
+
+
+def test_history_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetch(self, _query: str, *_args):
+            return [
+                _job_row(
+                    feedback_sentiment="disliked",
+                    feedback_reason="image_quality",
+                    feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                    feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+                )
+            ]
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs?limit=5&offset=0")
+
+    assert response.status_code == 200
+    assert response.json()["jobs"][0]["feedback"] == {
+        "sentiment": "disliked",
+        "reason": "image_quality",
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
+
+
+def test_detailed_job_status_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND jobs.user_id = $2" in query
+            return _job_row()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/status")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    body = response.json()
+    assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
+    assert set(body["assets"]) == {"car_original", "rim_original", "result"}
+
+
+def test_job_detail_returns_structured_feedback(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _job_row(
+                feedback_sentiment="liked",
+                feedback_reason=None,
+                feedback_created_at=datetime(2026, 6, 29, tzinfo=UTC),
+                feedback_updated_at=datetime(2026, 6, 30, tzinfo=UTC),
+            )
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111?telegram_user_id=123")
+
+    assert response.status_code == 200
+    assert response.json()["feedback"] == {
+        "sentiment": "liked",
+        "reason": None,
+        "created_at": "2026-06-29T00:00:00Z",
+        "updated_at": "2026-06-30T00:00:00Z",
+    }
+
+
+def test_result_download_query_is_scoped_to_authenticated_user(monkeypatch):
+    calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            calls.append((query, args))
+            assert "AND user_id = $2" in query
+            return {
+                "status": "completed",
+                "output_image_url": "https://example.test/result.jpg",
+            }
+
+    class FakeResponse:
+        status_code = 200
+        content = b"image"
+
+        def __init__(self) -> None:
+            self.headers = {"content-type": "image/jpeg"}
+
+    class FakeAsyncClient:
+        def __init__(self, timeout: float):
+            assert timeout == 30.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str):
+            assert url == "https://example.test/result.jpg"
+            return FakeResponse()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.httpx, "AsyncClient", FakeAsyncClient)
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/download")
+
+    assert response.status_code == 200
+    assert calls[0][1] == ("11111111-1111-4111-8111-111111111111", 10)
+    assert response.content == b"image"
+
+
+def test_legacy_job_response_keeps_existing_shape(monkeypatch):
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "_resolve_jobs_auth", fake_resolve_jobs_auth)
+
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            assert query == "SELECT status, output_image_url FROM jobs WHERE id = $1::uuid"
+            return {"status": "queued", "output_image_url": None}
+
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "queued", "output_image_url": None}
+
+
+def test_job_metadata_exposes_private_display_without_public_url():
+    fields = _base_asset_fields("car_display", kind="car_display")
+    fields.update(
+        car_display_asset_content_type="image/webp",
+        car_display_asset_width=1600,
+        car_display_asset_height=948,
+        car_display_asset_size_bytes=288350,
+    )
+    assets = jobs_api._assets_from_row(
+        _job_row(**fields), job_id="11111111-1111-4111-8111-111111111111"
+    )
+    display = assets["car_display"]
+    assert display.kind == "car_display"
+    assert display.url is None
+    assert display.content_type == "image/webp"
+    assert (display.width, display.height, display.size_bytes) == (1600, 948, 288350)
+    assert "car_display" in display.download_url
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/jobs",
+        "/jobs/11111111-1111-4111-8111-111111111111",
+        "/jobs/11111111-1111-4111-8111-111111111111/status",
+    ],
+)
+@pytest.mark.parametrize(
+    "evidence,expected",
+    [
+        ({}, "unknown"),
+        (
+            {
+                "credit_status": "refunded",
+                "credit_cost": 1,
+                "reserve_count": 1,
+                "reserve_delta": -1,
+                "refund_count": 1,
+                "refund_delta": 1,
+                "finalize_count": 0,
+            },
+            "refunded",
+        ),
+    ],
+)
+def test_billing_evidence_is_consistent_across_read_surfaces(monkeypatch, path, evidence, expected):
+    row = _job_row(status="failed", error_message="secret https://internal.test/token", **evidence)
+
+    class Conn:
+        async def fetchrow(self, query, *args):
+            assert "credit_ledger" in query and "jobs.user_id = $2" in query
+            return row
+
+        async def fetch(self, query, *args):
+            assert "credit_ledger" in query and "jobs.user_id = $1" in query
+            return [row]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get(path)
+    assert response.status_code == 200
+    body = response.json()
+    job = body["jobs"][0] if path == "/jobs" else body
+    assert job["render_billing_status"] == expected
+    assert "secret" not in response.text and "internal.test" not in response.text
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/jobs",
+        "/jobs/11111111-1111-4111-8111-111111111111",
+        "/jobs/11111111-1111-4111-8111-111111111111/status",
+    ],
+)
+def test_job_number_is_exposed_only_by_owner_scoped_reads(monkeypatch, path):
+    class Conn:
+        async def fetch(self, query, *args):
+            assert "jobs.try_on_number" in query
+            assert "jobs.user_id = $1" in query
+            assert args[0] == 10
+            return [_job_row()]
+
+        async def fetchrow(self, query, *args):
+            assert "jobs.try_on_number" in query
+            assert "jobs.user_id = $2" in query
+            assert args[1] == 10
+            return _job_row()
+
+    _patch_auth(monkeypatch, user_id=10)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get(path)
+    assert response.status_code == 200
+    value = response.json()
+    if path == "/jobs":
+        value = value["jobs"][0]
+    assert value["try_on_number"] == 12

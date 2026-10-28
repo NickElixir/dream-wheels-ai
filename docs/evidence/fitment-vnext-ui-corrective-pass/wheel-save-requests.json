@@ -1,0 +1,34 @@
+[
+  {
+    "method": "PATCH",
+    "path": "/jobs/job-a/fitment",
+    "body": {
+      "expected_vehicle_revision": 1,
+      "expected_rim_revision": 1,
+      "setup_mode": "uniform",
+      "rim": {
+        "confirmed_fields": [
+          "wheel_diameter_in",
+          "wheel_width_j",
+          "bolt_count",
+          "pcd_mm",
+          "center_bore_mm",
+          "offset_et_mm"
+        ],
+        "brand": "Xtrike",
+        "model": "10-Spoke",
+        "sku": "118753506318",
+        "product_url": "https://shop.example.test/rim",
+        "bolt_count": 5,
+        "pcd_mm": 112,
+        "wheel_diameter_in": 19,
+        "wheel_width_j": 8.5,
+        "center_bore_mm": 66.6,
+        "offset_et_mm": 35.125,
+        "source_fingerprint": null,
+        "selected_variant_sku": null,
+        "variant_state": "none"
+      }
+    }
+  }
+]

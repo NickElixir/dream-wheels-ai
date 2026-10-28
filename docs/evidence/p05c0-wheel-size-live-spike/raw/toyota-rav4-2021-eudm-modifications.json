@@ -1,0 +1,441 @@
+{
+  "data": [
+    {
+      "slug": "a7bd8e0eec",
+      "name": "2.0 VVT-i",
+      "body": null,
+      "trim": "2.0 VVT-i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfort",
+        "Club"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 129.0,
+          "PS": 175,
+          "hp": 173
+        },
+        "code": "M20A-FKS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 129.0,
+          "PS": 175,
+          "hp": 173
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "c1dc18e5b7",
+      "name": "2.5 VVT-i",
+      "body": null,
+      "trim": "2.5 VVT-i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2023,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 146.0,
+          "PS": 199,
+          "hp": 196
+        },
+        "code": "A25A-FKS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 146.0,
+          "PS": 199,
+          "hp": 196
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "497fad336e",
+      "name": "2.5",
+      "body": null,
+      "trim": "2.5",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "FWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Icon",
+        "Design",
+        "Excel",
+        "Dynamic",
+        "Comfort",
+        "Business",
+        "Club",
+        "Style",
+        "Lounge"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2025,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 160.0,
+          "PS": 218,
+          "hp": 215
+        },
+        "code": "A25A-FXS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    {
+      "slug": "ba0a95f8ef",
+      "name": "2.5",
+      "body": null,
+      "trim": "2.5",
+      "trim_scoring": null,
+      "trim_attributes": [
+        "AWD"
+      ],
+      "trim_body_types": [],
+      "trim_levels": [
+        "LE",
+        "XLE",
+        "XSE",
+        "Limited",
+        "Design",
+        "Excel",
+        "Dynamic",
+        "Comfort",
+        "Club",
+        "Style",
+        "Lounge",
+        "Woodland Edition"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2025,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 163.0,
+          "PS": 222,
+          "hp": 219
+        },
+        "code": "A25A-FXS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "usdm",
+        "cdm",
+        "mxndm",
+        "ladm",
+        "eudm",
+        "russia",
+        "chdm",
+        "skdm",
+        "sam",
+        "medm",
+        "nadm",
+        "sadm",
+        "audm"
+      ]
+    },
+    {
+      "slug": "a01a97af93",
+      "name": "2.5 PHEV",
+      "body": null,
+      "trim": "2.5 PHEV",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Comfort",
+        "Style",
+        "GR SPORT"
+      ],
+      "make": {
+        "slug": "toyota",
+        "name": "Toyota",
+        "name_en": "Toyota"
+      },
+      "model": {
+        "slug": "rav4",
+        "name": "RAV4",
+        "name_en": "RAV4"
+      },
+      "generation": {
+        "slug": "c44bebb973",
+        "name": "V (XA50)",
+        "platform": "",
+        "start": 2019,
+        "end": 2027,
+        "bodies": [
+          {
+            "slug": "523df5a6db",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218870.3974261.jpg"
+          },
+          {
+            "slug": "5658eb3bf0",
+            "name": "SUV, 5d",
+            "image": "https://cdn.wheel-size.com/automobile/body/toyota-rav4-2019-2027-1782218871.1158478.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2025,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.5",
+        "type": "I4",
+        "power": {
+          "kW": 225.0,
+          "PS": 306,
+          "hp": 302
+        },
+        "code": "A25A-FXS"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia",
+        "chdm",
+        "skdm",
+        "medm"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 5,
+    "engine": {
+      "fuels": [
+        "hybrid",
+        "petrol"
+      ],
+      "horsepower": {
+        "min": 173,
+        "max": 302
+      }
+    },
+    "debug": null
+  }
+}

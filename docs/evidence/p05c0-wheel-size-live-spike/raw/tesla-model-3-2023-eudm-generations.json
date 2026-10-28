@@ -1,0 +1,80 @@
+{
+  "data": [
+    {
+      "slug": "efdde87c66",
+      "name": "",
+      "platform": "",
+      "start": 2017,
+      "end": 2023,
+      "bodies": [
+        {
+          "slug": "459ad054a6",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2017-2023-1706256675.4041386.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "mxndm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "year_ranges": [
+        "2017-2023"
+      ]
+    },
+    {
+      "slug": "67797f1f0f",
+      "name": "Facelift",
+      "platform": "",
+      "start": 2023,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "0314ae78de",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/tesla-model-3-2023-2025-1706943292.6074798.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "mxndm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "year_ranges": [
+        "2023-2026"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 2
+  }
+}

@@ -1,0 +1,51 @@
+decision:
+  slice: 03B-B
+  status: "APPROVED"
+  marketplace_audit: "COMPLETE"
+  base_commit: e5b93c1b49268e02f64a1ec8271055d9c8fc916b
+  dataset_version: 1
+  manual_fallback_required: "YES"
+  approved_03b_c_scope: "YANDEX_ONLY"
+  parser_runtime_changes: "NONE"
+  canonical_staging_runtime: "NOT_MODIFIED"
+  production: "NOT_TOUCHED"
+
+marketplaces:
+  wildberries:
+    release_1: "DEFERRED"
+    reason: "Anonymous browser anti-bot; direct product capability not sufficiently proven; backend remains UNKNOWN; expected complexity HEAVY."
+    fallback: "manual rim parameters -> user review -> Fitment"
+    implementation_allowed_in_03b_c: "NO"
+  ozon:
+    release_1: "DEFERRED"
+    reason: "Confirmed backend 403 challenge on real direct product URLs; expected complexity HEAVY."
+    fallback: "Ozon URL -> manual input -> user confirmation -> Fitment"
+    implementation_allowed_in_03b_c: "NO"
+  yandex_market:
+    release_1: "CONDITIONAL_PARTIAL"
+    reason: "Useful alternate HTML exists, but current resolver receives a 15-byte shell and generic extraction has current-product contamination risk."
+    fallback: "auto attempt -> user review; partial/failure -> manual completion"
+    implementation_allowed_in_03b_c: "YES"
+    scope: "Yandex-only deterministic fetch profile, current-product anchoring, selected-variant isolation, normalized extraction, tests, frozen benchmark"
+
+acceptance_gates:
+  yandex_useful_fetch_rate_minimum: 0.90
+  yandex_useful_fetch_cases_minimum: 14
+  critical_false_data: 0
+  wrong_auto_selected_variant: 0
+  cross_variant_contamination: 0
+  existing_store_regression: 0
+  manual_fallback: "PASS"
+  production: "NOT_TOUCHED"
+
+stop_conditions:
+  - browser execution
+  - CAPTCHA
+  - persistent marketplace session
+  - rotating or residential proxy
+  - fragile private API
+  - signed client-token emulation
+  - unbounded secondary fetching
+  - unproven current-product anchoring
+  - unproven critical-false-data elimination
+  - implementation complexity above MEDIUM

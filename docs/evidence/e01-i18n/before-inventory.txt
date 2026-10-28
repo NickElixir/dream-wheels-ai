@@ -1,0 +1,474 @@
+webapp/vnext/views/support.js:18:  label.textContent = topic.label;
+webapp/vnext/views/support.js:22:  arrow.textContent = "›";
+webapp/vnext/views/support.js:30:    detail.textContent = topic.detail || "";
+webapp/vnext/views/support.js:55:  eyebrow.textContent = model.eyebrow;
+webapp/vnext/views/support.js:59:  heading.textContent = model.heroTitle;
+webapp/vnext/views/support.js:63:  copy.textContent = model.copy;
+webapp/vnext/views/support.js:76:  label.textContent = model.messageLabel;
+webapp/vnext/views/support.js:80:  textarea.placeholder = model.messagePlaceholder;
+webapp/vnext/views/support.js:88:  email.textContent = model.supportLabel;
+webapp/vnext/views/support.js:102:  sideTitle.textContent = model.selfHelpTitle;
+webapp/vnext/views/support.js:112:  docs.append(createTextAction({ label: model.documentsLabel, onClick: () => navigate?.("docs") }));
+webapp/vnext/views/render.js:9:const media = (url, alt, jobId = "", kind = "result", failed = false, loading = false, copy = null) => `<div class="vnext-render-media">${url && !failed ? `<img src="${esc(url)}" alt="${esc(alt)}" data-render-image="${kind}" data-job="${esc(jobId)}">` : `<span role="status">${esc(loading ? copy?.loadingImage || "Загружаем изображение…" : copy?.assetUnavailable || "Изображение временно недоступно")}</span>`}</div>`;
+webapp/vnext/views/render.js:23:    const vehicle = model.title ? `<section class="vnext-generation-meta"><h3>${model.vehicleConfirmed ? "Автомобиль" : "Примерка"}</h3><p class="vnext-generation-value">${esc(model.title)}</p></section>` : "";
+webapp/vnext/views/render.js:26:    return `<section class="vnext-generation-error${hasCar ? "" : " vnext-generation-error--no-car"}" role="status"><div class="vnext-generation-media">${hasCar ? media(model.carUrl, "Фото автомобиля") : ""}</div><aside class="vnext-generation-aside"><div class="vnext-generation-copy"><p class="vnext-eyebrow">Генерация</p><h2>${esc(model.error.title)}</h2><p>${esc(model.error.copy)}</p></div>${vehicle}${wheel}<div class="vnext-generation-actions">${button(model.error.actionLabel, "generation-retry", { primary: true })}${model.error.showSupport ? button("Поддержка", "support", { text: true }) : ""}</div></aside></section>`;
+webapp/vnext/views/render.js:28:  return `<section class="vnext-render-intro"><p class="vnext-eyebrow">${model.status === "queued" ? "В очереди" : "В обработке"}</p><h2>Создаём виртуальную примерку</h2><p>Результат появится после завершения обработки</p></section><div class="vnext-processing-layout"><section class="vnext-processing-card">${media(model.carUrl, "Исходное фото автомобиля")}<div class="vnext-processing-status" role="status"><span class="vnext-spinner" aria-hidden="true"></span><div><strong>${model.status === "queued" ? "Примерка в очереди" : "Создаём примерку..."}</strong><p>Это может занять до 90 секунд</p></div></div></section><aside class="vnext-processing-aside"><p class="vnext-eyebrow">Выбрано</p><div class="vnext-render-object">${esc(model.title)}</div>${model.rimName ? `<p class="vnext-processing-wheel-name">${esc(model.rimName)}</p>` : ""}${model.specs ? `<p class="vnext-processing-wheel-specs">${esc(model.specs)}</p>` : ""}${media(model.wheelUrl, copy("wheel.label"))}<div class="vnext-render-actions">${button(copy("nav.history"), "history")}</div></aside></div>`;
+webapp/vnext/views/render.js:32:  if (!model.jobId) return `<section class="vnext-system-card" role="status"><h2>${esc(model.loading ? "Загружаем примерку…" : model.error || "Примерка не найдена")}</h2>${button("К моим примеркам", "history")}</section>`;
+webapp/vnext/views/render.js:38:    <div class="vnext-compare-layer">${media(model.resultUrl, "Результат примерки", model.jobId, "result", model.resultFailed, model.resultLoading, model.failureCopy)}</div>
+webapp/vnext/views/render.js:39:    <div class="vnext-compare-layer vnext-compare-reveal">${media(model.originalUrl, "Исходное фото", model.jobId, "original", model.originalFailed, model.originalLoading, model.failureCopy)}</div>
+webapp/vnext/views/render.js:40:    <span class="vnext-compare-label left">Оригинал</span><span class="vnext-compare-label right">Результат</span><div class="vnext-compare-divider"></div><div class="vnext-compare-handle" aria-hidden="true">↔</div>
+webapp/vnext/views/render.js:41:    <input class="vnext-compare-range" type="range" min="0" max="100" value="50" aria-label="Сравнение результата и оригинала" ${!model.originalUrl || model.originalFailed || !model.resultUrl || model.resultFailed ? "disabled" : ""}>
+webapp/vnext/views/render.js:42:  </div>`}<aside class="vnext-result-aside">${model.title ? `<section class="vnext-result-meta"><h3>${model.vehicleConfirmed ? "Автомобиль" : "Примерка"}</h3><p class="vnext-result-value">${esc(model.title)}</p></section>` : ""}${model.rimName || model.specs ? `<section class="vnext-result-meta"><h3>${esc(copy("wheel.label"))}</h3>${model.rimName ? `<p class="vnext-result-value">${esc(model.rimName)}</p>` : ""}${model.specs ? `<p class="vnext-result-detail">${esc(model.specs)}</p>` : ""}</section>` : ""}${model.createdLabel ? `<section class="vnext-result-meta"><h3>Создано</h3><p class="vnext-result-value vnext-result-value--date">${esc(model.createdLabel)}</p></section>` : ""}<div class="vnext-result-actions">${button(copy("render.again"), "repeat", { primary: true, jobId: model.jobId })}${model.canFitment ? button("Проверить совместимость", "fitment", { jobId: model.jobId }) : ""}${button(model.downloading ? "Загружаем…" : "Скачать результат", "download", { tertiary: true, jobId: model.jobId, disabled: model.downloading || !model.canDownload })}${model.originalFailed || model.resultFailed ? button("Повторить загрузку изображения", "asset-retry", { text: true, jobId: model.jobId }) : ""}</div><p class="vnext-render-notice" role="status">${esc(model.downloadNotice)}</p></aside></div>
+webapp/vnext/views/render.js:43:  <section class="vnext-rating" aria-label="Оценка результата"><h3>Оценка результата</h3><p>Помогите улучшить следующие примерки</p><div class="vnext-rating-actions">${button("Удачный результат", "feedback", { jobId: model.jobId, value: "liked", disabled: feedback.busy, selected: feedback.sentiment === "liked", tone: "good" })}${button("Нужна доработка", "feedback", { jobId: model.jobId, value: "disliked", disabled: feedback.busy, selected: feedback.sentiment === "disliked", tone: "warning" })}</div><div class="vnext-feedback-reasons" ${feedback.sentiment !== "disliked" ? "hidden" : ""}><p>Что улучшить</p><div class="vnext-feedback-chips">${(model.reasons || []).map((reason) => button(reason.label, "reason", { jobId: model.jobId, value: reason.code, disabled: feedback.busy, selected: reason.code === feedback.reason })).join("")}</div></div><p class="vnext-feedback-notice" role="status">${esc(feedback.busy ? "Сохраняем оценку…" : feedback.notice)}</p><div class="vnext-feedback-error" role="status" ${!feedback.error ? "hidden" : ""}>${esc(feedback.error)} ${button("Повторить", "feedback-retry", { jobId: model.jobId, disabled: feedback.busy })}</div></section>`;
+webapp/vnext/views/render.js:47:  if (model.loading) return '<section class="vnext-render-intro" role="status"><p>Загружаем историю…</p></section>';
+webapp/vnext/views/render.js:48:  if (model.error) return `<section class="vnext-system-card" role="status"><h2>История временно недоступна</h2><p>${esc(model.error)}</p>${button("Повторить", "history-retry", { primary: true })}</section>`;
+webapp/vnext/views/render.js:49:  if (!model.rows?.length) return `<div class="vnext-system-wrap"><section class="vnext-system-card"><p class="vnext-eyebrow">${esc(copy("nav.history"))}</p><h2>Готовых рендеров пока нет</h2><p>Создайте первую виртуальную примерку на главном экране</p>${button(copy("nav.create"), "create", { primary: true })}</section></div>`;
+webapp/vnext/views/render.js:54:    const action = row.status === "completed" ? button("Открыть", "open", { jobId: row.jobId }) : row.status === "failed" ? button(row.failureCopy?.retry, "retry-create") : "";
+webapp/vnext/views/render.js:55:    return `${date}<article class="vnext-history-row" data-row-job="${esc(row.jobId)}">${row.status === "failed" ? `<div class="vnext-render-media">${row.thumbnailUrl && !row.thumbnailFailed ? `<img src="${esc(row.thumbnailUrl)}" alt="${esc(row.failureCopy?.sourcePhoto)}" data-render-image="original" data-job="${esc(row.jobId)}">` : ""}</div>` : media(row.thumbnailUrl, "Примерка автомобиля", row.jobId, row.thumbnailKind, row.thumbnailFailed, row.thumbnailLoading, row.failureCopy)}<div><h3>${esc(row.status === "completed" ? row.title : row.status === "failed" ? row.failureCopy?.generationFailed : "Создаём виртуальную примерку")}</h3><p>${esc([row.rimName, row.specs, row.createdLabel].filter(Boolean).join(" / "))}</p><span class="vnext-status vnext-status--${row.status === "completed" ? "positive" : row.status === "failed" ? "negative" : "pending"}">${esc(row.status === "failed" ? row.failureCopy?.failedBadge : row.statusLabel)}</span>${row.status === "failed" && row.billingMessage ? `<p>${esc(row.billingMessage)}</p>` : ""}</div><div class="vnext-history-actions">${action}</div></article>`;
+webapp/vnext/views/render.js:56:  }).join("")}</div>${model.hasMore ? button("Показать ещё", "more") : ""}`;
+webapp/vnext/views/render.js:90:  next.innerHTML = markup;
+webapp/vnext/models/photo-guide.js:4:    title: "Как подготовить фото",
+webapp/vnext/models/photo-guide.js:5:    eyebrow: "Визуальная примерка",
+webapp/vnext/models/photo-guide.js:6:    heroTitle: "Фото должно хорошо показывать автомобиль и колёса",
+webapp/vnext/models/photo-guide.js:7:    copy: "Чем понятнее исходный кадр, тем проще сохранить форму автомобиля, перспективу и естественное положение нового диска.",
+webapp/vnext/models/photo-guide.js:11:        toneLabel: "Подходит для примерки",
+webapp/vnext/models/photo-guide.js:12:        title: "Автомобиль виден целиком",
+webapp/vnext/models/photo-guide.js:13:        copy: "Колёса хорошо различимы, перспектива понятна, кузов не перекрыт другими объектами.",
+webapp/vnext/models/photo-guide.js:15:        alt: "Серебристый автомобиль полностью в кадре, оба колеса видны, номера размыты",
+webapp/vnext/models/photo-guide.js:19:        toneLabel: "Лучше выбрать другой кадр",
+webapp/vnext/models/photo-guide.js:20:        title: "Часть машины не попала в кадр",
+webapp/vnext/models/photo-guide.js:21:        copy: "Когда кузов или колесо обрезаны, результат примерки может быть менее точным.",
+webapp/vnext/models/photo-guide.js:23:        alt: "Серый автомобиль снят слишком близко, края кузова обрезаны, номер размыт",
+webapp/vnext/models/photo-guide.js:27:      ["01", "Покажите автомобиль целиком", "Не обрезайте переднюю и заднюю часть кузова. Оставьте немного пространства вокруг машины."],
+webapp/vnext/models/photo-guide.js:28:      ["02", "Колёса должны быть видны", "Избегайте кадров, где колёса закрыты бордюром, травой, людьми или другими автомобилями."],
+webapp/vnext/models/photo-guide.js:30:      ["04", "Не меняйте фото перед загрузкой", "Сильные фильтры, искусственное размытие и деформация перспективы мешают сохранить реалистичный результат."],
+webapp/vnext/views/documents.js:9:  eyebrow.textContent = model.eyebrow;
+webapp/vnext/views/documents.js:11:  copy.textContent = model.copy;
+webapp/vnext/views/documents.js:26:    title.textContent = row.title;
+webapp/vnext/views/documents.js:28:    description.textContent = row.copy;
+webapp/vnext/views/documents.js:33:    open.textContent = "Открыть";
+webapp/vnext/api/legacy-dashboard.js:3:  balanceLabel: "0 рендеров",
+webapp/vnext/bootstrap.js:64:      const title = model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку";
+webapp/vnext/bootstrap.js:66:      if (heading && heading.textContent !== title) heading.textContent = title;
+webapp/vnext/bootstrap.js:109:      title: kind === "history" ? copy("nav.history") : kind === "result" ? "Результат" : model.error ? "Виртуальная примерка" : "Создаём виртуальную примерку",
+webapp/vnext/bootstrap.js:115:      title: "Главная",
+webapp/vnext/bootstrap.js:142:    title: "Совместимость",
+webapp/vnext/bootstrap.js:146:    title: "Баланс",
+webapp/vnext/views/dashboard.js:10:    image.alt = job.status === "failed" ? job.failureCopy?.sourcePhoto : job.title || "Результат примерки";
+webapp/vnext/views/dashboard.js:14:    const placeholder = document.createElement("div");
+webapp/vnext/views/dashboard.js:15:    placeholder.className = "vnext-dashboard__media-placeholder";
+webapp/vnext/views/dashboard.js:16:    placeholder.textContent = job?.status === "failed" ? (job.failureCopy?.sourcePhoto || "") : "Виртуальная примерка";
+webapp/vnext/views/dashboard.js:17:    media.append(placeholder);
+webapp/vnext/views/dashboard.js:28:  eyebrow.textContent = "Последний результат";
+webapp/vnext/views/dashboard.js:35:    title.textContent = "Ваша первая примерка";
+webapp/vnext/views/dashboard.js:37:    copy.textContent = "Загрузите фото автомобиля и диска — готовый результат появится здесь.";
+webapp/vnext/views/dashboard.js:38:    empty.append(title, copy, createButton({ label: "Создать примерку", variant: "secondary", onClick: () => navigate?.("create") }));
+webapp/vnext/views/dashboard.js:50:  title.textContent = latest.title;
+webapp/vnext/views/dashboard.js:53:  subtitle.textContent = [latest.subtitle, latest.meta].filter(Boolean).join(" — ");
+webapp/vnext/views/dashboard.js:57:      label: latest.status === "failed" ? latest.failureCopy?.generationFailed : latest.statusLabel,
+webapp/vnext/views/dashboard.js:62:    const billing = document.createElement("p"); billing.textContent = latest.billingMessage; copy.append(billing);
+webapp/vnext/views/dashboard.js:67:    ? createButton({ label: "Открыть", variant: "secondary", onClick: () => openRenderDetail?.(latest.jobId) })
+webapp/vnext/views/dashboard.js:68:    : createButton({ label: latest.status === "failed" ? "Попробовать ещё раз" : uiCopy("nav.history"), variant: "secondary", onClick: () => navigate?.(latest.status === "failed" ? "create" : "renders") });
+webapp/vnext/views/dashboard.js:80:  eyebrow.textContent = "Баланс";
+webapp/vnext/views/dashboard.js:86:    copy.textContent = "Войдите, чтобы увидеть баланс";
+webapp/vnext/views/dashboard.js:87:    content.append(copy, createButton({ label: "Войти", variant: "secondary", onClick: openAuth }));
+webapp/vnext/views/dashboard.js:95:  strong.textContent = model.balance === null ? "—" : String(model.balance);
+webapp/vnext/views/dashboard.js:98:  unit.textContent = model.balanceLabel.replace(/^\d+\s+/, "");
+webapp/vnext/views/dashboard.js:100:  line.append(amount, createButton({ label: "Пополнить баланс", variant: "text", onClick: () => navigate?.("wallet") }));
+webapp/vnext/views/dashboard.js:108:    label.textContent = "Срок действия";
+webapp/vnext/views/dashboard.js:114:      credits.textContent = item.creditsLabel || String(item.credits);
+webapp/vnext/views/dashboard.js:116:      date.textContent = item.expiresLabel;
+webapp/vnext/views/dashboard.js:122:    note.textContent = model.expiryNote;
+webapp/vnext/views/dashboard.js:135:  eyebrow.textContent = "Недавние примерки";
+webapp/vnext/views/dashboard.js:141:    empty.textContent = "Здесь появятся последние виртуальные примерки.";
+webapp/vnext/views/dashboard.js:153:    title.textContent = job.title;
+webapp/vnext/views/dashboard.js:155:    meta.textContent = [job.subtitle, job.meta].filter(Boolean).join(", ");
+webapp/vnext/views/dashboard.js:161:      open.textContent = "Открыть";
+webapp/vnext/views/dashboard.js:166:        label: job.status === "failed" ? job.failureCopy?.generationFailed : job.statusLabel,
+webapp/vnext/views/dashboard.js:171:      const billing = document.createElement("p"); billing.textContent = job.billingMessage; item.append(billing);
+webapp/vnext/views/dashboard.js:188:  eyebrow.textContent = "Новая примерка";
+webapp/vnext/views/dashboard.js:190:  title.setAttribute("aria-label", "Примерьте новые диски на своём автомобиле");
+webapp/vnext/views/dashboard.js:191:  ["Примерьте", "новые диски", "на своём автомобиле"].forEach((line) => {
+webapp/vnext/views/dashboard.js:193:    lineElement.textContent = line;
+webapp/vnext/views/dashboard.js:197:  intro.append(introCopy, createButton({ label: "Создать примерку", onClick: () => callbacks.navigate?.("create") }));
+webapp/vnext/views/dashboard.js:207:    text.textContent = "Обновляем данные…";
+webapp/vnext/views/dashboard.js:214:    error.textContent = model.error;
+webapp/vnext/models/support.js:4:    title: "Поддержка",
+webapp/vnext/models/support.js:5:    eyebrow: "Помощь",
+webapp/vnext/models/support.js:6:    heroTitle: "Разберёмся с проблемой",
+webapp/vnext/models/support.js:7:    copy: "Опишите, что произошло. Для вопросов по генерации, оплате, данным автомобиля или диска лучше сразу указать, на каком шаге возникла проблема.",
+webapp/vnext/models/support.js:8:    messageLabel: "Сообщение",
+webapp/vnext/models/support.js:9:    messagePlaceholder: "Например: не удалось обновить данные диска по ссылке…",
+webapp/vnext/models/support.js:10:    supportLabel: "Написать в поддержку",
+webapp/vnext/models/support.js:13:    selfHelpTitle: "Что можно проверить самостоятельно",
+webapp/vnext/models/support.js:16:        label: "Как подготовить фотографию автомобиля",
+webapp/vnext/models/support.js:21:        label: "Что делать, если ссылка на диск не распозналась",
+webapp/vnext/models/support.js:23:        detail: "Попробуйте другую ссылку. Если источник снова не распознаётся, загрузите фотографию диска вручную.",
+webapp/vnext/models/support.js:26:        label: "Почему техническая проверка не блокирует примерку",
+webapp/vnext/models/support.js:31:        label: "Оплата и срок действия рендеров",
+webapp/vnext/models/support.js:33:        detail: "Баланс, срок действия рендеров и история пополнений доступны в разделе «Баланс».",
+webapp/vnext/models/support.js:36:    documentsLabel: "Правовые документы",
+webapp/vnext/views/create.js:11:  label.textContent = kind === "car" ? "Автомобиль" : copy("wheel.label", snapshot.locale);
+webapp/vnext/views/create.js:13:    label: file ? (kind === "car" ? "Заменить фото" : "Заменить фото") : "Добавить фото",
+webapp/vnext/views/create.js:22:  stage.setAttribute("aria-label", file ? `Заменить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}` : `Добавить фото: ${kind === "car" ? "автомобиль" : copy("wheel.object", snapshot.locale)}`);
+webapp/vnext/views/create.js:28:    image.alt = kind === "car" ? "Загруженный автомобиль" : copy("wheel.uploaded", snapshot.locale);
+webapp/vnext/views/create.js:33:    empty.textContent = kind === "car" ? "Добавьте фото автомобиля" : "Добавьте фото диска";
+webapp/vnext/views/create.js:40:  status.textContent = file
+webapp/vnext/views/create.js:41:    ? (kind === "car" ? "Фото автомобиля добавлено" : copy("wheel.photoAdded", snapshot.locale))
+webapp/vnext/views/create.js:42:    : (kind === "car" ? "Фото автомобиля" : copy("wheel.photo", snapshot.locale));
+webapp/vnext/views/create.js:60:  title.textContent = label;
+webapp/vnext/views/create.js:64:    copy.textContent = detail;
+webapp/vnext/views/create.js:74:    label: snapshot.sourceEditing ? "Закрыть ссылку" : snapshot.rimProductUrl ? "Изменить ссылку на товар" : "Добавить ссылку на товар",
+webapp/vnext/views/create.js:78:  if (snapshot.rimProductUrl && !snapshot.sourceEditing) section.append(statusLine("Ссылка сохранена", "positive"));
+webapp/vnext/views/create.js:90:  caption.textContent = "Ссылка на товар";
+webapp/vnext/views/create.js:96:  input.placeholder = "https://";
+webapp/vnext/views/create.js:100:  const save = createButton({ label: "Сохранить ссылку", variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
+webapp/vnext/views/create.js:111:    error.textContent = snapshot.productUrlError;
+webapp/vnext/views/create.js:117:  helper.textContent = "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.";
+webapp/vnext/views/create.js:119:  const cancel = createTextAction({ label: "Отмена", onClick: () => callbacks.setSourceEditing?.(false) });
+webapp/vnext/views/create.js:143:    text.append(document.createTextNode("Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. "));
+webapp/vnext/views/create.js:148:    privacy.textContent = "Политика конфиденциальности";
+webapp/vnext/views/create.js:154:    consentDocument.textContent = "Согласие на обработку данных";
+webapp/vnext/views/create.js:160:  if (snapshot.submitting) page.append(statusLine(snapshot.renderStatus || "Создаём виртуальную примерку", "pending", "Это может занять до 90 секунд."));
+webapp/vnext/views/create.js:165:    error.append(createButton({ label: snapshot.renderErrorActionLabel || "Повторить", variant: "secondary", onClick: callbacks.handleGenerationError }));
+webapp/vnext/views/create.js:171:  const reason = !snapshot.files?.car ? "Добавьте фото автомобиля"
+webapp/vnext/views/create.js:172:    : !snapshot.files?.wheel ? "Добавьте фото диска"
+webapp/vnext/views/create.js:173:    : !snapshot.consentAccepted ? "Подтвердите согласие на обработку фотографий" : "";
+webapp/vnext/views/create.js:174:  actions.append(createButton({ label: "Создать изображение", onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
+webapp/vnext/views/create.js:179:    hint.textContent = reason;
+webapp/vnext/views/create.js:185:      "Автомобиль": "Car", "Добавить фото": "Add photo",
+webapp/vnext/views/create.js:186:      "Заменить фото": "Replace photo", "Фото автомобиля": "Car photo",
+webapp/vnext/views/create.js:187:      "Фото автомобиля добавлено": "Car photo added",
+webapp/vnext/views/create.js:188:      "Добавьте фото автомобиля": "Add a car photo", "Добавьте фото диска": "Add a wheel photo",
+webapp/vnext/views/create.js:189:      "Создать изображение": "Create image", "Подтвердите согласие на обработку фотографий": "Confirm consent to process the photos",
+webapp/vnext/views/create.js:190:      "Добавить ссылку на товар": "Add product link", "Изменить ссылку на товар": "Edit product link",
+webapp/vnext/views/create.js:191:      "Закрыть ссылку": "Close link", "Ссылка на товар": "Product link", "Сохранить ссылку": "Save link",
+webapp/vnext/views/create.js:192:      "Ссылка сохранена": "Link saved", "Отмена": "Cancel",
+webapp/vnext/views/create.js:193:      "Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.": "Product link is optional. We will save it for a later compatibility check.",
+webapp/vnext/views/create.js:194:      "Политика конфиденциальности": "Privacy policy", "Согласие на обработку данных": "Data processing consent",
+webapp/vnext/views/create.js:195:      "Я подтверждаю право использовать эти фотографии и соглашаюсь на их обработку для создания примерки. ": "I confirm my right to use these photos and consent to processing them for a visual try-on. ",
+webapp/vnext/views/create.js:196:      "Создаём виртуальную примерку": "Creating a visual try-on", "Это может занять до 90 секунд.": "This may take up to 90 seconds.",
+webapp/vnext/views/create.js:199:      if ((node.nodeType === 3 || !node.childNodes.length) && translations[node.textContent]) node.textContent = translations[node.textContent];
+webapp/vnext/views/photo-guide.js:11:  eyebrow.textContent = model.eyebrow;
+webapp/vnext/views/photo-guide.js:13:  title.textContent = model.heroTitle;
+webapp/vnext/views/photo-guide.js:15:  copy.textContent = model.copy;
+webapp/vnext/views/photo-guide.js:28:    image.alt = example.alt;
+webapp/vnext/views/photo-guide.js:35:    tone.textContent = example.toneLabel;
+webapp/vnext/views/photo-guide.js:37:    heading.textContent = example.title;
+webapp/vnext/views/photo-guide.js:39:    paragraph.textContent = example.copy;
+webapp/vnext/views/photo-guide.js:53:    num.textContent = number;
+webapp/vnext/views/photo-guide.js:56:    heading.textContent = headingText;
+webapp/vnext/views/photo-guide.js:58:    paragraph.textContent = copyText;
+webapp/vnext/shell/app-shell.js:3:  ["Главная", "dashboard"], ["nav.create", "create"], ["nav.history", "renders"], ["Баланс", "wallet"],
+webapp/vnext/shell/app-shell.js:5:const helpNav = [["Поддержка", "support"], ["Как подготовить фото", "photo-guide"], ["Документы", "docs"]];
+webapp/vnext/shell/app-shell.js:6:const mobileNav = [["Главная", "dashboard"], ["nav.createMobile", "create"], ["nav.history", "renders"], ["Баланс", "wallet"], ["Помощь", "support"]];
+webapp/vnext/shell/app-shell.js:12:  button.textContent = label.startsWith("nav.") ? copy(label) : label;
+webapp/vnext/shell/app-shell.js:24:  sidebar.innerHTML = '<div class="vnext-shell__brand">DREAM <span>WHEELS AI</span></div>';
+webapp/vnext/shell/app-shell.js:28:  nav.setAttribute("aria-label", "Основная навигация");
+webapp/vnext/shell/app-shell.js:33:  label.textContent = "Помощь";
+webapp/vnext/shell/app-shell.js:40:  account.setAttribute("aria-label", "Аккаунт");
+webapp/vnext/shell/app-shell.js:43:  accountLabel.textContent = "Аккаунт";
+webapp/vnext/shell/app-shell.js:47:  profileButton.innerHTML = '<span>Аккаунт</span><small>Настройки профиля</small>';
+webapp/vnext/shell/app-shell.js:52:  desktopLoginButton.textContent = "Войти";
+webapp/vnext/shell/app-shell.js:66:  pageTitle.textContent = title;
+webapp/vnext/shell/app-shell.js:70:  mobileLoginButton.textContent = "Войти";
+webapp/vnext/shell/app-shell.js:80:  bottom.setAttribute("aria-label", "Основная навигация");
+webapp/vnext/shell/app-shell.js:85:    button.textContent = labelText.startsWith("nav.") ? copy(labelText) : labelText;
+webapp/vnext/views/wallet.js:13:  if (!items.length) return '<p class="vnext-wallet__empty">Пополнений пока нет.</p>';
+webapp/vnext/views/wallet.js:24:  root.innerHTML = `
+webapp/vnext/views/wallet.js:28:        <section class="vnext-wallet__balance" aria-label="Доступный баланс">
+webapp/vnext/views/wallet.js:29:          <p class="vnext-wallet__label">Доступно</p>
+webapp/vnext/views/wallet.js:31:          <div class="vnext-wallet__loading" data-wallet-loading hidden role="status"><span class="vnext-spinner" aria-hidden="true"></span>Загружаем баланс…</div>
+webapp/vnext/views/wallet.js:32:          <div class="vnext-wallet__error" data-wallet-cabinet-error hidden role="alert"><span>Не удалось загрузить баланс.</span><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="refresh">Повторить</button></div>
+webapp/vnext/views/wallet.js:33:          <div class="vnext-wallet__auth" data-wallet-auth hidden role="status"><span>Сессия истекла.</span><button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="login">Войти</button></div>
+webapp/vnext/views/wallet.js:34:          <div class="vnext-wallet__expiry" data-wallet-expiry hidden><h2>Срок действия</h2><div data-wallet-expiry-rows></div><p data-wallet-expiry-note></p></div>
+webapp/vnext/views/wallet.js:37:        <section class="vnext-wallet__topup" aria-labelledby="wallet-topup-title">
+webapp/vnext/views/wallet.js:38:          <h2 id="wallet-topup-title">Пополнить баланс</h2>
+webapp/vnext/views/wallet.js:39:          <div class="vnext-wallet__packages" data-wallet-packages role="group" aria-label="Пакеты пополнения"></div>
+webapp/vnext/views/wallet.js:41:            <label for="vnext-wallet-email">Email для чека</label>
+webapp/vnext/views/wallet.js:42:            <input id="vnext-wallet-email" data-topup-email type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" aria-describedby="vnext-wallet-email-hint vnext-wallet-email-error">
+webapp/vnext/views/wallet.js:43:            <p id="vnext-wallet-email-hint">Чек будет отправлен на этот адрес.</p>
+webapp/vnext/views/wallet.js:44:            <p id="vnext-wallet-email-error" class="vnext-wallet__field-error" data-wallet-email-error hidden role="alert">Введите корректный email</p>
+webapp/vnext/views/wallet.js:46:          <div class="vnext-wallet__selection" aria-live="polite"><p data-wallet-selection-title>Выберите пакет</p><strong data-wallet-selection-amount hidden></strong><span data-wallet-selection-credits hidden></span><span data-wallet-selection-duration hidden></span><span data-wallet-selection-email hidden></span></div>
+webapp/vnext/views/wallet.js:47:          <button type="button" class="vnext-button vnext-button--primary vnext-wallet__pay" data-wallet-action="pay" disabled>Перейти к оплате</button>
+webapp/vnext/views/wallet.js:48:          <p class="vnext-wallet__provider">Оплата через Robokassa</p>
+webapp/vnext/views/wallet.js:52:      <aside class="vnext-wallet__pending" data-wallet-pending hidden aria-label="Оплата в обработке">
+webapp/vnext/views/wallet.js:53:        <h2>Ожидаем подтверждение оплаты</h2>
+webapp/vnext/views/wallet.js:56:        <button type="button" class="vnext-button vnext-button--secondary" data-wallet-action="refresh"><span class="vnext-spinner" data-wallet-refresh-spinner hidden aria-hidden="true"></span><span data-wallet-refresh-label>Обновить статус</span></button>
+webapp/vnext/views/wallet.js:59:    <section class="vnext-wallet__history" aria-labelledby="wallet-history-title"><h2 id="wallet-history-title">История пополнений</h2><div data-wallet-history></div><button type="button" class="vnext-text-action" data-wallet-action="more" hidden>Показать ещё</button></section>`;
+webapp/vnext/views/wallet.js:82:  const setText = (selector, value) => { const node = one(selector); if (node) node.textContent = String(value ?? ""); };
+webapp/vnext/views/wallet.js:96:  notice.textContent = notice.hidden ? "" : message;
+webapp/vnext/views/wallet.js:102:  if (one("[data-wallet-expiry-rows]").innerHTML !== expiryMarkup) one("[data-wallet-expiry-rows]").innerHTML = expiryMarkup;
+webapp/vnext/views/wallet.js:109:    packageHost.innerHTML = packagesMarkup;
+webapp/vnext/views/wallet.js:133:  pay.textContent = model.paymentBusy ? "Открываем оплату…" : "Перейти к оплате";
+webapp/vnext/views/wallet.js:143:  setText("[data-wallet-refresh-label]", model.loading ? "Обновляем статус…" : "Обновить статус");
+webapp/vnext/views/wallet.js:146:  if (one("[data-wallet-history]").innerHTML !== historyMarkup) one("[data-wallet-history]").innerHTML = historyMarkup;
+webapp/vnext/ui/primitives.js:5:  button.textContent = label || "";
+webapp/vnext/ui/primitives.js:15:  button.textContent = label || "";
+webapp/vnext/ui/primitives.js:24:  heading.textContent = title || "";
+webapp/vnext/ui/primitives.js:29:    paragraph.textContent = copy;
+webapp/vnext/ui/primitives.js:45:  status.textContent = label || "";
+webapp/vnext/models/documents.js:3:    title: "Документы",
+webapp/vnext/models/documents.js:4:    eyebrow: "Правовая информация",
+webapp/vnext/models/documents.js:5:    copy: "Здесь собраны документы, которые относятся к использованию сервиса, оплате и обработке персональных данных.",
+webapp/vnext/models/documents.js:8:        title: "Политика конфиденциальности",
+webapp/vnext/models/documents.js:9:        copy: "Как сервис обрабатывает и защищает пользовательские данные.",
+webapp/vnext/models/documents.js:13:        title: "Публичная оферта",
+webapp/vnext/models/documents.js:14:        copy: "Условия приобретения и использования рендеров.",
+webapp/vnext/models/documents.js:18:        title: "Условия возврата",
+webapp/vnext/models/documents.js:19:        copy: "Порядок возврата оплаты в предусмотренных случаях.",
+webapp/vnext/models/documents.js:23:        title: "Согласие на обработку персональных данных",
+webapp/vnext/models/documents.js:24:        copy: "Условия обработки данных, необходимых для работы сервиса.",
+webapp/vnext/views/fitment.js:9:  compatible: "Подходит",
+webapp/vnext/views/fitment.js:10:  compatible_with_conditions: "Подходит с условиями",
+webapp/vnext/views/fitment.js:11:  unknown: "Не можем подтвердить совместимость",
+webapp/vnext/views/fitment.js:12:  incompatible: "Не подходит",
+webapp/vnext/views/fitment.js:16:  complete_vehicle_details: "Уточните данные автомобиля",
+webapp/vnext/views/fitment.js:17:  select_vehicle_variant: "Выберите комплектацию автомобиля",
+webapp/vnext/views/fitment.js:18:  run_standard_check: "Данные готовы к проверке",
+webapp/vnext/views/fitment.js:25:function field(label, path, value, { type = "text", options = null, disabled = false, message = "", error = "", retry = "", placeholder = "Не выбрано" } = {}) {
+webapp/vnext/views/fitment.js:30:    ? `<select data-fitment-field="${esc(path)}"${inputAttributes}><option value="">${esc(placeholder)}</option>${options.map((option) => `<option value="${esc(option.value)}" ${String(option.value) === String(value ?? "") ? "selected" : ""}>${esc(option.label)}</option>`).join("")}</select>`
+webapp/vnext/views/fitment.js:32:  return `<div class="vnext-fitment__field${invalid ? " vnext-fitment__field--invalid" : ""}"><label for="${esc(id)}">${esc(label)}</label>${control}${message ? `<small class="vnext-fitment__field-message" role="status">${esc(message)}${retry ? ` ${button("Повторить", "retry-catalogue", { value: retry })}` : ""}</small>` : ""}${invalid ? `<small class="vnext-fitment__field-error" id="fitment-error-${esc(path.replaceAll(".", "-"))}" role="alert">${esc(error)}</small>` : ""}</div>`;
+webapp/vnext/views/fitment.js:41:  const label = { wheel_diameter_in: ["Диаметр", "Diameter"], wheel_width_j: ["Ширина", "Width"], bolt_count: ["PCD", "PCD"], pcd_mm: ["PCD", "PCD"], center_bore_mm: ["DIA", "DIA"], offset_et_mm: ["ET", "ET"] }[name]?.[model.locale === "en" ? 1 : 0] || name;
+webapp/vnext/views/fitment.js:43:  const sourceLabel = (value, current) => model.locale === "en" ? current ? `Current ${label} value: ${display(value)}` : `${label} value from product page: ${display(value)}` : current ? `Текущее значение ${label}: ${display(value)}` : `Значение ${label} из карточки товара: ${display(value)}`;
+webapp/vnext/views/fitment.js:44:  const chip = (value, current) => `<button type="button" class="vnext-fitment__conflict-chip" aria-pressed="false" aria-label="${esc(sourceLabel(value, current))}" data-fitment-focus="rim.${["bolt_count", "pcd_mm"].includes(name) ? "pcd" : esc(name)}" data-fitment-action="${current ? "conflict-keep" : "conflict-use"}" data-value="${esc(current ? name : `${name}|${value}`)}">${esc(display(value))}</button>`;
+webapp/vnext/views/fitment.js:45:  return `<div class="vnext-fitment__conflict" role="group" aria-label="Конфликт значения ${esc(label)}">${conflict.current == null ? "" : chip(conflict.current, true)}${choices.map(value => chip(value, false)).join("")}</div>`;
+webapp/vnext/views/fitment.js:55:    ? `<div class="vnext-fitment__suggestions" role="group" aria-label="Предложения для поля ${esc(label.toLocaleLowerCase())}">${candidates.map((candidate) => button(String(candidate.value), "candidate", { value: `${path}|${candidate.value}` })).join("")}</div>`
+webapp/vnext/views/fitment.js:65:  ["wheel_diameter_in", "Диаметр", "Diameter", "″"], ["wheel_width_j", "Ширина", "Width", "J"],
+webapp/vnext/views/fitment.js:67:  ["bolt_count", "Количество отверстий", "Bolt count", ""], ["center_bore_mm", "DIA", "DIA", " mm"],
+webapp/vnext/views/fitment.js:72:  pass: comparisonLabel(model, "Подходит", "Matches"),
+webapp/vnext/views/fitment.js:73:  conditional: comparisonLabel(model, "С условием", "With conditions"),
+webapp/vnext/views/fitment.js:74:  fail: comparisonLabel(model, "Не подходит", "Does not match"),
+webapp/vnext/views/fitment.js:75:  unknown: comparisonLabel(model, "Нет данных", "No data"),
+webapp/vnext/views/fitment.js:76:}[item.status] || item.resultLabel || comparisonLabel(model, "Нет данных", "No data"));
+webapp/vnext/views/fitment.js:81:    const value = raw => raw == null ? comparisonLabel(model, "Нет данных", "No data") : esc(fitmentDisplayValue(raw, model.locale) + (model.locale !== "en" ? unit.replace(" mm", " мм") : unit));
+webapp/vnext/views/fitment.js:85:    const referenceValue = contextualMissing ? esc(comparisonLabel(model, "Нет для этого размера", "None for this size")) : value(item.vehicleValue);
+webapp/vnext/views/fitment.js:93:  if (model.rimDraftDirty) return `<section class="vnext-fitment__verdict" role="status"><h2>Есть несохранённые изменения</h2><p>Сохраните параметры, чтобы проверить обновлённые данные.</p></section>`;
+webapp/vnext/views/fitment.js:95:    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--failed" role="alert"><p class="vnext-eyebrow">Техническая проверка</p><h2>Проверку выполнить не удалось</h2><p>Попробуйте ещё раз.</p><p>Подтверждённые данные сохранены.</p></section>`;
+webapp/vnext/views/fitment.js:97:  if (status === "queued" || status === "processing" || model.checking) return `<section class="vnext-fitment__verdict"><p class="vnext-eyebrow">Техническая проверка</p>${loadingStatus("Проверяем совместимость…")}<p>${esc(model.vehicleTitle)} — ${esc(model.rimTitle)}</p>${model.checkError ? button("Обновить статус", "reload") : ""}</section>`;
+webapp/vnext/views/fitment.js:102:    return `<section class="vnext-fitment__verdict vnext-fitment__verdict--${stale ? "stale" : esc(check.verdict || "unknown")}" role="status"><p class="vnext-eyebrow">Техническая проверка</p><h2>${stale ? "Результат больше не актуален" : esc(verdictLabel)}</h2>${stale && verdictLabel ? `<p class="vnext-fitment__previous-verdict">Предыдущий результат: ${esc(verdictLabel)}</p><p>${esc(text("fitment.wheel.changed"))}</p>` : ""}${!stale && check.verdict === "unknown" ? `<p>${esc(unknownVerdictSubtitle(model))}</p>` : !stale && model.resultCopy ? `<p>${esc(model.resultCopy)}</p>` : ""}</section>`;
+webapp/vnext/views/fitment.js:104:  const statusCopy = (model.nextAction === "complete_rim_specs" ? text("fitment.wheel.complete") : nextActionCopy[model.nextAction]) || (model.loading ? "Загружаем данные…" : "Техническая проверка ещё не готова");
+webapp/vnext/views/fitment.js:105:  return `<section class="vnext-fitment__verdict"${model.loading ? ' aria-busy="true"' : ""}><p class="vnext-eyebrow">Техническая проверка</p>${model.loading ? loadingStatus(statusCopy) : `<h2>${esc(statusCopy)}</h2>`}${model.checkError ? `<p role="alert">${esc(model.checkError)}</p>` : ""}</section>`;
+webapp/vnext/views/fitment.js:114:  const retries = resolver.statusTone === "error" && resolver.url ? `<div class="vnext-fitment__actions">${button("Повторить", "resolve-rim", { disabled: resolver.loading })}${button(text("fitment.manual"), "manual-rim")}</div>` : "";
+webapp/vnext/views/fitment.js:115:  const variants = resolver.variants?.length ? `<div class="vnext-fitment__choices"><div class="vnext-fitment__sku-legend" aria-hidden="true"><span>Вариант</span><span class="vnext-fitment__sku-specs"><span>Диаметр</span><span>Ширина</span><span>PCD</span><span>DIA</span><span>ET</span></span><span></span></div><div role="group" aria-label="${esc(text("fitment.wheel.variants"))}">${resolver.variants.map((variant, index) => {
+webapp/vnext/views/fitment.js:117:    const known = (value, suffix = "") => value === null || value === undefined || value === "" ? "Не определено" : `${wheelDisplay(value, model.locale)}${suffix}`;
+webapp/vnext/views/fitment.js:118:    const pcd = values.bolt_count != null && values.pcd_mm != null ? `${values.bolt_count}×${wheelDisplay(values.pcd_mm, model.locale)}` : "Не определено";
+webapp/vnext/views/fitment.js:119:    const specs = [["Диаметр", known(values.wheel_diameter_in, "″")], ["Ширина", known(values.wheel_width_j, "J")], ["PCD", pcd], ["DIA", known(values.center_bore_mm)], ["ET", known(values.offset_et_mm)]];
+webapp/vnext/views/fitment.js:120:    return `<button type="button" class="vnext-fitment__sku-row" data-fitment-action="rim-variant" data-value="${index}" aria-pressed="${String(variant.sku === resolver.selectedSku)}"><span class="vnext-fitment__sku-identity">${variant.imageUrl ? `<img src="${esc(variant.imageUrl)}" alt="" class="vnext-fitment__sku-image">` : ""}<span class="vnext-fitment__sku-name">${esc([variant.brand, variant.model].filter(Boolean).join(" ") || `Вариант ${index + 1}`)}</span><span class="vnext-fitment__sku-code">${esc(text("wheel.sku"))}: ${esc(variant.sku || "Не определено")}</span></span><span class="vnext-fitment__sku-specs">${specs.map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("")}</span><span class="vnext-fitment__sku-select">Выбрать</span></button>`;
+webapp/vnext/views/fitment.js:122:  return `<section class="vnext-fitment__source-disclosure">${!variants ? `<button type="button" class="vnext-button vnext-button--secondary" data-fitment-action="toggle-source" aria-expanded="${String(Boolean(resolver.open))}" aria-controls="fitment-source-panel">${resolver.url ? "Изменить ссылку на товар" : "Добавить ссылку на товар"}</button>` : ""}${!variants && resolver.open ? `<div class="vnext-fitment__source-panel" id="fitment-source-panel"><div class="vnext-fitment__section-heading"><h3>${esc(text("fitment.wheel.source"))}</h3></div><label class="vnext-fitment__field"><span>Ссылка на товар</span><input type="url" inputmode="url" data-fitment-source-url value="${esc(resolver.url)}" placeholder="https://"></label><div class="vnext-fitment__source-actions">${button("Определить параметры", "resolve-rim", { primary: true, disabled: resolver.loading || !resolver.url })}<p>Необязательно — попробуем получить модель и технические параметры со страницы.</p></div>${resolving}${status ? `<p class="vnext-fitment__notice${statusClass}" role="${resolver.statusTone === "error" ? "alert" : "status"}">${esc(status)}</p>` : ""}${retries}</div>` : ""}${variants}${resolver.chooserOpen ? button("Отмена", "cancel-rim-sku") : ""}${!resolver.open ? resolving + (resolver.statusTone === "error" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(status)}</p>${retries}` : "") : ""}</section>`;
+webapp/vnext/views/fitment.js:128:  const groups = [[model.check.verdict === "incompatible" ? "Почему не подходит" : model.check.verdict === "unknown" ? "Что не удалось подтвердить" : "Что нужно уточнить", model.blockingIssues], ["Что нужно уточнить", model.missingData], ["Условия установки", model.conditions], ["Дополнительная информация", model.advisories]]
+webapp/vnext/views/fitment.js:134:  const blockersAndConditions = groups.some(group => group.title === "Почему не подходит") && groups.some(group => group.title === "Условия установки");
+webapp/vnext/views/fitment.js:135:  return `<section class="vnext-fitment__evidence">${groups.map(group => `<div><h3>${group.title}</h3><ul>${group.items.map(label => `<li>${esc(label)}</li>`).join("")}</ul></div>`).join("")}${blockersAndConditions ? `<p>Условия установки не отменяют причины несовместимости.</p>` : ""}</section>`;
+webapp/vnext/views/fitment.js:146:    const display = value => value == null ? "Нет данных" : fitmentDisplayValue(value, model.locale);
+webapp/vnext/views/fitment.js:152:  const table = (items, caption) => `<table class="vnext-fitment__comparison-table"><caption>${model.check?.is_current === false ? `Предыдущий результат — ${caption}` : caption}</caption><colgroup><col><col><col><col></colgroup><thead><tr><th scope="col">${comparisonLabel(model, "Параметр", "Parameter")}</th><th scope="col">${comparisonLabel(model, "Автомобиль", "Vehicle")}</th><th scope="col">${text("wheel.label")}</th><th scope="col">${comparisonLabel(model, "Результат", "Result")}</th></tr></thead><tbody>${parameters(model, items)}</tbody></table>`;
+webapp/vnext/views/fitment.js:153:  return `<section class="vnext-fitment__comparison">${table(front, separateAxles ? comparisonLabel(model, "Передняя ось", "Front axle") : staggered ? comparisonLabel(model, "Одинаково для обеих осей", "Same for both axles") : comparisonLabel(model, "Параметры колёс", "Wheel parameters"))}${separateAxles ? table(rear, comparisonLabel(model, "Задняя ось", "Rear axle")) : ""}</section>`;
+webapp/vnext/views/fitment.js:158:  return `<footer class="vnext-fitment__commercial-warning"><p>${esc(comparisonLabel(model, "Это предварительная проверка по техническим данным. Перед покупкой уточните совместимость у продавца или в шиномонтаже.", "This is a preliminary check based on technical data. Before purchasing, confirm compatibility with the seller or an installation shop."))}</p></footer>`;
+webapp/vnext/views/fitment.js:162:  return `<div class="vnext-fitment__stage vnext-fitment__stage--${kind}">${url ? `<img src="${esc(url)}" alt="${esc(alt)}" loading="lazy">` : `<span>Фото недоступно</span>`}</div>`;
+webapp/vnext/views/fitment.js:167:    empty: "Параметры не заполнены",
+webapp/vnext/views/fitment.js:168:    partial: "Не хватает параметров",
+webapp/vnext/views/fitment.js:169:    complete_unconfirmed: "Проверьте и подтвердите параметры",
+webapp/vnext/views/fitment.js:170:    confirmed_ready: "Параметры подтверждены",
+webapp/vnext/views/fitment.js:171:  })[state] || "Состояние параметров неизвестно";
+webapp/vnext/views/fitment.js:198:const wheelFieldLabels = { wheel_diameter_in: "Диаметр", wheel_width_j: "Ширина", pcd: "PCD", center_bore_mm: "DIA", offset_et_mm: "ET" };
+webapp/vnext/views/fitment.js:230:  return `<div class="vnext-fitment__picker-scrim" data-wheel-picker-close></div><section class="vnext-fitment__picker" role="dialog" aria-modal="true" aria-labelledby="wheel-picker-title"><div class="vnext-fitment__section-heading"><h2 id="wheel-picker-title">${label}</h2><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-close aria-label="Закрыть выбор ${label}">Закрыть</button></div><label class="vnext-fitment__field"><span>Поиск ${label}</span><input type="text" inputmode="${field === "pcd" ? "text" : "decimal"}" data-wheel-picker-search value="${esc(picker.query)}" placeholder="${field === "pcd" ? "5×112" : "Поиск"}"></label>${group("Точное совпадение",options.exact)}${group(picker.query ? "Похожие значения" : picker.mode === "all" ? "Все значения" : field === "offset_et_mm" ? "Рекомендуемые" : "Значения",options.matches)}${field === "offset_et_mm" ? `<button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-mode>${picker.mode === "all" ? "Рекомендуемые значения" : "Показать все значения"}</button>` : ""}<div class="vnext-fitment__picker-manual"><p>Ручной ввод ${label}${field === "offset_et_mm" ? text("fitment.picker.noRounding") : "."}</p><button type="button" class="vnext-button vnext-button--secondary" data-wheel-picker-value="${esc(manual ?? "")}" ${manual === null ? "disabled" : ""}>Использовать ${esc(wheelDisplay(picker.query, picker.locale))}</button></div></section>`;
+webapp/vnext/views/fitment.js:243:    const displayValue = value === "" ? "Не выбрано" : `${field === "offset_et_mm" ? "ET " : ""}${wheelDisplay(value, model.locale)}${field === "wheel_diameter_in" ? "″" : field === "wheel_width_j" ? "J" : ""}`;
+webapp/vnext/views/fitment.js:248:    return `<div class="vnext-fitment__compound-field" data-confirmation-state="${proposed ? "proposed" : value === "" ? "missing" : "confirmed"}"><span>${label}</span><div class="vnext-fitment__compound${!proposed && value !== "" ? " vnext-fitment__compound--accepted" : ""}"><button type="button" data-fitment-action="${value === "" ? "open-wheel-picker" : "accept-rim-proposal"}" data-value="${prefix}.${field}" data-fitment-focus="${path}" ${errorAttributes} ${conflict ? "disabled" : ""} aria-label="${proposed ? "Подтвердить предложение" : value === "" ? "Выбрать" : "Подтверждено"} ${field === "offset_et_mm" && value !== "" ? "" : label + " "}${esc(displayValue)}">${esc(displayValue)}</button><button type="button" data-wheel-picker-open="${path}" aria-label="Выбрать другое ${label} для ${axle === "rear" ? "задней" : "передней"} оси">Выбрать другое ▾</button></div>${proposed ? `<small>${esc(text("fitment.proposed"))}</small>` : ""}${suggestions}${conflict}${error ? `<small id="${esc(errorId)}" role="alert">${esc(error)}</small>` : ""}</div>`;
+webapp/vnext/views/fitment.js:264:    ? `<p class="vnext-fitment__notice${marketState.status === "failed" ? " vnext-fitment__notice--error" : ""}" role="${marketState.status === "failed" ? "alert" : "status"}">${esc(marketState.message)}</p>${marketState.status === "failed" ? button("Повторить", "retry-catalogue", { value: "markets" }) : ""}` : "";
+webapp/vnext/views/fitment.js:265:  return `<section class="vnext-fitment__editor" data-fitment-workspace="vehicle" aria-labelledby="fitment-vehicle-editor-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Автомобиль</p><h2 id="fitment-vehicle-editor-title" tabindex="-1">Укажите автомобиль</h2></div><div class="vnext-fitment__field-group"><div class="vnext-fitment__fields">${catalogueField(model, "makes", "Марка", "vehicle.make", vehicle.make)}${catalogueField(model, "models", "Модель", "vehicle.model", vehicle.model)}${catalogueField(model, "years", "Год", "vehicle.year", vehicle.year)}${marketField}</div>${marketNotice}</div>${model.vehicleRecognition?.status === "applied" ? `<p class="vnext-fitment__notice">Проверьте данные в каталоге и выберите точный год автомобиля.</p>` : ""}${model.vehicleError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.vehicleError)}</p>` : ""}${model.nextAction === "select_vehicle_variant" ? button("Вернуться к выбору комплектации", "show-variants") : ""}${button(model.vehicleAwaitingConfirmation ? "Подтвердить данные" : "Сохранить автомобиль", model.vehicleAwaitingConfirmation ? "confirm-vehicle" : "save-vehicle", { primary: true, disabled: model.saving })}</section>`;
+webapp/vnext/views/fitment.js:270:  const heading = recognition.status === "loading" ? "Распознаём автомобиль…" : recognition.status === "failed" ? "Не удалось распознать автомобиль" : "Распознано по фотографии";
+webapp/vnext/views/fitment.js:273:    const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : "Год не определён");
+webapp/vnext/views/fitment.js:274:    return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
+webapp/vnext/views/fitment.js:276:  const content = recognition.status === "loading" ? loadingStatus("Распознаём автомобиль…") : recognition.status === "failed"
+webapp/vnext/views/fitment.js:277:    ? `${recognition.message ? `<p role="alert">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button("Попробовать ещё раз", "recognize-vehicle", { disabled: !recognition.canRecognize })}${button("Указать вручную", "edit-vehicle")}</div>`
+webapp/vnext/views/fitment.js:278:    : `<p>Выберите найденный автомобиль, чтобы проверить данные по каталогу.</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
+webapp/vnext/views/fitment.js:279:  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Распознавание автомобиля</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
+webapp/vnext/views/fitment.js:310:  const choicesMarkup = choices.map((variant, index) => `<button type="button" class="vnext-fitment__choice" aria-pressed="${String(index === model.selectedVehicleVariant)}" data-fitment-action="vehicle-variant" data-value="${index}"><span class="vnext-fitment__choice-copy"><strong>${esc(variant.label || `Вариант ${index + 1}`)}</strong>${variant.technical ? `<small>${esc(variant.technical)}</small>` : ""}</span><span class="vnext-fitment__variant-cue">${index === model.selectedVehicleVariant ? "Выбрано" : "Выбрать"}</span></button>`).join("");
+webapp/vnext/views/fitment.js:311:  const message = status === "failed" ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">Не удалось загрузить комплектации.</p>${button("Повторить", "load-vehicle-variants")}` : status === "no_match" ? `<p class="vnext-fitment__notice" role="status">Комплектации не найдены.</p>` : "";
+webapp/vnext/views/fitment.js:312:  return `<section class="vnext-fitment__variant-step" data-fitment-workspace="vehicle" aria-labelledby="fitment-variant-title"><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">Комплектация автомобиля</p><h2 id="fitment-variant-title" tabindex="-1">Выберите комплектацию</h2></div><div class="vnext-fitment__variant-list" role="group" aria-label="Варианты комплектации">${choicesMarkup}${loading ? loadingStatus("Загружаем комплектации автомобиля") : ""}${message}<div class="vnext-fitment__paired-actions">${button("Подтвердить комплектацию", "confirm-vehicle-variant", { primary: true, disabled: model.selectedVehicleVariant == null || !choices[model.selectedVehicleVariant] })}${reselection ? button("Отмена", "cancel-vehicle-reselection") : button("Указать вручную", "manual-vehicle")}</div></div></section>`;
+webapp/vnext/views/fitment.js:316:  if (model.rimSaveReadiness?.conflicts?.length) return axle === "front" ? `<span data-fitment-conflict-notice>Выберите значение перед сохранением.</span>` : "";
+webapp/vnext/views/fitment.js:323:  return count ? `Осталось подтвердить ${count} ${count === 1 ? "параметр" : count < 5 ? "параметра" : "параметров"}` : "Все параметры подтверждены";
+webapp/vnext/views/fitment.js:332:    ? `<div class="vnext-fitment__fields">${fieldWithCandidates(model, "Бренд", "rim.brand", rim.brand)}${fieldWithCandidates(model, "Модель", "rim.model", rim.model)}${fieldWithCandidates(model, "Артикул", "rim.sku", rim.sku)}</div>` : "";
+webapp/vnext/views/fitment.js:334:  return `<section class="vnext-fitment__editor" data-fitment-workspace="rim" aria-labelledby="fitment-rim-editor-title">
+webapp/vnext/views/fitment.js:335:    <div class="vnext-fitment__editor-heading"><div><p class="vnext-eyebrow">${esc(text("fitment.wheel.eyebrow"))}</p><h2 id="fitment-rim-editor-title" tabindex="-1">${esc(chooser ? text("fitment.wheel.choose") : identity)}</h2>${!chooser && (model.resolver?.selectedSku || rim.sku) ? `<p class="vnext-fitment__identity-code">${esc(text("wheel.sku"))} ${esc(model.resolver?.selectedSku || rim.sku)}</p>` : ""}</div>${!chooser ? `<div class="vnext-fitment__mode" role="group" aria-label="Параметры по осям">${[ ["uniform", "Одинаковые"], ["staggered", "Разные"] ].map(([value,label]) => `<button type="button" data-fitment-action="setup-mode" data-value="${value}" aria-pressed="${String((model.setupMode || "uniform") === value)}">${label}</button>`).join("")}</div>` : ""}</div>
+webapp/vnext/views/fitment.js:337:    ${chooser ? `<p class="vnext-fitment__progress">${esc(text("fitment.variant.notice"))}</p>` : `${identityEditor}<div class="vnext-fitment__axles${model.setupMode === "staggered" ? " vnext-fitment__axles--staggered" : ""}">${axle("front", model.setupMode === "staggered" ? "Передняя ось" : "Обе оси")}${model.setupMode === "staggered" ? axle("rear", "Задняя ось") : ""}</div>${model.setupMode === "staggered" && model.resolver?.canChooseSku ? `<p class="vnext-fitment__progress">${esc(text("fitment.variant.rearNotice"))}</p>` : ""}${model.rearDraftPreserved ? `<p class="vnext-fitment__progress">Задние параметры сохранены в черновике до сохранения.</p>` : ""}${model.rimError ? `<p class="vnext-fitment__notice vnext-fitment__notice--error" role="alert">${esc(model.rimError)}</p>` : ""}${model.setupMode !== "staggered" ? `<p class="vnext-fitment__progress" role="status">${wheelConfirmationProgress(model)}</p>` : ""}${readiness.invalid?.length ? `<p class="vnext-fitment__notice" role="alert">Проверьте числовые параметры диска.</p>` : ""}<div class="vnext-fitment__paired-actions">${button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || !readiness.ready })}${model.resolver?.canChooseSku ? button(text("fitment.variant.choose"), "choose-rim-sku", { disabled: model.resolver.loading }) : ""}${button(model.rimIdentityEditing ? text("fitment.identity.hide") : text("fitment.identity.edit"), "toggle-rim-identity")}</div>`}
+webapp/vnext/views/fitment.js:343:  if (model.loading && !model.overview) return localizeFitmentMarkup(`<section class="vnext-fitment">${loadingStatus("Загружаем совместимость")}</section>`, model.locale);
+webapp/vnext/views/fitment.js:344:  if (model.error && !model.overview) return `<section class="vnext-fitment" role="alert"><h2>Не удалось загрузить совместимость</h2><p>${esc(model.error)}</p>${button("Повторить", "reload", { primary: true })}</section>`;
+webapp/vnext/views/fitment.js:351:  const sourceStatus = state => model.rimSaveReadiness?.conflicts?.length ? "Требуется выбрать значение" : localReady ? model.rimEditing ? "Готово к сохранению" : "Есть несохранённые изменения" : model.rimDraftDirty ? "Есть несохранённые изменения" : rimSetupLabel(state);
+webapp/vnext/views/fitment.js:353:    ? `<span>Передняя ось: ${esc(sourceStatus(rimSetupState))}</span><span>Задняя ось: ${esc(sourceStatus(model.rearRimSetupState))}</span>`
+webapp/vnext/views/fitment.js:355:  const vehicleStatus = model.vehicleStatus || "Требуется подтверждение";
+webapp/vnext/views/fitment.js:356:  const configuration = model.vehicleVariantName ? `<div class="vnext-fitment__configuration"><p class="vnext-eyebrow">Комплектация</p><strong>${esc(model.vehicleVariantName)}</strong>${model.vehicleVariantTechnical ? `<small>${esc(model.vehicleVariantTechnical)}</small>` : ""}<span>Подтверждено</span></div>` : `<p class="vnext-fitment__object-status">${esc(vehicleStatus)}</p>`;
+webapp/vnext/views/fitment.js:361:  const checkLabel = retryState ? (model.checkStartFailed || model.executionStatus === "failed") ? "Повторить проверку" : "Проверить ещё раз" : completedCurrent ? "Проверить ещё раз" : "Проверить совместимость";
+webapp/vnext/views/fitment.js:362:  const checkAction = (model.rimDraftDirty ? button("Сохранить параметры", "save-rim", { primary: true, disabled: model.saving || model.checking }) : "") + button(checkLabel, "check", { primary: !model.rimDraftDirty && !completedCurrent && !activeEditor && model.nextAction === "run_standard_check", disabled: model.rimDraftDirty || !model.canRunCheck || activeEditor || model.checking || retryState && !model.retryAvailable });
+webapp/vnext/views/fitment.js:363:  const renderAction = button("Создать изображение", "create-image", { primary: completedCurrent && !activeEditor });
+webapp/vnext/views/fitment.js:364:  const authNotice = model.authRequired ? `<div class="vnext-fitment__notice vnext-fitment__notice--error" role="alert"><p>Сессия истекла. Войдите, чтобы продолжить работу.</p>${button("Войти", "login")}</div>` : "";
+webapp/vnext/views/fitment.js:368:    <div class="vnext-fitment__topline"><h1>Проверка совместимости</h1>${button("Назад", "back")}</div>
+webapp/vnext/views/fitment.js:371:    <fieldset class="vnext-fitment__mutation-region" ${model.checking || ["queued", "processing"].includes(model.executionStatus) ? "disabled" : ""} aria-label="${esc(text("fitment.objects"))}">
+webapp/vnext/views/fitment.js:372:    <div class="vnext-fitment__pair" aria-label="Источники и состояние данных">
+webapp/vnext/views/fitment.js:373:      <section class="vnext-fitment__object${model.vehicleEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-vehicle-title"><p class="vnext-eyebrow">Автомобиль</p>${preview(model.vehiclePreview, "Фотография автомобиля")}
+webapp/vnext/views/fitment.js:374:        ${model.vehicleTitle ? `<h2 id="fitment-vehicle-title">${esc(model.vehicleTitle)}</h2>` : `<h2 id="fitment-vehicle-title">Автомобиль не указан</h2>`}
+webapp/vnext/views/fitment.js:375:        <div class="vnext-fitment__source-row"><p><span>${esc(text("fitment.source.label"))}</span><strong>Фото автомобиля</strong></p>${button("Заменить фото", "edit-vehicle-photo")}</div>
+webapp/vnext/views/fitment.js:376:        <input type="file" accept="image/jpeg,image/png,image/webp" data-fitment-vehicle-photo hidden aria-label="Фото автомобиля">
+webapp/vnext/views/fitment.js:377:        <div class="vnext-fitment__source-action">${button("Распознать автомобиль", "recognize-vehicle", { primary: !activeEditor && model.overview?.vehicle_state !== "confirmed_ready", disabled: !model.vehicleRecognition?.canRecognize || model.vehicleRecognition?.status === "loading" })}${button(!model.overview?.vehicle_identity_id && model.overview?.vehicle_state === "empty" ? "Указать автомобиль" : model.canReselectVehicleVariant ? "Изменить автомобиль" : "Указать вручную", "edit-vehicle")}</div>
+webapp/vnext/views/fitment.js:378:        ${configuration}${model.canReselectVehicleVariant ? button("Изменить комплектацию", "reselect-vehicle") : ""}${variantRequired && model.rimEditing ? button("Выбрать комплектацию", "show-variants") : ""}${vehicleError}
+webapp/vnext/views/fitment.js:380:      <section class="vnext-fitment__object${model.rimEditing ? " vnext-fitment__object--editing" : ""}" aria-labelledby="fitment-rim-title"><p class="vnext-eyebrow">${esc(text("wheel.label"))}</p>${preview(model.rimPreview, text("fitment.wheel.photo"), { kind: "wheel" })}
+webapp/vnext/views/fitment.js:382:        <div class="vnext-fitment__source-row"><p><span>${esc(text("fitment.source.label"))}</span><strong>${esc(model.rimSourceLabel || "Источник не указан")}</strong>${model.rimSourceDomain ? `<small>${esc(model.rimSourceDomain)}</small>` : ""}</p>${button("Изменить", "edit-rim", { value: "source" })}</div>
+webapp/vnext/views/fitment.js:383:        <div class="vnext-fitment__source-action">${button(text("fitment.wheel.recognize"), "resolve-rim", { primary: !activeEditor && !model.resolver?.canChooseSku && model.overview?.rim_setup_state !== "confirmed_ready", disabled: !model.resolver?.url || model.resolver?.loading })}${!model.rimEditing ? button("Изменить параметры", "edit-rim") : ""}</div>
+webapp/vnext/views/fitment.js:389:    ${model.check || model.checkStartFailed || model.checking || ["queued", "processing", "failed"].includes(model.executionStatus) ? `<section class="vnext-fitment__result-panel">${verdict(model)}${checkError}${!model.checkStartFailed ? evidence(model) + comparisonTable(model) + preliminaryWarning(model) : ""}${!model.rimEditing && !model.vehicleEditing ? `<div class="vnext-fitment__actions">${button("Изменить параметры", "edit-rim")}</div>` : ""}</section>` : checkError}
+webapp/vnext/views/fitment.js:390:    <section class="vnext-fitment__standard" aria-labelledby="fitment-standard-title"><h2 id="fitment-standard-title">${model.checking ? "Проверяем совместимость…" : completedCurrent ? "Проверка выполнена" : "Проверка совместимости"}</h2>${!completedCurrent && !model.checking ? `<p>${esc(model.rimDraftDirty ? "Есть несохранённые изменения. Сохраните параметры, чтобы проверить обновлённые данные." : model.checkStartFailed || model.executionStatus === "failed" ? "Проверку выполнить не удалось. Попробуйте ещё раз." : (model.nextAction === "complete_rim_specs" ? text("fitment.wheel.complete") : nextActionCopy[model.nextAction]) || "Подтвердите автомобиль и параметры диска.")}</p>` : ""}${hasSummary(model.canonicalVehicleSummary) || hasSummary(model.canonicalWheelSummary) ? `<div class="vnext-fitment__ready-summaries">${hasSummary(model.canonicalVehicleSummary) ? `<div><span>Автомобиль</span><strong>${esc(model.canonicalVehicleSummary)}</strong></div>` : ""}${hasSummary(model.canonicalWheelSummary) ? `<div><span>${esc(text("wheel.label"))}</span><strong>${esc(model.canonicalWheelSummary)}</strong></div>` : ""}</div>` : ""}<div class="vnext-fitment__footer">${checkAction}${renderAction}</div></section>
+webapp/vnext/views/fitment.js:410:  next.innerHTML = markup;
+webapp/vnext/views/fitment.js:508:  "Сохраните параметры, чтобы проверить обновлённые данные.": "Save the details to check the updated data.",
+webapp/vnext/views/fitment.js:509:  "Проверку выполнить не удалось": "The check could not be completed",
+webapp/vnext/views/fitment.js:510:  "Попробуйте ещё раз.": "Please try again.",
+webapp/vnext/views/fitment.js:511:  "Повторить проверку": "Retry check",
+webapp/vnext/views/fitment.js:512:  "Фото диска": "Wheel photo",
+webapp/vnext/views/fitment.js:513:  "Указано вручную": "Entered manually",
+webapp/vnext/views/fitment.js:514:  "Источник не указан": "Source not specified",
+webapp/vnext/views/fitment.js:515:  "Почему не подходит": "Why it does not fit",
+webapp/vnext/views/fitment.js:516:  "Что не удалось подтвердить": "What could not be confirmed",
+webapp/vnext/views/fitment.js:517:  "Не можем подтвердить совместимость": "Compatibility could not be confirmed",
+webapp/vnext/views/fitment.js:518:  "Что нужно уточнить": "What needs clarification",
+webapp/vnext/views/fitment.js:519:  "Условия установки": "Installation conditions",
+webapp/vnext/views/fitment.js:520:  "Дополнительная информация": "Additional information",
+webapp/vnext/views/fitment.js:521:  "Условия установки не отменяют причины несовместимости.": "Installation conditions do not override the incompatibility reasons.",
+webapp/vnext/views/fitment.js:523:  "Автомобиль не указан": "Car not specified",
+webapp/vnext/views/fitment.js:524:  "Указать автомобиль": "Specify car",
+webapp/vnext/views/fitment.js:525:  "Распознавание автомобиля": "Vehicle recognition",
+webapp/vnext/views/fitment.js:526:  "Распознано по фотографии": "Recognized from the photo",
+webapp/vnext/views/fitment.js:527:  "Распознаём автомобиль…": "Recognizing the vehicle…",
+webapp/vnext/views/fitment.js:528:  "Не удалось распознать автомобиль": "Unable to recognize the vehicle",
+webapp/vnext/views/fitment.js:529:  "Выберите найденный автомобиль, чтобы проверить данные по каталогу.": "Select the recognized vehicle to verify its details in the catalogue.",
+webapp/vnext/views/fitment.js:530:  "Проверьте данные в каталоге и выберите точный год автомобиля.": "Verify the catalogue details and select the exact vehicle year.",
+webapp/vnext/views/fitment.js:531:  "Попробовать ещё раз": "Try again",
+webapp/vnext/views/fitment.js:532:  "Год не определён": "Year undetermined",
+webapp/vnext/views/fitment.js:533:  "Комплектация автомобиля": "Vehicle version",
+webapp/vnext/views/fitment.js:534:  "Проверка совместимости": "Compatibility check",
+webapp/vnext/views/fitment.js:535:  "Проверка выполнена": "Check completed",
+webapp/vnext/views/fitment.js:536:  "Назад": "Back",
+webapp/vnext/views/fitment.js:537:  "Автомобиль": "Vehicle",
+webapp/vnext/views/fitment.js:538:  "Фото автомобиля": "Vehicle photo",
+webapp/vnext/views/fitment.js:539:  "Ссылка на товар": "Product link",
+webapp/vnext/views/fitment.js:540:  "Изменить": "Change",
+webapp/vnext/views/fitment.js:541:  "Заменить фото": "Replace photo",
+webapp/vnext/views/fitment.js:542:  "Распознать автомобиль": "Recognize vehicle",
+webapp/vnext/views/fitment.js:543:  "Указать вручную": "Enter manually",
+webapp/vnext/views/fitment.js:544:  "Изменить автомобиль": "Edit vehicle",
+webapp/vnext/views/fitment.js:545:  "Изменить параметры": "Edit parameters",
+webapp/vnext/views/fitment.js:546:  "Комплектация": "Vehicle version",
+webapp/vnext/views/fitment.js:547:  "Изменить комплектацию": "Change vehicle version",
+webapp/vnext/views/fitment.js:548:  "Выбрать комплектацию": "Choose vehicle version",
+webapp/vnext/views/fitment.js:549:  "Требуется подтверждение": "Confirmation required",
+webapp/vnext/views/fitment.js:550:  "Комплектация подтверждена": "Vehicle version confirmed",
+webapp/vnext/views/fitment.js:551:  "Данные подтверждены": "Details confirmed",
+webapp/vnext/views/fitment.js:552:  "Выберите комплектацию автомобиля": "Choose the vehicle version",
+webapp/vnext/views/fitment.js:553:  "Уточните данные автомобиля": "Complete the vehicle details",
+webapp/vnext/views/fitment.js:554:  "Данные готовы к проверке": "Details are ready for checking",
+webapp/vnext/views/fitment.js:555:  "Выберите значение перед сохранением.": "Choose a value before saving.",
+webapp/vnext/views/fitment.js:556:  "Требуется выбрать значение": "Value selection required",
+webapp/vnext/views/fitment.js:557:  "Есть несохранённые изменения": "There are unsaved changes",
+webapp/vnext/views/fitment.js:558:  "Готово к сохранению": "Ready to save",
+webapp/vnext/views/fitment.js:559:  "Текущее значение": "Current value",
+webapp/vnext/views/fitment.js:560:  "Значение": "Value",
+webapp/vnext/views/fitment.js:561:  "из карточки товара": "from the product page",
+webapp/vnext/views/fitment.js:562:  "Параметры подтверждены": "Parameters confirmed",
+webapp/vnext/views/fitment.js:563:  "Параметры не заполнены": "Parameters are empty",
+webapp/vnext/views/fitment.js:564:  "Не хватает параметров": "Parameters are missing",
+webapp/vnext/views/fitment.js:565:  "Проверьте и подтвердите параметры": "Review and confirm parameters",
+webapp/vnext/views/fitment.js:566:  "Подтвердите автомобиль и параметры диска.": "Confirm the vehicle and wheel parameters.",
+webapp/vnext/views/fitment.js:567:  "Сохранить параметры": "Save parameters",
+webapp/vnext/views/fitment.js:568:  "Одинаковые": "Same",
+webapp/vnext/views/fitment.js:569:  "Разные": "Different",
+webapp/vnext/views/fitment.js:570:  "Обе оси": "Both axles",
+webapp/vnext/views/fitment.js:571:  "Передняя ось": "Front axle",
+webapp/vnext/views/fitment.js:572:  "Задняя ось": "Rear axle",
+webapp/vnext/views/fitment.js:573:  "Диаметр": "Diameter",
+webapp/vnext/views/fitment.js:574:  "Ширина": "Width",
+webapp/vnext/views/fitment.js:575:  "Не выбрано": "Not selected",
+webapp/vnext/views/fitment.js:576:  "Выбрать другое ▾": "Choose another ▾",
+webapp/vnext/views/fitment.js:577:  "Все параметры подтверждены": "All parameters confirmed",
+webapp/vnext/views/fitment.js:578:  "Задние параметры сохранены в черновике до сохранения.": "Rear parameters are preserved in the draft until saving.",
+webapp/vnext/views/fitment.js:579:  "Отмена": "Cancel",
+webapp/vnext/views/fitment.js:580:  "Проверить совместимость": "Check compatibility",
+webapp/vnext/views/fitment.js:581:  "Проверить ещё раз": "Check again",
+webapp/vnext/views/fitment.js:582:  "Повторить": "Retry",
+webapp/vnext/views/fitment.js:583:  "Создать изображение": "Create image",
+webapp/vnext/views/fitment.js:584:  "Техническая проверка": "Technical check",
+webapp/vnext/views/fitment.js:585:  "Подходит": "Compatible",
+webapp/vnext/views/fitment.js:586:  "Подходит с условиями": "Compatible with conditions",
+webapp/vnext/views/fitment.js:587:  "Не подходит": "Incompatible",
+webapp/vnext/views/fitment.js:588:  "Недостаточно данных для проверки": "Insufficient data for checking",
+webapp/vnext/views/fitment.js:589:  "В базе недостаточно технических данных, чтобы определить совместимость этого диска с автомобилем.": "The database has insufficient technical data to determine whether this wheel is compatible with the vehicle.",
+webapp/vnext/views/fitment.js:590:  "Результат больше не актуален": "The result is no longer current",
+webapp/vnext/views/fitment.js:591:  "Подтверждённые данные сохранены.": "Confirmed details are preserved.",
+webapp/vnext/views/fitment.js:592:  "Не удалось выполнить проверку": "Unable to complete the check",
+webapp/vnext/views/fitment.js:593:  "Проверяем совместимость…": "Checking compatibility…",
+webapp/vnext/views/fitment.js:594:  "Параметр": "Parameter",
+webapp/vnext/views/fitment.js:595:  "Результат": "Result",
+webapp/vnext/views/fitment.js:596:  "Параметры колёс": "Wheel parameters",
+webapp/vnext/views/fitment.js:597:  "Нет данных": "No data",
+webapp/vnext/views/fitment.js:598:  "Не определено": "Undetermined",
+webapp/vnext/views/fitment.js:599:  "С условием": "With a condition",
+webapp/vnext/views/fitment.js:600:  "Не совпадает": "Mismatch",
+webapp/vnext/views/fitment.js:601:  "Закрыть": "Close",
+webapp/vnext/views/fitment.js:602:  "Точное совпадение": "Exact match",
+webapp/vnext/views/fitment.js:603:  "Похожие значения": "Similar values",
+webapp/vnext/views/fitment.js:604:  "Рекомендуемые": "Recommended",
+webapp/vnext/views/fitment.js:605:  "Значения": "Values",
+webapp/vnext/views/fitment.js:606:  "Все значения": "All values",
+webapp/vnext/views/fitment.js:607:  "Показать все значения": "Show all values",
+webapp/vnext/views/fitment.js:608:  "Рекомендуемые значения": "Recommended values",
+webapp/vnext/views/fitment.js:609:  "Изменить ссылку на товар": "Change product link",
+webapp/vnext/views/fitment.js:610:  "Добавить ссылку на товар": "Add product link",
+webapp/vnext/views/fitment.js:611:  "Определить параметры": "Resolve parameters",
+webapp/vnext/views/fitment.js:612:  "Необязательно — попробуем получить модель и технические параметры со страницы.": "Optional — retrieve the model and technical parameters from the page.",
+webapp/vnext/views/fitment.js:613:  "Подтвердить комплектацию": "Confirm vehicle version",
+webapp/vnext/views/fitment.js:614:  "Выберите комплектацию": "Choose a vehicle version",
+webapp/vnext/views/fitment.js:615:  "Выбрано": "Selected",
+webapp/vnext/views/fitment.js:616:  "Выбрать": "Select",
+webapp/vnext/views/fitment.js:617:  "Данные автомобиля": "Vehicle details",
+webapp/vnext/views/fitment.js:618:  "Укажите автомобиль": "Enter vehicle details",
+webapp/vnext/views/fitment.js:619:  "Марка": "Make",
+webapp/vnext/views/fitment.js:620:  "Модель": "Model",
+webapp/vnext/views/fitment.js:621:  "Год": "Year",
+webapp/vnext/views/fitment.js:622:  "Бренд": "Brand",
+webapp/vnext/views/fitment.js:623:  "Артикул": "SKU",
+webapp/vnext/views/fitment.js:624:  "Сохранить автомобиль": "Save vehicle",
+webapp/vnext/views/fitment.js:625:  "Подтвердить данные": "Confirm details",
+webapp/vnext/views/fitment.js:626:  "Источники и состояние данных": "Sources and data status",
+webapp/vnext/views/fitment.js:627:  "Фото недоступно": "Photo unavailable",
+webapp/vnext/views/fitment.js:628:  "Состояние параметров неизвестно": "Parameter status is unknown",
+webapp/vnext/views/fitment.js:629:  "Закрыть выбор": "Close selection",
+webapp/vnext/views/fitment.js:630:  "от −150 до +150": "from −150 to +150",
+webapp/vnext/views/fitment.js:631:  " мм": " mm",
+webapp/vnext/views/fitment.js:632:  "Нет описания": "No description",
+webapp/vnext/views/fitment.js:633:  "Для покупки": "For purchase",
+webapp/vnext/views/fitment.js:634:  "для задней оси": "for the rear axle",
+webapp/vnext/views/fitment.js:635:  "для передней оси": "for the front axle",
+webapp/vnext/views/fitment.js:636:  "Выбрать другое": "Choose another",
+webapp/vnext/views/fitment.js:637:  "Фотография автомобиля": "Vehicle photograph",
+webapp/vnext/views/fitment.js:638:  "Загружаем совместимость": "Loading compatibility",
+webapp/vnext/views/fitment.js:639:  "Не удалось загрузить совместимость": "Unable to load compatibility",
+webapp/vnext/views/fitment.js:640:  "Варианты комплектации": "Vehicle versions",
+webapp/vnext/views/fitment.js:641:  "Параметры по осям": "Axle configuration",
+webapp/vnext/views/fitment.js:642:  "Не удалось загрузить комплектации.": "Unable to load vehicle versions.",
+webapp/vnext/views/fitment.js:643:  "Комплектации не найдены.": "Vehicle versions were not found.",
+webapp/vnext/views/fitment.js:644:  "Загружаем комплектации автомобиля": "Loading vehicle versions",
+webapp/vnext/views/fitment.js:645:  "Вернуться к выбору комплектации": "Return to vehicle version selection",
+webapp/vnext/views/fitment.js:646:  "Проверьте числовые параметры диска.": "Check the numeric wheel parameters.",
+webapp/vnext/views/fitment.js:647:  "Разрешите конфликты перед сохранением.": "Resolve conflicts before saving.",
+webapp/vnext/views/fitment.js:648:  "найдено": "found",
+webapp/vnext/views/fitment.js:649:  "Оставить": "Keep",
+webapp/vnext/views/fitment.js:650:  "Передняя": "Front",
+webapp/vnext/views/fitment.js:651:  "Задняя": "Rear",
+webapp/vnext/views/fitment.js:652:  "Выбрать другое ET для передней оси": "Choose another ET for the front axle",
+webapp/vnext/views/fitment.js:653:  "выбор": "selection",
+webapp/vnext/views/fitment.js:654:  "Совпадает": "Matches",
+webapp/vnext/views/fitment.js:655:  "Вариант": "Variant",
+webapp/vnext/views/fitment.js:656:  "Недостаточно данных": "Insufficient data",
+webapp/vnext/views/fitment.js:657:  "Конфликт значения": "Conflicting value",
+webapp/vnext/views/fitment.js:658:  "Найдено несколько значений. Выберите одно.": "Several values were found. Select one.",
+webapp/vnext/views/fitment.js:659:  "Предложения для поля марка": "Suggestions for make",
+webapp/vnext/views/fitment.js:660:  "Предложения для поля модель": "Suggestions for model",
+webapp/vnext/views/fitment.js:661:  "Предложения для поля год": "Suggestions for year",
+webapp/vnext/views/fitment.js:662:  "Предложения для поля версия для рынка": "Suggestions for market version"
+webapp/vnext/views/fitment.js:670:    return value.replace(/Осталось подтвердить (\d+) параметр(?:а|ов)?/g, "$1 parameters left to confirm").replaceAll("Предыдущий результат", "Previous result").replaceAll("Подтвердить предложение", "Confirm suggestion").replaceAll("Подтверждено", "Confirmed").replaceAll("Использовать", "Use").replaceAll("Поиск", "Search").replaceAll("Ручной ввод", "Manual input");
+webapp/vnext/views/fitment.js:672:  return markup.replace(/>([^<>]+)</g, (_,text) => `>${translate(text)}<`).replace(/(aria-label|placeholder|alt)="([^"]*)"/g, (_,attr,text) => `${attr}="${translate(text)}"`);

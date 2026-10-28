@@ -1,0 +1,9 @@
+{
+  "base": "7762584633914abe6b1ca26ea0197cba72df4239",
+  "onlyRuntimeDiff": "two C0 UI copy expressions inside renderFitment",
+  "topLevelNodes": 586,
+  "byteIdenticalTopLevelNodes": 585,
+  "stateMachineAndPublicBridgesUnchanged": true,
+  "backendSchemaCssViewsGeneratedBundlesHistoricalEvidenceUntouched": true,
+  "productionSHA256": "0c603f85023328084a74116b65318160374ef68c60bdef75bef3dc6b409f22ef"
+}

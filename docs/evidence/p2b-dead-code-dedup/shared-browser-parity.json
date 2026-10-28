@@ -1,0 +1,14 @@
+{
+  "base": "260c3516c286dc37c3647a2dca465e05985c38e5",
+  "checks": 180,
+  "exactBeforeAfterEquality": true,
+  "compared": [
+    "visible text",
+    "aria/alt/placeholder",
+    "overflow",
+    "clipping",
+    "page errors",
+    "account locale-switch state"
+  ],
+  "source": "tests/e01-i18n-browser.cjs"
+}

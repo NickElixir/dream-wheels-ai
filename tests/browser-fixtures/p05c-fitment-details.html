@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>P0.5-C Fitment details QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+<style>body{margin:0;background:var(--vnext-canvas);color:var(--vnext-text);font-family:Arial,sans-serif}main{max-width:1120px;margin:auto;padding:24px 16px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}[hidden]{display:none!important}</style></head><body><main data-vnext-root><nav><button id="picker">Variants</button><button id="result">Diameter result</button></nav><div id="fixture"></div></main><script type="module">
+const url=new URL('../../webapp/app.js',location.href);
+const source=(await(await fetch(url)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const harness=`
+import {createFitmentView,refreshFitmentView} from "${new URL('../../webapp/vnext/views/fitment.js',location.href)}";
+const data=await(await fetch("${new URL('../../docs/evidence/p05c-fitment-reference-variant-details/representative-api.json',location.href)}")).json();
+const model={locale,overview:{},vehicleTitle:"Porsche Cayenne",rimTitle:"Wheel",nextAction:"select_vehicle_variant",selectedVehicleVariant:null,vehicleVariants:data.variants.map(v=>({label:fitmentVariantDisplayName(v),technical:fitmentVariantTechnicalSeries(v)}))};
+const root=createFitmentView(model,{action(action,value){if(action==='vehicle-variant'){model.selectedVehicleVariant=Number(value);refreshFitmentView(root,model);}}});
+document.querySelector('#fixture').append(root);
+document.querySelector('#result').onclick=()=>{model.nextAction='run_standard_check';model.check=data.checks[0].response;model.executionStatus='completed';model.diameterReferences=model.check.diameter_reference_details.map(fitmentDiameterPresentation);refreshFitmentView(root,model)};
+document.querySelector('#picker').onclick=()=>{delete model.check;delete model.executionStatus;model.nextAction='select_vehicle_variant';refreshFitmentView(root,model)};
+`;
+const module=URL.createObjectURL(new Blob([source,harness],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+</script></body></html>

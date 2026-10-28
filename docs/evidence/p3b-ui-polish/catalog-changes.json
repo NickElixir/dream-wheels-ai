@@ -1,0 +1,132 @@
+{
+  "base": "f3825f6fec57a3150b8081f3834da8b18a1b055a",
+  "changed_keys": 14,
+  "changes": [
+    {
+      "key": "render.downloadShort",
+      "before": null,
+      "after": {
+        "ru": "Скачать",
+        "en": "Download"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "render.checkShort",
+      "before": null,
+      "after": {
+        "ru": "Проверить",
+        "en": "Check fit"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.summary.title",
+      "before": null,
+      "after": {
+        "ru": "Итог",
+        "en": "Summary"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.failure.saved",
+      "before": null,
+      "after": {
+        "ru": "Данные сохранены — вводить их заново не нужно.",
+        "en": "Your details are saved — no need to enter them again."
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.retry.unavailable",
+      "before": null,
+      "after": {
+        "ru": "Повтор этой проверки недоступен.",
+        "en": "Retry is unavailable for this check."
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.retry.confirmDetails",
+      "before": null,
+      "after": {
+        "ru": "Для повтора подтвердите данные автомобиля и диска.",
+        "en": "Confirm the vehicle and wheel details to retry."
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.selectEmpty",
+      "before": null,
+      "after": {
+        "ru": "Выбрать ▾",
+        "en": "Select ▾"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.selectOther",
+      "before": null,
+      "after": {
+        "ru": "Выбрать другое ▾",
+        "en": "Select another ▾"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.selectEmptyAria",
+      "before": null,
+      "after": {
+        "ru": "Выбрать {label}",
+        "en": "Select {label}"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "fitment.table.autoShort",
+      "before": null,
+      "after": {
+        "ru": "Авто",
+        "en": "Vehicle"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "history.today",
+      "before": null,
+      "after": {
+        "ru": "Сегодня",
+        "en": "Today"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "history.yesterday",
+      "before": null,
+      "after": {
+        "ru": "Вчера",
+        "en": "Yesterday"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "dashboard.latestFailed",
+      "before": null,
+      "after": {
+        "ru": "Последняя примерка не удалась · {history}.",
+        "en": "Your latest try-on failed · {history}."
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    },
+    {
+      "key": "dashboard.openHistory",
+      "before": null,
+      "after": {
+        "ru": "Открыть историю",
+        "en": "Open History"
+      },
+      "reason": "P3-B owner-approved items 1–12"
+    }
+  ]
+}

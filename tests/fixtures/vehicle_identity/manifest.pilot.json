@@ -1,0 +1,124 @@
+{
+  "dataset_version": "vehicle-identity-wikimedia-pilot-v1",
+  "cases": [
+    {
+      "case_id": "lexus-rx-2020-front",
+      "image_path": "downloaded/lexus-rx-2020-front.jpg",
+      "ground_truth": {"make": "Lexus", "model": "RX", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Lexus RX 450h Takumi CVT 3.5 Front.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Lexus_RX_450h_Takumi_CVT_3.5_Front.jpg", "author": "Vauxford", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "lexus-rx-2020-rear",
+      "image_path": "downloaded/lexus-rx-2020-rear.jpg",
+      "ground_truth": {"make": "Lexus", "model": "RX", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Lexus RX 450h Takumi CVT 3.5 Rear.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Lexus_RX_450h_Takumi_CVT_3.5_Rear.jpg", "author": "Vauxford", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "vw-tiguan-2020-front",
+      "image_path": "downloaded/vw-tiguan-2020-front.jpg",
+      "ground_truth": {"make": "Volkswagen", "model": "Tiguan", "year_start": 2020, "year_end": 2024},
+      "recognizable": true,
+      "source": {"commons_file_name": "20 Volkswagen Tiguan (2020-2024) 1.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:20_Volkswagen_Tiguan_(2020-2024)_1.jpg", "author": "Benespit", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "vw-tiguan-2020-rline",
+      "image_path": "downloaded/vw-tiguan-2020-rline.jpg",
+      "ground_truth": {"make": "Volkswagen", "model": "Tiguan", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Volkswagen Tiguan R-Line Auto.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Volkswagen_Tiguan_R-Line_Auto.jpg", "author": "Calreyn88", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "toyota-rav4-fifth-generation",
+      "image_path": "downloaded/toyota-rav4-fifth-generation.jpg",
+      "ground_truth": {"make": "Toyota", "model": "RAV4", "year_start": 2019, "year_end": 2024},
+      "recognizable": true,
+      "source": {"commons_file_name": "Toyota RAV4 (52280072511).jpg", "page_url": "https://commons.wikimedia.org/wiki/File:Toyota_RAV4_(52280072511).jpg", "author": "crash71100", "license": "CC0 1.0"}
+    },
+    {
+      "case_id": "bmw-x5-2020",
+      "image_path": "downloaded/bmw-x5-2020.jpg",
+      "ground_truth": {"make": "BMW", "model": "X5", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 BMW X5 xDrive 30d M Sport.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_BMW_X5_xDrive_30d_M_Sport.jpg", "author": "Chanokchon", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "mercedes-gle-2020-front",
+      "image_path": "downloaded/mercedes-gle-2020-front.jpg",
+      "ground_truth": {"make": "Mercedes-Benz", "model": "GLE", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Mercedes-Benz GLE 350 4Matic front 6.16.19.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Mercedes-Benz_GLE_350_4Matic_front_6.16.19.jpg", "author": "Kevauto", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "mercedes-gle-2020-rear",
+      "image_path": "downloaded/mercedes-gle-2020-rear.jpg",
+      "ground_truth": {"make": "Mercedes-Benz", "model": "GLE", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Mercedes-Benz GLE 350 4Matic rear NYIAS 2019.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Mercedes-Benz_GLE_350_4Matic_rear_NYIAS_2019.jpg", "author": "Kevauto", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "audi-q5-2020",
+      "image_path": "downloaded/audi-q5-2020.jpg",
+      "ground_truth": {"make": "Audi", "model": "Q5", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "Audi-Q5 (2) Foto 2020 Free image (49647488661).jpg", "page_url": "https://commons.wikimedia.org/wiki/File:Audi-Q5_(2)_Foto_2020_Free_image_(49647488661).jpg", "author": "Autobilder Gratis", "license": "CC BY 2.0"}
+    },
+    {
+      "case_id": "mazda-cx5-2020-rear",
+      "image_path": "downloaded/mazda-cx5-2020-rear.jpg",
+      "ground_truth": {"make": "Mazda", "model": "CX-5", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Mazda CX-5 au SIAM 2020 -- arrière.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Mazda_CX-5_au_SIAM_2020_--_arri%C3%A8re.jpg", "author": "Bull-Doser", "license": "Public domain"}
+    },
+    {
+      "case_id": "kia-sportage-2020",
+      "image_path": "downloaded/kia-sportage-2020.jpg",
+      "ground_truth": {"make": "Kia", "model": "Sportage", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Kia Sportage 4 CRDi ISG MHEV.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Kia_Sportage_4_CRDi_ISG_MHEV.jpg", "author": "Calreyn88", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "hyundai-tucson-2020",
+      "image_path": "downloaded/hyundai-tucson-2020.png",
+      "ground_truth": {"make": "Hyundai", "model": "Tucson", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Hyundai Tucson au SIAM 2020.png", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Hyundai_Tucson_au_SIAM_2020.png", "author": "Bull-Doser", "license": "Public domain"}
+    },
+    {
+      "case_id": "volvo-xc60-2020",
+      "image_path": "downloaded/volvo-xc60-2020.jpg",
+      "ground_truth": {"make": "Volvo", "model": "XC60", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Volvo XC60 R-Design D4 Auto.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Volvo_XC60_R-Design_D4_Auto.jpg", "author": "Calreyn88", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "nissan-qashqai-2020-rear",
+      "image_path": "downloaded/nissan-qashqai-2020-rear.jpg",
+      "ground_truth": {"make": "Nissan", "model": "Qashqai", "year_start": 2020, "year_end": 2020},
+      "recognizable": true,
+      "source": {"commons_file_name": "2020 Nissan Qashqai rear view at ALDI car park, Duncan Road, Gillingham, Kent.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:2020_Nissan_Qashqai_rear_view_at_ALDI_car_park,_Duncan_Road,_Gillingham,_Kent.jpg", "author": "OathOn", "license": "CC BY-SA 4.0"}
+    },
+    {
+      "case_id": "unknown-sunset-lake",
+      "image_path": "downloaded/unknown-sunset-lake.jpg",
+      "ground_truth": {},
+      "recognizable": false,
+      "source": {"commons_file_name": "Sunset 🌇.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:Sunset_🌇.jpg", "author": "Pratyakshaa Seth", "license": "CC0 1.0"}
+    },
+    {
+      "case_id": "unknown-sunset-scenic",
+      "image_path": "downloaded/unknown-sunset-scenic.jpg",
+      "ground_truth": {},
+      "recognizable": false,
+      "source": {"commons_file_name": "Scenic Sunset.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:Scenic_Sunset.jpg", "author": "Lim0103", "license": "CC0 1.0"}
+    },
+    {
+      "case_id": "unknown-mountain",
+      "image_path": "downloaded/unknown-mountain.jpg",
+      "ground_truth": {},
+      "recognizable": false,
+      "source": {"commons_file_name": "Moon mountain.jpg", "page_url": "https://commons.wikimedia.org/wiki/File:Moon_mountain.jpg", "author": "Rakeshk9548", "license": "CC0 1.0"}
+    }
+  ]
+}

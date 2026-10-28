@@ -1,0 +1,81 @@
+[
+  {
+    "state": "multi-sku",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "manual-conflict",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "staggered",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "both-ready",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "compatible",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "all-confirmed",
+    "residue": [],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  },
+  {
+    "state": "vehicle-multi-market",
+    "residue": [
+      "Е",
+      "в",
+      "р",
+      "о",
+      "п",
+      "а",
+      "К",
+      "и",
+      "т",
+      "а",
+      "й",
+      "Е",
+      "в",
+      "р",
+      "о",
+      "п",
+      "а",
+      "К",
+      "и",
+      "т",
+      "а",
+      "й"
+    ],
+    "labels": [
+      "Vehicle",
+      "Wheel"
+    ]
+  }
+]

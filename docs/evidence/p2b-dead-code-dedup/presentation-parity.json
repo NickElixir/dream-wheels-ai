@@ -1,0 +1,1161 @@
+{
+  "base": "260c3516c286dc37c3647a2dca465e05985c38e5",
+  "checks": [
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "dashboard",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=dashboard",
+        "view": null
+      },
+      "hashes": {
+        "route": "e53d73ce64937fbe95410ab413fb7da435b234ff4afad41f7dadeddfb233de23",
+        "visibleStatus": "63d2006a73ebb2748b0adaae284f7cec4ce491b833e1ef92b80ec535fbae7600",
+        "actions": "fb1e34719ec1c58089a49bdfcceb049d59235a4a0f7a92c8e653cb080566fad9",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "create",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=create",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d47c2f82b48862266e6292656c51c25dc90e7f4861fcb5dbef73ecbe2b8b19c",
+        "visibleStatus": "1f95d8840da2318c2286fa65cab723870dd4591cb20e4f93c5d7f49b1a7a6152",
+        "actions": "bcc77e1f8e28d9108049b9bd0c86b111cf9fbbe75c3343578aa5912a1040ff0d",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "history",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=history",
+        "view": null
+      },
+      "hashes": {
+        "route": "61ba25f1a431332989d299fcf92c7d926c7855711b7d1eb68a2241e29da43cb5",
+        "visibleStatus": "fb81c300c95e8b13a0eed64f980e96dff85282b532ed8be31b7d96303e5eeee9",
+        "actions": "84d83b85bb87922eb1362ac37f7ae60a2be3fbe18e0f1839d0e71ec2aad6dec4",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=result",
+        "view": null
+      },
+      "hashes": {
+        "route": "244861b4486b85de577dd7027d7173fbdff65b95b5a989d05dac7b89117da022",
+        "visibleStatus": "9eb6e22171d081afd9a3c6bf66296964287d1da6c9c5ff1a74369e89a63d2ab8",
+        "actions": "f4ae51155d841ac941535e00aab240fc7c3534ca3850a02ca77005fce48e2f8a",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "refunded",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=refunded",
+        "view": null
+      },
+      "hashes": {
+        "route": "0f522e5189d8fdf07f47063ff7000bdef9bb159837454145179725f7411ff4bc",
+        "visibleStatus": "602b3166a332c36df56ea3314411f2d6c599709aa96677e3af352cc2c5a0850c",
+        "actions": "b0f10a10e6cbb113841484a2a759d1547df65f0ac73b5f6177e96ad1afa5cf3a",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "missing-asset",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=missing-asset",
+        "view": null
+      },
+      "hashes": {
+        "route": "6803fd446398bd36137cf93d5a48b31342a6bfb379eb1308f895e5d216e636a9",
+        "visibleStatus": "1b9155f5d3338e9e13809550cbdfa63aac266ebe4159911c73228be0869960a6",
+        "actions": "68e7a553853c2b450cf0b8b184d70dc0eda8f2050488f2edc98ef8bb851cd40c",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d993a48ae509fa6ed24bb40587aa07435cb9201f19064ab0df706a336cae9ed",
+        "visibleStatus": "1e3139e883c2fa9d271d97cbcd523126e54ba842d954a829b3d189d1592c331e",
+        "actions": "0e57197a28ba8ab47e0daef93cefd623f34113fdae075eb915e29ade22749622",
+        "criticalState": "26b83a93ceed7099b8c0ca7a3da076831009d2a9e9ebeabf88371088f57025de"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "compatible",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=compatible",
+        "view": null
+      },
+      "hashes": {
+        "route": "f4790f7f81d89ce047cb4cbcb9ece60d34955533615ba2c74426f7db9987e7db",
+        "visibleStatus": "61349aa38097a15e7981509f6046c2cce6a9a8d8588520b69726e0a292d5b01c",
+        "actions": "cbf0a9cadf5b9e8c84bccab363f6cea4f5665807a4afb5540646e9bc6e68dd64",
+        "criticalState": "7c9af1fba392b67d8de593a6de0f2fce684245a87500e957a7dd6de5e116f7c0"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "0b5a128f367209113e796be9a8df78fb9eb3cfcf38fefa294815856a62637a96",
+        "visibleStatus": "1990bcaec9e20806483d490f3e0cfffa4fb1343a5ff2b1e1ad5b9397cc6d03c1",
+        "actions": "e0bb218c1758932faf965e26347297a1fe6135fb0ef517a6380258a1100448d3",
+        "criticalState": "885cff4097892685d2381b9726f02b6a38eab891ec928b396ff7a1f0e504f648"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "stale",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=stale",
+        "view": null
+      },
+      "hashes": {
+        "route": "f1008adecfa23663b4279363bfe4cdda3eff0752b776881e2cb0dfbc2d90cecd",
+        "visibleStatus": "979dd53a29ddb287c085cb886aa5df3e83c11658ea167cc8bf4ac97b48f87db3",
+        "actions": "cbf0a9cadf5b9e8c84bccab363f6cea4f5665807a4afb5540646e9bc6e68dd64",
+        "criticalState": "b88d6c17ed3eef337a9db240e12fccc68e9564d321e7fde2062e9157c19a6e49"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "wallet",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=wallet",
+        "view": null
+      },
+      "hashes": {
+        "route": "16da2035d2f430e8c4a26a6897da8dabd2f4bfdd1ae2684161b78e7aa0e9451a",
+        "visibleStatus": "9e09acdbd7e4ac04580c42b4df5ab5af69ef75ca02adb225115de74a7576fc4a",
+        "actions": "0eb41b854ef7563fcb78b24bd685060ab8bd68d7cb6ab400447dc5c2d01b3aaa",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "pending-payment",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=pending-payment",
+        "view": null
+      },
+      "hashes": {
+        "route": "2c09ad35a658ad559e5c509d068f44b2b505fc81079fbf24b7a2f791342cc5a2",
+        "visibleStatus": "671c9fc33391c8178033b5bae62535f0ceec7a9b8ad048543566fd1913b5041d",
+        "actions": "a47031d7844320331369e241061fd7fc1f55166183a0d22d252f997b3cdc51f2",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "auth-email",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-email",
+        "view": null
+      },
+      "hashes": {
+        "route": "d4ca9d6798cf5d2bd06d38fda5196c271deaa0cc20782411b0cececb053aa080",
+        "visibleStatus": "57e9cb4e09f25b3520551d8b7387793acc32ca40087be87c37541c5e87661500",
+        "actions": "60fa5ae8ad93d046e6a1d965f49e06b03fda7d8619611a355223e35db4a1620d",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "auth-restored",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-restored",
+        "view": null
+      },
+      "hashes": {
+        "route": "7cf4fd95ef745896617bcd1558fccb6fac7dc8ec200b370c23e5bec8cd6b2f61",
+        "visibleStatus": "dd5e51cde5ceb3749b79f6151399299e39944ae7e0e009e3ceb60b50dc85b77c",
+        "actions": "cb343f953bfcb83dc1ae6f73a30f640eba85d511512b12a98a9b0720bdd12aa9",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "p2b-fallback-editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "9a74497ebbadfccf29ec52030a73283a27bd4999fd4d4df2ebede48cd05ff680",
+        "visibleStatus": "00eec37b0764c368278e6931a26e6e3497532887ec8171ab06c096d141aa58d4",
+        "actions": "87955405220202469af6c1f708958a099cc9b958d50b420a8832ea8b464460f5",
+        "criticalState": "60bf7d38682dfde790624c0b0f6455c627a91b125dcc7195a8426f8700a6620e"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "p2b-fallback-result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-result",
+        "view": null
+      },
+      "hashes": {
+        "route": "aae0f32585180a236a122397cd62e89b062664c471c2df2c2053cc546c7a46be",
+        "visibleStatus": "bfd949645cca7bc6ea8753d3aabf50aa08d08c944c24b44dd789310ad8ee7365",
+        "actions": "fd1e577913b988d7d5d0483909320d8176a7c61777f4ad37504c7f5e3780384c",
+        "criticalState": "ba053889ba954b89941e5ad71ecf69cbd62392415e4a157c083ed3ca2499649e"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "ru",
+      "scenario": "p2b-fallback-failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "5c949e0b86f782101a230ff8a5910bda5f93fc345ebd7c56517ba0cb7bfe90d2",
+        "visibleStatus": "8a8019ea443584a267ecb359b399d9882b11e4c6cb84ed4e7a40ece09163e56d",
+        "actions": "7d90856c2cc15920cafe64b0965557591a6832293ef9e6b8f28165b3a571c5d5",
+        "criticalState": "2224cbd7f2cd97aaebea7cd00824ae9241e5cb4b8a35332690b24ac91bf28110"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "dashboard",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=dashboard",
+        "view": null
+      },
+      "hashes": {
+        "route": "e53d73ce64937fbe95410ab413fb7da435b234ff4afad41f7dadeddfb233de23",
+        "visibleStatus": "d86a138fbd6c158ae15be89fc8de85f00ed1c1aaf480aa9f043ad9d3e0b24332",
+        "actions": "3a5145513d4cf3baa558232ed69b8727a0708e9be270374ac2980e17a19a35d4",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "create",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=create",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d47c2f82b48862266e6292656c51c25dc90e7f4861fcb5dbef73ecbe2b8b19c",
+        "visibleStatus": "de36f220c80135ec596d4e6bc40ea958e7792b1fc3b5759061904d32287ee0f6",
+        "actions": "a9407c7a667bd8fd04eb3bb20d7f18e4a67ba564da1a835aae6f179f7d943b9e",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "history",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=history",
+        "view": null
+      },
+      "hashes": {
+        "route": "61ba25f1a431332989d299fcf92c7d926c7855711b7d1eb68a2241e29da43cb5",
+        "visibleStatus": "6ad5d12b747ceb2186a99d64baa6263e03be2af741676d581e756e1170b84c42",
+        "actions": "36bb4de68b130a3dcc472938142ce14295e4329474755fc236340e7d56d42410",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=result",
+        "view": null
+      },
+      "hashes": {
+        "route": "244861b4486b85de577dd7027d7173fbdff65b95b5a989d05dac7b89117da022",
+        "visibleStatus": "1588a551accd5fbb936bc2c40ba9632c3f7b439d1d7ba1cb300226ac817e8cc3",
+        "actions": "9218fe4b5cd79de9f55b49a8dc6bbff4e2d4eea1d33c76a2b186fca85a394165",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "refunded",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=refunded",
+        "view": null
+      },
+      "hashes": {
+        "route": "0f522e5189d8fdf07f47063ff7000bdef9bb159837454145179725f7411ff4bc",
+        "visibleStatus": "c200027f1d36d57045324bb2b08ca728dee967a6b3c04cd4b2463a1b0e60e2f7",
+        "actions": "7e33a2fc41fc24875f089921dfa5ca1c5f36ff20848f99655da3df14969ee2f7",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "missing-asset",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=missing-asset",
+        "view": null
+      },
+      "hashes": {
+        "route": "6803fd446398bd36137cf93d5a48b31342a6bfb379eb1308f895e5d216e636a9",
+        "visibleStatus": "0dfd05e59f41e4bc218180ca8a8b70ed98d2b4aaa0363f7568107a76107bf1d0",
+        "actions": "ad8970514123212efe1c7048555fcfe5d2b4997921bf6bc67f967bdbb8241eec",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d993a48ae509fa6ed24bb40587aa07435cb9201f19064ab0df706a336cae9ed",
+        "visibleStatus": "9c7b55949d40c12cc3b076699e68f7d90e3acc460c6b5d498f4ac2aad450e3b2",
+        "actions": "fffc680edc2b884e3d7cebc390ce867ffc48460de495a77baf21c27d029478ce",
+        "criticalState": "b56343930911586b05e0d2d0a0412081d794d2e935afef9ae0b4eccb1593cf03"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "compatible",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=compatible",
+        "view": null
+      },
+      "hashes": {
+        "route": "f4790f7f81d89ce047cb4cbcb9ece60d34955533615ba2c74426f7db9987e7db",
+        "visibleStatus": "82fdf2c39f237b8cecf5aa99cb8fca04fd11410ad32a860cc63fc049f6411ce4",
+        "actions": "45e64595bbd16e18019c803ed7b09802477feb65b798d3fab6ff770d5acff606",
+        "criticalState": "50b3777a9753eb05aed9e1621ef708388815849aec696778517d1d5b7c25fd08"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "0b5a128f367209113e796be9a8df78fb9eb3cfcf38fefa294815856a62637a96",
+        "visibleStatus": "5cea49c9298b461bab4ef35997df1ef110690a97feaf49fb674dae1158d54de3",
+        "actions": "aa601bb432b3a7c9464c915b15cce2639e32478d1027571f7ffd856eb26d6780",
+        "criticalState": "f92120cb4c17e9f50dcee594ac3e34d07b14c7ea9b08053daf01b2a283ba7d68"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "stale",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=stale",
+        "view": null
+      },
+      "hashes": {
+        "route": "f1008adecfa23663b4279363bfe4cdda3eff0752b776881e2cb0dfbc2d90cecd",
+        "visibleStatus": "4f07337c56b0d31ed375ab1408e797adfceee79fdffe999918c773460f4b93f8",
+        "actions": "45e64595bbd16e18019c803ed7b09802477feb65b798d3fab6ff770d5acff606",
+        "criticalState": "eef2882b65716b28804991d70c9fceb176edd1a78a09946d77e1a42565282a51"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "wallet",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=wallet",
+        "view": null
+      },
+      "hashes": {
+        "route": "16da2035d2f430e8c4a26a6897da8dabd2f4bfdd1ae2684161b78e7aa0e9451a",
+        "visibleStatus": "7ea807cd2a656798ed18f006a739aa763a3be63b294ea968e8bd3fed80197a69",
+        "actions": "e3a11da475dc1b48119a8fa59df06223fae093d4f2d9664feb54283ad03c62c3",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "pending-payment",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=pending-payment",
+        "view": null
+      },
+      "hashes": {
+        "route": "2c09ad35a658ad559e5c509d068f44b2b505fc81079fbf24b7a2f791342cc5a2",
+        "visibleStatus": "301e039e1d2aa76d345992c2a915ba41397d028c2a8eee349c637ea58e1293c2",
+        "actions": "5d94edf1d3275f8387446d850a252b40e5fd85d0dc9bc862427a1ecefed9f94e",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "auth-email",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-email",
+        "view": null
+      },
+      "hashes": {
+        "route": "d4ca9d6798cf5d2bd06d38fda5196c271deaa0cc20782411b0cececb053aa080",
+        "visibleStatus": "88f84c949c15d77039c778d38126c72f3dff3a8d6d3c9530c029a186cbccf577",
+        "actions": "87aaa47977e7141ad333032af82acb25df7375e56b438c0320cf6521367f3041",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "auth-restored",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-restored",
+        "view": null
+      },
+      "hashes": {
+        "route": "7cf4fd95ef745896617bcd1558fccb6fac7dc8ec200b370c23e5bec8cd6b2f61",
+        "visibleStatus": "0ac7577691b71b737296f75a7a51ad4f16dc2f03c005b02b8acd64e3cb40e386",
+        "actions": "ac588dc8c579ec635eabe71a4ed0b91428836bad1e3c232ca91263901acac9d6",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "p2b-fallback-editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "9a74497ebbadfccf29ec52030a73283a27bd4999fd4d4df2ebede48cd05ff680",
+        "visibleStatus": "f0b458194c4f8dfdabe0feba7c5829d6403ca0941abbf1fc3637ac9197658278",
+        "actions": "82d9e850d74d40820e38545b27c72d7c9a70fbaacaf09d33c7901177e0de3aa3",
+        "criticalState": "60bf7d38682dfde790624c0b0f6455c627a91b125dcc7195a8426f8700a6620e"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "p2b-fallback-result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-result",
+        "view": null
+      },
+      "hashes": {
+        "route": "aae0f32585180a236a122397cd62e89b062664c471c2df2c2053cc546c7a46be",
+        "visibleStatus": "e178656ab9185a9de578b0235068cbd578d2ad4e011fb6e7ff3e59b31a857f9f",
+        "actions": "591add36ee434a598bbcb63aa87ab3955c0cd51909b4d9b0233f2f75c62699c3",
+        "criticalState": "ba053889ba954b89941e5ad71ecf69cbd62392415e4a157c083ed3ca2499649e"
+      }
+    },
+    {
+      "width": 390,
+      "locale": "en",
+      "scenario": "p2b-fallback-failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "5c949e0b86f782101a230ff8a5910bda5f93fc345ebd7c56517ba0cb7bfe90d2",
+        "visibleStatus": "aff7f10a381e6cc7d265483bc1c5e2717b65a913bacb848a2cbaed19d24881ea",
+        "actions": "002eefcda7da1936d6360b9ec8dafec8379cf35342f912e00428420bd265876f",
+        "criticalState": "2224cbd7f2cd97aaebea7cd00824ae9241e5cb4b8a35332690b24ac91bf28110"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "dashboard",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=dashboard",
+        "view": null
+      },
+      "hashes": {
+        "route": "e53d73ce64937fbe95410ab413fb7da435b234ff4afad41f7dadeddfb233de23",
+        "visibleStatus": "55c8e980c626206978cbb4873291eec5c86c7673f610cce3e4b3ec4ee485d7f9",
+        "actions": "301626c4f7f587505f6f6e667b7f02bd1aeb1ec1a34d791e0a9d1257a8bbd3d1",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "create",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=create",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d47c2f82b48862266e6292656c51c25dc90e7f4861fcb5dbef73ecbe2b8b19c",
+        "visibleStatus": "ebfa3ddb7116b4fb7ed1c25faa2c59b40642c3bbd2c38bb502dded7e8f57e1e8",
+        "actions": "3bbc814f88dbf48345539bfc6d0cf4520f94298aa97e79316317d71bc40be62c",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "history",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=history",
+        "view": null
+      },
+      "hashes": {
+        "route": "61ba25f1a431332989d299fcf92c7d926c7855711b7d1eb68a2241e29da43cb5",
+        "visibleStatus": "9982ca71bcbe620d35f34d564946a5c66079a07a2936022415e05be3fdc55522",
+        "actions": "9da74b0af903b483f62edfea6482495b0e893e3530f652980bd79f86c08b6f88",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=result",
+        "view": null
+      },
+      "hashes": {
+        "route": "244861b4486b85de577dd7027d7173fbdff65b95b5a989d05dac7b89117da022",
+        "visibleStatus": "949da4cdb24cbfc35db4d7a2691e5c1c0c079acddca3ca14655679445027cbbe",
+        "actions": "6b3fe6f2c901fedfb43100538732e28ce3f07dabcbef18247e4ac1af3dfe042c",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "refunded",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=refunded",
+        "view": null
+      },
+      "hashes": {
+        "route": "0f522e5189d8fdf07f47063ff7000bdef9bb159837454145179725f7411ff4bc",
+        "visibleStatus": "29ac84899442e4aea612fa56f56f0b3d83119d4f8bf619c8960b4d9f04fcb8da",
+        "actions": "ff6e1de5fe5e3a049e503e3b1d6a416e38770efb74b04d8efa6b8509b95da4fe",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "missing-asset",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=missing-asset",
+        "view": null
+      },
+      "hashes": {
+        "route": "6803fd446398bd36137cf93d5a48b31342a6bfb379eb1308f895e5d216e636a9",
+        "visibleStatus": "00c128839e082b3359440ec12d16d4b442cea963c5466bd255bf05cd6c1861db",
+        "actions": "44ec1a38abd5b415f355d7ea87c25719f15d5231366feb221d8360269274b964",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d993a48ae509fa6ed24bb40587aa07435cb9201f19064ab0df706a336cae9ed",
+        "visibleStatus": "91642fdd692c9f703ab4f4797d119ae7470a10017efa95c21fec59480d21aeca",
+        "actions": "fbdf64f4cf00bb4f2e59cfab6d6743bfa916ca04e3af83508ced79b583c5799a",
+        "criticalState": "26b83a93ceed7099b8c0ca7a3da076831009d2a9e9ebeabf88371088f57025de"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "compatible",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=compatible",
+        "view": null
+      },
+      "hashes": {
+        "route": "f4790f7f81d89ce047cb4cbcb9ece60d34955533615ba2c74426f7db9987e7db",
+        "visibleStatus": "a5eb1bcae6650042c2583719df98bcf5b6f1b4267493dd826dbba0d716f317b5",
+        "actions": "268ebc01ab7d3caddd2cabab83221ac44f4f76adda60a67de8efd487a4d6b585",
+        "criticalState": "7c9af1fba392b67d8de593a6de0f2fce684245a87500e957a7dd6de5e116f7c0"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "0b5a128f367209113e796be9a8df78fb9eb3cfcf38fefa294815856a62637a96",
+        "visibleStatus": "aaf806c247944a488cc7001942b7513172b35acf13b41208ecf93a2cf1d47bbb",
+        "actions": "b010a19ca3b3b1f2379a253f56ec2af25bf2f5760929734252bbb64450e8adc6",
+        "criticalState": "885cff4097892685d2381b9726f02b6a38eab891ec928b396ff7a1f0e504f648"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "stale",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=stale",
+        "view": null
+      },
+      "hashes": {
+        "route": "f1008adecfa23663b4279363bfe4cdda3eff0752b776881e2cb0dfbc2d90cecd",
+        "visibleStatus": "398e4abdbff44811e85e50b43ba797303ece578a2804422f4127cd8103547540",
+        "actions": "268ebc01ab7d3caddd2cabab83221ac44f4f76adda60a67de8efd487a4d6b585",
+        "criticalState": "b88d6c17ed3eef337a9db240e12fccc68e9564d321e7fde2062e9157c19a6e49"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "wallet",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=wallet",
+        "view": null
+      },
+      "hashes": {
+        "route": "16da2035d2f430e8c4a26a6897da8dabd2f4bfdd1ae2684161b78e7aa0e9451a",
+        "visibleStatus": "76a453e5f44fb1117f2e5b1a9da492a58b95615f20423b3b49de571d9e3dbef2",
+        "actions": "9dffa4ecee068e2c00188d6bf5c3c3cf956583334bdab1173e8fca518e990092",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "pending-payment",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=pending-payment",
+        "view": null
+      },
+      "hashes": {
+        "route": "2c09ad35a658ad559e5c509d068f44b2b505fc81079fbf24b7a2f791342cc5a2",
+        "visibleStatus": "d9468acf2174e9ebff664492d7e5f573cf4c5b92a9b983e2f9b256f8b6aa9a77",
+        "actions": "afceaf38b20b2d0afa3dbc1fb9d818619135729767e5faf609b2be59bb984fe1",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "auth-email",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-email",
+        "view": null
+      },
+      "hashes": {
+        "route": "d4ca9d6798cf5d2bd06d38fda5196c271deaa0cc20782411b0cececb053aa080",
+        "visibleStatus": "909c6013f31dc73ebc5aad4bee2598e8c0225a381311da958fe61dd616512568",
+        "actions": "6bb779194c675264338d8018481351121cb0be6efabff1430d10e29a2e93d4b8",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "auth-restored",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-restored",
+        "view": null
+      },
+      "hashes": {
+        "route": "7cf4fd95ef745896617bcd1558fccb6fac7dc8ec200b370c23e5bec8cd6b2f61",
+        "visibleStatus": "5bc65840d25df291e2a9c824ebd292e542e5d0055d55f526b1e0dd36a8c3281b",
+        "actions": "62386cef8ce66715bc011c7c81e0c98e15ae248abfeb352c682925e07d0d43bf",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "p2b-fallback-editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "9a74497ebbadfccf29ec52030a73283a27bd4999fd4d4df2ebede48cd05ff680",
+        "visibleStatus": "f7ac3b13c49d966a0f12a5c80ccb0c6789a843f8f0fd7d2d1008142d342ad1dd",
+        "actions": "34b23bb5e07883514ba147ffd290ede9be110deea5998cd9da29d47a5526823f",
+        "criticalState": "60bf7d38682dfde790624c0b0f6455c627a91b125dcc7195a8426f8700a6620e"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "p2b-fallback-result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-result",
+        "view": null
+      },
+      "hashes": {
+        "route": "aae0f32585180a236a122397cd62e89b062664c471c2df2c2053cc546c7a46be",
+        "visibleStatus": "adc7f294a01e085b259f7bffd64265c545a7b6e576290cdd6064104410314221",
+        "actions": "32f69032877e94fe4a7e37eb4c6dd70a68970074cb5a3fc4d5f03795abe0fa7a",
+        "criticalState": "ba053889ba954b89941e5ad71ecf69cbd62392415e4a157c083ed3ca2499649e"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "ru",
+      "scenario": "p2b-fallback-failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "5c949e0b86f782101a230ff8a5910bda5f93fc345ebd7c56517ba0cb7bfe90d2",
+        "visibleStatus": "b5d81ba23856a106a43155e868e9a22786ee4263a8ea559755f17a325945328a",
+        "actions": "81daac879ca30b601d8f0bf007025cd4706df9b42f859eef79d34e3a45c4ca08",
+        "criticalState": "2224cbd7f2cd97aaebea7cd00824ae9241e5cb4b8a35332690b24ac91bf28110"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "dashboard",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=dashboard",
+        "view": null
+      },
+      "hashes": {
+        "route": "e53d73ce64937fbe95410ab413fb7da435b234ff4afad41f7dadeddfb233de23",
+        "visibleStatus": "64eef9b748f8b6deae583e56c7c0550c554a504c3b800d2a2e506d930269fbd9",
+        "actions": "6ef57d0c694742fbdd8ef59c79e075f617aecd07f70d6acf32a8ffbda5406407",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "create",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=create",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d47c2f82b48862266e6292656c51c25dc90e7f4861fcb5dbef73ecbe2b8b19c",
+        "visibleStatus": "159ce3dffd6a47167f4230122b9ee593e252dd14566e913552d9e519043d397e",
+        "actions": "92a110c5d9b306935c988d332af7d8bc6eb7dd0283f889b2a6ffa0582e8a226e",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "history",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=history",
+        "view": null
+      },
+      "hashes": {
+        "route": "61ba25f1a431332989d299fcf92c7d926c7855711b7d1eb68a2241e29da43cb5",
+        "visibleStatus": "98c8fe77cea0976a51354178b9d337d1f33e65e99500cd44e067c5cfcd78f431",
+        "actions": "dd5a5c73768ce53919c71634b1430f6191a4ea876df9cf3a99647232c360ed04",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=result",
+        "view": null
+      },
+      "hashes": {
+        "route": "244861b4486b85de577dd7027d7173fbdff65b95b5a989d05dac7b89117da022",
+        "visibleStatus": "331de3d4e4a404fec76b9e48a150e2b265a4f8b99f117c6402216bac8b243825",
+        "actions": "4fd8c69400cd463ddefa81d4ef297986fbc70ebad4f4060906f80cf26daa4338",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "refunded",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=refunded",
+        "view": null
+      },
+      "hashes": {
+        "route": "0f522e5189d8fdf07f47063ff7000bdef9bb159837454145179725f7411ff4bc",
+        "visibleStatus": "7603b8f5217d0d9abaf11e5928bbdfc1a216ba29646398402ddda60e1850c036",
+        "actions": "20aca7cb3f203aac62fce34e514d12f5d15df80585af0eb0d3cc6dfe6f6bc638",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "missing-asset",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=missing-asset",
+        "view": null
+      },
+      "hashes": {
+        "route": "6803fd446398bd36137cf93d5a48b31342a6bfb379eb1308f895e5d216e636a9",
+        "visibleStatus": "562b30c8252b6da11afc8bdfdd251145641f242a4fcf973432b302b74a3ca66d",
+        "actions": "67c938f987e8caafb0a76d3acf4530497096dcf0b6cc3f2ea4c7780ed86db1c6",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "5d993a48ae509fa6ed24bb40587aa07435cb9201f19064ab0df706a336cae9ed",
+        "visibleStatus": "5edfb609be0067d4afc587474456c39a397e0bc3982fff9f526272c4fbf82ac8",
+        "actions": "c81644642273512a896ef7ee80ab6c3b225f445aba23b6d767bd3ceb90fbba41",
+        "criticalState": "b56343930911586b05e0d2d0a0412081d794d2e935afef9ae0b4eccb1593cf03"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "compatible",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=compatible",
+        "view": null
+      },
+      "hashes": {
+        "route": "f4790f7f81d89ce047cb4cbcb9ece60d34955533615ba2c74426f7db9987e7db",
+        "visibleStatus": "d05540c569ac754bb6b938c52c94be121781440c04a3cd636343178e81ce84c0",
+        "actions": "7fa7b823824670a1892a59d949f6713e503a8008907f702613b4f7a9143bacfc",
+        "criticalState": "50b3777a9753eb05aed9e1621ef708388815849aec696778517d1d5b7c25fd08"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "0b5a128f367209113e796be9a8df78fb9eb3cfcf38fefa294815856a62637a96",
+        "visibleStatus": "0a2649d55cf09398127f1278a850cb82c4c9b73e942b25c770bf274ba66bc505",
+        "actions": "867584b0807705a1e789ed951483a2b90b55dd70df53cea931effcf41b5a2cfb",
+        "criticalState": "f92120cb4c17e9f50dcee594ac3e34d07b14c7ea9b08053daf01b2a283ba7d68"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "stale",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=stale",
+        "view": null
+      },
+      "hashes": {
+        "route": "f1008adecfa23663b4279363bfe4cdda3eff0752b776881e2cb0dfbc2d90cecd",
+        "visibleStatus": "b61e1783aec70271389a344e6e1404a8e1d46d94fa4ec8fc7077e262b16013cb",
+        "actions": "7fa7b823824670a1892a59d949f6713e503a8008907f702613b4f7a9143bacfc",
+        "criticalState": "eef2882b65716b28804991d70c9fceb176edd1a78a09946d77e1a42565282a51"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "wallet",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=wallet",
+        "view": null
+      },
+      "hashes": {
+        "route": "16da2035d2f430e8c4a26a6897da8dabd2f4bfdd1ae2684161b78e7aa0e9451a",
+        "visibleStatus": "5a55b137fb5665decaa6c00257e657f6b2208ec898c20d4cb42b056d53cc2d17",
+        "actions": "ed76a743de3e4d0c26581332f3f5475273ffffc6bf5b4a47f617922cfe7c2ddd",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "pending-payment",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=pending-payment",
+        "view": null
+      },
+      "hashes": {
+        "route": "2c09ad35a658ad559e5c509d068f44b2b505fc81079fbf24b7a2f791342cc5a2",
+        "visibleStatus": "0d329fce7131363da4eb27e64fcd86dc943f6f206868b4a932b94ec166e7efcb",
+        "actions": "a8e4becfadc84ca3d09fac0bab5ed03bd1c0e0d66ab10cbd7e6ee22ad1ee5da4",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "auth-email",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-email",
+        "view": null
+      },
+      "hashes": {
+        "route": "d4ca9d6798cf5d2bd06d38fda5196c271deaa0cc20782411b0cececb053aa080",
+        "visibleStatus": "9182ed299defd5afd55868df62afae7bcbf96db95ad1bc00e53e1d27f91e52c6",
+        "actions": "ef143cd61643540ab2a607f1a57951d557e270e8ac16cf6f7fe79a22fac7c7b5",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "auth-restored",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=auth-restored",
+        "view": null
+      },
+      "hashes": {
+        "route": "7cf4fd95ef745896617bcd1558fccb6fac7dc8ec200b370c23e5bec8cd6b2f61",
+        "visibleStatus": "a962dc78384ae0d13086aacd9c9185271e8e9f6a20ae58b330bbc68d300df5c5",
+        "actions": "cdc96bbc745bef250d9183763d41d4e75c060faee342d20a4f8043c5f5ac5b3d",
+        "criticalState": "4a0220da09aa4e0348d0dd3b4a1ece1820d7411ed066ec88deee8cbb8e03b8ed"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "p2b-fallback-editor",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-editor",
+        "view": null
+      },
+      "hashes": {
+        "route": "9a74497ebbadfccf29ec52030a73283a27bd4999fd4d4df2ebede48cd05ff680",
+        "visibleStatus": "65b5e54f46d202c241798162c1726ab33a8be26a713380c6d62b6e7bd920cc53",
+        "actions": "cc795c7354b62a557878f6dae20a7d239a6a8283c520e4b7e81c712a5fd7d17a",
+        "criticalState": "60bf7d38682dfde790624c0b0f6455c627a91b125dcc7195a8426f8700a6620e"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "p2b-fallback-result",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-result",
+        "view": null
+      },
+      "hashes": {
+        "route": "aae0f32585180a236a122397cd62e89b062664c471c2df2c2053cc546c7a46be",
+        "visibleStatus": "70a3b12ae6342fc25f27481f60de07bb75c5afd78f06b56a5e7908d2cc9e901d",
+        "actions": "729be7e377f4c53436c425233c869ba8ecbfc8ce90c6dff0107ebabbb2f7a7a8",
+        "criticalState": "ba053889ba954b89941e5ad71ecf69cbd62392415e4a157c083ed3ca2499649e"
+      }
+    },
+    {
+      "width": 1440,
+      "locale": "en",
+      "scenario": "p2b-fallback-failed",
+      "parity": true,
+      "route": {
+        "pathname": "/tests/browser-fixtures/e01-i18n.html",
+        "search": "?scenario=p2b-fallback-failed",
+        "view": null
+      },
+      "hashes": {
+        "route": "5c949e0b86f782101a230ff8a5910bda5f93fc345ebd7c56517ba0cb7bfe90d2",
+        "visibleStatus": "764dba542217765fb964bb1506d009294399d130318b3a325828f090ad461844",
+        "actions": "16dbc1916906575e384c9efa7e06a910c372472b01f28ebc7935fc853b5e8dc1",
+        "criticalState": "2224cbd7f2cd97aaebea7cd00824ae9241e5cb4b8a35332690b24ac91bf28110"
+      }
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+[
+  {
+    "width": 1440,
+    "height": 1000,
+    "locale": "ru",
+    "scenario": "result",
+    "frame": {
+      "x": 252,
+      "y": 80.609375,
+      "width": 860.3125,
+      "height": 483.671875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 124.8681640625
+    }
+  },
+  {
+    "width": 1440,
+    "height": 1000,
+    "locale": "en",
+    "scenario": "result",
+    "frame": {
+      "x": 252,
+      "y": 80.609375,
+      "width": 860.3125,
+      "height": 483.671875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 86.142578125
+    }
+  },
+  {
+    "width": 1024,
+    "height": 900,
+    "locale": "ru",
+    "scenario": "result",
+    "frame": {
+      "x": 260.953125,
+      "y": 80.609375,
+      "width": 722.09375,
+      "height": 405.96875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 124.8681640625
+    }
+  },
+  {
+    "width": 1024,
+    "height": 900,
+    "locale": "en",
+    "scenario": "result",
+    "frame": {
+      "x": 260.953125,
+      "y": 80.609375,
+      "width": 722.09375,
+      "height": 405.96875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 86.142578125
+    }
+  },
+  {
+    "width": 768,
+    "height": 900,
+    "locale": "ru",
+    "scenario": "result",
+    "frame": {
+      "x": 250.71875,
+      "y": 80.609375,
+      "width": 486.5625,
+      "height": 273.546875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 124.8681640625
+    }
+  },
+  {
+    "width": 768,
+    "height": 900,
+    "locale": "en",
+    "scenario": "result",
+    "frame": {
+      "x": 250.71875,
+      "y": 80.609375,
+      "width": 486.5625,
+      "height": 273.546875
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 86.142578125
+    }
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "locale": "ru",
+    "scenario": "result",
+    "frame": {
+      "x": 16,
+      "y": 69.59375,
+      "width": 358,
+      "height": 201.265625
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 124.8681640625
+    }
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "locale": "en",
+    "scenario": "result",
+    "frame": {
+      "x": 16,
+      "y": 69.59375,
+      "width": 358,
+      "height": 201.265625
+    },
+    "text": {
+      "font": "10px sans-serif",
+      "width": 86.142578125
+    }
+  }
+]

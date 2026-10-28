@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090b">
+<title>Dream Wheels — Pre-render Fitment V2 VNext prototype</title>
+<style>
+:root{
+  --bg:#07090b;
+  --bg-2:#0b0e11;
+  --surface:#0f1317;
+  --surface-2:#13181d;
+  --line:rgba(238,242,246,.10);
+  --line-strong:rgba(238,242,246,.16);
+  --text:#f1f3f2;
+  --muted:#9aa2a8;
+  --subtle:#707980;
+  --cta:#f0efe9;
+  --cta-text:#0c0f11;
+  --lime:#d8ff37;
+  --good:#75caa0;
+  --warn:#d8ad67;
+  --bad:#d87979;
+  --pending:#9aa2a8;
+  --focus:#d8ff37;
+  --r-sm:7px;
+  --r-md:10px;
+  --r-lg:12px;
+  --sidebar:220px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--text);
+  background:var(--bg);
+  font:15px/1.45 "IBM Plex Sans","Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit}
+button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+.sidebar{
+  position:sticky;top:0;height:100vh;
+  border-right:1px solid var(--line);
+  padding:26px 18px 22px;
+  display:flex;flex-direction:column;
+  background:#080a0c;
+}
+.brand{
+  display:flex;align-items:center;gap:9px;
+  font-weight:600;letter-spacing:.16em;font-size:13px;
+  margin:0 8px 34px;
+}
+.brand-dim{color:#8d959b}
+.nav-group{display:grid;gap:5px}
+.nav-label{
+  margin:20px 10px 7px;color:#5f6870;
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+}
+.nav-item{
+  position:relative;appearance:none;border:0;background:transparent;
+  min-height:42px;border-radius:var(--r-sm);
+  color:#8f979d;text-align:left;padding:0 12px;font-weight:500;
+}
+.nav-item:hover{background:#0e1215;color:var(--text)}
+.nav-item.active{background:#101418;color:var(--text)}
+.account{
+  margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:end;gap:12px;
+}
+.account small{display:block;color:var(--subtle);font-size:11px}
+.account strong{display:block;margin-top:3px;font-size:14px;font-weight:500}
+.balance{text-align:right;font-variant-numeric:tabular-nums}
+.main{min-width:0;padding:28px clamp(22px,4vw,58px) 88px}
+.frame{width:min(1180px,100%);margin:0 auto}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding-bottom:22px;border-bottom:1px solid var(--line)
+}
+.topbar h1{margin:0;font-size:27px;line-height:1.15;font-weight:500;letter-spacing:-.025em}
+.top-meta{display:flex;gap:18px;align-items:center;color:var(--muted);font-size:12px}
+.prototype-tag{color:var(--subtle);letter-spacing:.08em;text-transform:uppercase}
+.context{
+  display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,.75fr);
+  gap:16px;padding:24px 0 26px;border-bottom:1px solid var(--line)
+}
+.media-object{min-width:0}
+.media{
+  position:relative;overflow:hidden;border-radius:var(--r-lg);
+  background:#101317;border:1px solid rgba(255,255,255,.06)
+}
+.vehicle .media{aspect-ratio:16/8.8}
+.wheel .media{aspect-ratio:1/1}
+.media svg{display:block;width:100%;height:100%}
+.media::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 -90px 80px -75px rgba(0,0,0,.78)
+}
+.object-meta{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
+  padding-top:12px
+}
+.object-label{
+  margin:0 0 3px;color:var(--subtle);font-size:10px;
+  letter-spacing:.15em;text-transform:uppercase;font-weight:600
+}
+.object-name{font-size:18px;font-weight:500;letter-spacing:-.015em}
+.object-sub{margin-top:4px;color:var(--muted);font-size:13px}
+.change{
+  appearance:none;border:0;background:transparent;color:#b8bec3;
+  padding:2px 0;font-size:12px;text-decoration:underline;text-underline-offset:4px;
+  text-decoration-color:#4b5258
+}
+.content{display:block;padding-top:30px}
+.primary{min-width:0;width:100%}
+.eyebrow{
+  margin:0 0 10px;color:var(--subtle);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;font-weight:600
+}
+.verdict-heading{display:flex;align-items:flex-start;gap:14px;max-width:820px}
+.verdict-mark{
+  flex:0 0 auto;display:grid;place-items:center;
+  width:34px;height:34px;margin-top:2px;
+  font-size:29px;line-height:1;font-weight:500
+}
+.verdict-mark.good{color:var(--good)}
+.verdict-mark.warn{color:var(--warn)}
+.verdict-mark.bad{color:var(--bad)}
+.verdict-mark.neutral{color:#aab2b7}
+.verdict-title{
+  margin:0;color:var(--text);
+  font-size:clamp(30px,3.5vw,46px);line-height:1.04;
+  font-weight:500;letter-spacing:-.04em
+}
+.verdict-copy{margin:13px 0 0;max-width:820px;color:#b5bcc1;font-size:16px;line-height:1.5}
+.table-wrap{margin-top:30px;border-top:1px solid var(--line-strong)}
+.fit-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.fit-table col:nth-child(1){width:20%}
+.fit-table col:nth-child(2){width:29%}
+.fit-table col:nth-child(3){width:22%}
+.fit-table col:nth-child(4){width:29%}
+.fit-table th{
+  padding:13px 10px 11px;text-align:left;color:var(--subtle);
+  font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;
+  border-bottom:1px solid var(--line)
+}
+.fit-table th:first-child,.fit-table td:first-child{padding-left:0}
+.fit-table th:last-child,.fit-table td:last-child{padding-right:0}
+.fit-table td{
+  padding:15px 10px;border-bottom:1px solid var(--line);
+  vertical-align:middle
+}
+.param{color:#aeb5ba;font-size:12px;font-weight:500;letter-spacing:.02em}
+.value{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.result{
+  display:inline-grid;place-items:center;
+  width:26px;height:26px;
+  font-size:22px;line-height:1;font-weight:500
+}
+.result.good{color:var(--good)}
+.result.warn{color:var(--warn)}
+.result.bad{color:var(--bad)}
+.result.pending{color:var(--pending)}
+.sr-only{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
+}
+.row-strong td{background:linear-gradient(90deg,rgba(216,121,121,.055),rgba(216,121,121,0))}
+.row-warn td{background:linear-gradient(90deg,rgba(216,173,103,.055),rgba(216,173,103,0))}
+.explainer{
+  margin-top:20px;padding:15px 0;border-bottom:1px solid var(--line);
+  color:#aab2b7;font-size:13px;max-width:760px
+}
+.explainer strong{color:var(--text);font-weight:500}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.btn{
+  min-height:46px;border-radius:8px;padding:0 18px;font-weight:500;
+  border:1px solid transparent
+}
+.btn-primary{background:var(--cta);color:var(--cta-text)}
+.btn-primary:hover{background:#fff}
+.btn-secondary{background:transparent;color:#d5d9dc;border-color:var(--line-strong)}
+.btn-secondary:hover{background:#101419}
+.btn-text{background:transparent;color:#b6bdc2;padding-left:4px;padding-right:4px}
+.fitment-disclaimer{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:20px;padding:14px 0 0;border-top:1px solid var(--line);
+  color:#929ba1;font-size:12px;max-width:900px
+}
+.fitment-disclaimer-icon{
+  flex:0 0 auto;width:18px;height:18px;border:1px solid #606970;
+  border-radius:50%;display:grid;place-items:center;
+  color:#c5cacf;font-size:11px;margin-top:1px
+}
+.fitment-disclaimer strong{display:block;color:#d5d9dc;font-weight:500;margin-bottom:3px}
+.fitment-disclaimer p{margin:0;line-height:1.5}
+.processing-block{
+  margin-top:28px;border-top:1px solid var(--line-strong);padding-top:18px
+}
+.processing-line{display:flex;align-items:center;gap:10px;color:#b9c0c5}
+.spinner{
+  width:15px;height:15px;border-radius:50%;border:1.5px solid #3c444a;
+  border-top-color:#d1d5d8;animation:spin .9s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-block{
+  margin-top:28px;padding:17px 0;border-top:1px solid var(--line-strong);
+  border-bottom:1px solid var(--line);color:#b7bec3
+}
+.error-block strong{display:block;color:#e1a0a0;font-weight:500;margin-bottom:5px}
+.review{
+  position:fixed;right:16px;bottom:16px;z-index:20;width:min(360px,calc(100vw - 32px));
+  background:rgba(12,15,18,.97);border:1px solid #293036;border-radius:10px;
+  box-shadow:0 16px 42px rgba(0,0,0,.38);overflow:hidden
+}
+.review:not([open]){width:auto}
+.review summary{
+  list-style:none;cursor:pointer;padding:11px 13px;color:#8e979e;
+  font-size:10px;text-transform:uppercase;letter-spacing:.13em;font-weight:600
+}
+.review summary::-webkit-details-marker{display:none}
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px}
+.review button{
+  min-height:36px;border-radius:6px;border:1px solid #252b30;
+  background:#101418;color:#9ba4aa;text-align:left;padding:0 10px;font-size:11px
+}
+.review button.active{background:#181d21;color:var(--text);border-color:#434b51}
+.mobile-nav{display:none}
+.mobile-brand{display:none}
+@media(max-width:980px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:18px 18px calc(88px + var(--safe-bottom))}
+  .topbar{flex-wrap:wrap;align-items:center}
+  .mobile-brand{display:flex;order:1;margin:0}
+  .desktop-title{display:block;order:2;width:100%}
+  .desktop-title h1{font-size:23px;margin-top:8px}
+  .content{display:block}
+  .mobile-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:15;
+    display:grid;grid-template-columns:repeat(5,1fr);
+    border-top:1px solid var(--line);
+    padding:7px 6px calc(7px + var(--safe-bottom));
+    background:rgba(8,10,12,.96);backdrop-filter:blur(14px)
+  }
+  .mobile-nav button{
+    min-height:46px;border:0;border-radius:7px;background:transparent;
+    color:#737c83;font-size:10px;font-weight:500
+  }
+  .mobile-nav button.active{color:var(--text);background:#101418}
+}
+@media(max-width:680px){
+  .topbar{padding-bottom:16px}
+  .top-meta{gap:10px}
+  .prototype-tag{display:none}
+  .context{grid-template-columns:1fr;gap:20px;padding:18px 0 22px}
+  .vehicle .media{aspect-ratio:16/9.5}
+  .wheel{
+    display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center
+  }
+  .wheel .media{aspect-ratio:1/1}
+  .wheel .object-meta{padding-top:0}
+  .content{padding-top:24px;gap:28px}
+  .verdict-heading{gap:10px}
+  .verdict-mark{width:28px;height:28px;font-size:24px}
+  .verdict-title{font-size:34px}
+  .verdict-copy{font-size:14px}
+  .table-wrap{overflow:visible}
+  .fit-table,.fit-table tbody,.fit-table tr,.fit-table td{display:block;width:100%}
+  .fit-table colgroup,.fit-table thead{display:none}
+  .fit-table tr{padding:14px 0;border-bottom:1px solid var(--line)}
+  .fit-table td{border:0;padding:0}
+  .fit-table td.param{margin-bottom:9px;color:#d0d5d8;font-size:13px}
+  .fit-table td:nth-child(2),.fit-table td:nth-child(3){
+    display:grid;grid-template-columns:110px 1fr;gap:10px;padding:3px 0
+  }
+  .fit-table td:nth-child(2)::before{content:"Автомобиль";color:var(--subtle);font-size:11px}
+  .fit-table td:nth-child(3)::before{content:"Диск";color:var(--subtle);font-size:11px}
+  .fit-table td:nth-child(4){padding-top:8px}
+  .row-strong td,.row-warn td{background:none}
+  .actions{display:grid;grid-template-columns:1fr}
+  .btn{width:100%}
+  .review{position:static;width:100%;margin-top:32px}
+  .review-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:390px){
+  .main{padding-left:14px;padding-right:14px}
+  .wheel{grid-template-columns:104px minmax(0,1fr)}
+  .review-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+    <nav class="nav-group" aria-label="Основная навигация">
+      <button class="nav-item">Главная</button>
+      <button class="nav-item">Примерить диски</button>
+      <button class="nav-item active">Совместимость</button>
+      <button class="nav-item">Мои примерки</button>
+      <button class="nav-item">Баланс</button>
+    </nav>
+    <div class="nav-label">Помощь</div>
+    <nav class="nav-group">
+      <button class="nav-item">Поддержка</button>
+      <button class="nav-item">Документы</button>
+    </nav>
+    <div class="account">
+      <div><small>Профиль</small><strong>Nikolai</strong></div>
+      <div class="balance"><small>Рендеры</small><strong>36</strong></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="frame">
+      <header class="topbar">
+        <div class="desktop-title"><h1>Проверка совместимости</h1></div>
+        <div class="mobile-brand brand"><span>DREAM</span><span class="brand-dim">WHEELS</span></div>
+
+      </header>
+
+      <section class="context" aria-label="Текущая пара">
+        <article class="media-object vehicle">
+          <div class="media" aria-label="Porsche Cayenne E3">
+            <svg viewBox="0 0 1000 550" role="img" aria-label="Porsche Cayenne E3, автомобиль">
+              <defs>
+                <linearGradient id="garage" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#353a3e"/>
+                  <stop offset=".42" stop-color="#171c20"/>
+                  <stop offset="1" stop-color="#0b0e11"/>
+                </linearGradient>
+                <linearGradient id="paint" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#3c4146"/>
+                  <stop offset=".5" stop-color="#171b1f"/>
+                  <stop offset="1" stop-color="#060708"/>
+                </linearGradient>
+              </defs>
+              <rect width="1000" height="550" fill="url(#garage)"/>
+              <rect y="388" width="1000" height="162" fill="#0a0c0e"/>
+              <rect x="80" y="54" width="5" height="305" fill="#a9a18f" opacity=".30"/>
+              <rect x="882" y="54" width="5" height="305" fill="#a9a18f" opacity=".20"/>
+              <path d="M170 365 C209 284 309 231 438 220 L642 224 C719 234 790 277 828 337 L885 354 897 399 857 425 192 425 126 394 140 366 Z" fill="url(#paint)" stroke="#53595e" stroke-width="2"/>
+              <path d="M364 240 L456 239 433 316 248 315 C278 275 317 251 364 240Z" fill="#20272c"/>
+              <path d="M478 240 L636 243 C694 251 744 279 779 316 L467 316Z" fill="#1c2328"/>
+              <path d="M173 365 C294 350 613 348 845 360" stroke="#838a8f" stroke-width="2" opacity=".35"/>
+              <ellipse cx="311" cy="421" rx="68" ry="20" fill="#000" opacity=".65"/>
+              <ellipse cx="743" cy="421" rx="68" ry="20" fill="#000" opacity=".65"/>
+              <circle cx="311" cy="411" r="62" fill="#060708"/><circle cx="311" cy="411" r="37" fill="#737a80"/><circle cx="311" cy="411" r="22" fill="#171b1e"/>
+              <circle cx="743" cy="411" r="62" fill="#060708"/><circle cx="743" cy="411" r="37" fill="#737a80"/><circle cx="743" cy="411" r="22" fill="#171b1e"/>
+              <rect x="805" y="336" width="70" height="9" rx="4" fill="#ece6d2" opacity=".85"/>
+            </svg>
+          </div>
+          <div class="object-meta">
+            <div><p class="object-label">Автомобиль</p><div class="object-name">Porsche Cayenne</div><div class="object-sub">E3, 2022, Russia+ — исходное фото</div></div>
+            <button class="change">Изменить</button>
+          </div>
+        </article>
+
+        <article class="media-object wheel">
+          <div class="media" aria-label="BBS CI-R">
+            <svg viewBox="0 0 500 500" role="img" aria-label="BBS CI-R, колесный диск">
+              <defs>
+                <radialGradient id="rimBg"><stop offset="0" stop-color="#384047"/><stop offset=".7" stop-color="#171b1f"/><stop offset="1" stop-color="#0c0f12"/></radialGradient>
+                <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dedede"/><stop offset=".45" stop-color="#8c9297"/><stop offset="1" stop-color="#3d4348"/></linearGradient>
+              </defs>
+              <rect width="500" height="500" fill="url(#rimBg)"/>
+              <circle cx="250" cy="250" r="177" fill="#0b0d0f" stroke="#555c62" stroke-width="11"/>
+              <circle cx="250" cy="250" r="145" fill="#171b1f" stroke="#838a90" stroke-width="3"/>
+              <g transform="translate(250 250)" fill="url(#metal)">
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(36)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(72)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(108)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(144)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(180)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(216)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(252)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(288)"/>
+                <path d="M-8 -139 L8 -139 L18 -34 L-18 -34 Z" transform="rotate(324)"/>
+              </g>
+              <circle cx="250" cy="250" r="38" fill="#0a0d0f" stroke="#777d82" stroke-width="3"/>
+              <circle cx="250" cy="250" r="8" fill="#9ba2a7" opacity=".65"/>
+            </svg>
+          </div>
+          <div class="object-meta">
+            <div><p class="object-label">Колесный диск</p><div class="object-name">BBS CI-R</div><div class="object-sub">20″, 9J, ET 50</div></div>
+            <button class="change">Изменить</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="content">
+        <div class="primary">
+          <p class="eyebrow">Техническая проверка</p>
+          <div class="verdict-heading">
+            <span class="verdict-mark" id="verdictMark" aria-hidden="true"></span>
+            <h2 class="verdict-title" id="verdictTitle"></h2>
+          </div>
+          <p class="verdict-copy" id="verdictCopy"></p>
+
+          <div id="tableMount"></div>
+          <div id="auxMount"></div>
+
+          <aside class="fitment-disclaimer">
+            <span class="fitment-disclaimer-icon" aria-hidden="true">i</span>
+            <div>
+              <strong>Техническая проверка не ограничивает визуальную примерку</strong>
+              <p>Создание изображения остаётся доступным независимо от Fitment. Рендер показывает внешний вид и не подтверждает физическую установку</p>
+            </div>
+          </aside>
+
+          <div class="actions" id="actions">
+            <button class="btn btn-primary">Создать изображение</button>
+            <button class="btn btn-secondary" id="secondaryAction">Выбрать другой диск</button>
+          </div>
+        </div>
+      </section>
+
+      <details class="review">
+        <summary>Сценарии прототипа</summary>
+        <div class="review-grid" id="reviewGrid"></div>
+      </details>
+    </div>
+  </main>
+</div>
+
+<nav class="mobile-nav" aria-label="Мобильная навигация">
+  <button>Главная</button>
+  <button class="active">Создать</button>
+  <button>Мои</button>
+  <button>Баланс</button>
+  <button>Ещё</button>
+</nav>
+
+<script>
+const baseRows = [
+  {key:"pcd",label:"PCD",car:"5×130",wheel:"5×130",status:"good",result:"Подходит"},
+  {key:"dia",label:"DIA",car:"71,6 мм",wheel:"71,6 мм",status:"good",result:"Подходит"},
+  {key:"diameter",label:"Диаметр",car:"20″",wheel:"20″",status:"good",result:"Подходит"},
+  {key:"width",label:"Ширина",car:"9J",wheel:"9J",status:"good",result:"Подходит"},
+  {key:"et",label:"ET",car:"47–53",wheel:"50",status:"good",result:"Подходит"}
+];
+
+const scenarios = {
+  compatible:{
+    label:"Совместимо",
+    title:"Предварительно совместимо",
+    tone:"good",
+    mark:"✓",
+    markTone:"good",
+    copy:"По проверенным параметрам конфликтов не обнаружено",
+    rows:baseRows,
+    explainer:"",
+    secondary:""
+  },
+  conditional:{
+    label:"С условием",
+    title:"Совместимо при условии",
+    tone:"warn",
+    mark:"!",
+    markTone:"warn",
+    copy:"Для установки потребуются правильно подобранные центровочные кольца",
+    rows:baseRows.map(function(r){return r.key==="dia"?{key:"dia",label:"DIA",car:"71,6 мм",wheel:"74,1 мм",status:"warn",result:"Требуется условие"}:r}),
+    explainer:"DIA диска больше диаметра ступицы автомобиля. Для установки требуется центровочное кольцо",
+    secondary:"Подробнее об условии"
+  },
+  incompatible:{
+    label:"PCD конфликт",
+    title:"Обнаружена несовместимость",
+    tone:"bad",
+    mark:"×",
+    markTone:"bad",
+    copy:"Разболтовка выбранного диска не соответствует автомобилю",
+    rows:baseRows.map(function(r){return r.key==="pcd"?{key:"pcd",label:"PCD",car:"5×130",wheel:"5×112",status:"bad",result:"Конфликт",strong:true}:r}),
+    explainer:"Подтверждённый PCD диска отличается от PCD автомобиля",
+    secondary:"Выбрать другой диск"
+  },
+  incompatibleEt:{
+    label:"ET конфликт",
+    title:"Обнаружена несовместимость",
+    tone:"bad",
+    mark:"×",
+    markTone:"bad",
+    copy:"Вылет выбранного диска находится вне допустимого диапазона",
+    rows:baseRows.map(function(r){return r.key==="et"?{key:"et",label:"ET",car:"47–53",wheel:"58",status:"bad",result:"Конфликт",strong:true}:r}),
+    explainer:"ET диска 58 находится вне допустимого диапазона 47–53 для этой конфигурации",
+    secondary:"Выбрать другой диск"
+  },
+  unknown:{
+    label:"Недостаточно данных",
+    title:"Недостаточно данных для вывода",
+    tone:"neutral",
+    mark:"?",
+    markTone:"neutral",
+    copy:"Не хватает подтверждённого значения ET колесного диска",
+    rows:baseRows.map(function(r){return r.key==="et"?{key:"et",label:"ET",car:"47–53",wheel:"—",status:"pending",result:"Недостаточно данных",strong:false}:r}),
+    explainer:"Укажите ET выбранного диска и запустите техническую проверку повторно",
+    secondary:"Указать ET"
+  },
+  processing:{
+    label:"Проверяем",
+    title:"Проверяем совместимость",
+    tone:"neutral",
+    mark:"…",
+    markTone:"neutral",
+    copy:"Технический результат появится после завершения проверки",
+    processing:true,
+    secondary:""
+  },
+  failure:{
+    label:"Сервис недоступен",
+    title:"Проверка не выполнена",
+    tone:"neutral",
+    mark:"!",
+    markTone:"warn",
+    copy:"Сервис технической проверки совместимости временно недоступен",
+    failure:true,
+    secondary:"Повторить проверку"
+  }
+};
+
+let current = localStorage.getItem("dw-vnext-fitment-state") || "incompatible";
+
+function renderTable(rows){
+  const icons={good:"✓",warn:"!",bad:"×",pending:"?"};
+  let html='<div class="table-wrap"><table class="fit-table"><colgroup><col><col><col><col></colgroup><thead><tr><th>Параметр</th><th>Для автомобиля</th><th>Диск</th><th>Результат</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    html+='<tr class="'+(r.strong?(r.status==="bad"?"row-strong":"row-warn"):"")+'">';
+    html+='<td class="param">'+r.label+'</td>';
+    html+='<td class="value">'+r.car+'</td>';
+    html+='<td class="value">'+r.wheel+'</td>';
+    html+='<td><span class="result '+r.status+'" aria-label="'+r.result+'" title="'+r.result+'">'+icons[r.status]+'<span class="sr-only">'+r.result+'</span></span></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function render(){
+  const s=scenarios[current];
+  const title=document.getElementById("verdictTitle");
+  const mark=document.getElementById("verdictMark");
+  title.textContent=s.title;
+  title.className="verdict-title";
+  mark.textContent=s.mark||"";
+  mark.className="verdict-mark "+(s.markTone||"neutral");
+  document.getElementById("verdictCopy").textContent=s.copy;
+
+  const table=document.getElementById("tableMount");
+  const aux=document.getElementById("auxMount");
+  if(s.processing){
+    table.innerHTML="";
+    aux.innerHTML='<div class="processing-block"><div class="processing-line"><span class="spinner"></span><span>Сравниваем подтверждённые параметры автомобиля и диска</span></div></div>';
+  }else if(s.failure){
+    table.innerHTML="";
+    aux.innerHTML='<div class="error-block"><strong>Не удалось выполнить техническую проверку</strong><span>Введённые данные сохранены. Можно повторить проверку позже</span></div>';
+  }else{
+    table.innerHTML=renderTable(s.rows);
+    aux.innerHTML=s.explainer?'<div class="explainer"><strong>Что это значит</strong><br>'+s.explainer+'</div>':"";
+  }
+
+  const secondary=document.getElementById("secondaryAction");
+  secondary.textContent=s.secondary||"";
+  secondary.hidden=!s.secondary;
+
+  document.querySelectorAll("#reviewGrid button").forEach(function(btn){
+    btn.classList.toggle("active",btn.dataset.key===current);
+  });
+}
+
+function buildReview(){
+  const grid=document.getElementById("reviewGrid");
+  Object.keys(scenarios).forEach(function(key){
+    const b=document.createElement("button");
+    b.textContent=scenarios[key].label;
+    b.dataset.key=key;
+    b.onclick=function(){
+      current=key;
+      localStorage.setItem("dw-vnext-fitment-state",key);
+      render();
+    };
+    grid.appendChild(b);
+  });
+}
+
+buildReview();
+render();
+</script>
+</body>
+</html>

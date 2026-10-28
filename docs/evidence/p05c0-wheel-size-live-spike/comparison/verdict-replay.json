@@ -1,0 +1,28 @@
+{
+  "rule": "size_offset",
+  "status": "unknown",
+  "reason_code": "size_not_in_reference",
+  "axle": "front",
+  "detail": {
+    "rim_diameter_in": 16,
+    "rim_width_j": 8.5,
+    "reference_sizes": [
+      {
+        "rim_diameter_in": 19.0,
+        "rim_width_j": 8.5
+      },
+      {
+        "rim_diameter_in": 20.0,
+        "rim_width_j": 9.0
+      },
+      {
+        "rim_diameter_in": 21.0,
+        "rim_width_j": 9.5
+      },
+      {
+        "rim_diameter_in": 22.0,
+        "rim_width_j": 10.0
+      }
+    ]
+  }
+}

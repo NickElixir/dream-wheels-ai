@@ -1,126 +1,156 @@
-# Product and Delivery Roadmap
+# Dream Wheels Dual-Track Product Roadmap
 
-## Goal
+> **Internal initiative:** Project Dual Track
+>
+> This is the delivery plan for two independent product pipelines and their shared foundation.
 
-Dream Wheels AI combines two independent user outcomes:
+## Working model
 
-1. **Visual fitment** — a generated image of the user's car with selected wheels.
-2. **Technical compatibility** — a preliminary fitment verdict derived from confirmed vehicle data, wheel specifications and a structured fitment provider.
+```text
+Shared Product Foundation
+  ├── durable jobs, assets and history
+  ├── authentication, payments and wallet
+  └── common create/result user flow
 
-A visual result must never be presented as proof of technical compatibility.
+Rendering Pipeline
+  └── visual wheel-on-car result
+
+Fitment Pipeline
+  └── preliminary technical compatibility verdict
+```
+
+Rendering answers how wheels look. Fitment answers preliminary technical possibility. A visual render is never proof of technical compatibility.
+
+## Release 1 ownership boundary
+
+The current Release 1 product contract is defined by `docs/adr/0005-release1-create-fitment-boundary.md`:
+
+```text
+Create owns:
+- car photo
+- wheel photo/source
+- render
+
+Fitment owns:
+- vehicle recognition
+- vehicle catalogue
+- exact variant
+- wheel technical parameters
+- compatibility check
+```
+
+Release 1 remains render-first at the persistence/navigation level: Create produces a RenderJob, and Technical Fitment is opened from Result/History when needed. Pre-render Fitment is intentionally deferred until after Release 1 rather than expanding the current release scope.
+
+The deferred target uses a persistent Pair/Project parent with RenderJob and FitmentCheck as children, so Create and Fitment can later become two entry points to the same pair without duplicating upload flows.
+
+## Canonical documents
+
+- `docs/ui-design-code.md` — approved UI rules through Sprint 3
+- `docs/ui/ui-development-process.md` — frozen mandatory UI delivery process
+- `docs/sprint-3-ui.md` — approved Sprint 3 layout and interaction reference
+- `docs/adr/0003-render-feedback-data-boundary.md` — feedback persistence and ML boundary
+- `docs/adr/0005-release1-create-fitment-boundary.md` — current Release 1 Create/Fitment ownership and deferred pre-render direction
+- `docs/render-feedback-api-contract-v1.md` — Sprint 3 API/data contract
+- `docs/fitment-schema.md`, `docs/fitment-api-contract-v1.md`, and Fitment ADRs — future Fitment work
 
 ## Delivery sequence
 
 ### Sprint 0 — durable render foundation
 
-**Backend and database**
-
-- Treat the existing `jobs` record as the canonical render job; evolve it instead of creating a second competing job entity.
-- Store source images and result images in durable object storage.
-- Persist storage object identifiers/URLs, provider request metadata, timestamps, status and error code.
-- Keep idempotency for upload/create requests.
-- Add a history endpoint backed by Postgres rather than browser state.
-
-**Exit criteria**
-
-- A completed or failed render remains visible after reload and deploy.
-- Original car image, original rim image and final image can be retrieved for an authorized user.
-
-### Parallel F0 — fitment provider discovery
-
-- Evaluate candidate fitment data sources against a representative vehicle set.
-- Record coverage, supported parameters, latency, terms, cache policy, price and gaps.
-- Select a provider only through an ADR; domain code must remain provider-agnostic.
+Durable jobs, assets, render statuses, idempotency, and Postgres-backed history.
 
 ### Sprint 1 — cabinet dashboard
 
-- Dashboard with balance, latest render, CTA and navigation to history/wallet.
-- Read from durable render history and existing payment endpoints.
+Dashboard, balance, history, navigation, wallet, and UI-only feedback.
 
-### Sprint 2 — create flow and structured input
+### Sprint 2A — Assisted Identity Flow
 
-Flow: upload car → upload rim → confirm vehicle → optional rim data → review → generate.
+Existing upload screen stays unchanged. One page: upload → AI proposal → confirmation → review → render.
 
-- Vehicle confirmation: make, model, year, body; generation/modification when needed.
-- Optional rim fields: brand, model, SKU/article, product URL, diameter, width, PCD, ET, DIA.
-- Input technical validation and self-check warnings only; no automatic AI rejection.
+Quick vehicle identity: make, model, year/range, primary proposal plus at most two alternatives.
+
+Quick rim identity: diameter, mandatory width, PCD stored as `bolt_count` + `pcd_mm` and displayed as `NxPCD`.
+
+No full vehicle catalogue, rim brand/model, SKU, ET/DIA, provider lookup, FitmentCheck, or verdict.
+
+**Status: completed as a historical Sprint 2 implementation.**
+
+The Assisted Identity UI is not the current Release 1 product target. Release 1 removes vehicle recognition/confirmation from Create; see ADR 0005.
+
+### Sprint 2B — Production Vehicle VLM Resolver
+
+**Status: planned / feature-flagged.**
+
+Production vehicle recognition resolves only make, model and year/range with primary,
+two alternatives at most, and explicit abstention. It is provider-neutral, uses safe
+image normalization, and requires a reproducible consented benchmark before a provider
+is enabled beyond staging. Rim technical values remain manual in this phase.
+
+### Sprint 3 — comparison, durable history, and persistent feedback
+
+**Approved result detail**
+
+- Open a completed result inside the existing history context.
+- Single viewer with full-width equal segments: `Результат | Оригинал`.
+- Default to Result; switch the same image in place with a short fade.
+- Preserve full source/result composition: `width:100%`, `height:auto`, `object-fit:contain`.
+- History thumbnails use `object-fit:contain` in compact fixed frames; dark letterboxing is allowed.
+
+**History states**
+
+- Completed: `Готово`, `Открыть`.
+- Processing: `Создаём виртуальную примерку`, `В обработке`.
+- Failed: clear error, `Рендеры не списаны`, `Повторить`.
+- Comparison and feedback are only available for completed jobs.
+
+**Repeat scenario**
+
+`Создать ещё вариант` restores server-backed car/rim assets and confirmed identity context. It does not create a job or debit until the user explicitly starts a new render.
+
+**Persistent feedback**
+
+- One current record per user and completed `render_job_id`.
+- Like/dislike can be replaced or cleared.
+- Dislike uses exactly one code: `wheel_differs`, `car_changed`, `angle_or_scale`, `image_quality`, or `other`.
+- No modal, free-text comment, submit button, localStorage source of truth, or clickstream duplication.
+- Feedback is product data, not automatically a training label or consent to train on user media.
 
 ### Parallel F1 — fitment domain and rules engine
 
-- Normalize vehicle identity, vehicle fitment profile, rim specifications and verdict.
-- Implement deterministic checks for PCD, DIA, ET, width, diameter, fasteners and axle differences when available.
-- Return `compatible`, `compatible_with_conditions`, `unknown` or `incompatible`.
-- Add golden tests and source/version audit data.
-
-### Sprint 3 — comparison, history and feedback
-
-- Original/result toggle in render detail.
-- Render history with states and repeat scenario.
-- User feedback on visual similarity and usefulness.
+Normalize fitment data and evidence; deterministic rules return accepted taxonomy.
 
 ### Parallel F2 — fitment UX integration
 
-- Trigger a fitment check after vehicle and rim inputs are available.
-- Do not block image generation.
-- Show verdict, reasons, missing data and specialist disclaimer on result detail and history.
+User-initiated Detailed Fitment Check, independent from rendering.
 
-**Customer-development gate**
+### Sprint 4 — Detailed Fitment Wizard and wallet alignment
 
-Run customer development after Sprint 3 + F2. The tested product is the complete value proposition: visual fitment + preliminary compatibility, not a standalone image generator.
+Optional detailed fields after result detail: generation, modification, market, SKU/product URL, diameter, width, PCD, ET, DIA, staggered setup.
 
-### Sprint 4 — wallet redesign
+### Follow-up — rim source enrichment before rendering
 
-- Balance, packages, invoice summary, receipt email and payment CTA.
-- Do not advertise credit expiration until the backend implements it.
-- Keep payment provider behavior out of this scope.
+An optional rim product URL is collected in the pre-render flow and travels with
+the render input draft to the Fitment editor. The create flow intentionally has no
+manual rim specification fields: photo and URL are sufficient for a visual render.
+URL parsing remains an explicit Fitment-editor action; its extracted values and
+provenance are reviewable before saving. Confirmed brand/model/SKU/specification
+data may later be used as context for diffusion generation and render-quality
+evaluation; unconfirmed page data must never be treated as ground truth.
 
-### Parallel F4 — unified account and authentication
+### Sprint 5 onward
 
-Start only when website access needs to extend beyond Telegram-only sign-in.
+Evaluation baseline, input-quality gate, controlled rendering, and catalog work with audited feeds.
 
-- Introduce one Dream Wheels account with separately verified identity links: Telegram, email and, later, phone.
-- Let a user who first entered through Telegram add a verified email and return to the same history, balance and payments from either channel.
-- Use email magic link or one-time code for email; evaluate Telegram Gateway and an SMS provider for phone verification before selecting a provider.
-- Design account linking, recovery, rate limits, anti-enumeration and session revocation before exposing the extra login methods.
-- Preserve Mini App `initData` validation as the Telegram-native authentication channel.
-- Revisit Telegram OIDC Authorization Code Flow when a shared auth broker, server-side sessions, multi-site SSO or a unified identity layer becomes necessary.
+## Current non-goals
 
-**Exit criteria**
+- Fitment verdict in Sprint 3.
+- Comparison slider or side-by-side comparison.
+- Free-text feedback, analytics dashboard, export, or automatic ML dataset ingestion.
+- Payment-provider switching, hard fitment guarantees, or catalog recommendations without audited data.
 
-- One verified person cannot accidentally receive duplicate accounts, balances or render histories when using Telegram and email.
-- Unverified identifiers never grant account access or account linking.
-- Existing Telegram Mini App and website login flows remain backward-compatible during rollout.
+## Owner UI release timeline — 08.10.2026
 
-### Parallel F3 — catalog and partner recommendations
-
-Requires a structured owned catalog or partner feed.
-
-- Filter products by technical fitment.
-- Rank by fit score, availability, visual similarity, price and commercial priority.
-- Track impressions, clicks and leads.
-
-### Sprint 5 — evaluation baseline
-
-- Build a labelled evaluation dataset from consented/test cases.
-- Benchmark generation providers by cost, latency, visual quality, wheel similarity and vehicle preservation.
-- Keep expert labels separate from user feedback.
-
-### Sprint 6 — soft input quality gate
-
-- Add CV/VLM checks for blur, brightness, resolution, car/wheel visibility and rim front-face visibility.
-- Show warnings; do not automatically reject uploads until measured evidence supports it.
-
-### Sprint 7 — controlled rendering pipeline
-
-- Wheel detection and segmentation.
-- Mask/crop artifacts and render plan.
-- Post-generation validation, one internal retry and provider fallback.
-- Internal retries never consume additional user credits.
-
-## Non-goals in the current block
-
-- Email/phone login changes.
-- Payment provider switching.
-- Credit expiration implementation without separate approval.
-- Hard fitment guarantees.
-- Catalog recommendations without an auditable product feed.
+- [x] Cabinet navigation routes: PR #269 merged into staging.
+- [x] Result composition: wheel reference, horizontal input summary, download/check/repeat actions; owner accepted locally 08.10.2026 (UI-024). Staging rollout and live validation pending.
+- [ ] Next UI review: History cards, labels, statuses, empty/error/loading states and result navigation.
+- [ ] Following Result acceptance, separate task/PR: restore «Поделиться» using public share pages and before/after social previews. Keep private `/try-ons/{uuid}` links separate from public share links. Audit the existing `/s/{short_id}` mechanism, owner publishing controls, revocation and old-link compatibility before rollout; support messenger/native sharing with copy-link fallback. No date committed.

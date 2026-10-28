@@ -1,0 +1,57 @@
+[
+  {
+    "make_slug": "toyota",
+    "model_slug": "rav4",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "V (XA50)",
+    "modification": "2.0 VVT-i",
+    "body": "",
+    "generation_slug": "c44bebb973",
+    "modification_slug": "a7bd8e0eec"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "rav4",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "V (XA50)",
+    "modification": "2.5 VVT-i",
+    "body": "",
+    "generation_slug": "c44bebb973",
+    "modification_slug": "c1dc18e5b7"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "rav4",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "V (XA50)",
+    "modification": "2.5",
+    "body": "",
+    "generation_slug": "c44bebb973",
+    "modification_slug": "497fad336e"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "rav4",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "V (XA50)",
+    "modification": "2.5",
+    "body": "",
+    "generation_slug": "c44bebb973",
+    "modification_slug": "ba0a95f8ef"
+  },
+  {
+    "make_slug": "toyota",
+    "model_slug": "rav4",
+    "region": "eudm",
+    "market": "eudm",
+    "generation": "V (XA50)",
+    "modification": "2.5 PHEV",
+    "body": "",
+    "generation_slug": "c44bebb973",
+    "modification_slug": "a01a97af93"
+  }
+]

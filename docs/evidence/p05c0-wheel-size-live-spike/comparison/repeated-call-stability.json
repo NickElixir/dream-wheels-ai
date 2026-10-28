@@ -1,0 +1,44 @@
+[
+  {
+    "original": "porsche-cayenne-2021-eudm-search.json",
+    "repeat": "porsche-cayenne-2021-eudm-search-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  },
+  {
+    "original": "tesla-model-3-2023-eudm-modifications.json",
+    "repeat": "tesla-model-3-2023-eudm-modifications-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  },
+  {
+    "original": "porsche-cayenne-2021-eudm-modifications.json",
+    "repeat": "porsche-cayenne-2021-eudm-modifications-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  },
+  {
+    "original": "tesla-model-3-2023-eudm-search.json",
+    "repeat": "tesla-model-3-2023-eudm-search-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  },
+  {
+    "original": "volkswagen-golf-2020-eudm-search.json",
+    "repeat": "volkswagen-golf-2020-eudm-search-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  },
+  {
+    "original": "volkswagen-golf-2020-eudm-modifications.json",
+    "repeat": "volkswagen-golf-2020-eudm-modifications-repeat.json",
+    "raw_equal": true,
+    "IDs_equal": true,
+    "ordering_equal": true
+  }
+]

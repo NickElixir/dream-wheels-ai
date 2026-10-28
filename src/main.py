@@ -1,18 +1,54 @@
 import asyncio
-import base64
 import json
 import logging
 import os
-from contextlib import asynccontextmanager
+from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from src import auth_api, db, jobs_api, payments_api, redis_client, share_api, storage
-from src.config import REDIS_JOB_QUEUE, REDIS_URL, WEBAPP_URL, WORKER_ENABLED, runtime_env_summary
+from src import (
+    analytics_api,
+    assets_service,
+    auth_api,
+    db,
+    fitment_checks_api,
+    identity_api,
+    jobs_api,
+    payments_api,
+    publications_api,
+    redis_client,
+    share_api,
+    storage,
+)
+from src.config import (
+    APP_MAINTENANCE,
+    BOT_ENABLED,
+    PAYMENT_TIMEOUT_ENABLED,
+    PAYMENTS_ENABLED,
+    REDIS_JOB_QUEUE,
+    REDIS_URL,
+    ROBOKASSA_IS_TEST,
+    WEBAPP_URL,
+    WORKER_ENABLED,
+    runtime_env_summary,
+)
 from src.credits_service import finalize_job_credit, refund_job_credit
-from src.reve_client import fetch_image_base64, remix_wheels_on_car
+from src.generation import (
+    GenerationInput,
+    GenerationProvider,
+    GenerationProviderError,
+    GenerationResult,
+    WanImageConfig,
+    WanImageProvider,
+    build_generation_request,
+    inspect_image,
+)
+from src.image_fetch import fetch_image_bytes
+from src.payment_timeout import payment_timeout_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,23 +79,67 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("🟢 Redis отключён: API-only режим без очереди рендеров")
 
-    if WORKER_ENABLED and REDIS_URL:
+    if WORKER_ENABLED and REDIS_URL and not APP_MAINTENANCE:
         worker_task = asyncio.create_task(process_jobs_loop())
+    elif APP_MAINTENANCE:
+        logger.info("Worker disabled by maintenance profile")
     elif WORKER_ENABLED:
         logger.warning("⚠️ Redis отсутствует: worker loop не запущен")
     else:
         logger.info("🟢 ВОРКЕР ОТКЛЮЧЕН (WORKER_ENABLED=false)")
 
-    yield
+    timeout_task = (
+        asyncio.create_task(payment_timeout_loop())
+        if PAYMENT_TIMEOUT_ENABLED and not APP_MAINTENANCE
+        else None
+    )
+    try:
+        yield
+    finally:
+        if timeout_task is not None:
+            timeout_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await timeout_task
 
-    if worker_task:
-        worker_task.cancel()
-    await db.close_pool()
-    if redis_client.is_initialized():
-        await redis_client.close_client()
+        if worker_task:
+            worker_task.cancel()
+        await db.close_pool()
+        if redis_client.is_initialized():
+            await redis_client.close_client()
 
 
 app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def maintenance_gate(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    if APP_MAINTENANCE and not (
+        request.method in {"GET", "HEAD"}
+        and request.url.path in {"/health", "/health/full", "/health/release"}
+    ):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service temporarily unavailable for maintenance"},
+            headers={"Retry-After": "60", "Cache-Control": "no-store"},
+        )
+    return await call_next(request)
+
+
+@app.get("/health/release")
+async def release_health() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "commit": os.getenv("RENDER_GIT_COMMIT", ""),
+        "maintenance": APP_MAINTENANCE,
+        "payments_test_mode": ROBOKASSA_IS_TEST,
+        "payments_enabled": PAYMENTS_ENABLED,
+        "worker_enabled": WORKER_ENABLED and not APP_MAINTENANCE,
+        "bot_enabled": BOT_ENABLED and not APP_MAINTENANCE,
+        "payment_timeout_enabled": PAYMENT_TIMEOUT_ENABLED and not APP_MAINTENANCE,
+    }
+
 
 # CORS — webapp хостится на Vercel и шлёт fetch с другого домена.
 # Telegram-клиент проксирует Mini App тоже как origin: разрешаем т.г-домены
@@ -68,7 +148,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[WEBAPP_URL, "https://web.telegram.org"],
     allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,
     max_age=600,
@@ -77,13 +157,24 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_api.router)
+app.include_router(analytics_api.router)
+app.include_router(identity_api.router)
+app.include_router(fitment_checks_api.router)
 app.include_router(jobs_api.router)
 app.include_router(payments_api.router)
 app.include_router(share_api.router)
+app.include_router(publications_api.router)
 
 
-async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
-    """Получить car/wheel в base64. Поддерживает оба источника payload'а:
+def build_generation_provider() -> GenerationProvider:
+    """Build the one active production provider without a fallback."""
+    return WanImageProvider(WanImageConfig.from_env())
+
+
+async def _load_generation_inputs(
+    pool, job_id: str, job_data: dict
+) -> tuple[GenerationInput, GenerationInput]:
+    """Load and inspect the durable vehicle/rim inputs for a render request.
 
     - bot:    {car_url, wheel_url}        — Telegram file URLs
     - webapp: {car_storage_path, wheel_storage_path, source: "webapp"}
@@ -96,76 +187,359 @@ async def _load_inputs_as_b64(job_data: dict) -> tuple[str, str]:
         wheel_bytes = await storage.download_bytes(
             bucket=storage.RAW_BUCKET, path=job_data["wheel_storage_path"]
         )
-        return (
-            base64.b64encode(car_bytes).decode("utf-8"),
-            base64.b64encode(wheel_bytes).decode("utf-8"),
+    else:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT car_asset.storage_key AS car_storage_path,
+                       rim_asset.storage_key AS rim_storage_path
+                FROM jobs
+                LEFT JOIN assets AS car_asset ON car_asset.id = jobs.car_asset_id
+                LEFT JOIN assets AS rim_asset ON rim_asset.id = jobs.rim_asset_id
+                WHERE jobs.id = $1::uuid
+                """,
+                job_id,
+            )
+        if not row or not row["car_storage_path"] or not row["rim_storage_path"]:
+            raise GenerationProviderError(
+                "provider_input_error", "Durable render inputs are missing"
+            )
+        car_bytes = await storage.download_bytes(
+            bucket=storage.RAW_BUCKET, path=row["car_storage_path"]
         )
-    car_b64 = await fetch_image_base64(job_data["car_url"])
-    wheel_b64 = await fetch_image_base64(job_data["wheel_url"])
-    return car_b64, wheel_b64
+        wheel_bytes = await storage.download_bytes(
+            bucket=storage.RAW_BUCKET, path=row["rim_storage_path"]
+        )
+    return (
+        inspect_image(car_bytes, role="vehicle"),
+        inspect_image(wheel_bytes, role="rim reference"),
+    )
 
 
-async def _save_render_output(job_id: str, job_data: dict, img_bytes: bytes) -> str:
-    """Сохранить рендер в постоянное public-хранилище Supabase results."""
-    return await storage.upload_result_image(job_id=job_id, data=img_bytes)
+async def _save_legacy_bot_inputs(pool, job_id: str, user_id: int, job_data: dict) -> None:
+    """Persist Telegram bot input URLs into durable raw storage on first processing."""
+    if job_data.get("source") == "webapp":
+        return
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT car_asset_id, rim_asset_id FROM jobs WHERE id = $1::uuid",
+            job_id,
+        )
+    if row and row["car_asset_id"] and row["rim_asset_id"]:
+        return
+
+    car_bytes, _ = await fetch_image_bytes(job_data["car_url"])
+    wheel_bytes, _ = await fetch_image_bytes(job_data["wheel_url"])
+    car_content_type = inspect_image(car_bytes, role="vehicle").content_type
+    wheel_content_type = inspect_image(wheel_bytes, role="rim reference").content_type
+    car_asset = await assets_service.upload_render_asset(
+        owner_user_id=user_id,
+        job_id=job_id,
+        kind="car_original",
+        data=car_bytes,
+        content_type=car_content_type,
+    )
+    rim_asset = await assets_service.upload_render_asset(
+        owner_user_id=user_id,
+        job_id=job_id,
+        kind="rim_original",
+        data=wheel_bytes,
+        content_type=wheel_content_type,
+    )
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await assets_service.insert_asset(conn, car_asset)
+            await assets_service.insert_asset(conn, rim_asset)
+            await conn.execute(
+                """
+                UPDATE jobs
+                SET car_asset_id = COALESCE(car_asset_id, $1::uuid),
+                    rim_asset_id = COALESCE(rim_asset_id, $2::uuid)
+                WHERE id = $3::uuid
+                """,
+                car_asset.id,
+                rim_asset.id,
+                job_id,
+            )
+
+
+async def _upload_render_output_candidate(
+    job_id: str,
+    user_id: int,
+    img_bytes: bytes,
+    content_type: str = "image/jpeg",
+) -> assets_service.AssetUpload:
+    """Upload a candidate without publishing any database result reference."""
+    return await assets_service.upload_render_asset(
+        owner_user_id=user_id,
+        job_id=job_id,
+        kind="result",
+        data=img_bytes,
+        content_type=content_type,
+    )
+
+
+async def _discard_render_output_candidate(asset: assets_service.AssetUpload) -> None:
+    try:
+        await assets_service.delete_uploaded_asset(asset)
+    except Exception:
+        logger.exception(
+            "Render candidate cleanup failed job_id=%s user_id=%s",
+            asset.job_id,
+            asset.owner_user_id,
+        )
+
+
+async def _publish_render_output(
+    pool, *, job_id: str, user_id: int, candidate: assets_service.AssetUpload
+) -> bool:
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            active = await conn.fetchval(
+                "SELECT id FROM jobs WHERE id = $1::uuid AND user_id = $2 "
+                "AND status = 'processing' AND credit_status = 'reserved' FOR UPDATE",
+                job_id,
+                user_id,
+            )
+            if not active:
+                logger.info("Ignoring late render output job_id=%s user_id=%s", job_id, user_id)
+                return False
+            await assets_service.insert_asset(conn, candidate)
+            completed = await conn.fetchval(
+                "UPDATE jobs SET status = 'completed', result_asset_id = $1::uuid, "
+                "output_image_url = $2, completed_at = CURRENT_TIMESTAMP, "
+                "updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = $3::uuid AND user_id = $4 AND status = 'processing' "
+                "AND credit_status = 'reserved' RETURNING id",
+                candidate.id,
+                candidate.public_url or storage.public_url(candidate.bucket, candidate.storage_key),
+                job_id,
+                user_id,
+            )
+            if not completed:
+                raise RuntimeError(f"Render publication lost active job job_id={job_id}")
+            await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
+    return True
+
+
+async def _persist_generation_metadata(pool, job_id: str, result: GenerationResult) -> None:
+    """Persist provider-neutral usage metadata before result finalization."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE jobs
+            SET generation_provider = $1,
+                provider_request_id = $2,
+                provider_task_id = $3,
+                generation_latency_ms = $4,
+                generation_cost = $5,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $6::uuid AND status = 'processing' AND credit_status = 'reserved'
+            """,
+            result.provider,
+            result.provider_request_id,
+            result.provider_task_id,
+            result.latency_ms,
+            result.generation_cost,
+            job_id,
+        )
+
+
+def _log_provider_diagnostics(job_id: str, user_id: int, error: GenerationProviderError) -> None:
+    diagnostics = error.diagnostics
+    if diagnostics is None:
+        return
+    logger.warning(
+        "⚠️ Wan provider diagnostics job_id=%s user_id=%s code=%s http_status=%s "
+        "request_id=%s task_id=%s task_status=%s provider_code=%s message=%s "
+        "poll_attempts=%s transitions=%s",
+        job_id,
+        user_id,
+        error.code,
+        diagnostics.http_status,
+        diagnostics.request_id,
+        diagnostics.task_id,
+        diagnostics.raw_task_status,
+        diagnostics.provider_error_code,
+        diagnostics.provider_message,
+        diagnostics.poll_attempts,
+        diagnostics.status_transitions,
+    )
+
+
+_SAFE_PROVIDER_MESSAGES = {
+    "provider_config_error": "Image generation is temporarily unavailable.",
+    "provider_auth_error": "Image generation is temporarily unavailable.",
+    "provider_input_error": "The uploaded images could not be processed.",
+    "provider_content_rejected": "The uploaded images could not be processed.",
+    "provider_rate_limited": "Image generation is busy. Please try again later.",
+    "provider_unavailable": "Image generation is temporarily unavailable.",
+    "provider_submission_uncertain": "The generation request could not be confirmed.",
+    "provider_task_failed": "Image generation failed. Please try again.",
+    "provider_task_timeout": "Image generation timed out. Please try again.",
+    "provider_result_download_error": "The generated image could not be saved.",
+    "provider_response_error": "Image generation returned an invalid response.",
+}
+
+
+def _safe_job_failure(error: Exception) -> tuple[str, str]:
+    if isinstance(error, GenerationProviderError):
+        return error.code, _SAFE_PROVIDER_MESSAGES[error.code]
+    return "generation_failed", "Image generation failed. Please try again."
+
+
+async def _mark_render_failed(
+    pool,
+    *,
+    job_id: str,
+    user_id: int,
+    error: Exception,
+) -> None:
+    if isinstance(error, GenerationProviderError):
+        _log_provider_diagnostics(job_id, user_id, error)
+    error_code, error_message = _safe_job_failure(error)
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            active = await conn.fetchval(
+                "SELECT id FROM jobs WHERE id = $1::uuid AND user_id = $2 "
+                "AND status IN ('queued', 'processing') FOR UPDATE",
+                job_id,
+                user_id,
+            )
+            if not active:
+                logger.info("Ignoring late render failure job_id=%s user_id=%s", job_id, user_id)
+                return
+            await refund_job_credit(conn, user_id=user_id, job_id=job_id)
+            await conn.execute(
+                "UPDATE jobs SET status = 'failed', error_code = $1, error_message = $2, "
+                "updated_at = CURRENT_TIMESTAMP WHERE id = $3::uuid",
+                error_code,
+                error_message,
+                job_id,
+            )
+            await analytics_api.record_system_event(
+                conn,
+                user_id=user_id,
+                event_name="render_failed",
+                properties={"job_id": job_id, "error_code": error_code},
+            )
+
+
+async def process_render_job(
+    pool,
+    *,
+    job_id: str,
+    user_id: int,
+    job_data: dict,
+    provider: GenerationProvider | None = None,
+) -> None:
+    """Run one render without owning queue or credit compensation policy."""
+    async with pool.acquire() as conn:
+        claimed = await conn.fetchval(
+            "UPDATE jobs SET status = 'processing', updated_at = CURRENT_TIMESTAMP "
+            "WHERE id = $1::uuid AND user_id = $2 AND status = 'queued' "
+            "AND credit_status = 'reserved' RETURNING id",
+            job_id,
+            user_id,
+        )
+    if not claimed:
+        logger.info("Ignoring render queue replay job_id=%s user_id=%s", job_id, user_id)
+        return
+
+    await _save_legacy_bot_inputs(pool, job_id, user_id, job_data)
+    vehicle, rim_reference = await _load_generation_inputs(pool, job_id, job_data)
+    request = build_generation_request(vehicle=vehicle, rim_reference=rim_reference)
+    result = await (provider or build_generation_provider()).edit(request)
+    await _persist_generation_metadata(pool, job_id, result)
+    candidate = await _upload_render_output_candidate(
+        job_id,
+        user_id,
+        result.image_bytes,
+        content_type=result.content_type,
+    )
+    try:
+        published = await _publish_render_output(
+            pool, job_id=job_id, user_id=user_id, candidate=candidate
+        )
+    except Exception:
+        await _discard_render_output_candidate(candidate)
+        raise
+    if not published:
+        await _discard_render_output_candidate(candidate)
+        return
+
+    # Telemetry is independent of the committed result and credit outcome.
+    try:
+        async with pool.acquire() as conn:
+            await analytics_api.record_system_event(
+                conn,
+                user_id=user_id,
+                event_name="render_completed",
+                properties={"job_id": job_id, "model": result.model},
+            )
+    except Exception:
+        logger.exception("Completion analytics failed job_id=%s user_id=%s", job_id, user_id)
+    logger.info(
+        "✅ Задача %s завершена provider=%s model=%s task_id=%s latency_ms=%s",
+        job_id,
+        result.provider,
+        result.model,
+        result.provider_task_id,
+        result.latency_ms,
+    )
 
 
 async def process_jobs_loop():
     logger.info("🟢 ВОРКЕР ЗАПУЩЕН")
     pool = db.get_pool()
     rds = redis_client.get_client()
+    try:
+        await fitment_checks_api.recover_stale_fitment_checks()
+    except Exception:
+        # Recovery is best-effort; normal queue processing must still start.
+        logger.exception("❌ Не удалось восстановить зависшие Fitment checks")
 
     while True:
         job_id = None
         job_data = None
         try:
-            result = await rds.blpop(redis_client.key(REDIS_JOB_QUEUE), timeout=10)
+            result = await rds.blpop(
+                [
+                    redis_client.key(REDIS_JOB_QUEUE),
+                    redis_client.key(fitment_checks_api.FITMENT_CHECK_QUEUE),
+                ],
+                timeout=10,
+            )
             if not result:
                 continue
 
             job_data = json.loads(result[1])
+            if job_data.get("kind") == "fitment_check":
+                await fitment_checks_api.execute_fitment_check(str(job_data["check_id"]))
+                continue
             job_id = job_data["job_id"]
             user_id = int(job_data["user_id"])
             source = job_data.get("source", "bot")
             logger.info(f"🔥 Взята задача: {job_id} (source={source})")
 
-            async with pool.acquire() as conn:
-                await conn.execute(
-                    "UPDATE jobs SET status = 'processing' WHERE id = $1::uuid", job_id
-                )
-
-            car_b64, wheel_b64 = await _load_inputs_as_b64(job_data)
-            img_bytes = await remix_wheels_on_car(car_b64, wheel_b64)
-            output_url = await _save_render_output(job_id, job_data, img_bytes)
-
-            async with pool.acquire() as conn:
-                async with conn.transaction():
-                    await conn.execute(
-                        "UPDATE jobs SET status = 'completed', output_image_url = $1, "
-                        "completed_at = CURRENT_TIMESTAMP WHERE id = $2::uuid",
-                        output_url,
-                        job_id,
-                    )
-                    await finalize_job_credit(conn, user_id=user_id, job_id=job_id)
-            logger.info(f"✅ Задача {job_id} завершена!")
+            await process_render_job(
+                pool,
+                job_id=job_id,
+                user_id=user_id,
+                job_data=job_data,
+            )
 
         except Exception as e:
-            logger.exception(f"❌ Ошибка воркера на job_id={job_id}: {e}")
+            logger.exception("❌ Ошибка воркера на job_id=%s: %s", job_id, e)
             if job_id:
-                async with pool.acquire() as conn:
-                    async with conn.transaction():
-                        if job_data and job_data.get("user_id"):
-                            await refund_job_credit(
-                                conn,
-                                user_id=int(job_data["user_id"]),
-                                job_id=job_id,
-                            )
-                        await conn.execute(
-                            "UPDATE jobs SET status = 'failed', error_message = $1 "
-                            "WHERE id = $2::uuid",
-                            str(e),
-                            job_id,
-                        )
+                await _mark_render_failed(
+                    pool,
+                    job_id=job_id,
+                    user_id=int(job_data["user_id"]),
+                    error=e,
+                )
             await asyncio.sleep(5)
 
 

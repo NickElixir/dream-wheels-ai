@@ -1,0 +1,11 @@
+{
+  "dataset_version": "vehicle-identity-v1-example",
+  "cases": [
+    {
+      "case_id": "synthetic-vehicle-001",
+      "image_path": "synthetic-vehicle-001.jpg",
+      "ground_truth": {"make": "Example", "model": "Vehicle", "year_start": 2020, "year_end": 2022},
+      "recognizable": true
+    }
+  ]
+}

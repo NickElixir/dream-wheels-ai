@@ -5,12 +5,13 @@ bucket. Webapp/бот напрямую к Storage не ходят.
 
 Buckets:
 - `raw`     — private, исходники car/wheel (10 MB лимит)
-- `results` — public,  AI-рендеры (5 MB лимит)
+- `results` — public, AI-рендеры (20 MiB bucket limit; global limit must be >= 20 MiB)
 
 Документация: https://supabase.com/docs/reference/api/storage
 """
 
 import logging
+from urllib.parse import quote
 from uuid import uuid4
 
 import httpx
@@ -154,6 +155,7 @@ __all__ = [
     "RESULTS_BUCKET",
     "SUPABASE_PROJECT_REF",
     "StorageError",
+    "create_signed_url",
     "delete_object",
     "download_bytes",
     "public_url",
@@ -161,3 +163,26 @@ __all__ = [
     "upload_raw_image",
     "upload_result_image",
 ]
+
+
+async def create_signed_url(*, bucket: str, path: str, expires_in: int) -> str:
+    """Sign a known private object without transferring image bytes or logging tokens."""
+    if expires_in <= 0:
+        raise ValueError("expires_in must be positive")
+    url = f"{SUPABASE_STORAGE_URL}/object/sign/{quote(bucket, safe='')}/{quote(path, safe='/')}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(
+                url, headers=_auth_headers(), json={"expiresIn": expires_in}
+            )
+        if response.status_code >= 400:
+            raise StorageError(f"Asset signing failed: HTTP {response.status_code}")
+        payload = response.json()
+        signed = payload.get("signedURL") if isinstance(payload, dict) else None
+        expected = f"/object/sign/{quote(bucket, safe='')}/"
+        if not isinstance(signed, str) or not signed.startswith(expected):
+            raise StorageError("Invalid asset signing response")
+        return SUPABASE_STORAGE_URL.rstrip("/") + signed
+    except (httpx.HTTPError, ValueError):
+        # Underlying HTTP exceptions may contain URLs; never propagate those details.
+        raise StorageError("Asset signing unavailable") from None

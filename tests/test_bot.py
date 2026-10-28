@@ -49,7 +49,7 @@ class _FakeUser:
 class _FakeUpdate:
     def __init__(self) -> None:
         self.effective_user = _FakeUser()
-        self.effective_message = _FakeMessage()
+        self.message = _FakeMessage()
 
 
 def test_start_grants_credits_before_sending_welcome(monkeypatch):
@@ -74,7 +74,7 @@ def test_start_grants_credits_before_sending_welcome(monkeypatch):
     asyncio.run(bot.start(update, None))
 
     assert events == ["ensure_user", "ensure_credit_account_state"]
-    assert update.effective_message.calls == [
+    assert update.message.calls == [
         "Привет! Дарим 3 стартовых credits на 30 дней. "
         "Жми кнопку ниже, чтобы открыть Mini App, или отправь фото машины прямо в чат."
     ]
@@ -97,7 +97,7 @@ def test_start_does_not_reannounce_existing_grant(monkeypatch):
     update = _FakeUpdate()
     asyncio.run(bot.start(update, None))
 
-    assert update.effective_message.calls == [
+    assert update.message.calls == [
         "Привет! Mini App уже готов. Жми кнопку ниже, чтобы открыть его, или отправь фото "
         "машины прямо в чат. Стартовый grant действует 30 дней с момента первого начисления."
     ]

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P0-C1b — Vehicle Save browser smoke</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css">
+<link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css">
+<link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+<style>body{margin:0;background:var(--vnext-canvas);font-family:var(--vnext-font)}main{max-width:1120px;margin:auto;padding:24px 16px 80px}nav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;color:var(--vnext-text)}#evidence{color:var(--vnext-text-secondary);white-space:pre-wrap;font-size:12px}</style>
+</head><body><main data-vnext-root><nav><button id="first">First Vehicle Save</button><button id="lada">LADA single market</button><button id="lexus">Lexus multi market</button><button id="result">Set active section: result</button></nav><div id="fitment" data-vnext-fitment-root></div><pre id="evidence"></pre></main>
+<script type="module">
+// Serve from the repository root. Execute the production controller/view with
+// deterministic local API doubles, never a staging session or provider.
+const sourceUrl = new URL('../../webapp/app.js', location.href);
+const source = (await (await fetch(sourceUrl)).text()).replace(/from "(\.\/[^\"]+)"/g, (_, path) => `from "${new URL(path, sourceUrl)}"`);
+window.Telegram = { Login: {} };
+const harness = `
+import { createFitmentView, refreshFitmentView } from "${new URL('../../webapp/vnext/views/fitment.js', location.href)}";
+let fixtureRoot;
+let fixtureOverview;
+let fixtureScenario = "lada";
+let fixtureCalls = [];
+let fixtureWheelBaseline;
+window.c1bConsoleErrors=[];
+window.addEventListener("error",event=>window.c1bConsoleErrors.push(event.message));
+window.addEventListener("unhandledrejection",event=>window.c1bConsoleErrors.push(String(event.reason)));
+const fixtureOptions = () => fixtureScenario !== "lexus"
+    ? { make: "lada", model: "vesta", makeLabel: "LADA", modelLabel: "Vesta", markets: [{value:"russia",label:"Russia+"}] }
+    : { make: "lexus", model: "rx", makeLabel: "Lexus", modelLabel: "RX", markets: [{value:"eudm",label:"Europe"},{value:"usdm",label:"USA"}] };
+const fixtureResponse = body => new Response(JSON.stringify(body), {status:200,headers:{"Content-Type":"application/json"}});
+window.fetch = async (url, options = {}) => {
+    const path = new URL(url, location.href).pathname;
+    const method = options.method || "GET";
+    const config = fixtureOptions();
+    if (path.includes("vehicle-catalogue")) {
+        const kind = path.split('/').pop();
+        const items = kind === "makes" ? [{value:config.make,label:config.makeLabel}]
+            : kind === "models" ? [{value:config.model,label:config.modelLabel}]
+            : kind === "years" ? [{value:"2020",label:"2020"},{value:"2021",label:"2021"}]
+            : config.markets;
+        return fixtureResponse(kind === "markets" ? {outcome:"success",resolution:items.length===1?"single":"selection_required",resolved_market:items.length===1?items[0]:null,items:items.length===1?[]:items} : {outcome:"success",items});
+    }
+    if (path.endsWith("/vehicle-variants")) {
+        fixtureCalls.push({method, path, market:fixtureOverview.vehicle.market});
+        return fixtureResponse({outcome:"multiple",vehicle_revision:fixtureOverview.vehicle_revision,variants:[
+            {make_slug:config.make,model_slug:config.model,region:fixtureOverview.vehicle.market,generation_slug:"generation",modification_slug:"a",generation:"Generation",modification:"Version A",body:"Sedan"},
+            {make_slug:config.make,model_slug:config.model,region:fixtureOverview.vehicle.market,generation_slug:"generation",modification_slug:"b",generation:"Generation",modification:"Version B",body:"Sedan"}
+        ]});
+    }
+    if (path.endsWith("/fitment") && method === "PATCH") {
+        const payload = JSON.parse(options.body);
+        fixtureCalls.push({method,path,active_section:state.fitmentActiveSection,payload});
+        if (["rim","front_rim","rear_rim","setup_mode"].some(key => Object.hasOwn(payload,key))) throw new Error("Vehicle mutation contains Wheel data");
+        const same = payload.vehicle.year === fixtureOverview.vehicle.year && payload.vehicle.market === fixtureOverview.vehicle.market
+            && [config.make,config.makeLabel].includes(payload.vehicle.make) && [config.model,config.modelLabel].includes(payload.vehicle.model);
+        fixtureOverview = {...fixtureOverview,vehicle_revision:fixtureOverview.vehicle_revision+(same && fixtureOverview.vehicle.is_user_confirmed ? 0 : 1),
+            vehicle:{...fixtureOverview.vehicle,make:config.makeLabel,model:config.modelLabel,year:payload.vehicle.year,market:payload.vehicle.market,is_user_confirmed:same},
+            vehicle_state:same?"confirmed_ready":"unconfirmed",next_action:{kind:same?"select_vehicle_variant":"complete_vehicle_details"}};
+        fixtureOverview.vehicle_field_states = Object.fromEntries(["make","model","year","region"].map(field=>[field,{value:fixtureOverview.vehicle[field==="region"?"market":field],state:same?"confirmed":"proposed",is_user_confirmed:same,source:same?"user_confirmed":"user_entered"}]));
+        return fixtureResponse(fixtureOverview);
+    }
+    if (path.endsWith("/fitment")) return fixtureResponse(fixtureOverview);
+    throw new Error("Unexpected local fixture request: " + method + " " + path);
+};
+loadRenderHistory = async () => {};
+loadFitmentCheckHistory = async () => {};
+refreshFitmentCheckCurrentness = async () => {};
+renderFitment = () => {
+    if (!fixtureOverview) return;
+    const model = vnextFitmentSnapshot();
+    if (!fixtureRoot) {
+        fixtureRoot = createFitmentView(model, {action:(action,value)=>window.dreamwheelsFitmentBridge.action(action,value),setField:(path,value)=>window.dreamwheelsFitmentBridge.setField(path,value)});
+        document.querySelector('#fitment').append(fixtureRoot);
+    } else refreshFitmentView(fixtureRoot,model);
+    const canonical = state.fitmentOverview;
+    const wheel = JSON.stringify([canonical.rim,canonical.front_rim,canonical.rear_rim,canonical.rim_revision,canonical.rim_setup_revision]);
+    document.querySelector('#evidence').textContent = JSON.stringify({active_section:state.fitmentActiveSection,vehicle_state:canonical.vehicle_state,form_vehicle:state.fitmentForm.vehicle,invalid:state.fitmentFormState.invalidFields,missing:state.fitmentFormState.missingFields,next_action:canonical.next_action.kind,vehicle_revision:canonical.vehicle_revision,market:canonical.vehicle.market,wheel_unchanged:wheel===fixtureWheelBaseline,console_errors:window.c1bConsoleErrors,calls:fixtureCalls},null,2);
+};
+function fixtureStart(scenario) {
+    clearFitmentRuntimeRequests();
+    fixtureScenario = scenario;
+    fixtureCalls = [];
+    fixtureOverview = buildDefaultDemoFitmentOverview();
+    fixtureOverview.job_id = "local-h1-job";
+    fixtureOverview.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia",is_user_confirmed:true};
+    fixtureOverview.vehicle_state = "confirmed_ready";
+    if (scenario === "first") {
+        fixtureOverview.vehicle = {make:null,model:null,year:null,market:null,is_user_confirmed:false};
+        fixtureOverview.vehicle_revision = 0;
+        fixtureOverview.vehicle_state = "empty";
+    }
+    fixtureOverview.vehicle_field_states = Object.fromEntries(["make","model","year","region"].map(field=>[field,{value:fixtureOverview.vehicle[field==="region"?"market":field],state:scenario==="first"?"missing":"confirmed",is_user_confirmed:scenario!=="first",source:scenario==="first"?null:"user_confirmed"}]));
+    fixtureOverview.vehicle_candidates = {};
+    fixtureOverview.rim_setup_state = "confirmed_ready";
+    const wheel = {brand:"BBS",model:"CI-R",sku:"SKU-38",product_url:"https://shop.example.test/bbs",wheel_diameter_in:18,wheel_width_j:8,bolt_count:5,pcd_mm:112,center_bore_mm:66.6,offset_et_mm:38,title:"BBS CI-R"};
+    const fields = Object.fromEntries(["wheel_diameter_in","wheel_width_j","bolt_count","pcd_mm","center_bore_mm","offset_et_mm"].map(field => [field,{value:wheel[field],state:"confirmed",is_user_confirmed:true,source:"user_confirmed"}]));
+    fixtureOverview.rim = wheel;
+    fixtureOverview.rim_field_states = fields;
+    fixtureOverview.front_rim = {rim:wheel,field_states:fields,source_fingerprint:"completed-wheel",selected_variant_sku:"SKU-38",variant_state:"selected",source_revision:3};
+    fixtureOverview.rim_revision = 7;
+    fixtureOverview.rim_setup_revision = 4;
+    fixtureOverview.modification_state = "none";
+    fixtureOverview.selected_modification = null;
+    fixtureOverview.next_action = {kind:"select_vehicle_variant"};
+    fixtureWheelBaseline = JSON.stringify([fixtureOverview.rim,fixtureOverview.front_rim,fixtureOverview.rear_rim,fixtureOverview.rim_revision,fixtureOverview.rim_setup_revision]);
+    state.view = "fitment";
+    state.fitmentJobId = fixtureOverview.job_id;
+    state.fitmentOverview = fixtureOverview;
+    state.fitmentForm = fitmentFormFromOverview(fixtureOverview);
+    if (scenario === "first") state.fitmentForm.vehicle = {make:"LADA",model:"Vesta",year:2020,market:"russia"};
+    state.fitmentFormState = {status:"clean",baseline:cloneFitmentForm(state.fitmentForm),missingFields:[],invalidFields:[]};
+    state.fitmentVehicleDirty = false;
+    state.fitmentVehicleEditing = true;
+    state.fitmentActiveSection = "vehicle";
+    state.fitmentCatalogueDraftMemory = createFitmentCatalogueDraftMemory(state.fitmentJobId);
+    state.fitmentVehicleVariants = [];
+    state.fitmentModificationPickerOpen = false;
+    state.fitmentSelectedVehicleVariantIndex = null;
+    state.fitmentError = "";
+    state.fitmentMessage = "";
+    const version = beginFitmentCatalogueContextChange();
+    void loadFitmentCatalogue("makes", {}, {contextVersion:version}).then(makes => revalidateFitmentCatalogueChain(version, {preloaded:{makes}}));
+    renderFitment();
+}
+document.querySelector('#first').onclick = () => fixtureStart("first");
+document.querySelector('#lada').onclick = () => fixtureStart("lada");
+document.querySelector('#lexus').onclick = () => fixtureStart("lexus");
+document.querySelector('#result').onclick = () => setFitmentActiveSection("result");
+fixtureStart("lada");
+`;
+const moduleUrl = URL.createObjectURL(new Blob([source, harness], {type:'text/javascript'}));
+await import(moduleUrl);
+URL.revokeObjectURL(moduleUrl);
+</script></body></html>

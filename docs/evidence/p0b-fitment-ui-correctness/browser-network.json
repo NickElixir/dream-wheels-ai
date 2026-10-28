@@ -1,0 +1,243 @@
+{
+  "checks": [
+    "clean-1440",
+    "dirty-1440",
+    "saved-1440",
+    "invalid-focused-1440",
+    "failed-1440",
+    "queued-1440",
+    "processing-1440",
+    "launch-failure-1440",
+    "compatible-1440",
+    "compatible_with_conditions-1440",
+    "unknown-1440",
+    "incompatible-1440",
+    "balance-1-1440",
+    "balance-2-1440",
+    "balance-4-1440",
+    "clean-390",
+    "dirty-390",
+    "saved-390",
+    "invalid-focused-390",
+    "failed-390",
+    "queued-390",
+    "processing-390",
+    "launch-failure-390",
+    "compatible-390",
+    "compatible_with_conditions-390",
+    "unknown-390",
+    "incompatible-390",
+    "balance-1-390",
+    "balance-2-390",
+    "balance-4-390",
+    "save-race-desktop"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/analytics/events",
+      "body": {
+        "visitor_id": "1e282e76-5ca8-463c-98a6-d6767d1c3628",
+        "event_name": "app_opened",
+        "attribution": {
+          "utm_source": null,
+          "utm_medium": null,
+          "utm_campaign": null,
+          "utm_content": null,
+          "utm_term": null,
+          "landing_url": "http://127.0.0.1:8781/?telegram_user_id=123456",
+          "referrer": null,
+          "first_seen_at": "2026-10-03T18:59:51.526Z",
+          "last_seen_at": "2026-10-03T18:59:51.526Z"
+        },
+        "properties": {
+          "surface": "website"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-catalogue/makes",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/fitment/checks",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "PATCH",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": {
+        "expected_vehicle_revision": 1,
+        "expected_rim_revision": 1,
+        "setup_mode": "uniform",
+        "rim": {
+          "confirmed_fields": [
+            "offset_et_mm"
+          ],
+          "brand": "Xtrike",
+          "model": "10-Spoke",
+          "sku": "118753506318",
+          "product_url": null,
+          "bolt_count": 5,
+          "pcd_mm": 112,
+          "wheel_diameter_in": 19,
+          "wheel_width_j": 8.5,
+          "center_bore_mm": 66.6,
+          "offset_et_mm": 35.125,
+          "source_fingerprint": null,
+          "selected_variant_sku": null,
+          "variant_state": "none"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/fitment/checks",
+      "body": {
+        "vehicle_identity_id": "demo-vehicle-identity",
+        "rim_setup_id": "demo-rim-setup",
+        "render_job_id": "11111111-1111-4111-8111-111111111111",
+        "trigger": "user_requested",
+        "mode": "standard"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/fitment/checks/execution-1",
+      "body": null
+    },
+    {
+      "method": "PATCH",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": {
+        "expected_vehicle_revision": 1,
+        "expected_rim_revision": 2,
+        "setup_mode": "uniform",
+        "rim": {
+          "confirmed_fields": [
+            "offset_et_mm"
+          ],
+          "brand": "Xtrike",
+          "model": "10-Spoke",
+          "sku": "118753506318",
+          "product_url": null,
+          "bolt_count": 5,
+          "pcd_mm": 112,
+          "wheel_diameter_in": 19,
+          "wheel_width_j": 8.5,
+          "center_bore_mm": 66.6,
+          "offset_et_mm": 36.25,
+          "source_fingerprint": null,
+          "selected_variant_sku": null,
+          "variant_state": "none"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/fitment/checks",
+      "body": {
+        "vehicle_identity_id": "demo-vehicle-identity",
+        "rim_setup_id": "demo-rim-setup",
+        "render_job_id": "11111111-1111-4111-8111-111111111111",
+        "trigger": "user_requested",
+        "mode": "standard"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/fitment/checks/execution-2",
+      "body": null
+    },
+    {
+      "method": "PATCH",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": {
+        "expected_vehicle_revision": 1,
+        "expected_rim_revision": 3,
+        "setup_mode": "uniform",
+        "rim": {
+          "confirmed_fields": [
+            "offset_et_mm"
+          ],
+          "brand": "Xtrike",
+          "model": "10-Spoke",
+          "sku": "118753506318",
+          "product_url": null,
+          "bolt_count": 5,
+          "pcd_mm": 112,
+          "wheel_diameter_in": 19,
+          "wheel_width_j": 8.5,
+          "center_bore_mm": 66.6,
+          "offset_et_mm": 40,
+          "source_fingerprint": null,
+          "selected_variant_sku": null,
+          "variant_state": "none"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/jobs",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+      "body": null
+    }
+  ],
+  "errors": [],
+  "viewports": [
+    1440,
+    390
+  ],
+  "environment": "Local runtime with controlled API responses. Not live staging E2E."
+}

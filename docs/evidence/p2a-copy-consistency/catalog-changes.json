@@ -1,0 +1,365 @@
+{
+  "base": "cd414ff086931c4c44f6d00eb674f5e4fccbc1c7",
+  "changedKeys": [
+    {
+      "key": "render.generatingRender",
+      "before": {
+        "ru": "Создаём примерку...",
+        "en": "Generating render..."
+      },
+      "after": {
+        "ru": "Создаём примерку…",
+        "en": "Creating the try-on…"
+      },
+      "reason": "terminology + ellipsis"
+    },
+    {
+      "key": "render.thisCanTakeUpToSeconds",
+      "before": {
+        "ru": "Это может занять до 90 секунд",
+        "en": "This can take up to 90 seconds"
+      },
+      "after": {
+        "ru": "Это может занять до 90 секунд",
+        "en": "This may take up to 90 seconds."
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.auth.loginShort",
+      "before": {
+        "ru": "Войти",
+        "en": "Log in"
+      },
+      "after": {
+        "ru": "Войти",
+        "en": "Sign in"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.auth.loggingIn",
+      "before": {
+        "ru": "Входим...",
+        "en": "Logging in..."
+      },
+      "after": {
+        "ru": "Входим…",
+        "en": "Signing in…"
+      },
+      "reason": "terminology + ellipsis"
+    },
+    {
+      "key": "legacy.auth.preparing",
+      "before": {
+        "ru": "Подготавливаем вход...",
+        "en": "Preparing login..."
+      },
+      "after": {
+        "ru": "Подготавливаем вход…",
+        "en": "Preparing sign-in…"
+      },
+      "reason": "terminology + ellipsis"
+    },
+    {
+      "key": "legacy.auth.sendingCode",
+      "before": {
+        "ru": "Отправляем код...",
+        "en": "Sending code..."
+      },
+      "after": {
+        "ru": "Отправляем код…",
+        "en": "Sending code…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.auth.checkingCode",
+      "before": {
+        "ru": "Проверяем код...",
+        "en": "Checking code..."
+      },
+      "after": {
+        "ru": "Проверяем код…",
+        "en": "Checking code…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.menu.wallet",
+      "before": {
+        "ru": "Баланс",
+        "en": "Wallet"
+      },
+      "after": {
+        "ru": "Баланс",
+        "en": "Balance"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.caption.fitment",
+      "before": {
+        "ru": "Совместимость",
+        "en": "Fitment"
+      },
+      "after": {
+        "ru": "Совместимость",
+        "en": "Compatibility"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.caption.photoGuide",
+      "before": {
+        "ru": "Как подготовить фото",
+        "en": "How to prepare a photo"
+      },
+      "after": {
+        "ru": "Как подготовить фото",
+        "en": "How to prepare photos"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.create.createRender",
+      "before": {
+        "ru": "Создать виртуальную примерку",
+        "en": "Create virtual render"
+      },
+      "after": {
+        "ru": "Создать виртуальную примерку",
+        "en": "Create a try-on"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.photoGuide.carSection",
+      "before": {
+        "ru": "Фото автомобиля",
+        "en": "Car photo"
+      },
+      "after": {
+        "ru": "Фото автомобиля",
+        "en": "Vehicle photo"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.photoGuide.carCheck1",
+      "before": {
+        "ru": "Автомобиль виден целиком",
+        "en": "The whole car is visible"
+      },
+      "after": {
+        "ru": "Автомобиль виден целиком",
+        "en": "The whole vehicle is visible"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.status.startingServer",
+      "before": {
+        "ru": "Запускаем сервер...",
+        "en": "Starting server..."
+      },
+      "after": {
+        "ru": "Запускаем сервер…",
+        "en": "Starting server…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.status.uploading",
+      "before": {
+        "ru": "Загружаем файлы...",
+        "en": "Uploading files..."
+      },
+      "after": {
+        "ru": "Загружаем файлы…",
+        "en": "Uploading files…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.status.upTo90",
+      "before": {
+        "ru": "Это может занять до 90 секунд",
+        "en": "This can take up to 90 seconds"
+      },
+      "after": {
+        "ru": "Это может занять до 90 секунд",
+        "en": "This may take up to 90 seconds."
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.status.generating",
+      "before": {
+        "ru": "Создаём примерку...",
+        "en": "Generating render..."
+      },
+      "after": {
+        "ru": "Создаём примерку…",
+        "en": "Creating the try-on…"
+      },
+      "reason": "terminology + ellipsis"
+    },
+    {
+      "key": "legacy.fitment.eyebrow",
+      "before": {
+        "ru": "Проверка совместимости",
+        "en": "Fitment preparation"
+      },
+      "after": {
+        "ru": "Проверка совместимости",
+        "en": "Compatibility check"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.fitment.modification",
+      "before": {
+        "ru": "Комплектация",
+        "en": "Trim"
+      },
+      "after": {
+        "ru": "Комплектация",
+        "en": "Vehicle version"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.actions.requestingDownload",
+      "before": {
+        "ru": "Запрашиваем скачивание...",
+        "en": "Requesting download..."
+      },
+      "after": {
+        "ru": "Запрашиваем скачивание…",
+        "en": "Requesting download…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.actions.preparing",
+      "before": {
+        "ru": "Готовим...",
+        "en": "Preparing..."
+      },
+      "after": {
+        "ru": "Готовим…",
+        "en": "Preparing…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.wallet.eyebrow",
+      "before": {
+        "ru": "Кабинет",
+        "en": "Cabinet"
+      },
+      "after": {
+        "ru": "Кабинет",
+        "en": "Account"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.wallet.title",
+      "before": {
+        "ru": "Баланс",
+        "en": "Wallet"
+      },
+      "after": {
+        "ru": "Баланс",
+        "en": "Balance"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.wallet.refundLink",
+      "before": {
+        "ru": "Условия возврата",
+        "en": "Refund Terms"
+      },
+      "after": {
+        "ru": "Условия возврата",
+        "en": "Refund terms"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.wallet.loading",
+      "before": {
+        "ru": "Загружаем кабинет...",
+        "en": "Loading cabinet..."
+      },
+      "after": {
+        "ru": "Загружаем кабинет…",
+        "en": "Loading account…"
+      },
+      "reason": "terminology + ellipsis"
+    },
+    {
+      "key": "legacy.wallet.refreshingInvoice",
+      "before": {
+        "ru": "Обновляем статус оплаты...",
+        "en": "Refreshing invoice status..."
+      },
+      "after": {
+        "ru": "Обновляем статус оплаты…",
+        "en": "Refreshing invoice status…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.wallet.openingPayment",
+      "before": {
+        "ru": "Открываем Robokassa...",
+        "en": "Opening Robokassa..."
+      },
+      "after": {
+        "ru": "Открываем Robokassa…",
+        "en": "Opening Robokassa…"
+      },
+      "reason": "ellipsis"
+    },
+    {
+      "key": "legacy.settings.eyebrow",
+      "before": {
+        "ru": "Параметры кабинета",
+        "en": "Cabinet settings"
+      },
+      "after": {
+        "ru": "Параметры кабинета",
+        "en": "Account settings"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "legacy.settings.linked",
+      "before": {
+        "ru": "Подключено",
+        "en": "Connected"
+      },
+      "after": {
+        "ru": "Подключено",
+        "en": "Linked"
+      },
+      "reason": "terminology"
+    },
+    {
+      "key": "generation.error.vehicle.replace",
+      "before": {
+        "ru": "Заменить фото автомобиля",
+        "en": "Replace car photo"
+      },
+      "after": {
+        "ru": "Заменить фото автомобиля",
+        "en": "Replace vehicle photo"
+      },
+      "reason": "terminology"
+    }
+  ]
+}

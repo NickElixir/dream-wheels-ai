@@ -1,5 +1,6 @@
 """Credit ledger и безопасное списание за рендеры."""
 
+import json
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -8,7 +9,12 @@ from typing import Any
 
 import asyncpg
 
-from src.config import JOB_CREDIT_COST, STARTER_GRANT_CREDITS, STARTER_GRANT_TTL_DAYS
+from src.config import (
+    JOB_CREDIT_COST,
+    PURCHASE_GRANT_TTL_DAYS,
+    STARTER_GRANT_CREDITS,
+    STARTER_GRANT_TTL_DAYS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +29,115 @@ class CreditAccountState:
     starter_credits_granted_now: bool
 
 
+async def create_credit_package(
+    conn: asyncpg.Connection,
+    *,
+    user_id: int,
+    source: str,
+    credits: int,
+    expires_at: datetime | None,
+    idempotency_key: str,
+    related_payment_id: str | None = None,
+) -> None:
+    await conn.execute(
+        """
+        INSERT INTO credit_packages (
+            user_id, source, credits_granted, remaining_credits, expires_at,
+            related_payment_id, idempotency_key
+        ) VALUES ($1, $2, $3, $3, $4, $5::uuid, $6)
+        ON CONFLICT (idempotency_key) DO NOTHING
+        """,
+        user_id,
+        source,
+        credits,
+        expires_at,
+        related_payment_id,
+        idempotency_key,
+    )
+
+
+async def expire_credit_packages(conn: asyncpg.Connection, *, user_id: int) -> int:
+    # The package ledger was introduced after the original credit account
+    # schema.  Staging can briefly run the newer application against a
+    # database that has not received that additive migration yet.  Probe the
+    # relation through to_regclass so the optional package path does not abort
+    # the surrounding transaction with UndefinedTableError.
+    if await _credit_packages_table_missing(conn):
+        return 0
+    rows = await conn.fetch(
+        """
+        SELECT id, remaining_credits, expires_at
+        FROM credit_packages
+        WHERE user_id = $1 AND remaining_credits > 0 AND expires_at <= CURRENT_TIMESTAMP
+        ORDER BY expires_at NULLS LAST, created_at
+        FOR UPDATE
+        """,
+        user_id,
+    )
+    expired = sum(int(row["remaining_credits"]) for row in rows)
+    if not expired:
+        return 0
+    for row in rows:
+        await conn.execute(
+            "UPDATE credit_packages SET remaining_credits = 0 WHERE id = $1", row["id"]
+        )
+        await conn.execute(
+            """
+            INSERT INTO credit_ledger (user_id, event_type, credits_delta, balance_after,
+                idempotency_key, metadata)
+            VALUES (
+                $1,
+                'expiration',
+                $2,
+                0,
+                $3,
+                jsonb_build_object(
+                    'package_id', $4::text,
+                    'expires_at', $5::timestamptz
+                )
+            )
+            ON CONFLICT (idempotency_key) DO NOTHING
+            """,
+            user_id,
+            -int(row["remaining_credits"]),
+            f"package_expire:{row['id']}",
+            str(row["id"]),
+            row["expires_at"],
+        )
+    await conn.execute(
+        "UPDATE user_credit_accounts SET balance = GREATEST(0, balance - $2), updated_at = CURRENT_TIMESTAMP WHERE user_id = $1",
+        user_id,
+        expired,
+    )
+    return expired
+
+
+async def list_credit_packages(
+    conn: asyncpg.Connection, *, user_id: int
+) -> list[dict[str, object]]:
+    if await _credit_packages_table_missing(conn):
+        return []
+    await expire_credit_packages(conn, user_id=user_id)
+    rows = await conn.fetch(
+        """
+        SELECT id, source, remaining_credits, expires_at, created_at
+        FROM credit_packages
+        WHERE user_id = $1 AND remaining_credits > 0 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        ORDER BY expires_at NULLS LAST, created_at
+        """,
+        user_id,
+    )
+    return [
+        {
+            "id": str(row["id"]),
+            "source": row["source"],
+            "remaining_credits": int(row["remaining_credits"]),
+            "expires_at": row["expires_at"].isoformat() if row["expires_at"] else None,
+        }
+        for row in rows
+    ]
+
+
 def _starter_grant_idempotency_key(user_id: int) -> str:
     return f"starter_grant:{user_id}"
 
@@ -33,6 +148,19 @@ def _starter_grant_expiration_idempotency_key(user_id: int) -> str:
 
 def _starter_grant_expires_at(created_at: datetime) -> datetime:
     return created_at + timedelta(days=STARTER_GRANT_TTL_DAYS)
+
+
+def _metadata_kind(metadata: object) -> str:
+    """Read JSONB consistently when a database codec returns text."""
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            return ""
+    if not isinstance(metadata, Mapping):
+        return ""
+    value = metadata.get("kind")
+    return value if isinstance(value, str) else ""
 
 
 async def _has_starter_grant_ledger_entry(conn: asyncpg.Connection, user_id: int) -> bool:
@@ -163,7 +291,7 @@ def _calculate_remaining_starter_grant_credits(
 
     for row in ledger_rows:
         row_idempotency_key = row.get("idempotency_key")
-        row_kind = ((row.get("metadata") or {}).get("kind") if row.get("metadata") else None) or ""
+        row_kind = _metadata_kind(row.get("metadata"))
         row_event_type = row.get("event_type")
         credits_delta = int(row.get("credits_delta") or 0)
 
@@ -329,8 +457,8 @@ async def _insert_starter_grant_expiration_ledger_entry(
                     jsonb_build_object(
                         'kind', 'starter_grant_expiration',
                         'grant_kind', 'starter_grant',
-                        'expired_credits', $5,
-                        'expires_at', $6
+                        'expired_credits', $5::integer,
+                        'expires_at', $6::timestamptz
                     )
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING
@@ -341,7 +469,7 @@ async def _insert_starter_grant_expiration_ledger_entry(
                 balance_after,
                 _starter_grant_expiration_idempotency_key(user_id),
                 credits_to_expire,
-                expires_at.isoformat(),
+                expires_at,
             )
         return inserted == 1
     except asyncpg.UndefinedColumnError:
@@ -374,8 +502,8 @@ async def _insert_starter_grant_expiration_ledger_entry(
                     jsonb_build_object(
                         'kind', 'starter_grant_expiration',
                         'grant_kind', 'starter_grant',
-                        'expired_credits', $4,
-                        'expires_at', $5
+                        'expired_credits', $4::integer,
+                        'expires_at', $5::timestamptz
                     )
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING
@@ -385,7 +513,7 @@ async def _insert_starter_grant_expiration_ledger_entry(
                 -credits_to_expire,
                 _starter_grant_expiration_idempotency_key(user_id),
                 credits_to_expire,
-                expires_at.isoformat(),
+                expires_at,
             )
         return inserted == 1
     except asyncpg.PostgresError:
@@ -408,6 +536,13 @@ async def _expire_starter_grant_if_due(
 
     expires_at = _starter_grant_expires_at(starter_grant_row["created_at"])
     if expires_at > datetime.now(UTC):
+        return balance
+
+    if not await _credit_packages_table_missing(conn) and await conn.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM credit_packages WHERE user_id=$1 AND source='legacy_balance')",
+        user_id,
+    ):
+        # The cutover has replaced this historical grant with a permanent balance.
         return balance
 
     if await _has_starter_grant_expiration_ledger_entry(conn, user_id):
@@ -550,6 +685,14 @@ async def ensure_credit_account_state(
             user_id=user_id,
             balance_after=balance_after,
         )
+        await create_credit_package(
+            conn,
+            user_id=user_id,
+            source="starter_grant",
+            credits=STARTER_GRANT_CREDITS,
+            expires_at=datetime.now(UTC) + timedelta(days=STARTER_GRANT_TTL_DAYS),
+            idempotency_key=_starter_grant_idempotency_key(user_id),
+        )
         logger.info(f"✅ Выдан стартовый grant user_id={user_id}: +{STARTER_GRANT_CREDITS} credits")
         return CreditAccountState(balance=balance_after, starter_credits_granted_now=True)
     return CreditAccountState(balance=balance, starter_credits_granted_now=False)
@@ -562,8 +705,52 @@ async def ensure_credit_account(conn: asyncpg.Connection, user_id: int) -> int:
 
 
 async def get_balance(conn: asyncpg.Connection, user_id: int) -> int:
-    """Вернуть актуальный баланс, создав grant при первом входе."""
-    return await ensure_credit_account(conn, user_id)
+    """Вернуть баланс, синхронизированный с активными пакетами credits."""
+    balance = await ensure_credit_account(conn, user_id)
+    await expire_credit_packages(conn, user_id=user_id)
+    return await reconcile_credit_account_balance(conn, user_id=user_id, fallback_balance=balance)
+
+
+async def reconcile_credit_account_balance(
+    conn: asyncpg.Connection,
+    *,
+    user_id: int,
+    fallback_balance: int,
+) -> int:
+    """Сверить кэш аккаунта с доступными пакетами после миграции FIFO."""
+    if await _credit_packages_table_missing(conn):
+        return fallback_balance
+
+    package_balance = await conn.fetchval(
+        """
+        SELECT COALESCE(SUM(remaining_credits), 0)
+        FROM credit_packages
+        WHERE user_id = $1
+          AND remaining_credits > 0
+          AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        """,
+        user_id,
+    )
+
+    balance = int(package_balance or 0)
+    await conn.execute(
+        """
+        UPDATE user_credit_accounts
+        SET balance = $2,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $1
+          AND balance IS DISTINCT FROM $2
+        """,
+        user_id,
+        balance,
+    )
+    return balance
+
+
+async def _credit_packages_table_missing(conn: asyncpg.Connection) -> bool:
+    """Return whether the optional FIFO package table is not deployed yet."""
+    relation = await conn.fetchval("SELECT to_regclass('public.credit_packages')")
+    return relation is None
 
 
 async def reserve_job_credit(
@@ -588,15 +775,48 @@ async def reserve_job_credit(
 
     current_status = job_row["credit_status"]
     if current_status in {"reserved", "finalized"}:
-        balance = await ensure_credit_account(conn, user_id)
+        balance = await get_balance(conn, user_id)
         return balance
 
-    balance = await ensure_credit_account(conn, user_id)
+    if current_status == "refunded":
+        raise RuntimeError(f"cannot reserve refunded job job_id={job_id}")
+
+    balance = await get_balance(conn, user_id)
     effective_cost = int(job_row["credit_cost"] or credit_cost)
     if balance < effective_cost:
         raise InsufficientCreditsError(
             f"user_id={user_id} balance={balance} < credit_cost={effective_cost}"
         )
+
+    packages = await conn.fetch(
+        """
+        SELECT id, remaining_credits FROM credit_packages
+        WHERE user_id = $1 AND remaining_credits > 0 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+        ORDER BY expires_at NULLS LAST, created_at FOR UPDATE
+        """,
+        user_id,
+    )
+    remaining = effective_cost
+    for package in packages:
+        allocated = min(remaining, int(package["remaining_credits"]))
+        if not allocated:
+            continue
+        await conn.execute(
+            "UPDATE credit_packages SET remaining_credits = remaining_credits - $2 WHERE id = $1",
+            package["id"],
+            allocated,
+        )
+        await conn.execute(
+            """INSERT INTO credit_package_allocations (package_id, job_id, credits)
+                VALUES ($1, $2::uuid, $3) ON CONFLICT (package_id, job_id)
+                DO UPDATE SET credits = credit_package_allocations.credits + EXCLUDED.credits""",
+            package["id"],
+            job_id,
+            allocated,
+        )
+        remaining -= allocated
+    if remaining:
+        raise RuntimeError(f"credit packages are out of sync for user_id={user_id}")
 
     balance_after = balance - effective_cost
     await conn.execute(
@@ -665,11 +885,11 @@ async def finalize_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id:
     if job_row is None:
         raise RuntimeError(f"job not found for finalize job_id={job_id}")
     if job_row["credit_status"] == "finalized":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
     if job_row["credit_status"] != "reserved":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
 
-    balance = await ensure_credit_account(conn, user_id)
+    balance = await get_balance(conn, user_id)
     await conn.execute(
         """
         INSERT INTO credit_ledger (
@@ -720,13 +940,36 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
     if job_row is None:
         raise RuntimeError(f"job not found for refund job_id={job_id}")
     if job_row["credit_status"] == "refunded":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
     if job_row["credit_status"] != "reserved":
-        return await ensure_credit_account(conn, user_id)
+        return await get_balance(conn, user_id)
 
-    balance = await ensure_credit_account(conn, user_id)
+    balance = await get_balance(conn, user_id)
     credit_cost = int(job_row["credit_cost"] or JOB_CREDIT_COST)
-    balance_after = balance + credit_cost
+    restored_rows = await conn.fetch(
+        """
+        UPDATE credit_packages AS package
+        SET remaining_credits = LEAST(package.credits_granted, package.remaining_credits + allocation.credits)
+        FROM credit_package_allocations AS allocation
+        WHERE allocation.job_id = $1::uuid
+          AND allocation.package_id = package.id
+          AND (package.expires_at IS NULL OR package.expires_at > CURRENT_TIMESTAMP)
+        RETURNING allocation.credits
+        """,
+        job_id,
+    )
+    restored_credits = sum(int(row["credits"]) for row in restored_rows)
+    if restored_credits == 0:
+        await create_credit_package(
+            conn,
+            user_id=user_id,
+            source="refund",
+            credits=credit_cost,
+            expires_at=datetime.now(UTC) + timedelta(days=PURCHASE_GRANT_TTL_DAYS),
+            idempotency_key=f"job_refund_package:{job_id}",
+        )
+        restored_credits = credit_cost
+    balance_after = balance + restored_credits
     await conn.execute(
         """
         UPDATE user_credit_accounts
@@ -760,11 +1003,11 @@ async def refund_job_credit(conn: asyncpg.Connection, *, user_id: int, job_id: s
         ON CONFLICT (idempotency_key) DO NOTHING
         """,
         user_id,
-        credit_cost,
+        restored_credits,
         balance_after,
         job_id,
         f"job_refund:{job_id}",
-        credit_cost,
+        restored_credits,
     )
     await conn.execute(
         """

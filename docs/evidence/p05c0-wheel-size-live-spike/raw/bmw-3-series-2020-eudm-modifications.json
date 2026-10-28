@@ -1,0 +1,1687 @@
+{
+  "data": [
+    {
+      "slug": "33e2e04077",
+      "name": "330d",
+      "body": null,
+      "trim": "330d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2020,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": null,
+        "type": "I6",
+        "power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "aeef2e2263",
+      "name": "330d xDrive",
+      "body": null,
+      "trim": "330d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2021,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 195.0,
+          "PS": 265,
+          "hp": 261
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "e0e931dc02",
+      "name": "330i",
+      "body": null,
+      "trim": "330i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 190.0,
+          "PS": 258,
+          "hp": 255
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 190.0,
+          "PS": 258,
+          "hp": 255
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm"
+      ]
+    },
+    {
+      "slug": "f0762c6aef",
+      "name": "320i",
+      "body": null,
+      "trim": "320i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "1.6",
+        "type": "I4",
+        "power": {
+          "kW": 125.0,
+          "PS": 170,
+          "hp": 168
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 125.0,
+          "PS": 170,
+          "hp": 168
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "nadm"
+      ]
+    },
+    {
+      "slug": "3333e5b5d0",
+      "name": "M340i xDrive",
+      "body": null,
+      "trim": "M340i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 275.0,
+          "PS": 374,
+          "hp": 369
+        },
+        "code": "B58B30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 275.0,
+          "PS": 374,
+          "hp": 369
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "e99ec12bee",
+      "name": "M340i xDrive",
+      "body": null,
+      "trim": "M340i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 285.0,
+          "PS": 387,
+          "hp": 382
+        },
+        "code": "B58B30B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 285.0,
+          "PS": 387,
+          "hp": 382
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "abe2ca61c0",
+      "name": "330e",
+      "body": null,
+      "trim": "330e",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 215.0,
+          "PS": 292,
+          "hp": 288
+        },
+        "code": "B48B20"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "sam"
+      ]
+    },
+    {
+      "slug": "7dec175db6",
+      "name": "320i xDrive",
+      "body": null,
+      "trim": "320i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "708a232f1a",
+      "name": "330i xDrive",
+      "body": null,
+      "trim": "330i xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 190.0,
+          "PS": 258,
+          "hp": 255
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 190.0,
+          "PS": 258,
+          "hp": 255
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "b2f25dbe55",
+      "name": "320d xDrive",
+      "body": null,
+      "trim": "320d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 140.0,
+          "PS": 190,
+          "hp": 188
+        },
+        "code": "B47D20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 140.0,
+          "PS": 190,
+          "hp": 188
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "c00a960f19",
+      "name": "320d",
+      "body": null,
+      "trim": "320d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 140.0,
+          "PS": 190,
+          "hp": 188
+        },
+        "code": "B47D20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 140.0,
+          "PS": 190,
+          "hp": 188
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "sam"
+      ]
+    },
+    {
+      "slug": "24369fa4b3",
+      "name": "318d",
+      "body": null,
+      "trim": "318d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "code": "B47D20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 110.0,
+          "PS": 150,
+          "hp": 148
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    },
+    {
+      "slug": "2c0a14f47c",
+      "name": "320i",
+      "body": null,
+      "trim": "320i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2019,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 135.0,
+          "PS": 184,
+          "hp": 181
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm",
+        "russia",
+        "sam",
+        "medm"
+      ]
+    },
+    {
+      "slug": "e5a4b5bc79",
+      "name": "330d",
+      "body": null,
+      "trim": "330d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "71130edeac",
+      "name": "318i",
+      "body": null,
+      "trim": "318i",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Petrol",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 115.0,
+          "PS": 156,
+          "hp": 154
+        },
+        "code": "B48B20B"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "petrol",
+          "title": "Petrol"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 115.0,
+          "PS": 156,
+          "hp": 154
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia",
+        "sam"
+      ]
+    },
+    {
+      "slug": "b674ba6852",
+      "name": "M340d xDrive",
+      "body": null,
+      "trim": "M340d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 250.0,
+          "PS": 340,
+          "hp": 335
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "ladm",
+        "eudm"
+      ]
+    },
+    {
+      "slug": "3b3557aefc",
+      "name": "330d xDrive",
+      "body": null,
+      "trim": "330d xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport",
+        "Base",
+        "M Special"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "3.0",
+        "type": "I6",
+        "power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "code": "B57D30"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 210.0,
+          "PS": 286,
+          "hp": 282
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "9b1c8e4035",
+      "name": "330e xDrive",
+      "body": null,
+      "trim": "330e xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 215.0,
+          "PS": 292,
+          "hp": 288
+        },
+        "code": "B48B20"
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "1112177846",
+      "name": "320e",
+      "body": null,
+      "trim": "320e",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 150.0,
+          "PS": 204,
+          "hp": 201
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "85c5b53040",
+      "name": "320e xDrive",
+      "body": null,
+      "trim": "320e xDrive",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [
+        "Advantage",
+        "Sport Line",
+        "Luxury Line",
+        "M Sport"
+      ],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Hybrid",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 150.0,
+          "PS": 204,
+          "hp": 201
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_reported",
+        "primary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "secondary_fuel": {
+          "code": "not_reported",
+          "title": "Not reported"
+        },
+        "engine_power": null,
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm"
+      ]
+    },
+    {
+      "slug": "5d1442f689",
+      "name": "316d",
+      "body": null,
+      "trim": "316d",
+      "trim_scoring": null,
+      "trim_attributes": [],
+      "trim_body_types": [],
+      "trim_levels": [],
+      "make": {
+        "slug": "bmw",
+        "name": "BMW",
+        "name_en": "BMW"
+      },
+      "model": {
+        "slug": "3-series",
+        "name": "3 Series",
+        "name_en": "3 Series"
+      },
+      "generation": {
+        "slug": "ddd1df4434",
+        "name": "VII (G20/G21/G28)",
+        "platform": "",
+        "start": 2019,
+        "end": 2022,
+        "bodies": [
+          {
+            "slug": "fa78a16157",
+            "name": "Saloon (G20)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+          },
+          {
+            "slug": "c93e07f14a",
+            "name": "Touring, 5d (G21)",
+            "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+          }
+        ]
+      },
+      "start_year": 2020,
+      "end_year": 2022,
+      "engine": {
+        "fuel": "Diesel",
+        "capacity": "2.0",
+        "type": "I4",
+        "power": {
+          "kW": 90.0,
+          "PS": 122,
+          "hp": 121
+        },
+        "code": null
+      },
+      "powertrain": {
+        "combustion_engine": "present",
+        "electrification_level": "not_applicable",
+        "primary_fuel": {
+          "code": "diesel",
+          "title": "Diesel"
+        },
+        "secondary_fuel": {
+          "code": "not_applicable",
+          "title": "Not applicable"
+        },
+        "engine_power": {
+          "kW": 90.0,
+          "PS": 122,
+          "hp": 121
+        },
+        "system_power": null,
+        "engine_power_secondary": null,
+        "motors": []
+      },
+      "regions": [
+        "eudm",
+        "russia"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 21,
+    "engine": {
+      "fuels": [
+        "diesel",
+        "hybrid",
+        "petrol"
+      ],
+      "horsepower": {
+        "min": 121,
+        "max": 382
+      }
+    },
+    "debug": null
+  }
+}

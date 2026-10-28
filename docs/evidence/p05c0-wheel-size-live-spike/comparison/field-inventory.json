@@ -1,0 +1,1113 @@
+[
+  {
+    "path": "body",
+    "type_counts": {
+      "null": 174
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "configurator",
+    "type_counts": {
+      "null": 83
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "end_year",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 2020
+    }
+  },
+  {
+    "path": "engine.capacity",
+    "type_counts": {
+      "null": 32,
+      "str": 142
+    },
+    "examples": {
+      "null": null,
+      "str": "3.0"
+    }
+  },
+  {
+    "path": "engine.code",
+    "type_counts": {
+      "str": 146,
+      "null": 28
+    },
+    "examples": {
+      "str": "B57D30",
+      "null": null
+    }
+  },
+  {
+    "path": "engine.fuel",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "Diesel"
+    }
+  },
+  {
+    "path": "engine.power.PS",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 265
+    }
+  },
+  {
+    "path": "engine.power.hp",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 261
+    }
+  },
+  {
+    "path": "engine.power.kW",
+    "type_counts": {
+      "float": 174
+    },
+    "examples": {
+      "float": 195.0
+    }
+  },
+  {
+    "path": "engine.type",
+    "type_counts": {
+      "str": 162,
+      "null": 12
+    },
+    "examples": {
+      "str": "I6",
+      "null": null
+    }
+  },
+  {
+    "path": "generation.bodies[].image",
+    "type_counts": {
+      "str": 360
+    },
+    "examples": {
+      "str": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+    }
+  },
+  {
+    "path": "generation.bodies[].name",
+    "type_counts": {
+      "str": 360
+    },
+    "examples": {
+      "str": "Saloon (G20)"
+    }
+  },
+  {
+    "path": "generation.bodies[].slug",
+    "type_counts": {
+      "str": 360
+    },
+    "examples": {
+      "str": "fa78a16157"
+    }
+  },
+  {
+    "path": "generation.end",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 2022
+    }
+  },
+  {
+    "path": "generation.name",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "VII (G20/G21/G28)"
+    }
+  },
+  {
+    "path": "generation.platform",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": ""
+    }
+  },
+  {
+    "path": "generation.slug",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "ddd1df4434"
+    }
+  },
+  {
+    "path": "generation.start",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 2019
+    }
+  },
+  {
+    "path": "make.name",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "BMW"
+    }
+  },
+  {
+    "path": "make.name_en",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "BMW"
+    }
+  },
+  {
+    "path": "make.slug",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "bmw"
+    }
+  },
+  {
+    "path": "model.name",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "3 Series"
+    }
+  },
+  {
+    "path": "model.name_en",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "3 Series"
+    }
+  },
+  {
+    "path": "model.slug",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "3-series"
+    }
+  },
+  {
+    "path": "name",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "330d"
+    }
+  },
+  {
+    "path": "powertrain.combustion_engine",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "present"
+    }
+  },
+  {
+    "path": "powertrain.electrification_level",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "not_applicable"
+    }
+  },
+  {
+    "path": "powertrain.engine_power",
+    "type_counts": {
+      "null": 28
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "powertrain.engine_power.PS",
+    "type_counts": {
+      "int": 146
+    },
+    "examples": {
+      "int": 265
+    }
+  },
+  {
+    "path": "powertrain.engine_power.hp",
+    "type_counts": {
+      "int": 146
+    },
+    "examples": {
+      "int": 261
+    }
+  },
+  {
+    "path": "powertrain.engine_power.kW",
+    "type_counts": {
+      "float": 146
+    },
+    "examples": {
+      "float": 195.0
+    }
+  },
+  {
+    "path": "powertrain.engine_power_secondary",
+    "type_counts": {
+      "null": 174
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "powertrain.motors[]",
+    "type_counts": {
+      "list": 146
+    },
+    "examples": {
+      "list": []
+    }
+  },
+  {
+    "path": "powertrain.motors[].axle",
+    "type_counts": {
+      "str": 28
+    },
+    "examples": {
+      "str": "rear"
+    }
+  },
+  {
+    "path": "powertrain.motors[].code",
+    "type_counts": {
+      "null": 28
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "powertrain.motors[].power.PS",
+    "type_counts": {
+      "int": 28
+    },
+    "examples": {
+      "int": 136
+    }
+  },
+  {
+    "path": "powertrain.motors[].power.hp",
+    "type_counts": {
+      "int": 28
+    },
+    "examples": {
+      "int": 134
+    }
+  },
+  {
+    "path": "powertrain.motors[].power.kW",
+    "type_counts": {
+      "float": 28
+    },
+    "examples": {
+      "float": 100.0
+    }
+  },
+  {
+    "path": "powertrain.primary_fuel.code",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "diesel"
+    }
+  },
+  {
+    "path": "powertrain.primary_fuel.title",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "Diesel"
+    }
+  },
+  {
+    "path": "powertrain.secondary_fuel.code",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "not_applicable"
+    }
+  },
+  {
+    "path": "powertrain.secondary_fuel.title",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "Not applicable"
+    }
+  },
+  {
+    "path": "powertrain.system_power",
+    "type_counts": {
+      "null": 146
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "powertrain.system_power.PS",
+    "type_counts": {
+      "int": 28
+    },
+    "examples": {
+      "int": 462
+    }
+  },
+  {
+    "path": "powertrain.system_power.hp",
+    "type_counts": {
+      "int": 28
+    },
+    "examples": {
+      "int": 456
+    }
+  },
+  {
+    "path": "powertrain.system_power.kW",
+    "type_counts": {
+      "float": 28
+    },
+    "examples": {
+      "float": 340.0
+    }
+  },
+  {
+    "path": "regions[]",
+    "type_counts": {
+      "str": 926
+    },
+    "examples": {
+      "str": "eudm"
+    }
+  },
+  {
+    "path": "slug",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "33e2e04077"
+    }
+  },
+  {
+    "path": "start_year",
+    "type_counts": {
+      "int": 174
+    },
+    "examples": {
+      "int": 2019
+    }
+  },
+  {
+    "path": "technical.bolt_pattern",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "5x112"
+    }
+  },
+  {
+    "path": "technical.centre_bore",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "66.6"
+    }
+  },
+  {
+    "path": "technical.pcd",
+    "type_counts": {
+      "float": 83
+    },
+    "examples": {
+      "float": 112.0
+    }
+  },
+  {
+    "path": "technical.rear_axis_bolt_pattern",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "N/A"
+    }
+  },
+  {
+    "path": "technical.rear_axis_centre_bore",
+    "type_counts": {
+      "null": 83
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "technical.rear_axis_pcd",
+    "type_counts": {
+      "null": 83
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "technical.rear_axis_stud_holes",
+    "type_counts": {
+      "null": 83
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "technical.stud_holes",
+    "type_counts": {
+      "int": 83
+    },
+    "examples": {
+      "int": 5
+    }
+  },
+  {
+    "path": "technical.wheel_fasteners.thread_size",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "M14 x 1.25"
+    }
+  },
+  {
+    "path": "technical.wheel_fasteners.type",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "Lug bolts"
+    }
+  },
+  {
+    "path": "technical.wheel_tightening_torque",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "140 Nm"
+    }
+  },
+  {
+    "path": "tire_type",
+    "type_counts": {
+      "str": 83
+    },
+    "examples": {
+      "str": "Passenger"
+    }
+  },
+  {
+    "path": "trim",
+    "type_counts": {
+      "str": 174
+    },
+    "examples": {
+      "str": "330d"
+    }
+  },
+  {
+    "path": "trim_attributes[]",
+    "type_counts": {
+      "list": 158,
+      "str": 16
+    },
+    "examples": {
+      "list": [],
+      "str": "AWD"
+    }
+  },
+  {
+    "path": "trim_body_types[]",
+    "type_counts": {
+      "list": 146,
+      "str": 28
+    },
+    "examples": {
+      "list": [],
+      "str": "Coupe"
+    }
+  },
+  {
+    "path": "trim_levels[]",
+    "type_counts": {
+      "str": 302,
+      "list": 88
+    },
+    "examples": {
+      "str": "Advantage",
+      "list": []
+    }
+  },
+  {
+    "path": "trim_scoring",
+    "type_counts": {
+      "null": 174
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.load_index",
+    "type_counts": {
+      "int": 517,
+      "null": 1
+    },
+    "examples": {
+      "int": 98,
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.rim",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": "7.5Jx17 ET30"
+    }
+  },
+  {
+    "path": "wheels[].front.rim_diameter",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 17.0
+    }
+  },
+  {
+    "path": "wheels[].front.rim_offset",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 30.0
+    }
+  },
+  {
+    "path": "wheels[].front.rim_width",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 7.5
+    }
+  },
+  {
+    "path": "wheels[].front.speed_index",
+    "type_counts": {
+      "str": 517,
+      "null": 1
+    },
+    "examples": {
+      "str": "Y",
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.tire",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": "225/50ZR17"
+    }
+  },
+  {
+    "path": "wheels[].front.tire_alpha_numeric",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.tire_aspect_ratio",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 50.0
+    }
+  },
+  {
+    "path": "wheels[].front.tire_construction",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": "R"
+    }
+  },
+  {
+    "path": "wheels[].front.tire_diameter",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.tire_diameter_mm",
+    "type_counts": {
+      "int": 518
+    },
+    "examples": {
+      "int": 657
+    }
+  },
+  {
+    "path": "wheels[].front.tire_full",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": "225/50ZR17 98Y"
+    }
+  },
+  {
+    "path": "wheels[].front.tire_is_82series",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].front.tire_pressure",
+    "type_counts": {
+      "null": 276
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.tire_pressure.bar",
+    "type_counts": {
+      "float": 242
+    },
+    "examples": {
+      "float": 2.4
+    }
+  },
+  {
+    "path": "wheels[].front.tire_pressure.kPa",
+    "type_counts": {
+      "float": 242
+    },
+    "examples": {
+      "float": 240.0
+    }
+  },
+  {
+    "path": "wheels[].front.tire_pressure.psi",
+    "type_counts": {
+      "int": 242
+    },
+    "examples": {
+      "int": 35
+    }
+  },
+  {
+    "path": "wheels[].front.tire_section_width",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].front.tire_sizing_system",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": "metric"
+    }
+  },
+  {
+    "path": "wheels[].front.tire_weight_kg",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 10.23
+    }
+  },
+  {
+    "path": "wheels[].front.tire_width",
+    "type_counts": {
+      "float": 518
+    },
+    "examples": {
+      "float": 225.0
+    }
+  },
+  {
+    "path": "wheels[].front.tire_width_mm",
+    "type_counts": {
+      "int": 518
+    },
+    "examples": {
+      "int": 225
+    }
+  },
+  {
+    "path": "wheels[].is_extra_load_tires",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].is_high_load_tires",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].is_pressed_steel_rims",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].is_recommended_for_winter",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].is_runflat_tires",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].is_stock",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": true
+    }
+  },
+  {
+    "path": "wheels[].rear.load_index",
+    "type_counts": {
+      "null": 284,
+      "int": 234
+    },
+    "examples": {
+      "null": null,
+      "int": 99
+    }
+  },
+  {
+    "path": "wheels[].rear.rim",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": ""
+    }
+  },
+  {
+    "path": "wheels[].rear.rim_diameter",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 18.0
+    }
+  },
+  {
+    "path": "wheels[].rear.rim_offset",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 40.0
+    }
+  },
+  {
+    "path": "wheels[].rear.rim_width",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 8.5
+    }
+  },
+  {
+    "path": "wheels[].rear.speed_index",
+    "type_counts": {
+      "null": 284,
+      "str": 234
+    },
+    "examples": {
+      "null": null,
+      "str": "Y"
+    }
+  },
+  {
+    "path": "wheels[].rear.tire",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": ""
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_alpha_numeric",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_aspect_ratio",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 40.0
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_construction",
+    "type_counts": {
+      "str": 496,
+      "null": 22
+    },
+    "examples": {
+      "str": "R",
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_diameter",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_diameter_mm",
+    "type_counts": {
+      "null": 284,
+      "int": 234
+    },
+    "examples": {
+      "null": null,
+      "int": 661
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_full",
+    "type_counts": {
+      "str": 518
+    },
+    "examples": {
+      "str": ""
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_is_82series",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": false
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_pressure",
+    "type_counts": {
+      "null": 276
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_pressure.bar",
+    "type_counts": {
+      "float": 242
+    },
+    "examples": {
+      "float": 2.6
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_pressure.kPa",
+    "type_counts": {
+      "float": 242
+    },
+    "examples": {
+      "float": 260.0
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_pressure.psi",
+    "type_counts": {
+      "int": 242
+    },
+    "examples": {
+      "int": 38
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_section_width",
+    "type_counts": {
+      "null": 518
+    },
+    "examples": {
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_sizing_system",
+    "type_counts": {
+      "str": 496,
+      "null": 22
+    },
+    "examples": {
+      "str": "metric",
+      "null": null
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_weight_kg",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 11.34
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_width",
+    "type_counts": {
+      "null": 284,
+      "float": 234
+    },
+    "examples": {
+      "null": null,
+      "float": 255.0
+    }
+  },
+  {
+    "path": "wheels[].rear.tire_width_mm",
+    "type_counts": {
+      "null": 284,
+      "int": 234
+    },
+    "examples": {
+      "null": null,
+      "int": 255
+    }
+  },
+  {
+    "path": "wheels[].showing_fp_only",
+    "type_counts": {
+      "bool": 518
+    },
+    "examples": {
+      "bool": true
+    }
+  }
+]

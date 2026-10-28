@@ -1,0 +1,27 @@
+- main:
+  - navigation:
+    - button "New job"
+    - button "Historical job"
+    - button "Near expiry"
+  - img "Результат примерки"
+  - img "Исходное фото"
+  - generic: Оригинал
+  - generic: Результат
+  - generic: ↔
+  - slider "Сравнение результата и оригинала": "50"
+  - complementary:
+    - heading "Автомобиль" [level=3]
+    - paragraph: Lexus RX
+    - heading "Колесный диск" [level=3]
+    - paragraph: BBS CI-R
+    - button "Создать ещё вариант"
+    - button "Скачать результат":
+      - text: Скачать результат
+    - status
+  - region "Оценка результата":
+    - heading "Оценка результата" [level=3]
+    - paragraph: Помогите улучшить следующие примерки
+    - button "Удачный результат"
+    - button "Нужна доработка"
+    - status
+  - generic: "{ \"kind\": \"car_display\", \"source\": \"HTTPS signed Storage double\", \"signing_requests\": 1, \"calls\": [ { \"method\": \"GET\", \"path\": \"/jobs/11111111-1111-4111-8111-111111111111/assets/car_display/signed-url\" } ] }"

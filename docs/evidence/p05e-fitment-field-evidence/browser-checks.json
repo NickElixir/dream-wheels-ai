@@ -1,0 +1,1227 @@
+{
+  "browser": "Bundled Playwright Chromium",
+  "url": "http://127.0.0.1:8779/tests/browser-fixtures/p05e-fitment-field-evidence.html",
+  "scope": "production vnextFitmentSnapshot and renderer/i18n, saved fixture API responses; isolated network",
+  "checks": [
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "10J",
+          "Не определено"
+        ],
+        [
+          "ET",
+          "Нет данных",
+          "45 мм",
+          "Не определено"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "20″",
+          "Не определено"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "Нет данных",
+          "45 мм",
+          "Не определено"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "114,3 мм",
+          "Не совпадает"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "4",
+          "Не совпадает"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "70 мм",
+          "С условием"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "10J",
+          "Unknown"
+        ],
+        [
+          "ET",
+          "No data",
+          "45 mm",
+          "Unknown"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "20″",
+          "Unknown"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "No data",
+          "45 mm",
+          "Unknown"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "114.3 mm",
+          "Mismatch"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "4",
+          "Mismatch"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "locale": "en",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "70 mm",
+          "With conditions"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "10J",
+          "Не определено"
+        ],
+        [
+          "ET",
+          "Нет данных",
+          "45 мм",
+          "Не определено"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "20″",
+          "Не определено"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "Нет данных",
+          "45 мм",
+          "Не определено"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "114,3 мм",
+          "Не совпадает"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "4",
+          "Не совпадает"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "66,6 мм",
+          "Подходит"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "ru",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Диаметр",
+          "19″",
+          "19″",
+          "Подходит"
+        ],
+        [
+          "Ширина",
+          "8,5J",
+          "8,5J",
+          "Подходит"
+        ],
+        [
+          "ET",
+          "40–50 мм",
+          "45 мм",
+          "Подходит"
+        ],
+        [
+          "PCD",
+          "112 мм",
+          "112 мм",
+          "Подходит"
+        ],
+        [
+          "Количество отверстий",
+          "5",
+          "5",
+          "Подходит"
+        ],
+        [
+          "DIA",
+          "66,6 мм",
+          "70 мм",
+          "С условием"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "A",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "10J",
+          "Unknown"
+        ],
+        [
+          "ET",
+          "No data",
+          "45 mm",
+          "Unknown"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "B",
+      "verdict": "unknown",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "20″",
+          "Unknown"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "No data",
+          "45 mm",
+          "Unknown"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 20,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "above",
+        "exact_diameter_match": false,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "J",
+      "verdict": "incompatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "114.3 mm",
+          "Mismatch"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "4",
+          "Mismatch"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "compatible",
+      "verdict": "compatible",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "66.6 mm",
+          "Matches"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "locale": "en",
+      "scenario": "dia-conditional",
+      "verdict": "compatible_with_conditions",
+      "rows": [
+        [
+          "Diameter",
+          "19″",
+          "19″",
+          "Matches"
+        ],
+        [
+          "Width",
+          "8.5J",
+          "8.5J",
+          "Matches"
+        ],
+        [
+          "ET",
+          "40–50 mm",
+          "45 mm",
+          "Matches"
+        ],
+        [
+          "PCD",
+          "112 mm",
+          "112 mm",
+          "Matches"
+        ],
+        [
+          "Bolt count",
+          "5",
+          "5",
+          "Matches"
+        ],
+        [
+          "DIA",
+          "66.6 mm",
+          "70 mm",
+          "With conditions"
+        ]
+      ],
+      "detail": {
+        "axle": "front",
+        "rim_diameter_in": 19,
+        "reference_diameters_in": [
+          19
+        ],
+        "reference_min_diameter_in": 19,
+        "reference_max_diameter_in": 19,
+        "reference_relation": "within_bounds",
+        "exact_diameter_match": true,
+        "reference_scope": "normalized_allowed_wheels"
+      },
+      "overflow": false,
+      "consoleErrors": [],
+      "blank": false,
+      "overlay": false
+    }
+  ]
+}

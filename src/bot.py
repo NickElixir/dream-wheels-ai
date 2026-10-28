@@ -17,6 +17,8 @@ from src import db
 from src.config import (
     API_BASE_URL,
     API_INTERNAL_TOKEN,
+    APP_MAINTENANCE,
+    BOT_ENABLED,
     BOT_TOKEN,
     LEGAL_BASE_URL,
     REDIS_URL,
@@ -82,11 +84,7 @@ MESSAGES = {
             "directly in this chat. The starter grant stays active for {days} days from the first crediting."
         ),
         "app": "Open the Mini App below.",
-        "help": (
-            "Send two photos in chat: first the car from the side, "
-            "then the wheel from the front. "
-            "You can also open the Mini App below."
-        ),
+        "help": "Send two photos in chat: first the car from the side, then the wheel from the front. You can also open the Mini App below.",
         "support": "Open support in the Mini App.",
         "privacy": "Open the privacy policy.",
         "terms": "Open the public offer.",
@@ -112,11 +110,7 @@ MESSAGES = {
             "машины прямо в чат. Стартовый grant действует {days} дней с момента первого начисления."
         ),
         "app": "Открываю Mini App.",
-        "help": (
-            "Отправь 2 фото в чат: сначала машину сбоку, "
-            "затем диск анфас. "
-            "Или открой Mini App кнопкой ниже."
-        ),
+        "help": "Отправь 2 фото в чат: сначала машину сбоку, затем диск анфас. Или открой Mini App кнопкой ниже.",
         "support": "Открываю поддержку в Mini App.",
         "privacy": "Открываю политику конфиденциальности.",
         "terms": "Открываю публичную оферту.",
@@ -176,7 +170,7 @@ def _legal_url(path: str) -> str:
 
 
 async def _reply_with_webapp_button(update: Update, text: str, url: str, button_text: str) -> None:
-    message = update.effective_message
+    message = getattr(update, "effective_message", None) or getattr(update, "message", None)
     if message is None:
         return
     keyboard = InlineKeyboardMarkup(
@@ -186,7 +180,7 @@ async def _reply_with_webapp_button(update: Update, text: str, url: str, button_
 
 
 async def _reply_with_url_button(update: Update, text: str, url: str, button_text: str) -> None:
-    message = update.effective_message
+    message = getattr(update, "effective_message", None) or getattr(update, "message", None)
     if message is None:
         return
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(button_text, url=url)]])
@@ -202,11 +196,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if state is not None and state.starter_credits_granted_now:
                 start_message_key = "start"
         except Exception as e:
-            logger.exception(
-                "❌ /start starter grant failed telegram_user_id=%s: %s",
-                getattr(user, "id", None),
-                e,
-            )
+            logger.exception(f"❌ /start starter grant failed telegram_user_id={user.id}: {e}")
 
     await _reply_with_webapp_button(
         update,
@@ -218,46 +208,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply_with_webapp_button(
-        update,
-        _t(update, "app"),
-        _webapp_url(),
-        _t(update, "open_app"),
+        update, _t(update, "app"), _webapp_url(), _t(update, "open_app")
     )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply_with_webapp_button(
-        update,
-        _t(update, "help"),
-        _webapp_url(),
-        _t(update, "open_app"),
+        update, _t(update, "help"), _webapp_url(), _t(update, "open_app")
     )
 
 
 async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply_with_webapp_button(
-        update,
-        _t(update, "support"),
-        _webapp_url("support"),
-        _t(update, "open_support"),
+        update, _t(update, "support"), _webapp_url("support"), _t(update, "open_support")
     )
 
 
 async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply_with_url_button(
-        update,
-        _t(update, "privacy"),
-        _legal_url("/legal/privacy"),
-        _t(update, "open_document"),
+        update, _t(update, "privacy"), _legal_url("/legal/privacy"), _t(update, "open_document")
     )
 
 
 async def terms_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply_with_url_button(
-        update,
-        _t(update, "terms"),
-        _legal_url("/legal/offer"),
-        _t(update, "open_document"),
+        update, _t(update, "terms"), _legal_url("/legal/offer"), _t(update, "open_document")
     )
 
 
@@ -323,8 +298,7 @@ async def poll_job_status(update: Update, status_msg, job_id: str):
                                 [
                                     [
                                         InlineKeyboardButton(
-                                            fb["like"],
-                                            callback_data=f"feedback:like:{job_id}",
+                                            fb["like"], callback_data=f"feedback:like:{job_id}"
                                         ),
                                         InlineKeyboardButton(
                                             fb["dislike"],
@@ -373,12 +347,15 @@ async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             headers = {}
             if API_INTERNAL_TOKEN:
                 headers["X-Internal-Token"] = API_INTERNAL_TOKEN
-            async with session.post(
+            async with session.put(
                 f"{API_BASE_URL}/jobs/{job_id}/feedback",
-                json={"vote": vote, "telegram_user_id": telegram_user_id},
+                json={
+                    "sentiment": "liked" if vote == "like" else "disliked",
+                    "telegram_user_id": telegram_user_id,
+                },
                 headers=headers,
             ) as resp:
-                if resp.status != 204:
+                if resp.status != 200:
                     body = await resp.text()
                     logger.warning(
                         "Feedback API rejected job_id=%s tg_user=%s status=%s body=%s",
@@ -414,7 +391,10 @@ async def _post_shutdown(_application: Application) -> None:
     await db.close_pool()
 
 
-def main():
+def main() -> None:
+    if APP_MAINTENANCE or not BOT_ENABLED:
+        logger.info("Telegram bot disabled by runtime profile")
+        return
     logger.info("Запуск Telegram-бота...")
     application = (
         Application.builder()

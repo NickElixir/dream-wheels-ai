@@ -12,7 +12,7 @@
 - 🟣 фиолетовый — backend (FastAPI, Worker)
 - 🟢 зелёный — данные (Postgres, Storage)
 - 🟠 оранжевый — Redis (очередь, кэш, rate-limit)
-- 🔴 красный — внешние API (Reve)
+- 🔴 красный — внешние API (Alibaba Cloud Model Studio / Wan)
 - ⚪ серый — ops/инфра (keep-alive, monitoring)
 
 ---
@@ -29,7 +29,7 @@ sequenceDiagram
     participant DB as Postgres
     participant Q as Redis
     participant W as Worker
-    participant R as Reve API
+    participant R as Wan 2.7 API
     participant S as Storage
 
     User->>Bot: Фото машины
@@ -49,8 +49,8 @@ sequenceDiagram
 
     W->>Q: BLPOP job_queue
     W->>DB: UPDATE processing
-    W->>R: image/remix (2)
-    R-->>W: result
+    W->>R: async image generation (vehicle, rim)
+    R-->>W: task/result
     W->>S: PUT result
     W->>DB: UPDATE completed
 
@@ -94,7 +94,7 @@ graph TB
     end
 
     Redis[(Upstash Redis<br/>queue + sessions + rate-limit)]
-    Reve[Reve API]
+    Wan[Alibaba Model Studio<br/>Wan 2.7 Image]
 
     WA -->|POST /jobs/upload| API
     WA -->|GET /jobs/:id| API
@@ -108,7 +108,7 @@ graph TB
     Worker --> Redis
     Worker --> Storage
     Worker --> PG
-    Worker --> Reve
+    Worker --> Wan
 
     classDef frontend fill:#1a3a52,color:#fff,stroke:#4a7ba8
     classDef backend fill:#3a1a52,color:#fff,stroke:#7b4aa8
@@ -120,7 +120,7 @@ graph TB
     class API,Worker,Bot backend
     class PG,Storage data
     class Redis cache
-    class Reve external
+    class Wan external
 ```
 
 ---
@@ -170,7 +170,7 @@ sequenceDiagram
     participant DB as Postgres
     participant R as Redis
     participant Wk as Worker
-    participant Reve as Reve API
+    participant Wan as Wan 2.7 API
 
     U->>W: Открывает Mini App
     W-->>U: "Загрузи фото машины"
@@ -192,8 +192,8 @@ sequenceDiagram
 
     Wk->>R: BLPOP job_queue
     Wk->>S: GET car.jpg, wheel.jpg
-    Wk->>Reve: image/remix
-    Reve-->>Wk: result
+    Wk->>Wan: async generation + polling
+    Wan-->>Wk: task result
     Wk->>S: PUT result.jpg
     Wk->>DB: UPDATE completed
 
@@ -275,7 +275,7 @@ graph LR
 stateDiagram-v2
     [*] --> queued: POST /jobs/upload
     queued --> processing: воркер взял из BLPOP
-    processing --> completed: Reve вернул картинку
+    processing --> completed: Wan вернул картинку
     processing --> failed: ошибка / таймаут 90с
     completed --> [*]
     failed --> [*]

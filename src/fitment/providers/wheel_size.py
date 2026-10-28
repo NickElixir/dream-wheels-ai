@@ -1,0 +1,755 @@
+"""Адаптер Wheel-Size API v2 (https://developer.wheel-size.com/).
+
+Факты API, на которых построен адаптер:
+- база `https://api.wheel-size.com/v2`, auth — query-параметр `user_key`;
+- cataloging-методы `/makes/`, `/models/`, `/years/` — кэшируемые (ToS);
+- search `/search/by_model/?make=&model=&year=&region=[&modification=]` —
+  только по действию реального пользователя, один регион на запрос;
+- элемент `data[]` содержит `technical.{stud_holes,pcd,centre_bore,bolt_pattern,
+  fasteners{type,thread_size,wheel_tightening_torque}}` и
+  `wheels[].{front,rear}.{rim_diameter,rim_width,offset,is_stock}`;
+- `centre_bore` может прийти строкой ("67.1") или "N/A";
+- дневные квоты сбрасываются в 0:00 GMT; 429/5xx ретраим с backoff.
+
+Лестница резолва: /makes/ → /models/ → /years/ → /generations/ →
+/modifications/ → search/by_model. Slugs пишутся в
+identity.provider_mappings["wheel_size"], канонические поля не подменяются.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import difflib
+import hashlib
+import json
+import logging
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from typing import Any
+
+import httpx
+
+from src.fitment.config import (
+    FITMENT_CATALOG_CACHE_TTL_SEC,
+    FITMENT_NEGATIVE_CACHE_TTL_SEC,
+    FITMENT_PROFILE_CACHE_TTL_SEC,
+    WHEEL_SIZE_API_KEY,
+    WHEEL_SIZE_BASE_URL,
+    WHEEL_SIZE_MAX_RETRIES,
+    WHEEL_SIZE_REGION_DEFAULT,
+    WHEEL_SIZE_TIMEOUT_CONNECT_SEC,
+    WHEEL_SIZE_TIMEOUT_READ_SEC,
+)
+from src.fitment.providers.base import ProviderError
+from src.fitment.providers.cache import ProviderCache, default_provider_cache
+from src.fitment.schemas import (
+    AxleFitment,
+    FitmentProfile,
+    OffsetReference,
+    VehicleIdentity,
+    parse_bolt_pattern,
+)
+from src.fitment.variant_details import wheel_size_display_details
+
+logger = logging.getLogger(__name__)
+
+PROVIDER_NAME = "wheel_size"
+# The normalized profile is cached independently from the raw provider payload.
+# Bump this whenever normalization semantics change, so an old profile cannot
+# bypass a corrected parser for its full cache TTL.
+PROFILE_NORMALIZATION_VERSION = "wheel_size_profile_v2"
+
+# Рынок VLM/пользователя → регион Wheel-Size + fallback при пустом ответе.
+MARKET_TO_REGION: dict[str, tuple[str, str | None]] = {
+    "russia": ("russia", "chdm"),
+    "chdm": ("chdm", "russia"),
+    "europe": ("eudm", "usdm"),
+    "eudm": ("eudm", "usdm"),
+    "usa": ("usdm", "eudm"),
+    "usdm": ("usdm", "eudm"),
+    "japan": ("jdm", "eudm"),
+    "jdm": ("jdm", "eudm"),
+    "cn": ("chdm", "russia"),
+    "china": ("chdm", "russia"),
+    "korea": ("kdm", "eudm"),
+    "kdm": ("kdm", "eudm"),
+}
+
+_FUZZY_MATCH_THRESHOLD = 0.75
+
+
+def _to_float(value: Any) -> float | None:
+    """Безопасный парс: у Wheel-Size centre_bore бывает строкой или 'N/A'."""
+    if value in (None, "", "N/A", "n/a"):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _offset_values(axle_data: dict[str, Any]) -> list[float]:
+    """Return provider-supplied ET values without rounding or interpolation.
+
+    Current Wheel-Size records use one scalar ``rim_offset``.  The older
+    ``offset``/``et`` aliases are retained for compatible payloads.  A list is
+    accepted only when the provider explicitly supplies one.  Explicit
+    min/max endpoints are used only when no scalar/list representation is
+    present; we never synthesize intermediate values or combine dimensions.
+    """
+    for field in ("offset", "et", "rim_offset"):
+        raw = axle_data.get(field)
+        if raw is None:
+            continue
+        values = raw if isinstance(raw, list | tuple | set) else [raw]
+        parsed = [_to_float(value) for value in values]
+        offsets = [value for value in parsed if value is not None]
+        if offsets:
+            return offsets
+
+    endpoints: list[float] = []
+    for field in (
+        "offset_min",
+        "offset_max",
+        "et_min",
+        "et_max",
+        "rim_offset_min",
+        "rim_offset_max",
+    ):
+        value = _to_float(axle_data.get(field))
+        if value is not None:
+            endpoints.append(value)
+    return endpoints
+
+
+def _option_values(option: dict[str, Any]) -> set[str]:
+    values: set[str] = set()
+    for field in ("slug", "name", "name_en", "trim", "engine", "body"):
+        value = option.get(field)
+        if value:
+            values.add(str(value))
+    return values
+
+
+def _match_score(query: str, option: dict[str, Any]) -> float:
+    normalized_query = query.strip().lower()
+    scores = [
+        difflib.SequenceMatcher(None, normalized_query, candidate.strip().lower()).ratio()
+        for candidate in _option_values(option)
+    ]
+    return max(scores, default=0.0)
+
+
+def _fuzzy_pick(query: str, options: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Выбрать элемент каталога (slug/name/name_en) по нечёткому совпадению."""
+    best: tuple[float, dict[str, Any]] | None = None
+    for option in options:
+        score = _match_score(query, option)
+        if best is None or score > best[0]:
+            best = (score, option)
+    if best is None or best[0] < _FUZZY_MATCH_THRESHOLD:
+        return None
+    return best[1]
+
+
+def _pick_specific_entry(
+    options: list[dict[str, Any]],
+    *hints: str | None,
+) -> dict[str, Any] | None:
+    if len(options) == 1:
+        return options[0]
+    for hint in hints:
+        if hint:
+            ranked = sorted(
+                ((_match_score(hint, option), option) for option in options),
+                key=lambda pair: pair[0],
+                reverse=True,
+            )
+            if (
+                ranked
+                and ranked[0][0] >= _FUZZY_MATCH_THRESHOLD
+                and (len(ranked) == 1 or ranked[0][0] > ranked[1][0])
+            ):
+                return ranked[0][1]
+    return None
+
+
+def _contains_year(options: list[Any], year: int) -> bool:
+    for option in options:
+        if isinstance(option, dict):
+            value = option.get("year", option.get("name", option.get("slug")))
+        else:
+            value = option
+        try:
+            if int(value) == year:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
+
+
+def _consensus(values: list[Any]) -> Any | None:
+    if not values or any(value is None for value in values):
+        return None
+    first = values[0]
+    return first if all(value == first for value in values[1:]) else None
+
+
+class WheelSizeProvider:
+    """FitmentProvider поверх Wheel-Size v2. httpx-клиент инжектится для тестов."""
+
+    name = PROVIDER_NAME
+
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        cache: ProviderCache | None = None,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
+        self._api_key = api_key if api_key is not None else WHEEL_SIZE_API_KEY
+        self._base_url = (base_url or WHEEL_SIZE_BASE_URL).rstrip("/")
+        self._cache = cache or default_provider_cache()
+        self._client = client
+
+    # -- HTTP core -----------------------------------------------------------
+
+    async def _request(self, path: str, params: dict[str, Any]) -> Any:
+        if not self._api_key:
+            raise ProviderError("WHEEL_SIZE_API_KEY is not configured")
+
+        # Wheel-Size documents ``region`` as a repeatable array parameter,
+        # e.g. ``region=eudm&region=usdm``. Keep scalar calls backwards
+        # compatible while encoding aggregate calls without inventing a new
+        # provider parameter or comma-separated semantics.
+        has_sequence = any(isinstance(value, list | tuple | set) for value in params.values())
+        if has_sequence:
+            request_params: Any = []
+            for key, value in params.items():
+                if isinstance(value, list | tuple | set):
+                    request_params.extend((key, item) for item in value)
+                else:
+                    request_params.append((key, value))
+            request_params.append(("user_key", self._api_key))
+        else:
+            request_params = {**params, "user_key": self._api_key}
+        url = f"{self._base_url}/{path.strip('/')}/"
+        timeout = httpx.Timeout(WHEEL_SIZE_TIMEOUT_READ_SEC, connect=WHEEL_SIZE_TIMEOUT_CONNECT_SEC)
+
+        owns_client = self._client is None
+        client = self._client or httpx.AsyncClient(timeout=timeout, trust_env=False)
+        try:
+            last_error: Exception | None = None
+            attempts = max(1, WHEEL_SIZE_MAX_RETRIES)
+            for attempt in range(attempts):
+                try:
+                    response = await client.get(url, params=request_params)
+                except httpx.TransportError as exc:
+                    last_error = exc
+                    if attempt + 1 < attempts:
+                        await asyncio.sleep(0.5 * (2**attempt))
+                    continue
+
+                if response.status_code == 429 or response.status_code >= 500:
+                    last_error = ProviderError(f"wheel-size HTTP {response.status_code} on /{path}")
+                    if attempt + 1 < attempts:
+                        await asyncio.sleep(0.5 * (2**attempt))
+                    continue
+                if response.status_code >= 400:
+                    # 4xx (кроме 429) — не ретраим: неверный запрос/ключ.
+                    raise ProviderError(f"wheel-size HTTP {response.status_code} on /{path}")
+                try:
+                    return response.json()
+                except ValueError as exc:
+                    raise ProviderError(f"wheel-size invalid JSON on /{path}") from exc
+
+            raise ProviderError(
+                f"wheel-size request failed on /{path}: {type(last_error).__name__}"
+            )
+        finally:
+            if owns_client:
+                await client.aclose()
+
+    async def _cataloging(self, path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        cache_key = f"ws:catalog:{path}:{sorted(params.items())}"
+        cached = await self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+        payload = await self._request(path, params)
+        data = payload.get("data", payload) if isinstance(payload, dict) else payload
+        if not isinstance(data, list):
+            raise ProviderError(f"wheel-size unexpected cataloging payload on /{path}")
+        await self._cache.set(cache_key, data, FITMENT_CATALOG_CACHE_TTL_SEC)
+        return data
+
+    # -- Public catalogue surface -------------------------------------------
+
+    async def catalogue_regions(self) -> list[dict[str, Any]]:
+        """Provider-backed vehicle markets for the interactive Fitment flow."""
+        return await self._cataloging("regions", {})
+
+    async def catalogue_makes(self, *, region: str | Sequence[str]) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "makes",
+            {"region": tuple(region) if not isinstance(region, str) else region},
+        )
+
+    async def catalogue_models(
+        self,
+        *,
+        make: str,
+        region: str | Sequence[str],
+    ) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "models",
+            {"make": make, "region": tuple(region) if not isinstance(region, str) else region},
+        )
+
+    async def catalogue_years(
+        self,
+        *,
+        make: str,
+        model: str,
+        region: str | Sequence[str],
+    ) -> list[dict[str, Any]]:
+        return await self._cataloging(
+            "years",
+            {
+                "make": make,
+                "model": model,
+                "region": tuple(region) if not isinstance(region, str) else region,
+            },
+        )
+
+    # -- Resolution ladder ----------------------------------------------------
+
+    def _regions_for(self, identity: VehicleIdentity) -> list[str]:
+        market = (identity.market or "").strip().lower()
+        region, fallback = MARKET_TO_REGION.get(market, (WHEEL_SIZE_REGION_DEFAULT, None))
+        regions = [region]
+        if fallback and fallback not in regions:
+            regions.append(fallback)
+        return regions
+
+    async def resolve_vehicle(self, identity: VehicleIdentity) -> VehicleIdentity | None:
+        if not identity.is_resolvable:
+            return None
+
+        region = self._regions_for(identity)[0]
+        makes = await self._cataloging("makes", {"region": region})
+        make_entry = _fuzzy_pick(identity.make, makes)
+        if make_entry is None:
+            logger.info("🔎 wheel-size: make '%s' не найден в каталоге", identity.make)
+            return None
+        make_slug = str(make_entry.get("slug") or "")
+        if not make_slug:
+            return None
+
+        models = await self._cataloging("models", {"make": make_slug, "region": region})
+        model_entry = _fuzzy_pick(identity.model, models)
+        if model_entry is None:
+            logger.info(
+                "🔎 wheel-size: model '%s' не найден для make=%s", identity.model, make_slug
+            )
+            return None
+        model_slug = str(model_entry.get("slug") or "")
+        if not model_slug:
+            return None
+
+        base_params: dict[str, Any] = {
+            "make": make_slug,
+            "model": model_slug,
+            "region": region,
+        }
+        years = await self._cataloging("years", base_params)
+        if not _contains_year(years, identity.year):
+            logger.info(
+                "🔎 wheel-size: year=%s не найден для make=%s model=%s",
+                identity.year,
+                make_slug,
+                model_slug,
+            )
+            return None
+
+        vehicle_params = {**base_params, "year": identity.year}
+        generations = await self._cataloging("generations", vehicle_params)
+        generation_entry = _pick_specific_entry(
+            generations,
+            identity.generation,
+            identity.body,
+        )
+        generation_slug = (
+            str(generation_entry.get("slug") or "") if generation_entry is not None else ""
+        )
+
+        modification_slug = ""
+        if generation_slug:
+            modifications = await self._cataloging(
+                "modifications",
+                {**vehicle_params, "generation": generation_slug},
+            )
+            modification_entry = _pick_specific_entry(
+                modifications,
+                identity.modification,
+                identity.body,
+            )
+            if modification_entry is not None:
+                modification_slug = str(modification_entry.get("slug") or "")
+
+        resolved = identity.model_copy(deep=True)
+        mapping = {
+            "make_slug": make_slug,
+            "model_slug": model_slug,
+            "region": region,
+        }
+        if generation_slug:
+            mapping["generation_slug"] = generation_slug
+        if modification_slug:
+            mapping["modification_slug"] = modification_slug
+        resolved.provider_mappings[PROVIDER_NAME] = mapping
+        return resolved
+
+    async def find_vehicle_variants(self, identity: VehicleIdentity) -> list[dict[str, str]]:
+        """Return explicit variants; never choose one when the catalogue is ambiguous."""
+        if not identity.is_resolvable:
+            return []
+        region = self._regions_for(identity)[0]
+        make = _fuzzy_pick(identity.make or "", await self._cataloging("makes", {"region": region}))
+        if not make or not make.get("slug"):
+            return []
+        model = _fuzzy_pick(
+            identity.model or "",
+            await self._cataloging("models", {"make": make["slug"], "region": region}),
+        )
+        if not model or not model.get("slug"):
+            return []
+        base = {"make": str(make["slug"]), "model": str(model["slug"]), "region": region}
+        if not _contains_year(await self._cataloging("years", base), identity.year or 0):
+            return []
+        generations = await self._cataloging("generations", {**base, "year": identity.year})
+        variants: list[dict[str, str]] = []
+        for generation in generations:
+            generation_slug = str(generation.get("slug") or "")
+            if not generation_slug:
+                continue
+            generation_name = str(
+                generation.get("name") or generation.get("name_en") or generation_slug
+            )
+            modifications = await self._cataloging(
+                "modifications", {**base, "year": identity.year, "generation": generation_slug}
+            )
+            for modification in modifications:
+                modification_slug = str(modification.get("slug") or "")
+                if not modification_slug:
+                    continue
+                modification_name = str(
+                    modification.get("name")
+                    or modification.get("name_en")
+                    or modification.get("trim")
+                    or modification_slug
+                )
+                variants.append(
+                    {
+                        # Keep the canonical identifiers with the display
+                        # values.  Re-resolving a selected row via fuzzy
+                        # matching is both wasteful and can select a sibling
+                        # generation again.
+                        "make_slug": base["make"],
+                        "model_slug": base["model"],
+                        "region": region,
+                        "generation": generation_name,
+                        "modification": modification_name,
+                        "body": str(modification.get("body") or generation.get("body") or ""),
+                        "market": region,
+                        "generation_slug": generation_slug,
+                        "modification_slug": modification_slug,
+                    }
+                )
+        return variants
+
+    async def find_vehicle_variants_exact(
+        self,
+        *,
+        make_slug: str,
+        model_slug: str,
+        region: str,
+        year: int,
+    ) -> list[dict[str, Any]]:
+        """List variants for an already validated catalogue selection.
+
+        This is deliberately separate from :meth:`find_vehicle_variants`,
+        which remains a legacy normalisation helper for pre-catalogue
+        identities. Interactive Fitment saves exact provider identifiers first
+        and must not fuzzy-match them again during lookup.
+        """
+        base = {"make": make_slug, "model": model_slug, "region": region}
+        if not _contains_year(await self._cataloging("years", base), year):
+            return []
+
+        generations = await self._cataloging("generations", {**base, "year": year})
+        variants: list[dict[str, Any]] = []
+        for generation in generations:
+            generation_slug = str(generation.get("slug") or "")
+            if not generation_slug:
+                continue
+            generation_name = str(
+                generation.get("name") or generation.get("name_en") or generation_slug
+            )
+            modifications = await self._cataloging(
+                "modifications", {**base, "year": year, "generation": generation_slug}
+            )
+            for modification in modifications:
+                modification_slug = str(modification.get("slug") or "")
+                if not modification_slug:
+                    continue
+                modification_name = str(
+                    modification.get("name")
+                    or modification.get("name_en")
+                    or modification.get("trim")
+                    or modification_slug
+                )
+                variants.append(
+                    {
+                        "make_slug": make_slug,
+                        "model_slug": model_slug,
+                        "region": region,
+                        "generation": generation_name,
+                        "modification": modification_name,
+                        "body": str(modification.get("body") or generation.get("body") or ""),
+                        "market": region,
+                        "generation_slug": generation_slug,
+                        "modification_slug": modification_slug,
+                        **wheel_size_display_details(modification),
+                    }
+                )
+        return variants
+
+    # -- Profile --------------------------------------------------------------
+
+    async def _search_by_model(self, params: dict[str, Any]) -> list[dict[str, Any]]:
+        cache_key = f"ws:search:by_model:{sorted(params.items())}"
+        cached = await self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        payload = await self._request("search/by_model", params)
+        data = payload.get("data") if isinstance(payload, dict) else None
+        if data is None and isinstance(payload, list):
+            data = payload
+        if not isinstance(data, list):
+            raise ProviderError("wheel-size unexpected search payload on /search/by_model")
+        # A provider "not found" is useful to cache briefly, but must not
+        # hide a newly available catalogue record for a whole day.
+        await self._cache.set(
+            cache_key,
+            data,
+            FITMENT_NEGATIVE_CACHE_TTL_SEC if not data else FITMENT_PROFILE_CACHE_TTL_SEC,
+        )
+        return data
+
+    @staticmethod
+    def _profile_cache_key(params: dict[str, Any]) -> str:
+        return f"ws:profile:{PROFILE_NORMALIZATION_VERSION}:{sorted(params.items())}"
+
+    async def get_fitment_profile(
+        self,
+        identity: VehicleIdentity,
+        *,
+        user_initiated: bool = True,
+    ) -> FitmentProfile | None:
+        if not user_initiated:
+            logger.warning("🔥 wheel-size search skipped: user_initiated=false")
+            return None
+
+        mapping = identity.provider_mappings.get(PROVIDER_NAME)
+        required_mapping = {
+            "make_slug",
+            "model_slug",
+            "region",
+            "generation_slug",
+            "modification_slug",
+        }
+        if (
+            not isinstance(mapping, dict)
+            or not required_mapping.issubset(mapping)
+            or not identity.year
+        ):
+            return None
+
+        # A detailed verdict must never silently fall back to another market.
+        for region in [mapping["region"]]:
+            params: dict[str, Any] = {
+                "make": mapping["make_slug"],
+                "model": mapping["model_slug"],
+                "year": identity.year,
+                "region": region,
+            }
+            if mapping.get("modification_slug"):
+                params["modification"] = mapping["modification_slug"]
+
+            cache_key = self._profile_cache_key(params)
+            cached = await self._cache.get(cache_key)
+            if cached is not None:
+                return FitmentProfile.model_validate(cached)
+
+            data = await self._search_by_model(params)
+            if not data:
+                continue
+
+            profile = self._normalize_profile(data)
+            if profile is None:
+                continue
+            await self._cache.set(cache_key, profile.model_dump(), FITMENT_PROFILE_CACHE_TTL_SEC)
+            return profile
+
+        return None
+
+    def _normalize_profile(self, data: list[dict[str, Any]]) -> FitmentProfile | None:
+        """Normalise the response for one explicitly selected modification.
+
+        ``get_fitment_profile`` always sends the persisted modification slug.
+        Consensus checks remain deliberately conservative in case the provider
+        returns duplicate records for that exact modification.
+        """
+        bolt_patterns: list[tuple[int, float] | None] = []
+        center_bores: list[float | None] = []
+        fastener_types: list[str | None] = []
+        thread_sizes: list[str | None] = []
+        torques: list[str | None] = []
+        allowed: list[AxleFitment] = []
+
+        for item in data:
+            technical = item.get("technical") or {}
+            stud_holes = technical.get("stud_holes")
+            pcd = _to_float(technical.get("pcd"))
+            if stud_holes is None or pcd is None:
+                parsed_count, parsed_pcd = parse_bolt_pattern(technical.get("bolt_pattern"))
+                stud_holes = stud_holes if stud_holes is not None else parsed_count
+                pcd = pcd if pcd is not None else parsed_pcd
+            try:
+                stud_holes_int = int(stud_holes) if stud_holes is not None else None
+            except (TypeError, ValueError):
+                stud_holes_int = None
+            bolt_patterns.append(
+                (stud_holes_int, pcd) if stud_holes_int is not None and pcd is not None else None
+            )
+
+            bore_raw = technical.get("centre_bore")
+            if bore_raw is None:
+                bore_raw = technical.get("center_bore")
+            bore = _to_float(bore_raw)
+            center_bores.append(bore)
+
+            fasteners = technical.get("fasteners") or {}
+            fastener_types.append(str(fasteners["type"]) if fasteners.get("type") else None)
+            thread_sizes.append(
+                str(fasteners["thread_size"]) if fasteners.get("thread_size") else None
+            )
+            torques.append(
+                str(fasteners["wheel_tightening_torque"])
+                if fasteners.get("wheel_tightening_torque")
+                else None
+            )
+
+            for wheel_pair in item.get("wheels") or []:
+                for axle in ("front", "rear"):
+                    axle_data = wheel_pair.get(axle) or {}
+                    diameter = _to_float(axle_data.get("rim_diameter"))
+                    width = _to_float(axle_data.get("rim_width"))
+                    if diameter is None or width is None:
+                        continue
+                    # In live Wheel-Size v2 responses the stock marker is
+                    # usually attached to the surrounding wheels[] pair;
+                    # retain support for fixtures that put it on the axle.
+                    is_stock = axle_data.get("is_stock")
+                    if is_stock is None:
+                        is_stock = wheel_pair.get("is_stock")
+                    # Preserve every provider ET value for this exact
+                    # axle/diameter/width tuple.  A missing ET still creates
+                    # an allowed-size record, but never an invented interval.
+                    offsets = _offset_values(axle_data)
+                    for offset in offsets or [None]:
+                        allowed.append(
+                            AxleFitment(
+                                axle=axle,
+                                rim_diameter=diameter,
+                                rim_width=width,
+                                offset=offset,
+                                is_stock=is_stock,
+                                tire=axle_data.get("tire"),
+                            )
+                        )
+
+        if not allowed and not any(bolt_patterns):
+            return None
+
+        # Дедуп allowed по (axle, diameter, width, offset).
+        seen: set[tuple] = set()
+        unique_allowed: list[AxleFitment] = []
+        for rec in allowed:
+            key = (rec.axle, rec.rim_diameter, rec.rim_width, rec.offset)
+            if key not in seen:
+                seen.add(key)
+                unique_allowed.append(rec)
+
+        # Wheel-Size sometimes emits one front profile for a square setup.  It
+        # is evidence for both axles, not missing rear data.  Do not do this
+        # when a distinct rear profile is present.
+        has_front = any(rec.axle == "front" for rec in unique_allowed)
+        has_rear = any(rec.axle == "rear" for rec in unique_allowed)
+        if has_front and not has_rear:
+            unique_allowed.extend(
+                rec.model_copy(update={"axle": "rear"})
+                for rec in unique_allowed
+                if rec.axle == "front"
+            )
+
+        grouped_offsets: dict[tuple[str, float, float, bool | None], list[float]] = {}
+        for record in unique_allowed:
+            if record.offset is None:
+                continue
+            key = (record.axle, record.rim_diameter, record.rim_width, record.is_stock)
+            grouped_offsets.setdefault(key, []).append(record.offset)
+        offset_references: list[OffsetReference] = []
+        for (axle, diameter, width, is_stock), offsets in grouped_offsets.items():
+            # Do not mix OE and non-OE records.  Non-OE stays preliminary and
+            # is used only when no stock range exists for this exact size.
+            unique_offsets = sorted(set(offsets))
+            offset_references.append(
+                OffsetReference(
+                    axle=axle,
+                    rim_diameter_in=diameter,
+                    rim_width_j=width,
+                    et_min_mm=unique_offsets[0],
+                    et_max_mm=unique_offsets[-1],
+                    source_offsets_mm=unique_offsets,
+                    evidence_class="stock" if is_stock is True else "approved_non_oem",
+                )
+            )
+
+        bolt_count: int | None = None
+        pcd_mm: float | None = None
+        bolt_pattern = _consensus(bolt_patterns)
+        if bolt_pattern is not None:
+            bolt_count, pcd_mm = bolt_pattern
+
+        return FitmentProfile(
+            provider=PROVIDER_NAME,
+            provider_version="v2",
+            fetched_at=datetime.now(UTC).isoformat(),
+            raw_response_ref=(
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+            ),
+            bolt_count=bolt_count,
+            pcd_mm=pcd_mm,
+            center_bore_mm=_consensus(center_bores),
+            fastener_type=_consensus(fastener_types),
+            thread_size=_consensus(thread_sizes),
+            tightening_torque=_consensus(torques),
+            allowed_wheels=unique_allowed,
+            offset_references=offset_references,
+        )

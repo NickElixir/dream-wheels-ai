@@ -1,0 +1,17 @@
+{
+  "base": "7762584633914abe6b1ca26ea0197cba72df4239",
+  "existingStaticNamedTestDefinitionsRemoved": 0,
+  "fixturesRemoved": 0,
+  "historicalEvidenceUntouched": true,
+  "sharedBrowserCases": 180,
+  "sharedBrowserOutputExactlyEqualToPostP2BBaseline": true,
+  "newCases": {
+    "Node": 8,
+    "Python": 2,
+    "manualFallbackBrowser": 20
+  },
+  "sourcePresenceAssertionsReplaced": 4,
+  "neighboringFunctionOrBridgeIntervalsMigrated": 61,
+  "customNodeExtractionMechanismsConsolidated": 2,
+  "newSkips": 0
+}

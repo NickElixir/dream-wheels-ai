@@ -1,0 +1,2640 @@
+{
+  "roots": [
+    "renderFitmentLegacy",
+    "fitmentSourceValue",
+    "fitmentNextStep",
+    "fitmentCatalogueErrorMessage",
+    "fitmentCatalogueQueryValue",
+    "formatPcd"
+  ],
+  "dead": [
+    "renderFitmentLegacy",
+    "fitmentSourceValue",
+    "fitmentNextStep",
+    "fitmentCatalogueErrorMessage",
+    "fitmentCatalogueQueryValue",
+    "formatPcd",
+    "fitmentVehicleMeta",
+    "fitmentRimMeta",
+    "fitmentSourceBrand",
+    "fitmentSourceSku",
+    "setFitmentOverviewCollapsed",
+    "renderFitmentCandidates",
+    "fitmentCandidatesFor",
+    "fitmentCandidateLabel",
+    "fitmentModificationStateLabel",
+    "fitmentRetryMessage"
+  ],
+  "productionLocRemoved": 567,
+  "functions": [
+    {
+      "name": "renderFitmentLegacy",
+      "line": 4585,
+      "endLine": 4979,
+      "loc": 395,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentSourceValue",
+      "line": 3214,
+      "endLine": 3219,
+      "loc": 6,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentNextStep",
+      "line": 3845,
+      "endLine": 3877,
+      "loc": 33,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentCatalogueErrorMessage",
+      "line": 5944,
+      "endLine": 5948,
+      "loc": 5,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentCatalogueQueryValue",
+      "line": 5976,
+      "endLine": 5989,
+      "loc": 14,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "formatPcd",
+      "line": 9766,
+      "endLine": 9770,
+      "loc": 5,
+      "refs": [],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentVehicleMeta",
+      "line": 3203,
+      "endLine": 3205,
+      "loc": 3,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4926,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentRimMeta",
+      "line": 3207,
+      "endLine": 3212,
+      "loc": 6,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4939,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentSourceBrand",
+      "line": 3221,
+      "endLine": 3231,
+      "loc": 11,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4942,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentSourceSku",
+      "line": 3233,
+      "endLine": 3235,
+      "loc": 3,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4946,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4947,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "setFitmentOverviewCollapsed",
+      "line": 3237,
+      "endLine": 3250,
+      "loc": 14,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4857,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "renderFitmentCandidates",
+      "line": 3265,
+      "endLine": 3293,
+      "loc": 29,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4978,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentCandidatesFor",
+      "line": 3195,
+      "endLine": 3201,
+      "loc": 7,
+      "refs": [
+        {
+          "owner": "renderFitmentCandidates",
+          "line": 3272,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentCandidateLabel",
+      "line": 3252,
+      "endLine": 3263,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "renderFitmentCandidates",
+          "line": 3278,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentModificationStateLabel",
+      "line": 4051,
+      "endLine": 4062,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4871,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "fitmentRetryMessage",
+      "line": 4064,
+      "endLine": 4075,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4813,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": true,
+      "classification": "DEAD"
+    },
+    {
+      "name": "renderFitment",
+      "line": 5494,
+      "endLine": 5870,
+      "loc": 377,
+      "refs": [
+        {
+          "owner": "showFitmentAuthRequired",
+          "line": 2924,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "resumeFitmentAfterLogin",
+          "line": 2944,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setFitmentActiveSection",
+          "line": 3643,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentCheckHistory",
+          "line": 3674,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentCheckHistory",
+          "line": 3714,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "reconcileRequiredFitmentWorkspace",
+          "line": 3841,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "runDemoFitmentCheck",
+          "line": 4432,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "runDemoFitmentCheck",
+          "line": 4439,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "runDemoFitmentCheck",
+          "line": 4447,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureFitmentPreviewAsset",
+          "line": 5014,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentCatalogue",
+          "line": 6141,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentCatalogue",
+          "line": 6188,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6206,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6215,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6225,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6239,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6249,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6257,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6273,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6285,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6291,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6307,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6318,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "revalidateFitmentCatalogueChain",
+          "line": 6356,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentOverview",
+          "line": 6421,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentOverview",
+          "line": 6506,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "hydrateFitmentVehiclePhoto",
+          "line": 6624,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setFitmentVehiclePhoto",
+          "line": 6637,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setFitmentVehiclePhoto",
+          "line": 6647,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "recognizeFitmentVehicle",
+          "line": 6672,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "recognizeFitmentVehicle",
+          "line": 6716,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "useFitmentRecognitionProposal",
+          "line": 6736,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "selectFitmentRimVariant",
+          "line": 7027,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "resolveFitmentParserConflict",
+          "line": 7038,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "resolveFitmentRimSource",
+          "line": 7048,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "resolveFitmentRimSource",
+          "line": 7061,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "resolveFitmentRimSource",
+          "line": 7163,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7181,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7189,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7202,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7210,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7251,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariantsForReselection",
+          "line": 7269,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariantsForReselection",
+          "line": 7304,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "toggleFitmentModificationPicker",
+          "line": 7314,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "toggleFitmentModificationPicker",
+          "line": 7321,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "replaceFitmentVehicleVariant",
+          "line": 7338,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "replaceFitmentVehicleVariant",
+          "line": 7344,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "replaceFitmentVehicleVariant",
+          "line": 7410,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "pollFitmentCheck",
+          "line": 7517,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "pollFitmentCheck",
+          "line": 7525,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "runFitmentCheck",
+          "line": 7549,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "runFitmentCheck",
+          "line": 7586,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "applyFitmentVehicleVariant",
+          "line": 7599,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "applyFitmentVehicleVariant",
+          "line": 7653,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7680,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7710,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7804,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7851,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setView",
+          "line": 7984,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rerenderActiveView",
+          "line": 8025,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setVnextFitmentField",
+          "line": 10090,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveVnextFitment",
+          "line": 10102,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10141,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10148,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10156,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10199,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10227,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10247,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10253,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10267,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10270,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11205,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11210,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11290,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11306,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11424,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11590,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11624,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11631,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11647,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11650,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentVehicleHelper",
+      "line": 3480,
+      "endLine": 3491,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "renderFitment",
+          "line": 5726,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentValidation",
+      "line": 3493,
+      "endLine": 3513,
+      "loc": 21,
+      "refs": [
+        {
+          "owner": "renderFitment",
+          "line": 5848,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentFieldStates",
+      "line": 4077,
+      "endLine": 4094,
+      "loc": 18,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4977,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5847,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentVerdictGroup",
+      "line": 4096,
+      "endLine": 4108,
+      "loc": 13,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4821,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4827,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4833,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentV2Result",
+          "line": 5435,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentV2Result",
+          "line": 5441,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentControls",
+      "line": 4452,
+      "endLine": 4583,
+      "loc": 132,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4730,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5545,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentV2Result",
+      "line": 5301,
+      "endLine": 5492,
+      "loc": 192,
+      "refs": [
+        {
+          "owner": "renderFitment",
+          "line": 5868,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentRimVariants",
+      "line": 5872,
+      "endLine": 5903,
+      "loc": 32,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4685,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5845,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentParserConflicts",
+      "line": 5905,
+      "endLine": 5942,
+      "loc": 38,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4686,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5846,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderFitmentSourceDisclosure",
+      "line": 5130,
+      "endLine": 5167,
+      "loc": 38,
+      "refs": [
+        {
+          "owner": "renderFitment",
+          "line": 5725,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "t",
+      "line": 300,
+      "endLine": 303,
+      "loc": 4,
+      "refs": [
+        {
+          "owner": "applyTranslations",
+          "line": 1387,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "applyTranslations",
+          "line": 1390,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "initTelegram",
+          "line": 1421,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateCreateFooter",
+          "line": 1443,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "getAuthAccountPresentation",
+          "line": 1493,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "getAuthAccountPresentation",
+          "line": 1499,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1932,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1934,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1935,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1938,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1940,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1941,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderApplicationAuthGate",
+          "line": 1948,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2126,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2128,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2129,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2139,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2141,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2143,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateWebsiteAuthUi",
+          "line": 2144,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2155,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2156,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2157,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2158,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2159,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2160,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2161,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2162,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2163,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "authErrorMessage",
+          "line": 2164,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateAuthDialogCooldown",
+          "line": 2180,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateAuthDialogCooldown",
+          "line": 2181,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialogTurnstile",
+          "line": 2230,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadAuthDialogTurnstile",
+          "line": 2258,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2298,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2300,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2302,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2304,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2305,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2308,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2310,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2312,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2313,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2317,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2318,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2321,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2322,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2330,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2331,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2332,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2332,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2333,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2334,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2335,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2336,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2375,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2393,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2395,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2397,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderAuthDialog",
+          "line": 2398,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loginWithTelegram",
+          "line": 2629,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "startAuthDialogTelegramLogin",
+          "line": 2685,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "startAuthDialogTelegramLogin",
+          "line": 2693,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "startAuthDialogTelegramLogin",
+          "line": 2701,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "startAuthDialogTelegramLogin",
+          "line": 2713,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestFrontendEmailOtp",
+          "line": 2735,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestFrontendEmailOtp",
+          "line": 2743,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestFrontendEmailOtp",
+          "line": 2749,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "verifyFrontendEmailOtp",
+          "line": 2781,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "verifyFrontendEmailOtp",
+          "line": 2789,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "verifyFrontendEmailOtp",
+          "line": 2794,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderLogoutDialog",
+          "line": 2823,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderLogoutDialog",
+          "line": 2824,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderLogoutDialog",
+          "line": 2826,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderLogoutDialog",
+          "line": 2830,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "switchFromRestoredSession",
+          "line": 2887,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "logoutWebsiteAuth",
+          "line": 2954,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatTemplate",
+          "line": 2973,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentVehicleMeta",
+          "line": 3204,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentVehicleMeta",
+          "line": 3204,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentRimMeta",
+          "line": 3210,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentRimMeta",
+          "line": 3211,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentSourceValue",
+          "line": 3217,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentSourceBrand",
+          "line": 3229,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setFitmentOverviewCollapsed",
+          "line": 3245,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setFitmentOverviewCollapsed",
+          "line": 3246,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentCheckHistory",
+          "line": 3708,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4667,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4668,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4784,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4803,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4886,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4887,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4895,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4950,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4950,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentV2Result",
+          "line": 5415,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentOverview",
+          "line": 6502,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentVehicleVariants",
+          "line": 7247,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "pollFitmentCheck",
+          "line": 7524,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "applyFitmentVehicleVariant",
+          "line": 7648,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7733,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7758,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7846,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "parseApiError",
+          "line": 7871,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "parseApiError",
+          "line": 7888,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "updateTopbarCaption",
+          "line": 7903,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setWalletLoading",
+          "line": 8064,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8098,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8099,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8100,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8101,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8102,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPaymentStatus",
+          "line": 8103,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "getPendingWalletMessage",
+          "line": 8127,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "getPendingWalletMessage",
+          "line": 8129,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextWalletSnapshot",
+          "line": 8167,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextWalletSnapshot",
+          "line": 8177,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 8216,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 8222,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFailureCopy",
+          "line": 8572,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderBillingMessage",
+          "line": 8576,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "statusLabel",
+          "line": 8580,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "statusLabel",
+          "line": 8581,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "statusLabel",
+          "line": 8582,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryViewer",
+          "line": 8672,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryViewer",
+          "line": 8672,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryViewer",
+          "line": 8672,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "submitHistoryFeedback",
+          "line": 8850,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryCard",
+          "line": 8870,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryCard",
+          "line": 8877,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadRenderDetailJob",
+          "line": 8964,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderRenders",
+          "line": 9026,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextDashboardSnapshot",
+          "line": 9153,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9212,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9220,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9229,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9239,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9245,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9245,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9285,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9295,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDashboardContext",
+          "line": 9328,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9404,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9457,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9498,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9500,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9509,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9510,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "createPayment",
+          "line": 9573,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "createPayment",
+          "line": 9589,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "createPayment",
+          "line": 9607,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "createPayment",
+          "line": 9617,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "handlePaymentReturn",
+          "line": 9628,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "handlePaymentReturn",
+          "line": 9632,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9835,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9836,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9837,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9838,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9839,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9840,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9841,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10269,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "showCreateScreen",
+          "line": 10453,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "showCreateScreen",
+          "line": 10453,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "refreshButtonsForCurrentView",
+          "line": 10584,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setDownloadButtonState",
+          "line": 10627,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setShareButtonState",
+          "line": 10634,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10664,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10681,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10689,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10692,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10703,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "downloadResult",
+          "line": 10708,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "buildTelegramShareUrl",
+          "line": 10725,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10739,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10743,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10748,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10752,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10756,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10761,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10764,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10770,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "shareResult",
+          "line": 10773,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "submitJob",
+          "line": 10962,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11649,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "applyTranslations",
+      "line": 1382,
+      "endLine": 1392,
+      "loc": 11,
+      "refs": [
+        {
+          "owner": "MODULE",
+          "line": 295,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 11729,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "enforceUiCopyRule",
+      "line": 1394,
+      "endLine": 1409,
+      "loc": 16,
+      "refs": [
+        {
+          "owner": "observeUiCopyRule",
+          "line": 1414,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "observeUiCopyRule",
+          "line": 1415,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "UNCERTAIN"
+    },
+    {
+      "name": "observeUiCopyRule",
+      "line": 1411,
+      "endLine": 1417,
+      "loc": 7,
+      "refs": [
+        {
+          "owner": "MODULE",
+          "line": 11735,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "UNCERTAIN"
+    },
+    {
+      "name": "vnextFitmentSnapshot",
+      "line": 9845,
+      "endLine": 10030,
+      "loc": 186,
+      "refs": [
+        {
+          "owner": "MODULE",
+          "line": 10116,
+          "parent": "Property"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "vnextRenderSnapshot",
+      "line": 10305,
+      "endLine": 10333,
+      "loc": 29,
+      "refs": [
+        {
+          "owner": "MODULE",
+          "line": 10348,
+          "parent": "Property"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "vnextDashboardSnapshot",
+      "line": 9137,
+      "endLine": 9161,
+      "loc": 25,
+      "refs": [
+        {
+          "owner": "emitVNextDashboardChange",
+          "line": 9166,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 9535,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "vnextWalletSnapshot",
+      "line": 8146,
+      "endLine": 8202,
+      "loc": 57,
+      "refs": [
+        {
+          "owner": "MODULE",
+          "line": 8210,
+          "parent": "Property"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "formatPcdDisplay",
+      "line": 9779,
+      "endLine": 9782,
+      "loc": 4,
+      "refs": [
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8296,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "formatIdentityNumber",
+      "line": 9772,
+      "endLine": 9777,
+      "loc": 6,
+      "refs": [
+        {
+          "owner": "demoPcdDisplay",
+          "line": 726,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentRimSpecs",
+          "line": 764,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentRimSpecs",
+          "line": 765,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentVerdictMessage",
+          "line": 3974,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentVerdictMessage",
+          "line": 3974,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8296,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8296,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8299,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8299,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rimSummaryForJob",
+          "line": 8299,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "formatPcd",
+          "line": 9769,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9833,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentDiameterPresentation",
+          "line": 9838,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentComparableVehicle",
+      "line": 1133,
+      "endLine": 1144,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "fitmentVehicleValuesEquivalent",
+          "line": 1147,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentVehicleValuesEquivalent",
+          "line": 1147,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "restoreFitmentTransientDraft",
+          "line": 1328,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "restoreFitmentTransientDraft",
+          "line": 1329,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentVehicleFormForPresentation",
+      "line": 3431,
+      "endLine": 3439,
+      "loc": 9,
+      "refs": [
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9946,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentVehicleBaseSpecs",
+      "line": 753,
+      "endLine": 755,
+      "loc": 3,
+      "refs": [
+        {
+          "owner": "fitmentVehicleSpecs",
+          "line": 731,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5579,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "fitmentVehicleSpecs",
+      "line": 730,
+      "endLine": 732,
+      "loc": 3,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4911,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5560,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_EQUIVALENT"
+    },
+    {
+      "name": "fitmentComparableWheel",
+      "line": 3061,
+      "endLine": 3070,
+      "loc": 10,
+      "refs": [
+        {
+          "owner": "fitmentWheelDraftIsDirty",
+          "line": 3073,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentWheelDraftIsDirty",
+          "line": 3074,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7675,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "saveFitment",
+          "line": 7766,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentRimSpecs",
+      "line": 762,
+      "endLine": 768,
+      "loc": 7,
+      "refs": [
+        {
+          "owner": "renderFitmentLegacy",
+          "line": 4932,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitment",
+          "line": 5563,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderFitmentRimVariants",
+          "line": 5897,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentRimTechnicalSummary",
+      "line": 5055,
+      "endLine": 5070,
+      "loc": 16,
+      "refs": [
+        {
+          "owner": "buildRimSecondaryDetails",
+          "line": 5103,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9990,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9995,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9995,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9996,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "renderFailureCopy",
+      "line": 8571,
+      "endLine": 8573,
+      "loc": 3,
+      "refs": [
+        {
+          "owner": "vnextDashboardJobViewModel",
+          "line": 9127,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextRenderJob",
+          "line": 10292,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextRenderSnapshot",
+          "line": 10317,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "renderAssetMissingState",
+      "line": 8660,
+      "endLine": 8667,
+      "loc": 8,
+      "refs": [
+        {
+          "owner": "renderHistoryViewer",
+          "line": 8698,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderHistoryViewer",
+          "line": 8698,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "humanRenderTitle",
+      "line": 8279,
+      "endLine": 8290,
+      "loc": 12,
+      "refs": [
+        {
+          "owner": "renderHistoryCard",
+          "line": 8860,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderRenderDetail",
+          "line": 8928,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextDashboardJobViewModel",
+          "line": 9129,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9270,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextRenderJob",
+          "line": 10288,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "formatDateTime",
+      "line": 8260,
+      "endLine": 8277,
+      "loc": 18,
+      "refs": [
+        {
+          "owner": "renderHistoryCard",
+          "line": 8865,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderRenderDetail",
+          "line": 8929,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextDashboardJobViewModel",
+          "line": 9131,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9292,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextRenderJob",
+          "line": 10291,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "formatShortDate",
+      "line": 8315,
+      "endLine": 8323,
+      "loc": 9,
+      "refs": [
+        {
+          "owner": "expiryLabel",
+          "line": 8326,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextRenderJob",
+          "line": 10291,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "expiryLabel",
+      "line": 8325,
+      "endLine": 8330,
+      "loc": 6,
+      "refs": [
+        {
+          "owner": "vnextWalletSnapshot",
+          "line": 8150,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextDashboardSnapshot",
+          "line": 9142,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "renderDashboard",
+          "line": 9223,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "fitmentMarketLabel",
+      "line": 734,
+      "endLine": 751,
+      "loc": 18,
+      "refs": [
+        {
+          "owner": "fitmentVariantTechnicalSeries",
+          "line": 691,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "fitmentCatalogueOptionLabel",
+          "line": 3115,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9854,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "vnextFitmentSnapshot",
+          "line": 9949,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "DUPLICATE_BUT_DISTINCT"
+    },
+    {
+      "name": "renderDashboard",
+      "line": 9170,
+      "endLine": 9318,
+      "loc": 149,
+      "refs": [
+        {
+          "owner": "handleFrontendAuthState",
+          "line": 2479,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loginWithTelegram",
+          "line": 2654,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "logoutCurrentFrontendAuthority",
+          "line": 2858,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rerenderActiveView",
+          "line": 8010,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureOriginalDisplayUrl",
+          "line": 8460,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureAssetBlobUrl",
+          "line": 8495,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureAssetBlobUrl",
+          "line": 8528,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setAssetLoadError",
+          "line": 8756,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "submitHistoryFeedback",
+          "line": 8789,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "submitHistoryFeedback",
+          "line": 8854,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "refreshProcessingHistoryJobs",
+          "line": 9115,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadFitmentReturnContext",
+          "line": 9356,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9377,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9387,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9393,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9408,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "loadDashboardData",
+          "line": 9419,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9437,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9462,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9507,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9512,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9517,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11467,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 11745,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    },
+    {
+      "name": "renderWallet",
+      "line": 8232,
+      "endLine": 8235,
+      "loc": 4,
+      "refs": [
+        {
+          "owner": "logoutWebsiteAuth",
+          "line": 2955,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rerenderActiveView",
+          "line": 8016,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 8227,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9436,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9461,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9505,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9511,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestCabinet",
+          "line": 9516,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 11743,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "ACTIVE"
+    },
+    {
+      "name": "renderRenders",
+      "line": 9010,
+      "endLine": 9043,
+      "loc": 34,
+      "refs": [
+        {
+          "owner": "loginWithTelegram",
+          "line": 2655,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "rerenderActiveView",
+          "line": 8019,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureOriginalDisplayUrl",
+          "line": 8459,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureAssetBlobUrl",
+          "line": 8494,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "ensureAssetBlobUrl",
+          "line": 8527,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "setAssetLoadError",
+          "line": 8755,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "submitHistoryFeedback",
+          "line": 8788,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "refreshProcessingHistoryJobs",
+          "line": 9114,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9376,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9386,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9392,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "requestRenderHistory",
+          "line": 9407,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 10358,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11466,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11485,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "bindEvents",
+          "line": 11662,
+          "parent": "CallExpression"
+        },
+        {
+          "owner": "MODULE",
+          "line": 11744,
+          "parent": "CallExpression"
+        }
+      ],
+      "dead": false,
+      "classification": "LEGACY_REQUIRED"
+    }
+  ],
+  "base": "260c3516c286dc37c3647a2dca465e05985c38e5",
+  "counts": {
+    "DEAD": 16,
+    "LEGACY_REQUIRED": 16,
+    "UNCERTAIN": 2,
+    "ACTIVE": 14,
+    "DUPLICATE_BUT_DISTINCT": 11,
+    "DUPLICATE_EQUIVALENT": 1
+  },
+  "candidateCount": 60
+}

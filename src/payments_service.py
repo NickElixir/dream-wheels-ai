@@ -4,13 +4,15 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 import asyncpg
 
 from src.config import (
+    PAYMENT_PENDING_TIMEOUT_SECONDS,
+    PURCHASE_GRANT_TTL_DAYS,
     ROBOKASSA_HASH_ALGO,
     ROBOKASSA_IS_TEST,
     ROBOKASSA_MERCHANT_LOGIN,
@@ -22,7 +24,8 @@ from src.config import (
     STARTER_GRANT_CREDITS,
     STARTER_GRANT_TTL_DAYS,
 )
-from src.credits_service import ensure_credit_account
+from src.credits_service import create_credit_package, get_balance
+from src.payment_return import safe_payment_return_context
 from src.payments.providers.robokassa import (
     RobokassaConfig,
     RobokassaPaymentProvider,
@@ -36,6 +39,7 @@ TWOPLACES = Decimal("0.01")
 PAYMENT_STATUS_PENDING = "pending"
 PAYMENT_STATUS_PAID = "paid"
 PAYMENT_STATUS_FAILED = "failed"
+PAYMENT_STATUS_CANCELLED = "cancelled"
 PAYMENT_PROVIDER_ROBOKASSA = "robokassa"
 PAYMENT_CURRENCY_RUB = "RUB"
 PAYMENT_DELIVERY_CHANNEL_WEBSITE = "website"
@@ -65,6 +69,8 @@ class TopUpIntent:
     pricing_version: str
     source_screen: str
     receipt_email: str
+    client_channel: str
+    return_to: str
 
     @property
     def credits_granted(self) -> int:
@@ -157,7 +163,9 @@ async def create_topup_payment(
             receipt_payload,
             pricing_version,
             source_screen,
-            delivery_channel
+            delivery_channel,
+            client_channel,
+            return_to
         )
         VALUES (
             $1,
@@ -173,7 +181,9 @@ async def create_topup_payment(
             $10::jsonb,
             $11,
             $12,
-            $13
+            $13,
+            $14,
+            $15
         )
         RETURNING id, invoice_id, amount_rub, credits_granted, pricing_version
         """,
@@ -190,6 +200,8 @@ async def create_topup_payment(
         intent.pricing_version,
         intent.source_screen,
         PAYMENT_DELIVERY_CHANNEL_WEBSITE,
+        intent.client_channel,
+        intent.return_to,
     )
     invoice_id = int(row["invoice_id"])
     payment_url = build_payment_url(invoice_id=invoice_id, payment_id=payment_id, intent=intent)
@@ -207,7 +219,7 @@ async def list_payments_for_user(conn: asyncpg.Connection, *, user_id: int) -> l
     rows = await conn.fetch(
         """
         SELECT id, invoice_id, status, amount_rub, credits_granted, pricing_version,
-               receipt_email, source_screen, provider_payment_id, created_at, paid_at, failed_at, updated_at
+               receipt_email, provider_payment_id, created_at, paid_at, failed_at, updated_at
         FROM payments
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -215,36 +227,7 @@ async def list_payments_for_user(conn: asyncpg.Connection, *, user_id: int) -> l
         """,
         user_id,
     )
-    return [
-        serialize_payment_row(row, confirmation_url=_confirmation_url_for_payment(row))
-        for row in rows
-    ]
-
-
-def _confirmation_url_for_payment(row: asyncpg.Record) -> str | None:
-    if row["status"] != PAYMENT_STATUS_PENDING:
-        return None
-    receipt_email = row["receipt_email"]
-    provider_payment_id = row["provider_payment_id"]
-    if not receipt_email or not provider_payment_id or row["amount_rub"] is None:
-        return None
-    try:
-        return build_payment_url(
-            invoice_id=int(row["invoice_id"]),
-            payment_id=str(provider_payment_id),
-            intent=TopUpIntent(
-                amount_rub=Decimal(str(row["amount_rub"])),
-                pricing_version=str(row["pricing_version"] or "credits-v1"),
-                source_screen=str(row["source_screen"] or "cabinet"),
-                receipt_email=str(receipt_email),
-            ),
-        )
-    except PaymentConfigError:
-        logger.warning(
-            "⚠️ Robokassa resume URL unavailable for invoice_id=%s",
-            row["invoice_id"],
-        )
-        return None
+    return [serialize_payment_row(row) for row in rows]
 
 
 async def get_starter_grant_for_user(
@@ -289,35 +272,24 @@ async def get_starter_grant_for_user(
         logger.warning("⚠️ credit_ledger lookup failed; starter grant history skipped")
         return None
     if row is None:
+        if STARTER_GRANT_CREDITS <= 0:
+            return None
         try:
-            account_row = await conn.fetchrow(
+            account = await conn.fetchrow(
                 """
-                SELECT trial_used_at, updated_at
+                SELECT trial_used_at
                 FROM user_credit_accounts
-                WHERE user_id = $1
-                  AND trial_used_at IS NOT NULL
+                WHERE user_id = $1 AND trial_used_at IS NOT NULL
                 """,
                 user_id,
             )
-        except asyncpg.UndefinedColumnError:
-            account_row = None
         except asyncpg.PostgresError:
-            logger.warning(
-                "⚠️ user_credit_accounts fallback lookup failed; starter grant history skipped"
-            )
-            account_row = None
-
-        if account_row is None or STARTER_GRANT_CREDITS <= 0:
+            logger.exception("Starter grant history fallback failed user_id=%s", user_id)
             return None
-
-        created_at = account_row["trial_used_at"] or account_row["updated_at"]
-        if created_at is None:
+        if account is None or account["trial_used_at"] is None:
             return None
-        return {
-            "credits": STARTER_GRANT_CREDITS,
-            "created_at": created_at.isoformat(),
-            "expires_at": (created_at + timedelta(days=STARTER_GRANT_TTL_DAYS)).isoformat(),
-        }
+        # Historical metadata only: never infer remaining credits or create a package.
+        row = {"credits_delta": STARTER_GRANT_CREDITS, "created_at": account["trial_used_at"]}
     return {
         "credits": int(row["credits_delta"]),
         "created_at": row["created_at"].isoformat(),
@@ -341,6 +313,7 @@ def serialize_payment_row(
         "created_at": row["created_at"].isoformat(),
         "updated_at": updated_at.isoformat() if updated_at else None,
         "paid_at": row["paid_at"].isoformat() if row["paid_at"] else None,
+        "failed_at": row["failed_at"].isoformat() if row["failed_at"] else None,
         "tax_receipt_status": "handled_by_robokassa",
     }
 
@@ -367,9 +340,55 @@ async def get_payment_status_by_invoice(
     )
     if row is None:
         raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
-    payload = serialize_payment_row(row, confirmation_url=_confirmation_url_for_payment(row))
+    payload = serialize_payment_row(row)
     payload["balance"] = int(row["balance"] or 0)
     return payload
+
+
+async def get_payment_return_context(
+    conn: asyncpg.Connection,
+    *,
+    invoice_id: int,
+    provider_payment_id: str,
+    out_sum: str | None = None,
+) -> dict[str, Any]:
+    """Validate a browser return and return only its safe routing context."""
+    row = await conn.fetchrow(
+        """
+        SELECT invoice_id,
+               status,
+               amount_rub,
+               provider_payment_id,
+               client_channel,
+               return_to
+        FROM payments
+        WHERE invoice_id = $1
+        """,
+        invoice_id,
+    )
+    if row is None:
+        raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
+    if row["provider_payment_id"] != provider_payment_id:
+        raise PaymentValidationError(f"invoice_id={invoice_id} provider_payment_id mismatch")
+    if out_sum and normalize_amount_rub(out_sum) != row["amount_rub"]:
+        raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
+
+    return_to, client_channel, used_fallback = safe_payment_return_context(
+        client_channel=row["client_channel"],
+        return_to=row["return_to"],
+    )
+    if used_fallback:
+        logger.warning(
+            "⚠️ Invalid payment return context; using safe fallback invoice_id=%s channel=%s",
+            invoice_id,
+            client_channel,
+        )
+    return {
+        "invoice_id": int(row["invoice_id"]),
+        "status": row["status"],
+        "client_channel": client_channel,
+        "return_to": return_to,
+    }
 
 
 def verify_result_signature(
@@ -387,6 +406,53 @@ def verify_result_signature(
         payment_id=payment_id,
         is_test=is_test,
     )
+
+
+async def mark_payment_failed(
+    conn: asyncpg.Connection,
+    *,
+    invoice_id: int,
+    provider_payment_id: str,
+    out_sum: str | None = None,
+) -> dict[str, Any]:
+    row = await conn.fetchrow(
+        """
+        SELECT id,
+               user_id,
+               invoice_id,
+               status,
+               amount_rub,
+               provider_payment_id
+        FROM payments
+        WHERE invoice_id = $1
+        FOR UPDATE
+        """,
+        invoice_id,
+    )
+    if row is None:
+        raise PaymentNotFoundError(f"invoice_id={invoice_id} not found")
+    if row["provider_payment_id"] != provider_payment_id:
+        raise PaymentValidationError(f"invoice_id={invoice_id} provider_payment_id mismatch")
+    if out_sum and normalize_amount_rub(out_sum) != row["amount_rub"]:
+        raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
+
+    if row["status"] in {PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED}:
+        return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+    if row["status"] != PAYMENT_STATUS_PENDING:
+        return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+
+    await conn.execute(
+        """
+        UPDATE payments
+        SET status = 'failed',
+            failed_at = COALESCE(failed_at, CURRENT_TIMESTAMP),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = $1
+          AND status = 'pending'
+        """,
+        invoice_id,
+    )
+    return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
 
 
 async def mark_payment_paid(
@@ -431,7 +497,7 @@ async def mark_payment_paid(
     if normalize_amount_rub(out_sum) != row["amount_rub"]:
         raise PaymentValidationError(f"invoice_id={invoice_id} amount mismatch")
 
-    balance = await ensure_credit_account(conn, int(row["user_id"]))
+    balance = await get_balance(conn, int(row["user_id"]))
     row = await conn.fetchrow(
         """
         SELECT p.id,
@@ -453,7 +519,7 @@ async def mark_payment_paid(
         return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
 
     credits_granted = int(row["credits_granted"])
-    balance_after = int(row["balance"] or balance) + credits_granted
+    balance_after = balance + credits_granted
     await conn.execute(
         """
         UPDATE user_credit_accounts
@@ -495,14 +561,66 @@ async def mark_payment_paid(
         out_sum,
         is_test,
     )
+    await create_credit_package(
+        conn,
+        user_id=int(row["user_id"]),
+        source="purchase",
+        credits=credits_granted,
+        expires_at=datetime.now(UTC) + timedelta(days=PURCHASE_GRANT_TTL_DAYS),
+        related_payment_id=str(row["id"]),
+        idempotency_key=f"payment_package:{invoice_id}",
+    )
     await conn.execute(
         """
         UPDATE payments
         SET status = 'paid',
             paid_at = CURRENT_TIMESTAMP,
+            failed_at = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE invoice_id = $1
         """,
         invoice_id,
     )
+    logger.info(
+        "payment_id=%s old_status=%s new_status=paid reason=provider_callback",
+        row["id"],
+        row["status"],
+    )
     return await get_payment_status_by_invoice(conn, invoice_id=invoice_id)
+
+
+async def cancel_expired_pending_payments(
+    conn: asyncpg.Connection, *, batch_size: int = 100
+) -> int:
+    """Bounded local timeout; never overwrite a settled payment or grant credits."""
+    if not 1 <= batch_size <= 1000:
+        raise ValueError("batch_size must be between 1 and 1000")
+    async with conn.transaction():
+        rows = await conn.fetch(
+            """
+            WITH expired AS (
+                SELECT id
+                FROM payments
+                WHERE status = 'pending'
+                  AND created_at < statement_timestamp() - ($1 * INTERVAL '1 second')
+                ORDER BY created_at, id
+                LIMIT $2
+                FOR UPDATE SKIP LOCKED
+            )
+            UPDATE payments p
+            SET status = 'cancelled', updated_at = statement_timestamp()
+            FROM expired e
+            WHERE p.id = e.id AND p.status = 'pending'
+              AND p.created_at < statement_timestamp() - ($1 * INTERVAL '1 second')
+            RETURNING p.id, EXTRACT(EPOCH FROM (statement_timestamp() - p.created_at)) AS age
+            """,
+            PAYMENT_PENDING_TIMEOUT_SECONDS,
+            batch_size,
+        )
+    for row in rows:
+        logger.info(
+            "payment_id=%s old_status=pending new_status=cancelled reason=timeout age_seconds=%s",
+            row["id"],
+            int(row["age"]),
+        )
+    return len(rows)

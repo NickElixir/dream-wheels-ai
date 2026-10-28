@@ -1,0 +1,118 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dream Wheels — Home preview</title>
+<link rel="stylesheet" href="/webapp/style.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/tokens.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/foundation.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/shell.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/surfaces.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/auth.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/render.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/fitment.css?v=__BUILD_ID__&surface=pr5"><link rel="stylesheet" href="/webapp/vnext/styles/wallet.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/approved-home-create.css?v=__BUILD_ID__"><link rel="stylesheet" href="/webapp/vnext/styles/account.css?v=__BUILD_ID__"><style>body{margin:0;background:var(--vnext-canvas)}</style></head><body><div id="fixture" data-vnext-root></div><script type="module">
+const url=new URL('/webapp/app.js',location.href);
+let source=(await(await fetch(url)).text()).replace(/\nwarmWebsiteLoginResources\(\);/g,"\n").split('document.addEventListener("DOMContentLoaded", async () => {')[0].replace(/return fetch\(apiUrl\("\/analytics\/events"\).*?\.catch\(\(\) => undefined\);/, "return Promise.resolve();").replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const accountSource=await (await fetch('/webapp/app.js?v=60')).text();
+source=source.replace(/function renderAccountSettings\(\) \{[\s\S]*?(?=\nasync function loadAccountState)/,accountSource.slice(accountSource.indexOf('function renderAccountSettings()'),accountSource.indexOf('async function loadAccountState')));
+const extra=`
+import {createRenderView} from "${new URL('/webapp/vnext/views/render.js?v=27',location.href)}";
+import {createFitmentView,refreshFitmentView} from "${new URL('/webapp/vnext/views/fitment.js?v=58',location.href)}";
+import {createDashboardView} from "${new URL('/webapp/vnext/views/dashboard.js?v=7',location.href)}";
+import {createAppShell} from "${new URL('/webapp/vnext/shell/app-shell.js?v=61',location.href)}";
+import {createWalletView,refreshWalletView} from "${location.origin}/webapp/vnext/views/wallet.js?v=31";
+const scenario=new URLSearchParams(location.search).get('scenario')||'result';
+document.documentElement.lang=locale;
+const asset=path=>new URL('/webapp/assets/'+path,location.href).href;
+const job={job_id:'qa-completed',status:'completed',created_at:'2026-10-18T09:00:00Z',render_input_snapshot:{rim:{brand:'X-Trike',model:'X-132'}},vehicle_identity:{is_user_confirmed:true},output_image_url:asset('demo-render-zeekr-xtrike.jpg')};
+const projected=vnextRenderJob(job);
+const result={...projected,wheelAvailable:true,wheelUrl:asset('demo-rim-xtrike.png'),title:'Zeekr 009',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:scenario!=='result-no-fitment'};
+const {createCreateView}=await import("${new URL('/webapp/vnext/views/create.js?v=22',location.href)}");
+let content,activeView='renders',title=uiCopy('page.renderResult',locale);
+window.qaActions=[];
+function previewNavigate(view){const routes={dashboard:'dashboard',home:'dashboard',create:'create',history:'history',renders:'history',wallet:'balance',support:'support','photo-guide':'photo-guide',docs:'documents',fitment:'compatible',result:'result',settings:'settings'};if(routes[view])location.href='/docs/evidence/ui-owner-audit-2026-10-18/preview.html?scenario='+routes[view]+'&lang='+locale+'&v=59';}
+if(scenario==='settings'){
+ content=document.createElement('section');content.className='vnext-account-preview';
+ content.innerHTML='<p>Входите через Email или Telegram — баланс и история останутся общими</p><div data-account-settings-content></div><p class="vnext-account-preview__demo">Демонстрационный аккаунт — подключение способов входа доступно в приложении</p>';
+ title='Настройки аккаунта';activeView='settings';
+}else if(scenario==='documents'){
+ const {createDocumentsView}=await import('${location.origin}/webapp/vnext/views/documents.js?v=47');
+ const {documentsViewModel}=await import('${location.origin}/webapp/vnext/models/documents.js');
+ const model=documentsViewModel(locale);content=createDocumentsView(model);title=model.title;activeView='docs';
+}else if(scenario==='support'){
+ const {createSupportView}=await import('${location.origin}/webapp/vnext/views/support.js?v=43');
+ const {supportViewModel}=await import('${location.origin}/webapp/vnext/models/support.js');
+ content=createSupportView(supportViewModel(locale),{navigate:previewNavigate});title='Поддержка';activeView='support';
+}else if(scenario==='photo-guide'){
+ const {createPhotoGuideView}=await import('${location.origin}/webapp/vnext/views/photo-guide.js?v=39');
+ const {photoGuideViewModel}=await import('${location.origin}/webapp/vnext/models/photo-guide.js?v=39');
+ const guide=photoGuideViewModel(locale);guide.examples.forEach(e=>e.src='/webapp'+e.src);
+ content=createPhotoGuideView(guide,{navigate:previewNavigate});title=guide.title;activeView='photo-guide';
+}else if(scenario==='balance'){
+ const wallet={locale,authenticated:true,cabinetLoaded:true,balance:29,balanceUnit:'рендеров',expiryCohorts:[{creditsLabel:'23 рендера',expiresLabel:'до 21 октября'},{creditsLabel:'3 рендера',expiresLabel:'до 28 октября'},{creditsLabel:'3 рендера',expiresLabel:'до 29 октября'}],expiryNote:'Сначала спишутся рендеры с ближайшим сроком действия',topUpPackages:[{amount:100,amountLabel:'100 ₽',creditsLabel:'3 рендера'},{amount:200,amountLabel:'200 ₽',creditsLabel:'7 рендеров'},{amount:500,amountLabel:'500 ₽',creditsLabel:'20 рендеров'},{amount:1000,amountLabel:'1 000 ₽',creditsLabel:'45 рендеров'}],receiptEmail:'demo@example.com',validEmail:true,paymentHistory:Array.from({length:3},(_,i)=>({amountLabel:'100 ₽',creditsLabel:'3 рендера',dateLabel:'08.10.2026, 13:15:09',invoiceId:55-i,statusLabel:i===1?'Отменён':'Оплачен',tone:i===1?'warning':'success'})),hasMoreHistory:true,historyPage:0,historyPages:3};
+ const view=createWalletView(wallet,{showMoreHistory(){wallet.historyPage=Math.min(2,wallet.historyPage+1);wallet.hasMoreHistory=wallet.historyPage<2;refreshWalletView(view,wallet);},previousHistoryPage(){wallet.historyPage=Math.max(0,wallet.historyPage-1);wallet.hasMoreHistory=true;refreshWalletView(view,wallet);},selectPackage(amount){wallet.selectedPackage=wallet.topUpPackages.find(p=>p.amount===amount);refreshWalletView(view,wallet);},setReceiptEmail(email){wallet.receiptEmail=email;wallet.validEmail=email.includes('@');refreshWalletView(view,wallet);}});content=view;title='Баланс';activeView='wallet';
+}else if(scenario.startsWith('create')){
+ const empty=scenario==='create-empty';
+ const snapshot={locale,files:empty?{}:{car:{previewUrl:result.originalUrl},wheel:{previewUrl:asset('demo-rim-xtrike.png')}},bothReady:!empty,consentAccepted:true};
+ content=createCreateView(snapshot,{pickFile:kind=>window.qaActions.push(kind),saveRimProductUrl:value=>{window.qaActions.push({savedUrl:value});snapshot.rimProductUrl=value;content.replaceWith(content=createCreateView(snapshot,{pickFile:kind=>window.qaActions.push(kind),saveRimProductUrl:value=>window.qaActions.push({savedUrl:value})}));}});activeView='create';title=uiCopy('nav.create',locale);
+}else if(scenario.startsWith('result')||scenario==='loading'||scenario==='portrait'){
+ if(scenario==='loading')Object.assign(result,{originalUrl:'',originalLoading:true});
+ content=createRenderView('result',result,{action:action=>window.qaActions.push(action)});
+ window.qaRefresh=patch=>Object.assign(result,patch);
+}else if(scenario==='history'){
+ const rows=Array.from({length:7},(_,i)=>({...result,jobId:'demo-'+i,title:i===1?'Примерка #a12b34':i===3?'Zeekr 001':'Zeekr 009',historyCreatedLabel:(8-i)+' октября, 17:15',status:i===4?'processing':i===5?'queued':i===6?'failed':'completed',thumbnailUrl:i%2?result.originalUrl:result.resultUrl,thumbnailKind:'result'}));
+ content=createRenderView('history',{locale,rows,hasMore:true},{action:(action,id)=>{window.qaActions.push({action,id});if(action==='open'){const row=rows.find(x=>x.jobId===id);content.replaceWith(content=createRenderView('result',row,{action:a=>window.qaActions.push(a)}));document.querySelector('h1').textContent='Результат';}}});title=uiCopy('nav.history',locale);
+}else if(scenario==='dashboard'){
+ state.renderHistory=[job,...[1,2,3].map(n=>({...job,job_id:'previous-'+n,created_at:'2026-10-0'+(6-n)+'T10:15:00Z'}))];
+ locale=new URLSearchParams(location.search).get('lang')||'ru';document.documentElement.lang=locale;const model=vnextDashboardSnapshot();model.authenticated=true;window.qaDashboard={latest:model.latest.jobId,recent:model.recent.map(x=>x.jobId),latestFailed:model.latestFailed};
+ Object.assign(model.latest,{title:'Zeekr 009',previewUrl:result.resultUrl,canOpen:true});model.recent.forEach((item,n)=>item.title=['Zeekr 009','Примерка #12','Zeekr 009'][n]);model.balance=29;model.balanceLabel='29 рендеров';model.expiry=[{creditsLabel:'23 рендера',expiresLabel:'до 21 октября'},{creditsLabel:'3 рендера',expiresLabel:'до 28 октября'},{creditsLabel:'3 рендера',expiresLabel:'до 29 октября'}];model.expiryNote=t('dashboard.expiryPriority');
+ content=createDashboardView(model,{navigate:previewNavigate,openRenderDetail:id=>{window.qaActions.push(id);previewNavigate('result');}});activeView='dashboard';title=uiCopy('nav.dashboard',locale);
+}else{
+ const data=await(await fetch("${new URL('/docs/evidence/p05e-fitment-field-evidence/representative-api.json',location.href)}")).json();
+ const check=structuredClone(data[scenario==='compatible'?'compatible':scenario==='conditions'?'dia-conditional':scenario==='incompatible'?'J':'A']);
+ check.is_current=scenario!=='stale';if(scenario==='failed')check.execution_status='failed';
+ const fixtureRim={...job.render_input_snapshot.rim};
+ for(const field of check.field_results||[]){if(field.axle!=='front')continue;const value=Number(field.rim_value);if(field.rim_value!=null&&Number.isFinite(value))fixtureRim[field.field==='pcd'?'pcd_mm':field.field]=value;}
+ const model={locale,overview:{vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready'},nextAction:'run_standard_check',vehicleTitle:'Zeekr 009',vehicleVariantName:'EV',canonicalVehicleSummary:'Zeekr 009 / EV / 2023',savedRimSpecs:fitmentRimTechnicalSummary(fixtureRim).join(' / '),canonicalWheelSummary:'X-Trike X-132 / '+fitmentRimTechnicalSummary(fixtureRim).join(' / '),rimTitle:'X-Trike X-132',rimSku:'',rim:fixtureRim,vehiclePreview:result.originalUrl,rimPreview:asset('demo-rim-xtrike.png'),check,executionStatus:check.execution_status,canRunCheck:true,retryAvailable:scenario!=='failed',rimEditing:scenario==='editor',rimPendingProposals:[],rimSaveReadiness:{ready:true,invalid:[],missing:[],conflicts:[]},fieldEvidence:fitmentResultFieldItems(check).map(row=>({...row,vehicleValue:row.vehicle_value,rimValue:row.rim_value})),retryUnavailableReason:uiCopy('fitment.retry.unavailable',locale)};
+ if(scenario==='editor-empty')Object.assign(model,{rimEditing:true,rim:{}});
+ model.vehicle={make:'Zeekr',model:'009',year:'2023'};
+ model.vehicleRecognition={canRecognize:true,status:'idle'};
+ model.canReselectVehicleVariant=true;model.vehicleVariantTechnical='400 kW / AWD / 2022–2026';
+ model.resolver={url:'https://example.com/demo-wheel',open:false,loading:false};
+ model.catalogue={makes:[{value:'Zeekr',label:'Zeekr'},{value:'Aito',label:'Aito'}],models:['001','007','009'].map(value=>({value,label:value})),years:['2022','2023','2024','2025'].map(value=>({value,label:value})),states:{makes:{status:'selected'},models:{status:'selected'},years:{status:'selected'}}};
+ const callbacks={
+  action(action,value){
+   window.qaActions.push({action,value});
+   if(action==='back'){previewNavigate('result');return;}
+   if(['edit-vehicle','manual-vehicle'].includes(action)){model.vehicleEditing=true;model.manualVehicleEditing=true;model.activeSection='vehicle';model.vehicleRecognition.status='idle';}
+   if(action==='recognize-vehicle'){
+    model.vehicleEditing=false;model.vehicleRecognition={canRecognize:true,status:'loading',workspaceOpen:true};
+    setTimeout(()=>{model.vehicleRecognition={canRecognize:true,status:'proposed',workspaceOpen:true,candidates:[{make:'Zeekr',model:'009',year_start:2022,year_end:2026}]};refreshFitmentView(content,model,callbacks);},1200);
+   }
+   if(action==='recognition-proposal'){model.vehicle={make:'Zeekr',model:'009',year:'2023'};model.vehicleRecognition.status='applied';model.vehicleEditing=true;model.activeSection='vehicle';model.catalogue.models=[{value:'009',label:'009'}];model.catalogue.years=[{value:'2023',label:'2023'}];model.catalogue.states.models={status:'selected'};model.catalogue.states.years={status:'selected'};}
+   if(action==='reselect-vehicle'){model.vehicleEditing=false;model.rimEditing=false;model.vehicleRecognition.status='idle';model.vehicleVariantPickerOpen=true;model.vehicleVariantMode='reselect';model.vehicleVariants=[{label:'EV AWD',technical:'400 kW / AWD / 2022–2026'},{label:'EV RWD',technical:'200 kW / RWD / 2022–2026'}];model.selectedVehicleVariant=null;}
+   if(action==='vehicle-variant')model.selectedVehicleVariant=Number(value);
+   if(action==='cancel-vehicle-reselection')model.vehicleVariantPickerOpen=false;
+   if(action==='confirm-vehicle-variant'){const variant=model.vehicleVariants[model.selectedVehicleVariant];if(variant){model.vehicleVariantName=variant.label;model.vehicleVariantTechnical=variant.technical;model.vehicleVariantPickerOpen=false;model.canonicalVehicleSummary=[model.vehicleTitle,variant.label,model.vehicle.year].filter(Boolean).join(' / ');model.check.is_current=false;}}
+   if(action==='manual-rim'){model.rimEditing=true;model.vehicleEditing=false;model.activeSection='rim';model.resolver.loading=false;}
+   if(action==='edit-rim'){if(value==='source')model.resolver.open=true;model.rimEditing=true;model.vehicleEditing=false;model.activeSection='rim';}
+   if(action==='toggle-source'){model.resolver.open=!model.resolver.open;}
+   if(action==='resolve-rim'){model.resolver.loading=true;setTimeout(()=>{model.resolver.loading=false;model.rimEditing=true;model.activeSection='rim';refreshFitmentView(content,model,callbacks);},1000);}
+   if(['save-vehicle','confirm-vehicle'].includes(action)){model.vehicleTitle=model.vehicle.make+' '+model.vehicle.model;model.vehicleEditing=false;model.manualVehicleEditing=false;model.check.is_current=false;}
+   if(action==='save-rim'){model.rimDraftDirty=false;model.rimEditing=false;model.check.is_current=false;model.savedRimSpecs=fitmentRimTechnicalSummary(model.rim).join(' / ');model.canonicalWheelSummary=[model.rimTitle,model.savedRimSpecs].filter(Boolean).join(' / ');model.message='Параметры сохранены';model.parameterSaveNotice=true;}
+   if(action==='check'){model.check.is_current=true;model.executionStatus='completed';}
+   if(action==='create-image'){previewNavigate('create');return;}
+   refreshFitmentView(content,model,callbacks);
+
+  },
+  setSourceUrl(value){model.resolver.url=value;refreshFitmentView(content,model,callbacks);},
+  setField(path,value){
+   const [scope,key]=path.split('.');model[scope]||={};model[scope][key]=value;
+   if(scope==='vehicle' && ['make','model'].includes(key)){
+    const kind=key==='make'?'models':'years';
+    if(key==='make'){model.vehicle.model='';model.vehicle.year='';model.catalogue.models=[];model.catalogue.years=[];model.catalogue.states.years={status:'blocked',message:'Сначала выберите модель'};}else model.vehicle.year='';
+    model.catalogue.states[kind]={status:'loading'};
+    setTimeout(()=>{model.catalogue[kind]=(kind==='models'?(value==='Aito'?['M7','M9']:['001','007','009']):['2022','2023','2024','2025']).map(x=>({value:x,label:x}));model.catalogue.states[kind]={status:'loaded_unselected',placeholder:kind==='models'?'Выберите модель':'Выберите год'};refreshFitmentView(content,model,callbacks);},800);
+   }
+   if(scope==='rim'||scope==='rear_rim')model.rimDraftDirty=true;
+   refreshFitmentView(content,model,callbacks);
+  }
+ };
+ if(scenario==='recognition-loading')model.vehicleRecognition={canRecognize:true,status:'loading',workspaceOpen:true};
+ if(scenario==='recognition-result')model.vehicleRecognition={canRecognize:true,status:'proposed',workspaceOpen:true,candidates:[{make:'Zeekr',model:'009',year_start:2022,year_end:2026}]};
+ if(scenario==='catalogue-loading'){model.vehicleEditing=true;model.manualVehicleEditing=true;model.activeSection='vehicle';model.vehicle={make:'Aito',model:'',year:''};model.catalogue.states.models={status:'loading'};model.catalogue.states.years={status:'blocked',message:'Сначала выберите модель'};}
+ content=createFitmentView(model,callbacks);title=uiCopy('fitment.compatibilityCheck',locale);activeView='fitment';
+}
+document.querySelector('#fixture').append(createAppShell({title,activeView,content,navigate:previewNavigate,authenticated:true,accountData:{accountIdentifier:'@dreamwheels',balance:29},locale}));if(scenario==='settings'){state.accountState={identities:{email:{linked:true,display:'demo@example.com'},telegram:{linked:true,display:'@dreamwheels'}}};renderAccountSettings();}window.qaReady=true;
+`;
+const module=URL.createObjectURL(new Blob([source,extra],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+</script></body></html>

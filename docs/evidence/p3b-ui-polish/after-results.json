@@ -1,0 +1,326 @@
+[
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "dashboard",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "dashboard",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "dashboard",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "history",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "dashboard",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "incompatible",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "unknown",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "conditions",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "failed",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "stale",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "editor",
+    "overflow": false,
+    "broken": 0,
+    "errors": [],
+    "actions": []
+  }
+]

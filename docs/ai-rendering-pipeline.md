@@ -1,8 +1,12 @@
 # AI Rendering Pipeline
 
+> Part of **Project Dual Track**. This document describes the Rendering Pipeline only; it does not determine technical compatibility. See `docs/fitment-compatibility.md` for the independent Fitment Pipeline and `docs/product-roadmap.md` for the shared delivery plan.
+
 ## Scope
 
 This document describes the target production path for virtual wheel fitting. Evaluation scripts and provider experiments are not the production path; they feed provider selection, prompt/mask strategy and quality thresholds.
+
+The Rendering Pipeline answers one question: **“How will these wheels look on this car?”** It may consume confirmed vehicle or rim data where that improves the visual result, but it must not issue a technical compatibility verdict.
 
 ## Pipeline
 
@@ -17,6 +21,22 @@ Upload
   → post-generation validation
   → durable result, history and feedback
 ```
+
+## Current implementation status
+
+| Stage | Status |
+| --- | --- |
+| Upload/storage | Implemented |
+| Basic file validation | Partially implemented |
+| Vehicle identity flow | Implemented with safe mock abstention |
+| Production VLM resolver | Feature-flagged; benchmark required |
+| Quality gate | Planned |
+| Vehicle/wheel geometry | Planned |
+| Rim visual features | Planned |
+| RenderPlan | Planned |
+| Generation provider | Wan 2.7 runtime integration implemented in Phase 08E; staging validation pending |
+| Post-generation validation | Planned |
+| Evaluation baseline | Planned |
 
 ## Inputs
 
@@ -91,7 +111,9 @@ Do not construct provider prompts in route handlers. A `RenderPlan` should conta
 
 Use a provider-neutral interface. A provider receives a render plan and returns result location, request identifier, latency, estimated cost and raw response reference.
 
-The initial production path may use one provider. Add fallback only after benchmark evidence supports it.
+The active production path uses one provider: Alibaba Cloud Model Studio Wan 2.7
+(`wan2.7-image`). Reve is retired and is not a runtime fallback. Add fallback
+only after separate benchmark evidence and an explicit architecture decision.
 
 ## Stage G — post-generation validation
 

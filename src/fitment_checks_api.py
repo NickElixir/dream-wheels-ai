@@ -1,0 +1,1132 @@
+"""Durable detailed Fitment Check API over staging's canonical identity tables."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+from datetime import UTC, datetime
+from typing import Annotated, Literal
+from uuid import UUID
+
+from fastapi import APIRouter, Header, HTTPException, Query
+from pydantic import BaseModel, Field
+
+from src import db, redis_client
+from src.auth_principal import preflight_auth_credentials, require_auth_principal
+from src.config import WORKER_ENABLED
+from src.fitment import config as fitment_config
+from src.fitment.context import (
+    PROVIDER_REFERENCE_VERSION,
+    context_hash,
+    context_identity,
+    is_current_snapshot,
+)
+from src.fitment.diameter_reference import DiameterReferenceDetail, diameter_reference_detail
+from src.fitment.field_evidence import (
+    bolt_result,
+    discrete_result,
+    numeric,
+    offset_reference,
+    offset_result,
+    reference_values,
+    saved_field,
+)
+from src.fitment.providers.base import ProviderError
+from src.fitment.providers.wheel_size import WheelSizeProvider
+from src.fitment.rules.engine import run_checks
+from src.fitment.rules.tolerances import (
+    DIAMETER_TOL_IN,
+    ENGINE_VERSION,
+    TOLERANCES_VERSION,
+    WIDTH_TOL_IN,
+)
+from src.fitment.rules.verdict import assemble_verdict, verdict_vehicle_not_resolved
+from src.fitment.schemas import (
+    FieldValue,
+    FitmentProfile,
+    RimSetup,
+    RimSpec,
+    Source,
+    VehicleIdentity,
+)
+
+router = APIRouter(prefix="/fitment", tags=["fitment"])
+logger = logging.getLogger(__name__)
+FITMENT_CHECK_QUEUE = "fitment_check_queue"
+FITMENT_CHECK_LEASE_SEC = 15 * 60
+FITMENT_CHECK_MAX_ATTEMPTS = 3
+
+
+class CheckCreateRequest(BaseModel):
+    vehicle_identity_id: UUID
+    rim_setup_id: UUID
+    render_job_id: UUID | None = None
+    trigger: str = "user_requested"
+    # `detailed` is retained only for clients released before the Standard /
+    # Extended naming. It is normalized to `standard` below.
+    mode: Literal["standard", "detailed"] = "standard"
+
+
+class CheckFieldResult(BaseModel):
+    field: Literal[
+        "wheel_diameter_in", "wheel_width_j", "pcd", "bolt_count", "center_bore_mm", "offset_et_mm"
+    ]
+    axle: Literal["front", "rear"]
+    vehicle_value: str | None = None
+    rim_value: str | None = None
+    status: Literal["pass", "conditional", "fail", "unknown"] = "unknown"
+    code: str | None = None
+
+
+class CheckResponse(BaseModel):
+    id: str
+    mode: Literal["standard"] = "standard"
+    execution_status: str
+    verdict: str | None = None
+    is_preliminary: bool = True
+    reasons: list[dict] = Field(default_factory=list)
+    conditions: list[dict] = Field(default_factory=list)
+    blocking_issues: list[dict] = Field(default_factory=list)
+    advisories: list[dict] = Field(default_factory=list)
+    diagnostics: list[dict] = Field(default_factory=list)
+    missing_fields: list[str] = Field(default_factory=list)
+    field_results: list[CheckFieldResult] = Field(default_factory=list)
+    diameter_reference_details: list[DiameterReferenceDetail] = Field(default_factory=list)
+    versions: dict = Field(default_factory=dict)
+    error: dict | None = None
+    is_current: bool = False
+    input_hash: str | None = None
+    created_at: datetime | None = None
+    evaluated_at: datetime | None = None
+    retry_mode: Literal["retryable", "retry_later", "not_applicable"] = "not_applicable"
+    retry_at: datetime | None = None
+
+
+async def _auth(conn, init_data, telegram_user_id, authorization):
+    preflight_auth_credentials(
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="fitment checks",
+    )
+    return await require_auth_principal(
+        conn,
+        init_data=init_data,
+        telegram_user_id=telegram_user_id,
+        authorization=authorization,
+        auth_name="fitment checks",
+    )
+
+
+def _json_object(value: object, *, field_name: str) -> dict:
+    """Normalize asyncpg JSONB values to objects at the database boundary."""
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        logger.warning("⚠️ Unsupported %s type=%s", field_name, type(value).__name__)
+        return {}
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        logger.warning("⚠️ Invalid %s JSON", field_name)
+        return {}
+    if isinstance(parsed, dict):
+        return parsed
+    logger.warning("⚠️ Non-object %s JSON type=%s", field_name, type(parsed).__name__)
+    return {}
+
+
+def _float_or_zero(value: object) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _field(value, provenance: object, name: str) -> FieldValue:
+    """Build a field value while tolerating legacy JSON provenance shapes.
+
+    New ``rim_specs.field_provenance`` values are objects keyed by field name.
+    Some pre-fitment rows, however, contain a single JSON string such as
+    ``\"user_confirmed\"``.  A detailed check must treat that as provenance for
+    every rim field rather than raising an AttributeError.
+    """
+    decoded_provenance: object = provenance
+    if isinstance(provenance, str):
+        try:
+            decoded_provenance = json.loads(provenance)
+        except (TypeError, ValueError):
+            decoded_provenance = provenance
+
+    if isinstance(decoded_provenance, dict):
+        candidate = decoded_provenance.get(name)
+        meta = candidate if isinstance(candidate, dict) else {}
+    elif isinstance(decoded_provenance, str):
+        meta = {"source": decoded_provenance}
+    else:
+        meta = {}
+    source = meta.get("source", "user_input")
+    try:
+        parsed_source = Source(source)
+    except (TypeError, ValueError):
+        parsed_source = Source.user_input
+    return FieldValue(
+        value=float(value)
+        if value is not None and name not in {"bolt_count", "fastener_system", "seat_type"}
+        else value,
+        source=parsed_source,
+        confidence=_float_or_zero(meta.get("confidence")),
+        is_user_confirmed=bool(meta.get("is_user_confirmed")),
+    )
+
+
+async def _load(conn, user_id: int, request: CheckCreateRequest):
+    return await conn.fetchrow(
+        """
+        SELECT
+          vehicle.id::text AS vehicle_identity_id,
+          rs.id::text AS rim_setup_id,
+          vehicle.make, vehicle.model AS vehicle_model, vehicle.year, vehicle.body,
+          vehicle.generation, vehicle.modification, vehicle.market, vehicle.is_user_confirmed,
+          vehicle.provider_mappings, vehicle.revision AS vehicle_revision,
+          vehicle.provider_mapping_revision, rs.is_staggered, rs.revision AS rim_setup_revision,
+          front_rim.brand AS front_rim_brand, front_rim.model AS front_rim_model,
+          front_rim.sku AS front_rim_sku, front_rim.product_url AS front_rim_product_url,
+          front_rim.bolt_count AS front_rim_bolt_count, front_rim.pcd_mm AS front_rim_pcd_mm,
+          front_rim.center_bore_mm AS front_rim_center_bore_mm,
+          front_rim.wheel_diameter_in AS front_rim_wheel_diameter_in,
+          front_rim.wheel_width_j AS front_rim_wheel_width_j,
+          front_rim.offset_et_mm AS front_rim_offset_et_mm,
+          front_rim.load_rating_kg AS front_rim_load_rating_kg,
+          front_rim.fastener_system AS front_rim_fastener_system,
+          front_rim.seat_type AS front_rim_seat_type,
+          front_rim.field_provenance AS front_rim_field_provenance,
+          front_rim.revision AS front_rim_revision,
+          front_rim.source_fingerprint AS front_rim_source_fingerprint,
+          front_rim.selected_variant_sku AS front_rim_selected_variant_sku,
+          rear_rim.brand AS rear_rim_brand, rear_rim.model AS rear_rim_model,
+          rear_rim.sku AS rear_rim_sku, rear_rim.product_url AS rear_rim_product_url,
+          rear_rim.bolt_count AS rear_rim_bolt_count, rear_rim.pcd_mm AS rear_rim_pcd_mm,
+          rear_rim.center_bore_mm AS rear_rim_center_bore_mm,
+          rear_rim.wheel_diameter_in AS rear_rim_wheel_diameter_in,
+          rear_rim.wheel_width_j AS rear_rim_wheel_width_j,
+          rear_rim.offset_et_mm AS rear_rim_offset_et_mm,
+          rear_rim.load_rating_kg AS rear_rim_load_rating_kg,
+          rear_rim.fastener_system AS rear_rim_fastener_system,
+          rear_rim.seat_type AS rear_rim_seat_type,
+          rear_rim.field_provenance AS rear_rim_field_provenance,
+          rear_rim.revision AS rear_rim_revision,
+          rear_rim.source_fingerprint AS rear_rim_source_fingerprint,
+          rear_rim.selected_variant_sku AS rear_rim_selected_variant_sku,
+          jobs.id AS owned_job_id
+        FROM vehicle_identities vehicle
+        JOIN rim_setups rs ON rs.id = $2::uuid AND rs.owner_user_id = $1
+        JOIN rim_specs front_rim ON front_rim.id = rs.front_rim_spec_id AND front_rim.owner_user_id = $1
+        JOIN rim_specs rear_rim ON rear_rim.id = rs.rear_rim_spec_id AND rear_rim.owner_user_id = $1
+        LEFT JOIN jobs ON jobs.id = $3::uuid AND jobs.user_id = $1
+        WHERE vehicle.id = $4::uuid AND vehicle.owner_user_id = $1
+        """,
+        user_id,
+        str(request.rim_setup_id),
+        str(request.render_job_id) if request.render_job_id else None,
+        str(request.vehicle_identity_id),
+    )
+
+
+def _rim_snapshot(row, prefix: str, *, fallback_prefix: str = "") -> RimSpec:
+    """Read one canonical axle RimSpec without consulting parser candidates."""
+
+    def value(name: str):
+        key = f"{prefix}_{name}"
+        if key in row:
+            return row[key]
+        if fallback_prefix:
+            fallback_key = f"{fallback_prefix}_{name}"
+            if fallback_key in row:
+                return row[fallback_key]
+        return row.get(name)
+
+    provenance = value("field_provenance") or {}
+    return RimSpec(
+        brand=value("brand"),
+        model=value("model"),
+        sku=value("sku"),
+        product_url=value("product_url"),
+        source_fingerprint=value("source_fingerprint"),
+        selected_variant_sku=value("selected_variant_sku"),
+        revision=value("revision"),
+        bolt_count=_field(value("bolt_count"), provenance, "bolt_count"),
+        pcd_mm=_field(value("pcd_mm"), provenance, "pcd_mm"),
+        center_bore_mm=_field(value("center_bore_mm"), provenance, "center_bore_mm"),
+        wheel_diameter_in=_field(value("wheel_diameter_in"), provenance, "wheel_diameter_in"),
+        wheel_width_j=_field(value("wheel_width_j"), provenance, "wheel_width_j"),
+        offset_et_mm=_field(value("offset_et_mm"), provenance, "offset_et_mm"),
+        load_rating_kg=_field(value("load_rating_kg"), provenance, "load_rating_kg"),
+        fastener_system=_field(value("fastener_system"), provenance, "fastener_system"),
+        seat_type=_field(value("seat_type"), provenance, "seat_type"),
+    )
+
+
+def _snapshot(row) -> tuple[VehicleIdentity, RimSetup, dict]:
+    vehicle = VehicleIdentity(
+        make=row["make"],
+        model=row["vehicle_model"],
+        year=row["year"],
+        body=row["body"],
+        generation=row["generation"],
+        modification=row["modification"],
+        market=row["market"],
+        is_user_confirmed=bool(row["is_user_confirmed"]),
+        provider_mappings=_json_object(
+            row["provider_mappings"], field_name="vehicle provider_mappings"
+        ),
+    )
+    # The fallback keeps old immutable snapshots/test doubles readable. New DB
+    # reads always contain independently selected front and rear columns.
+    front = _rim_snapshot(row, "front_rim", fallback_prefix="rim")
+    rear = _rim_snapshot(row, "rear_rim", fallback_prefix="rim")
+    setup = RimSetup(
+        front=front,
+        rear=rear,
+        is_staggered=bool(row["is_staggered"]),
+        revision=row.get("rim_setup_revision"),
+    )
+    snapshot = {
+        "vehicle": vehicle.model_dump(mode="json"),
+        "rim_setup": setup.model_dump(mode="json"),
+        "context_identity": {
+            "vehicle_identity_id": row.get("vehicle_identity_id"),
+            "vehicle_revision": row.get("vehicle_revision"),
+            "vehicle_provider_mapping_revision": row.get("provider_mapping_revision")
+            or row.get("vehicle_provider_mapping_revision"),
+            "vehicle_provider_mapping": vehicle.provider_mappings.get("wheel_size"),
+            "modification_state": (vehicle.provider_mappings.get("wheel_size") or {}).get(
+                "modification_state"
+            ),
+            "selection_source": (vehicle.provider_mappings.get("wheel_size") or {}).get(
+                "selection_source"
+            ),
+            "selected_modification": (vehicle.provider_mappings.get("wheel_size") or {}).get(
+                "selected_modification"
+            ),
+            "modification_vehicle_revision": (
+                vehicle.provider_mappings.get("wheel_size") or {}
+            ).get("modification_vehicle_revision"),
+            "rim_setup_id": row.get("rim_setup_id"),
+            "rim_setup_revision": row.get("rim_setup_revision") or row.get("rim_revision"),
+            "setup_mode": "staggered" if bool(row["is_staggered"]) else "uniform",
+            "front_rim_revision": row.get("front_rim_revision") or row.get("rim_revision"),
+            "rear_rim_revision": row.get("rear_rim_revision") or row.get("rim_revision"),
+            "front_source_fingerprint": row.get("front_rim_source_fingerprint"),
+            "rear_source_fingerprint": row.get("rear_rim_source_fingerprint"),
+            "front_selected_variant_sku": row.get("front_rim_selected_variant_sku"),
+            "rear_selected_variant_sku": row.get("rear_rim_selected_variant_sku"),
+            "engine_version": ENGINE_VERSION,
+            "rules_version": TOLERANCES_VERSION,
+            "provider_version": PROVIDER_REFERENCE_VERSION,
+        },
+    }
+    return vehicle, setup, snapshot
+
+
+def _has_current_confirmed_modification(
+    provider_mapping: dict[str, object],
+    *,
+    vehicle_revision: int,
+) -> bool:
+    """Guard positive Standard evaluation with Slice 3 selection evidence."""
+    try:
+        bound_revision = int(provider_mapping.get("modification_vehicle_revision"))
+    except (TypeError, ValueError):
+        return False
+    return (
+        provider_mapping.get("modification_state") == "confirmed"
+        and provider_mapping.get("selection_source") in {"wheel_size_single", "user"}
+        and bound_revision == int(vehicle_revision)
+    )
+
+
+def _same_context_except_rules(check_snapshot: dict, current_snapshot: dict) -> bool:
+    """Allow a rules-only refresh, never a refresh of changed user/provider data."""
+    check_identity = context_identity(check_snapshot)
+    current_identity = context_identity(current_snapshot)
+    if not check_identity or not current_identity:
+        return False
+    return {key: value for key, value in check_identity.items() if key != "rules_version"} == {
+        key: value for key, value in current_identity.items() if key != "rules_version"
+    }
+
+
+def _recompute_result_from_evidence(
+    check_snapshot: dict,
+    evaluation_snapshot: dict,
+) -> dict | None:
+    """Re-run deterministic rules from the persisted Wheel-Size profile only."""
+    rim_setup = check_snapshot.get("rim_setup")
+    profile_snapshot = evaluation_snapshot.get("normalized_profile")
+    if not isinstance(rim_setup, dict) or not isinstance(profile_snapshot, dict):
+        return None
+    try:
+        setup = RimSetup.model_validate(rim_setup)
+        profile = FitmentProfile.model_validate(profile_snapshot)
+    except (TypeError, ValueError):
+        return None
+    if not setup.is_staggered and not profile.allowed_for_axle("rear"):
+        profile.allowed_wheels.extend(
+            item.model_copy(update={"axle": "rear"}) for item in profile.allowed_for_axle("front")
+        )
+    verdict = assemble_verdict(
+        run_checks(profile, setup), provider=profile.provider, is_preliminary=True
+    )
+    return verdict.model_dump(mode="json")
+
+
+async def _refresh_check_for_rules_version(
+    conn,
+    user_id: int,
+    row,
+    *,
+    check_snapshot: dict,
+    current_snapshot: dict,
+):
+    """Refresh a completed check only when rules are the sole changed context."""
+    if (
+        row.get("execution_status") != "completed"
+        or row.get("rules_version") == TOLERANCES_VERSION
+        or not _same_context_except_rules(check_snapshot, current_snapshot)
+    ):
+        return None
+    evaluation_snapshot = _json_object(
+        row.get("evaluation_snapshot"), field_name="fitment check evaluation_snapshot"
+    )
+    result = _recompute_result_from_evidence(check_snapshot, evaluation_snapshot)
+    if result is None:
+        return None
+    refreshed_snapshot = dict(current_snapshot)
+    refreshed_snapshot["check_mode"] = check_snapshot.get("check_mode", "standard")
+    refreshed_hash = hashlib.sha256(
+        json.dumps(refreshed_snapshot, sort_keys=True).encode()
+    ).hexdigest()
+    return await conn.fetchrow(
+        """
+        UPDATE fitment_checks
+        SET input_hash=$1, input_snapshot=$2::jsonb, result=$3::jsonb,
+            verdict=$4, engine_version=$5, rules_version=$6,
+            evaluated_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+        WHERE id=$7::uuid AND owner_user_id=$8 AND execution_status='completed'
+          AND rules_version IS DISTINCT FROM $6
+        RETURNING *
+        """,
+        refreshed_hash,
+        json.dumps(refreshed_snapshot),
+        json.dumps(result),
+        result["status"],
+        ENGINE_VERSION,
+        TOLERANCES_VERSION,
+        str(row["id"]),
+        user_id,
+    )
+
+
+async def _current_check_row(conn, user_id: int, row):
+    """Return the current row, lazily refreshing a rules-only stale verdict."""
+    if not row:
+        return row, False
+    snapshot = _json_object(row.get("input_snapshot"), field_name="fitment check input_snapshot")
+    if not context_hash(snapshot):
+        return row, False
+    try:
+        request = CheckCreateRequest(
+            vehicle_identity_id=UUID(str(row["vehicle_identity_id"])),
+            rim_setup_id=UUID(str(row["rim_setup_id"])),
+        )
+        current = await _load(conn, user_id, request)
+        if not current:
+            return False
+        _, _, current_snapshot = _snapshot(current)
+        current_snapshot["context_identity"].update(
+            {
+                "engine_version": ENGINE_VERSION,
+                "rules_version": TOLERANCES_VERSION,
+                "provider_version": PROVIDER_REFERENCE_VERSION,
+            }
+        )
+        if row.get("rules_version") == TOLERANCES_VERSION and is_current_snapshot(
+            snapshot, current_snapshot
+        ):
+            return row, True
+        refreshed = await _refresh_check_for_rules_version(
+            conn,
+            user_id,
+            row,
+            check_snapshot=snapshot,
+            current_snapshot=current_snapshot,
+        )
+        if refreshed:
+            return refreshed, True
+        return row, False
+    except (AssertionError, KeyError, NotImplementedError, TypeError, ValueError):
+        return row, False
+
+
+@router.post("/checks", response_model=CheckResponse)
+async def create_check(
+    request: CheckCreateRequest,
+    idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    if not fitment_config.FITMENT_VERDICT_ENABLED:
+        raise HTTPException(status_code=503, detail="Fitment verdict is not enabled")
+    if request.trigger != "user_requested":
+        raise HTTPException(
+            status_code=422, detail="Only user_requested standard checks are supported"
+        )
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
+        row = await _load(conn, user_id, request)
+        if not row:
+            raise HTTPException(status_code=404, detail="Fitment inputs not found")
+        if request.render_job_id and row["owned_job_id"] is None:
+            raise HTTPException(status_code=404, detail="Render job not found")
+        vehicle, setup, snapshot = _snapshot(row)
+        snapshot["check_mode"] = "standard"
+        snapshot["context_identity"].update(
+            {
+                "engine_version": ENGINE_VERSION,
+                "rules_version": TOLERANCES_VERSION,
+                "provider_version": PROVIDER_REFERENCE_VERSION,
+            }
+        )
+        provider_mapping = vehicle.provider_mappings.get("wheel_size") or {}
+        required_mapping = {
+            "make_slug",
+            "model_slug",
+            "region",
+            "generation_slug",
+            "modification_slug",
+        }
+        if not required_mapping.issubset(
+            provider_mapping
+        ) or not _has_current_confirmed_modification(
+            provider_mapping,
+            vehicle_revision=row["vehicle_revision"],
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="A confirmed Wheel-Size vehicle variant is required before this check",
+            )
+        required_rim_fields = (
+            "bolt_count",
+            "pcd_mm",
+            "center_bore_mm",
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+        )
+        rims = (setup.front, setup.rear) if setup.is_staggered else (setup.front,)
+        if any(
+            getattr(rim, name).value is None or not getattr(rim, name).is_user_confirmed
+            for rim in rims
+            for name in required_rim_fields
+        ):
+            raise HTTPException(status_code=409, detail={"code": "complete_rim_specs"})
+        input_hash = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
+        existing = await conn.fetchrow(
+            "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",
+            user_id,
+            idempotency_key,
+        )
+        if existing:
+            if existing["input_hash"] != input_hash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used for different fitment inputs",
+                )
+            existing, is_current = await _current_check_row(conn, user_id, existing)
+            return _response(existing, is_current=is_current)
+        # Equivalent active work is reused even when a client retried with a
+        # fresh idempotency key. Terminal completed work is also reusable for
+        # the exact same context and rules/provider versions.
+        try:
+            equivalent = await conn.fetchrow(
+                """
+                SELECT * FROM fitment_checks
+                WHERE owner_user_id=$1 AND vehicle_identity_id=$2::uuid
+                  AND rim_setup_id=$3::uuid AND input_hash=$4
+                  AND execution_status IN ('queued', 'processing', 'completed')
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                user_id,
+                str(request.vehicle_identity_id),
+                str(request.rim_setup_id),
+                input_hash,
+            )
+        except (AssertionError, NotImplementedError):
+            # Lightweight test doubles from the pre-Slice-5 API only model
+            # idempotency lookups; production connections always support it.
+            equivalent = None
+        if equivalent:
+            equivalent, is_current = await _current_check_row(conn, user_id, equivalent)
+            return _response(equivalent, is_current=is_current)
+
+        if WORKER_ENABLED and redis_client.is_initialized():
+            queued = await conn.fetchrow(
+                """INSERT INTO fitment_checks
+                   (owner_user_id,vehicle_identity_id,rim_setup_id,render_job_id,
+                    idempotency_key,input_hash,execution_status,verdict,input_snapshot,
+                    result,error,provider_version,engine_version,rules_version)
+                   VALUES ($1,$2,$3,$4,$5,$6,'queued',NULL,$7::jsonb,NULL,NULL,
+                           'wheel_size',$8,$9)
+                   ON CONFLICT (owner_user_id, idempotency_key) DO NOTHING
+                   RETURNING *""",
+                user_id,
+                str(request.vehicle_identity_id),
+                str(request.rim_setup_id),
+                str(request.render_job_id) if request.render_job_id else None,
+                idempotency_key,
+                input_hash,
+                json.dumps(snapshot),
+                ENGINE_VERSION,
+                TOLERANCES_VERSION,
+            )
+            if queued is None:
+                queued = await conn.fetchrow(
+                    "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",
+                    user_id,
+                    idempotency_key,
+                )
+            if queued is None:
+                raise HTTPException(status_code=503, detail="Fitment check could not be queued")
+            await redis_client.get_client().rpush(
+                redis_client.key(FITMENT_CHECK_QUEUE),
+                json.dumps({"kind": "fitment_check", "check_id": str(queued["id"])}),
+            )
+            queued, is_current = await _current_check_row(conn, user_id, queued)
+            return _response(queued, is_current=is_current)
+        try:
+            provider = WheelSizeProvider()
+            profile = await provider.get_fitment_profile(vehicle, user_initiated=True)
+            if not profile:
+                verdict = verdict_vehicle_not_resolved(provider=provider.name, is_preliminary=True)
+            else:
+                if not setup.is_staggered and not profile.allowed_for_axle("rear"):
+                    profile.allowed_wheels.extend(
+                        item.model_copy(update={"axle": "rear"})
+                        for item in profile.allowed_for_axle("front")
+                    )
+                verdict = assemble_verdict(
+                    run_checks(profile, setup), provider=provider.name, is_preliminary=True
+                )
+            result = verdict.model_dump(mode="json")
+            evaluation_snapshot = {
+                "vehicle_provider_mapping": provider_mapping,
+                "provider_request": {
+                    "make": provider_mapping["make_slug"],
+                    "model": provider_mapping["model_slug"],
+                    "year": vehicle.year,
+                    "region": provider_mapping["region"],
+                    "generation": provider_mapping["generation_slug"],
+                    "modification": provider_mapping["modification_slug"],
+                },
+                "normalized_profile": profile.model_dump(mode="json") if profile else None,
+                "provider_response_hash": hashlib.sha256(
+                    json.dumps(
+                        profile.model_dump(mode="json") if profile else {}, sort_keys=True
+                    ).encode()
+                ).hexdigest(),
+                "provider": provider.name,
+                "provider_version": profile.provider_version if profile else "v2",
+                "fetched_at": profile.fetched_at if profile else datetime.now(UTC).isoformat(),
+                "disclaimer_version": "stock_vehicle_only_v1",
+                "vehicle_identity_revision": row["vehicle_revision"],
+                "rim_setup_revision": row.get("rim_setup_revision") or row["rim_revision"],
+                "rim_spec_revisions": {
+                    "front": row.get("front_rim_revision") or row["rim_revision"],
+                    "rear": row.get("rear_rim_revision") or row["rim_revision"],
+                },
+                "rim_source_fingerprints": {
+                    "front": row.get("front_rim_source_fingerprint"),
+                    "rear": row.get("rear_rim_source_fingerprint"),
+                },
+                "provider_mapping_revision": row["provider_mapping_revision"],
+            }
+            status, error = "completed", None
+        except ProviderError as exc:
+            logger.warning("⚠️ Fitment provider unavailable for user_id=%s: %s", user_id, exc)
+            retryable = not any(code in str(exc) for code in ("HTTP 400", "HTTP 401", "HTTP 403"))
+            verdict, result, evaluation_snapshot, status, error = (
+                None,
+                None,
+                None,
+                "failed",
+                {
+                    "code": "provider_unavailable" if retryable else "provider_configuration_error",
+                    "retry_mode": "retryable" if retryable else "not_applicable",
+                    "retryable": retryable,
+                    "retry_at": None,
+                },
+            )
+        except Exception as exc:
+            logger.exception("⚠️ Fitment check execution failed during synchronous fallback")
+            verdict, result, evaluation_snapshot, status, error = (
+                None,
+                None,
+                None,
+                "failed",
+                _execution_error(exc),
+            )
+        record = await conn.fetchrow(
+            """INSERT INTO fitment_checks (owner_user_id,vehicle_identity_id,rim_setup_id,render_job_id,idempotency_key,input_hash,execution_status,verdict,input_snapshot,result,error,provider_version,engine_version,rules_version,evaluated_at,evaluation_snapshot,resolution_status,disclaimer_version,provider_mapping_revision)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13,$14,$15,$16::jsonb,$17,$18,$19)
+               ON CONFLICT (owner_user_id, idempotency_key) DO NOTHING
+               RETURNING *""",
+            user_id,
+            str(request.vehicle_identity_id),
+            str(request.rim_setup_id),
+            str(request.render_job_id) if request.render_job_id else None,
+            idempotency_key,
+            input_hash,
+            status,
+            verdict.status.value if verdict else None,
+            json.dumps(snapshot),
+            json.dumps(result) if result else None,
+            json.dumps(error) if error else None,
+            provider.name if result else "wheel_size",
+            result.get("engine_version") if result else ENGINE_VERSION,
+            result.get("tolerances_version") if result else TOLERANCES_VERSION,
+            datetime.now(UTC),
+            json.dumps(evaluation_snapshot) if evaluation_snapshot else None,
+            "resolved" if result else "provider_failed",
+            "stock_vehicle_only_v1",
+            row["provider_mapping_revision"],
+        )
+        if record is None:
+            existing = await conn.fetchrow(
+                "SELECT * FROM fitment_checks WHERE owner_user_id=$1 AND idempotency_key=$2",
+                user_id,
+                idempotency_key,
+            )
+            if not existing:
+                raise HTTPException(status_code=503, detail="Fitment check could not be persisted")
+            if existing["input_hash"] != input_hash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used for different fitment inputs",
+                )
+            record = existing
+        record, is_current = await _current_check_row(conn, user_id, record)
+        response = _response(record, is_current=is_current)
+    return response
+
+
+def _execution_error(exc: Exception) -> dict[str, object]:
+    message = str(exc).lower()
+    if isinstance(exc, TimeoutError) or "timeout" in message:
+        code, retry_mode = "provider_timeout", "retryable"
+    elif "401" in message or "403" in message or "auth" in message:
+        code, retry_mode = "provider_authentication_failed", "not_applicable"
+    elif "429" in message or "thrott" in message:
+        code, retry_mode = "throttled", "retry_later"
+    elif "quota" in message:
+        code, retry_mode = "quota_exceeded", "retry_later"
+    elif "proxy" in message:
+        code, retry_mode = "proxy_error", "retryable"
+    elif "network" in message:
+        code, retry_mode = "network_error", "retryable"
+    elif isinstance(exc, ProviderError) or "connection" in message:
+        code, retry_mode = "provider_unavailable", "retryable"
+    elif "json" in message or "malformed" in message:
+        code, retry_mode = "malformed_response", "not_applicable"
+    else:
+        code, retry_mode = "internal_execution_error", "not_applicable"
+    return {
+        "code": code,
+        "retry_mode": retry_mode,
+        "retryable": retry_mode != "not_applicable",
+        "retry_at": None,
+    }
+
+
+async def execute_fitment_check(check_id: str) -> None:
+    """Claim and execute one queued Standard check from the existing worker."""
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            UPDATE fitment_checks
+            SET execution_status='processing', started_at=CURRENT_TIMESTAMP,
+                attempt_count=attempt_count + 1, updated_at=CURRENT_TIMESTAMP
+            WHERE id=$1::uuid AND execution_status='queued'
+            RETURNING *
+            """,
+            check_id,
+        )
+
+    if not row:
+        return
+    snapshot = _json_object(row.get("input_snapshot"), field_name="fitment check input_snapshot")
+    try:
+        vehicle = VehicleIdentity(**snapshot["vehicle"])
+        setup = RimSetup(**snapshot["rim_setup"])
+        provider = WheelSizeProvider()
+        profile = await provider.get_fitment_profile(vehicle, user_initiated=True)
+        if not profile:
+            verdict = verdict_vehicle_not_resolved(provider=provider.name, is_preliminary=True)
+        else:
+            if not setup.is_staggered and not profile.allowed_for_axle("rear"):
+                profile.allowed_wheels.extend(
+                    item.model_copy(update={"axle": "rear"})
+                    for item in profile.allowed_for_axle("front")
+                )
+            verdict = assemble_verdict(
+                run_checks(profile, setup), provider=provider.name, is_preliminary=True
+            )
+        result = verdict.model_dump(mode="json")
+        evaluation_snapshot = {
+            "context_identity": snapshot.get("context_identity"),
+            "vehicle_provider_mapping": vehicle.provider_mappings.get("wheel_size"),
+            "normalized_profile": profile.model_dump(mode="json") if profile else None,
+            "provider_response_hash": hashlib.sha256(
+                json.dumps(
+                    profile.model_dump(mode="json") if profile else {}, sort_keys=True
+                ).encode()
+            ).hexdigest(),
+            "provider": provider.name,
+            "provider_version": profile.provider_version if profile else "v2",
+            "fetched_at": profile.fetched_at if profile else datetime.now(UTC).isoformat(),
+            "disclaimer_version": "stock_vehicle_only_v1",
+        }
+        error = None
+    except Exception as exc:  # operational boundary; never turn failures into unknown
+        logger.exception("fitment_check_execution_failed check_id=%s", check_id)
+        result, verdict, evaluation_snapshot = None, None, None
+        error = _execution_error(exc)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE fitment_checks
+            SET execution_status=$1, verdict=$2, result=$3::jsonb, error=$4::jsonb,
+                provider_version=$5, engine_version=$6, rules_version=$7,
+                evaluation_snapshot=$8::jsonb,
+                evaluated_at=CASE WHEN $1='completed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+                updated_at=CURRENT_TIMESTAMP
+            WHERE id=$9::uuid AND execution_status='processing'
+            """,
+            "completed" if result else "failed",
+            verdict.status.value if verdict else None,
+            json.dumps(result) if result else None,
+            json.dumps(error) if error else None,
+            "wheel_size",
+            result.get("engine_version") if result else ENGINE_VERSION,
+            result.get("tolerances_version") if result else TOLERANCES_VERSION,
+            json.dumps(evaluation_snapshot) if evaluation_snapshot else None,
+            check_id,
+        )
+
+
+def _comparison_fields(row: dict, rules: list[dict]) -> list[CheckFieldResult]:
+    """Present saved evidence only; do not evaluate or read current canonical data."""
+    if row.get("execution_status") != "completed":
+        return []
+    snapshot = _json_object(row.get("input_snapshot"), field_name="comparison input_snapshot")
+    evaluation = _json_object(
+        row.get("evaluation_snapshot"), field_name="comparison evaluation_snapshot"
+    )
+    setup = snapshot.get("rim_setup") or {}
+    profile = evaluation.get("normalized_profile") or {}
+    if not isinstance(setup, dict) or not isinstance(profile, dict):
+        return []
+
+    def number(value: object) -> str | None:
+        value = numeric(value)
+        return str(value).removesuffix(".0") if value is not None else None
+
+    output = []
+    for axle in ("front", "rear"):
+        rim = setup.get(axle) or (setup.get("front") if setup.get("rear") is None else {}) or {}
+        if not isinstance(rim, dict):
+            rim = {}
+        for field in (
+            "wheel_diameter_in",
+            "wheel_width_j",
+            "offset_et_mm",
+            "pcd",
+            "bolt_count",
+            "center_bore_mm",
+        ):
+            input_name = "pcd_mm" if field == "pcd" else field
+            value, trusted = saved_field(rim.get(input_name))
+            if field in {"wheel_diameter_in", "wheel_width_j"}:
+                diameter = field == "wheel_diameter_in"
+                references = reference_values(
+                    profile, axle, "rim_diameter" if diameter else "rim_width"
+                )
+                vehicle_value = " / ".join(number(item) for item in references) or None
+                status, code = discrete_result(
+                    rim.get(field), references, DIAMETER_TOL_IN if diameter else WIDTH_TOL_IN
+                )
+            elif field in {"pcd", "bolt_count"}:
+                vehicle_value = number(profile.get(input_name))
+                status, code = bolt_result(
+                    rim.get(input_name), profile.get(input_name), count=field == "bolt_count"
+                )
+            elif field == "offset_et_mm":
+                ref = offset_reference(profile, rim, axle)
+                lower, upper = number(ref.get("et_min_mm")), number(ref.get("et_max_mm"))
+                vehicle_value = (
+                    (lower if lower == upper else f"{lower}–{upper}")
+                    if lower is not None and upper is not None
+                    else None
+                )
+                status, code = offset_result(rim.get(field), ref)
+                if (
+                    value is not None
+                    and trusted
+                    and not ref
+                    and any(
+                        saved_field(rim.get(name))[0] is not None
+                        and not saved_field(rim.get(name))[1]
+                        for name in ("wheel_diameter_in", "wheel_width_j")
+                    )
+                ):
+                    code = "conflict_low_evidence"
+            else:
+                # DIA retains the persisted independent center-bore rule.
+                rule = next(
+                    (
+                        item
+                        for item in rules
+                        if item.get("rule") == "center_bore" and item.get("axle") == axle
+                    ),
+                    {},
+                )
+                vehicle_value = number(profile.get(field))
+                status = {
+                    "compatible": "pass",
+                    "compatible_with_conditions": "conditional",
+                    "incompatible": "fail",
+                }.get(rule.get("status"), "unknown")
+                code = rule.get("reason_code")
+                if value is None or vehicle_value is None:
+                    status, code = "unknown", "center_bore_unknown"
+                elif not trusted:
+                    status, code = "unknown", "conflict_low_evidence"
+            output.append(
+                CheckFieldResult(
+                    field=field,
+                    axle=axle,
+                    vehicle_value=vehicle_value,
+                    rim_value=number(value),
+                    status=status,
+                    code=code,
+                )
+            )
+    return output
+
+
+def _diameter_reference_details(row: dict) -> list[DiameterReferenceDetail]:
+    if row.get("execution_status") != "completed":
+        return []
+    snapshot = _json_object(row.get("input_snapshot"), field_name="diameter input_snapshot")
+    evaluation = _json_object(
+        row.get("evaluation_snapshot"), field_name="diameter evaluation_snapshot"
+    )
+    setup = snapshot.get("rim_setup")
+    profile = evaluation.get("normalized_profile")
+    if not isinstance(setup, dict):
+        return []
+    references = profile.get("allowed_wheels") if isinstance(profile, dict) else None
+    output = []
+    for axle in ["front", "rear"] if setup.get("is_staggered") else ["front"]:
+        rim = setup.get(axle)
+        field = rim.get("wheel_diameter_in") if isinstance(rim, dict) else None
+        submitted = field.get("value") if isinstance(field, dict) else field
+        detail = diameter_reference_detail(submitted, references, axle=axle)
+        status, code = discrete_result(
+            field,
+            reference_values(profile if isinstance(profile, dict) else {}, axle, "rim_diameter"),
+            DIAMETER_TOL_IN,
+        )
+        # The detail and row use the same discrete tolerance/evidence contract.
+        if status == "pass":
+            detail.reference_relation = "within_bounds"
+        detail.exact_diameter_match = (
+            True if status == "pass" else False if code == "size_not_in_reference" else None
+        )
+        output.append(detail)
+    return output
+
+
+def _response(row, *, is_current: bool | None = None) -> CheckResponse:
+    result = _json_object(row["result"], field_name="fitment check result")
+    error = _json_object(row["error"], field_name="fitment check error") or None
+    rules = result.get("rule_results") or []
+    legacy_reasons = [
+        rule
+        for rule in rules
+        if isinstance(rule, dict) and rule.get("status") in {"incompatible", "unknown"}
+    ]
+    retry_mode = "not_applicable"
+    if error:
+        retry_mode = error.get("retry_mode") or (
+            "retryable" if error.get("retryable") else "not_applicable"
+        )
+    return CheckResponse(
+        id=str(row["id"]),
+        mode="standard",
+        execution_status=row["execution_status"],
+        verdict=row["verdict"],
+        is_preliminary=bool(row["is_preliminary"]),
+        reasons=legacy_reasons,
+        conditions=result.get("conditions")
+        or [
+            rule
+            for rule in rules
+            if isinstance(rule, dict) and rule.get("status") == "compatible_with_conditions"
+        ],
+        blocking_issues=result.get("blocking_issues") or legacy_reasons,
+        advisories=result.get("advisories") or [],
+        diagnostics=result.get("diagnostics") or [],
+        missing_fields=result.get("missing_fields") or [],
+        field_results=_comparison_fields(row, rules),
+        diameter_reference_details=_diameter_reference_details(row),
+        versions={
+            "provider": "wheel_size",
+            "engine": row["engine_version"],
+            "rules": row["rules_version"],
+        },
+        error=error,
+        is_current=bool(row.get("is_current", False) if is_current is None else is_current),
+        input_hash=row.get("input_hash"),
+        created_at=row.get("created_at"),
+        evaluated_at=row.get("evaluated_at"),
+        retry_mode=retry_mode,
+        retry_at=row.get("retry_at"),
+    )
+
+
+@router.get("/checks/{check_id}", response_model=CheckResponse)
+async def get_check(
+    check_id: UUID,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    async with db.get_pool().acquire() as conn:
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
+        row = await conn.fetchrow(
+            "SELECT * FROM fitment_checks WHERE id=$1::uuid AND owner_user_id=$2",
+            str(check_id),
+            user_id,
+        )
+        row, current = await _current_check_row(conn, user_id, row)
+    if not row:
+        raise HTTPException(status_code=404, detail="Fitment check not found")
+    return _response(row, is_current=current)
+
+
+class CheckHistoryItem(BaseModel):
+    id: str
+    execution_status: str
+    verdict: str | None = None
+    created_at: datetime | None = None
+    evaluated_at: datetime | None = None
+    input_hash: str | None = None
+    versions: dict[str, object] = Field(default_factory=dict)
+    is_current: bool = False
+
+
+class CheckHistoryResponse(BaseModel):
+    checks: list[CheckHistoryItem] = Field(default_factory=list)
+
+
+@router.get("/checks", response_model=CheckHistoryResponse)
+async def list_checks(
+    vehicle_identity_id: UUID,
+    rim_setup_id: UUID,
+    init_data: Annotated[str | None, Query()] = None,
+    telegram_user_id: Annotated[int | None, Query()] = None,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    async with db.get_pool().acquire() as conn:
+        principal = await _auth(conn, init_data, telegram_user_id, authorization)
+        user_id = principal.user_id
+        rows = await conn.fetch(
+            """
+            SELECT * FROM fitment_checks
+            WHERE owner_user_id=$1 AND vehicle_identity_id=$2::uuid AND rim_setup_id=$3::uuid
+            ORDER BY created_at DESC
+            """,
+            user_id,
+            str(vehicle_identity_id),
+            str(rim_setup_id),
+        )
+        items = []
+        for row in rows:
+            row, current = await _current_check_row(conn, user_id, row)
+            items.append(
+                CheckHistoryItem(
+                    id=str(row["id"]),
+                    execution_status=row["execution_status"],
+                    verdict=row.get("verdict"),
+                    created_at=row.get("created_at"),
+                    evaluated_at=row.get("evaluated_at"),
+                    input_hash=row.get("input_hash"),
+                    versions={
+                        "provider": row.get("provider_version"),
+                        "engine": row.get("engine_version"),
+                        "rules": row.get("rules_version"),
+                    },
+                    is_current=current,
+                )
+            )
+    return CheckHistoryResponse(checks=items)
+
+
+async def recover_stale_fitment_checks() -> None:
+    """Requeue abandoned claims after a worker restart, with a bounded retry."""
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        requeued = await conn.fetch(
+            """
+            UPDATE fitment_checks
+            SET execution_status='queued', started_at=NULL,
+                retry_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+            WHERE execution_status='processing'
+              AND started_at < CURRENT_TIMESTAMP - ($1 * INTERVAL '1 second')
+              AND attempt_count < $2
+            RETURNING id
+            """,
+            FITMENT_CHECK_LEASE_SEC,
+            FITMENT_CHECK_MAX_ATTEMPTS,
+        )
+        await conn.execute(
+            """
+            UPDATE fitment_checks
+            SET execution_status='failed', verdict=NULL,
+                error=jsonb_build_object(
+                    'code', 'internal_execution_error',
+                    'retry_mode', 'not_applicable',
+                    'retryable', false
+                ),
+                updated_at=CURRENT_TIMESTAMP
+            WHERE execution_status='processing'
+              AND started_at < CURRENT_TIMESTAMP - ($1 * INTERVAL '1 second')
+              AND attempt_count >= $2
+            """,
+            FITMENT_CHECK_LEASE_SEC,
+            FITMENT_CHECK_MAX_ATTEMPTS,
+        )
+    for row in requeued:
+        await redis_client.get_client().rpush(
+            redis_client.key(FITMENT_CHECK_QUEUE),
+            json.dumps({"kind": "fitment_check", "check_id": str(row["id"])}),
+        )

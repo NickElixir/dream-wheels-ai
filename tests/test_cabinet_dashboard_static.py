@@ -1,0 +1,764 @@
+import json
+from pathlib import Path
+
+from tests.helpers.source_extract import extract_function
+
+ROOT = Path(__file__).resolve().parents[1]
+COPY = json.loads(
+    Path("webapp/vnext/copy.mjs")
+    .read_text(encoding="utf-8")
+    .split("export const COPY = ", 1)[1]
+    .split(";\n\n", 1)[0]
+)
+APP_JS = (ROOT / "webapp" / "app.js").read_text(encoding="utf-8")
+STYLE_CSS = (ROOT / "webapp" / "style.css").read_text(encoding="utf-8")
+INDEX_HTML = (ROOT / "webapp" / "index.html").read_text(encoding="utf-8")
+WALLET_VIEW = (ROOT / "webapp" / "vnext" / "views" / "wallet.js").read_text(encoding="utf-8")
+WALLET_CSS = (ROOT / "webapp" / "vnext" / "styles" / "wallet.css").read_text(encoding="utf-8")
+JOBS_API = (ROOT / "src" / "jobs_api.py").read_text(encoding="utf-8")
+VERCEL_JSON = json.loads((ROOT / "webapp" / "vercel.json").read_text(encoding="utf-8"))
+VERSION_JSON = json.loads((ROOT / "webapp" / "version.json").read_text(encoding="utf-8"))
+MIGRATION_0019 = (ROOT / "migrations" / "0019_fitment_identity_candidates.sql").read_text(
+    encoding="utf-8"
+)
+MIGRATION_0020 = (ROOT / "migrations" / "0020_fitment_change_events.sql").read_text(
+    encoding="utf-8"
+)
+MIGRATION_0023 = (ROOT / "migrations" / "0023_enable_credit_accounts_rls.sql").read_text(
+    encoding="utf-8"
+)
+MIGRATION_0026 = (ROOT / "migrations" / "0026_fitment_rim_setup_schema_compat.sql").read_text(
+    encoding="utf-8"
+)
+SMOKE_CHECKLIST = (ROOT / "docs" / "sprint-1-dashboard-smoke-checklist.md").read_text(
+    encoding="utf-8"
+)
+
+
+def test_dashboard_uses_balance_from_cabinet_api() -> None:
+    assert 'view: "dashboard"' in APP_JS
+    assert "data-dashboard-balance" in INDEX_HTML
+    assert "/payments/cabinet" in APP_JS
+    assert "state.balance = cabinet.balance ?? 0" in APP_JS
+
+
+def test_latest_completed_render_uses_durable_history_api() -> None:
+    assert 'apiUrl("/jobs"' in APP_JS
+    assert "fetchRenderHistory" in APP_JS
+    assert "state.renderHistory = Array.isArray(history.jobs)" in APP_JS
+    assert 'assetUrlForJob(latest, "result")' in APP_JS
+    assert "assets?.result?.url" in APP_JS
+
+
+def test_history_does_not_use_recent_render_local_storage_as_source() -> None:
+    assert "RECENT_RENDERS_STORAGE_KEY" not in APP_JS
+    assert "dreamWheelsRecentRenders" not in APP_JS
+    assert "loadRecentRenders" not in APP_JS
+    assert "recentRenders" not in APP_JS
+
+
+def test_empty_processing_and_failed_states_are_user_safe() -> None:
+    assert "Ваша первая примерка" in INDEX_HTML
+    assert "Создаём результат" in APP_JS
+    assert "Не удалось создать результат" in APP_JS
+    assert "Failed to fetch" not in APP_JS
+
+
+def test_history_opens_completed_card_on_a_dedicated_detail_screen() -> None:
+    assert "renderDetailJobId" in APP_JS
+    assert "function openRenderDetail(jobId" in APP_JS
+    assert 'setView("render-detail")' in APP_JS
+    assert 'const canOpen = status === "completed";' in APP_JS
+    assert 'const hasResult = hasAssetSource(job, "result");' in APP_JS
+
+
+def test_expanded_images_are_not_cropped() -> None:
+    assert ".render-full-image" in STYLE_CSS
+    render_full_block = STYLE_CSS.split(".render-full-image", 1)[1].split("}", 1)[0]
+    assert "width: 100%" in render_full_block
+    assert "height: auto" in render_full_block
+    assert "object-fit: contain" in render_full_block
+
+
+def test_frontend_does_not_offer_cross_owner_query_inputs() -> None:
+    assert "getIdentitySearchParams" in APP_JS
+    assert "withAuthHeaders" in APP_JS
+    assert "telegram_user_id" in APP_JS
+    assert "tgUser" in APP_JS
+    assert "WEBAPP_DEV_AUTH_ENABLED" not in APP_JS
+    assert "owner_user_id" not in APP_JS
+
+
+def test_account_menu_stays_in_place_with_long_identity() -> None:
+    assert "flex: 0 0 auto;" in STYLE_CSS.split(".sidebar-account", 1)[1].split("}", 1)[0]
+    assert ".sidebar-account > div:last-child" in STYLE_CSS
+    assert "overflow-wrap: anywhere;" in STYLE_CSS.split(".account-name", 1)[1].split("}", 1)[0]
+    sidebar_nav = STYLE_CSS.split(".sidebar-nav", 1)[1].split("}", 1)[0]
+    assert "overflow-y: auto;" in sidebar_nav
+    assert "min-height: 0;" in sidebar_nav
+    assert "Настройки аккаунта" in INDEX_HTML
+
+
+def test_create_view_is_hidden_in_initial_markup() -> None:
+    assert '<section class="view" data-view="create" hidden>' in INDEX_HTML
+
+
+def test_unauthenticated_state_prompts_telegram_login() -> None:
+    assert "data-website-auth-button" in INDEX_HTML
+    assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
+    assert "data-dashboard-auth-login" in INDEX_HTML
+    assert "telegram-button-icon" in INDEX_HTML
+    assert "wallet.authRequired" in APP_JS
+
+
+def test_website_login_warms_popup_dependencies_before_first_click() -> None:
+    assert 'href="https://oauth.telegram.org"' in INDEX_HTML
+    assert 'href="//oauth.telegram.org"' in INDEX_HTML
+    assert 'src="https://oauth.telegram.org/js/telegram-login.js?5"' not in INDEX_HTML
+    assert "data-telegram-login-library" not in INDEX_HTML
+    assert "WEBSITE_LOGIN_NONCE_MAX_AGE_MS" in APP_JS
+    assert "TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS" in APP_JS
+    assert "auth.preparing" in APP_JS
+    assert "auth.retryTelegram" in APP_JS
+    assert "function warmWebsiteLoginResources()" in APP_JS
+    assert "websiteLoginWarmupPending" in APP_JS
+    assert "button.disabled = state.websiteLoginPending;" in APP_JS
+    assert "Promise.allSettled([loadTelegramLoginLibrary(), fetchWebsiteLoginNonce()])" in APP_JS
+    assert '["pointerdown", "mouseenter", "focus"]' in APP_JS
+    assert "warmWebsiteLoginResources();" in APP_JS
+    assert "Promise.all([fetchWebsiteLoginNonce(), loadTelegramLoginLibrary()])" in APP_JS
+    assert "warmWebsiteLoginResources();" in APP_JS.split("function warmWebsiteLoginResources()")[1]
+    assert "WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS" in APP_JS
+    assert "for (const delayMs of WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS)" in APP_JS
+    loader = extract_function(APP_JS, "loadTelegramLoginLibrary")
+    assert 'document.querySelector("script[data-telegram-login-library]")?.remove();' in loader
+    assert "Telegram Login library timed out" in loader
+    assert "window.clearTimeout(timeoutId);" in loader
+
+
+def test_auth_dialog_keeps_telegram_login_visible_until_completion() -> None:
+    listener = APP_JS.split('authTelegramButton?.addEventListener("click", ')[1].split(");", 1)[0]
+    assert "startAuthDialogTelegramLogin" in listener
+    assert "closeAuthDialog" not in listener
+    assert "function getPreparedTelegramLoginResources()" in APP_JS
+    assert "function startAuthDialogTelegramLogin()" in APP_JS
+    assert 'setAuthDialogMessage(t("auth.openingTelegram"))' in APP_JS
+    assert "void warmWebsiteLoginResources();" in extract_function(APP_JS, "openAuthDialog")
+    assert "authTelegramButton?.addEventListener(eventName, warmWebsiteLoginResources" in APP_JS
+    backdrop_listener = APP_JS.split(
+        'document.querySelector("[data-auth-dialog]")?.addEventListener("click", '
+    )[1].split(");", 1)[0]
+    assert "!state.authDialogBusy && !state.websiteLoginPending" in backdrop_listener
+    failure_handler = APP_JS.split(
+        "void loginWithTelegram({ preparedResources: resources }).then((signedIn) => {"
+    )[1].split("function validFrontendEmail", 1)[0]
+    assert "state.authDialogOpen = true;" in failure_handler
+
+
+def test_stale_website_auth_is_cleared_and_identity_login_never_clicks_logout() -> None:
+    assert "function clearWebsiteAuthSession" in APP_JS
+    assert "[data-identity-error-action]" not in APP_JS
+    assert "function authenticatedFetch" in APP_JS
+
+
+def test_open_tabs_detect_a_new_frontend_build() -> None:
+    build = VERSION_JSON["build"]
+    assert f'data-app-build="{build}"' in INDEX_HTML
+    assert f"/style.css?v={build}" in INDEX_HTML
+    assert f"/app.js?v={build}" in INDEX_HTML
+    assert "function checkCurrentBuild()" in APP_JS
+    assert 'cache: "no-store"' in APP_JS
+    version_headers = next(
+        item["headers"] for item in VERCEL_JSON["headers"] if item["source"] == "/version.json"
+    )
+    assert {"key": "Cache-Control", "value": "no-store, max-age=0"} in version_headers
+
+
+def test_desktop_layout_reserves_sidebar_gutter() -> None:
+    assert "--desktop-sidebar-width" in STYLE_CSS
+    assert "--desktop-content-gap" in STYLE_CSS
+    assert "margin-left: calc(" in STYLE_CSS
+    assert "var(--desktop-sidebar-width)" in STYLE_CSS
+    assert "var(--desktop-content-gap)" in STYLE_CSS
+
+
+def test_photo_guide_caption_uses_i18n_key_without_hyphen() -> None:
+    assert 'state.view === "photo-guide" ? "photoGuide" : state.view' in APP_JS
+    assert "caption.photo-guide" not in INDEX_HTML
+    assert "caption.photo-guide" not in APP_JS
+
+
+def test_existing_create_and_payment_flows_remain_wired() -> None:
+    assert '@router.post("/upload"' in JOBS_API
+    assert "/identity/assets" in APP_JS
+    assert "/jobs/from-assets" in APP_JS
+    assert "/payments/topups" in APP_JS
+    assert 'class="topup-icon"' not in INDEX_HTML
+    for icon in ("⚡", "🏁", "💎", "👑"):
+        assert icon not in INDEX_HTML
+    assert "Robokassa" in WALLET_VIEW
+
+
+def test_payment_creation_sends_channel_aware_return_context() -> None:
+    assert "function paymentReturnContext()" in APP_JS
+    assert 'client_channel: "telegram"' in APP_JS
+    assert 'return_to: "/t/"' in APP_JS
+    assert 'client_channel: "web"' in APP_JS
+    assert 'safeApplicationReturnPath(window.location) || "/app"' in APP_JS
+    assert "window.location.href" in APP_JS
+
+
+def test_sprint_2_create_flow_preserves_upload_and_adds_identity_islands() -> None:
+    assert 'data-input="car"' in INDEX_HTML
+    assert 'data-input="wheel"' in INDEX_HTML
+    assert "data-identity-flow" not in INDEX_HTML
+    assert "/identity/assets" in APP_JS
+    assert "/identity/resolve" not in APP_JS
+
+
+def test_selected_vehicle_choice_uses_selected_status_not_correctness_claim() -> None:
+    assert "selectedVehicleIndex" not in APP_JS
+    assert "confirmedCreateVehicle" not in APP_JS
+    assert "selectedVehicleCandidate" not in APP_JS
+
+
+def test_vehicle_identity_requires_explicit_confirmation_and_manual_fallback() -> None:
+    assert "vehicle_user_confirmed: true" not in APP_JS
+    assert "function resolveIdentity" not in APP_JS
+    assert "async function requestFitmentVehicleProposal" in APP_JS or "/vehicle-proposal" in APP_JS
+
+
+def test_sprint_4_fitment_flow_is_wired_with_verdict_entrypoint() -> None:
+    assert 'data-view="fitment"' in INDEX_HTML
+    assert "data-open-fitment-result" in INDEX_HTML
+    assert "data-fitment-form" in INDEX_HTML
+    assert "data-fitment-context-pair" in INDEX_HTML
+    assert 'data-fitment-section-tab="result"' in INDEX_HTML
+    assert "data-fitment-render-action" in INDEX_HTML
+    assert "/fitment`" in APP_JS
+    assert "data-open-fitment" in APP_JS
+    assert "data-fitment-candidate" in APP_JS
+    assert "expected_vehicle_revision" in APP_JS
+    assert "expected_rim_revision" in APP_JS
+    assert "fitment_available" in APP_JS
+    assert 'uiCopy("bridge.confirmed", locale)' in APP_JS
+    assert 'params.get("preview") === "fitment"' in APP_JS
+    assert "FITMENT_PREVIEW_STORAGE_KEY" in APP_JS
+    assert "buildDefaultDemoFitmentOverview" in APP_JS
+    assert "demoServerTransition" in APP_JS
+    assert "persistDemoFitmentOverview(overview);" in APP_JS
+    assert "job_id: GUEST_FITMENT_DEMO_JOB_ID" in APP_JS
+    assert "fitment_available: true" in APP_JS
+    assert "fitment/history" in JOBS_API
+    assert "runFitmentCheck" in APP_JS
+    assert "data-fitment-check" in INDEX_HTML
+    assert 'apiUrl("/fitment/checks"' in APP_JS
+    assert "compatible_with_conditions" in APP_JS
+    assert COPY["legacy.fitment.demoLiveActionsUnavailable"]["ru"]
+    assert "shouldUseDemoFitment(state.fitmentJobId)" in APP_JS
+    assert "[data-fitment-verdict-blocking-list]" in APP_JS
+    assert "`${target}-list`" not in APP_JS
+    assert "state.fitmentCheck = null;" in APP_JS
+    assert "source_summary" not in APP_JS
+    assert "vehicle?.summary" not in APP_JS
+
+
+def test_saved_rim_source_is_resolved_when_fitment_opens() -> None:
+    assert "state.fitmentSourceAutoResolvedForJob !== jobId" in APP_JS
+    assert "void resolveFitmentRimSource({ automatic: true });" in APP_JS
+    assert 'state.fitmentSourceAutoResolvedForJob = "";' in APP_JS
+    assert "Сохранить параметры" in APP_JS
+    assert "await runFitmentCheck();" not in APP_JS
+    assert "You can start the compatibility check separately." in APP_JS
+    assert "state.fitmentSourceOpen = true;" in APP_JS
+    assert "clearFitmentResolverFeedback({ close: true });" in APP_JS
+    assert "Wheel parameters could not be determined automatically" in APP_JS
+    assert "state.fitmentSourceOpen = true;" in APP_JS
+    assert "const RIM_SOURCE_RESOLVE_TIMEOUT_MS = 20 * 1000;" in APP_JS
+    assert "const controller = new AbortController();" in APP_JS
+    assert "signal: controller.signal," in APP_JS
+    assert "window.clearTimeout(requestTimeout);" in APP_JS
+
+
+def test_fitment_entrypoint_uses_compatibility_language() -> None:
+    assert COPY["legacy.fitment.openFromResult"]["ru"] == "Проверить совместимость"
+    assert COPY["legacy.fitment.openFromHistory"]["ru"] == "Проверить совместимость"
+    assert "Проверить совместимость автомобиля и диска" not in APP_JS
+    result_button = INDEX_HTML.split("data-open-fitment-result", 1)[1].split("</button>", 1)[0]
+    assert "Уточнить параметры" not in result_button
+
+
+def app_without_legacy_title_separator() -> str:
+    snapshot = extract_function(APP_JS, "vnextFitmentSnapshot")
+    assert 'join(" · ")' not in snapshot
+    assert 'join(" / ")' in snapshot
+    return APP_JS.replace("${title} · ${wheel}", "")
+
+
+def test_user_facing_ui_never_uses_middle_dot_as_separator() -> None:
+    assert "middle dot (`·`)" in (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
+    assert "·" not in INDEX_HTML
+    assert "·" not in app_without_legacy_title_separator()
+
+
+def test_fitment_panel_collapses_hidden_status_islands() -> None:
+    assert '.fitment-panel > .wallet-status-island[data-visible="false"]' in STYLE_CSS
+    assert (
+        "display: none"
+        in STYLE_CSS.split('.fitment-panel > .wallet-status-island[data-visible="false"]', 1)[
+            1
+        ].split("}", 1)[0]
+    )
+
+
+def test_detail_screen_has_one_fitment_editor_cta_and_no_duplicate_new_tryon() -> None:
+    detail = extract_function(APP_JS, "renderRenderDetail")
+    assert COPY["legacy.fitment.openFromHistory"]["ru"] == "Проверить совместимость"
+    assert detail.count("data-open-fitment") == 1
+    assert "render-expanded-actions" in detail
+    assert "Скачать результат" in detail
+    assert "Повторить с этими фото" in detail
+    assert "data-new-tryon" not in detail
+    assert "data-new-tryon" not in INDEX_HTML
+
+
+def test_latest_result_preview_and_actions_cannot_overflow_dashboard_card() -> None:
+    assert ".latest-render-card [data-latest-content]" in STYLE_CSS
+    latest_content_css = STYLE_CSS.split(".latest-render-card [data-latest-content]", 1)[1].split(
+        "}", 1
+    )[0]
+    assert "min-width: 0" in latest_content_css
+    assert "overflow: clip" in latest_content_css
+    latest_image_css = STYLE_CSS.split(".latest-result-image,", 1)[1].split("}", 1)[0]
+    assert "max-width: 100%" in latest_image_css
+    assert "latest-render-actions" in APP_JS
+    assert "latest-preview-layout" in APP_JS
+    assert "grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1.15fr)" in STYLE_CSS
+    assert ".latest-render-actions.render-card-buttons" in STYLE_CSS
+    assert ".latest-render-actions .compact-button" in STYLE_CSS
+    assert "font-size: clamp(" in STYLE_CSS
+
+
+def test_detail_screen_rerenders_after_history_refresh_and_can_fetch_missing_job() -> None:
+    load_history = extract_function(APP_JS, "requestRenderHistory")
+    assert 'state.view === "render-detail"' in load_history
+    assert "renderRenderDetail()" in load_history
+    assert "async function loadRenderDetailJob(jobId)" in APP_JS
+    assert "fetchJobStatusForHistory(jobId)" in APP_JS
+    assert "Загружаем примерку…" in APP_JS
+
+
+def test_completed_history_rows_are_compact_and_do_not_show_ready_badge() -> None:
+    history_card = extract_function(APP_JS, "renderHistoryCard")
+    assert 'status === "completed"' in history_card
+    assert 'const statusMarkup = status === "completed"' in history_card
+    assert "grid-template-columns: minmax(160px, 30%) minmax(0, 1fr)" in STYLE_CSS
+
+
+def test_photo_guide_uses_the_approved_car_example_and_has_a_create_cta() -> None:
+    assert "/assets/photo-guide-car.jpg" in INDEX_HTML
+    assert (ROOT / "webapp" / "assets" / "photo-guide-car.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-car-bad.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-product.jpg").is_file()
+    assert (ROOT / "webapp" / "assets" / "photo-guide-wheel-real.jpg").is_file()
+    assert "Диск снят прямо спереди" in INDEX_HTML
+    assert 'data-i18n="photoGuide.readyAction">Начать примерку</button>' in INDEX_HTML
+    assert "/assets/photo-guide-wheel-product.jpg" in INDEX_HTML
+    assert "/assets/photo-guide-wheel-real.jpg" in INDEX_HTML
+    assert "photo-guide-wheel-examples" in STYLE_CSS
+
+
+def test_fitment_continue_opens_rim_step_without_waiting_for_catalogue() -> None:
+    assert (
+        'const savedFromSection = confirmingVehicle ? "vehicle" : owner || state.fitmentActiveSection;'
+        in APP_JS
+    )
+    assert 'if (savedFromSection === "vehicle")' in APP_JS
+    assert "state.fitmentActiveStep = 2;" in APP_JS
+    assert 'state.fitmentActiveSection = "rim";' in APP_JS
+
+
+def test_negative_feedback_reveals_reason_choices_before_submission() -> None:
+    assert "feedbackReasonPickerByJob" not in APP_JS
+    assert "function feedbackReasonPickerVisible(job)" in APP_JS
+    assert 'sentiment === "disliked"' in APP_JS
+    assert "data-history-feedback-reason" in APP_JS
+
+
+def test_active_view_rerender_helper_covers_every_declared_view() -> None:
+    helper = extract_function(APP_JS, "rerenderActiveView")
+    for view in (
+        "dashboard",
+        "create",
+        "wallet",
+        "renders",
+        "render-detail",
+        "fitment",
+        "settings",
+        "photo-guide",
+        "support",
+        "docs",
+    ):
+        assert f'case "{view}":' in helper
+    feedback_handler = extract_function(APP_JS, "submitHistoryFeedback")
+    assert feedback_handler.count("rerenderActiveView();") == 2
+
+
+def test_sprint_4_identity_candidates_migration_is_idempotent() -> None:
+    assert "ALTER TABLE vehicle_identities" in MIGRATION_0019
+    assert (
+        "ADD COLUMN IF NOT EXISTS field_candidates JSONB NOT NULL DEFAULT '{}'::jsonb"
+        in MIGRATION_0019
+    )
+    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0019
+    assert "ALTER TABLE rim_specs" in MIGRATION_0019
+    assert "vehicle_identities_revision_check" in MIGRATION_0019
+    assert "rim_specs_revision_check" in MIGRATION_0019
+
+
+def test_fitment_change_events_migration_is_append_only() -> None:
+    assert "CREATE TABLE IF NOT EXISTS fitment_change_events" in MIGRATION_0020
+    assert "actor_type" in MIGRATION_0020 and "TEXT NOT NULL" in MIGRATION_0020
+    assert "changes" in MIGRATION_0020 and "JSONB NOT NULL DEFAULT '{}'::jsonb" in MIGRATION_0020
+    assert "idx_fitment_change_events_job_created" in MIGRATION_0020
+
+
+def test_credit_accounts_migration_restores_backend_only_rls() -> None:
+    assert "ALTER TABLE IF EXISTS user_credit_accounts ENABLE ROW LEVEL SECURITY;" in MIGRATION_0023
+    assert "CREATE POLICY" not in MIGRATION_0023
+
+
+def test_fitment_rim_setup_schema_migration_matches_slice_7_queries() -> None:
+    assert "ADD COLUMN IF NOT EXISTS source_fingerprint TEXT" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS selected_variant_sku TEXT" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS source_revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0026
+    assert "ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 1" in MIGRATION_0026
+
+
+def test_sprint_2_reference_prototype_is_committed() -> None:
+    reference = ROOT / "docs" / "references" / "sprint-2-create-flow.html"
+    assert reference.exists()
+    content = reference.read_text(encoding="utf-8")
+    assert "Определить данные" in content
+
+
+def test_uploaded_photo_preview_preserves_image_ratio_without_cropping() -> None:
+    assert 'data-preview-media="car"' in INDEX_HTML
+    assert 'data-preview-media="wheel"' in INDEX_HTML
+    assert "function syncPreviewGeometry(kind)" in APP_JS
+    assert "--preview-aspect-ratio" in APP_JS
+    assert ".preview-media" in STYLE_CSS
+    assert "transition: aspect-ratio 320ms ease" in STYLE_CSS
+    preview_block = STYLE_CSS.split(".preview img", 1)[1].split("}", 1)[0]
+    assert "object-fit: contain" in preview_block
+
+
+def test_design_code_defines_ui_separator_rules() -> None:
+    design_code = (ROOT / "docs" / "ui-design-code.md").read_text(encoding="utf-8")
+    assert "Never use a full stop, middle dot (`·`)" in design_code
+    assert '20" / 8,5J / 5×114,3' in design_code
+    assert "Russian decimal values use a comma" in design_code
+    assert "Vehicle and rim names use spaces only" in design_code
+    assert " · " not in app_without_legacy_title_separator()
+    assert "vnextRimSpecs(rim)" in APP_JS
+    assert '" / "' in APP_JS
+
+
+def test_fitment_entity_names_keep_specs_on_secondary_lines() -> None:
+    assert "data-fitment-vehicle-specs" in INDEX_HTML
+    assert "data-fitment-summary-vehicle-specs" in INDEX_HTML
+    assert "data-fitment-card-rim-specs" in INDEX_HTML
+    assert "function fitmentVehicleSpecs(vehicle)" in APP_JS
+    assert "function fitmentRimSpecs(rim)" in APP_JS
+    assert "demoVehicleTitle(overview.vehicle)" in APP_JS
+    assert "demoRimTitle(overview.rim)" in APP_JS
+
+
+def test_fitment_editor_reduces_visual_competition_after_editing_starts() -> None:
+    assert "data-fitment-overview-toggle" not in INDEX_HTML
+    assert "data-fitment-overview-grid" not in INDEX_HTML
+    assert "fitment-field.has-candidates" in STYLE_CSS
+    assert "fitment-candidate-row" in STYLE_CSS
+    assert ".fitment-actions {\n        position: sticky" not in STYLE_CSS
+    assert "--desktop-content-max: 1080px" in STYLE_CSS
+    assert "data-fitment-source-disclosure" in INDEX_HTML
+    assert "data-fitment-source-submit" in INDEX_HTML
+
+
+def test_fitment_uses_the_approved_three_step_progressive_flow() -> None:
+    assert "Проверьте, подойдут ли диски" not in INDEX_HTML
+    assert 'data-fitment-section-tab="vehicle"' in INDEX_HTML
+    assert 'data-fitment-section-tab="rim"' in INDEX_HTML
+    assert 'data-fitment-section-tab="result"' in INDEX_HTML
+    assert "fitmentActiveStep" in APP_JS
+    assert "fitmentActiveSection" in APP_JS
+    assert "tab.disabled = isResult && !resultAvailable;" not in APP_JS
+    assert "state.fitmentActiveSection = fitmentSectionForAction(overview);" in APP_JS
+    assert "Сохранить параметры" in APP_JS
+    assert "function fitmentNextAction" in APP_JS
+    assert "function fitmentDraftMissingFields" not in APP_JS
+    assert "function fitmentUiState" in APP_JS
+    assert "function refreshFitmentSaveLabel" in APP_JS
+    assert "useDraft: true" not in APP_JS
+    assert "void loadFitmentVehicleVariants();" in APP_JS
+    assert "Автомобиль определён по фотографии" in APP_JS
+
+
+def test_detail_feedback_uses_plain_outcome_language() -> None:
+    assert "👍 Удачный результат" in APP_JS
+    assert "👎 Нужна доработка" in APP_JS
+    assert "Гостевой пример: оценка сохранится только в этом браузере" in APP_JS
+    assert "Гостевой пример: фидбек" not in APP_JS
+
+
+def test_fitment_context_and_render_status_have_one_clear_visual_marker() -> None:
+    assert 'data-i18n="fitment.back"' not in INDEX_HTML
+    assert "Вернуться к примерке" not in INDEX_HTML
+    assert "Demo preview" not in INDEX_HTML
+    assert "data-fitment-context-pair" in INDEX_HTML
+    assert "Demo" not in INDEX_HTML
+    assert "fitment-context-row" not in INDEX_HTML
+    assert 'data-i18n="fitment.preliminary"' not in INDEX_HTML
+    assert "render-info-island" in APP_JS
+    assert 'status === "completed"' in APP_JS
+    assert ".render-info-island .status-pill" in STYLE_CSS
+    assert "render-demo-note" in APP_JS
+    assert "border: 1px solid rgba(255, 204, 86, 0.22)" in STYLE_CSS
+    assert "background: rgba(255, 204, 86, 0.08)" in STYLE_CSS
+
+
+def test_identity_error_state_is_classified_as_critical_and_actionable() -> None:
+    assert "data-identity-error" not in INDEX_HTML
+    assert "identityError:" not in APP_JS
+    assert "classifyGenerationError" in APP_JS
+
+
+def test_t_route_rewrites_to_shared_entrypoint_and_wallet_summary_features_exist() -> None:
+    rewrites = VERCEL_JSON.get("rewrites", [])
+    backend_rewrites = [
+        rewrite for rewrite in rewrites if rewrite["source"].startswith("/api/backend")
+    ]
+    assert backend_rewrites == [
+        {
+            "source": "/api/backend/(.*)",
+            "destination": "/api/backend-gateway?__backend_path=$1",
+        },
+    ]
+    assert {"source": "/t", "destination": "/index.html"} in rewrites
+    assert {"source": "/t/", "destination": "/index.html"} in rewrites
+    assert not (ROOT / "webapp" / "t" / "index.html").exists()
+    assert "Срок действия" in INDEX_HTML
+    assert (
+        COPY["legacy.dashboard.expiryPriority"]["ru"]
+        == "Сначала спишутся рендеры с ближайшим сроком действия"
+    )
+    assert "data-dashboard-expiry" in INDEX_HTML
+    assert 'data-view="wallet"' in INDEX_HTML
+    assert "data-wallet-expiry-rows" in WALLET_VIEW
+
+
+def test_wallet_payment_summaries_use_layout_without_punctuation_separators() -> None:
+    assert "data-wallet-selection-amount" in WALLET_VIEW
+    assert "data-wallet-selection-credits" in WALLET_VIEW
+    assert "data-wallet-selection-email" in WALLET_VIEW
+    assert "data-wallet-pending-amount" in WALLET_VIEW
+    assert "data-wallet-pending-credits" in WALLET_VIEW
+    assert "vnext-wallet__history-main" in WALLET_VIEW
+    assert "vnext-wallet__history-status" in WALLET_VIEW
+    assert " · " not in WALLET_VIEW
+    assert "data-last-invoice-amount" not in INDEX_HTML
+    assert "data-topup-summary-values" not in INDEX_HTML
+    assert "wallet.paymentSuccess" in APP_JS
+    assert (
+        "telegramUser?.id || state.websiteAuth?.telegramUserId || state.websiteAuth?.username"
+        in APP_JS
+    )
+    assert "WALLET_MIDDLE_DOT_SEPARATOR" not in APP_JS
+
+
+def test_wallet_spacing_status_alignment_and_visibility_preserve_active_view() -> None:
+    assert "gap: 14px;" in STYLE_CSS
+    assert "padding: 20px 24px;" in STYLE_CSS
+    assert ".payment-card-top" in STYLE_CSS
+    assert ".payment-card-top .status-pill," in STYLE_CSS
+    assert ".payment-history-item .status-pill" in STYLE_CSS
+    assert "position: absolute;" in STYLE_CSS
+    assert "padding-right: 190px;" in STYLE_CSS
+    assert "latest-payment-details" not in STYLE_CSS
+    visibility_handler = APP_JS.split('document.addEventListener("visibilitychange"', 1)[1].split(
+        'window.addEventListener("pagehide"', 1
+    )[0]
+    assert "checkCurrentBuild" not in visibility_handler
+    assert "void checkCurrentBuild();" in APP_JS
+
+
+def test_browser_app_namespace_rewrites_to_the_auth_gated_entrypoint() -> None:
+    rewrites = VERCEL_JSON.get("rewrites", [])
+    assert {"source": "/app", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/", "destination": "/index.html"} in rewrites
+    assert {"source": "/app/(.*)", "destination": "/index.html"} in rewrites
+    assert "import {" in APP_JS
+    assert 'from "./app-route.mjs"' in APP_JS
+    assert "data-application-auth-gate" in INDEX_HTML
+    assert "bootstrapAuthenticatedApplication" in APP_JS
+
+
+def test_browser_app_auth_wall_suppresses_protected_bootstrap_until_auth() -> None:
+    assert "state.applicationAuthRequired" in APP_JS
+    assert "state.applicationAuthGateReady = unlocked" in APP_JS
+    assert "if (!isApplicationAuthSessionReady())" in APP_JS
+    assert "clearApplicationSessionState();" in APP_JS
+    assert "applicationAuthReturnPath" in APP_JS
+
+
+def test_browser_app_auth_wall_opens_after_principal_verification_without_data_gate() -> None:
+    granted_start = APP_JS.index("function isApplicationAuthGranted()")
+    granted_end = APP_JS.index("function renderApplicationAuthGate()", granted_start)
+    gate_start = APP_JS.index("function renderApplicationAuthGate()")
+    gate_end = APP_JS.index("function setApplicationShellVisible", gate_start)
+
+    assert "state.applicationDataReady" not in APP_JS[granted_start:granted_end]
+    assert "authSessionReady && !state.applicationDataReady" not in APP_JS[gate_start:gate_end]
+
+
+def test_website_flows_use_same_origin_rewrite_proxy_and_paginated_history() -> None:
+    assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
+    assert "function shouldUseBrowserApiProxy()" in APP_JS
+    assert 'apiUrl("/jobs"' in APP_JS
+    assert "apiUrl(`/jobs/${jobId}/fitment`, { includeIdentity: true })" in APP_JS
+    assert "apiUrl(`/jobs/${state.fitmentJobId}/fitment`, { includeIdentity: true })" in APP_JS
+    assert "withIdentityQuery(`${state.apiBaseUrl}/jobs/${jobId}/fitment`)" not in APP_JS
+    assert (
+        "withIdentityQuery(`${state.apiBaseUrl}/jobs/${state.fitmentJobId}/fitment`)" not in APP_JS
+    )
+    assert "walletHistoryPage" in APP_JS
+    assert "PAYMENT_HISTORY_PAGE_SIZE = 3" in APP_JS
+    assert 'data-wallet-action="more"' in WALLET_VIEW
+    assert "data-wallet-history-pager" not in INDEX_HTML
+    assert "vnext-wallet__history-row" in WALLET_CSS
+
+
+def test_dashboard_uses_approved_auth_cta_skeletons_and_result_hierarchy() -> None:
+    assert "data-dashboard-auth-login" in INDEX_HTML
+    assert "Войдите, чтобы увидеть баланс" in INDEX_HTML
+    assert "data-dashboard-balance-skeleton" in INDEX_HTML
+    assert "data-dashboard-latest-skeleton" in INDEX_HTML
+    assert "dashboard-card-skeleton" in STYLE_CSS
+    assert "dashboard-skeleton-shimmer" in STYLE_CSS
+    assert "data-dashboard-primary-action" in INDEX_HTML
+    assert "data-dashboard-secondary-action" in INDEX_HTML
+    assert any(pair["ru"] == "Открыть последний результат" for pair in COPY.values())
+    assert "latest-preview-layout" in APP_JS
+    assert "dashboard-fitment-context" in APP_JS
+    assert "fitmentDashboardContext" in APP_JS
+
+
+def test_generation_errors_use_actionable_copy_without_exposing_internal_messages() -> None:
+    assert "classifyGenerationError" in APP_JS
+    assert any("Не удалось обработать изображение диска" in pair["ru"] for pair in COPY.values())
+    assert any("Не удалось распознать автомобиль на фото" in pair["ru"] for pair in COPY.values())
+    assert any("Сервис временно недоступен" in pair["ru"] for pair in COPY.values())
+    assert "data-error-action" in INDEX_HTML
+    assert "data-error-copy" in INDEX_HTML
+
+
+def test_rim_source_status_is_contextual_and_not_a_permanent_pipeline() -> None:
+    assert "data-fitment-source-progress" not in INDEX_HTML
+    assert "data-fitment-source-steps" not in INDEX_HTML
+    assert "renderFitmentSourceSteps" not in APP_JS
+    assert "fitment-source-steps" not in STYLE_CSS
+    assert "data-fitment-source-status" in INDEX_HTML
+    assert 'uiCopy("fitment.notice.resolvingWheel", locale)' in APP_JS
+    assert "Параметры найдены" in APP_JS
+
+
+def test_website_auth_does_not_inline_private_asset_urls() -> None:
+    assert "function proxiedAssetUrl(asset)" in APP_JS
+    assert 'if (hasBearerFrontendAuth()) return "";' in APP_JS
+    assert "Website auth lives in Authorization header" in APP_JS
+    assert "function assetDownloadUrlForJob(job, kind)" in APP_JS
+    assert "return hasBearerFrontendAuth()" in APP_JS
+    assert "if (getWebsiteAuthToken()) return resultUrlForJob(job);" in APP_JS
+
+
+def test_secondary_action_family_uses_shared_island_button_style() -> None:
+    assert ".payment-card-action," in STYLE_CSS
+    assert ".website-auth-button," in STYLE_CSS
+    assert ".summary-action" in STYLE_CSS
+    assert "min-height: 44px" in STYLE_CSS
+    assert "background: rgba(255, 255, 255, 0.03);" in STYLE_CSS
+    assert "background: rgba(255, 255, 255, 0.04);" in STYLE_CSS
+    assert "color: var(--accent-strong);" in STYLE_CSS
+
+
+def test_focus_visible_style_covers_button_and_navigation_families() -> None:
+    assert ".brand-button:focus-visible," in STYLE_CSS
+    assert ".sidebar-item:focus-visible," in STYLE_CSS
+    assert ".bottom-nav-item:focus-visible," in STYLE_CSS
+    assert ".website-auth-button:focus-visible," in STYLE_CSS
+    assert ".support-link:focus-visible," in STYLE_CSS
+    assert (
+        "box-shadow: 0 0 0 2px rgba(7, 8, 9, 0.92), 0 0 0 4px rgba(221, 255, 0, 0.3);" in STYLE_CSS
+    )
+
+
+def test_sidebar_accent_is_reserved_for_inactive_item_hover() -> None:
+    assert ".sidebar-item::before" not in STYLE_CSS
+    assert ".sidebar-item:hover:not(.active)" in STYLE_CSS
+    assert "color: var(--text);\n    background: var(--accent-soft);" in STYLE_CSS
+    assert (
+        ".sidebar-item.active {\n    color: var(--accent-strong);\n    background: var(--accent-soft);"
+        in STYLE_CSS
+    )
+    assert ".sidebar-item.active:hover {\n    transform: translateX(3px);" in STYLE_CSS
+
+
+def test_dashboard_balance_subisland_has_no_accent_frame() -> None:
+    balance_display = STYLE_CSS.split(".balance-tile.dashboard-balance-display {", 1)[1].split(
+        "}", 1
+    )[0]
+    assert "border: 0;" in balance_display
+    assert "background: transparent;" in balance_display
+
+
+def test_dashboard_login_island_follows_top_up_action() -> None:
+    dashboard_balance = INDEX_HTML.split('<article class="panel dashboard-balance-card">', 1)[
+        1
+    ].split("</article>", 1)[0]
+    assert dashboard_balance.index("dashboard-balance-action") < dashboard_balance.index(
+        "dashboard-auth-island"
+    )
+
+
+def test_fitment_primary_action_is_not_a_sticky_mobile_footer() -> None:
+    assert ".fitment-actions {\n        position: sticky" not in STYLE_CSS
+    assert "data-fitment-render-action" in INDEX_HTML
+
+
+def test_dashboard_summary_cards_use_container_responsive_headers() -> None:
+    assert "container-type: inline-size;" in STYLE_CSS
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in STYLE_CSS
+    assert "@container (max-width: 640px)" in STYLE_CSS
+    assert "justify-self: start;" in STYLE_CSS
+
+
+def test_topbar_actions_split_caption_left_and_login_right() -> None:
+    assert "justify-content: space-between;" in STYLE_CSS
+    assert "margin-left: auto;" in STYLE_CSS
+    assert ".topbar-caption {" in STYLE_CSS
+    assert "font-size: 18px;" in STYLE_CSS
+    assert "text-align: left;" in STYLE_CSS
+    topbar_actions = INDEX_HTML.split('<div class="topbar-actions">', 1)[1].split("</header>", 1)[0]
+    assert topbar_actions.index('class="topbar-caption"') < topbar_actions.index(
+        'class="website-auth-button"'
+    )
+
+
+def test_visual_smoke_checklist_covers_key_viewports_and_screens() -> None:
+    assert "## Visual smoke screenshots" in SMOKE_CHECKLIST
+    assert "Desktop `1280px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Desktop `1024px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` dashboard unauthorized state" in SMOKE_CHECKLIST
+    assert "Desktop `1280px` wallet unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` renders/history unauthorized state" in SMOKE_CHECKLIST
+    assert "Mobile `390px` photo-guide with `Ещё` sheet open" in SMOKE_CHECKLIST

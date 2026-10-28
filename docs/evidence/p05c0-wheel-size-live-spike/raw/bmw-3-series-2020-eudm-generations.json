@@ -1,0 +1,557 @@
+{
+  "data": [
+    {
+      "slug": "e4a6222cdb",
+      "name": "I (E21)",
+      "platform": "",
+      "start": 1975,
+      "end": 1983,
+      "bodies": [
+        {
+          "slug": "138bb06965",
+          "name": "Saloon, 2d",
+          "image": "https://cdn.wheel-size.com/automobile/body/9a283382.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "usdm"
+      ],
+      "years": [
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983
+      ],
+      "year_ranges": [
+        "1975-1983"
+      ]
+    },
+    {
+      "slug": "f340f1b1f6",
+      "name": "II (E30)",
+      "platform": "",
+      "start": 1982,
+      "end": 1994,
+      "bodies": [
+        {
+          "slug": "0bb4aec171",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/5288c019.jpg"
+        },
+        {
+          "slug": "9de6d14fff",
+          "name": "Coupe",
+          "image": "https://cdn.wheel-size.com/automobile/body/3779c8e7.jpg"
+        },
+        {
+          "slug": "efe937780e",
+          "name": "Convertible",
+          "image": "https://cdn.wheel-size.com/automobile/body/33537dd0.jpg"
+        },
+        {
+          "slug": "371bce7dc8",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/54b5188c.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "usdm"
+      ],
+      "years": [
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994
+      ],
+      "year_ranges": [
+        "1982-1994"
+      ]
+    },
+    {
+      "slug": "335f535208",
+      "name": "III (E36)",
+      "platform": "",
+      "start": 1990,
+      "end": 2000,
+      "bodies": [
+        {
+          "slug": "b3967a0e93",
+          "name": "Estate, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/782be604.jpg"
+        },
+        {
+          "slug": "d81f9c1be2",
+          "name": "Compact, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/e4c2308a.jpg"
+        },
+        {
+          "slug": "13f9896df6",
+          "name": "Convertible",
+          "image": "https://cdn.wheel-size.com/automobile/body/cfffdc35.jpg"
+        },
+        {
+          "slug": "c5ff2543b5",
+          "name": "Coupe",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-coupe-e36.jpg"
+        },
+        {
+          "slug": "01386bd6d8",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/4b3a5294.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "mxndm",
+        "usdm"
+      ],
+      "years": [
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000
+      ],
+      "year_ranges": [
+        "1990-2000"
+      ]
+    },
+    {
+      "slug": "555d6702c9",
+      "name": "IV (E46)",
+      "platform": "",
+      "start": 1998,
+      "end": 2003,
+      "bodies": [
+        {
+          "slug": "40008b9a53",
+          "name": "Convertible, 2d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-1998-2003-1561286711.9.png"
+        },
+        {
+          "slug": "3dd48ab31d",
+          "name": "Coupe, 2d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-1998-2003-1561286712.41.png"
+        },
+        {
+          "slug": "58238e9ae2",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-1998-2003-1561286712.66.png"
+        },
+        {
+          "slug": "3ad7c2ebb9",
+          "name": "Touring, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-1998-2003-1561286712.92.png"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003
+      ],
+      "year_ranges": [
+        "1998-2003"
+      ]
+    },
+    {
+      "slug": "47a7f2c033",
+      "name": "IV (E46) Facelift",
+      "platform": "",
+      "start": 2001,
+      "end": 2007,
+      "bodies": [
+        {
+          "slug": "56e48d3060",
+          "name": "Convertible, 2d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2001-2007-1561286856.33.png"
+        },
+        {
+          "slug": "a1aa0c486f",
+          "name": "Coupe, 2d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2001-2007-1561286856.87.png"
+        },
+        {
+          "slug": "1a59ef90d1",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2001-2007-1561286857.1.png"
+        },
+        {
+          "slug": "f99499791a",
+          "name": "Touring, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2001-2007-1561286857.34.png"
+        },
+        {
+          "slug": "24aef8cb32",
+          "name": "Compact, 3d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2001-2007-1561286857.6.png"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "mxndm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007
+      ],
+      "year_ranges": [
+        "2001-2007"
+      ]
+    },
+    {
+      "slug": "01161aaa0b",
+      "name": "V (E90/E91/E92/E93)",
+      "platform": "",
+      "start": 2005,
+      "end": 2010,
+      "bodies": [
+        {
+          "slug": "310dcbbf4c",
+          "name": "Convertible, 2d (E93)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2005-2010-1561544926.61.png"
+        },
+        {
+          "slug": "2f2b265625",
+          "name": "Coupe, 2d (E92)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2005-2010-1561544927.15.png"
+        },
+        {
+          "slug": "f9b902fc32",
+          "name": "Saloon (E90)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2005-2010-1561544927.4.png"
+        },
+        {
+          "slug": "6855456e2f",
+          "name": "Estate, 5d (E91)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2005-2010-1561544927.66.png"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010
+      ],
+      "year_ranges": [
+        "2005-2010"
+      ]
+    },
+    {
+      "slug": "3fe230348e",
+      "name": "V (E90/E91/E92/E93) LCI",
+      "platform": "",
+      "start": 2008,
+      "end": 2013,
+      "bodies": [
+        {
+          "slug": "6b061fc28f",
+          "name": "Convertible, 2d (E93)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2008-2013-1668580022.0969644.jpg"
+        },
+        {
+          "slug": "412f1f1340",
+          "name": "Coupe, 2d (E92)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2008-2013-1668580022.5327694.jpg"
+        },
+        {
+          "slug": "7866457eb9",
+          "name": "Saloon (E90)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2008-2013-1668580022.7285743.jpg"
+        },
+        {
+          "slug": "87a1ce4101",
+          "name": "Estate, 5d (E91)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2008-2013-1668580022.9048707.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "year_ranges": [
+        "2008-2013"
+      ]
+    },
+    {
+      "slug": "577ef1154f",
+      "name": "VI (F30/F31/F35)",
+      "platform": "",
+      "start": 2011,
+      "end": 2016,
+      "bodies": [
+        {
+          "slug": "6da37dd313",
+          "name": "Touring, 5d (F31)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2011-2016-1759501087.1878357.jpg"
+        },
+        {
+          "slug": "c042f4db68",
+          "name": "Saloon (F30)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2011-2016-1759501088.0593104.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "mxndm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2011,
+        2012,
+        2013,
+        2014,
+        2015
+      ],
+      "year_ranges": [
+        "2011-2015"
+      ]
+    },
+    {
+      "slug": "958ad0d05d",
+      "name": "VI LCI (F30/F31/F35)",
+      "platform": "",
+      "start": 2015,
+      "end": 2019,
+      "bodies": [
+        {
+          "slug": "28891cb4ab",
+          "name": "Touring, 5d (F31)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2015-2019-1759501261.161979.jpg"
+        },
+        {
+          "slug": "ee3dd1c266",
+          "name": "Saloon (F30)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2015-2019-1759501261.6892195.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "medm",
+        "russia",
+        "usdm"
+      ],
+      "years": [
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "year_ranges": [
+        "2015-2019"
+      ]
+    },
+    {
+      "slug": "ddd1df4434",
+      "name": "VII (G20/G21/G28)",
+      "platform": "",
+      "start": 2019,
+      "end": 2022,
+      "bodies": [
+        {
+          "slug": "fa78a16157",
+          "name": "Saloon (G20)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241789.7213364.jpg"
+        },
+        {
+          "slug": "c93e07f14a",
+          "name": "Touring, 5d (G21)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2019-2022-1747241790.2865698.jpg"
+        }
+      ],
+      "regions": [
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "nadm",
+        "russia",
+        "sam",
+        "usdm"
+      ],
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022
+      ],
+      "year_ranges": [
+        "2019-2022"
+      ]
+    },
+    {
+      "slug": "8b77b4b515",
+      "name": "VII LCI (G20/G21/G28)",
+      "platform": "",
+      "start": 2022,
+      "end": 2024,
+      "bodies": [
+        {
+          "slug": "8856638da4",
+          "name": "Saloon (G20)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2022-2024-1720454630.5308557.jpg"
+        },
+        {
+          "slug": "b951192c76",
+          "name": "Touring, 5d (G21)",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2022-2024-1720454631.3431246.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "russia",
+        "sadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2022,
+        2023,
+        2024
+      ],
+      "year_ranges": [
+        "2022-2024"
+      ]
+    },
+    {
+      "slug": "5779e947ca",
+      "name": "VII LCI (G20/G21/G28)",
+      "platform": "",
+      "start": 2024,
+      "end": 2027,
+      "bodies": [
+        {
+          "slug": "a19ea80272",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2024-2026-1758091260.8358111.jpg"
+        },
+        {
+          "slug": "851612d3c1",
+          "name": "Touring, 5d",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2024-2026-1758091261.4619057.jpg"
+        },
+        {
+          "slug": "85da0ea73f",
+          "name": "Saloon",
+          "image": "https://cdn.wheel-size.com/automobile/body/bmw-3-series-2024-2026-1758091261.7049136.jpg"
+        }
+      ],
+      "regions": [
+        "audm",
+        "cdm",
+        "chdm",
+        "eudm",
+        "jdm",
+        "ladm",
+        "medm",
+        "mxndm",
+        "nadm",
+        "russia",
+        "sadm",
+        "sam",
+        "skdm",
+        "usdm"
+      ],
+      "years": [
+        2024,
+        2025,
+        2026
+      ],
+      "year_ranges": [
+        "2024-2026"
+      ]
+    }
+  ],
+  "meta": {
+    "count": 12
+  }
+}

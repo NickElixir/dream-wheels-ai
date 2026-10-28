@@ -1,0 +1,54 @@
+[
+  {
+    "locale": "ru-RU",
+    "width": 390,
+    "url": "http://127.0.0.1:8776/tests/browser-fixtures/p05c-fitment-details.html",
+    "title": "P0.5-C Fitment details QA",
+    "selection": "PASS",
+    "confirmUsable": true,
+    "referenceValuesVisible": true,
+    "unknownVerdictVisible": true,
+    "pickerOverflow": false,
+    "resultOverflow": false,
+    "errors": []
+  },
+  {
+    "locale": "ru-RU",
+    "width": 1440,
+    "url": "http://127.0.0.1:8776/tests/browser-fixtures/p05c-fitment-details.html",
+    "title": "P0.5-C Fitment details QA",
+    "selection": "PASS",
+    "confirmUsable": true,
+    "referenceValuesVisible": true,
+    "unknownVerdictVisible": true,
+    "pickerOverflow": false,
+    "resultOverflow": false,
+    "errors": []
+  },
+  {
+    "locale": "en-US",
+    "width": 390,
+    "url": "http://127.0.0.1:8776/tests/browser-fixtures/p05c-fitment-details.html",
+    "title": "P0.5-C Fitment details QA",
+    "selection": "PASS",
+    "confirmUsable": true,
+    "referenceValuesVisible": true,
+    "unknownVerdictVisible": true,
+    "pickerOverflow": false,
+    "resultOverflow": false,
+    "errors": []
+  },
+  {
+    "locale": "en-US",
+    "width": 1440,
+    "url": "http://127.0.0.1:8776/tests/browser-fixtures/p05c-fitment-details.html",
+    "title": "P0.5-C Fitment details QA",
+    "selection": "PASS",
+    "confirmUsable": true,
+    "referenceValuesVisible": true,
+    "unknownVerdictVisible": true,
+    "pickerOverflow": false,
+    "resultOverflow": false,
+    "errors": []
+  }
+]

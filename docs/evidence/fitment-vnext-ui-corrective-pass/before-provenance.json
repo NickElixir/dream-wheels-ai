@@ -1,0 +1,115 @@
+{
+  "source_zip": "fitment-ui-review-evidence.zip",
+  "source_zip_sha256": "1c07a2dc597806e0f3667f8d3460ad09aa8659a5dceed33aa4c0b0af427a549a",
+  "before_encoding": "JPEG derivatives, full original dimensions, quality 85; original PNGs and ZIP untouched",
+  "before": [
+    {
+      "original": "E10_after_wheel_save_1440.png",
+      "original_sha256": "f1f8bb91ce16da31f9c75470baffe9a5be44aad00de3477175abcfa1e7bfeba1",
+      "derivative": "before/E10_after_wheel_save_1440.jpg",
+      "dimensions": [
+        1944,
+        889
+      ]
+    },
+    {
+      "original": "E11_mobile_tap_manual_no_visible_change_390.png",
+      "original_sha256": "b889f24e4266ece358ca6f72635f36b06f9fce3cbb87438f25333f915253457a",
+      "derivative": "before/E11_mobile_tap_manual_no_visible_change_390.jpg",
+      "dimensions": [
+        390,
+        844
+      ]
+    },
+    {
+      "original": "E12_desktop_picker_dialog.png",
+      "original_sha256": "90fb6834679e64c975fa14448d0e21cfa75f857d509049b71189b004858e2294",
+      "derivative": "before/E12_desktop_picker_dialog.jpg",
+      "dimensions": [
+        1440,
+        1000
+      ]
+    },
+    {
+      "original": "E1_wheel_editor_1440_v13_vs_runtime.png",
+      "original_sha256": "c02bb27854cc2585c3049ae3b429aa69fdcdf81d25788e58f3859f9ffa252ad2",
+      "derivative": "before/E1_wheel_editor_1440_v13_vs_runtime.jpg",
+      "dimensions": [
+        1944,
+        1662
+      ]
+    },
+    {
+      "original": "E2_one_active_workspace_regression_1440.png",
+      "original_sha256": "4c1f086927f22fa7288723c5f37147f085dc3ff25d2c15d07e367c73a65db53c",
+      "derivative": "before/E2_one_active_workspace_regression_1440.jpg",
+      "dimensions": [
+        1944,
+        1804
+      ]
+    },
+    {
+      "original": "E3_mobile_390_initial_v13_vs_runtime.png",
+      "original_sha256": "ef9812972631063e31ae66940158d5e60d65ecd81a4241a3be0c02da0ad8b3dc",
+      "derivative": "before/E3_mobile_390_initial_v13_vs_runtime.jpg",
+      "dimensions": [
+        1632,
+        3306
+      ]
+    },
+    {
+      "original": "E4_proposal_vs_confirmed_runtime.png",
+      "original_sha256": "93114c218a0a6a7af0f9aa2093118b21b6a232361ed9ae8dc977cf93c976af9d",
+      "derivative": "before/E4_proposal_vs_confirmed_runtime.jpg",
+      "dimensions": [
+        1326,
+        597
+      ]
+    },
+    {
+      "original": "E5_result_conditions_1440.png",
+      "original_sha256": "e670b14b874260e097e4aeabc59a8c7806de691bc6cc6266faa66bfdb7464c61",
+      "derivative": "before/E5_result_conditions_1440.jpg",
+      "dimensions": [
+        1944,
+        1489
+      ]
+    },
+    {
+      "original": "E6_mobile_picker_header.png",
+      "original_sha256": "d95ac4716ca3e6d669d317c5edcd9b09b44217073265407f99acc58f321a15a2",
+      "derivative": "before/E6_mobile_picker_header.jpg",
+      "dimensions": [
+        806,
+        606
+      ]
+    },
+    {
+      "original": "E7_sku_selection_1440.png",
+      "original_sha256": "2a96b82ff6dfaf53b978eae58adb9cd984296ebb07eea835594f8921646bf5e8",
+      "derivative": "before/E7_sku_selection_1440.jpg",
+      "dimensions": [
+        1944,
+        1295
+      ]
+    },
+    {
+      "original": "E8_staggered_1440.png",
+      "original_sha256": "0257d51b954aa058d347cf0f57b1b46faea4fbd7df5d3a6f1d3c8d33c4466be9",
+      "derivative": "before/E8_staggered_1440.jpg",
+      "dimensions": [
+        1944,
+        1954
+      ]
+    },
+    {
+      "original": "E9_stale_failed_runtime.png",
+      "original_sha256": "687dfdf2b20149acd0488d86754eff9187ecbccaaaf6d94c152c654b50cfa71e",
+      "derivative": "before/E9_stale_failed_runtime.jpg",
+      "dimensions": [
+        2266,
+        868
+      ]
+    }
+  ]
+}

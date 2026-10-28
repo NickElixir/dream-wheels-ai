@@ -1,0 +1,12 @@
+{
+  "late_callback": "paid",
+  "duplicate_grants": 1,
+  "race_final": "paid",
+  "timeout_repeat_noop": true,
+  "batch_limit": 2,
+  "paid_never_cancelled": true,
+  "reconciliation_discrepancies": 0,
+  "balance": 42,
+  "migration_applied_twice": true,
+  "callback_atomic_rollback": true
+}

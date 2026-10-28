@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>P0.5-E field evidence QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css">
+<style>body{margin:0;background:var(--vnext-canvas);color:var(--vnext-text);font-family:Arial,sans-serif}main{max-width:1120px;margin:auto;padding:24px 16px}</style></head><body><main data-vnext-root><div id="fixture"></div></main><script type="module">
+const url=new URL('../../webapp/app.js',location.href);
+const source=(await(await fetch(url)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const harness=`
+import {createFitmentView} from "${new URL('../../webapp/vnext/views/fitment.js',location.href)}";
+const data=await(await fetch("${new URL('../../docs/evidence/p05e-fitment-field-evidence/representative-api.json',location.href)}")).json();
+const scenario=new URLSearchParams(location.search).get('scenario')||'A';
+state.fitmentCheck=data[scenario];
+state.fitmentCheck.is_current=true;
+state.fitmentOverview={vehicle_state:'confirmed_ready',rim_setup_state:'confirmed_ready',setup_mode:'square',next_action:'run_standard_check',vehicle:{make:'Example',model:'Stock car'}};
+const model=vnextFitmentSnapshot();
+const root=createFitmentView(model,{});
+document.querySelector('#fixture').append(root);
+window.qaModel=model;
+`;
+const module=URL.createObjectURL(new Blob([source,harness],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
+</script></body></html>

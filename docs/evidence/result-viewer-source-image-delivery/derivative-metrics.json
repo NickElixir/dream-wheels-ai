@@ -1,0 +1,21 @@
+{
+  "original_bytes": 6258237,
+  "display_bytes": 288350,
+  "reduction_percent": 95.39,
+  "original_dimensions": [
+    3957,
+    2344
+  ],
+  "display_dimensions": [
+    1600,
+    948
+  ],
+  "original_sha256": "4bd4c8e4d13b19fedeb578f6cd5fbd9b14a03f1f5aafbe98bde4c96abf1acb77",
+  "display_sha256": "bc996115b52071e23521daa375389cd78dc46f50451b58803b241f331821015f",
+  "original_persisted_sha256": "4bd4c8e4d13b19fedeb578f6cd5fbd9b14a03f1f5aafbe98bde4c96abf1acb77",
+  "source": "https://commons.wikimedia.org/wiki/File:2020_Lexus_RX_450h_Takumi_CVT_3.5_Front.jpg",
+  "author": "Vauxford",
+  "license": "CC BY-SA 4.0",
+  "changes": "EXIF transpose, downsize, WebP quality 80, metadata stripped",
+  "measurement_mode": "Production upload_render_asset + upload_car_display, local Storage upload sink; no live Storage writes"
+}

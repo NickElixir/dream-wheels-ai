@@ -1,0 +1,262 @@
+[
+  {
+    "scenario": "recognition-loading",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-recognition-title",
+    "height": 844,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "recognition-proposed",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px"
+    ],
+    "focus": "fitment-recognition-title",
+    "height": 844,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "recognition-failed",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-recognition-title",
+    "height": 844,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "manual-vehicle",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-vehicle-editor-title",
+    "height": 844,
+    "kind": "vehicle-editor",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "vehicle-multi-market",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-vehicle-editor-title",
+    "height": 844,
+    "kind": "vehicle-editor",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "required-variant",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px",
+      "0px"
+    ],
+    "focus": "fitment-variant-title",
+    "height": 844,
+    "kind": "vehicle-variant",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "multi-sku",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px",
+      "0px",
+      "0px"
+    ],
+    "focus": "fitment-rim-editor-title",
+    "height": 844,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "all-confirmed",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-rim-editor-title",
+    "height": 844,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "staggered",
+    "viewport": "390x844 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-rim-editor-title",
+    "height": 844,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "confirmed-summary",
+    "viewport": "390x844 CSS",
+    "count": 0,
+    "decorativeBorders": [],
+    "focus": "reselect-vehicle",
+    "height": 844,
+    "kind": "none",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "compatible",
+    "viewport": "390x844 CSS",
+    "count": 0,
+    "decorativeBorders": [],
+    "focus": "edit-vehicle",
+    "height": 844,
+    "kind": "none",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "scenario": "recognition-loading",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-recognition-title",
+    "height": 1000,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "recognition-proposed",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px"
+    ],
+    "focus": "fitment-recognition-title",
+    "height": 1000,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "recognition-failed",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-recognition-title",
+    "height": 1000,
+    "kind": "vehicle-recognition",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "manual-vehicle",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-vehicle-editor-title",
+    "height": 1000,
+    "kind": "vehicle-editor",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "vehicle-multi-market",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-vehicle-editor-title",
+    "height": 1000,
+    "kind": "vehicle-editor",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "required-variant",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px",
+      "0px"
+    ],
+    "focus": "fitment-variant-title",
+    "height": 1000,
+    "kind": "vehicle-variant",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "multi-sku",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [
+      "0px",
+      "0px",
+      "0px"
+    ],
+    "focus": "fitment-rim-editor-title",
+    "height": 1000,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "all-confirmed",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-rim-editor-title",
+    "height": 1000,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "staggered",
+    "viewport": "1440x1000 CSS",
+    "count": 1,
+    "decorativeBorders": [],
+    "focus": "fitment-rim-editor-title",
+    "height": 1000,
+    "kind": "rim-editor",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "confirmed-summary",
+    "viewport": "1440x1000 CSS",
+    "count": 0,
+    "decorativeBorders": [],
+    "focus": "reselect-vehicle",
+    "height": 1000,
+    "kind": "none",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "scenario": "compatible",
+    "viewport": "1440x1000 CSS",
+    "count": 0,
+    "decorativeBorders": [],
+    "focus": "edit-vehicle",
+    "height": 1000,
+    "kind": "none",
+    "overflow": false,
+    "width": 1440
+  }
+]

@@ -1,0 +1,356 @@
+[
+  {
+    "state": "multi-sku",
+    "actions": [
+      {
+        "width": 87.99715423583984,
+        "x": 1143.1036376953125
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 1143.1036376953125
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 1143.1036376953125
+      }
+    ],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1507,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "manual-conflict",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1802,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "staggered",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1865,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Передняя ось: Не хватает параметровЗадняя ось: Состояние параметров неизвестно",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "both-ready",
+    "actions": [],
+    "check": "vnext-button vnext-button--primary",
+    "documentHeight": 1023,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "compatible",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1613,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--primary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "all-confirmed",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1710,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Готово к сохранению",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "vehicle-multi-market",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1360,
+    "height": 1000,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 1440
+  },
+  {
+    "state": "multi-sku",
+    "actions": [
+      {
+        "width": 87.99715423583984,
+        "x": 263.10369873046875
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 263.10369873046875
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 263.10369873046875
+      }
+    ],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 2039,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "manual-conflict",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 2240,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "staggered",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 3025,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Передняя ось: Не хватает параметровЗадняя ось: Состояние параметров неизвестно",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "both-ready",
+    "actions": [],
+    "check": "vnext-button vnext-button--primary",
+    "documentHeight": 1462,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "compatible",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 2078,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--primary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "all-confirmed",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 2208,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Готово к сохранению",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "vehicle-multi-market",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1908,
+    "height": 844,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 390
+  },
+  {
+    "state": "multi-sku",
+    "actions": [
+      {
+        "width": 87.99715423583984,
+        "x": 631.2854614257812
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 631.2854614257812
+      },
+      {
+        "width": 87.99715423583984,
+        "x": 631.2854614257812
+      }
+    ],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1622,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "manual-conflict",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1797,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "staggered",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1860,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Передняя ось: Не хватает параметровЗадняя ось: Состояние параметров неизвестно",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "both-ready",
+    "actions": [],
+    "check": "vnext-button vnext-button--primary",
+    "documentHeight": 1024,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "compatible",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1599,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--primary",
+    "status": "Параметры подтверждены",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "all-confirmed",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1705,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Готово к сохранению",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  },
+  {
+    "state": "vehicle-multi-market",
+    "actions": [],
+    "check": "vnext-button vnext-button--secondary",
+    "documentHeight": 1354,
+    "height": 1024,
+    "overflow": false,
+    "render": "vnext-button vnext-button--secondary",
+    "status": "Не хватает параметров",
+    "titles": [
+      "600",
+      "600"
+    ],
+    "width": 768
+  }
+]

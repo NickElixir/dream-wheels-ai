@@ -1,0 +1,3189 @@
+import asyncio
+import json
+from copy import deepcopy
+from datetime import UTC, datetime
+from decimal import Decimal
+
+import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from src import jobs_api
+from src.auth_principal import AuthPrincipal
+from src.fitment.providers.base import ProviderError
+from src.main import app
+from src.rim_url_resolver import RimUrlCandidate, RimUrlError, RimUrlResolution, RimUrlVariant
+
+client = TestClient(app)
+
+
+def _fitment_row(**overrides) -> dict:
+    row = {
+        "job_id": "11111111-1111-4111-8111-111111111111",
+        "status": "completed",
+        "completed_at": datetime(2026, 7, 1, tzinfo=UTC),
+        "output_image_url": "https://example.test/result.jpg",
+        "render_input_snapshot": {"vehicle": {"make": "BMW"}, "rim": {"pcd": "5x112"}},
+        "fitment_available": True,
+        "is_staggered": False,
+        "vehicle_identity_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "rim_setup_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "owner_user_id": 10,
+        "vehicle_make": "BMW",
+        "vehicle_model": "3 Series",
+        "vehicle_year": 2020,
+        "vehicle_body": "G20",
+        "vehicle_generation": "VII",
+        "vehicle_modification": "330i",
+        "vehicle_market": "EU",
+        "vehicle_is_user_confirmed": False,
+        "vehicle_field_provenance": {
+            "make": {"source": "vlm_visual", "confidence": 0.9, "is_user_confirmed": False},
+            "model": {"source": "vlm_visual", "confidence": 0.9, "is_user_confirmed": False},
+            "year": {"source": "vlm_visual", "confidence": 0.9, "is_user_confirmed": False},
+        },
+        "vehicle_field_candidates": {
+            "model": [
+                {
+                    "value": "3 Series",
+                    "source": "vlm_visual",
+                    "confidence": 0.9,
+                    "resolver": "mock_visual_identity_v1",
+                    "origin": "render_input_draft",
+                    "captured_at": "2026-07-01T00:00:00+00:00",
+                }
+            ]
+        },
+        "vehicle_revision": 1,
+        "front_rim_spec_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "rear_rim_spec_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "rim_field_provenance": {
+            "bolt_count": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+            "pcd_mm": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+            "center_bore_mm": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+            "wheel_diameter_in": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+            "wheel_width_j": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+            "offset_et_mm": {"source": "ocr", "confidence": 0.72, "is_user_confirmed": False},
+        },
+        "rim_field_candidates": {
+            "pcd_mm": [
+                {
+                    "value": 112,
+                    "source": "ocr",
+                    "confidence": 0.72,
+                    "resolver": "mock_visual_identity_v1",
+                    "origin": "render_input_draft",
+                    "captured_at": "2026-07-01T00:00:00+00:00",
+                }
+            ]
+        },
+        "rim_revision": 1,
+        "rim_brand": "BBS",
+        "rim_model": "CH-R",
+        "rim_sku": "CHR-001",
+        "rim_product_url": None,
+        "rim_bolt_count": 5,
+        "rim_pcd_mm": Decimal("112"),
+        "rim_center_bore_mm": Decimal("66.6"),
+        "rim_wheel_diameter_in": Decimal("18"),
+        "rim_wheel_width_j": Decimal("8.0"),
+        "rim_offset_et_mm": Decimal("35"),
+    }
+    row.update(overrides)
+    return row
+
+
+def _confirmed_vehicle_row(**overrides) -> dict:
+    confirmed = {
+        "source": "user_confirmed",
+        "confidence": 1.0,
+        "is_user_confirmed": True,
+    }
+    row = _fitment_row(
+        vehicle_is_user_confirmed=True,
+        vehicle_field_provenance={
+            "make": dict(confirmed),
+            "model": dict(confirmed),
+            "year": dict(confirmed),
+            "market": dict(confirmed),
+        },
+    )
+    row.update(overrides)
+    return row
+
+
+def _confirmed_modification_mapping() -> dict:
+    return {
+        "wheel_size": {
+            "make_slug": "bmw",
+            "model_slug": "3-series",
+            "region": "eu",
+            "generation": "G20",
+            "modification": "330i",
+            "body": "Sedan",
+            "market": "eudm",
+            "generation_slug": "g20",
+            "modification_slug": "330i",
+            "modification_state": "confirmed",
+            "selection_source": "user",
+            "modification_vehicle_revision": 1,
+            "selected_modification": {
+                "make_slug": "bmw",
+                "model_slug": "3-series",
+                "region": "eu",
+                "generation": "G20",
+                "modification": "330i",
+                "body": "Sedan",
+                "market": "eudm",
+                "generation_slug": "g20",
+                "modification_slug": "330i",
+            },
+        }
+    }
+
+
+def test_rim_setup_state_distinguishes_empty_partial_unconfirmed_and_confirmed():
+    confirmed = {"source": "user_confirmed", "is_user_confirmed": True}
+    suggested = {"source": "resolver", "is_user_confirmed": False}
+    empty = _fitment_row(
+        **{f"rim_{field}": None for field in jobs_api._RIM_CRITICAL_FIELDS},
+        rim_field_provenance={},
+    )
+    assert (
+        jobs_api._rim_setup_state_from_states(
+            jobs_api._rim_field_states_from_row(empty, "front_rim")
+        )
+        == "empty"
+    )
+
+    partial = _fitment_row(
+        rim_center_bore_mm=None,
+        rim_offset_et_mm=None,
+        rim_field_provenance={"bolt_count": confirmed, "pcd_mm": confirmed},
+    )
+    assert (
+        jobs_api._rim_setup_state_from_states(
+            jobs_api._rim_field_states_from_row(partial, "front_rim")
+        )
+        == "partial"
+    )
+
+    unconfirmed = _fitment_row(
+        rim_field_provenance={field: suggested for field in jobs_api._RIM_CRITICAL_FIELDS}
+    )
+    assert (
+        jobs_api._rim_setup_state_from_states(
+            jobs_api._rim_field_states_from_row(unconfirmed, "front_rim")
+        )
+        == "complete_unconfirmed"
+    )
+
+    ready = _fitment_row(
+        rim_field_provenance={field: confirmed for field in jobs_api._RIM_CRITICAL_FIELDS}
+    )
+    states = jobs_api._rim_field_states_from_row(ready, "front_rim")
+    assert jobs_api._rim_setup_state_from_states(states) == "confirmed_ready"
+    assert states["pcd"].state == "confirmed"
+
+
+def test_rim_field_state_manual_entry_is_not_confirmation():
+    row = _fitment_row(
+        rim_field_provenance={"offset_et_mm": {"source": "user_edited", "is_user_confirmed": False}}
+    )
+    state = jobs_api._rim_field_states_from_row(row, "front_rim")["offset_et_mm"]
+    assert state.state == "entered"
+    assert state.is_user_confirmed is False
+
+
+class FakeAcquire:
+    def __init__(self, conn):
+        self.conn = conn
+
+    async def __aenter__(self):
+        return self.conn
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+class FakePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def acquire(self):
+        return FakeAcquire(self.conn)
+
+
+class FakeTransaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+
+def _patch_auth(monkeypatch, *, user_id: int = 10) -> None:
+    async def fake_resolve_jobs_auth(**_kwargs):
+        return AuthPrincipal(
+            user_id=user_id,
+            authority="telegram",
+            subject="123456789",
+            auth_channel="website",
+            telegram_username="dw-user",
+        )
+
+    monkeypatch.setattr(
+        jobs_api,
+        "_resolve_jobs_auth",
+        fake_resolve_jobs_auth,
+    )
+
+
+async def _exact_catalogue_selection(_provider, *, make, model, region, year):
+    return {
+        "make": make,
+        "model": model,
+        "year": year,
+        "region": region,
+        "make_slug": make.casefold().replace(" ", "-"),
+        "model_slug": model.casefold().replace(" ", "-"),
+    }
+
+
+def _patch_vehicle_catalogue(monkeypatch) -> None:
+    async def regions(_self):
+        return [
+            {"slug": "russia", "name": "Russia+"},
+            {"slug": "eudm", "name": "Europe"},
+            {"slug": "usdm", "name": "USA+"},
+        ]
+
+    async def makes(_self, *, region):
+        return [{"slug": "porsche", "name": "Porsche"}] if region == "russia" else []
+
+    async def models(_self, *, make, region):
+        if (make, region) == ("porsche", "russia"):
+            return [{"slug": "cayenne", "name": "Cayenne"}]
+        return []
+
+    async def years(_self, *, make, model, region):
+        if (make, model, region) == ("porsche", "cayenne", "russia"):
+            return [{"year": year} for year in range(2018, 2024)]
+        return []
+
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_regions", regions)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_makes", makes)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_models", models)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_years", years)
+
+
+def test_fitment_overview_returns_completed_owner_job(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, query: str, *args):
+            assert "AND jobs.user_id = $2" in query
+            assert args == ("11111111-1111-4111-8111-111111111111", 10)
+            return _fitment_row()
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["fitment_available"] is True
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 1
+    assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
+    assert body["rim_candidates"]["pcd_mm"][0]["source"] == "ocr"
+    assert body["readiness"]["ready"] is True
+    assert body["vehicle_state"] == "unconfirmed"
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+    assert body["readiness"]["unconfirmed_fields"] == [
+        "vehicle.make",
+        "vehicle.model",
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.center_bore_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+        "rim.offset_et_mm",
+    ]
+    assert body["vehicle"]["title"] == "BMW 3 Series · 2020 · VII"
+    assert body["vehicle"]["is_user_confirmed"] is False
+    assert body["rim"]["pcd_display"] == "5×112"
+    assert body["rim"]["product_url"] is None
+    assert body["rim"]["has_product_url"] is False
+
+
+def test_fitment_overview_is_not_gated_by_render_completion(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row(status="processing", completed_at=None, output_image_url=None)
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "processing"
+    assert response.json()["fitment_available"] is True
+
+
+def test_fitment_overview_parses_stringified_json_fields(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row(
+                vehicle_field_provenance=(
+                    '{"make":{"source":"vlm_visual","confidence":0.9,"is_user_confirmed":false}}'
+                ),
+                vehicle_field_candidates=(
+                    '{"model":[{"value":"3 Series","source":"vlm_visual","confidence":0.9}]}'
+                ),
+                rim_field_provenance=(
+                    '{"bolt_count":{"source":"ocr","confidence":0.72,"is_user_confirmed":false}}'
+                ),
+                rim_field_candidates='{"pcd_mm":[{"value":112,"source":"ocr","confidence":0.72}]}',
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_provenance"]["make"]["source"] == "vlm_visual"
+    assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
+    assert body["rim_provenance"]["bolt_count"]["source"] == "ocr"
+    assert body["rim_candidates"]["pcd_mm"][0]["value"] == 112
+
+
+def test_fitment_source_resolver_returns_unpersisted_draft(monkeypatch):
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row()
+
+        async def execute(self, *_args):
+            return "UPDATE 1"
+
+    async def fake_resolve(url, *, policy, limits):
+        assert url == "https://shop.example/wheel"
+        assert policy.permits("shop.example", 443)
+        assert limits.max_redirects == jobs_api.RIM_URL_RESOLVER_MAX_REDIRECTS
+        candidate = RimUrlCandidate("pcd_mm", 114.3, "json_ld", 0.95)
+        return RimUrlResolution(
+            requested_url=url,
+            final_url=url,
+            values={"pcd_mm": 114.3, "bolt_count": 5},
+            candidates=(candidate,),
+            conflicts=(),
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/wheel"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["values"] == {"pcd_mm": 114.3, "bolt_count": 5}
+
+
+def test_fitment_source_resolver_returns_safe_error_code(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_resolve(*_args, **_kwargs):
+        raise RimUrlError(
+            "upstream hostname and path must not reach the client",
+            reason_code="rim_source_fetch_failed",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/wheel"},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": {"code": "rim_source_fetch_failed"}}
+
+
+def test_fitment_source_resolver_returns_variants_without_arbitrary_selection(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def fake_resolve(url, *, policy, limits):
+        del policy, limits
+        candidate = RimUrlCandidate("sku", "ROAD-18", "json_ld_variant", 0.98)
+        return RimUrlResolution(
+            requested_url=url,
+            final_url=url,
+            values={"brand": "Example", "model": "Road"},
+            candidates=(),
+            conflicts=(),
+            variants=(
+                RimUrlVariant(
+                    sku="ROAD-17",
+                    values={"sku": "ROAD-17", "wheel_diameter_in": 17.0},
+                    candidates=(candidate,),
+                ),
+                RimUrlVariant(
+                    sku="ROAD-18",
+                    values={"sku": "ROAD-18", "wheel_diameter_in": 18.0},
+                    candidates=(candidate,),
+                ),
+            ),
+            selection_required=True,
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", fake_resolve)
+
+    async def no_limit(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", no_limit)
+
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve",
+        json={"product_url": "https://shop.example/road"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["selection_required"] is True
+    assert body["selected_variant_sku"] is None
+    assert [variant["sku"] for variant in body["variants"]] == ["ROAD-17", "ROAD-18"]
+
+
+def test_fitment_vehicle_variants_are_catalogue_server_side(monkeypatch):
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row()
+
+        async def execute(self, *_args):
+            return "UPDATE 1"
+
+    async def fake_variants(self, identity):
+        assert identity.make == "BMW"
+        return [
+            {
+                "generation": "G20",
+                "modification": "330i",
+                "body": "Sedan",
+                "market": "eudm",
+                "make_slug": "bmw",
+                "model_slug": "3-series",
+                "region": "eu",
+                "generation_slug": "g20",
+                "modification_slug": "330i",
+            }
+        ]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants", fake_variants)
+
+    response = client.post("/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants")
+
+    assert response.status_code == 200
+    assert response.json()["outcome"] == "single"
+    assert response.json()["vehicle_revision"] == 1
+    assert response.json()["total_count"] == 1
+    assert response.json()["variants"] == [
+        {
+            "make_slug": "bmw",
+            "model_slug": "3-series",
+            "region": "eu",
+            "generation": "G20",
+            "modification": "330i",
+            "body": "Sedan",
+            "market": "eudm",
+            "generation_slug": "g20",
+            "modification_slug": "330i",
+        }
+    ]
+
+
+def test_fitment_overview_returns_404_for_non_owner(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return None
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 404
+
+
+def test_fitment_routes_reject_malformed_job_id_before_database_uuid_cast(monkeypatch):
+    class FetchGuardConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            raise AssertionError("malformed job id reached the database")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FetchGuardConn()))
+
+    overview = client.get("/jobs/not-a-uuid/fitment")
+    assert overview.status_code == 422
+    assert overview.json() == {"detail": {"code": "invalid_job_id"}}
+
+    saved = client.patch(
+        "/jobs/not-a-uuid/fitment",
+        json={
+            "vehicle": {"make": "BMW", "model": "3 Series", "year": 2020, "market": "EU"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert saved.status_code == 422
+    assert saved.json() == {"detail": {"code": "invalid_job_id"}}
+
+
+def test_fitment_save_updates_canonical_entities_only(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    rows = [
+        _fitment_row(),
+        _fitment_row(
+            vehicle_make="BMW",
+            vehicle_model="M3",
+            vehicle_year=2021,
+            vehicle_generation="G80",
+            vehicle_is_user_confirmed=True,
+            vehicle_field_provenance={"model": {"source": "user_edited"}},
+            vehicle_revision=2,
+            rim_brand="OZ",
+            rim_model="Ultraleggera",
+            rim_sku="OZ-18",
+            rim_product_url="https://shop.example.test/oz-18",
+            rim_field_provenance={"product_url": {"source": "user_edited"}},
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, query: str, *args):
+            assert "render_input_snapshot" in query
+            assert args == ("11111111-1111-4111-8111-111111111111", 10)
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(
+        jobs_api,
+        "_resolve_exact_vehicle_catalogue_selection",
+        _exact_catalogue_selection,
+    )
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {
+                "model": "M3",
+                "year": 2021,
+                "generation": "G80",
+            },
+            "rim": {
+                "brand": "OZ",
+                "model": "Ultraleggera",
+                "sku": "OZ-18",
+                "product_url": "https://shop.example.test/oz-18",
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle"]["model"] == "M3"
+    assert body["vehicle_revision"] == 2
+    assert body["rim"]["brand"] == "OZ"
+    assert body["rim_revision"] == 2
+    assert body["rim"]["product_url"] == "https://shop.example.test/oz-18"
+    assert body["vehicle_candidates"]["model"][0]["value"] == "3 Series"
+    assert body["rim_candidates"]["pcd_mm"][0]["value"] == 112
+    assert len(execute_calls) == 4
+    assert "UPDATE vehicle_identities" in execute_calls[0][0]
+    assert "UPDATE rim_specs" in execute_calls[1][0]
+    assert "INSERT INTO fitment_change_events" in execute_calls[2][0]
+    assert "render_input_snapshot" not in execute_calls[0][0]
+    assert "render_input_snapshot" not in execute_calls[1][0]
+    assert execute_calls[0][1][1] == "M3"
+    assert execute_calls[1][1][0] == "OZ"
+    assert execute_calls[0][1][-1] == 1
+    assert execute_calls[1][1][-1] == 1
+
+
+def test_fitment_overview_reports_missing_fields_for_future_check(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row(rim_center_bore_mm=None, rim_offset_et_mm=None)
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["readiness"]["ready"] is False
+    assert body["readiness"]["missing_fields"] == [
+        "rim.center_bore_mm",
+        "rim.offset_et_mm",
+    ]
+    assert body["readiness"]["unconfirmed_fields"] == [
+        "vehicle.make",
+        "vehicle.model",
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+    ]
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+
+
+def test_fitment_overview_returns_one_authoritative_next_action(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row(
+                vehicle_provider_mappings={
+                    "wheel_size": {
+                        "make_slug": "bmw",
+                        "model_slug": "3-series",
+                        "region": "eu",
+                        "generation_slug": "g20",
+                        "modification_slug": "330i",
+                    }
+                }
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+
+    assert response.status_code == 200
+    assert response.json()["modification_state"] == "none"
+    assert response.json()["next_action"]["kind"] == "select_vehicle_variant"
+
+    missing_vehicle = _fitment_row(vehicle_make=None)
+    assert (
+        jobs_api._fitment_next_action_from_row(missing_vehicle).kind == "complete_vehicle_details"
+    )
+
+
+def test_confirming_only_wheel_preserves_unconfirmed_vehicle_and_revision(monkeypatch):
+    row = _fitment_row(rim_center_bore_mm=None, rim_offset_et_mm=None)
+    before = deepcopy(row)
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            writes.append(query)
+            if "UPDATE rim_specs" in query:
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rim_{field}"] = value
+                row["rim_field_provenance"] = json.loads(args[10])
+                row["rim_revision"] += 1
+            elif "UPDATE vehicle_identities" in query:
+                raise AssertionError("Wheel confirmation must not write the vehicle")
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    path = f"/jobs/{row['job_id']}/fitment"
+    initial = client.get(path).json()
+    assert initial["vehicle_state"] == "unconfirmed"
+    assert initial["rim_setup_state"] == "partial"
+    response = client.patch(
+        path,
+        json={
+            "rim": {
+                field: (
+                    66.6
+                    if field == "center_bore_mm"
+                    else 35
+                    if field == "offset_et_mm"
+                    else float(before[f"rim_{field}"])
+                )
+                for field in jobs_api._RIM_CRITICAL_FIELDS
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert response.status_code == 200
+    # New manual values are entered first; confirming the saved values is a
+    # separate existing PATCH, not a new confirmation API.
+    entered = response.json()
+    assert entered["rim_setup_state"] == "complete_unconfirmed"
+    response = client.patch(
+        path,
+        json={
+            "rim": {field: float(row[f"rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 2,
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["rim_setup_state"] == "confirmed_ready"
+    assert result["vehicle_state"] == "unconfirmed"
+    assert result["next_action"]["kind"] == "complete_vehicle_details"
+    assert result["vehicle"] == initial["vehicle"]
+    assert result["vehicle_revision"] == initial["vehicle_revision"]
+    assert {k: v for k, v in row.items() if k.startswith("vehicle_")} == {
+        k: v for k, v in before.items() if k.startswith("vehicle_")
+    }
+    assert any("UPDATE rim_specs" in query for query in writes)
+
+
+def test_confirmed_vehicle_partial_wheel_requires_rim_specs(monkeypatch):
+    class Conn:
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row(
+                vehicle_provider_mappings=_confirmed_modification_mapping(),
+                rim_center_bore_mm=None,
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["vehicle_state"] == "confirmed_ready"
+    assert result["rim_setup_state"] == "partial"
+    assert result["next_action"]["kind"] == "complete_rim_specs"
+
+
+def test_repeated_explicit_wheel_confirmation_keeps_revisions(monkeypatch):
+    row = _fitment_row(
+        rim_source_fingerprint="same-source-123",
+        rim_field_provenance={
+            field: {"source": "user_confirmed", "is_user_confirmed": True}
+            for field in jobs_api._RIM_CRITICAL_FIELDS
+        },
+    )
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *_args):
+            writes.append(query)
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {field: float(row[f"rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS}
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "rim": {
+                **values,
+                "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS),
+                "source_fingerprint": "same-source-123",
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert not any("UPDATE rim_specs" in query for query in writes)
+    assert not any("UPDATE vehicle_identities" in query for query in writes)
+    assert response.json()["rim_revision"] == 1
+
+
+@pytest.mark.parametrize("fingerprint", [None, "same-source-123", "new-source-123"])
+def test_explicit_wheel_confirmations_save_new_values_once_without_vehicle_write(
+    monkeypatch, fingerprint
+):
+    row = _fitment_row(
+        rim_center_bore_mm=None,
+        rim_source_fingerprint="same-source-123",
+        rim_field_provenance={
+            field: {"source": "user_confirmed", "is_user_confirmed": True}
+            for field in jobs_api._RIM_CRITICAL_FIELDS
+        },
+    )
+    before_vehicle = {
+        key: deepcopy(value) for key, value in row.items() if key.startswith("vehicle_")
+    }
+    writes = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            writes.append(query)
+            if "UPDATE vehicle_identities" in query:
+                raise AssertionError("Wheel-only save must not write Vehicle")
+            if "UPDATE rim_specs" in query:
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rim_{field}"] = value
+                row["rim_field_provenance"] = json.loads(args[10])
+                row["rim_revision"] += 1
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {
+        field: float(row[f"rim_{field}"]) if row[f"rim_{field}"] is not None else 66.6
+        for field in jobs_api._RIM_CRITICAL_FIELDS
+    }
+    values["offset_et_mm"] = 35.125
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "rim": {
+                **values,
+                "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS),
+                "source_fingerprint": fingerprint,
+            },
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["rim_setup_state"] == "confirmed_ready"
+    assert result["rim"]["offset_et_mm"] == 35.125
+    assert row["rim_offset_et_mm"] == Decimal("35.125")
+    assert result["vehicle_state"] == "unconfirmed"
+    assert result["next_action"]["kind"] == "complete_vehicle_details"
+    assert {
+        key: value for key, value in row.items() if key.startswith("vehicle_")
+    } == before_vehicle
+    assert sum("UPDATE rim_specs" in query for query in writes) == 1
+
+
+@pytest.mark.parametrize(
+    "rim",
+    [
+        {"confirmed_fields": ["offset_et_mm"]},
+        {"offset_et_mm": None, "confirmed_fields": ["offset_et_mm"]},
+        {"offset_et_mm": 35, "confirmed_fields": ["vehicle.make"]},
+    ],
+)
+def test_wheel_confirmations_require_supported_non_null_values_in_the_same_request(rim):
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={"expected_vehicle_revision": 1, "expected_rim_revision": 1, "rim": rim},
+    )
+    assert response.status_code == 422
+
+
+def test_explicit_rear_confirmation_is_independent_of_front_values(monkeypatch):
+    row = _fitment_row(is_staggered=True, rear_rim_spec_id="dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+    for field in ("brand", "model", "sku", "product_url", *jobs_api._RIM_CRITICAL_FIELDS):
+        row[f"rear_rim_{field}"] = row[f"rim_{field}"]
+    row["rear_rim_field_provenance"] = {}
+    before_front = {key: deepcopy(value) for key, value in row.items() if key.startswith("rim_")}
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, query, *args):
+            if "UPDATE rim_specs" in query:
+                assert args[-2] == row["rear_rim_spec_id"]
+                fields = (
+                    "brand",
+                    "model",
+                    "sku",
+                    "product_url",
+                    "bolt_count",
+                    "pcd_mm",
+                    "center_bore_mm",
+                    "wheel_diameter_in",
+                    "wheel_width_j",
+                    "offset_et_mm",
+                )
+                for field, value in zip(fields, args, strict=False):
+                    row[f"rear_rim_{field}"] = value
+                row["rear_rim_field_provenance"] = json.loads(args[10])
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    values = {field: float(row[f"rear_rim_{field}"]) for field in jobs_api._RIM_CRITICAL_FIELDS}
+    values["offset_et_mm"] = 42.75
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "setup_mode": "staggered",
+            "rear_rim": {**values, "confirmed_fields": list(jobs_api._RIM_CRITICAL_FIELDS)},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["rear_rim"]["rim_setup_state"] == "confirmed_ready"
+    assert row["rear_rim_offset_et_mm"] == Decimal("42.75")
+    assert {key: value for key, value in row.items() if key.startswith("rim_")} == before_front
+
+
+def test_both_confirmed_branches_allow_standard_check(monkeypatch):
+    class Conn:
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row(
+                vehicle_provider_mappings=_confirmed_modification_mapping(),
+                rim_field_provenance={
+                    field: {"source": "user_confirmed", "is_user_confirmed": True}
+                    for field in jobs_api._RIM_CRITICAL_FIELDS
+                },
+            )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["vehicle_state"] == result["rim_setup_state"] == "confirmed_ready"
+    assert result["next_action"]["kind"] == "run_standard_check"
+
+
+def test_parallel_readiness_rim_confirmation_does_not_advance_vehicle(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    rows = [
+        _fitment_row(),
+        _fitment_row(
+            rim_field_provenance={
+                field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
+            },
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "rim": {
+                "bolt_count": 5,
+                "pcd_mm": 112,
+                "center_bore_mm": 66.6,
+                "wheel_diameter_in": 18,
+                "wheel_width_j": 8,
+                "offset_et_mm": 35,
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_state"] == "unconfirmed"
+    assert body["rim_setup_state"] == "confirmed_ready"
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 2
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
+    assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
+
+
+def test_parallel_readiness_next_action_matrix():
+    confirmed_meta = {
+        "source": "user_confirmed",
+        "confidence": 1.0,
+        "is_user_confirmed": True,
+    }
+    vehicle_ready = _confirmed_vehicle_row(
+        vehicle_provider_mappings=_confirmed_modification_mapping(),
+    )
+
+    wheel_partial = dict(vehicle_ready)
+    wheel_partial["rim_center_bore_mm"] = None
+    wheel_partial["rim_field_provenance"] = {
+        field: dict(confirmed_meta)
+        for field in jobs_api._RIM_CRITICAL_FIELDS
+        if field != "center_bore_mm"
+    }
+    assert jobs_api._fitment_next_action_from_row(wheel_partial).kind == "complete_rim_specs"
+
+    wheel_ready = dict(vehicle_ready)
+    wheel_ready["rim_field_provenance"] = {
+        field: dict(confirmed_meta) for field in jobs_api._RIM_CRITICAL_FIELDS
+    }
+    assert jobs_api._fitment_next_action_from_row(wheel_ready).kind == "run_standard_check"
+
+
+def test_fitment_save_allows_clearing_optional_fields(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    rows = [
+        _fitment_row(rim_product_url="https://shop.example.test/old"),
+        _fitment_row(vehicle_body=None, rim_product_url=None, vehicle_revision=2, rim_revision=2),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(
+        jobs_api,
+        "_resolve_exact_vehicle_catalogue_selection",
+        _exact_catalogue_selection,
+    )
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"body": None},
+            "rim": {"product_url": None},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["vehicle"]["body"] is None
+    assert response.json()["rim"]["product_url"] is None
+    assert execute_calls[0][1][3] is None
+    assert execute_calls[1][1][3] is None
+
+
+def test_fitment_save_preserves_revision_when_payload_is_unchanged(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    rows = [
+        _fitment_row(
+            vehicle_is_user_confirmed=True,
+            vehicle_field_provenance={
+                "make": confirmed_meta,
+                "model": confirmed_meta,
+                "year": confirmed_meta,
+                "body": confirmed_meta,
+                "generation": confirmed_meta,
+                "modification": confirmed_meta,
+                "market": confirmed_meta,
+            },
+            rim_field_provenance={
+                "brand": confirmed_meta,
+                "model": confirmed_meta,
+                "sku": confirmed_meta,
+                "bolt_count": confirmed_meta,
+                "pcd_mm": confirmed_meta,
+                "center_bore_mm": confirmed_meta,
+                "wheel_diameter_in": confirmed_meta,
+                "wheel_width_j": confirmed_meta,
+                "offset_et_mm": confirmed_meta,
+            },
+        ),
+        _fitment_row(
+            vehicle_is_user_confirmed=True,
+            vehicle_field_provenance={
+                "make": confirmed_meta,
+                "model": confirmed_meta,
+                "year": confirmed_meta,
+                "body": confirmed_meta,
+                "generation": confirmed_meta,
+                "modification": confirmed_meta,
+                "market": confirmed_meta,
+            },
+            rim_field_provenance={
+                "brand": confirmed_meta,
+                "model": confirmed_meta,
+                "sku": confirmed_meta,
+                "bolt_count": confirmed_meta,
+                "pcd_mm": confirmed_meta,
+                "center_bore_mm": confirmed_meta,
+                "wheel_diameter_in": confirmed_meta,
+                "wheel_width_j": confirmed_meta,
+                "offset_et_mm": confirmed_meta,
+            },
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {
+                "make": "BMW",
+                "model": "3 Series",
+                "year": 2020,
+                "body": "G20",
+                "generation": "VII",
+                "modification": "330i",
+                "market": "EU",
+            },
+            "rim": {
+                "brand": "BBS",
+                "model": "CH-R",
+                "sku": "CHR-001",
+                "product_url": None,
+                "bolt_count": 5,
+                "pcd_mm": 112,
+                "center_bore_mm": 66.6,
+                "wheel_diameter_in": 18,
+                "wheel_width_j": 8,
+                "offset_et_mm": 35,
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["vehicle_revision"] == 1
+    assert response.json()["rim_revision"] == 1
+    assert len(execute_calls) == 1
+    query, args = execute_calls[0]
+    assert "INSERT INTO fitment_change_events" in query
+    assert args[3] == "vehicle_confirmation_intent"
+    assert args[5] == 10
+    assert args[6:8] == (1, 1)
+    assert json.loads(args[10]) == {
+        "intent": "explicit_vehicle_action",
+        "surface": "technical_fitment",
+        "action": "save_vehicle",
+        "outcome": "confirmed",
+    }
+
+
+def test_rim_only_save_preserves_revision_bound_modification_from_stale_vehicle_form(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    mapping = _confirmed_modification_mapping()
+    rows = [
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+        ),
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+            rim_center_bore_mm=Decimal("74.1"),
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {
+                "make": "BMW",
+                "model": "3 Series",
+                "year": 2020,
+                "body": "stale-body",
+                "generation": "stale-generation",
+                "modification": "stale-modification",
+                "market": "EU",
+            },
+            "rim": {"center_bore_mm": 74.1},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 2
+    assert body["modification_state"] == "confirmed"
+    assert body["vehicle"]["modification"] == "330i"
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
+    assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
+
+
+def test_rim_only_save_without_vehicle_payload_preserves_confirmed_modification(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    confirmed_meta = {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True}
+    mapping = _confirmed_modification_mapping()
+    rows = [
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+        ),
+        _confirmed_vehicle_row(
+            vehicle_provider_mappings=mapping,
+            vehicle_field_provenance={
+                field: dict(confirmed_meta)
+                for field in (
+                    "make",
+                    "model",
+                    "year",
+                    "body",
+                    "generation",
+                    "modification",
+                    "market",
+                )
+            },
+            rim_center_bore_mm=Decimal("74.1"),
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "rim": {"center_bore_mm": 74.1},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_revision"] == 1
+    assert body["rim_revision"] == 2
+    assert body["modification_state"] == "confirmed"
+    assert body["vehicle"]["modification"] == "330i"
+    assert all("UPDATE vehicle_identities" not in query for query, _args in execute_calls)
+    assert any("UPDATE rim_specs" in query for query, _args in execute_calls)
+
+
+def test_fitment_save_confirms_prefilled_values_without_value_change(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    rows = [
+        _fitment_row(),
+        _fitment_row(
+            vehicle_is_user_confirmed=True,
+            vehicle_field_provenance={
+                "make": {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True},
+                "model": {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True},
+                "year": {"source": "user_confirmed", "confidence": 1.0, "is_user_confirmed": True},
+            },
+            rim_field_provenance={
+                "bolt_count": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+                "pcd_mm": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+                "center_bore_mm": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+                "wheel_diameter_in": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+                "wheel_width_j": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+                "offset_et_mm": {
+                    "source": "user_confirmed",
+                    "confidence": 1.0,
+                    "is_user_confirmed": True,
+                },
+            },
+            vehicle_revision=2,
+            rim_revision=2,
+        ),
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(
+        jobs_api,
+        "_resolve_exact_vehicle_catalogue_selection",
+        _exact_catalogue_selection,
+    )
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"make": "BMW", "model": "3 Series", "year": 2020},
+            "rim": {
+                "bolt_count": 5,
+                "pcd_mm": 112,
+                "center_bore_mm": 66.6,
+                "wheel_diameter_in": 18,
+                "wheel_width_j": 8,
+                "offset_et_mm": 35,
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["vehicle_revision"] == 2
+    assert response.json()["rim_revision"] == 2
+    assert len(execute_calls) == 4
+    assert "UPDATE vehicle_identities" in execute_calls[0][0]
+    assert "UPDATE rim_specs" in execute_calls[1][0]
+    assert "INSERT INTO fitment_change_events" in execute_calls[2][0]
+
+
+def test_fitment_save_returns_409_for_stale_revision(monkeypatch):
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _fitment_row(vehicle_revision=2)
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"model": "M3"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 409
+
+
+def test_fitment_save_returns_404_for_non_owner(monkeypatch):
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return None
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"model": "M3"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_fitment_save_rejects_invalid_product_url_before_db(monkeypatch):
+    _patch_auth(monkeypatch)
+
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "rim": {"product_url": "ftp://example.test/wheel"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_fitment_history_returns_events_for_owner(monkeypatch):
+    history_rows = [
+        {
+            "event_type": "user_confirm",
+            "actor_type": "user",
+            "actor_user_id": 10,
+            "vehicle_revision_before": 1,
+            "vehicle_revision_after": 2,
+            "rim_revision_before": 1,
+            "rim_revision_after": 2,
+            "changes": {"vehicle": {"model": {"old": "3 Series", "new": "3 Series"}}},
+            "created_at": datetime(2026, 7, 2, tzinfo=UTC),
+        }
+    ]
+
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+        async def fetch(self, query: str, *args):
+            assert "FROM fitment_change_events AS evt" in query
+            assert args == ("11111111-1111-4111-8111-111111111111", 10)
+            return history_rows
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment/history")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["job_id"] == "11111111-1111-4111-8111-111111111111"
+    assert body["events"][0]["event_type"] == "user_confirm"
+    assert body["events"][0]["actor_type"] == "user"
+
+
+def test_fitment_history_parses_stringified_changes(monkeypatch):
+    history_rows = [
+        {
+            "event_type": "user_confirm",
+            "actor_type": "user",
+            "actor_user_id": 10,
+            "vehicle_revision_before": 1,
+            "vehicle_revision_after": 2,
+            "rim_revision_before": 1,
+            "rim_revision_after": 2,
+            "changes": '{"vehicle":{"model":{"old":"3 Series","new":"3 Series"}}}',
+            "created_at": datetime(2026, 7, 2, tzinfo=UTC),
+        }
+    ]
+
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+        async def fetch(self, *_args):
+            return history_rows
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment/history")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["events"][0]["changes"]["vehicle"]["model"]["new"] == "3 Series"
+
+
+def test_fitment_catalogue_exposes_exact_porsche_cayenne_russia_years(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    _patch_auth(monkeypatch)
+    _patch_vehicle_catalogue(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    base = "/jobs/11111111-1111-4111-8111-111111111111/fitment/catalogue"
+
+    regions = client.get(f"{base}/regions")
+    assert regions.status_code == 200
+    assert regions.json()["outcome"] == "success"
+    assert [item["label"] for item in regions.json()["items"][:2]] == ["Россия+", "Европа"]
+
+    makes = client.get(f"{base}/makes?region=russia")
+    assert makes.json() == {
+        "outcome": "success",
+        "items": [{"value": "porsche", "label": "Porsche", "provider_id": "porsche"}],
+    }
+
+    models = client.get(f"{base}/models?region=russia&make=porsche")
+    assert models.json()["items"][0]["value"] == "cayenne"
+
+    years = client.get(f"{base}/years?region=russia&make=porsche&model=cayenne")
+    assert years.status_code == 200
+    assert years.json()["outcome"] == "success"
+    assert [item["value"] for item in years.json()["items"]] == [
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022",
+        "2023",
+    ]
+
+
+def test_fitment_catalogue_distinguishes_no_data_and_provider_failure(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    _patch_auth(monkeypatch)
+    _patch_vehicle_catalogue(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    base = "/jobs/11111111-1111-4111-8111-111111111111/fitment/catalogue"
+
+    no_data = client.get(f"{base}/models?region=russia&make=unknown")
+    assert no_data.status_code == 200
+    assert no_data.json() == {"outcome": "no_data", "items": []}
+
+    async def unavailable(_self):
+        raise ProviderError("wheel-size HTTP 503 on /regions")
+
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_regions", unavailable)
+    failed = client.get(f"{base}/regions")
+    assert failed.status_code == 503
+    assert failed.json() == {"detail": {"code": "provider_unavailable"}}
+
+
+def test_make_first_vehicle_catalogue_aggregates_markets_after_year(monkeypatch):
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    _patch_auth(monkeypatch)
+    _patch_vehicle_catalogue(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    base = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-catalogue"
+
+    makes = client.get(f"{base}/makes")
+    assert makes.status_code == 200
+    assert makes.json()["items"] == [
+        {
+            "value": "porsche",
+            "label": "Porsche",
+            "provider_id": "porsche",
+            "identities": [
+                {"region": "russia", "provider_id": "porsche"},
+            ],
+        }
+    ]
+
+    models = client.get(f"{base}/models?make=porsche")
+    assert models.status_code == 200
+    assert models.json()["items"][0]["value"] == "cayenne"
+    years = client.get(f"{base}/years?make=porsche&model=cayenne")
+    assert years.status_code == 200
+    markets = client.get(f"{base}/markets?make=porsche&model=cayenne&year=2023")
+    assert markets.status_code == 200
+    assert markets.json()["resolution"] == "single"
+    assert markets.json()["resolved_market"]["value"] == "russia"
+    assert markets.json()["items"] == []
+
+
+def test_fitment_catalogue_deduplicates_provider_year_records():
+    options = jobs_api._catalogue_options(
+        [
+            {"year": 2025},
+            {"year": "2025"},
+            {"name": "2024"},
+            {"slug": "2024"},
+            {"year": 2023},
+        ],
+        year=True,
+    )
+
+    assert [item.value for item in options] == ["2025", "2024", "2023"]
+
+
+def test_fitment_catalogue_year_query_resolves_legacy_region_to_provider_value(monkeypatch):
+    calls: list[tuple[str, ...]] = []
+
+    class FakeConn:
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+    async def regions(_self):
+        calls.append(("regions",))
+        return [{"slug": "chdm", "name": "China"}]
+
+    async def makes(_self, *, region):
+        calls.append(("makes", region))
+        return [{"slug": "zeekr", "name": "ZEEKR"}] if region == "chdm" else []
+
+    async def models(_self, *, make, region):
+        calls.append(("models", make, region))
+        return [{"slug": "007", "name": "007"}] if (make, region) == ("zeekr", "chdm") else []
+
+    async def years(_self, *, make, model, region):
+        calls.append(("years", make, model, region))
+        return [{"year": 2025}, {"year": 2025}, {"year": 2026}]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_regions", regions)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_makes", makes)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_models", models)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "catalogue_years", years)
+
+    response = client.get(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/catalogue/years"
+        "?region=CN&make=ZEEKR&model=007"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "outcome": "success",
+        "items": [
+            {"value": "2025", "label": "2025", "provider_id": None},
+            {"value": "2026", "label": "2026", "provider_id": None},
+        ],
+    }
+    assert calls == [
+        ("regions",),
+        ("makes", "chdm"),
+        ("models", "zeekr", "chdm"),
+        ("years", "zeekr", "007", "chdm"),
+    ]
+
+
+def test_vehicle_authoritative_states_cover_empty_to_confirmed_ready():
+    assert (
+        jobs_api._vehicle_state_from_row(
+            _fitment_row(
+                vehicle_make=None,
+                vehicle_model=None,
+                vehicle_year=None,
+                vehicle_market=None,
+                vehicle_field_provenance={},
+            )
+        )
+        == "empty"
+    )
+    assert jobs_api._vehicle_state_from_row(_fitment_row()) == "unconfirmed"
+    assert (
+        jobs_api._vehicle_state_from_row(_confirmed_vehicle_row(vehicle_year=None))
+        == "confirmed_incomplete"
+    )
+    assert jobs_api._vehicle_state_from_row(_confirmed_vehicle_row()) == "confirmed_ready"
+    assert jobs_api._vehicle_state_from_row(_fitment_row()) != "confirmed_ready"
+
+
+def test_vehicle_variants_return_no_match_single_and_multiple_without_selection(monkeypatch):
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _confirmed_vehicle_row()
+
+        async def execute(self, *_args):
+            return "UPDATE 1"
+
+    outcomes: list[list[dict[str, str]]] = [
+        [],
+        [
+            {
+                "generation": "E3",
+                "modification": "3.0 V6",
+                "body": "SUV",
+                "market": "russia",
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v6",
+            }
+        ],
+        [
+            {
+                "generation": "E3",
+                "modification": "3.0 V6",
+                "body": "SUV",
+                "market": "russia",
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v6",
+            },
+            {
+                "generation": "E3",
+                "modification": "4.0 V8",
+                "body": "SUV",
+                "market": "russia",
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v8",
+            },
+        ],
+    ]
+
+    async def variants(_self, _identity):
+        return outcomes.pop(0)
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants", variants)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants"
+
+    for outcome, total in (("no_match", 0), ("single", 1), ("multiple", 2)):
+        response = client.post(path)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["outcome"] == outcome
+        assert body["total_count"] == total
+        assert body["has_more"] is False
+        assert "selection_source" not in body
+
+
+def test_vehicle_save_validates_exact_selection_then_lookup_uses_saved_revision(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+    saved_row = _confirmed_vehicle_row(
+        vehicle_make="Porsche",
+        vehicle_model="Cayenne",
+        vehicle_year=2021,
+        vehicle_market="russia",
+        vehicle_generation=None,
+        vehicle_modification=None,
+        vehicle_provider_mappings={
+            "wheel_size": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+            }
+        },
+        vehicle_revision=2,
+    )
+    rows = [
+        _confirmed_vehicle_row(vehicle_provider_mappings={"wheel_size": {"old": "x"}}),
+        saved_row,
+    ]
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return rows.pop(0)
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    async def exact_selection(_provider, *, make, model, region, year):
+        assert (make, model, region, year) == ("Porsche", "Cayenne", "russia", 2021)
+        return {
+            "make": "Porsche",
+            "model": "Cayenne",
+            "year": 2021,
+            "region": "russia",
+            "make_slug": "porsche",
+            "model_slug": "cayenne",
+        }
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", exact_selection)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment"
+    saved = client.patch(
+        path,
+        json={
+            "vehicle": {
+                "make": "Porsche",
+                "model": "Cayenne",
+                "year": 2021,
+                "market": "russia",
+            },
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+
+    assert saved.status_code == 200
+    assert saved.json()["vehicle_revision"] == 2
+    vehicle_update = execute_calls[0][1]
+    assert vehicle_update[4:6] == (None, None)
+    assert json.loads(vehicle_update[9])["wheel_size"] == {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+    }
+    assert vehicle_update[10] == 1
+
+    async def exact_variants(_self, *, make_slug, model_slug, region, year):
+        assert (make_slug, model_slug, region, year) == ("porsche", "cayenne", "russia", 2021)
+        return []
+
+    class LookupConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return saved_row
+
+        async def execute(self, *_args):
+            return "UPDATE 1"
+
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", exact_variants)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(LookupConn()))
+    lookup = client.post(f"{path}/vehicle-variants")
+    assert lookup.status_code == 200
+    assert lookup.json()["vehicle_revision"] == 2
+    assert lookup.json()["outcome"] == "no_match"
+
+
+def test_vehicle_save_failure_never_calls_modification_lookup(monkeypatch):
+    execute_calls: list[tuple[str, tuple]] = []
+
+    class FakeConn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+        async def execute(self, query: str, *args):
+            execute_calls.append((query, args))
+            return "UPDATE 1"
+
+    calls = {"lookup": 0}
+
+    async def lookup_called(*_args, **_kwargs):
+        calls["lookup"] += 1
+        return []
+
+    async def no_data(*_args, **_kwargs):
+        return None
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(FakeConn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", no_data)
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants", lookup_called)
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"make": "Porsche", "model": "Cayenne", "year": 2021, "market": "russia"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert response.status_code == 422
+    assert response.json() == {"detail": {"code": "validation_error", "reason": "no_data"}}
+    assert execute_calls == []
+    assert calls["lookup"] == 0
+
+    async def unavailable_save(*_args, **_kwargs):
+        raise ProviderError("wheel-size HTTP 503 on /regions")
+
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", unavailable_save)
+    failed = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "vehicle": {"make": "Porsche", "model": "Cayenne", "year": 2021, "market": "russia"},
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+        },
+    )
+    assert failed.status_code == 503
+    assert failed.json() == {"detail": {"code": "provider_unavailable"}}
+    assert execute_calls == []
+    assert calls["lookup"] == 0
+
+
+def _provider_variant(
+    *, generation: str, modification: str, modification_slug: str
+) -> dict[str, str]:
+    return {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+        "generation": generation,
+        "modification": modification,
+        "body": "SUV",
+        "market": "russia",
+        "generation_slug": generation.casefold(),
+        "modification_slug": modification_slug,
+    }
+
+
+class MutableModificationConn:
+    def __init__(self, row: dict):
+        self.row = row
+        self.events: list[tuple[str, tuple]] = []
+        self.vehicle_updates = 0
+
+    def transaction(self):
+        return FakeTransaction()
+
+    async def fetchrow(self, *_args):
+        return self.row
+
+    async def execute(self, query: str, *args):
+        if "UPDATE vehicle_identities" in query:
+            self.row["vehicle_generation"] = args[0]
+            self.row["vehicle_modification"] = args[1]
+            self.row["vehicle_body"] = args[2]
+            self.row["vehicle_provider_mappings"] = json.loads(args[3])
+            self.row["vehicle_provider_mapping_revision"] = (
+                self.row.get("vehicle_provider_mapping_revision", 0) + 1
+            )
+            self.vehicle_updates += 1
+            return "UPDATE 1"
+        if "INSERT INTO fitment_change_events" in query:
+            self.events.append((query, args))
+            return "INSERT 0 1"
+        raise AssertionError(query)
+
+
+def _catalogued_vehicle_row(**overrides) -> dict:
+    row = _confirmed_vehicle_row(
+        vehicle_make="Porsche",
+        vehicle_model="Cayenne",
+        vehicle_year=2021,
+        vehicle_market="russia",
+        vehicle_generation=None,
+        vehicle_modification=None,
+        vehicle_body=None,
+        vehicle_revision=10,
+        vehicle_provider_mappings={
+            "wheel_size": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+            }
+        },
+    )
+    row.update(overrides)
+    return row
+
+
+def test_modification_multiple_never_selects_first_then_user_selection_confirms(monkeypatch):
+    variants = [
+        _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6"),
+        _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8"),
+        _provider_variant(generation="E3", modification="Turbo GT", modification_slug="turbo-gt"),
+    ]
+    conn = MutableModificationConn(_catalogued_vehicle_row())
+
+    async def lookup(_self, *, make_slug, model_slug, region, year):
+        assert (make_slug, model_slug, region, year) == ("porsche", "cayenne", "russia", 2021)
+        return variants
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment"
+
+    listed = client.post(f"{path}/vehicle-variants")
+    assert listed.status_code == 200
+    assert listed.json()["outcome"] == "multiple"
+    overview = client.get(path).json()
+    assert overview["modification_state"] == "suggested"
+    assert overview["selection_source"] is None
+    assert overview["selected_modification"] is None
+    assert conn.row["vehicle_generation"] is None
+    assert conn.row["vehicle_modification"] is None
+    assert "selected_modification" not in conn.row["vehicle_provider_mappings"]["wheel_size"]
+
+    selected = client.post(
+        f"{path}/vehicle-variants/apply",
+        json={
+            "expected_vehicle_revision": 10,
+            "generation": "E3",
+            "modification": "4.0 V8",
+            "body": "SUV",
+            "market": "russia",
+        },
+    )
+    assert selected.status_code == 200
+    body = selected.json()
+    assert body["modification_state"] == "confirmed"
+    assert body["selection_source"] == "user"
+    assert body["modification_vehicle_revision"] == 10
+    assert body["selected_modification"]["modification_slug"] == "v8"
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
+    assert conn.row["vehicle_provider_mappings"]["wheel_size"]["selection_source"] == "user"
+
+
+def test_single_auto_confirm_is_idempotent_and_no_match_clears_current_selection(monkeypatch):
+    single = [_provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")]
+    conn = MutableModificationConn(_catalogued_vehicle_row())
+    provider_results = [single, single, []]
+
+    async def lookup(_self, **_kwargs):
+        return provider_results.pop(0)
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment"
+
+    first = client.post(f"{path}/vehicle-variants")
+    assert first.status_code == 200
+    assert client.get(path).json()["selection_source"] == "wheel_size_single"
+    assert (
+        conn.row["vehicle_provider_mappings"]["wheel_size"]["modification_vehicle_revision"] == 10
+    )
+    assert conn.vehicle_updates == 1
+
+    repeated = client.post(f"{path}/vehicle-variants")
+    assert repeated.status_code == 200
+    assert conn.vehicle_updates == 1
+
+    no_match = client.post(f"{path}/vehicle-variants")
+    assert no_match.status_code == 200
+    overview = client.get(path).json()
+    assert overview["modification_state"] == "none"
+    assert overview["selection_source"] is None
+    assert overview["selected_modification"] is None
+
+
+def test_single_variant_opt_in_waits_for_explicit_revision_bound_apply(monkeypatch):
+    variant = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_catalogued_vehicle_row())
+
+    async def lookup(_self, **_kwargs):
+        return [variant]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = f"/jobs/{conn.row['job_id']}/fitment"
+    response = client.post(f"{path}/vehicle-variants?require_confirmation=true")
+    assert response.status_code == 200
+    assert response.json()["outcome"] == "single"
+    assert response.json()["requires_confirmation"] is True
+    assert response.json()["variants"][0]["modification_slug"] == "v6"
+    overview = client.get(path).json()
+    assert overview["modification_state"] == "suggested"
+    assert overview["selected_modification"] is None
+    assert overview["next_action"]["kind"] == "select_vehicle_variant"
+    applied = client.post(
+        f"{path}/vehicle-variants/apply",
+        json={"expected_vehicle_revision": 10, **variant},
+    )
+    assert applied.status_code == 200
+    assert applied.json()["modification_state"] == "confirmed"
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
+
+
+def test_modification_stale_revision_and_provider_failure_never_resurrect_selection(monkeypatch):
+    single = [_provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")]
+    old_row = _catalogued_vehicle_row()
+    changed_row = _catalogued_vehicle_row(
+        vehicle_year=2022,
+        vehicle_revision=11,
+        vehicle_provider_mappings={
+            "wheel_size": {"make_slug": "porsche", "model_slug": "cayenne", "region": "russia"}
+        },
+    )
+
+    class RaceConn(MutableModificationConn):
+        def __init__(self):
+            super().__init__(old_row)
+            self.reads = 0
+
+        async def fetchrow(self, *_args):
+            self.reads += 1
+            return old_row if self.reads == 1 else changed_row
+
+    race_conn = RaceConn()
+
+    async def lookup(_self, **_kwargs):
+        return single
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(race_conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment"
+    stale_lookup = client.post(f"{path}/vehicle-variants")
+    assert stale_lookup.status_code == 409
+    assert stale_lookup.json() == {"detail": {"code": "vehicle_revision_conflict"}}
+    assert race_conn.vehicle_updates == 0
+    assert jobs_api._modification_from_row(changed_row)[0] == "none"
+
+    confirmed_mapping = {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+        "generation_slug": "e3",
+        "modification_slug": "v6",
+        "modification_state": "confirmed",
+        "selection_source": "user",
+        "modification_vehicle_revision": 10,
+        "selected_modification": single[0],
+    }
+    stable_row = _catalogued_vehicle_row(
+        vehicle_provider_mappings={"wheel_size": confirmed_mapping},
+        vehicle_generation="E3",
+        vehicle_modification="3.0 V6",
+        vehicle_body="SUV",
+    )
+    stable_conn = MutableModificationConn(stable_row)
+
+    async def unavailable(_self, **_kwargs):
+        raise ProviderError("wheel-size HTTP 503 on /years")
+
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(stable_conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", unavailable)
+    failed = client.post(f"{path}/vehicle-variants")
+    assert failed.status_code == 503
+    assert jobs_api._modification_from_row(stable_row)[:2] == ("confirmed", "user")
+    assert stable_conn.vehicle_updates == 0
+
+
+def test_explicit_modification_apply_rejects_stale_candidate_revision(monkeypatch):
+    candidate = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    suggested_row = _catalogued_vehicle_row(
+        vehicle_provider_mappings={
+            "wheel_size": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "modification_state": "suggested",
+                "modification_vehicle_revision": 10,
+            }
+        }
+    )
+    changed_row = _catalogued_vehicle_row(
+        vehicle_year=2022,
+        vehicle_revision=11,
+        vehicle_provider_mappings={
+            "wheel_size": {"make_slug": "porsche", "model_slug": "cayenne", "region": "russia"}
+        },
+    )
+
+    class ApplyRaceConn(MutableModificationConn):
+        def __init__(self):
+            super().__init__(suggested_row)
+            self.reads = 0
+
+        async def fetchrow(self, *_args):
+            self.reads += 1
+            return suggested_row if self.reads == 1 else changed_row
+
+    conn = ApplyRaceConn()
+
+    async def lookup(_self, **_kwargs):
+        return [candidate]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    response = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/apply",
+        json={
+            "expected_vehicle_revision": 10,
+            "generation": "E3",
+            "modification": "4.0 V8",
+            "body": "SUV",
+            "market": "russia",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": {"code": "vehicle_revision_conflict"}}
+    assert conn.vehicle_updates == 0
+    assert jobs_api._modification_from_row(changed_row)[0] == "none"
+
+
+def _confirmed_catalogued_row(selected: dict[str, str], **overrides) -> dict:
+    mapping = {
+        "make_slug": selected["make_slug"],
+        "model_slug": selected["model_slug"],
+        "region": selected["region"],
+        "generation_slug": selected["generation_slug"],
+        "modification_slug": selected["modification_slug"],
+        "modification_state": "confirmed",
+        "selection_source": "user",
+        "modification_vehicle_revision": 10,
+        "selected_modification": selected,
+    }
+    row = _catalogued_vehicle_row(
+        vehicle_generation=selected["generation"],
+        vehicle_modification=selected["modification"],
+        vehicle_body=selected["body"],
+        vehicle_provider_mappings={"wheel_size": mapping},
+    )
+    row.update(overrides)
+    return row
+
+
+def test_confirmed_reselection_lookup_is_read_only_and_preserves_current(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    replacement = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current, replacement]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/reselect"
+
+    response = client.post(path)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["outcome"] == "multiple"
+    assert body["current_selection"]["modification_slug"] == "v6"
+    assert [item["modification_slug"] for item in body["variants"]] == ["v6", "v8"]
+    assert conn.vehicle_updates == 0
+    assert conn.events == []
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
+
+
+def test_confirmed_reselection_lookup_no_match_and_provider_failure_preserve_current(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+    results = [[], ProviderError("wheel-size HTTP 503 on /years")]
+
+    async def lookup(_self, **_kwargs):
+        result = results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/reselect"
+
+    no_match = client.post(path)
+    failed = client.post(path)
+
+    assert no_match.status_code == 200
+    assert no_match.json()["outcome"] == "no_match"
+    assert failed.status_code == 503
+    assert failed.json() == {"detail": {"code": "provider_unavailable"}}
+    assert conn.vehicle_updates == 0
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
+
+
+def test_confirmed_replacement_is_atomic_and_preserves_vehicle_revision_and_rim(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    replacement = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current, replacement]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+    response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v6",
+            },
+            "new_selection": {
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+                "region": "russia",
+                "generation_slug": "e3",
+                "modification_slug": "v8",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["modification_state"] == "confirmed"
+    assert body["selection_source"] == "user"
+    assert body["selected_modification"]["modification_slug"] == "v8"
+    assert body["vehicle_revision"] == 10
+    assert body["rim_setup_id"] == "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    assert body["rim_revision"] == 1
+    assert conn.vehicle_updates == 1
+    assert len(conn.events) == 2
+    assert [e[1][3] for e in conn.events] == [
+        "modification_user_confirmed",
+        "vehicle_confirmation_intent",
+    ]
+    assert json.loads(conn.events[-1][1][10])["outcome"] == "confirmed"
+    assert conn.row["vehicle_modification"] == "4.0 V8"
+
+
+def test_confirmed_replacement_same_selection_is_idempotent_and_conflicts_are_safe(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def should_not_lookup(_self, **_kwargs):
+        raise AssertionError("same selection must not revalidate or write")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(
+        jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", should_not_lookup
+    )
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+    same = {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+        "generation_slug": "e3",
+        "modification_slug": "v6",
+    }
+    same_response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": same,
+            "new_selection": same,
+        },
+    )
+    stale_revision = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 9,
+            "expected_current_selection": same,
+            "new_selection": same,
+        },
+    )
+    stale_selection = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": {**same, "modification_slug": "v8"},
+            "new_selection": {**same, "modification_slug": "v8"},
+        },
+    )
+
+    assert same_response.status_code == 200
+    assert same_response.json()["selected_modification"]["modification_slug"] == "v6"
+    assert stale_revision.status_code == 409
+    assert stale_revision.json() == {"detail": {"code": "vehicle_revision_conflict"}}
+    assert stale_selection.status_code == 409
+    assert stale_selection.json() == {"detail": {"code": "modification_selection_conflict"}}
+    assert conn.vehicle_updates == 0
+    assert len(conn.events) == 1
+    assert conn.events[0][1][3] == "vehicle_confirmation_intent"
+    assert conn.events[0][1][6:8] == (10, 10)
+    assert json.loads(conn.events[0][1][10])["outcome"] == "confirmed"
+
+
+def test_confirmed_replacement_rejects_stale_target_without_mutating(monkeypatch):
+    current = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    stale_target = _provider_variant(generation="E3", modification="4.0 V8", modification_slug="v8")
+    conn = MutableModificationConn(_confirmed_catalogued_row(current))
+
+    async def lookup(_self, **_kwargs):
+        return [current]
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    monkeypatch.setattr(jobs_api.WheelSizeProvider, "find_vehicle_variants_exact", lookup)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/replace"
+
+    def selection(variant):
+        return {
+            "make_slug": variant["make_slug"],
+            "model_slug": variant["model_slug"],
+            "region": variant["region"],
+            "generation_slug": variant["generation_slug"],
+            "modification_slug": variant["modification_slug"],
+        }
+
+    response = client.post(
+        path,
+        json={
+            "expected_vehicle_revision": 10,
+            "expected_current_selection": selection(current),
+            "new_selection": selection(stale_target),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": {"code": "candidate_not_current"}}
+    assert conn.vehicle_updates == 0
+    assert conn.events == []
+    assert jobs_api._modification_from_row(conn.row)[2].modification_slug == "v6"
+
+
+def test_each_core_vehicle_change_invalidates_current_modification(monkeypatch):
+    selected = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    confirmed_mapping = {
+        "make_slug": "porsche",
+        "model_slug": "cayenne",
+        "region": "russia",
+        "generation_slug": "e3",
+        "modification_slug": "v6",
+        "modification_state": "confirmed",
+        "selection_source": "user",
+        "modification_vehicle_revision": 1,
+        "selected_modification": selected,
+    }
+
+    for field, value in (
+        ("make", "Porsche AG"),
+        ("model", "Cayenne Coupe"),
+        ("year", 2022),
+        ("market", "eudm"),
+    ):
+        before = _catalogued_vehicle_row(
+            vehicle_revision=1,
+            vehicle_provider_mappings={"wheel_size": confirmed_mapping},
+            vehicle_generation="E3",
+            vehicle_modification="3.0 V6",
+            vehicle_body="SUV",
+        )
+        after = _catalogued_vehicle_row(
+            vehicle_revision=2,
+            vehicle_make=value if field == "make" else before["vehicle_make"],
+            vehicle_model=value if field == "model" else before["vehicle_model"],
+            vehicle_year=value if field == "year" else before["vehicle_year"],
+            vehicle_market=value if field == "market" else before["vehicle_market"],
+            vehicle_provider_mappings={
+                "wheel_size": {
+                    "make_slug": "porsche",
+                    "model_slug": "cayenne",
+                    "region": str(value) if field == "market" else "russia",
+                }
+            },
+            vehicle_generation=None,
+            vehicle_modification=None,
+            vehicle_body=None,
+        )
+
+        class SaveConn:
+            def __init__(self, result_rows: list[dict]):
+                self.rows = result_rows
+                self.execute_calls: list[tuple[str, tuple]] = []
+
+            def transaction(self):
+                return FakeTransaction()
+
+            async def fetchrow(self, *_args):
+                return self.rows.pop(0)
+
+            async def execute(self, query: str, *args):
+                self.execute_calls.append((query, args))
+                return "UPDATE 1"
+
+        async def exact_selection(_provider, *, make, model, region, year):
+            return {
+                "make": make,
+                "model": model,
+                "year": year,
+                "region": region,
+                "make_slug": "porsche",
+                "model_slug": "cayenne",
+            }
+
+        _patch_auth(monkeypatch)
+        conn = SaveConn([before, after])
+        monkeypatch.setattr(jobs_api.db, "get_pool", lambda conn=conn: FakePool(conn))
+        monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", exact_selection)
+        response = client.patch(
+            "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+            json={
+                "vehicle": {field: value},
+                "expected_vehicle_revision": 1,
+                "expected_rim_revision": 1,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["modification_state"] == "none"
+        mapping = json.loads(conn.execute_calls[0][1][9])["wheel_size"]
+        assert "selection_source" not in mapping
+        assert "selected_modification" not in mapping
+        assert conn.execute_calls[0][1][3:6] == (None, None, None)
+
+
+def _missing_vehicle_row() -> dict:
+    row = _fitment_row(
+        vehicle_identity_id=None,
+        vehicle_revision=0,
+        vehicle_is_user_confirmed=False,
+        vehicle_provider_mappings={},
+        vehicle_field_candidates={},
+        vehicle_field_provenance={},
+    )
+    for key in tuple(row):
+        if key.startswith("vehicle_") and key not in {
+            "vehicle_identity_id",
+            "vehicle_revision",
+            "vehicle_is_user_confirmed",
+            "vehicle_provider_mappings",
+            "vehicle_field_candidates",
+            "vehicle_field_provenance",
+        }:
+            row[key] = None
+    return row
+
+
+def test_overview_without_vehicle_uses_empty_state_and_revision_zero(monkeypatch):
+    class Conn:
+        async def fetchrow(self, query, *args):
+            if "FROM fitment_checks" in query:
+                return None
+            assert "COALESCE(vehicle.revision, 0)" in query
+            return _missing_vehicle_row()
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.get("/jobs/11111111-1111-4111-8111-111111111111/fitment")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicle_identity_id"] is None
+    assert body["vehicle_revision"] == 0
+    assert body["vehicle_state"] == "empty"
+    assert body["next_action"]["kind"] == "complete_vehicle_details"
+    assert body["readiness"]["ready"] is False
+
+
+@pytest.mark.parametrize("wheel_only", [False, True])
+def test_missing_vehicle_save_is_atomic_and_wheel_save_does_not_create_vehicle(
+    monkeypatch, wheel_only
+):
+    row = _missing_vehicle_row()
+    calls = []
+
+    class Transaction:
+        async def __aenter__(self):
+            calls.append("begin")
+
+        async def __aexit__(self, exc_type, exc, tb):
+            calls.append("rollback" if exc else "commit")
+
+    class Conn:
+        def transaction(self):
+            return Transaction()
+
+        async def fetchrow(self, query, *args):
+            if "FOR UPDATE" in query:
+                assert "FOR UPDATE OF jobs" in query
+                calls.append("lock_job")
+            return deepcopy(row)
+
+        async def fetchval(self, query, *args):
+            assert "INSERT INTO vehicle_identities" in query
+            assert not wheel_only
+            assert args[0] == 10
+            row.update(
+                vehicle_identity_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                vehicle_revision=1,
+                vehicle_make=args[1],
+                vehicle_model=args[2],
+                vehicle_year=args[3],
+                vehicle_market=args[7],
+                vehicle_is_user_confirmed=args[8],
+                vehicle_field_provenance=json.loads(args[9]),
+                vehicle_provider_mappings=json.loads(args[10]),
+            )
+            calls.append("insert_vehicle")
+            return row["vehicle_identity_id"]
+
+        async def execute(self, query, *args):
+            if "UPDATE jobs SET vehicle_identity_id" in query:
+                assert not wheel_only
+                assert "vehicle_identity_id IS NULL" in query
+                calls.append("attach_vehicle")
+            elif "UPDATE rim_specs" in query:
+                calls.append("wheel_write")
+                row["rim_revision"] += 1
+            elif "INSERT INTO fitment_change_events" in query:
+                if args[3] == "vehicle_confirmation_intent":
+                    assert not wheel_only
+                    assert args[5] == 10
+                    assert args[6:8] == (1, 1)
+                    calls.append("confirmation_intent")
+                else:
+                    assert args[6] == 0
+                    assert args[7] == (0 if wheel_only else 1)
+            return "UPDATE 1"
+
+    async def catalogue(*args, **kwargs):
+        return dict(
+            make="BMW",
+            model="3 Series",
+            year=2020,
+            region="eu",
+            make_slug="bmw",
+            model_slug="3-series",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", catalogue)
+    body = {"expected_vehicle_revision": 0, "expected_rim_revision": 1}
+    body["rim" if wheel_only else "vehicle"] = (
+        {"offset_et_mm": 35.25}
+        if wheel_only
+        else {
+            "make": "BMW",
+            "model": "3 Series",
+            "year": 2020,
+            "market": "eu",
+        }
+    )
+    response = client.patch("/jobs/11111111-1111-4111-8111-111111111111/fitment", json=body)
+    assert response.status_code == 200, response.text
+    assert calls[0:2] == ["begin", "lock_job"]
+    assert calls[-1] == "commit"
+    if wheel_only:
+        assert response.json()["vehicle_identity_id"] is None
+        assert response.json()["vehicle_revision"] == 0
+        assert "insert_vehicle" not in calls
+        assert "wheel_write" in calls
+    else:
+        assert calls.index("insert_vehicle") < calls.index("attach_vehicle") < calls.index("commit")
+        assert response.json()["vehicle_revision"] == 1
+        assert (
+            response.json()["vehicle_state"] == "unconfirmed"
+        )  # Existing explicit confirmation stage is preserved.
+        stale = client.patch("/jobs/11111111-1111-4111-8111-111111111111/fitment", json=body)
+        assert stale.status_code == 409
+        assert calls.count("insert_vehicle") == 1
+
+
+def test_incomplete_first_vehicle_save_does_not_insert_placeholder(monkeypatch):
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+        async def fetchval(self, *args):
+            raise AssertionError("Must not insert placeholder")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "expected_vehicle_revision": 0,
+            "expected_rim_revision": 1,
+            "vehicle": {"make": "BMW", "model": "3 Series"},
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "vehicle_details_required"
+
+
+@pytest.mark.parametrize("provider_fails", [False, True])
+def test_automatic_source_attempt_is_claimed_once_and_manual_retry_remains_available(
+    monkeypatch, provider_fails
+):
+    attempts = []
+    claimed = False
+
+    class Conn:
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+        async def execute(self, query, *args):
+            nonlocal claimed
+            assert "{_create_url_auto_resolution}" in query
+            assert "revision =" not in query
+            assert args[1] == 10
+            if claimed:
+                return "UPDATE 0"
+            claimed = True
+            return "UPDATE 1"
+
+    async def resolver(url, **kwargs):
+        attempts.append(url)
+        await asyncio.sleep(0.01)
+        if provider_fails:
+            raise RimUrlError("no_data")
+        return RimUrlResolution(
+            requested_url=url, final_url=url, values={}, candidates=(), conflicts=()
+        )
+
+    async def limit(*args, **kwargs):
+        pass
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", False)
+    monkeypatch.setattr(jobs_api, "resolve_rim_product_url", resolver)
+    monkeypatch.setattr(jobs_api, "enforce_rate_limit", limit)
+    path = "/jobs/11111111-1111-4111-8111-111111111111/fitment/rim-source/resolve"
+    payload = {"product_url": "https://shop.example/wheel", "automatic": True}
+    disabled = client.post(path, json=payload)
+    assert disabled.status_code == 503
+    assert not claimed and not attempts
+    monkeypatch.setattr(jobs_api, "RIM_URL_RESOLVER_ENABLED", True)
+
+    async def concurrent():
+        return await asyncio.gather(
+            *[
+                jobs_api.resolve_fitment_rim_source(
+                    "11111111-1111-4111-8111-111111111111",
+                    jobs_api.RimSourceResolveRequest(**payload),
+                )
+                for _ in range(2)
+            ],
+            return_exceptions=True,
+        )
+
+    results = asyncio.run(concurrent())
+    errors = [result for result in results if isinstance(result, HTTPException)]
+    assert sorted(error.status_code for error in errors) == (
+        [409, 422] if provider_fails else [409]
+    )
+    assert any(error.detail == {"code": "automatic_source_already_attempted"} for error in errors)
+    assert len(attempts) == 1
+    manual = client.post(path, json={**payload, "automatic": False})
+    assert manual.status_code == (422 if provider_fails else 200)
+    assert len(attempts) == 2
+
+
+@pytest.mark.parametrize(
+    "endpoint,expected", [("vehicle-variants", 409), ("vehicle-variants/reselect", 409)]
+)
+def test_missing_vehicle_variant_endpoints_return_domain_error_not_500(
+    monkeypatch, endpoint, expected
+):
+    class Conn:
+        async def fetchrow(self, *args):
+            return _missing_vehicle_row()
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    response = client.post(f"/jobs/11111111-1111-4111-8111-111111111111/fitment/{endpoint}")
+    assert response.status_code == expected
+
+
+@pytest.mark.parametrize("race", [False, True])
+def test_same_variant_apply_records_intent_under_lock_and_rejects_race(monkeypatch, race):
+    variant = _provider_variant(generation="E3", modification="3.0 V6", modification_slug="v6")
+    initial = _confirmed_catalogued_row(variant)
+
+    class Conn(MutableModificationConn):
+        def __init__(self):
+            super().__init__(initial)
+            self.reads = 0
+
+        async def fetchrow(self, query, *_args):
+            self.reads += 1
+            if self.reads == 2:
+                assert "FOR UPDATE OF jobs" in query
+                if race:
+                    return {**initial, "vehicle_revision": 11}
+            return self.row
+
+    conn = Conn()
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(conn))
+    result = client.post(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment/vehicle-variants/apply",
+        json={"expected_vehicle_revision": 10, **variant},
+    )
+    assert conn.vehicle_updates == 0
+    if race:
+        assert result.status_code == 409
+        assert conn.events == []
+    else:
+        assert result.status_code == 200
+        assert len(conn.events) == 1
+        assert conn.events[0][1][3] == "vehicle_confirmation_intent"
+        assert conn.events[0][1][6:8] == (10, 10)
+        assert json.loads(conn.events[0][1][10])["outcome"] == "confirmed"
+
+
+@pytest.mark.parametrize(
+    "wheel_section",
+    [
+        {"rim": {"offset_et_mm": 35.25}},
+        {"front_rim": {"offset_et_mm": 35.25}},
+        {"rim": {"offset_et_mm": 35.25, "confirmed_fields": ["offset_et_mm"]}},
+        {"setup_mode": "staggered"},
+    ],
+)
+def test_staggered_wheel_sections_still_require_rear(monkeypatch, wheel_section):
+    row = _fitment_row(is_staggered=True)
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return row
+
+        async def execute(self, *_args):
+            raise AssertionError("invalid Wheel request must not persist any mutation")
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    result = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={"expected_vehicle_revision": 1, "expected_rim_revision": 1, **wheel_section},
+    )
+    assert result.status_code == 422
+    assert result.json()["detail"] == {"code": "validation_error", "field": "rear_rim"}
+
+
+@pytest.mark.parametrize("first_vehicle", [False, True])
+def test_explicit_vehicle_save_confirms_new_catalogue_values_in_one_patch(
+    monkeypatch, first_vehicle
+):
+    row = _missing_vehicle_row() if first_vehicle else _fitment_row()
+    writes = []
+    catalogue_calls = []
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return deepcopy(row)
+
+        async def fetchval(self, query, *args):
+            assert "INSERT INTO vehicle_identities" in query
+            writes.append("insert")
+            row.update(
+                vehicle_identity_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                vehicle_revision=1,
+                vehicle_make=args[1],
+                vehicle_model=args[2],
+                vehicle_year=args[3],
+                vehicle_body=args[4],
+                vehicle_generation=args[5],
+                vehicle_modification=args[6],
+                vehicle_market=args[7],
+                vehicle_is_user_confirmed=args[8],
+                vehicle_field_provenance=json.loads(args[9]),
+                vehicle_provider_mappings=json.loads(args[10]),
+            )
+            return row["vehicle_identity_id"]
+
+        async def execute(self, query, *args):
+            if "UPDATE vehicle_identities" in query:
+                writes.append("update")
+                for field, value in zip(
+                    ["make", "model", "year", "body", "generation", "modification", "market"],
+                    args,
+                    strict=False,
+                ):
+                    row[f"vehicle_{field}"] = value
+                row["vehicle_is_user_confirmed"] = args[7]
+                row["vehicle_field_provenance"] = json.loads(args[8])
+                row["vehicle_provider_mappings"] = json.loads(args[9])
+                row["vehicle_revision"] += 1
+            assert "UPDATE rim_specs" not in query
+            return "UPDATE 1"
+
+    async def catalogue(*args, **kwargs):
+        catalogue_calls.append(kwargs)
+        return dict(
+            make="BMW",
+            model="5 Series",
+            year=2017,
+            region="eudm",
+            make_slug="bmw",
+            model_slug="5-series",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", catalogue)
+    original_rim = {k: deepcopy(v) for k, v in row.items() if k.startswith("rim_")}
+    body = {
+        "expected_vehicle_revision": row["vehicle_revision"],
+        "expected_rim_revision": row["rim_revision"],
+        "vehicle": {
+            "make": "bmw",
+            "model": "5-series",
+            "year": 2017,
+            "market": "eudm",
+            "confirmed_fields": ["make", "model", "year", "market"],
+        },
+    }
+    response = client.patch(f"/jobs/{row['job_id']}/fitment", json=body)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["vehicle_state"] == "confirmed_ready"
+    assert result["vehicle"]["is_user_confirmed"] is True
+    assert result["next_action"]["kind"] == "select_vehicle_variant"
+    assert all(item["is_user_confirmed"] for item in result["vehicle_field_states"].values())
+    assert len(writes) == len(catalogue_calls) == 1
+    assert {k: v for k, v in row.items() if k.startswith("rim_")} == original_rim
+    again = client.patch(f"/jobs/{row['job_id']}/fitment", json=body)
+    assert again.status_code == 409
+    assert len(writes) == 1
+    body["expected_vehicle_revision"] = row["vehicle_revision"]
+    repeated = client.patch(f"/jobs/{row['job_id']}/fitment", json=body)
+    assert repeated.status_code == 200
+    assert repeated.json()["vehicle_revision"] == result["vehicle_revision"]
+    assert len(writes) == 1
+
+
+@pytest.mark.parametrize(
+    "vehicle",
+    [
+        {"confirmed_fields": ["market"]},
+        {"market": None, "confirmed_fields": ["market"]},
+        {"make": "BMW", "confirmed_fields": ["modification"]},
+    ],
+)
+def test_vehicle_confirmations_bind_only_submitted_base_fields(vehicle):
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "vehicle": vehicle,
+        },
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("outcome", ["no_data", "failed"])
+def test_explicit_vehicle_confirmation_cannot_bypass_catalogue(monkeypatch, outcome):
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return _fitment_row()
+
+        async def execute(self, *_args):
+            raise AssertionError("Invalid catalogue values must not be written")
+
+    async def catalogue(*args, **kwargs):
+        if outcome == "failed":
+            raise ProviderError("provider_unavailable")
+        return None
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", catalogue)
+    response = client.patch(
+        "/jobs/11111111-1111-4111-8111-111111111111/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "vehicle": {
+                "make": "BMW",
+                "model": "5 Series",
+                "year": 2017,
+                "market": "eudm",
+                "confirmed_fields": ["make", "model", "year", "market"],
+            },
+        },
+    )
+    assert response.status_code == (503 if outcome == "failed" else 422)
+
+
+def test_manual_save_of_catalogue_aliases_preserves_confirmed_variant(monkeypatch):
+    row = _confirmed_vehicle_row(
+        vehicle_market="eu", vehicle_provider_mappings=_confirmed_modification_mapping()
+    )
+
+    class Conn:
+        def transaction(self):
+            return FakeTransaction()
+
+        async def fetchrow(self, *_args):
+            return deepcopy(row)
+
+        async def execute(self, query, *_args):
+            assert "UPDATE vehicle_identities" not in query
+            assert "UPDATE rim_specs" not in query
+            return "INSERT 0 1"
+
+    async def catalogue(*args, **kwargs):
+        return dict(
+            make="BMW",
+            model="3 Series",
+            year=2020,
+            region="eu",
+            make_slug="bmw",
+            model_slug="3-series",
+        )
+
+    _patch_auth(monkeypatch)
+    monkeypatch.setattr(jobs_api.db, "get_pool", lambda: FakePool(Conn()))
+    monkeypatch.setattr(jobs_api, "_resolve_exact_vehicle_catalogue_selection", catalogue)
+    response = client.patch(
+        f"/jobs/{row['job_id']}/fitment",
+        json={
+            "expected_vehicle_revision": 1,
+            "expected_rim_revision": 1,
+            "vehicle": {
+                "make": "bmw",
+                "model": "3-series",
+                "year": 2020,
+                "market": "eu",
+                "body": "stale",
+                "confirmed_fields": ["make", "model", "year", "market"],
+            },
+        },
+    )
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["vehicle_revision"] == 1
+    assert result["modification_state"] == "confirmed"
+    assert result["selected_modification"]["modification_slug"] == "330i"
+    assert result["vehicle"]["body"] == row["vehicle_body"]

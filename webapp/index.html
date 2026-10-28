@@ -1,98 +1,288 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-app-build="__BUILD_ID__" data-ui-startup="loading">
 <head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0a0b0e">
     <title>Dream Wheels AI</title>
-    <link rel="stylesheet" href="/style.css?v=20260627-1">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        html[data-ui-startup] { background: #090d10; }
+        html[data-ui-startup] body > :not([data-ui-startup-screen]):not(script):not(noscript) { display: none !important; }
+        [data-ui-startup-screen] { display: none; }
+        html[data-ui-startup] [data-ui-startup-screen] { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; padding: 24px; box-sizing: border-box; color: #f2f4f5; background: #090d10; font: 16px/1.5 system-ui, sans-serif; }
+        [data-ui-startup-screen] .startup-wordmark { margin: 0 0 24px; font-size: 13px; font-weight: 600; letter-spacing: .15em; }
+        [data-ui-startup-screen] .startup-wordmark span { color: #7f8c95; }
+        [data-ui-startup-screen] .startup-status { display: flex; align-items: center; gap: 12px; }
+        [data-ui-startup-screen] .startup-spinner { width: 20px; height: 20px; flex: 0 0 20px; border: 2px solid #42515c; border-top-color: #f2f4f5; border-radius: 50%; animation: startup-spin 1s linear infinite; }
+        [data-ui-startup-screen] a { color: inherit; }
+        [data-ui-startup-screen] [data-startup-error], [data-ui-startup-screen] [data-startup-retry] { display: none; }
+        html[data-ui-startup="error"] [data-startup-loading] { display: none; }
+        html[data-ui-startup="error"] [data-startup-error], html[data-ui-startup="error"] [data-startup-retry] { display: block; }
+        @keyframes startup-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { [data-ui-startup-screen] .startup-spinner { animation: none; } }
+    </style>
+    <link rel="preconnect" href="https://oauth.telegram.org">
+    <link rel="dns-prefetch" href="//oauth.telegram.org">
+    <link rel="stylesheet" href="/style.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/tokens.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/foundation.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/shell.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/surfaces.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/auth.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/render.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/fitment.css?v=__BUILD_ID__&surface=pr5">
+    <link rel="stylesheet" href="/vnext/styles/wallet.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/approved-home-create.css?v=__BUILD_ID__">
+    <link rel="stylesheet" href="/vnext/styles/account.css?v=__BUILD_ID__">
 </head>
 <body>
+    <section data-ui-startup-screen aria-live="polite" aria-label="Dream Wheels AI">
+        <p class="startup-wordmark">DREAM<span>WHEELS AI</span></p>
+        <div class="startup-status" data-startup-loading><span class="startup-spinner" aria-hidden="true"></span><span data-startup-label>Открываем приложение…</span></div>
+        <p data-startup-error>Не удалось открыть приложение</p>
+        <a href="" data-startup-retry>Повторить</a>
+        <noscript><p>Для открытия приложения включите JavaScript</p></noscript>
+    </section>
+    <script src="/startup.js?v=__BUILD_ID__"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <section class="application-auth-gate" data-application-auth-gate hidden aria-live="polite">
+        <div class="application-auth-gate-card">
+            <p class="application-auth-gate-wordmark brand-wordmark" aria-label="Dream Wheels AI">
+                <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+            </p>
+            <div class="application-auth-gate-status">
+                <div class="application-auth-gate-spinner" data-application-auth-gate-spinner aria-hidden="true"></div>
+                <h1 class="application-auth-gate-title" data-application-auth-gate-title>Открываем приложение…</h1>
+            </div>
+            <p class="application-auth-gate-copy" data-application-auth-gate-copy hidden></p>
+            <button type="button" class="primary-button" data-application-auth-gate-login hidden>Войти</button>
+        </div>
+    </section>
+    <aside class="desktop-sidebar" aria-label="Навигация кабинета" data-copy-aria="aria.cabinetNavigation">
+        <button type="button" class="brand-wordmark brand-button" data-nav="dashboard" aria-label="Dream Wheels AI — главная" data-copy-aria="aria.brandHome">
+            <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+        </button>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Основное</div>
+                <button type="button" class="sidebar-item active" data-nav="dashboard">Главная</button>
+                <button type="button" class="sidebar-item" data-nav="create">Примерить диски</button>
+                <button type="button" class="sidebar-item" data-nav="renders">История рендеров</button>
+                <button type="button" class="sidebar-item" data-nav="wallet">Баланс</button>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">Помощь</div>
+                <button type="button" class="sidebar-item" data-nav="support">Поддержка</button>
+                <button type="button" class="sidebar-item" data-nav="photo-guide">Как подготовить фото</button>
+                <button type="button" class="sidebar-item" data-nav="docs">Документы</button>
+            </div>
+        </nav>
+        <button type="button" class="sidebar-account" data-account-block data-nav="settings" aria-label="Открыть аккаунт" data-copy-aria="aria.openAccount">
+            <div class="account-avatar" data-account-avatar>DW</div>
+            <div>
+                <div class="account-name" data-account-name>Dream Wheels</div>
+                <div class="account-subtitle" data-account-subtitle>Кабинет</div>
+            </div>
+        </button>
+    </aside>
+
     <main id="app">
         <header class="topbar">
-            <div class="brand-wordmark">
+            <button type="button" class="brand-wordmark brand-button mobile-brand" data-nav="dashboard" aria-label="Dream Wheels AI — главная" data-copy-aria="aria.brandHome">
                 <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
-            </div>
+            </button>
             <div class="topbar-actions">
-                <button type="button" class="website-auth-button" data-website-auth-button data-i18n="auth.login" hidden>Войти через Telegram</button>
                 <div class="topbar-caption" data-topbar-caption>Кабинет</div>
-                <button type="button" class="menu-button" data-menu-toggle aria-expanded="false" aria-label="Открыть меню">
-                    <span aria-hidden="true">☰</span>
+                <button type="button" class="website-auth-button" data-website-auth-button hidden>
+                    <svg class="telegram-button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
+                    <span data-website-auth-label>Войти</span>
                 </button>
             </div>
         </header>
 
-        <nav class="menu-layer" data-menu-layer hidden aria-label="Навигация кабинета">
-            <button type="button" class="menu-item active" data-nav="create">
-                <span class="menu-icon" aria-hidden="true">✨</span>
-                <span class="menu-text" data-i18n="menu.create">Создать рендер</span>
-            </button>
-            <button type="button" class="menu-item" data-nav="wallet">
-                <span class="menu-icon" aria-hidden="true">👛</span>
-                <span class="menu-text" data-i18n="menu.wallet">Кошелек</span>
-            </button>
-            <button type="button" class="menu-item" data-nav="renders">
-                <span class="menu-icon" aria-hidden="true">🖼️</span>
-                <span class="menu-text" data-i18n="menu.renders">История рендеров</span>
-            </button>
-            <button type="button" class="menu-item" data-nav="settings">
-                <span class="menu-icon" aria-hidden="true">⚙️</span>
-                <span class="menu-text" data-i18n="menu.settings">Настройки</span>
-            </button>
-            <button type="button" class="menu-item" data-nav="support">
-                <span class="menu-icon" aria-hidden="true">💬</span>
-                <span class="menu-text" data-i18n="menu.support">Поддержка</span>
-            </button>
-            <button type="button" class="menu-item" data-nav="docs">
-                <span class="menu-icon" aria-hidden="true">📄</span>
-                <span class="menu-text" data-i18n="menu.docs">Документы</span>
-            </button>
-        </nav>
-
-        <section class="view" data-view="create">
-            <section class="hero-panel compact">
+        <section class="view" data-view="dashboard">
+            <section class="hero-panel dashboard-hero">
                 <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="create.eyebrow">Главный экран</p>
-                    <h1 data-i18n="create.title">Загрузи фото машины и диска</h1>
-                    <p class="lede" data-i18n="create.lede">
-                        Машина целиком сбоку, диск анфас. JPG или PNG, до 10 MB.
-                    </p>
+                    <h1 class="dashboard-title"><span data-i18n="dashboard.titleLine1">Примерьте</span><span data-i18n="dashboard.titleLine2">новые диски</span><span data-i18n="dashboard.titleLine3">на своём автомобиле</span></h1>
+                    <p class="lede" data-i18n="dashboard.lede">Загрузите два фото – результат будет готов за 1–2 минуты</p>
+                    <div class="dashboard-actions">
+                        <button type="button" class="ghost-button" data-dashboard-primary-action data-nav="create" data-i18n="dashboard.startRender">Создать виртуальную примерку</button>
+                        <button type="button" class="ghost-button" data-dashboard-secondary-action data-nav="renders">История рендеров</button>
+                    </div>
                 </div>
             </section>
 
-            <section class="panel" data-create-screen="upload">
-                <label class="dropzone" data-upload-zone="car">
-                    <input type="file" accept="image/*" data-input="car" hidden>
-                    <div class="dropzone-icon">📷</div>
-                    <div class="dropzone-text" data-i18n="create.carPhoto">Фото машины</div>
-                    <div class="dropzone-sub" data-i18n="create.choose">Нажми, чтобы выбрать</div>
-                </label>
-                <div class="preview" data-preview="car" hidden>
-                    <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
-                    <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить машину</button>
+            <section class="dashboard-grid">
+                <article class="panel dashboard-balance-card">
+                    <div class="dashboard-card-skeleton" data-dashboard-balance-skeleton hidden aria-hidden="true">
+                        <span class="dashboard-skeleton-line dashboard-skeleton-label"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-title"></span>
+                        <span class="dashboard-skeleton-island"></span>
+                    </div>
+                    <div class="panel-head">
+                        <div>
+                            <p class="section-label">Баланс</p>
+                        </div>
+                    </div>
+                    <div class="balance-tile dashboard-balance-display">
+                        <div class="dashboard-balance-subisland">
+                            <span class="balance-value dashboard-balance-value" data-dashboard-balance>0</span>
+                            <span class="balance-unit dashboard-balance-unit" data-dashboard-balance-unit>рендеров</span>
+                            <span class="balance-note balance-note-value dashboard-balance-account" data-dashboard-balance-account></span>
+                        </div>
+                    </div>
+                    <div class="dashboard-expiry-card" data-dashboard-expiry hidden>
+                        <div class="dashboard-expiry-head">
+                            <strong data-i18n="dashboard.expiryTitle">Срок действия</strong>
+                        </div>
+                        <div class="dashboard-expiry-list" data-dashboard-expiry-list></div>
+                        <div class="dashboard-expiry-note" data-dashboard-expiry-note hidden></div>
+                    </div>
+                    <div class="wallet-status-island tone-loading" data-dashboard-loading data-visible="false" aria-live="polite">
+                        <div class="wallet-status-spinner" aria-hidden="true"></div>
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-i18n="wallet.loading" data-i18n-sentence>Загружаем кабинет…</div>
+                        </div>
+                    </div>
+                    <div class="wallet-status-island tone-error" data-dashboard-error data-visible="false">
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-dashboard-error-text>Баланс временно недоступен</div>
+                        </div>
+                    </div>
+                    <button type="button" class="ghost-button compact-button dashboard-balance-action" data-nav="wallet">Пополнить счёт</button>
+                    <div class="wallet-status-island tone-warning dashboard-auth-island" data-dashboard-auth data-visible="false">
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-i18n="auth.dashboardLoginPrompt">Войдите, чтобы увидеть баланс</div>
+                            <button type="button" class="primary-button compact-button dashboard-auth-action" data-dashboard-auth-login>
+                                <svg class="telegram-button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
+                                <span data-dashboard-auth-login-label>Войти</span>
+                            </button>
+                            <div class="wallet-status-sub dashboard-auth-error" data-dashboard-auth-error hidden role="status"></div>
+                        </div>
+                    </div>
+                    <div class="wallet-status-island tone-warning dashboard-auth-info" data-dashboard-auth-info hidden role="status" aria-live="polite">
+                        <div class="wallet-status-copy">
+                            <div class="wallet-status-title" data-dashboard-auth-info-text>Вход выполнен. Кабинет будет доступен после подключения защищённых запросов.</div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel latest-render-card" data-latest-render-card>
+                    <div class="dashboard-card-skeleton" data-dashboard-latest-skeleton hidden aria-hidden="true">
+                        <span class="dashboard-skeleton-line dashboard-skeleton-label"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-title"></span>
+                        <span class="dashboard-skeleton-preview"></span>
+                        <span class="dashboard-skeleton-line dashboard-skeleton-meta"></span>
+                    </div>
+                    <div class="panel-head">
+                        <div>
+                            <p class="section-label">Последний результат</p>
+                            <h2 data-latest-title>Ваша первая примерка</h2>
+                        </div>
+                        <span class="status-pill neutral" data-latest-status>Нет истории</span>
+                    </div>
+                    <div data-latest-content></div>
+                </article>
+            </section>
+
+        </section>
+
+        <section class="view" data-view="create" hidden>
+            <section class="create-upload-flow" data-create-screen="upload">
+                <div class="upload-photo-grid">
+                    <article class="upload-photo-card">
+                        <p class="section-label" data-i18n="create.carPhoto">Фото автомобиля</p>
+                        <label class="dropzone" data-upload-zone="car">
+                            <input type="file" accept="image/*" data-input="car" hidden>
+                            <div class="dropzone-icon" aria-hidden="true">🚗</div>
+                            <div class="dropzone-sub" data-i18n="create.choose">Нажмите, чтобы выбрать</div>
+                        </label>
+                        <div class="preview" data-preview="car" hidden>
+                            <div class="preview-media" data-preview-media="car">
+                                <!-- hidden until the selected car receives its blob URL -->
+                                <img alt="Car preview" data-preview-img="car" data-i18n-alt="create.carPreviewAlt">
+                            </div>
+                            <p class="photo-upload-status" data-i18n="create.carAdded">Фото автомобиля добавлено</p>
+                            <button type="button" class="link-button" data-clear="car" data-i18n="create.replaceCar">Заменить фото автомобиля</button>
+                        </div>
+                    </article>
+
+                    <article class="upload-photo-card">
+                        <p class="section-label" data-i18n="create.wheelPhoto">Фото колесного диска</p>
+                        <label class="dropzone" data-upload-zone="wheel">
+                            <input type="file" accept="image/*" data-input="wheel" hidden>
+                            <div class="dropzone-icon" aria-hidden="true">🛞</div>
+                            <div class="dropzone-sub" data-i18n="create.choose">Нажмите, чтобы выбрать</div>
+                        </label>
+                        <div class="preview" data-preview="wheel" hidden>
+                            <div class="preview-media" data-preview-media="wheel">
+                                <!-- hidden until the selected wheel receives its blob URL -->
+                                <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
+                            </div>
+                            <p class="photo-upload-status" data-i18n="create.wheelAdded">Фото колесного диска добавлено</p>
+                            <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить фото колесного диска</button>
+                        </div>
+                    </article>
                 </div>
 
-                <label class="dropzone" data-upload-zone="wheel">
-                    <input type="file" accept="image/*" data-input="wheel" hidden>
-                    <div class="dropzone-icon">⚙️</div>
-                    <div class="dropzone-text" data-i18n="create.wheelPhoto">Фото диска</div>
-                    <div class="dropzone-sub" data-i18n="create.choose">Нажми, чтобы выбрать</div>
-                </label>
-                <div class="preview" data-preview="wheel" hidden>
-                    <img alt="Wheel preview" data-preview-img="wheel" data-i18n-alt="create.wheelPreviewAlt">
-                    <button type="button" class="link-button" data-clear="wheel" data-i18n="create.replaceWheel">Заменить диск</button>
+                <div class="wallet-status-island tone-warning upload-format-warning" data-visible="true">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-i18n="create.uploadFormat">Поддерживаемые форматы JPG, PNG и WebP до 10 МБ</div>
+                    </div>
                 </div>
+
+                <div class="wallet-status-island tone-neutral beta-notice" data-visible="true" role="status">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-text" data-i18n="warnings.beta">Dream Wheels находится в бета-режиме. Некоторые функции проходят финальное тестирование, а результат ИИ может содержать визуальные неточности.</div>
+                    </div>
+                </div>
+
+                <section class="photo-consent-card" data-photo-consent hidden aria-labelledby="photo-consent-title">
+                    <div class="photo-consent-heading">
+                        <span class="photo-consent-icon" aria-hidden="true">🔒</span>
+                        <div>
+                            <h2 id="photo-consent-title" data-i18n="consent.title">Использование фотографий</h2>
+                            <p data-i18n="consent.description">Для создания примерки фотографии автомобиля и диска будут обработаны Dream Wheels AI и сервисом AI-генерации.</p>
+                        </div>
+                    </div>
+                    <label class="photo-consent-check">
+                        <input type="checkbox" data-photo-consent-checkbox>
+                        <span data-i18n="consent.confirmation">Я подтверждаю, что имею право использовать выбранные фотографии, и соглашаюсь с их обработкой для создания AI-примерки.</span>
+                    </label>
+                    <div class="legal-inline-links">
+                        <a href="https://legal.dreamwheels.pro/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="consent.privacy">Политика обработки данных</a>
+                        <span aria-hidden="true">–</span>
+                        <a href="https://legal.dreamwheels.pro/legal/consent" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="consent.document">Согласие</a>
+                    </div>
+                    <button type="button" class="link-button consent-cancel" data-photo-consent-cancel data-i18n="consent.cancel">Отменить и выбрать другие фотографии</button>
+                </section>
+
+                <p class="photo-consent-compact" data-photo-consent-compact hidden>
+                    <span data-i18n="consent.compact">Продолжая, вы подтверждаете право использовать выбранные фотографии.</span>
+                    <a href="https://legal.dreamwheels.pro/legal/privacy" target="_blank" rel="noopener noreferrer" data-external-link data-i18n="consent.processingTerms">Условия обработки данных</a>
+                </p>
+
+                <div class="rim-source-preflight create-source-card" data-rim-source-preflight hidden>
+                    <label class="fitment-field">
+                        <span><span data-i18n="create.productLink">Ссылка на товар</span> <em data-i18n="create.productLinkOptional">(необязательно)</em></span>
+                        <input type="url" inputmode="url" autocomplete="url" placeholder="https://…" data-rim-product-url>
+                    </label>
+                    <div class="panel-note warning" data-i18n="create.productLinkWarning">Ссылка на товар — необязательно. Сохраним её для последующей проверки совместимости.</div>
+                </div>
+
+
             </section>
 
             <section class="panel result-panel" data-create-screen="result" hidden>
                 <div class="status-block" data-status>
                     <div class="spinner" data-spinner></div>
-                    <div class="status-text" data-status-text data-i18n="status.creating">Создаём задачу...</div>
+                    <div class="status-text" data-status-text data-i18n="status.creating" data-i18n-sentence>Создаём изображение…</div>
                     <div class="status-sub" data-status-sub data-i18n="status.upTo90">Это может занять до 90 секунд</div>
                     <pre class="status-debug" data-status-debug hidden></pre>
                 </div>
                 <div class="result-block" data-result hidden>
+                    <!-- result stays hidden until its protected image is loaded -->
                     <img data-result-img hidden alt="AI render" data-i18n-alt="result.imageAlt" class="result-image">
                     <div class="result-actions">
                         <button type="button" class="ghost-button compact-button" data-download-result data-i18n="actions.download" hidden>Скачать</button>
@@ -100,304 +290,609 @@
                     </div>
                     <div class="result-icon">✅</div>
                     <p class="result-title" data-i18n="result.title">Готово!</p>
-                    <p class="result-caption" data-i18n="result.caption">Ваш рендер с новыми дисками готов.</p>
+                    <p class="result-caption" data-i18n="result.caption">Результат примерки готов</p>
+                    <div class="create-flow-actions">
+                        <button type="button" class="ghost-button compact-button" data-open-fitment-result hidden data-i18n="fitment.openFromResult">Проверить совместимость</button>
+                    </div>
                 </div>
                 <div class="error-block" data-error hidden>
                     <div class="error-icon">⚠️</div>
-                    <div class="error-text" data-error-text data-i18n="errors.generic">Что-то пошло не так</div>
+                    <div class="error-text" data-error-text data-error-title data-i18n="errors.generic">Что-то пошло не так</div>
+                    <p class="error-copy" data-error-copy></p>
+                    <div class="create-flow-actions">
+                        <button type="button" class="ghost-button compact-button" data-error-action>Повторить</button>
+                        <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="link-button error-support-link" data-error-support hidden>Поддержка</a>
+                    </div>
                 </div>
             </section>
 
-            <footer class="miniapp-footer">
-                <span data-user-info data-i18n="create.footerNotTelegram">Не в Telegram</span>
-                <span class="dot">·</span>
-                <span>2026</span>
-            </footer>
         </section>
 
-        <section class="view" data-view="wallet" hidden>
-            <section class="hero-panel">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="wallet.eyebrow">Кабинет</p>
-                    <h1 data-i18n="wallet.title">Мой Dream Wheels AI</h1>
-                    <p class="lede" data-i18n="wallet.lede">
-                        Здесь видны баланс, последний счет и быстрый платежный flow в три шага
-                    </p>
-                </div>
-                <section class="balance-tile">
-                    <div class="balance-badge">💎</div>
-                    <div class="balance-value"><span data-balance-value>3</span></div>
-                    <div class="balance-unit">credits</div>
-                    <div class="balance-note" data-balance-note hidden></div>
-                </section>
-            </section>
+        <section class="view" data-view="wallet" hidden></section>
 
-            <section class="panel last-invoice-panel">
-                <div class="panel-head">
-                    <div>
-                        <p class="section-label" data-i18n="wallet.lastInvoiceLabel">Последний счет</p>
-                        <h2 data-i18n="wallet.lastInvoiceTitle">Статус виден сразу после оплаты</h2>
-                    </div>
-                    <span class="status-pill neutral" data-payment-status>Нет платежей</span>
-                </div>
-                <p class="panel-note warning-note" data-last-payment-error hidden></p>
-                <div class="payment-card payment-card-grant" data-last-invoice-empty>
-                    <div>
-                        <div class="payment-card-title" data-i18n="wallet.noPaymentsTitle">Платежей пока нет</div>
-                        <div class="payment-card-meta" data-i18n="wallet.noPaymentsMeta">Стартовый грант по /start на 30 дней появится в истории платежей</div>
-                    </div>
-                </div>
-                <div class="payment-card" data-last-invoice-card hidden>
-                    <div>
-                        <div class="payment-card-title" data-last-invoice-number>#000000</div>
-                        <div class="payment-card-meta" data-last-invoice-meta>Сегодня</div>
-                    </div>
-                    <div class="payment-card-actions">
-                        <button type="button" class="payment-card-action payment-card-action-ghost" data-refresh-invoice hidden data-i18n="wallet.refreshInvoice">Обновить счет</button>
-                        <button type="button" class="payment-card-action payment-card-action-accent" data-resume-invoice hidden data-i18n="wallet.payAgain">Оплатить еще раз</button>
-                    </div>
-                </div>
-                <div class="invoice-card" data-last-invoice-details hidden>
-                    <div class="invoice-row">
-                        <div>
-                            <div class="invoice-number" data-last-invoice-amount>0 ₽</div>
-                            <div class="invoice-meta" data-last-invoice-state>Черновик</div>
-                        </div>
-                        <span class="status-pill" data-last-invoice-status>Pending</span>
-                    </div>
-                    <div class="invoice-grid">
-                        <div class="invoice-field">
-                            <span data-i18n="wallet.invoiceEmail">Email</span>
-                            <strong data-last-invoice-email>—</strong>
-                        </div>
-                        <div class="invoice-field">
-                            <span data-i18n="wallet.invoiceCredits">Начисление</span>
-                            <strong data-last-invoice-credits>0 credits</strong>
-                        </div>
-                        <div class="invoice-field">
-                            <span data-i18n="wallet.invoiceAmount">Сумма</span>
-                            <strong data-last-invoice-amount-copy>0 ₽</strong>
-                        </div>
-                        <div class="invoice-field">
-                            <span data-i18n="wallet.invoiceNumber">Счет</span>
-                            <strong data-last-invoice-number-copy>#000000</strong>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel wizard-panel">
-                <div class="panel-head">
-                    <div>
-                        <p class="section-label" data-i18n="wallet.wizardLabel">Пополнение</p>
-                        <h2 data-i18n="wallet.wizardTitle">Три шага оплаты</h2>
-                    </div>
-                    <button type="button" class="ghost-button" data-reset-wizard data-i18n="wallet.reset">Сбросить</button>
-                </div>
-                <div class="wallet-status-island wallet-status-loading" data-wallet-loading aria-live="polite" data-visible="false">
-                    <div class="wallet-status-spinner" aria-hidden="true"></div>
-                    <div class="wallet-status-copy">
-                        <div class="wallet-status-title" data-wallet-loading-text data-i18n="wallet.loading">Загружаем кабинет...</div>
-                    </div>
-                </div>
-                <div class="topup-wizard">
-                    <div class="topup-island topup-step-island">
-                        <div class="topup-step-head">
-                            <span class="topup-step-index">1</span>
-                            <div>
-                                <div class="topup-step-title" data-i18n="wallet.stepChooseTitle">Выберите пакет</div>
-                                <div class="topup-step-sub" data-i18n="wallet.stepChooseSub">Пакетный режим активен по умолчанию</div>
-                            </div>
-                        </div>
-                        <div class="topup-mode-switch" hidden>
-                            <button type="button" class="topup-mode-button" data-topup-mode-button="package" data-selected="true" aria-selected="true" data-i18n="wallet.modePackage">Пакет</button>
-                            <button type="button" class="topup-mode-button" data-topup-mode-button="custom" data-selected="false" aria-selected="false" disabled data-i18n="wallet.modeCustom">Своя сумма</button>
-                        </div>
-                        <div class="topup-island topup-packages-island" data-topup-panel="package" data-active="true" aria-hidden="false">
-                            <div class="topup-grid">
-                                <button type="button" class="topup-card" data-topup-amount="100" data-topup-credits="3" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">⚡</span>
-                                    <span class="package-main">
-                                        <span class="package-name">100 ₽</span>
-                                        <span class="package-meta" data-topup-meta>3 credits · 30 дней</span>
-                                    </span>
-                                </button>
-                                <button type="button" class="topup-card" data-topup-amount="200" data-topup-credits="7" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">🏁</span>
-                                    <span class="package-main">
-                                        <span class="package-name">200 ₽</span>
-                                        <span class="package-meta" data-topup-meta>7 credits · 30 дней</span>
-                                    </span>
-                                </button>
-                                <button type="button" class="topup-card" data-topup-amount="500" data-topup-credits="20" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">💎</span>
-                                    <span class="package-main">
-                                        <span class="package-name">500 ₽</span>
-                                        <span class="package-meta" data-topup-meta>20 credits · 30 дней</span>
-                                    </span>
-                                </button>
-                                <button type="button" class="topup-card" data-topup-amount="1000" data-topup-credits="45" data-selected="false">
-                                    <span class="topup-icon" aria-hidden="true">👑</span>
-                                    <span class="package-main">
-                                        <span class="package-name">1 000 ₽</span>
-                                        <span class="package-meta" data-topup-meta>45 credits · 30 дней</span>
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="custom-topup" data-topup-panel="custom" data-active="false" aria-hidden="true" hidden>
-                            <div class="topup-island">
-                                <label class="custom-topup-label" for="custom-topup-amount" data-i18n="wallet.customAmountLabel">Своя сумма</label>
-                                <div class="custom-topup-row">
-                                    <input id="custom-topup-amount" type="number" inputmode="numeric" min="100" max="3000" step="50" value="200" data-custom-topup disabled>
-                                </div>
-                                <p class="custom-topup-preview" data-custom-topup-preview>7 credits за 200 ₽ · 30 дней</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="topup-island topup-step-island">
-                        <div class="topup-step-head">
-                            <span class="topup-step-index">2</span>
-                            <div>
-                                <div class="topup-step-title" data-i18n="wallet.emailLabel">Email для чека</div>
-                                <div class="topup-step-sub" data-i18n="wallet.emailHint">Используем его для чека и подтверждения оплаты</div>
-                            </div>
-                        </div>
-                        <label class="custom-topup-label" for="wallet-email" data-i18n="wallet.emailLabel">Email для чека</label>
-                        <input id="wallet-email" class="topup-email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-topup-email>
-                        <p class="topup-email-error" data-topup-email-error hidden></p>
-                    </div>
-
-                    <div class="topup-island topup-step-island topup-action-island">
-                        <div class="topup-step-head">
-                            <span class="topup-step-index">3</span>
-                            <div>
-                                <div class="topup-step-title" data-i18n="wallet.stepConfirm">Подтверждение</div>
-                                <div class="topup-step-sub" data-i18n="wallet.confirmHint">Проверьте пакет перед переходом в Robokassa</div>
-                            </div>
-                        </div>
-                        <div class="wallet-status-island" data-wallet-feedback aria-live="polite" data-visible="false">
-                            <div class="wallet-status-copy">
-                                <div class="wallet-status-title" data-wallet-feedback-text></div>
-                            </div>
-                        </div>
-                        <div class="topup-summary">
-                            <div class="topup-summary-title" data-topup-summary-title data-i18n="wallet.summaryEmptyTitle">Выберите пакет</div>
-                            <div class="topup-summary-meta" data-topup-summary-meta data-i18n="wallet.summaryEmptyMeta">Здесь появится выбранный пакет перед оплатой.</div>
-                        </div>
-                        <button type="button" class="primary-button wallet-pay-button" data-pay-button data-i18n="wallet.pay">Оплатить</button>
-                        <p class="panel-note" data-i18n="wallet.paymentNote">Оплата откроется через Robokassa. Credits начисляются после подтверждения.</p>
-                    </div>
-                </div>
-            </section>
-
-            <details class="collapsible panel">
-                <summary>
-                    <span>
-                        <strong data-i18n="wallet.paymentHistory">История платежей</strong>
-                        <span class="summary-hint" data-i18n="wallet.paymentHistoryHint">Скрыта по умолчанию</span>
-                    </span>
-                    <span class="summary-action" data-i18n="wallet.openHistory">Открыть</span>
-                </summary>
-                <div class="history-list" data-payment-history-list></div>
-            </details>
-        </section>
 
         <section class="view" data-view="renders" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="renders.eyebrow">Готовые работы</p>
-                    <h1 data-i18n="renders.title">История рендеров</h1>
-                    <p class="lede" data-i18n="renders.lede">
-                        Быстрый список последних генераций и их состояния.
-                    </p>
-                </div>
-            </section>
             <section class="panel">
                 <div class="list" data-render-history></div>
             </section>
         </section>
 
-        <section class="view" data-view="settings" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="settings.eyebrow">Параметры кабинета</p>
-                    <h1 data-i18n="settings.title">Настройки</h1>
-                    <p class="lede" data-i18n="settings.lede">
-                        Формальный экран для будущих параметров профиля и уведомлений.
-                    </p>
+        <section class="view" data-view="render-detail" hidden>
+            <section class="panel" data-render-detail></section>
+        </section>
+
+        <section class="view" data-view="fitment" hidden>
+            <section class="panel fitment-panel">
+                <div class="wallet-status-island tone-loading" data-fitment-loading data-visible="false" aria-live="polite">
+                    <div class="wallet-status-spinner" aria-hidden="true"></div>
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-i18n="fitment.loading">Загружаем данные</div>
+                    </div>
+                </div>
+
+                <div class="wallet-status-island tone-error" data-fitment-error data-visible="false" aria-live="assertive">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-fitment-error-text>Не удалось загрузить данные</div>
+                    </div>
+                </div>
+
+                <div class="wallet-status-island tone-success" data-fitment-message data-visible="false" aria-live="polite">
+                    <div class="wallet-status-copy">
+                        <div class="wallet-status-title" data-fitment-message-text>Данные сохранены</div>
+                    </div>
+                </div>
+
+                <div class="fitment-shell" data-fitment-shell hidden>
+                    <article class="fitment-context fitment-v2-context" data-fitment-context>
+                        <div class="fitment-pair" data-fitment-context-pair>
+                            <article class="fitment-pair-card" data-fitment-vehicle-preview>
+                                <div class="fitment-pair-media" data-fitment-vehicle-preview-media><span>Фото автомобиля</span></div>
+                                <div class="fitment-pair-copy"><span class="section-label">Автомобиль</span><strong data-fitment-vehicle-title>—</strong><small data-fitment-vehicle-specs hidden></small></div>
+                            </article>
+                            <article class="fitment-pair-card" data-fitment-rim-preview>
+                                <div class="fitment-pair-media" data-fitment-rim-preview-media><span>Фото диска</span></div>
+                                <div class="fitment-pair-copy"><span class="section-label">Колесный диск</span><strong data-fitment-card-rim-title>—</strong><small data-fitment-card-rim-specs hidden></small></div>
+                            </article>
+                        </div>
+                    </article>
+
+                    <nav class="fitment-flow-nav" data-fitment-navigator aria-label="Разделы проверки" data-copy-aria="aria.checkSections">
+                        <button type="button" class="fitment-flow-tab active" data-fitment-section-tab="vehicle" aria-selected="true">
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Автомобиль</strong></span><span class="fitment-flow-state" data-fitment-flow-state="vehicle">Требует проверки</span></span>
+                        </button>
+                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="rim" aria-selected="false">
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Колесный диск</strong></span><span class="fitment-flow-state" data-fitment-flow-state="rim">Ожидает</span></span>
+                        </button>
+                        <button type="button" class="fitment-flow-tab" data-fitment-section-tab="result" data-fitment-result-tab aria-selected="false">
+                            <span class="fitment-flow-copy"><span class="fitment-flow-name"><span class="fitment-flow-dot"></span><strong>Вывод</strong></span><span class="fitment-flow-state" data-fitment-flow-state="result">Не выполнен</span></span>
+                        </button>
+                    </nav>
+
+                    <section class="fitment-verdict-card" data-fitment-verdict-card data-fitment-section="result" hidden>
+                        <div class="fitment-verdict-head">
+                            <h2 class="fitment-verdict-title" data-fitment-verdict-title>Проверка совместимости</h2>
+                        </div>
+                        <p class="fitment-verdict-copy" data-fitment-verdict-copy></p>
+                        <p class="fitment-verdict-stale-previous" data-fitment-stale-previous hidden></p>
+                        <p class="fitment-verdict-precheck-secondary" data-fitment-verdict-precheck-secondary hidden></p>
+                        <p class="panel-note warning" data-fitment-currentness hidden></p>
+                        <div class="fitment-stale-recovery" data-fitment-stale-recovery hidden>
+                            <button type="button" class="ghost-button compact-button" data-fitment-stale-recovery-action></button>
+                        </div>
+                        <div class="fitment-verdict-groups" data-fitment-verdict-groups hidden>
+                            <section class="fitment-verdict-group" data-fitment-verdict-blocking hidden>
+                                <strong>Нужно уточнить</strong>
+                                <div data-fitment-verdict-blocking-list></div>
+                            </section>
+                            <section class="fitment-verdict-group" data-fitment-verdict-conditions hidden>
+                                <strong>Условия установки</strong>
+                                <div data-fitment-verdict-conditions-list></div>
+                            </section>
+                        </div>
+                        <div class="fitment-verdict-fields" data-fitment-verdict-fields hidden></div>
+                        <div class="fitment-verdict-precheck-actions" data-fitment-verdict-precheck-actions hidden>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-result-action></button>
+                        </div>
+                        <div class="fitment-verdict-footer fitment-result-info" data-fitment-verdict-footer hidden>
+                            <p class="panel-note info" data-fitment-verdict-warning hidden data-i18n="warnings.fitment">Предварительная проверка совместимости. Результат основан на доступных технических параметрах. Перед покупкой рекомендуем подтвердить совместимость у продавца или установочного центра.</p>
+                            <p class="fitment-verdict-disclaimer" data-fitment-verdict-disclaimer data-i18n="fitment.verdictDisclaimer">Предварительная оценка не является гарантией установки.</p>
+                        </div>
+                        <div class="fitment-verdict-recheck" data-fitment-verdict-recheck hidden>
+                            <button type="button" class="ghost-button neutral compact-button" data-fitment-check data-i18n="fitment.check">Проверить ещё раз</button>
+                        </div>
+                    </section>
+
+                    <form class="form-stack fitment-form" data-fitment-form>
+                        <section class="fitment-form-section" data-fitment-section="vehicle">
+                            <div class="fitment-form-head">
+                                <h2 data-fitment-workspace-title data-i18n="fitment.vehicleSection">Автомобиль</h2>
+                                <div class="fitment-vehicle-helper" data-fitment-vehicle-helper aria-live="polite" hidden></div>
+                            </div>
+                            <div class="fitment-workspace-summary fitment-vehicle-summary" data-fitment-vehicle-summary hidden>
+                                <div class="fitment-summary-copy">
+                                    <span class="section-label fitment-summary-label">Основные данные</span>
+                                    <strong data-fitment-summary-vehicle-title>—</strong>
+                                    <span data-fitment-summary-vehicle-specs>—</span>
+                                </div>
+                                <button type="button" class="ghost-button compact-button" data-fitment-edit="vehicle">Изменить автомобиль</button>
+                            </div>
+                            <div class="fitment-form-grid" data-fitment-vehicle-editor>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.make">Марка</span>
+                                    <select id="fitment-make" data-fitment-input="vehicle.make" data-fitment-catalogue="makes">
+                                        <option value="">Загружаем марки…</option>
+                                    </select>
+                                    <small id="fitment-make-state" class="fitment-catalogue-state" data-fitment-catalogue-state="makes" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="makes" hidden>Повторить</button>
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.model">Модель</span>
+                                    <select id="fitment-model" data-fitment-input="vehicle.model" data-fitment-catalogue="models" disabled>
+                                        <option value="">Сначала выберите марку</option>
+                                    </select>
+                                    <small id="fitment-model-state" class="fitment-catalogue-state" data-fitment-catalogue-state="models" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="models" hidden>Повторить</button>
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.year">Год</span>
+                                    <select id="fitment-year" data-fitment-input="vehicle.year" data-fitment-catalogue="years" disabled>
+                                        <option value="">Сначала выберите модель</option>
+                                    </select>
+                                    <small id="fitment-year-state" class="fitment-catalogue-state" data-fitment-catalogue-state="years" aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="years" hidden>Повторить</button>
+                                </label>
+                                <label class="fitment-field fitment-market-field" data-fitment-market-field hidden>
+                                    <span data-i18n="fitment.marketVersion">Версия для рынка</span>
+                                    <select id="fitment-market" data-fitment-input="vehicle.market" data-fitment-market-resolution>
+                                        <option value="">Сначала выберите год</option>
+                                    </select>
+                                    <small id="fitment-market-state" class="fitment-catalogue-state" data-fitment-market-state aria-live="polite"></small>
+                                    <button type="button" class="ghost-button compact-button fitment-catalogue-retry" data-fitment-catalogue-retry="markets" hidden>Повторить</button>
+                                </label>
+                            </div>
+                            <div class="fitment-workspace-summary fitment-modification-summary" data-fitment-modification-summary hidden>
+                                <div class="fitment-summary-copy">
+                                    <span class="section-label fitment-summary-label">Комплектация</span>
+                                    <div class="fitment-modification-row" data-fitment-modification-row hidden>
+                                        <strong data-fitment-modification-name>Не выбрана</strong>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-modification-toggle aria-expanded="false" aria-controls="fitment-modification-options">Выбрать</button>
+                                    </div>
+                                    <div class="fitment-modification-picker" id="fitment-modification-options" data-fitment-modification-picker hidden aria-live="polite">
+                                        <div class="fitment-modification-list" data-fitment-modification-list hidden></div>
+                                        <div class="fitment-modification-feedback" data-fitment-modification-feedback hidden>
+                                            <span data-fitment-modification-feedback-text></span>
+                                            <button type="button" class="ghost-button compact-button" data-fitment-modification-retry hidden>Повторить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fitment-variant-picker" data-fitment-vehicle-variant-workspace hidden>
+                                <button type="button" class="ghost-button compact-button" data-fitment-variants-load data-i18n="fitment.findVariants">Подобрать версию автомобиля</button>
+                                <div class="fitment-modification-feedback" data-fitment-variant-feedback hidden aria-live="polite">
+                                    <strong data-fitment-variant-feedback-text></strong>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-variants-retry hidden>Повторить</button>
+                                </div>
+                                <div class="fitment-variant-list" data-fitment-variant-list hidden></div>
+                                <div class="fitment-variant-empty" data-fitment-variant-empty hidden>
+                                    <strong>Комплектация не найдена</strong>
+                                    <span>В техническом каталоге нет подходящих данных для выбранного автомобиля</span>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-variants-edit>Изменить автомобиль</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="fitment-form-section" data-fitment-section="rim">
+                            <div class="fitment-form-head">
+                                <h2>Колесный диск</h2>
+                                <p class="fitment-state-line" data-fitment-rim-state aria-live="polite"></p>
+                            </div>
+                            <div class="fitment-workspace-summary" data-fitment-rim-summary hidden>
+                                <div><strong data-fitment-rim-summary-title>—</strong><span data-fitment-rim-summary-specs>—</span><small data-fitment-rim-summary-meta>Параметры требуют подтверждения</small></div>
+                                <div class="fitment-summary-actions"><button type="button" class="primary-button compact-button" data-fitment-check-ready hidden>Проверить совместимость</button><button type="button" class="ghost-button compact-button" data-fitment-edit="rim">Изменить параметры</button></div>
+                            </div>
+                            <p class="fitment-axis-summary" data-fitment-rim-axes hidden></p>
+                            <details class="fitment-source-disclosure" data-fitment-source-disclosure>
+                                <summary aria-expanded="false" aria-controls="fitment-source-disclosure-body">Источник и технические данные</summary>
+                                <div class="fitment-source-entry" id="fitment-source-disclosure-body" data-fitment-source-entry>
+                                    <label class="fitment-field">
+                                        <span data-i18n="fitment.productUrl">Ссылка на колесный диск</span>
+                                        <input type="url" inputmode="url" data-fitment-source-url autocomplete="off" placeholder="https://">
+                                    </label>
+                                    <button type="button" class="ghost-button compact-button" data-fitment-source-submit data-i18n="fitment.sourceResolve">Извлечь параметры</button>
+                                    <div class="fitment-source-status" data-fitment-source-status hidden aria-live="polite">
+                                        <strong data-fitment-source-status-title></strong>
+                                        <span data-fitment-source-status-copy></span>
+                                    </div>
+                                    <div class="fitment-source-status-actions" data-fitment-source-status-actions hidden>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-source-manual>Заполнить параметры вручную</button>
+                                        <button type="button" class="ghost-button compact-button" data-fitment-source-retry>Повторить</button>
+                                    </div>
+                                </div>
+                                <div class="fitment-source-details" data-fitment-source-details hidden></div>
+                            </details>
+                            <div class="fitment-rim-variant-picker" data-fitment-rim-variant-picker hidden aria-live="polite"></div>
+                            <div class="fitment-parser-conflicts" data-fitment-parser-conflicts hidden aria-live="polite"></div>
+                            <label class="fitment-field fitment-setup-mode">
+                                <span>Комплект дисков</span>
+                                <select data-fitment-setup-mode aria-label="Комплект дисков" data-copy-aria="aria.wheelSetup">
+                                    <option value="uniform">Одинаковые параметры спереди и сзади</option>
+                                    <option value="staggered">Разные параметры по осям</option>
+                                </select>
+                            </label>
+                            <div class="fitment-form-grid">
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.rimBrand">Бренд</span>
+                                    <input type="text" data-fitment-input="rim.brand" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.rimModel">Модель</span>
+                                    <input type="text" data-fitment-input="rim.model" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.sku">Артикул</span>
+                                    <input type="text" data-fitment-input="rim.sku" autocomplete="off">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.boltCount">Крепёжных отверстий</span>
+                                    <input type="number" inputmode="numeric" step="1" min="3" max="8" data-fitment-input="rim.bolt_count">
+                                </label>
+                                <label class="fitment-field">
+                                    <span>Разболтовка (PCD)</span>
+                                    <select data-fitment-pcd-select aria-label="Разболтовка (PCD)" data-copy-aria="aria.pcd">
+                                        <option value="">Выберите PCD</option>
+                                        <option value="4x98">4×98</option>
+                                        <option value="4x100">4×100</option>
+                                        <option value="4x108">4×108</option>
+                                        <option value="5x98">5×98</option>
+                                        <option value="5x100">5×100</option>
+                                        <option value="5x108">5×108</option>
+                                        <option value="5x110">5×110</option>
+                                        <option value="5x112">5×112</option>
+                                        <option value="5x114.3">5×114,3</option>
+                                        <option value="5x115">5×115</option>
+                                        <option value="5x120">5×120</option>
+                                        <option value="5x127">5×127</option>
+                                        <option value="5x130">5×130</option>
+                                        <option value="5x135">5×135</option>
+                                        <option value="5x139.7">5×139,7</option>
+                                        <option value="6x114.3">6×114,3</option>
+                                        <option value="6x130">6×130</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="number" inputmode="decimal" step="0.1" min="1" data-fitment-input="rim.pcd_mm" data-fitment-pcd-custom hidden placeholder="Диаметр PCD, мм" data-copy-placeholder="placeholder.pcdDiameter">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.diameter">Диаметр</span>
+                                    <select data-fitment-preset="rim.wheel_diameter_in" data-fitment-input="rim.wheel_diameter_in">
+                                        <option value="">Выберите диаметр</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_diameter_in" hidden placeholder="Диаметр, дюймы" data-copy-placeholder="placeholder.diameter">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.widthShort">Ширина</span>
+                                    <select data-fitment-preset="rim.wheel_width_j" data-fitment-input="rim.wheel_width_j">
+                                        <option value="">Выберите ширину</option>
+                                        <option value="custom">Другое значение</option>
+                                    </select>
+                                    <input type="text" inputmode="decimal" data-fitment-custom="rim.wheel_width_j" hidden placeholder="Ширина, J" data-copy-placeholder="placeholder.width">
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.centerBore">Диаметр ступичного отверстия</span>
+                                    <input type="search" inputmode="decimal" list="fitment-dia-options" data-fitment-input="rim.center_bore_mm" autocomplete="off" placeholder="Введите DIA" data-copy-placeholder="placeholder.dia">
+                                    <datalist id="fitment-dia-options"></datalist>
+                                </label>
+                                <label class="fitment-field">
+                                    <span data-i18n="fitment.offset">Вылет (ET), мм</span>
+                                    <input type="text" inputmode="decimal" data-fitment-input="rim.offset_et_mm" placeholder="Например, 40" data-copy-placeholder="placeholder.et">
+                                </label>
+                            </div>
+                            <section class="fitment-rear-rim" data-fitment-rear-rim hidden aria-labelledby="fitment-rear-rim-title">
+                                <div class="fitment-form-head">
+                                    <p class="section-label">Задняя ось</p>
+                                    <h3 id="fitment-rear-rim-title">Параметры задних дисков</h3>
+                                </div>
+                                <div class="fitment-form-grid">
+                                    <label class="fitment-field"><span>Крепёжных отверстий</span><input type="number" inputmode="numeric" step="1" min="3" max="8" data-fitment-input="rear_rim.bolt_count"></label>
+                                    <label class="fitment-field"><span>PCD, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.pcd_mm" placeholder="Например, 114,3" data-copy-placeholder="placeholder.rearPcd"></label>
+                                    <label class="fitment-field"><span>Диаметр, дюймы</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_diameter_in"></label>
+                                    <label class="fitment-field"><span>Ширина, J</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.wheel_width_j"></label>
+                                    <label class="fitment-field"><span>DIA, мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.center_bore_mm"></label>
+                                    <label class="fitment-field"><span>Вылет (ET), мм</span><input type="text" inputmode="decimal" data-fitment-input="rear_rim.offset_et_mm" placeholder="Допустимы десятичные значения" data-copy-placeholder="placeholder.decimal"></label>
+                                </div>
+                            </section>
+                        </section>
+
+                        <div class="wallet-status-island tone-warning" data-fitment-auth-required hidden role="status">
+                            <div class="wallet-status-copy">
+                                <div class="wallet-status-title" data-fitment-auth-required-text>Сессия истекла. Войдите через Telegram, чтобы продолжить.</div>
+                                <button type="button" class="primary-button compact-button" data-fitment-auth-login>
+                                    <svg class="telegram-button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
+                                    <span data-fitment-auth-login-label>Войти через Telegram</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="create-flow-actions fitment-actions" data-fitment-actions>
+                            <button type="submit" class="primary-button" data-fitment-save>Продолжить</button>
+                        </div>
+                    </form>
+
                 </div>
             </section>
-            <section class="panel">
-                <div class="form-stack">
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.profileTitle">Профиль Telegram</strong>
-                            <p data-i18n="settings.profileText">Связан автоматически с Mini App.</p>
-                        </div>
-                        <span class="status-pill neutral" data-i18n="settings.linked">Подключено</span>
-                    </div>
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.notificationsTitle">Уведомления</strong>
-                            <p data-i18n="settings.notificationsText">Будут добавлены позже.</p>
-                        </div>
-                        <span class="status-pill muted" data-i18n="settings.soon">Скоро</span>
-                    </div>
-                    <div class="form-row">
-                        <div>
-                            <strong data-i18n="settings.languageTitle">Язык интерфейса</strong>
-                            <p data-i18n="settings.languageText">Определяется по Telegram.</p>
-                        </div>
-                        <span class="status-pill neutral" data-locale-label>RU</span>
-                    </div>
+            <section class="fitment-render-action" data-fitment-render-action>
+                <div class="fitment-render-copy">
+                    <strong data-fitment-render-copy>Визуальная примерка</strong>
+                    <span data-fitment-render-helper>Посмотрите, как выбранный диск выглядит на вашем автомобиле</span>
                 </div>
+                <button type="button" class="ghost-button neutral" data-fitment-create-image>Создать изображение</button>
+            </section>
+        </section>
+
+        <section class="view" data-view="settings" hidden>
+            <section class="panel account-settings-panel">
+                <div class="account-settings-head">
+                    <p class="section-label" data-i18n="account.label" data-i18n-sentence>Аккаунт</p>
+                    <h1 data-i18n="account.settings.title" data-i18n-sentence>Настройки аккаунта</h1>
+                    <p class="lede" data-i18n="account.settings.lede" data-i18n-sentence>Входите через Email или Telegram — баланс и история останутся общими</p>
+                </div>
+                <div class="form-stack" data-account-settings-content aria-live="polite"></div>
+            </section>
+        </section>
+
+        <section class="view" data-view="photo-guide" hidden>
+            <section class="panel photo-guide-panel">
+                <div class="photo-guide-layout">
+                    <article class="photo-guide-card">
+                        <div>
+                            <p class="section-label" data-i18n="photoGuide.carSection">Фото автомобиля</p>
+                            <h2 data-i18n="photoGuide.carTitle">Покажите автомобиль целиком</h2>
+                        </div>
+                        <div class="photo-guide-examples">
+                            <figure class="photo-guide-example is-bad">
+                                <img src="/assets/photo-guide-car-bad.jpg" alt="Автомобиль Mercedes снят под углом, такое фото лучше переснять" data-i18n-alt="photoGuide.carBadAlt">
+                                <figcaption><span data-i18n="photoGuide.carBadLabel">Лучше переснять</span><span data-i18n="photoGuide.carBadCaption">Ракурс три четверти и крупный план</span></figcaption>
+                            </figure>
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-car.jpg" alt="Автомобиль снят сбоку, оба колеса видны" data-i18n-alt="photoGuide.carGoodAlt">
+                                <figcaption><span data-i18n="photoGuide.carGoodLabel">Подходит</span><span data-i18n="photoGuide.carGoodCaption">Сбоку, в дневном свете</span></figcaption>
+                            </figure>
+                        </div>
+                        <ul class="photo-guide-checklist">
+                            <li data-i18n="photoGuide.carCheck1">Автомобиль виден целиком</li>
+                            <li data-i18n="photoGuide.carCheck2">Снимите сбоку или под небольшим углом</li>
+                            <li data-i18n="photoGuide.carCheck3">Все колёса попали в кадр</li>
+                            <li data-i18n="photoGuide.carCheck4">Выбирайте дневной свет</li>
+                        </ul>
+                        <p class="photo-guide-warning" data-i18n="photoGuide.carWarning">Избегайте ночных кадров, сильных бликов, обрезанных колёс и посторонних объектов</p>
+                    </article>
+
+                    <article class="photo-guide-card">
+                        <div>
+                            <p class="section-label" data-i18n="photoGuide.wheelSection">Фото колесного диска</p>
+                            <h2 data-i18n="photoGuide.wheelTitle">Сфотографируйте диск лицевой стороной к камере</h2>
+                        </div>
+                        <div class="photo-guide-examples photo-guide-wheel-examples">
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-wheel-product.jpg" alt="Автомобильный диск снят прямо спереди на светлом фоне" data-i18n-alt="photoGuide.wheelProductAlt">
+                                <figcaption><span data-i18n="photoGuide.carGoodLabel">Подходит</span><span data-i18n="photoGuide.wheelGoodCaption">Один диск анфас, весь рисунок в фокусе</span></figcaption>
+                            </figure>
+                            <figure class="photo-guide-example is-good">
+                                <img src="/assets/photo-guide-wheel-real.jpg" alt="Комплект автомобильных дисков снят сверху без упаковки" data-i18n-alt="photoGuide.wheelRealAlt">
+                                <figcaption><span data-i18n="photoGuide.carGoodLabel">Подходит</span><span data-i18n="photoGuide.wheelSetCaption">Комплект дисков, без рук и упаковки</span></figcaption>
+                            </figure>
+                        </div>
+                        <ul class="photo-guide-checklist">
+                            <li data-i18n="photoGuide.wheelCheck1">Диск снят прямо спереди</li>
+                            <li data-i18n="photoGuide.wheelCheck2">Видна вся окружность</li>
+                            <li data-i18n="photoGuide.wheelCheck3">Рисунок спиц находится в фокусе</li>
+                            <li data-i18n="photoGuide.wheelCheck4">Снимайте без упаковки и рук в кадре</li>
+                        </ul>
+                        <p class="photo-guide-warning" data-i18n="photoGuide.wheelWarning">Не используйте фото под углом, с сильными отражениями или частично закрытым диском</p>
+                    </article>
+                </div>
+                <aside class="photo-guide-ready">
+                    <div>
+                        <p class="section-label" data-i18n="photoGuide.readyLabel">Перед загрузкой</p>
+                        <strong data-i18n="photoGuide.format">Поддерживаемые форматы JPG, PNG и WebP до 10 МБ</strong>
+                        <span data-i18n="photoGuide.readyLink">Ссылка на товар необязательна</span>
+                    </div>
+                    <button type="button" class="primary-button" data-nav="create" data-i18n="photoGuide.readyAction">Начать примерку</button>
+                </aside>
             </section>
         </section>
 
         <section class="view" data-view="support" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="support.eyebrow">Связь</p>
-                    <h1 data-i18n="support.title">Поддержка</h1>
-                    <p class="lede" data-i18n="support.lede">
-                        Короткий и формальный экран контактов без лишнего текста.
-                    </p>
-                </div>
-            </section>
-            <section class="panel">
-                <div class="support-grid">
-                    <a href="https://t.me/dreamwheelsai" class="support-link" target="_blank" rel="noreferrer noopener"><span>💬</span><span data-i18n="support.telegram">Telegram</span></a>
-                    <a href="mailto:hello@dreamwheels.ai" class="support-link"><span>✉️</span><span data-i18n="support.email">Email</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" class="support-link" target="_blank" rel="noreferrer noopener"><span>📄</span><span data-i18n="support.offer">Оферта</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/refund" class="support-link" target="_blank" rel="noreferrer noopener"><span>↩︎</span><span data-i18n="support.refund">Возврат</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" class="support-link" target="_blank" rel="noreferrer noopener"><span>🔒</span><span data-i18n="support.pdn">ПДн</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/seller" class="support-link" target="_blank" rel="noreferrer noopener"><span>🧾</span><span data-i18n="support.requisites">Реквизиты</span></a>
-                </div>
+            <section class="panel support-panel">
+                <section class="support-section">
+                    <p class="section-label" data-i18n="support.helpSection">Инструкции</p>
+                    <button type="button" class="doc-link support-guide-link" data-nav="photo-guide">
+                        <span class="doc-link-copy"><strong data-i18n="support.photoGuideTitle">Как подготовить фото</strong><small data-i18n="support.photoGuideDescription">Инструкция по подготовке фотографий перед загрузкой</small></span>
+                    </button>
+                </section>
+                <section class="support-section">
+                    <p class="section-label" data-i18n="support.feedbackSection">Связаться с нами</p>
+                    <div class="support-grid">
+                        <a href="https://t.me/dreamwheelsai" target="_blank" rel="noopener noreferrer" class="support-link" data-telegram-link>
+                            <span class="support-link-icon" aria-hidden="true">💬</span>
+                            <span class="support-link-copy"><strong data-i18n="support.telegram">Telegram</strong><small>@dreamwheelsai</small></span>
+                        </a>
+                        <a href="mailto:venus.mike@yandex.ru" class="support-link">
+                            <span class="support-link-icon" aria-hidden="true">✉️</span>
+                            <span class="support-link-copy"><strong data-i18n="support.email">Email</strong><small>venus.mike@yandex.ru</small></span>
+                        </a>
+                    </div>
+                </section>
+                <section class="support-section support-refund-block">
+                    <p class="section-label" data-i18n="support.refundSection">Возврат средств</p>
+                    <a href="https://legal.dreamwheels.pro/legal/refund" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="support.refundTitle">Условия возврата</strong><small data-i18n="support.refundDescription">Когда доступен возврат и как отправить обращение</small></span>
+                    </a>
+                    <p class="support-response-note" data-i18n="support.refundSla">Обращения по возвратам рассматриваем в течение 24 часов</p>
+                </section>
             </section>
         </section>
 
         <section class="view" data-view="docs" hidden>
-            <section class="hero-panel compact">
-                <div class="hero-copy">
-                    <p class="eyebrow" data-i18n="docs.eyebrow">Документы</p>
-                    <h1 data-i18n="docs.title">Документы</h1>
-                    <p class="lede" data-i18n="docs.lede">
-                        Формальный список ссылок на юридические и справочные материалы.
-                    </p>
-                </div>
-            </section>
             <section class="panel">
                 <div class="docs-list">
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" class="doc-link" target="_blank" rel="noreferrer noopener"><span data-i18n="docs.offer">Оферта</span><span aria-hidden="true">↗</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/privacy" class="doc-link" target="_blank" rel="noreferrer noopener"><span data-i18n="docs.privacy">Политика конфиденциальности</span><span aria-hidden="true">↗</span></a>
-                    <a href="https://dream-wheels-ai-legal.vercel.app/legal/offer" class="doc-link" target="_blank" rel="noreferrer noopener"><span data-i18n="docs.payments">Условия оплаты</span><span aria-hidden="true">↗</span></a>
+                    <a href="https://legal.dreamwheels.pro/legal/offer" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="docs.offer">Публичная оферта</strong><small data-i18n="docs.offerDescription">Условия оказания и оплаты услуги</small></span>
+                    </a>
+                    <a href="https://legal.dreamwheels.pro/legal/refund" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="docs.refund">Условия возврата</strong><small data-i18n="docs.refundDescription">Возврат оплаты и кредитов</small></span>
+                    </a>
+                    <a href="https://legal.dreamwheels.pro/legal/privacy" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="docs.privacy">Политика обработки данных</strong><small data-i18n="docs.privacyDescription">Какие данные мы используем и храним</small></span>
+                    </a>
+                    <a href="https://legal.dreamwheels.pro/legal/consent" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="docs.consent">Согласие на обработку данных</strong><small data-i18n="docs.consentDescription">Состав данных, цели и отзыв согласия</small></span>
+                    </a>
+                    <a href="https://legal.dreamwheels.pro/legal/seller" target="_blank" rel="noopener noreferrer" class="doc-link" data-external-link>
+                        <span class="doc-link-copy"><strong data-i18n="docs.seller">Реквизиты и контакты</strong><small data-i18n="docs.sellerDescription">Информация об исполнителе</small></span>
+                    </a>
                 </div>
+                <p class="docs-edition-note" data-i18n="docs.edition">Документы действуют для Dream Wheels AI. Редакция от 8 июня 2026 года.</p>
             </section>
         </section>
     </main>
 
-    <script src="/app.js?v=20260627-1" type="module"></script>
+    <nav class="mobile-bottom-nav" aria-label="Основная навигация" data-copy-aria="aria.mainNavigation">
+        <button type="button" class="bottom-nav-item active" data-nav="dashboard">Главная</button>
+        <button type="button" class="bottom-nav-item" data-nav="create">Создать</button>
+        <button type="button" class="bottom-nav-item" data-nav="renders">История</button>
+        <button type="button" class="bottom-nav-item" data-nav="wallet">Баланс</button>
+        <button type="button" class="bottom-nav-item" data-more-toggle aria-expanded="false">Ещё</button>
+    </nav>
+
+    <div class="more-sheet-backdrop" data-more-backdrop hidden></div>
+    <section class="more-sheet" data-more-sheet hidden aria-label="Ещё" data-copy-aria="nav.more">
+        <button type="button" class="sheet-handle" data-more-close aria-label="Закрыть" data-copy-aria="auth.close"></button>
+        <button type="button" class="sheet-item" data-nav="settings">Аккаунт</button>
+        <button type="button" class="sheet-item" data-nav="support">Поддержка</button>
+        <button type="button" class="sheet-item" data-nav="photo-guide">Как подготовить фото</button>
+        <button type="button" class="sheet-item" data-nav="docs">Документы</button>
+    </section>
+
+    <div class="auth-dialog-backdrop" data-account-link-dialog hidden>
+        <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-link-dialog-title">
+            <button type="button" class="auth-dialog-close" data-account-link-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
+                <h2 id="account-link-dialog-title" data-account-link-title data-i18n="account.link.emailTitle" data-i18n-sentence>Подключить Email</h2>
+                <div class="auth-dialog-description"><p data-account-link-copy data-i18n="account.link.emailCopy" data-i18n-sentence>Подтвердите адрес электронной почты, чтобы использовать его для входа в этот аккаунт.</p></div>
+            </div>
+            <form class="auth-dialog-form" data-account-link-email-form>
+                <label class="auth-dialog-label" for="account-link-email" data-i18n="auth.emailLabel" data-i18n-sentence>Электронная почта</label>
+                <input id="account-link-email" class="auth-dialog-input" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-account-link-email>
+                <div class="auth-turnstile" data-account-link-turnstile hidden><div data-account-link-turnstile-widget></div></div>
+                <button type="submit" class="primary-button auth-dialog-primary" data-account-link-send data-i18n="auth.getCode" data-i18n-sentence>Получить код</button>
+            </form>
+            <form class="auth-dialog-form" data-account-link-otp-form hidden>
+                <label class="auth-dialog-label" for="account-link-otp" data-i18n="auth.codeLabel" data-i18n-sentence>Код из письма</label>
+                <p class="auth-dialog-otp-destination" data-account-link-destination></p>
+                <input id="account-link-otp" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-account-link-otp>
+                <button type="submit" class="primary-button auth-dialog-primary" data-account-link-verify data-i18n="account.link.verify" data-i18n-sentence>Подтвердить</button>
+            </form>
+            <p class="auth-dialog-status" data-account-link-status aria-live="polite"></p>
+        </section>
+    </div>
+
+    <div class="auth-dialog-backdrop" data-account-merge-dialog hidden>
+        <section class="auth-dialog account-link-dialog" role="dialog" aria-modal="true" aria-labelledby="account-merge-dialog-title">
+            <button type="button" class="auth-dialog-close" data-account-merge-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI"><span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span></p>
+                <h2 id="account-merge-dialog-title" data-i18n="account.merge.title" data-i18n-sentence>Объединить аккаунты?</h2>
+            </div>
+            <div class="auth-dialog-restored">
+                <p class="auth-dialog-restored-copy" data-account-merge-copy data-i18n="account.merge.inUse" data-i18n-sentence>Этот способ входа уже используется в другом аккаунте Dream Wheels.</p>
+                <p class="auth-dialog-restored-copy" data-i18n="account.merge.preservation" data-i18n-sentence>После объединения баланс, история рендеров и оплаты сохранятся и станут общими.</p>
+                <p class="auth-dialog-restored-copy" data-i18n="account.merge.irreversible" data-i18n-sentence>Объединение нельзя отменить.</p>
+                <div class="auth-logout-actions">
+                    <button type="button" class="ghost-button" data-account-merge-cancel data-i18n="create.cancel" data-i18n-sentence>Отмена</button>
+                    <button type="button" class="primary-button" data-account-merge-confirm data-i18n="account.merge.confirm" data-i18n-sentence>Объединить аккаунты</button>
+                </div>
+                <p class="auth-dialog-status" data-account-merge-status aria-live="polite"></p>
+            </div>
+        </section>
+    </div>
+
+    <div class="auth-dialog-backdrop" data-auth-dialog hidden>
+        <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
+            <button type="button" class="auth-dialog-close" data-auth-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
+            <div class="auth-dialog-header">
+                <h2 id="auth-dialog-title" data-auth-dialog-title>Войдите в аккаунт</h2>
+                <div id="auth-dialog-description" class="auth-dialog-description" data-auth-dialog-description hidden>
+                    <p data-auth-description-line1></p>
+                    <p data-auth-description-line2></p>
+                </div>
+            </div>
+            <form class="auth-dialog-form" data-auth-email-form novalidate>
+                <label class="auth-dialog-label" for="auth-email-input">Электронная почта</label>
+                <input id="auth-email-input" class="auth-dialog-input" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" aria-describedby="auth-email-error" data-auth-email required>
+                <p id="auth-email-error" class="auth-dialog-field-error" data-auth-email-error role="alert" aria-live="polite" hidden></p>
+                <div class="auth-turnstile" data-auth-turnstile hidden>
+                    <div data-auth-turnstile-widget></div>
+                </div>
+                <button type="submit" class="primary-button auth-dialog-primary" data-auth-send>Получить код</button>
+                <button type="button" class="link-button auth-dialog-tertiary auth-dialog-back-button" data-auth-back-to-otp hidden>Назад</button>
+            </form>
+            <div class="auth-dialog-divider" data-auth-email-alternative data-auth-initial-only aria-hidden="true"><span>или</span></div>
+            <form class="auth-dialog-form" data-auth-otp-form hidden>
+                <div class="auth-dialog-destination-group">
+                    <p id="auth-otp-destination" class="auth-dialog-otp-destination"><span data-auth-otp-sent-copy>Код отправлен на</span> <strong data-auth-otp-destination></strong></p>
+                    <button type="button" class="link-button auth-dialog-tertiary" data-auth-change-email>Изменить почту</button>
+                </div>
+                <label class="auth-dialog-label" for="auth-otp-input">Код из письма</label>
+                <input id="auth-otp-input" class="auth-dialog-input auth-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" aria-describedby="auth-otp-destination auth-otp-error" pattern="[0-9]{6}" maxlength="6" data-auth-otp>
+                <p id="auth-otp-error" class="auth-dialog-field-error" data-auth-otp-error role="alert" aria-live="polite" hidden></p>
+                <button type="submit" class="primary-button auth-dialog-primary" data-auth-verify>Войти</button>
+                <div class="auth-dialog-resend-row">
+                    <button type="button" class="link-button" data-auth-resend>Отправить повторно</button>
+                    <span class="auth-dialog-cooldown" data-auth-cooldown aria-live="polite"></span>
+                </div>
+            </form>
+            <div class="auth-dialog-restored" data-auth-restored-state hidden>
+                <div class="auth-dialog-account-card">
+                    <div class="account-avatar" data-auth-restored-avatar>DW</div>
+                    <div class="auth-dialog-account-copy">
+                        <strong data-auth-restored-name>Dream Wheels</strong>
+                        <span data-auth-restored-provider>Email</span>
+                    </div>
+                </div>
+                <button type="button" class="primary-button auth-dialog-primary" data-auth-continue>Продолжить</button>
+                <button type="button" class="link-button auth-dialog-tertiary" data-auth-switch>Сменить аккаунт</button>
+            </div>
+            <div class="auth-dialog-status" data-auth-message role="status" aria-live="polite"></div>
+            <button type="button" class="ghost-button auth-dialog-telegram" data-auth-telegram data-auth-initial-only>
+                <svg class="auth-telegram-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.1 3.3 2.9 10.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.8 3.5c.9.5 1.5.3 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.3-1.7Zm-12.9 9.6 10.9-6.8c.5-.3 1-.1.6.3l-8.8 8-.3 3.6-2.4-5.1Z" fill="currentColor"/></svg>
+                <span data-auth-telegram-label>Войти через Telegram</span>
+            </button>
+            <p class="auth-dialog-legal" data-auth-legal data-auth-email-alternative data-auth-initial-only>Продолжая, вы соглашаетесь с <a href="https://legal.dreamwheels.pro/legal/privacy" target="_blank" rel="noopener noreferrer">политикой конфиденциальности</a>.</p>
+        </section>
+    </div>
+
+    <div class="auth-dialog-backdrop" data-logout-dialog hidden>
+        <section class="auth-dialog auth-logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+            <button type="button" class="auth-dialog-close" data-logout-close aria-label="Закрыть" data-copy-aria="auth.close">×</button>
+            <div class="auth-dialog-header">
+                <p class="auth-dialog-wordmark brand-wordmark" aria-label="Dream Wheels AI">
+                    <span class="brand-light">DREAM</span><span class="brand-dim">WHEELS AI</span>
+                </p>
+                <h2 id="logout-dialog-title" data-logout-title>Выйти из аккаунта?</h2>
+                <p id="logout-dialog-description" class="auth-dialog-description" data-logout-description>После выхода потребуется снова войти</p>
+            </div>
+            <div class="auth-dialog-actions auth-logout-actions">
+                <button type="button" class="ghost-button" data-logout-cancel>Отмена</button>
+                <button type="button" class="ghost-button auth-logout-confirm" data-logout-confirm>Выйти</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="/auth/harness-config.js"></script>
+    <script src="/auth/app-auth.bundle.js"></script>
+    <script src="/app.js?v=__BUILD_ID__" type="module"></script>
+    <script src="/vnext/bootstrap.js?v=__BUILD_ID__" type="module"></script>
 </body>
 </html>

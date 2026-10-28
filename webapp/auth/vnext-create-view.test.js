@@ -1,0 +1,178 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+
+class ElementStub {
+  constructor(tagName) {
+    this.tagName = tagName;
+    this.children = [];
+    this.attributes = {};
+    this.listeners = {};
+    this.dataset = {};
+    this.disabled = false;
+    this.hidden = false;
+    this.value = "";
+    this.className = "";
+    this.textContent = "";
+  }
+  append(...items) { this.children.push(...items); }
+  appendChild(item) { this.children.push(item); return item; }
+  replaceChildren(...items) { this.children = items; }
+  replaceWith(item) { this.replacement = item; }
+  contains(item) { return this === item || this.children.some((child) => child.contains?.(item)); }
+  querySelectorAll(selector) {
+    const result = [];
+    const visit = (node) => {
+      if (node.tagName === "input" && (selector === "input" || node.name)) result.push(node);
+      node.children.forEach(visit);
+    };
+    visit(this);
+    return result;
+  }
+  querySelector(selector) {
+    if (selector === ".vnext-create__status--positive") return this.find(n => n.className?.includes("vnext-create__status--positive"));
+    const key = selector.match(/data-create-focus="([^"]+)"/);
+    return key ? this.find(n => n.dataset.createFocus === key[1] && !n.disabled) : null;
+  }
+  dispatchEvent(event) { this.listeners[event.type]?.(event); }
+  focus() { document.activeElement = this; }
+  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
+  setAttribute(key, value) { this.attributes[key] = value; }
+  addEventListener(name, callback) { this.listeners[name] = callback; }
+  get nodeType() { return this.tagName === "#text" ? 3 : 1; }
+  get childNodes() { return this.children; }
+  get childElementCount() { return this.children.length; }
+  get allText() { return this.textContent + this.children.map((child) => child.allText || child.textContent || "").join(""); }
+  find(predicate) {
+    if (predicate(this)) return this;
+    for (const child of this.children) {
+      const found = child.find?.(predicate);
+      if (found) return found;
+    }
+    return null;
+  }
+}
+
+globalThis.document = {
+  createElement: (tag) => new ElementStub(tag),
+  createTextNode: (text) => Object.assign(new ElementStub("#text"), { textContent: text }),
+  querySelector: () => null,
+};
+const { createCreateView, refreshCreateView } = await import("../vnext/views/create.js");
+
+const photo={previewUrl:'/photo.jpg'};
+const ready={files:{car:photo,wheel:photo},bothReady:true,consentAccepted:true};
+for(const [snapshot,reason,disabled] of [
+  [{},'Добавьте фото автомобиля',true],
+  [{files:{car:photo}},'Добавьте фото диска',true],
+  [{...ready,consentAccepted:false},'Подтвердите согласие на обработку фотографий',true],
+  [ready,'',false],
+  [{...ready,submitting:true},'',true],
+])test(`Create has one always present primary CTA: ${reason||'ready/submitting'}`,()=>{
+  const view=createCreateView(snapshot);
+  const cta=view.find(n=>n.textContent==='Создать изображение');
+  assert(cta);assert.equal(cta.disabled,disabled);
+  if(reason)assert.match(view.allText,new RegExp(reason));
+  assert.doesNotMatch(view.allText,/Определить автомобиль|Подтвердить автомобиль|Проверить совместимость|Марка|Модель/);
+});
+
+test('legacy recognition/provider states and verdicts cannot gate visual render',()=>{
+  for(const verdict of ['incompatible','unknown','failed','stale']){
+    const view=createCreateView({...ready,identityResolving:true,identityError:'legacy',proposal:{vehicle:{primary:{make:'AI Ghost'}},rim:{variant_state:'selection_required'}},fitmentVerdict:verdict});
+    assert.equal(view.find(n=>n.textContent==='Создать изображение').disabled,false);
+    assert.doesNotMatch(view.allText,/AI Ghost|Определяем|Требуется выбрать/);
+  }
+});
+
+test('product URL save delegates storage and explains deferred Fitment ownership',()=>{
+  let saved;const view=createCreateView({...ready,sourceEditing:true},{saveRimProductUrl:value=>saved=value});
+  assert.match(view.allText,/Для будущей проверки совместимости с автомобилем/);
+  assert.doesNotMatch(view.allText,/Определить параметры|Получаем данные/);
+  const input=view.find(n=>n.name==='rim_product_url');input.value='https://shop.example/wheel';
+  view.find(n=>n.textContent==='Сохранить ссылку').listeners.click();
+  assert.equal(saved,'https://shop.example/wheel');
+});
+
+test('picker and consent callbacks remain functional',()=>{
+  let consent;const picked=[];const view=createCreateView({...ready,consentAccepted:false},{pickFile:kind=>picked.push(kind),setConsent:value=>consent=value});
+  view.find(n=>n.className.includes('vnext-create__stage')).listeners.click();assert.deepEqual(picked,['car']);
+  const checkbox=view.find(n=>n.type==='checkbox');checkbox.checked=true;checkbox.listeners.change();assert.equal(consent,true);
+});
+
+test('Create preserves RU/EN language selection',()=>{
+  const view=createCreateView({...ready,locale:'en',sourceEditing:true});
+  assert.match(view.allText,/Create image/);assert.match(view.allText,/compatibility check/);
+  assert.doesNotMatch(view.allText,/Ссылка на товар|Создать изображение/);
+});
+
+test('invalid optional URL has accessible field feedback while Create stays enabled',()=>{
+  const view=createCreateView({...ready,sourceEditing:true,productUrlError:'Укажите корректную ссылку на товар'});
+  assert.match(view.allText,/Укажите корректную ссылку на товар/);
+  const field=view.find(node=>node.name==='rim_product_url');
+  assert.equal(field.attributes['aria-invalid'],'true');
+  assert.equal(field.attributes['aria-describedby'],'create-product-url-error');
+  assert.equal(view.find(node=>node.tagName==='button' && node.textContent==='Создать изображение').disabled,false);
+});
+
+
+test("saved product URL feedback survives refresh without synthetic input, then follows user edits", () => {
+  const snapshot = {...ready, rimProductUrl:"https://example.com/wheel"};
+  let view = createCreateView(snapshot);
+  let events=0;
+  view.find(n=>n.name==="rim_product_url").addEventListener("input",()=>events++);
+  view=refreshCreateView(view,snapshot,{});
+  const input=view.find(n=>n.name==="rim_product_url");
+  const saved=view.find(n=>n.className?.includes("vnext-create__status--positive"));
+  assert.equal(events,0);
+  assert.equal(saved.hidden,false);
+  input.value="https://example.com/other";input.dispatchEvent(new Event("input"));
+  assert.equal(saved.hidden,true);
+});
+
+for (const key of ["consent","photo-car","stage-wheel","save-link"]) test(`Create retains ${key} focus on redraw`,()=>{
+  let view=createCreateView(ready);view.find(n=>n.dataset.createFocus===key).focus();
+  view=refreshCreateView(view,ready,{});
+  assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus===key));
+});
+
+test('untouched Create URL receives late draft hydration and subsequent canonical updates', () => {
+  let view = createCreateView(ready);
+  view.find(n => n.name === 'rim_product_url').focus();
+  for (const url of ['https://shop.test/saved', 'https://shop.test/replaced']) {
+    view = refreshCreateView(view, {...ready, rimProductUrl: url}, {});
+    const input = view.find(n => n.name === 'rim_product_url');
+    assert.equal(input.value, url);
+    assert.equal(document.activeElement, input);
+    assert.equal(view.querySelector('.vnext-create__status--positive').hidden, false);
+  }
+});
+
+for (const edited of ['https://shop.test/unsaved', '']) test(`late hydration preserves user edit ${edited || '(cleared)'}`, () => {
+  let view = createCreateView(ready);
+  const input = view.find(n => n.name === 'rim_product_url');
+  input.value = 'https://shop.test/typing';
+  input.dispatchEvent(new Event('input'));
+  input.value = edited;
+  input.dispatchEvent(new Event('input'));
+  view = refreshCreateView(view, ready, {});
+  for (let i = 0; i < 5; i++) {
+    view = refreshCreateView(view, {...ready, rimProductUrl: 'https://shop.test/saved'}, {});
+    assert.equal(view.find(n => n.name === 'rim_product_url').value, edited);
+    assert.equal(view.querySelector('.vnext-create__status--positive').hidden, true);
+  }
+});
+
+test('failed URL save retains text with inline error; successful save adopts canonical updates', () => {
+  let view = createCreateView(ready);
+  const input = view.find(n => n.name === 'rim_product_url');
+  input.value = 'https://shop.test/new';
+  input.dispatchEvent(new Event('input'));
+  view = refreshCreateView(view, {...ready, productUrlError: 'Не удалось сохранить ссылку. Попробуйте ещё раз.'}, {});
+  assert.equal(view.find(n => n.name === 'rim_product_url').value, input.value);
+  assert.equal(view.find(n => n.attributes.role === 'alert').tagName, 'p');
+  assert.equal(view.querySelector('.vnext-create__status--positive'), null);
+  view = refreshCreateView(view, {...ready, rimProductUrl: input.value}, {});
+  assert.equal(view.querySelector('.vnext-create__status--positive').hidden, false);
+  view = refreshCreateView(view, {...ready, rimProductUrl: 'https://shop.test/canonical'}, {});
+  assert.equal(view.find(n => n.name === 'rim_product_url').value, 'https://shop.test/canonical');
+});

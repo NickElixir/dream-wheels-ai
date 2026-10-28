@@ -1,7 +1,7 @@
 import { query } from "@/lib/db";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed" | string;
-export type FeedbackValue = "like" | "dislike" | null;
+export type FeedbackValue = "liked" | "disliked" | null;
 
 export type DashboardFilters = {
   status?: string;
@@ -32,7 +32,7 @@ export type JobsByDay = {
 export type RecentJob = {
   id: string;
   status: JobStatus;
-  feedback: FeedbackValue;
+  feedback: string | null;
   output_image_url: string | null;
   error_message: string | null;
   created_at: string;
@@ -79,7 +79,14 @@ function normalizeFilters(filters: DashboardFilters) {
   const normalizedDays = Number(filters.days || 14);
   const days = [7, 14, 30, 90].includes(normalizedDays) ? normalizedDays : 14;
   const status = filters.status && filters.status !== "all" ? filters.status : null;
-  const feedback = filters.feedback && filters.feedback !== "all" ? filters.feedback : null;
+  const feedback =
+    filters.feedback === "like"
+      ? "liked"
+      : filters.feedback === "dislike"
+        ? "disliked"
+        : filters.feedback && filters.feedback !== "all"
+          ? filters.feedback
+          : null;
   const user = filters.user?.trim().replace(/^@/, "") || null;
 
   return { days, status, feedback, user };
@@ -96,10 +103,10 @@ function buildWhere(filters: DashboardFilters) {
   }
 
   if (feedback === "none") {
-    clauses.push("j.feedback IS NULL");
+    clauses.push("rf.render_job_id IS NULL");
   } else if (feedback) {
     params.push(feedback);
-    clauses.push(`j.feedback = $${params.length}`);
+    clauses.push(`rf.sentiment = $${params.length}`);
   }
 
   if (user) {
@@ -244,12 +251,15 @@ export async function getDashboardData(filters: DashboardFilters) {
         COUNT(*) FILTER (WHERE j.status = 'failed')::int AS failed,
         COUNT(*) FILTER (WHERE j.status = 'processing')::int AS processing,
         COUNT(*) FILTER (WHERE j.status = 'queued')::int AS queued,
-        COUNT(*) FILTER (WHERE j.feedback = 'like')::int AS likes,
-        COUNT(*) FILTER (WHERE j.feedback = 'dislike')::int AS dislikes,
-        COUNT(*) FILTER (WHERE j.feedback IS NOT NULL)::int AS rated,
+        COUNT(*) FILTER (WHERE rf.sentiment = 'liked')::int AS likes,
+        COUNT(*) FILTER (WHERE rf.sentiment = 'disliked')::int AS dislikes,
+        COUNT(*) FILTER (WHERE rf.sentiment IS NOT NULL)::int AS rated,
         ROUND(AVG(EXTRACT(EPOCH FROM (j.completed_at - j.created_at)))
           FILTER (WHERE j.completed_at IS NOT NULL))::int AS "avgProcessingSeconds"
       FROM jobs j
+      LEFT JOIN render_feedback rf
+        ON rf.render_job_id = j.id
+       AND rf.owner_user_id = j.user_id
       WHERE ${whereSql}
       `,
       params,
@@ -262,6 +272,9 @@ export async function getDashboardData(filters: DashboardFilters) {
         COUNT(*) FILTER (WHERE j.status = 'completed')::int AS completed,
         COUNT(*) FILTER (WHERE j.status = 'failed')::int AS failed
       FROM jobs j
+      LEFT JOIN render_feedback rf
+        ON rf.render_job_id = j.id
+       AND rf.owner_user_id = j.user_id
       WHERE ${whereSql}
       GROUP BY 1
       ORDER BY 1 ASC
@@ -273,7 +286,11 @@ export async function getDashboardData(filters: DashboardFilters) {
       SELECT
         j.id::text,
         j.status,
-        j.feedback,
+        CASE
+          WHEN rf.sentiment IS NULL THEN NULL
+          WHEN rf.reason IS NULL THEN rf.sentiment
+          ELSE rf.sentiment || ' / ' || rf.reason
+        END AS feedback,
         j.output_image_url,
         j.error_message,
         j.created_at::text,
@@ -283,6 +300,9 @@ export async function getDashboardData(filters: DashboardFilters) {
         u.telegram_user_id::text,
         u.username
       FROM jobs j
+      LEFT JOIN render_feedback rf
+        ON rf.render_job_id = j.id
+       AND rf.owner_user_id = j.user_id
       LEFT JOIN users u ON u.id = j.user_id
       WHERE ${whereSql}
       ORDER BY j.created_at DESC

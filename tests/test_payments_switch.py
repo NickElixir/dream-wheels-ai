@@ -16,6 +16,8 @@ def test_create_topup_respects_payments_enabled_flag(monkeypatch):
             "pricing_version": "2026-06-balance-v1",
             "source_screen": "cabinet_quick_amount",
             "email": "test@example.com",
+            "client_channel": "web",
+            "return_to": "/app",
             "telegram_user_id": 123456789,
         },
     )

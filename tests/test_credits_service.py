@@ -1,13 +1,18 @@
 import asyncio
+from datetime import UTC, datetime
+from uuid import UUID
 
 import asyncpg
 
 from src.credits_service import (
     _calculate_remaining_starter_grant_credits,
     _has_starter_grant_ledger_entry,
+    _insert_starter_grant_expiration_ledger_entry,
     _insert_starter_grant_ledger_entry,
     ensure_credit_account,
     ensure_credit_account_state,
+    expire_credit_packages,
+    get_balance,
 )
 
 
@@ -76,6 +81,29 @@ def test_remaining_starter_grant_drops_to_zero_after_spend_even_with_purchase():
     )
 
     assert remaining == 0
+
+
+def test_remaining_starter_grant_accepts_json_text_metadata_from_database():
+    remaining = _calculate_remaining_starter_grant_credits(
+        [
+            {
+                "event_type": "trial_grant",
+                "credits_delta": 3,
+                "idempotency_key": "starter_grant:123",
+                "metadata": '{"kind":"starter_grant"}',
+            },
+            {
+                "event_type": "job_reserve",
+                "credits_delta": -2,
+                "idempotency_key": "job_reserve:1",
+                "metadata": "{}",
+            },
+        ],
+        user_id=123,
+        granted_credits=3,
+    )
+
+    assert remaining == 1
 
 
 def test_remaining_starter_grant_restores_refunded_credit():
@@ -171,3 +199,121 @@ def test_ensure_credit_account_keeps_int_contract(monkeypatch):
     balance = asyncio.run(ensure_credit_account(object(), 123))
 
     assert balance == 5
+
+
+def test_get_balance_reconciles_cached_account_with_active_packages(monkeypatch):
+    async def fake_ensure(_conn, _user_id: int):
+        return 40
+
+    async def fake_expire(_conn, *, user_id: int):
+        assert user_id == 123
+        return 0
+
+    class FakeConn:
+        def __init__(self) -> None:
+            self.updated: tuple[str, tuple[object, ...]] | None = None
+
+        async def fetchval(self, query: str, *args):
+            if "to_regclass('public.credit_packages')" in query:
+                return "credit_packages"
+            assert "SUM(remaining_credits)" in query
+            assert args == (123,)
+            return 29
+
+        async def execute(self, query: str, *args):
+            self.updated = (query, args)
+            return "UPDATE 1"
+
+    monkeypatch.setattr("src.credits_service.ensure_credit_account", fake_ensure)
+    monkeypatch.setattr("src.credits_service.expire_credit_packages", fake_expire)
+    conn = FakeConn()
+
+    balance = asyncio.run(get_balance(conn, 123))
+
+    assert balance == 29
+    assert conn.updated is not None
+    assert conn.updated[1] == (123, 29)
+
+
+def test_get_balance_keeps_legacy_account_when_package_migration_is_missing(monkeypatch):
+    async def fake_ensure(_conn, _user_id: int):
+        return 6
+
+    class FakeConn:
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return None
+
+    monkeypatch.setattr("src.credits_service.ensure_credit_account", fake_ensure)
+
+    assert asyncio.run(get_balance(FakeConn(), 123)) == 6
+
+
+def test_list_credit_packages_returns_empty_when_package_migration_is_missing():
+    class FakeConn:
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return None
+
+    from src.credits_service import list_credit_packages
+
+    assert asyncio.run(list_credit_packages(FakeConn(), user_id=123)) == []
+
+
+def test_expire_credit_packages_casts_json_metadata_values_for_postgres():
+    expires_at = datetime(2026, 7, 1, tzinfo=UTC)
+    package_id = UUID("263b2b96-2704-4b98-82d4-0e6fbe81682e")
+
+    class FakeConn:
+        def __init__(self) -> None:
+            self.expiration_insert: tuple[str, tuple[object, ...]] | None = None
+
+        async def fetchval(self, query: str, *_args):
+            assert "to_regclass('public.credit_packages')" in query
+            return "credit_packages"
+
+        async def fetch(self, query: str, *args):
+            assert "FROM credit_packages" in query
+            return [{"id": package_id, "remaining_credits": 2, "expires_at": expires_at}]
+
+        async def execute(self, query: str, *args):
+            if "INSERT INTO credit_ledger" in query:
+                self.expiration_insert = (query, args)
+            return "UPDATE 1"
+
+    conn = FakeConn()
+    expired = asyncio.run(expire_credit_packages(conn, user_id=123))
+
+    assert expired == 2
+    assert conn.expiration_insert is not None
+    query, args = conn.expiration_insert
+    assert "$4::text" in query
+    assert "$5::timestamptz" in query
+    assert args == (123, -2, f"package_expire:{package_id}", str(package_id), expires_at)
+    assert args[3] == str(package_id)
+
+
+def test_expired_starter_grant_metadata_has_explicit_postgres_types():
+    expires_at = datetime(2026, 7, 1, tzinfo=UTC)
+
+    class FakeConn:
+        def transaction(self):
+            return _FakeTransaction()
+
+        async def fetchval(self, query: str, *args):
+            assert "$5::integer" in query
+            assert "$6::timestamptz" in query
+            assert args == (123, -3, 0, "starter_grant_expire:123", 3, expires_at)
+            return 1
+
+    inserted = asyncio.run(
+        _insert_starter_grant_expiration_ledger_entry(
+            FakeConn(),
+            user_id=123,
+            credits_to_expire=3,
+            balance_after=0,
+            expires_at=expires_at,
+        )
+    )
+
+    assert inserted is True

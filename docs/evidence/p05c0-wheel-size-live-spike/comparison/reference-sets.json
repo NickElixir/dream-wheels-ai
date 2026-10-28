@@ -1,0 +1,3409 @@
+[
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "abe2ca61c0",
+    "name": "330e",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "f0762c6aef",
+    "name": "320i",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0,
+        18.0
+      ],
+      "rear": [
+        18.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "3333e5b5d0",
+    "name": "M340i xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0
+      ],
+      "rear": [
+        18.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "e99ec12bee",
+    "name": "M340i xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": [
+        18.0,
+        19.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "33e2e04077",
+    "name": "330d",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "7dec175db6",
+    "name": "320i xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "708a232f1a",
+    "name": "330i xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "b2f25dbe55",
+    "name": "320d xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "c00a960f19",
+    "name": "320d",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "24369fa4b3",
+    "name": "318d",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "e0e931dc02",
+    "name": "330i",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "2c0a14f47c",
+    "name": "320i",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "aeef2e2263",
+    "name": "330d xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "e5a4b5bc79",
+    "name": "330d",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "71130edeac",
+    "name": "318i",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "b674ba6852",
+    "name": "M340d xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0
+      ],
+      "rear": [
+        18.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "3b3557aefc",
+    "name": "330d xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "9b1c8e4035",
+    "name": "330e xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "1112177846",
+    "name": "320e",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "85c5b53040",
+    "name": "320e xDrive",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "bmw-3-series-2020-eudm-search",
+    "slug": "5d1442f689",
+    "name": "316d",
+    "generation_slug": "ddd1df4434",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        18.0,
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.25"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "66.6",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "af284e7b2d",
+    "name": "2.9 Turbo S",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        19.0
+      ],
+      "rear": [
+        19.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "b33a1e86a6",
+    "name": "4.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "117a52c786",
+    "name": "3.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        19.0
+      ],
+      "rear": [
+        19.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "cae4a57bcd",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "f4593152ea",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "12991bdfa4",
+    "name": "2.9 Turbo S",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "19e5c5a357",
+    "name": "3.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "974ad82995",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "fc2890c44d",
+    "name": "4.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "70a5e2c25d",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "ea6a99ab69",
+    "name": "4.0 Turbo GTS",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "f8b7e58815",
+    "name": "4.0 Turbo GTS",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-eudm-search",
+    "slug": "4355503bc6",
+    "name": "4.0 Turbo GT",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        21.0,
+        22.0
+      ],
+      "rear": [
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        22.0
+      ],
+      "rear": [
+        22.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "af284e7b2d",
+    "name": "2.9 Turbo S",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        19.0
+      ],
+      "rear": [
+        19.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "b33a1e86a6",
+    "name": "4.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "117a52c786",
+    "name": "3.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        19.0
+      ],
+      "rear": [
+        19.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "cae4a57bcd",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        19.0,
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "f4593152ea",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "12991bdfa4",
+    "name": "2.9 Turbo S",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "19e5c5a357",
+    "name": "3.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "974ad82995",
+    "name": "3.0 Turbo E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "fc2890c44d",
+    "name": "4.0 Turbo",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "70a5e2c25d",
+    "name": "4.0 Turbo S E-Hybrid",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "ea6a99ab69",
+    "name": "4.0 Turbo GTS",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "f8b7e58815",
+    "name": "4.0 Turbo GTS",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        20.0,
+        21.0,
+        22.0
+      ],
+      "rear": [
+        20.0,
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        21.0
+      ],
+      "rear": [
+        21.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "porsche-cayenne-2021-usdm-search",
+    "slug": "4355503bc6",
+    "name": "4.0 Turbo GT",
+    "generation_slug": "2794f6a20e",
+    "all_explicit": {
+      "front": [
+        21.0,
+        22.0
+      ],
+      "rear": [
+        21.0,
+        22.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        22.0
+      ],
+      "rear": [
+        22.0
+      ]
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "160 Nm",
+      "stud_holes": 5,
+      "pcd": 130.0,
+      "centre_bore": "71.6",
+      "bolt_pattern": "5x130",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "5a081c2f38",
+    "name": "Long Range",
+    "generation_slug": "efdde87c66",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "0d7499344b",
+    "name": "Long Range",
+    "generation_slug": "efdde87c66",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "fe8e947903",
+    "name": "Standard Range",
+    "generation_slug": "efdde87c66",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "026e4ab9d6",
+    "name": "Long Range",
+    "generation_slug": "67797f1f0f",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "be5b2b9767",
+    "name": "Standard Range",
+    "generation_slug": "67797f1f0f",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": [
+        19.0,
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "tesla-model-3-2023-eudm-search",
+    "slug": "4296c050a9",
+    "name": "Performance",
+    "generation_slug": "67797f1f0f",
+    "all_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": [
+        20.0
+      ]
+    },
+    "stock_explicit": {
+      "front": [
+        20.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": true,
+    "staggered_width_observed": true,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "175 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "64.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "a7bd8e0eec",
+    "name": "2.0 VVT-i",
+    "generation_slug": "c44bebb973",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M12 x 1.5"
+      },
+      "wheel_tightening_torque": "103 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "60.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "c1dc18e5b7",
+    "name": "2.5 VVT-i",
+    "generation_slug": "c44bebb973",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M12 x 1.5"
+      },
+      "wheel_tightening_torque": "103 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "60.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "497fad336e",
+    "name": "2.5",
+    "generation_slug": "c44bebb973",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M12 x 1.5"
+      },
+      "wheel_tightening_torque": "103 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "60.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "ba0a95f8ef",
+    "name": "2.5",
+    "generation_slug": "c44bebb973",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M12 x 1.5"
+      },
+      "wheel_tightening_torque": "103 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "60.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "toyota-rav4-2021-eudm-search",
+    "slug": "a01a97af93",
+    "name": "2.5 PHEV",
+    "generation_slug": "c44bebb973",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug nuts",
+        "thread_size": "M12 x 1.5"
+      },
+      "wheel_tightening_torque": "103 Nm",
+      "stud_holes": 5,
+      "pcd": 114.3,
+      "centre_bore": "60.1",
+      "bolt_pattern": "5x114.3",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "ddeb5989b3",
+    "name": "1.5 TSI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "188b8a4c84",
+    "name": "2.0 TDI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "2a7b128d60",
+    "name": "1.5 TSI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "9277e5d8e6",
+    "name": "1.6 TDI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        15.0,
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "b495104fa9",
+    "name": "1.0 TSI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        15.0,
+        16.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        15.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "c95bb733ce",
+    "name": "2.0 TDI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "5aca8e04fd",
+    "name": "2.0 TDI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "2088e90e1b",
+    "name": "1.5 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "fbec709157",
+    "name": "1.5 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "2d99b6c8fb",
+    "name": "1.4 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "83124abf86",
+    "name": "1.5 TGI",
+    "generation_slug": "96f2d6069d",
+    "all_explicit": {
+      "front": [
+        15.0,
+        16.0,
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "120 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "b60612051c",
+    "name": "1.6 MPI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "fb6a7bfe07",
+    "name": "2.0 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "2518d420da",
+    "name": "1.5 eTSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "7a3c587b99",
+    "name": "1.5 TGI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "db512b5b37",
+    "name": "1.5 eTSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "037d4dc504",
+    "name": "1.0 eTSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "3531d0b9e7",
+    "name": "1.0 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "9c216a24d8",
+    "name": "1.0 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "662a02ffc0",
+    "name": "1.4 eTSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "3bed9f3cd5",
+    "name": "1.4 TSI eHybrid",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "56ef52b01d",
+    "name": "2.0 TDI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        17.0,
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "0513e1a0a3",
+    "name": "2.0 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0,
+        20.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "2749214f70",
+    "name": "2.0 TSI",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        18.0,
+        19.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        18.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  },
+  {
+    "sample": "volkswagen-golf-2020-eudm-search",
+    "slug": "5cf6978d9d",
+    "name": "1.4 TSI eHybrid",
+    "generation_slug": "687fe34a90",
+    "all_explicit": {
+      "front": [
+        16.0,
+        17.0,
+        18.0
+      ],
+      "rear": []
+    },
+    "stock_explicit": {
+      "front": [
+        16.0,
+        17.0
+      ],
+      "rear": []
+    },
+    "rear_explicit": false,
+    "staggered_width_observed": false,
+    "technical": {
+      "wheel_fasteners": {
+        "type": "Lug bolts",
+        "thread_size": "M14 x 1.5"
+      },
+      "wheel_tightening_torque": "140 Nm",
+      "stud_holes": 5,
+      "pcd": 112.0,
+      "centre_bore": "57.1",
+      "bolt_pattern": "5x112",
+      "rear_axis_stud_holes": null,
+      "rear_axis_pcd": null,
+      "rear_axis_centre_bore": null,
+      "rear_axis_bolt_pattern": "N/A"
+    }
+  }
+]

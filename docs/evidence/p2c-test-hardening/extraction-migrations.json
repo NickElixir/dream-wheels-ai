@@ -1,0 +1,502 @@
+[
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentVehicleHelperLines(ui)\", \"function renderFitmentVehicleHelper\"\n    )",
+    "target": "fitmentVehicleHelperLines",
+    "replacement": "extract_function(APP_JS, \"fitmentVehicleHelperLines\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function renderFitment()\", \"function renderFitmentRimVariants\"\n    )",
+    "target": "renderFitment",
+    "replacement": "extract_function(APP_JS, \"renderFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function renderFitmentValidation()\", \"function validateFitmentOverview\"\n    )",
+    "target": "renderFitmentValidation",
+    "replacement": "extract_function(APP_JS, \"renderFitmentValidation\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(APP_JS, \"async function saveFitment(\", \"async function fetchRenderHistory\")",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(APP_JS, \"function renderFitmentV2Result(\", \"function renderFitment()\")",
+    "target": "renderFitmentV2Result",
+    "replacement": "extract_function(APP_JS, \"renderFitmentV2Result\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"async function applyFitmentVehicleVariant\", \"async function saveFitment\"\n    )",
+    "target": "applyFitmentVehicleVariant",
+    "replacement": "extract_function(APP_JS, \"applyFitmentVehicleVariant\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(APP_JS, \"async function saveFitment(\", \"async function fetchRenderHistory\")",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function buildRimSecondaryDetails\", \"function renderFitmentSourceDisclosure\"\n    )",
+    "target": "buildRimSecondaryDetails",
+    "replacement": "extract_function(APP_JS, \"buildRimSecondaryDetails\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentRimHasManualProvenance\", \"function fitmentSafeSourceDisplay\"\n    )",
+    "target": "fitmentRimHasManualProvenance",
+    "replacement": "extract_function(APP_JS, \"fitmentRimHasManualProvenance\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "_scope(\n        APP_JS, \"function buildRimSecondaryDetails\", \"function renderFitmentSourceDisclosure\"\n    )",
+    "target": "buildRimSecondaryDetails",
+    "replacement": "extract_function(APP_JS, \"buildRimSecondaryDetails\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_g2.py",
+    "old": "APP_JS.split(\"function renderFitment()\", 1)[1].split(\n            \"function renderFitmentRimVariants\", 1\n        )[0]",
+    "target": "renderFitment",
+    "replacement": "extract_function(APP_JS, \"renderFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"async function saveFitment(\", 1)[1].split(\n        \"async function fetchRenderHistory\", 1\n    )[0]",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentVerdictMessage\", \"function fitmentFieldStateLabel\"\n    )",
+    "target": "fitmentVerdictMessage",
+    "replacement": "extract_function(APP_JS, \"fitmentVerdictMessage\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentResultFieldCopy\", \"function renderFitmentV2Result\"\n    )",
+    "target": "fitmentResultFieldCopy",
+    "replacement": "extract_function(APP_JS, \"fitmentResultFieldCopy\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"function fitmentVariantTechnicalSeries\", 1)[1].split(\n        \"function demoPcdDisplay\", 1\n    )[0]",
+    "target": "fitmentVariantTechnicalSeries",
+    "replacement": "extract_function(APP_JS, \"fitmentVariantTechnicalSeries\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"function fitmentPayload(\", 1)[1].split(\n        \"function cloneDemoFitmentOverview\", 1\n    )[0]",
+    "target": "fitmentPayload",
+    "replacement": "extract_function(APP_JS, \"fitmentPayload\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "_scope(APP_JS, \"function applyDemoResultFixture\", \"function runDemoFitmentCheck\")",
+    "target": "applyDemoResultFixture",
+    "replacement": "extract_function(APP_JS, \"applyDemoResultFixture\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"async function runFitmentCheck()\", 1)[1].split(\n        \"async function applyFitmentVehicleVariant\", 1\n    )[0]",
+    "target": "runFitmentCheck",
+    "replacement": "extract_function(APP_JS, \"runFitmentCheck\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"async function saveFitment(\", 1)[1].split(\n        \"async function fetchRenderHistory\", 1\n    )[0]",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_v2.py",
+    "old": "APP_JS.split(\"function fitmentPreviewAsset(job, kind)\", 1)[1].split(\n        \"async function ensureFitmentPreviewAsset\", 1\n    )[0]",
+    "target": "fitmentPreviewAsset",
+    "replacement": "extract_function(APP_JS, \"fitmentPreviewAsset\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"function deriveVehicleWorkspaceMode\", \"function deriveResultRecovery\")",
+    "target": "deriveVehicleWorkspaceMode",
+    "replacement": "extract_function(APP_JS, \"deriveVehicleWorkspaceMode\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"function renderFitment()\", \"function renderFitmentRimVariants\")",
+    "target": "renderFitment",
+    "replacement": "extract_function(APP_JS, \"renderFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentCatalogueFieldState\", \"function fitmentCatalogueDependencyKey\"\n    )",
+    "target": "fitmentCatalogueFieldState",
+    "replacement": "extract_function(APP_JS, \"fitmentCatalogueFieldState\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS, \"function fitmentRememberedVehicleChain\", \"function fitmentRevisionBaseline\"\n    )",
+    "target": "fitmentRememberedVehicleChain",
+    "replacement": "extract_function(APP_JS, \"fitmentRememberedVehicleChain\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS,\n        \"function isCurrentFitmentCatalogueRequest\",\n        \"function beginFitmentCatalogueContextChange\",\n    )",
+    "target": "isCurrentFitmentCatalogueRequest",
+    "replacement": "extract_function(APP_JS, \"isCurrentFitmentCatalogueRequest\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS,\n        \"async function revalidateFitmentCatalogueChain\",\n        \"function loadFitmentVehicleCatalogue\",\n    )",
+    "target": "revalidateFitmentCatalogueChain",
+    "replacement": "extract_function(APP_JS, \"revalidateFitmentCatalogueChain\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS,\n        \"async function loadFitmentCatalogue\",\n        \"async function revalidateFitmentCatalogueChain\",\n    )",
+    "target": "loadFitmentCatalogue",
+    "replacement": "extract_function(APP_JS, \"loadFitmentCatalogue\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"function retryFitmentCatalogue\", \"async function loadFitmentOverview\")",
+    "target": "retryFitmentCatalogue",
+    "replacement": "extract_function(APP_JS, \"retryFitmentCatalogue\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS, \"function validateFitmentForm\", \"function fitmentVehicleConfirmationRequired\"\n    )",
+    "target": "validateFitmentForm",
+    "replacement": "extract_function(APP_JS, \"validateFitmentForm\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"function renderFitment()\", \"function renderFitmentRimVariants\")",
+    "target": "renderFitment",
+    "replacement": "extract_function(APP_JS, \"renderFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"async function saveFitment\", \"async function fetchRenderHistory\")",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(APP_JS, \"function renderFitmentControls\", \"function fitmentContextJob\")",
+    "target": "renderFitmentControls",
+    "replacement": "extract_function(APP_JS, \"renderFitmentControls\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_vehicle_catalogue_state_machine.py",
+    "old": "_scope(\n        APP_JS, \"function beginFitmentCatalogueContextChange\", \"function resetFitmentCatalogue\"\n    )",
+    "target": "beginFitmentCatalogueContextChange",
+    "replacement": "extract_function(APP_JS, \"beginFitmentCatalogueContextChange\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_slice6.py",
+    "old": "APP_JS.split(\"async function revalidateFitmentCatalogueChain\", 1)[1].split(\n        \"function loadFitmentVehicleCatalogue\", 1\n    )[0]",
+    "target": "revalidateFitmentCatalogueChain",
+    "replacement": "extract_function(APP_JS, \"revalidateFitmentCatalogueChain\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_fitment_frontend_slice6.py",
+    "old": "APP_JS.split(\"async function saveFitment(\")[1].split(\n        \"async function fetchRenderHistory\"\n    )[0]",
+    "target": "saveFitment",
+    "replacement": "extract_function(APP_JS, \"saveFitment\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"function loadTelegramLoginLibrary()\", 1)[1].split(\n        \"function hasFreshWebsiteLoginNonce\", 1\n    )[0]",
+    "target": "loadTelegramLoginLibrary",
+    "replacement": "extract_function(APP_JS, \"loadTelegramLoginLibrary\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"function renderRenderDetail() {\")[1].split(\"function openRenderDetail\")[\n        0\n    ]",
+    "target": "renderRenderDetail",
+    "replacement": "extract_function(APP_JS, \"renderRenderDetail\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"async function loadRenderHistory\")[1].split(\n        \"async function loadDashboardData\"\n    )[0]",
+    "target": "requestRenderHistory",
+    "replacement": "extract_function(APP_JS, \"requestRenderHistory\")",
+    "assertions": "unchanged",
+    "reason": "Old broad interval included the neighboring requestRenderHistory worker; rerender assertions now inspect their actual owner."
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"function renderHistoryCard(job) {\")[1].split(\n        \"function renderRenderDetail()\"\n    )[0]",
+    "target": "renderHistoryCard",
+    "replacement": "extract_function(APP_JS, \"renderHistoryCard\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"function rerenderActiveView() {\", 1)[1].split(\"\\n}\\n\", 1)[0]",
+    "target": "rerenderActiveView",
+    "replacement": "extract_function(APP_JS, \"rerenderActiveView\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"async function submitHistoryFeedback\", 1)[1].split(\n        \"\\nfunction renderHistoryCard\", 1\n    )[0]",
+    "target": "submitHistoryFeedback",
+    "replacement": "extract_function(APP_JS, \"submitHistoryFeedback\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_cabinet_dashboard_static.py",
+    "old": "APP_JS.split(\"function openAuthDialog()\", 1)[1].split(\"function closeAuthDialog()\", 1)[0]",
+    "target": "openAuthDialog",
+    "replacement": "extract_function(APP_JS, \"openAuthDialog\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentBaseVehicleAwaitingConfirmation(\"), app.indexOf(\"function fitmentVehicleConfirmationRequired(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentBaseVehicleAwaitingConfirmation\",\"fitmentVehicleFormForPresentation\"])",
+    "targets": [
+      "fitmentBaseVehicleAwaitingConfirmation",
+      "fitmentVehicleFormForPresentation"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentCatalogueSelectionItem(\"), app.indexOf(\"function fitmentCatalogueParentReadiness(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentCatalogueSelectionItem\",\"fitmentCatalogueSelectionMatches\",\"fitmentCatalogueCanonicalValue\"])",
+    "targets": [
+      "fitmentCatalogueSelectionItem",
+      "fitmentCatalogueSelectionMatches",
+      "fitmentCatalogueCanonicalValue"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentDiameterPresentation(\"), app.indexOf(\"function setVnextFitmentField(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentDiameterPresentation\",\"vnextFitmentSnapshot\"])",
+    "targets": [
+      "fitmentDiameterPresentation",
+      "vnextFitmentSnapshot"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function setVnextFitmentField(\"), app.indexOf(\"window.dreamwheelsFitmentBridge =\"))",
+    "replacement": "extractFunctions(app, [\"setVnextFitmentField\",\"saveVnextFitment\"])",
+    "targets": [
+      "setVnextFitmentField",
+      "saveVnextFitment"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentRimValuesEqual(\"), app.indexOf(\"function markRimFieldEdited(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentRimValuesEqual\",\"fitmentCanonicalRimConflicts\",\"fitmentSourceContextMatchesCurrent\",\"mergeFitmentRimConflicts\",\"fitmentRimPendingProposalFields\",\"fitmentRimFieldsForConfirmation\",\"fitmentRimSaveReadiness\"])",
+    "targets": [
+      "fitmentRimValuesEqual",
+      "fitmentCanonicalRimConflicts",
+      "fitmentSourceContextMatchesCurrent",
+      "mergeFitmentRimConflicts",
+      "fitmentRimPendingProposalFields",
+      "fitmentRimFieldsForConfirmation",
+      "fitmentRimSaveReadiness"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function normalizeFitmentNumber(\"), app.indexOf(\"function formatFitmentNumber(\"))",
+    "replacement": "extractFunction(app, \"normalizeFitmentNumber\")",
+    "targets": [
+      "normalizeFitmentNumber"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"async function submitJob(\"), app.indexOf(\"function \", app.indexOf(\"async function submitJob(\") + 1))",
+    "replacement": "extractFunction(app, \"submitJob\")",
+    "targets": [
+      "submitJob"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentBaseVehicleAwaitingConfirmation(\"), app.indexOf(\"function fitmentVehicleConfirmationRequired(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentBaseVehicleAwaitingConfirmation\",\"fitmentVehicleFormForPresentation\"])",
+    "targets": [
+      "fitmentBaseVehicleAwaitingConfirmation",
+      "fitmentVehicleFormForPresentation"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentCatalogueSelectionItem(\"), app.indexOf(\"function fitmentCatalogueParentReadiness(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentCatalogueSelectionItem\",\"fitmentCatalogueSelectionMatches\",\"fitmentCatalogueCanonicalValue\"])",
+    "targets": [
+      "fitmentCatalogueSelectionItem",
+      "fitmentCatalogueSelectionMatches",
+      "fitmentCatalogueCanonicalValue"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentRimValuesEqual(\"), app.indexOf(\"function markRimFieldEdited(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentRimValuesEqual\",\"fitmentCanonicalRimConflicts\",\"fitmentSourceContextMatchesCurrent\",\"mergeFitmentRimConflicts\",\"fitmentRimPendingProposalFields\",\"fitmentRimFieldsForConfirmation\",\"fitmentRimSaveReadiness\"])",
+    "targets": [
+      "fitmentRimValuesEqual",
+      "fitmentCanonicalRimConflicts",
+      "fitmentSourceContextMatchesCurrent",
+      "mergeFitmentRimConflicts",
+      "fitmentRimPendingProposalFields",
+      "fitmentRimFieldsForConfirmation",
+      "fitmentRimSaveReadiness"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentNextAction(\"), app.indexOf(\"function deriveFitmentNextIntent(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentNextAction\",\"setFitmentEditor\",\"setFitmentEditorsForNextAction\"])",
+    "targets": [
+      "fitmentNextAction",
+      "setFitmentEditor",
+      "setFitmentEditorsForNextAction"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function updateDemoFitmentState(\"), app.indexOf(\"function createDemoFitmentCheck(\"))",
+    "replacement": "extractFunction(app, \"updateDemoFitmentState\")",
+    "targets": [
+      "updateDemoFitmentState"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"async function loadFitmentOverview(\"), app.indexOf(\"function openFitmentView(\"))",
+    "replacement": "extractFunction(app, \"loadFitmentOverview\")",
+    "targets": [
+      "loadFitmentOverview"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentDiameterPresentation(\"), app.indexOf(\"function setVnextFitmentField(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentDiameterPresentation\",\"vnextFitmentSnapshot\"])",
+    "targets": [
+      "fitmentDiameterPresentation",
+      "vnextFitmentSnapshot"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"async function resolveFitmentRimSource(\"), app.indexOf(\"async function loadFitmentVehicleVariants(\", app.indexOf(\"async function resolveFitmentRimSource(\")))",
+    "replacement": "extractFunction(app, \"resolveFitmentRimSource\")",
+    "targets": [
+      "resolveFitmentRimSource"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function setFitmentEditor(\"), app.indexOf(\"function setFitmentEditorsForNextAction(\"))",
+    "replacement": "extractFunction(app, \"setFitmentEditor\")",
+    "targets": [
+      "setFitmentEditor"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"function fitmentSectionToStep(\"), app.indexOf(\"function navigateFitmentRecovery(\"))",
+    "replacement": "extractFunctions(app, [\"fitmentSectionToStep\",\"clearFitmentTransientMessage\",\"setFitmentActiveSection\"])",
+    "targets": [
+      "fitmentSectionToStep",
+      "clearFitmentTransientMessage",
+      "setFitmentActiveSection"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(app.indexOf(\"window.dreamwheelsFitmentBridge = {\"), app.indexOf(\"\\n};\\n\\nlet renderAssetPreparationPending\"))",
+    "replacement": "extractDeclaration(app, \"window.dreamwheelsFitmentBridge\")",
+    "assertions": "unchanged"
+  },
+  {
+    "file": "webapp/auth/vnext-fitment.test.js",
+    "old": "app.slice(saveStart, app.indexOf(\"async function fetchRenderHistory(\", saveStart))",
+    "replacement": "extractFunction(app, \"saveFitment\")",
+    "targets": [
+      "saveFitment"
+    ],
+    "assertions": "unchanged"
+  },
+  {
+    "file": "tests/test_e01_corrective.mjs",
+    "old": "runtime(name): from target through next function declaration",
+    "replacement": "extractFunction(source, name); explicit VM dependency list retained",
+    "assertions": "all existing assertions retained"
+  },
+  {
+    "file": "tests/test_failed_render_behavior.mjs",
+    "old": "fn(name): from target to next unindented closing brace; I18N to detectLocale sentinel",
+    "replacement": "extractFunction(source,name) + extractDeclaration(source,\"I18N\")",
+    "assertions": "all billing/asset assertions retained"
+  }
+]

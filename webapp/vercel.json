@@ -1,6 +1,87 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": ".",
+  "buildCommand": "node scripts/build-public-config.mjs",
+  "git": {
+    "deploymentEnabled": false
+  },
+  "rewrites": [
+    {
+      "source": "/api/backend/(.*)",
+      "destination": "/api/backend-gateway?__backend_path=$1"
+    },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/", "destination": "/index.html" },
+    { "source": "/app/(.*)", "destination": "/index.html" },
+    { "source": "/t", "destination": "/index.html" },
+    { "source": "/t/", "destination": "/index.html" },
+    { "source": "/create", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" },
+    { "source": "/balance", "destination": "/index.html" },
+    { "source": "/account", "destination": "/index.html" },
+    { "source": "/help", "destination": "/index.html" },
+    { "source": "/help/photos", "destination": "/index.html" },
+    { "source": "/documents", "destination": "/index.html" },
+    { "source": "/try-ons/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
+    { "source": "/create", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/history", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/balance", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/account", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/help", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/help/photos", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/documents", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+    { "source": "/try-ons/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] },
+
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/app",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/app/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/app/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/t",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/t/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

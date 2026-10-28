@@ -20,6 +20,29 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - `0014_payments_provider_neutral_fields.sql` — provider-neutral поля платежей для Robokassa + будущих Telegram Stars
 - `0015_durable_render_assets.sql` — `assets` и ссылки `jobs.*_asset_id` для durable render history
 - `0016_credit_ledger_expiration_compat.sql` — compat для canonical `credit_ledger.event_type='expiration'`
+- `0017_vehicle_rim_identity.sql` — `VehicleIdentity`, `RimSpec`, `RimSetup`, pre-render drafts и snapshot-ссылки для Sprint 2
+- `0018_render_feedback.sql` — durable `render_feedback`, backfill из legacy `jobs.feedback` и owner/job constraints для Sprint 3
+- `0019_fitment_identity_candidates.sql` — JSON candidates и revisions для Sprint 4 full editor canonical identity
+- `0020_fitment_change_events.sql` — append-only история canonical fitment edits и подтверждений
+- `0021_fitment_checks.sql` — durable технические fitment verdicts
+- `0022_fitment_evidence_fallbacks.sql` — provider evidence и resolution state для verdicts
+- `0023_enable_credit_accounts_rls.sql` — повторно включает RLS для server-only credit balances при staging drift
+- `0024_credit_packages_fifo.sql` — durable credit packages и FIFO-распределение списаний
+- `0025_product_analytics.sql` — first-party продуктовая аналитика visitor/event
+- `0026_fitment_rim_setup_schema_compat.sql` — source state в `rim_specs` и revision в `rim_setups` для Slice 7 lifecycle
+- `0028_fitment_change_event_allowlist.sql` — allow-list для modification lifecycle events Slice 7
+- `0029_wan_provider_task_metadata.sql` — nullable Wan provider task identifier для render evidence
+- `0030_results_bucket_20m.sql` — увеличивает per-bucket limit `results` до 20 MiB для Wan output
+- `0031_auth_v11_identities.sql` — canonical external identities, Telegram backfill и nullable legacy Telegram ID
+- `0032_auth_v11_telemetry_allowlist.sql` — расширяет allow-list product analytics событиями Email OTP/Auth session
+- `0033_payment_return_routing.sql` — сохраняет UI-канал и валидированный внутренний маршрут возврата Robokassa
+- `0034_auth_account_linking.sql` — аудитируемое связывание аккаунтов и защита ownership для feedback
+- `0035_fitment_rim_source_state.sql` — source fingerprint, выбранный SKU и revision для `rim_specs`/`rim_setups`
+- `0036_fitment_check_lifecycle.sql` — lifecycle-поля попыток fitment check и индекс активного контекста
+
+- `0037_car_display_assets.sql` — private presentation derivative `car_display`, unique job/draft mapping; originals and historical jobs remain valid.
+
+- `0038_vehicle_confirmation_intent.sql` — расширяет Fitment audit allowlist для будущих explicit Vehicle confirmations, включая no-op; без backfill. Применить до deploy нового writer.
 
 ## Стратегия применения
 
@@ -41,6 +64,18 @@ SQL-миграции для PostgreSQL (Supabase). Применяются в п�
 - Код credits/payments ожидает наличие `user_credit_accounts` и canonical `credit_ledger` полей (`event_type`, `credits_delta`, `balance_after`, `related_job_id`, `related_payment_id`, `idempotency_key`).
 - Перед релизом payment/ledger кода на окружение, где этих объектов ещё нет, сначала применить `0012_credit_accounts_ledger_schema_align.sql`, затем выкатывать код.
 - Перед внедрением Telegram Stars применить `0014_payments_provider_neutral_fields.sql`: она добавляет `currency`, `amount_provider_units`, provider payload/charge id и `delivery_channel`, сохраняя совместимость текущих Robokassa inserts через trigger.
+- Перед выкладкой durable history кода применить `0015_durable_render_assets.sql`: код пишет в `assets` и `jobs.car_asset_id/rim_asset_id/result_asset_id`, сохраняя legacy поля `car_image_url/wheel_image_url/output_image_url`.
+- Перед выкладкой Sprint 2 create flow применить `0017_vehicle_rim_identity.sql`: новый flow пишет `render_input_drafts`, `vehicle_identities`, `rim_specs`, `rim_setups` и `jobs.render_input_snapshot`; legacy `/jobs/upload` остаётся совместимым.
+- Перед выкладкой Sprint 3 feedback-кода применить `0018_render_feedback.sql`: canonical feedback read/write paths переходят на `render_feedback`, а `jobs.feedback` остаётся только legacy-колонкой для rollout/backfill.
+- Перед выкладкой Sprint 4 full editor применить `0019_fitment_identity_candidates.sql`: API читает `field_candidates` и `revision` из `vehicle_identities` / `rim_specs`.
+- Перед выкладкой fitment history и confirm-without-change flow применить `0020_fitment_change_events.sql`: API пишет `initial_prefill`, `user_save` и `user_confirm` события в append-only audit table.
+- Перед выкладкой Slice 7 lifecycle применить `0026_fitment_rim_setup_schema_compat.sql`: API читает и обновляет `rim_specs.source_*` / `selected_variant_sku` и `rim_setups.revision`.
+- Перед выкладкой vehicle-variant lookup применить `0028_fitment_change_event_allowlist.sql`: API пишет `modification_suggested` и связанные revision-bound события в append-only history.
+- Перед выкладкой Wan runtime integration применить `0029_wan_provider_task_metadata.sql`: worker сохраняет безопасный Alibaba task identifier в `jobs.provider_task_id`.
+- Перед применением `0030_results_bucket_20m.sql` проверить в Supabase Storage Settings, что global file-size limit не ниже 20 MiB. На текущем rollout результат не перекодируется; будущая WebP/JPEG-нормализация остаётся отдельной задачей оптимизации.
+- Перед rollout Auth V1.1 foundation применить `0031_auth_v11_identities.sql`: она сохраняет `users.id`, backfill-ит Telegram identities, разрешает `users.telegram_user_id IS NULL` для Supabase-only users и оставляет `user_identities` server-only через RLS без public policies.
+- Перед rollout 05B.1 применить `0033_payment_return_routing.sql`: она добавляет `payments.client_channel` и `payments.return_to`, backfill-ит подтвержденные legacy Telegram-платежи значениями `telegram` и `/t/`, и не меняет `delivery_channel`, balance или ledger.
+- `0023` не создаёт публичных RLS-политик: `user_credit_accounts` доступна только серверному database/service-role пути, а не Mini App через PostgREST.
 - `0012` не применяется автоматически из Codex; rollout остаётся ручным через Supabase SQL Editor после явного подтверждения.
 
 ## Соглашения
@@ -67,3 +102,58 @@ Alembic интегрируется с SQLAlchemy/asyncpg, отслеживает
 ## Применение через MCP
 
 Если работаешь через Claude Code с подключённым Supabase MCP, можно применять миграции через `mcp__supabase__apply_migration` — Claude передаёт SQL в Management API. Это удобно для автоматизации, но **не заменяет ручную проверку** SQL Editor для критичных изменений.
+
+- Before deploying source viewer delivery, apply `0037_car_display_assets.sql` in staging after independent review. No backfill or bucket policy changes. Roll back application code without removing additive indexes or the expanded kind constraint.
+
+## 0040 — номера примерок внутри аккаунта
+
+Применять `0040_account_try_on_numbers.sql` после независимого ревью сначала в staging, **до** публикации API, читающего `try_on_number`. До миграции сделать резервную копию и сверить количество jobs по владельцам. Миграция работает одной транзакцией: блокирует users/jobs, назначает старым jobs номера по `(created_at, id)`, создаёт уникальность `(user_id, try_on_number)` и триггер выдачи номера.
+
+На время применения приостановить создание примерок и объединение аккаунтов, дождаться текущих транзакций. `lock_timeout=10s` ограничивает ожидание блокировки; при ошибке откатить транзакцию и повторить **весь файл**, не продолжать с середины. После применения сверить количество строк, отсутствие NULL у jobs с владельцем, уникальность и максимумы относительно users.last_try_on_number; затем возобновить запись и выкатить API/UI. Номер выделяется изменением строки владельца, поэтому конкурентные создания сериализуются в пределах аккаунта.
+
+Повторное выполнение сохраняет номера и максимум счётчика, в том числе после удаления примерки. Ownerless jobs остаются без номера; при назначении владельца триггер выдаёт номер. Failed/cancelled сохраняют номер. Перенос владельца выдаёт новый номер целевого аккаунта; обработчик объединения переносит jobs по `(created_at, id)` под блокировкой обоих пользователей.
+
+Откат приложения: вернуть предыдущий код, оставить добавленные колонки, индекс и триггер; данные не перенумеровывать. Полный откат схемы требует отдельной миграции и согласования. Staging-приёмка: create → history/detail → reload, два аккаунта, объединение Email/Telegram и сохранность UUID-ссылок.
+
+Локальная проверка на отдельной тестовой PostgreSQL: `TEST_DATABASE_URL=<dedicated test database> python3 -m pytest -q tests/test_try_on_numbers_postgres.py`. Тест создаёт/удаляет только изолированную схему; не передавать URL рабочей базы. В CI он запускается на временной PostgreSQL service.
+
+- `0041_shared_result_publications.sql` — server-only immutable publication snapshots with independent opaque IDs; apply before deploying the publication writer. See `docs/shared-result-publications.md`.
+
+## 0042 — бессрочный перенос остатков до FIFO
+
+`0042_permanent_legacy_credit_packages.sql` разрешает `expires_at=NULL` только
+для `source=legacy_balance`. Покупки, starter grants и refund-пакеты сохраняют
+прежние сроки. Обычное применение 0042 на staging меняет только схему и не
+переносит/начисляет кредиты.
+
+Для production **до первого применения 0024** используется отдельный
+`python scripts/migrate_legacy_credit_balances.py --apply` с DSN в
+`CREDIT_CUTOVER_DATABASE_URL`. Это операция записи, требующая отдельного
+разрешения, резервной копии и остановки всех writers: API, worker, bot,
+платёжных callbacks/обработчиков, слияний аккаунтов и периодических задач.
+Неподтверждённые платежи не дают кредитов. Старые queued/processing jobs
+необходимо отдельно сверить с очередью; инструмент их не повторяет и не завершает.
+
+Инструмент предназначен **только для проверенной pre-FIFO схемы** с уже
+применёнными зависимостями до 0016 (включая assets 0015); не является универсальным
+runner миграций. Он блокирует исходные таблицы, фиксирует остатки в памяти,
+в одной транзакции применяет проверенный список 0017–0042, обнуляет исторические
+пакеты, созданные 0024, и заменяет их ровно фактическими остатками без срока.
+Аудит снимка хранится в server-only `legacy_credit_balance_cutovers`.
+Ошибка на любом этапе откатывает всю операцию, включая исходные остатки.
+Standalone BEGIN/COMMIT файлов 0037/0040/0041 удаляются только при исполнении
+внутри этой общей транзакции; сами миграции не изменяются.
+
+Если `credit_packages` уже существует без маркера переноса, инструмент
+отказывается работать: по уже обнулённому балансу нельзя восстановить исходный
+остаток. Повтор после успешного переноса возвращает `already_applied` и не
+восстанавливает потраченные кредиты, в том числе после слияния аккаунтов.
+**Не запускать повторно 0024 отдельно после переноса**: её исторический
+перерасчёт не предназначен для работающей системы пакетов.
+
+Порядок публикации: проверить backup/restore и фактическую схему → остановить
+writers и дождаться транзакций → согласованный cutover → сверить каждый аккаунт,
+сумму остатков, packages, UUID/номера jobs, ledger и identities → опубликовать
+новый backend → frontend → разрешить writers. Старый backend не поддерживает
+бессрочные пакеты и может пересчитать баланс неправильно; простой rollback
+кода после cutover недопустим без совместимой версии учёта.

@@ -1,0 +1,18 @@
+.............................................................ss......... [ 10%]
+........................................................................ [ 21%]
+........................................................................ [ 32%]
+........................................................................ [ 42%]
+.........s.............................................................. [ 53%]
+........................................................................ [ 64%]
+........................................................................ [ 74%]
+.........................................sss............................ [ 85%]
+........................................................................ [ 96%]
+..........................                                               [100%]
+=============================== warnings summary ===============================
+../../../../../../Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/httpx/_client.py:680: 14 warnings
+tests/test_source_image_delivery.py: 6 warnings
+  /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/httpx/_client.py:680: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+    warnings.warn(message, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+668 passed, 6 skipped, 20 warnings in 6.23s

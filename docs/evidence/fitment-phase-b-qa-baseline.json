@@ -1,0 +1,504 @@
+{
+  "context_id": "cf66d1a9-0643-5ba6-9264-f8677c8718d2",
+  "owner_user_id": 26,
+  "browser_launch": {
+    "page": "https://dream-wheels-ai-webapp-staging.vercel.app/app/fitment",
+    "console_command": "if (location.origin !== 'https://dream-wheels-ai-webapp-staging.vercel.app') throw new Error('Staging only'); window.dreamwheelsRenderBridge.action('fitment', 'cf66d1a9-0643-5ba6-9264-f8677c8718d2');",
+    "entry_mode": "existing UI bridge; owner authentication remains required"
+  },
+  "created_at": "2026-10-01T22:07:25.573479+00:00",
+  "qa_context": {
+    "run_id": "4a71615c-a08d-588e-8abd-9ae630d15ccd",
+    "version": 1,
+    "context_id": "cf66d1a9-0643-5ba6-9264-f8677c8718d2",
+    "rim_setup_id": "0fc96de7-f5bb-4623-adc1-0af45c0b0dfd",
+    "owner_user_id": 26,
+    "initial_rim_spec_id": "794f101d-63ae-4020-b0d7-e478573f155e",
+    "vehicle_identity_id": "bb596dcf-420f-4689-891a-9d1f16053222"
+  },
+  "overview": {
+    "job_id": "cf66d1a9-0643-5ba6-9264-f8677c8718d2",
+    "vehicle_identity_id": "bb596dcf-420f-4689-891a-9d1f16053222",
+    "rim_setup_id": "0fc96de7-f5bb-4623-adc1-0af45c0b0dfd",
+    "status": "failed",
+    "result_url": null,
+    "completed_at": null,
+    "fitment_available": true,
+    "is_staggered": false,
+    "setup_mode": "uniform",
+    "rim_setup_state": "empty",
+    "rim_setup_revision": 1,
+    "snapshot_locked": true,
+    "vehicle_revision": 1,
+    "rim_revision": 1,
+    "vehicle_candidates": {},
+    "rim_candidates": {},
+    "vehicle_provenance": {
+      "make": {
+        "source": "user_input",
+        "confidence": 0.0,
+        "is_user_confirmed": false
+      },
+      "year": {
+        "source": "user_input",
+        "confidence": 0.0,
+        "is_user_confirmed": false
+      },
+      "model": {
+        "source": "user_input",
+        "confidence": 0.0,
+        "is_user_confirmed": false
+      },
+      "year_end": {
+        "source": "user_input",
+        "confidence": 0.0,
+        "is_user_confirmed": false
+      },
+      "year_start": {
+        "source": "user_input",
+        "confidence": 0.0,
+        "is_user_confirmed": false
+      }
+    },
+    "vehicle_state": "unconfirmed",
+    "vehicle_field_states": {
+      "make": {
+        "value": "Toyota",
+        "state": "proposed",
+        "source": "user_input",
+        "is_user_confirmed": false
+      },
+      "model": {
+        "value": "Camry",
+        "state": "proposed",
+        "source": "user_input",
+        "is_user_confirmed": false
+      },
+      "year": {
+        "value": null,
+        "state": "missing",
+        "source": "user_input",
+        "is_user_confirmed": false
+      },
+      "region": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false
+      }
+    },
+    "modification_state": "none",
+    "selection_source": null,
+    "selected_modification": null,
+    "modification_vehicle_revision": null,
+    "rim_provenance": {},
+    "rim_field_states": {
+      "bolt_count": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "pcd_mm": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "center_bore_mm": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "wheel_diameter_in": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "wheel_width_j": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "offset_et_mm": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "pcd": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "diameter": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "width": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "dia": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      },
+      "et": {
+        "value": null,
+        "state": "missing",
+        "source": null,
+        "is_user_confirmed": false,
+        "suggested_value": null
+      }
+    },
+    "front_rim": {
+      "setup_mode": "uniform",
+      "rim_setup_state": "empty",
+      "variant_state": "not_applicable",
+      "selected_variant_sku": null,
+      "source_fingerprint": null,
+      "source_revision": 1,
+      "rim_spec_revision": 1,
+      "field_states": {
+        "bolt_count": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "pcd_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "center_bore_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "wheel_diameter_in": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "wheel_width_j": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "offset_et_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "pcd": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "diameter": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "width": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "dia": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "et": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        }
+      },
+      "rim": {
+        "brand": null,
+        "model": null,
+        "sku": null,
+        "product_url": null,
+        "bolt_count": null,
+        "pcd_mm": null,
+        "pcd_display": null,
+        "center_bore_mm": null,
+        "wheel_diameter_in": null,
+        "wheel_width_j": null,
+        "offset_et_mm": null,
+        "has_product_url": false,
+        "title": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e"
+      }
+    },
+    "rear_rim": {
+      "setup_mode": "uniform",
+      "rim_setup_state": "empty",
+      "variant_state": "not_applicable",
+      "selected_variant_sku": null,
+      "source_fingerprint": null,
+      "source_revision": 1,
+      "rim_spec_revision": 1,
+      "field_states": {
+        "bolt_count": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "pcd_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "center_bore_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "wheel_diameter_in": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "wheel_width_j": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "offset_et_mm": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "pcd": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "diameter": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "width": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "dia": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        },
+        "et": {
+          "value": null,
+          "state": "missing",
+          "source": null,
+          "is_user_confirmed": false,
+          "suggested_value": null
+        }
+      },
+      "rim": {
+        "brand": null,
+        "model": null,
+        "sku": null,
+        "product_url": null,
+        "bolt_count": null,
+        "pcd_mm": null,
+        "pcd_display": null,
+        "center_bore_mm": null,
+        "wheel_diameter_in": null,
+        "wheel_width_j": null,
+        "offset_et_mm": null,
+        "has_product_url": false,
+        "title": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e"
+      }
+    },
+    "readiness": {
+      "ready": false,
+      "missing_fields": [
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.center_bore_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+        "rim.offset_et_mm"
+      ],
+      "blocking_fields": [
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.center_bore_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+        "rim.offset_et_mm"
+      ],
+      "unconfirmed_fields": [
+        "vehicle.make",
+        "vehicle.model"
+      ]
+    },
+    "input_readiness": {
+      "ready": false,
+      "missing_fields": [
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.center_bore_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+        "rim.offset_et_mm"
+      ],
+      "blocking_fields": [
+        "vehicle.year",
+        "vehicle.region",
+        "rim.bolt_count",
+        "rim.pcd_mm",
+        "rim.center_bore_mm",
+        "rim.wheel_diameter_in",
+        "rim.wheel_width_j",
+        "rim.offset_et_mm"
+      ],
+      "unconfirmed_fields": [
+        "vehicle.make",
+        "vehicle.model"
+      ]
+    },
+    "provider_readiness": {
+      "status": "variant_required",
+      "blocking_issues": [
+        {
+          "code": "vehicle_variant_required"
+        }
+      ]
+    },
+    "next_action": {
+      "kind": "complete_vehicle_details"
+    },
+    "current_check": null,
+    "vehicle": {
+      "make": "Toyota",
+      "model": "Camry",
+      "year": null,
+      "body": null,
+      "generation": null,
+      "modification": null,
+      "market": null,
+      "is_user_confirmed": false,
+      "title": "Toyota Camry"
+    },
+    "rim": {
+      "brand": null,
+      "model": null,
+      "sku": null,
+      "product_url": null,
+      "bolt_count": null,
+      "pcd_mm": null,
+      "pcd_display": null,
+      "center_bore_mm": null,
+      "wheel_diameter_in": null,
+      "wheel_width_j": null,
+      "offset_et_mm": null,
+      "has_product_url": false,
+      "title": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e"
+    }
+  },
+  "next_action": "complete_vehicle_details",
+  "latest_check": null,
+  "is_current": false,
+  "side_effect_baseline": {
+    "credit_balance": 31,
+    "ledger_count": 101,
+    "render_job_count": 44,
+    "render_reservations": 0,
+    "total_job_envelopes": 46
+  },
+  "setup_safety": {
+    "before": {
+      "credit_balance": 31,
+      "ledger_count": 101,
+      "render_job_count": 44,
+      "render_reservations": 0,
+      "total_job_envelopes": 46
+    },
+    "after": {
+      "credit_balance": 31,
+      "ledger_count": 101,
+      "render_job_count": 44,
+      "render_reservations": 0,
+      "total_job_envelopes": 46
+    },
+    "credit_delta": 0,
+    "render_job_delta": 0,
+    "reservation_delta": 0,
+    "qa_envelope_delta": 0,
+    "queue_publish_calls": 0
+  }
+}

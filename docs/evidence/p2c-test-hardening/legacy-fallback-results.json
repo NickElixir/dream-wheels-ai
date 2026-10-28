@@ -1,0 +1,262 @@
+[
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "editor",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "result",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "http://127.0.0.1:10000",
+      "https://oauth.telegram.org"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "title": "Визуальная примерка",
+    "helper": "Вы всё ещё можете создать изображение, чтобы оценить внешний вид дисков.",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "http://127.0.0.1:10000",
+      "https://oauth.telegram.org"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "failed",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "ru",
+    "scenario": "failed-no-retry",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "http://127.0.0.1:10000",
+      "https://oauth.telegram.org"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "editor",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "result",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "incompatible",
+    "title": "Visual try-on",
+    "helper": "You can still create an image to see how the wheels look.",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "http://127.0.0.1:10000",
+      "https://oauth.telegram.org"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "failed",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 390,
+    "locale": "en",
+    "scenario": "failed-no-retry",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "editor",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "result",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "incompatible",
+    "title": "Визуальная примерка",
+    "helper": "Вы всё ещё можете создать изображение, чтобы оценить внешний вид дисков.",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "failed",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "ru",
+    "scenario": "failed-no-retry",
+    "title": "Визуальная примерка",
+    "helper": "Посмотрите, как выбранный диск выглядит на вашем автомобиле",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "editor",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "result",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "incompatible",
+    "title": "Visual try-on",
+    "helper": "You can still create an image to see how the wheels look.",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "failed",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": true
+  },
+  {
+    "width": 1440,
+    "locale": "en",
+    "scenario": "failed-no-retry",
+    "title": "Visual try-on",
+    "helper": "See how the selected wheel looks on your vehicle",
+    "canonicalStateUnchanged": true,
+    "blockedExternalOrigins": [
+      "https://oauth.telegram.org",
+      "http://127.0.0.1:10000"
+    ],
+    "retryVisible": false
+  }
+]

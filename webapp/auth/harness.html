@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dream Wheels — Email OTP harness</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+        body { background: #0a0b0e; color: #eef2f6; margin: 0; padding: 32px 20px; }
+        main { max-width: 640px; margin: auto; }
+        article { background: #161a22; border: 1px solid #2b3340; border-radius: 18px; padding: 24px; }
+        h1 { font-size: 24px; margin-top: 0; }
+        h2 { font-size: 17px; margin: 24px 0 8px; }
+        p { color: #a3adba; }
+        label { display: block; color: #d8dee7; margin: 12px 0 6px; }
+        input { box-sizing: border-box; width: 100%; background: #0e1117; border: 1px solid #3b4656; border-radius: 10px; color: #fff; padding: 11px 12px; }
+        [data-auth-message] { min-height: 1.5em; color: #ffcc56; }
+        [data-auth-cooldown] { min-height: 1.4em; font-size: 13px; }
+        button { background: transparent; border: 1px solid #ddff00; border-radius: 10px; color: #ddff00; cursor: pointer; margin: 10px 6px 0 0; padding: 10px 14px; }
+        button:disabled { cursor: not-allowed; opacity: .45; }
+        [data-auth-otp-step][hidden] { display: none; }
+        [data-auth-captcha][hidden] { display: none; }
+        [data-auth-captcha-widget] { min-height: 65px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <main>
+        <article>
+            <h1>Supabase Email OTP harness</h1>
+            <p>This isolated diagnostic surface is not the production login UI.</p>
+            <p data-auth-state>State: BOOTSTRAPPING</p>
+            <p data-auth-authority>Authority: —</p>
+            <p data-auth-session>Session present: no</p>
+            <p data-auth-expiry>Access token expiry: —</p>
+            <p data-auth-message role="status" aria-live="polite"></p>
+
+            <form data-auth-email-form>
+                <h2>Email OTP</h2>
+                <label for="auth-email">Email</label>
+                <input id="auth-email" data-auth-email type="email" autocomplete="email" required>
+                <section data-auth-captcha hidden aria-live="polite">
+                    <p>Complete the security check before requesting a code.</p>
+                    <div data-auth-captcha-widget></div>
+                </section>
+                <button type="submit" data-auth-send>Send code</button>
+            </form>
+
+            <section data-auth-otp-step hidden>
+                <form data-auth-verify-form>
+                    <label for="auth-otp">One-time code</label>
+                    <input id="auth-otp" data-auth-otp inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" required>
+                    <button type="submit" data-auth-verify disabled>Verify code</button>
+                    <button type="button" data-auth-resend>Resend code</button>
+                    <p data-auth-cooldown aria-live="polite"></p>
+                </form>
+            </section>
+
+            <h2>Session controls</h2>
+            <button type="button" data-auth-read>Read current session</button>
+            <button type="button" data-auth-refresh>Refresh session</button>
+            <button type="button" data-auth-backend-probe>Verify backend authentication</button>
+            <button type="button" data-auth-signout>Sign out</button>
+        </article>
+    </main>
+    <script src="/auth/harness-config.js"></script>
+    <script type="module" src="/auth/harness.bundle.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 - На первой инкрементации (count == 1) ставим EXPIRE = window_sec
 - Если count > limit — отдаём 429
 
-Достаточно для защиты Reve API квоты от одного user_id. Для строгого
+Достаточно для защиты generation API квоты от одного user_id. Для строгого
 sliding window нужен ZSET с timestamp, но это overkill для MVP.
 """
 
