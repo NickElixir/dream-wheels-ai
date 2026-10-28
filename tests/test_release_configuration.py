@@ -71,6 +71,16 @@ def test_docs_only_push_does_not_deploy_frontends() -> None:
     assert "workflow_dispatch:" in workflow
 
 
+def test_production_gate_and_frontend_use_the_same_backend() -> None:
+    from scripts.check_release_backend import URL
+
+    workflow = (ROOT / ".github" / "workflows" / "deploy-frontends.yml").read_text()
+    backend = re.search(r"^  PRODUCTION_BACKEND_URL: (\S+)$", workflow, re.MULTILINE)
+    assert backend is not None
+    assert URL == backend.group(1) + "/health/release"
+    assert backend.group(1) == "https://dream-wheels-ai-prod-vnext.onrender.com"
+
+
 def test_all_html_entry_paths_are_not_cached() -> None:
     no_store_sources = {
         entry["source"]
