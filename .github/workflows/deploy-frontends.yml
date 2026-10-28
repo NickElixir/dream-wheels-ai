@@ -42,7 +42,7 @@ concurrency:
 env:
   VERCEL_CLI_VERSION: 53.1.1
   STAGING_BACKEND_URL: https://dream-wheels-ai-robokassa-staging.onrender.com
-  PRODUCTION_BACKEND_URL: https://dream-wheels-ai-tg.onrender.com
+  PRODUCTION_BACKEND_URL: https://dream-wheels-ai-prod-vnext.onrender.com
 
 jobs:
   ci:

@@ -5,7 +5,7 @@ import re
 import sys
 import urllib.request
 
-URL = "https://dream-wheels-ai-tg.onrender.com/health/release"
+URL = "https://dream-wheels-ai-prod-vnext.onrender.com/health/release"
 
 
 def verify_release(data: dict[str, object], sha: str) -> None:

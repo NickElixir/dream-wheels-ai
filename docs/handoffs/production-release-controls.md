@@ -81,6 +81,12 @@ the same SHA. Only reopen writers after SQL reconciliation and agreed smoke.
 The maintenance gate closes authenticated APIs as well; protected-API smoke and
 real OTP/payment tests cannot be claimed while it remains closed.
 
+The replacement production backend is `dream-wheels-ai-prod-vnext`, at
+`https://dream-wheels-ai-prod-vnext.onrender.com`. Both the release gate and the
+production Vercel `BACKEND_URL` must use this origin. The original
+`dream-wheels-ai-prod` service remains suspended; its old binary must never be
+resumed against the database after the permanent-balance cutover.
+
 ## Rollback profiles
 
 1. Failure before migration commit: transactional rollback; keep maintenance on.
