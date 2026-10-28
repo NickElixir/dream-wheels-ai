@@ -87,6 +87,11 @@ production Vercel `BACKEND_URL` must use this origin. The original
 `dream-wheels-ai-prod` service remains suspended; its old binary must never be
 resumed against the database after the permanent-balance cutover.
 
+Keep the environment file written by `vercel pull` until `vercel build` finishes:
+the build command reads public Supabase and Turnstile configuration from it.
+The workflow removes that file in an `always()` cleanup step, including failed
+builds. Do not print or upload the pulled file as a workflow artifact.
+
 ## Rollback profiles
 
 1. Failure before migration commit: transactional rollback; keep maintenance on.
