@@ -106,7 +106,6 @@ jobs:
           else
             echo "Pulled production environment: BACKEND_URL=absent"
           fi
-          rm -f "$env_file"
           if [ "$actual_backend" != "$STAGING_BACKEND_URL" ]; then
             case "$actual_backend" in
               "")
@@ -156,6 +155,10 @@ jobs:
         run: |
           curl --fail --silent --show-error --max-time 30 \
             "https://dream-wheels-ai-webapp-staging.vercel.app/api/backend/health"
+
+      - name: Clean up pulled Vercel environment
+        if: always()
+        run: rm -f .vercel/.env.production.local
 
   verify-production-backend:
     name: Verify production backend release
@@ -219,7 +222,6 @@ jobs:
           env_file=".vercel/.env.production.local"
           test -f "$env_file"
           actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
-          rm -f "$env_file"
           test "$actual_backend" = "$PRODUCTION_BACKEND_URL" || {
             echo "production BACKEND_URL missing or mismatched; refusing deployment" >&2
             exit 1
@@ -246,6 +248,10 @@ jobs:
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
         run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Clean up pulled Vercel environment
+        if: always()
+        run: rm -f .vercel/.env.production.local
 
   deploy-admin:
     name: Deploy admin when explicitly selected
@@ -317,7 +323,6 @@ jobs:
           env_file=".vercel/.env.preview.local"
           test -f "$env_file"
           actual_backend="$(sed -n 's/^BACKEND_URL=//p' "$env_file" | tr -d '"' | tr -d "'")"
-          rm -f "$env_file"
           test "$actual_backend" = "$STAGING_BACKEND_URL" || {
             echo "preview BACKEND_URL mismatch; refusing deployment" >&2
             exit 1
@@ -354,3 +359,7 @@ jobs:
       - name: E2E handoff marker
         if: inputs.run_e2e == true
         run: echo "Preview is ready for the authenticated E2E runner; no E2E runner is invoked by this workflow."
+
+      - name: Clean up pulled Vercel environment
+        if: always()
+        run: rm -f .vercel/.env.preview.local
