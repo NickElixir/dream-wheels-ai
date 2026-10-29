@@ -190,9 +190,13 @@ class OpenAIVehicleIdentityResolver:
         try:
             provider_response = json.loads(body)
             output_text = self._output_text(provider_response)
-        except (json.JSONDecodeError, KeyError, TypeError, IndexError, AttributeError):
+        except json.JSONDecodeError:
             raise VehicleIdentityProviderInvalidResponseError(
-                f"{self.provider_name} returned invalid structured vehicle identity"
+                f"{self.provider_name} returned invalid structured vehicle identity reason=envelope_invalid_json"
+            ) from None
+        except (KeyError, TypeError, IndexError, AttributeError):
+            raise VehicleIdentityProviderInvalidResponseError(
+                f"{self.provider_name} returned invalid structured vehicle identity reason=envelope_invalid_structure"
             ) from None
         try:
             wire_payload = json.loads(output_text)

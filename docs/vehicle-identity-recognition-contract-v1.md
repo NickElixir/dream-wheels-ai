@@ -120,3 +120,11 @@ The API logs only its SHA-256 prefix plus a new server call ID. Matching click h
 on different server calls identify replay of one action; different hashes identify
 separate client submissions. This is diagnostic correlation, not deduplication or
 an idempotency guarantee. Existing clients without the header remain supported.
+
+AI Tunnel envelope rejection reports a fixed reason: missing/invalid choices or
+message, refusal, incomplete finish (`length`, content filter or tool call), or
+missing/nontext/empty content. Unknown provider finish values are never echoed.
+Completion/reasoning token counts are included only when bounded nonnegative JSON
+integers; malformed counts become `unavailable`. Refusal text, content and other
+response values remain excluded. An incomplete response is still nonretryable and
+is never parsed or applied as a vehicle proposal.
