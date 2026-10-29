@@ -108,11 +108,12 @@ def proposal_context(monkeypatch):
     return row, calls
 
 
-def request(*, revision=10, data=None, content_type="image/png"):
+def request(*, revision=10, data=None, content_type="image/png", headers=None):
     return client.post(
         f"/identity/fitment/{JOB_ID}/vehicle-proposal",
         data={"expected_vehicle_revision": revision},
         files={"car_image": ("car.png", image_bytes() if data is None else data, content_type)},
+        headers=headers,
     )
 
 
@@ -127,6 +128,23 @@ def test_proposal_is_owned_revision_bound_and_noncanonical(proposal_context):
     assert "generation" not in primary and "market" not in primary
     assert calls == [(JOB_ID, 77), "identity_resolve", "provider", (JOB_ID, 77)]
     assert row == {"fitment_available": True, "vehicle_revision": 10}
+
+
+def test_repeated_transport_requests_share_click_hash_but_have_distinct_calls(
+    proposal_context, caplog
+):
+    import logging
+    import re
+
+    marker = "PRIVATE_CLICK_MARKER"
+    with caplog.at_level(logging.INFO):
+        for _ in range(2):
+            assert request(headers={"X-Vehicle-Recognition-Request-Id": marker}).status_code == 200
+    starts = [r.message for r in caplog.records if "proposal started" in r.message]
+    assert len(starts) == 2
+    assert marker not in caplog.text
+    assert len(set(re.findall(r"server_call_id=(\w+)", " ".join(starts)))) == 2
+    assert len(set(re.findall(r"click_hash=(\w+)", " ".join(starts)))) == 1
 
 
 @pytest.mark.parametrize(

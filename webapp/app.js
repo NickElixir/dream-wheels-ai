@@ -6279,7 +6279,7 @@ async function recognizeFitmentVehicle() {
         if (identity.init_data) body.append("init_data", identity.init_data);
         if (identity.telegram_user_id != null) body.append("telegram_user_id", String(identity.telegram_user_id));
         const response = await authenticatedFetch(apiUrl(`/identity/fitment/${jobId}/vehicle-proposal`), {
-            method: "POST", headers: withAuthHeaders(), body, signal: controller.signal,
+            method: "POST", headers: { ...withAuthHeaders(), "X-Vehicle-Recognition-Request-Id": makeIdempotencyKey() }, body, signal: controller.signal,
         });
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         if (response.status === 401) {

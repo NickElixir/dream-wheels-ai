@@ -55,3 +55,85 @@ The source asset remains unchanged. A metadata-stripped normalized copy is held 
 memory for the provider request. Raw provider responses are not persisted. Drafts keep
 validated candidates and provider/model/prompt/request metadata plus hashes for audit.
 User images are not evaluation or training data without separate consent.
+
+## AI Tunnel / Qwen3.8 Flash pilot
+
+The `aitunnel` provider uses `https://api.aitunnel.ru/v1/chat/completions`
+with normalized inline image bytes and the existing strict vehicle identity schema.
+It does not forward storage URLs, infer trim/market/fitment, or confirm catalog data.
+Truncated, refused, malformed and contract-invalid responses fail closed; no fallback
+request to another provider is made. Metadata identifies `aitunnel` and the configured
+model. `estimated_cost` remains null because that field historically represents USD,
+while AI Tunnel bills in RUB. Actual pilot charges must be checked in its dashboard.
+
+Configure the backend only after publishing the adapter:
+
+```dotenv
+VEHICLE_IDENTITY_ENABLED=true
+VEHICLE_IDENTITY_PROVIDER=aitunnel
+VEHICLE_IDENTITY_MODEL=qwen3.8-flash
+VEHICLE_IDENTITY_AITUNNEL_API_KEY=<secret in Render>
+VEHICLE_IDENTITY_TIMEOUT_SEC=30
+VEHICLE_IDENTITY_MAX_RETRIES=0
+```
+
+Start with retries disabled so a pilot action makes at most one provider request.
+The existing OpenAI key is not used by this adapter. Adding the new secret alone does
+not enable recognition. Keep production disabled until staging confirms the real
+provider accepts this JSON schema and returns suggestions that can be manually
+confirmed through the catalog. Local fake responses do not establish recognition
+accuracy or live endpoint compatibility. Roll back recognition with
+`VEHICLE_IDENTITY_ENABLED=false` and redeploy; generation settings stay unchanged.
+
+Sources: https://aitunnel.ru/docs and https://aitunnel.ru/models/qwen3-8-flash.
+
+### Local boundary validation and failures
+
+Both adapters validate the decoded provider JSON against the exact outgoing schema
+using pinned `jsonschema`, before applying the Pydantic semantic validators. Required
+fields, candidate year representation, additional properties and JSON types are not
+silently filled in or coerced at this boundary. Internal draft models retain their
+existing defaults. Semantic constraints (status/candidates and year range ordering)
+remain enforced after schema validation.
+
+Provider failures expose only fixed diagnostic messages, without provider payload,
+validation values or chained parser/validation exceptions in ordinary tracebacks.
+Only 429, 500/502/503/504 and transport timeout/network failures are retryable.
+Other HTTP errors fail immediately with `retryable=false`; 401/403 retain their
+configuration-error classification. Test coverage is in
+`tests/test_vehicle_identity_boundary.py` for both adapters.
+
+Schema-rejection diagnostics contain at most eight violations: schema-owned field
+paths, rule keywords, JSON value types and missing required field names. Request IDs
+are correlated by a SHA-256 prefix instead of logging untrusted header/body values.
+Provider response values, unknown property names and validator exception chains are
+not included. These diagnostics do not relax validation or trigger retries.
+
+Transport failures report a fixed category (`timeout`, `dns`, `tls`, `connection`,
+`response_body`, `client_error`), phase (`connecting`, `dns`, `awaiting_headers`,
+`reading_body`), elapsed milliseconds and attempt/retry counts. Exception strings
+and chains are not retained. Awaiting headers means the request headers were sent;
+it does not prove that the provider accepted or started inference.
+
+Fitment recognition sends an opaque per-action `X-Vehicle-Recognition-Request-Id`.
+The API logs only its SHA-256 prefix plus a new server call ID. Matching click hashes
+on different server calls identify replay of one action; different hashes identify
+separate client submissions. This is diagnostic correlation, not deduplication or
+an idempotency guarantee. Existing clients without the header remain supported.
+
+AI Tunnel envelope rejection reports a fixed reason: missing/invalid choices or
+message, refusal, incomplete finish (`length`, content filter or tool call), or
+missing/nontext/empty content. Unknown provider finish values are never echoed.
+Completion/reasoning token counts are included only when bounded nonnegative JSON
+integers; malformed counts become `unavailable`. Refusal text, content and other
+response values remain excluded. An incomplete response is still nonretryable and
+is never parsed or applied as a vehicle proposal.
+
+AI Tunnel prompt revision `:aitunnel-explicit-schema-v1` includes the complete
+canonical JSON Schema in its system message as well as `response_format`. It
+explicitly requires a root object with `status`, `primary`, `alternatives` and
+`abstention_reason`, never a root array. Both schema representations come from
+the same schema constant. This reinforces the provider instruction; it does not
+guarantee compliance. Local schema/semantic validation remains authoritative:
+arrays, including a one-element array containing an otherwise valid resolution,
+are rejected without conversion. OpenAI's prompt and prompt version are unchanged.

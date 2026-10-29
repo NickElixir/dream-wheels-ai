@@ -26,3 +26,8 @@ class VehicleIdentityProviderConfigurationError(VehicleIdentityProviderError):
 class VehicleIdentityProviderInvalidResponseError(VehicleIdentityProviderError):
     error_code = "vehicle_identity_provider_invalid_response"
     retryable = False
+
+
+class VehicleIdentityProviderRequestError(VehicleIdentityProviderError):
+    error_code = "vehicle_identity_provider_request_rejected"
+    retryable = False

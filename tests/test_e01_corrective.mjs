@@ -83,16 +83,23 @@ test('existing try-ons cannot replace the original vehicle photo',()=>{
 for (const language of ['ru','en']) test(`recognition fetches the canonical photo with Telegram identity (${language})`,async()=>{
  const calls=[];
  const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0,fitmentVehiclePhoto:new Blob(['obsolete'])};
- const context=runtime(['recognizeFitmentVehicle'],{locale:language,state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),fitmentPreviewAsset:()=>'',apiUrl:(url,options)=>url+(options?.includeIdentity?'?init_data=test-credential':''),withAuthHeaders:()=>({}),getIdentityPayload:()=>({init_data:'test-credential'}),authenticatedFetch:async(url,options)=>{calls.push({url,options});return url.includes('/assets/')?{ok:true,status:200,blob:async()=>new Blob(['canonical'],{type:'image/jpeg'})}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:{make:'BMW'}}})};}});
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{locale:language,state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),fitmentPreviewAsset:()=>'',apiUrl:(url,options)=>url+(options?.includeIdentity?'?init_data=test-credential':''),withAuthHeaders:()=>({}),getIdentityPayload:()=>({init_data:'test-credential'}),authenticatedFetch:async(url,options)=>{calls.push({url,options});return url.includes('/assets/')?{ok:true,status:200,blob:async()=>new Blob(['canonical'],{type:'image/jpeg'})}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:{make:'BMW'}}})};}});
+ const pending=context.recognizeFitmentVehicle();
  await context.recognizeFitmentVehicle();
+ await pending;
  assert.equal(calls.length,2);assert.match(calls[0].url,/\/assets\/car_original\/download\?init_data=/);
  assert.equal(await calls[1].options.body.get('car_image').text(),'canonical');
  assert.equal(state.fitmentRecognition.status,'proposed');
+ const firstId=calls[1].options.headers['X-Vehicle-Recognition-Request-Id'];
+ assert.ok(firstId);
+ await context.recognizeFitmentVehicle();
+ assert.equal(calls.length,4);
+ assert.notEqual(calls[3].options.headers['X-Vehicle-Recognition-Request-Id'],firstId);
 });
 
 test('photo download failure never invokes recognition and has its own error state',async()=>{
  let requests=0;
  const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
- const context=runtime(['recognizeFitmentVehicle'],{state,AbortController,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),authenticatedFetch:async()=>{requests++;return {ok:false,status:503};}});
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),authenticatedFetch:async()=>{requests++;return {ok:false,status:503};}});
  await context.recognizeFitmentVehicle();assert.equal(requests,1);assert.equal(state.fitmentRecognition.photoUnavailable,true);assert.match(state.fitmentRecognition.message,/загрузить фото/);
 });

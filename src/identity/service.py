@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from src.config import (
+    VEHICLE_IDENTITY_AITUNNEL_API_KEY,
     VEHICLE_IDENTITY_ENABLED,
     VEHICLE_IDENTITY_MAX_RETRIES,
     VEHICLE_IDENTITY_MODEL,
@@ -10,6 +11,7 @@ from src.config import (
     VEHICLE_IDENTITY_PROVIDER,
     VEHICLE_IDENTITY_TIMEOUT_SEC,
 )
+from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
 from src.identity.providers.base import (
     VehicleIdentityProviderConfigurationError,
     VehicleIdentityResolver,
@@ -34,6 +36,13 @@ def get_vehicle_identity_resolver() -> VehicleIdentityResolver:
     """Return the selected resolver; disabled flows abstain through the mock adapter."""
     if not VEHICLE_IDENTITY_ENABLED or VEHICLE_IDENTITY_PROVIDER == "mock":
         return MockVehicleIdentityResolver()
+    if VEHICLE_IDENTITY_PROVIDER == "aitunnel":
+        return AITunnelVehicleIdentityResolver(
+            api_key=VEHICLE_IDENTITY_AITUNNEL_API_KEY,
+            model=VEHICLE_IDENTITY_MODEL,
+            timeout_sec=VEHICLE_IDENTITY_TIMEOUT_SEC,
+            max_retries=VEHICLE_IDENTITY_MAX_RETRIES,
+        )
     if VEHICLE_IDENTITY_PROVIDER == "openai":
         return OpenAIVehicleIdentityResolver(
             api_key=VEHICLE_IDENTITY_OPENAI_API_KEY,
