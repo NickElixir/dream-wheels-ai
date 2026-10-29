@@ -1,0 +1,33 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auth session recovery — local controlled responses</title><link rel="stylesheet" href="../../webapp/style.css"><link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/auth.css"><link rel="stylesheet" href="../../webapp/vnext/styles/account.css?revision=spacing"><body><p id="result">Loading local runtime</p><script type="module">
+const html=new DOMParser().parseFromString(await(await fetch('../../webapp/index.html')).text(),'text/html');
+document.body.append(html.querySelector('[data-auth-dialog]'),html.querySelector('[data-logout-dialog]'));
+const account=html.querySelector('[data-view="settings"]');account.hidden=false;document.body.append(account);
+const url=new URL('../../webapp/app.js',location.href);
+const source=(await(await fetch(url)).text()).replace(/from "(\.\/[^\"]+)"/g,(_,path)=>`from "${new URL(path,url)}"`);
+const controllerUrl=new URL('../../webapp/auth/app-auth.js',location.href);
+const controllerSource=(await(await fetch(controllerUrl)).text()).replace(/^import \{[\s\S]*?\} from "\.\/supabase-client\.js";/, `
+const AUTH_SESSION_STATES=Object.fromEntries(['BOOTSTRAPPING','UNAUTHENTICATED','AUTHENTICATED','REFRESHING','SESSION_EXPIRED','NETWORK_ERROR'].map(x=>[x,x]));
+const getSupabaseAccessToken=()=>null,getSupabaseCurrentAuthUser=()=>null,getSupabaseSessionState=()=>({}),createEphemeralEmailLinkController=()=>{},initializeAuthSession=async()=>{},requestEmailOtp=async()=>{throw Error('Unexpected OTP request');},signOutSupabase=async()=>{},subscribeToAuthChanges=()=>()=>{},verifyEmailOtp=async()=>{};
+`);
+const localControllerUrl=URL.createObjectURL(new Blob([controllerSource],{type:'text/javascript'}));
+const setup=`
+const {createFrontendAuthController}=await import(${JSON.stringify(localControllerUrl)});
+locale=new URLSearchParams(location.search).get('locale')||'ru';
+state.applicationAuthRequired=false;
+syncApplicationAuthWall=()=>{};warmWebsiteLoginResources=async()=>{};loadAuthDialogTurnstile=()=>{};
+loadAccountState=async()=>{};loadDashboardData=async()=>{};
+const accountMode=new URLSearchParams(location.search).has('account');
+let mode=accountMode?'ok':'maintenance',requests=0;
+const session={initializeAuthSession:async()=>{},getAuthSessionState:()=>({sessionPresent:true}),getCurrentAuthUser:()=>({id:'local-user',email:'local@example.test'}),getAccessToken:async()=>'local-test-token',subscribeToAuthChanges:()=>()=>{}};
+const controller=createFrontendAuthController({sessionController:session,integrationEnabled:()=>true,fetchImpl:async url=>{requests++;return mode==='maintenance'?new Response(JSON.stringify({detail:'Service temporarily unavailable for maintenance'}),{status:503}):mode==='network'?new Response('{}',{status:502}):new Response(JSON.stringify(url.endsWith('/auth/me')?{authenticated:true,authority:'supabase'}:{account:{balance:3}}));}});
+frontendAuthController=()=>controller;isAuthIntegrationEnabled=()=>true;
+controller.subscribe(handleFrontendAuthState);
+await controller.initialize();bindEvents();
+if(accountMode){state.accountState={identities:{email:{linked:true,display:"lo••••@example.test"},telegram:{linked:false}}};renderAccountSettings();}
+else openAuthDialog();
+const tools=document.createElement('div');document.querySelector('[data-auth-dialog] [role=dialog]').append(tools);
+for(const [label,action] of [['Backend ready',()=>{mode='ok';}],['Network failure',()=>{mode='network';}],['Five redraws',()=>{for(let i=0;i<5;i++)renderAuthDialog();}],['Reopen',()=>openAuthDialog()]]){const button=document.createElement('button');button.textContent=label;button.onclick=action;tools.append(button);}
+document.querySelector('#result').textContent='Local controlled responses; no production requests';
+`;
+await import(URL.createObjectURL(new Blob([source,setup],{type:'text/javascript'})));
+</script></body></html>

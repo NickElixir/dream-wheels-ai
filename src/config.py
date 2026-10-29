@@ -14,6 +14,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
 REDIS_KEY_PREFIX = os.getenv("REDIS_KEY_PREFIX", "")
 REDIS_JOB_QUEUE = os.getenv("REDIS_JOB_QUEUE", "job_queue")
+APP_MAINTENANCE = os.getenv("APP_MAINTENANCE", "false").lower() == "true"
+BOT_ENABLED = os.getenv("BOT_ENABLED", "true").lower() == "true"
 WORKER_ENABLED = os.getenv("WORKER_ENABLED", "true").lower() == "true"
 
 # External APIs
