@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import socket
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -38,6 +39,21 @@ _WIRE_VALIDATOR = Draft202012Validator(VEHICLE_IDENTITY_JSON_SCHEMA)
 _RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 
+def _transport_failure_kind(exc: BaseException) -> str:
+    # Exception strings may contain URLs, credentials or provider response data.
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, aiohttp.ClientConnectorCertificateError | aiohttp.ClientSSLError):
+        return "tls"
+    if isinstance(exc, aiohttp.ClientConnectorError) and isinstance(exc.os_error, socket.gaierror):
+        return "dns"
+    if isinstance(exc, aiohttp.ClientPayloadError):
+        return "response_body"
+    if isinstance(exc, aiohttp.ClientConnectionError):
+        return "connection"
+    return "client_error"
+
+
 class OpenAIVehicleIdentityResolver:
     provider_name = "openai"
     endpoint = _RESPONSES_URL
@@ -64,9 +80,28 @@ class OpenAIVehicleIdentityResolver:
         started_at = time.monotonic()
         last_error: VehicleIdentityProviderError | None = None
         for attempt in range(self.max_retries + 1):
+            attempt_started = time.monotonic()
+            phase = "connecting"
+            trace = aiohttp.TraceConfig()
+
+            async def dns_start(*_args):
+                nonlocal phase
+                phase = "dns"
+
+            async def connect_start(*_args):
+                nonlocal phase
+                phase = "connecting"
+
+            async def headers_sent(*_args):
+                nonlocal phase
+                phase = "awaiting_headers"
+
+            trace.on_dns_resolvehost_start.append(dns_start)
+            trace.on_dns_resolvehost_end.append(connect_start)
+            trace.on_request_headers_sent.append(headers_sent)
             try:
                 async with aiohttp.ClientSession(
-                    timeout=aiohttp.ClientTimeout(total=self.timeout_sec)
+                    timeout=aiohttp.ClientTimeout(total=self.timeout_sec), trace_configs=[trace]
                 ) as session:
                     async with session.post(
                         self.endpoint,
@@ -85,6 +120,7 @@ class OpenAIVehicleIdentityResolver:
                             raise VehicleIdentityProviderRequestError(
                                 f"{self.provider_name} response status={response.status}"
                             )
+                        phase = "reading_body"
                         body = await response.text()
                         return self._parse_response(
                             body,
@@ -96,8 +132,13 @@ class OpenAIVehicleIdentityResolver:
                 raise
             except VehicleIdentityProviderInvalidResponseError:
                 raise
-            except (aiohttp.ClientError, TimeoutError):
-                last_error = VehicleIdentityProviderError(f"{self.provider_name} request failed")
+            except (aiohttp.ClientError, TimeoutError) as exc:
+                last_error = VehicleIdentityProviderError(
+                    f"{self.provider_name} request failed"
+                    f" failure_kind={_transport_failure_kind(exc)} phase={phase}"
+                    f" elapsed_ms={int((time.monotonic() - attempt_started) * 1000)}"
+                    f" attempt={attempt + 1} max_retries={self.max_retries}"
+                )
             except VehicleIdentityProviderError as exc:
                 if not exc.retryable:
                     raise

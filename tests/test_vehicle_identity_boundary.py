@@ -217,6 +217,60 @@ def test_request_attempts_and_retryable_classification(
         asyncio.run(resolver.resolve(image))
     assert error.value.retryable is retryable
     assert len(calls) == (0 if failure == "missing_key" else 3 if retryable else 1)
+    if failure in {"timeout", "network"}:
+        message = str(error.value)
+        assert f"failure_kind={'timeout' if failure == 'timeout' else 'connection'}" in message
+        assert "phase=connecting" in message
+        assert "attempt=3 max_retries=2" in message
+        assert "sensitive transport details" not in message
+
+
+@pytest.mark.parametrize("send_headers", [False, True])
+def test_real_http_timeout_records_phase_without_sensitive_data(resolver, image, send_headers):
+    async def run():
+        release = asyncio.Event()
+        done = asyncio.Event()
+
+        async def handle(reader, writer):
+            try:
+                header = await reader.readuntil(b"\r\n\r\n")
+                length = next(
+                    int(line.split(b":", 1)[1])
+                    for line in header.split(b"\r\n")
+                    if line.lower().startswith(b"content-length:")
+                )
+                await reader.readexactly(length)
+                if send_headers:
+                    writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\nPRIVATE")
+                    await writer.drain()
+                await release.wait()
+            finally:
+                writer.close()
+                await writer.wait_closed()
+                done.set()
+
+        server = await asyncio.start_server(handle, "127.0.0.1", 0)
+        resolver.endpoint = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/PRIVATE"
+        resolver.timeout_sec = 0.1
+        resolver.max_retries = 0
+        try:
+            with pytest.raises(VehicleIdentityProviderError) as error:
+                await resolver.resolve(image)
+            message = str(error.value)
+            assert "failure_kind=timeout" in message
+            phase = "reading_body" if send_headers else "awaiting_headers"
+            assert f"phase={phase}" in message
+            assert "attempt=1 max_retries=0" in message
+            assert "PRIVATE" not in message
+            assert "http" not in message
+            assert error.value.retryable is True
+        finally:
+            release.set()
+            await asyncio.wait_for(done.wait(), 2)
+            server.close()
+            await server.wait_closed()
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize("status", [200, 400, 401, 403, 429, 503])
@@ -294,3 +348,22 @@ def test_schema_diagnostics_is_bounded():
     payload = resolution()
     payload["alternatives"] = [{} for _ in range(100)]
     assert len(_schema_diagnostics(payload)) == 8
+
+
+def test_transport_failure_categories_never_use_exception_text():
+    import socket
+    import ssl
+    from types import SimpleNamespace
+
+    from src.identity.providers.openai import _transport_failure_kind
+
+    key = SimpleNamespace(host="PRIVATE", port=443, ssl=True)
+    for error, expected in [
+        (aiohttp.ClientConnectorError(key, socket.gaierror("PRIVATE")), "dns"),
+        (aiohttp.ClientConnectorCertificateError(key, ssl.CertificateError("PRIVATE")), "tls"),
+        (aiohttp.ClientPayloadError("PRIVATE"), "response_body"),
+        (aiohttp.ClientConnectionError("PRIVATE"), "connection"),
+        (aiohttp.ClientError("PRIVATE"), "client_error"),
+        (TimeoutError("PRIVATE"), "timeout"),
+    ]:
+        assert _transport_failure_kind(error) == expected

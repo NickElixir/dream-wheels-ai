@@ -1,10 +1,11 @@
 """Sprint 2 assisted identity API."""
 
+import hashlib
 import json
 import logging
 from datetime import UTC, datetime
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, Response, UploadFile
@@ -82,6 +83,7 @@ async def resolve_fitment_vehicle_proposal(
     init_data: Annotated[str, Form()] = "",
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
+    x_vehicle_recognition_request_id: Annotated[str | None, Header()] = None,
 ) -> FitmentVehicleProposalResponse:
     """Recognize an owned job's local photo without persisting or creating a render."""
     preflight_auth_credentials(
@@ -121,14 +123,29 @@ async def resolve_fitment_vehicle_proposal(
         )
     except ImageNormalizationError as exc:
         raise _normalization_http_error(exc) from exc
+    server_call_id = uuid4().hex
+    click_hash = (
+        hashlib.sha256(x_vehicle_recognition_request_id.encode()).hexdigest()[:16]
+        if x_vehicle_recognition_request_id and len(x_vehicle_recognition_request_id) <= 128
+        else "unavailable"
+    )
+    logger.info(
+        "📥 Fitment vehicle proposal started job_id=%s user_id=%s server_call_id=%s click_hash=%s",
+        job_id,
+        principal.user_id,
+        server_call_id,
+        click_hash,
+    )
     try:
         resolution = await get_vehicle_identity_resolver().resolve(normalized)
     except VehicleIdentityProviderError as exc:
         logger.exception(
-            "❌ Fitment vehicle proposal failed job_id=%s user_id=%s error_code=%s",
+            "❌ Fitment vehicle proposal failed job_id=%s user_id=%s error_code=%s server_call_id=%s click_hash=%s",
             job_id,
             principal.user_id,
             exc.error_code,
+            server_call_id,
+            click_hash,
         )
         raise HTTPException(
             status_code=503,
