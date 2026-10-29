@@ -55,3 +55,50 @@ The source asset remains unchanged. A metadata-stripped normalized copy is held 
 memory for the provider request. Raw provider responses are not persisted. Drafts keep
 validated candidates and provider/model/prompt/request metadata plus hashes for audit.
 User images are not evaluation or training data without separate consent.
+
+## AI Tunnel / Qwen3.8 Flash pilot
+
+The `aitunnel` provider uses `https://api.aitunnel.ru/v1/chat/completions`
+with normalized inline image bytes and the existing strict vehicle identity schema.
+It does not forward storage URLs, infer trim/market/fitment, or confirm catalog data.
+Truncated, refused, malformed and contract-invalid responses fail closed; no fallback
+request to another provider is made. Metadata identifies `aitunnel` and the configured
+model. `estimated_cost` remains null because that field historically represents USD,
+while AI Tunnel bills in RUB. Actual pilot charges must be checked in its dashboard.
+
+Configure the backend only after publishing the adapter:
+
+```dotenv
+VEHICLE_IDENTITY_ENABLED=true
+VEHICLE_IDENTITY_PROVIDER=aitunnel
+VEHICLE_IDENTITY_MODEL=qwen3.8-flash
+VEHICLE_IDENTITY_AITUNNEL_API_KEY=<secret in Render>
+VEHICLE_IDENTITY_TIMEOUT_SEC=30
+VEHICLE_IDENTITY_MAX_RETRIES=0
+```
+
+Start with retries disabled so a pilot action makes at most one provider request.
+The existing OpenAI key is not used by this adapter. Adding the new secret alone does
+not enable recognition. Keep production disabled until staging confirms the real
+provider accepts this JSON schema and returns suggestions that can be manually
+confirmed through the catalog. Local fake responses do not establish recognition
+accuracy or live endpoint compatibility. Roll back recognition with
+`VEHICLE_IDENTITY_ENABLED=false` and redeploy; generation settings stay unchanged.
+
+Sources: https://aitunnel.ru/docs and https://aitunnel.ru/models/qwen3-8-flash.
+
+### Local boundary validation and failures
+
+Both adapters validate the decoded provider JSON against the exact outgoing schema
+using pinned `jsonschema`, before applying the Pydantic semantic validators. Required
+fields, candidate year representation, additional properties and JSON types are not
+silently filled in or coerced at this boundary. Internal draft models retain their
+existing defaults. Semantic constraints (status/candidates and year range ordering)
+remain enforced after schema validation.
+
+Provider failures expose only fixed diagnostic messages, without provider payload,
+validation values or chained parser/validation exceptions in ordinary tracebacks.
+Only 429, 500/502/503/504 and transport timeout/network failures are retryable.
+Other HTTP errors fail immediately with `retryable=false`; 401/403 retain their
+configuration-error classification. Test coverage is in
+`tests/test_vehicle_identity_boundary.py` for both adapters.
