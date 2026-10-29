@@ -1,3 +1,4 @@
+import asyncio
 import json
 from io import BytesIO
 
@@ -127,6 +128,7 @@ def test_openai_adapter_validates_structured_response() -> None:
                             "text": json.dumps(
                                 {
                                     "status": "unknown",
+                                    "primary": None,
                                     "alternatives": [],
                                     "abstention_reason": "model_uncertain",
                                 }
@@ -146,3 +148,181 @@ def test_openai_adapter_validates_structured_response() -> None:
     assert result.abstention_reason is AbstentionReason.model_uncertain
     assert result.metadata.provider_request_id == "req_123"
     assert result.metadata.estimated_cost == pytest.approx(0.000195)
+
+
+def _aitunnel_resolver():
+    from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
+
+    return AITunnelVehicleIdentityResolver(
+        api_key="test-aitunnel", model="qwen3.8-flash", timeout_sec=1, max_retries=0
+    )
+
+
+def test_aitunnel_payload_uses_chat_vision_and_strict_schema() -> None:
+    resolver = _aitunnel_resolver()
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    payload = resolver._payload(image)
+    assert resolver.endpoint == "https://api.aitunnel.ru/v1/chat/completions"
+    assert payload["model"] == "qwen3.8-flash"
+    assert "input" not in payload
+    assert payload["response_format"]["json_schema"]["strict"] is True
+    assert payload["messages"][1]["content"][1]["image_url"]["url"].startswith(
+        "data:image/jpeg;base64,"
+    )
+
+
+def test_aitunnel_parses_valid_identity_without_mislabeling_cost() -> None:
+    resolver = _aitunnel_resolver()
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    body = json.dumps(
+        {
+            "id": "chat-123",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "status": "resolved",
+                                "primary": {
+                                    "make": "BMW",
+                                    "model": "5 Series",
+                                    "year": 2020,
+                                    "year_start": None,
+                                    "year_end": None,
+                                    "source": "vlm_visual",
+                                    "confidence": 0.9,
+                                },
+                                "alternatives": [],
+                                "abstention_reason": None,
+                            }
+                        )
+                    },
+                }
+            ],
+            "usage": {"prompt_tokens": 1000, "completion_tokens": 100},
+        }
+    )
+    result = resolver._parse_response(body, image=image, provider_request_id=None, latency_ms=5)
+    assert result.primary.make == "BMW"
+    assert result.metadata.provider == "aitunnel"
+    assert result.metadata.model == "qwen3.8-flash"
+    assert result.metadata.provider_request_id == "chat-123"
+    assert result.metadata.estimated_cost is None
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"choices": []},
+        {"choices": [{"finish_reason": "length", "message": {"content": "{}"}}]},
+        {"choices": [{"finish_reason": "stop", "message": {"content": "not JSON"}}]},
+        {"choices": [{"finish_reason": "stop", "message": {"content": None}}]},
+        {"choices": [{"finish_reason": "stop", "message": {"content": "{}", "refusal": "no"}}]},
+        {"choices": [{"finish_reason": "stop", "message": {"content": '{"status":"resolved"}'}}]},
+        [],
+    ],
+)
+def test_aitunnel_rejects_incomplete_refused_and_invalid_identity(response) -> None:
+    from src.identity.providers.base import VehicleIdentityProviderInvalidResponseError
+
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    with pytest.raises(VehicleIdentityProviderInvalidResponseError):
+        _aitunnel_resolver()._parse_response(
+            json.dumps(response), image=image, provider_request_id=None, latency_ms=1
+        )
+
+
+def test_aitunnel_selection_uses_dedicated_key_and_respects_disabled_flag(monkeypatch) -> None:
+    import src.identity.service as service
+    from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
+    from src.identity.providers.mock import MockVehicleIdentityResolver
+
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_ENABLED", True)
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_PROVIDER", "aitunnel")
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_MODEL", "qwen3.8-flash")
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_AITUNNEL_API_KEY", "dedicated")
+    resolver = service.get_vehicle_identity_resolver()
+    assert isinstance(resolver, AITunnelVehicleIdentityResolver)
+    assert resolver.api_key == "dedicated"
+    assert resolver.model == "qwen3.8-flash"
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_ENABLED", False)
+    assert isinstance(service.get_vehicle_identity_resolver(), MockVehicleIdentityResolver)
+
+
+@pytest.mark.parametrize(
+    "status, expected",
+    [(200, None), (401, "configuration"), (403, "configuration"), (429, "provider")],
+)
+def test_aitunnel_transport_and_auth_errors(monkeypatch, status, expected) -> None:
+    import src.identity.providers.openai as adapter
+    from src.identity.providers.base import (
+        VehicleIdentityProviderConfigurationError,
+        VehicleIdentityProviderError,
+    )
+
+    calls = []
+
+    class Response:
+        def __init__(self):
+            self.headers = {"x-request-id": "req-safe"}
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def text(self):
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "status": "unknown",
+                                        "primary": None,
+                                        "alternatives": [],
+                                        "abstention_reason": "model_uncertain",
+                                    }
+                                )
+                            },
+                        }
+                    ]
+                }
+            )
+
+    Response.status = status
+
+    class Session:
+        def __init__(self, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        def post(self, url, **kwargs):
+            calls.append((url, kwargs))
+            return Response()
+
+    monkeypatch.setattr(adapter.aiohttp, "ClientSession", Session)
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    if expected:
+        error = (
+            VehicleIdentityProviderConfigurationError
+            if expected == "configuration"
+            else VehicleIdentityProviderError
+        )
+        with pytest.raises(error):
+            asyncio.run(_aitunnel_resolver().resolve(image))
+    else:
+        result = asyncio.run(_aitunnel_resolver().resolve(image))
+        assert result.metadata.provider == "aitunnel"
+    assert len(calls) == 1
+    assert calls[0][0] == "https://api.aitunnel.ru/v1/chat/completions"
+    assert calls[0][1]["headers"]["Authorization"] == "Bearer test-aitunnel"

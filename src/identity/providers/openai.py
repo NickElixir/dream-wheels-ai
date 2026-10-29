@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import aiohttp
+from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from src.identity.prompts import (
@@ -23,6 +24,7 @@ from src.identity.providers.base import (
     VehicleIdentityProviderConfigurationError,
     VehicleIdentityProviderError,
     VehicleIdentityProviderInvalidResponseError,
+    VehicleIdentityProviderRequestError,
 )
 from src.identity.schemas import (
     ProviderVehicleResolution,
@@ -31,10 +33,15 @@ from src.identity.schemas import (
 )
 from src.vision.image_normalization import NormalizedImage
 
+_WIRE_VALIDATOR = Draft202012Validator(VEHICLE_IDENTITY_JSON_SCHEMA)
+
 _RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 
 class OpenAIVehicleIdentityResolver:
+    provider_name = "openai"
+    endpoint = _RESPONSES_URL
+
     def __init__(
         self,
         *,
@@ -50,7 +57,9 @@ class OpenAIVehicleIdentityResolver:
 
     async def resolve(self, image: NormalizedImage) -> VehicleIdentityResolution:
         if not self.api_key:
-            raise VehicleIdentityProviderConfigurationError("OpenAI API key is not configured")
+            raise VehicleIdentityProviderConfigurationError(
+                f"{self.provider_name} API key is not configured"
+            )
         payload = self._payload(image)
         started_at = time.monotonic()
         last_error: VehicleIdentityProviderError | None = None
@@ -60,23 +69,23 @@ class OpenAIVehicleIdentityResolver:
                     timeout=aiohttp.ClientTimeout(total=self.timeout_sec)
                 ) as session:
                     async with session.post(
-                        _RESPONSES_URL,
+                        self.endpoint,
                         headers={"Authorization": f"Bearer {self.api_key}"},
                         json=payload,
                     ) as response:
-                        body = await response.text()
                         if response.status in {429, 500, 502, 503, 504}:
                             raise VehicleIdentityProviderError(
-                                f"OpenAI temporary response status={response.status}"
+                                f"{self.provider_name} temporary response status={response.status}"
                             )
                         if response.status in {401, 403}:
                             raise VehicleIdentityProviderConfigurationError(
-                                f"OpenAI authentication response status={response.status}"
+                                f"{self.provider_name} authentication response status={response.status}"
                             )
                         if response.status >= 400:
-                            raise VehicleIdentityProviderError(
-                                f"OpenAI response status={response.status}"
+                            raise VehicleIdentityProviderRequestError(
+                                f"{self.provider_name} response status={response.status}"
                             )
+                        body = await response.text()
                         return self._parse_response(
                             body,
                             image=image,
@@ -87,14 +96,15 @@ class OpenAIVehicleIdentityResolver:
                 raise
             except VehicleIdentityProviderInvalidResponseError:
                 raise
-            except (aiohttp.ClientError, TimeoutError) as exc:
-                last_error = VehicleIdentityProviderError("OpenAI request failed")
-                last_error.__cause__ = exc
+            except (aiohttp.ClientError, TimeoutError):
+                last_error = VehicleIdentityProviderError(f"{self.provider_name} request failed")
             except VehicleIdentityProviderError as exc:
+                if not exc.retryable:
+                    raise
                 last_error = exc
             if attempt < self.max_retries:
                 await asyncio.sleep(0.25 * (attempt + 1))
-        raise last_error or VehicleIdentityProviderError("OpenAI request failed")
+        raise last_error or VehicleIdentityProviderError(f"{self.provider_name} request failed")
 
     def _payload(self, image: NormalizedImage) -> dict[str, Any]:
         image_data = base64.b64encode(image.bytes).decode("ascii")
@@ -138,38 +148,56 @@ class OpenAIVehicleIdentityResolver:
     ) -> VehicleIdentityResolution:
         try:
             provider_response = json.loads(body)
-            output_text = _response_output_text(provider_response)
-        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            output_text = self._output_text(provider_response)
+        except (json.JSONDecodeError, KeyError, TypeError, IndexError, AttributeError):
             raise VehicleIdentityProviderInvalidResponseError(
-                "OpenAI returned invalid structured vehicle identity"
-            ) from exc
+                f"{self.provider_name} returned invalid structured vehicle identity"
+            ) from None
         try:
-            payload = ProviderVehicleResolution.model_validate_json(output_text)
-        except ValidationError as exc:
-            first_error = exc.errors()[0]
-            location = ".".join(str(part) for part in first_error["loc"])
+            wire_payload = json.loads(output_text)
+        except (json.JSONDecodeError, TypeError):
             raise VehicleIdentityProviderInvalidResponseError(
-                "OpenAI structured vehicle identity violates contract at "
-                f"{location}: {first_error['msg']}"
-            ) from exc
-        return VehicleIdentityResolution(
-            status=payload.status,
-            primary=payload.primary,
-            alternatives=payload.alternatives,
-            abstention_reason=payload.abstention_reason,
-            metadata=VehicleResolutionMetadata(
-                provider="openai",
-                model=self.model,
-                prompt_version=PROMPT_VERSION,
-                resolver_version=RESOLVER_VERSION,
-                provider_request_id=provider_request_id or provider_response.get("id"),
-                latency_ms=latency_ms,
-                estimated_cost=_estimated_cost_usd(provider_response, self.model),
-                normalized_input_sha256=image.sha256,
-                response_hash=hashlib.sha256(body.encode("utf-8")).hexdigest(),
-                captured_at=datetime.now(UTC),
-            ),
-        )
+                f"{self.provider_name} returned invalid JSON"
+            ) from None
+        if not _WIRE_VALIDATOR.is_valid(wire_payload):
+            raise VehicleIdentityProviderInvalidResponseError(
+                f"{self.provider_name} structured vehicle identity violates JSON schema"
+            )
+        try:
+            payload = ProviderVehicleResolution.model_validate(wire_payload)
+        except ValidationError:
+            raise VehicleIdentityProviderInvalidResponseError(
+                f"{self.provider_name} structured vehicle identity violates semantic contract"
+            ) from None
+        try:
+            return VehicleIdentityResolution(
+                status=payload.status,
+                primary=payload.primary,
+                alternatives=payload.alternatives,
+                abstention_reason=payload.abstention_reason,
+                metadata=VehicleResolutionMetadata(
+                    provider=self.provider_name,
+                    model=self.model,
+                    prompt_version=PROMPT_VERSION,
+                    resolver_version=RESOLVER_VERSION,
+                    provider_request_id=provider_request_id or provider_response.get("id"),
+                    latency_ms=latency_ms,
+                    estimated_cost=self._estimated_cost(provider_response),
+                    normalized_input_sha256=image.sha256,
+                    response_hash=hashlib.sha256(body.encode("utf-8")).hexdigest(),
+                    captured_at=datetime.now(UTC),
+                ),
+            )
+        except (ValidationError, TypeError, AttributeError):
+            raise VehicleIdentityProviderInvalidResponseError(
+                f"{self.provider_name} returned invalid response metadata"
+            ) from None
+
+    def _output_text(self, response: dict[str, Any]) -> str:
+        return _response_output_text(response)
+
+    def _estimated_cost(self, response: dict[str, Any]) -> float | None:
+        return _estimated_cost_usd(response, self.model)
 
 
 def _response_output_text(response: dict[str, Any]) -> str:
