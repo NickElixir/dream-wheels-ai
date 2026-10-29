@@ -108,3 +108,15 @@ paths, rule keywords, JSON value types and missing required field names. Request
 are correlated by a SHA-256 prefix instead of logging untrusted header/body values.
 Provider response values, unknown property names and validator exception chains are
 not included. These diagnostics do not relax validation or trigger retries.
+
+Transport failures report a fixed category (`timeout`, `dns`, `tls`, `connection`,
+`response_body`, `client_error`), phase (`connecting`, `dns`, `awaiting_headers`,
+`reading_body`), elapsed milliseconds and attempt/retry counts. Exception strings
+and chains are not retained. Awaiting headers means the request headers were sent;
+it does not prove that the provider accepted or started inference.
+
+Fitment recognition sends an opaque per-action `X-Vehicle-Recognition-Request-Id`.
+The API logs only its SHA-256 prefix plus a new server call ID. Matching click hashes
+on different server calls identify replay of one action; different hashes identify
+separate client submissions. This is diagnostic correlation, not deduplication or
+an idempotency guarantee. Existing clients without the header remain supported.
