@@ -866,7 +866,7 @@ export const COPY = {
     "en": "Recognizing the vehicle…"
   },
   "fitment.unableToRecognizeTheVehicle": {
-    "ru": "Не удалось распознать автомобиль",
+    "ru": "Не удалось",
     "en": "Unable to recognize the vehicle"
   },
   "fitment.recognizedFromThePhoto": {
