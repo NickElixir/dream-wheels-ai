@@ -44,3 +44,14 @@
  .vnext-shell[data-authenticated="false"] .vnext-dashboard { padding-top: 0; }
  .vnext-shell[data-authenticated="false"] .vnext-dashboard__intro > div { padding-right: 84px; }
 }
+
+.account-settings-panel .account-settings-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: fit-content;
+    min-height: 44px;
+    margin: 32px auto;
+    padding: 8px 14px;
+}

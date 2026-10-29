@@ -2,10 +2,12 @@ import asyncio
 import json
 import logging
 import os
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src import (
@@ -23,9 +25,13 @@ from src import (
     storage,
 )
 from src.config import (
+    APP_MAINTENANCE,
+    BOT_ENABLED,
     PAYMENT_TIMEOUT_ENABLED,
+    PAYMENTS_ENABLED,
     REDIS_JOB_QUEUE,
     REDIS_URL,
+    ROBOKASSA_IS_TEST,
     WEBAPP_URL,
     WORKER_ENABLED,
     runtime_env_summary,
@@ -73,14 +79,20 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("🟢 Redis отключён: API-only режим без очереди рендеров")
 
-    if WORKER_ENABLED and REDIS_URL:
+    if WORKER_ENABLED and REDIS_URL and not APP_MAINTENANCE:
         worker_task = asyncio.create_task(process_jobs_loop())
+    elif APP_MAINTENANCE:
+        logger.info("Worker disabled by maintenance profile")
     elif WORKER_ENABLED:
         logger.warning("⚠️ Redis отсутствует: worker loop не запущен")
     else:
         logger.info("🟢 ВОРКЕР ОТКЛЮЧЕН (WORKER_ENABLED=false)")
 
-    timeout_task = asyncio.create_task(payment_timeout_loop()) if PAYMENT_TIMEOUT_ENABLED else None
+    timeout_task = (
+        asyncio.create_task(payment_timeout_loop())
+        if PAYMENT_TIMEOUT_ENABLED and not APP_MAINTENANCE
+        else None
+    )
     try:
         yield
     finally:
@@ -97,6 +109,37 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def maintenance_gate(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    if APP_MAINTENANCE and not (
+        request.method in {"GET", "HEAD"}
+        and request.url.path in {"/health", "/health/full", "/health/release"}
+    ):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service temporarily unavailable for maintenance"},
+            headers={"Retry-After": "60", "Cache-Control": "no-store"},
+        )
+    return await call_next(request)
+
+
+@app.get("/health/release")
+async def release_health() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "commit": os.getenv("RENDER_GIT_COMMIT", ""),
+        "maintenance": APP_MAINTENANCE,
+        "payments_test_mode": ROBOKASSA_IS_TEST,
+        "payments_enabled": PAYMENTS_ENABLED,
+        "worker_enabled": WORKER_ENABLED and not APP_MAINTENANCE,
+        "bot_enabled": BOT_ENABLED and not APP_MAINTENANCE,
+        "payment_timeout_enabled": PAYMENT_TIMEOUT_ENABLED and not APP_MAINTENANCE,
+    }
+
 
 # CORS — webapp хостится на Vercel и шлёт fetch с другого домена.
 # Telegram-клиент проксирует Mini App тоже как origin: разрешаем т.г-домены

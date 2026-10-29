@@ -51,7 +51,8 @@ const defaultSessionController = Object.freeze({
 
 function configuredHostIsAllowed(hostname = "") {
     if (["localhost", "127.0.0.1"].includes(hostname)) return true;
-    if (hostname === "dreamwheels.pro") return true;
+    if (["dreamwheels.pro", "app.dreamwheels.pro", "dream-wheels-ai-webapp.vercel.app",
+        "dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app"].includes(hostname)) return true;
     if (hostname === "dream-wheels-ai-webapp-staging.vercel.app") return true;
     return /^dream-wheels-ai-webapp-git-feature-auth-v11-integration-[a-z0-9-]+\.vercel\.app$/u.test(hostname);
 }
@@ -230,7 +231,7 @@ export function createFrontendAuthController({
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            if (!response?.ok) throw new Error("principal_probe_failed");
+            if (!response?.ok) throw await backendAuthError(response);
             const payload = await response.json().catch(() => null);
             if (!probeStillCurrent()) return getState();
             if (payload?.authenticated !== true || payload.authority !== "supabase") {
@@ -266,8 +267,8 @@ export function createFrontendAuthController({
                 principalVerified: false,
                 protectedApiReady: false,
                 sessionPresent: true,
-                errorCode: "NETWORK_ERROR",
-                interactionState: AUTH_INTERACTION_STATES.RESTORING,
+                errorCode: error?.code === "MAINTENANCE" ? "MAINTENANCE" : "NETWORK_ERROR",
+                interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
                 authenticationSource: null,
                 account: null,
             }, "ME_UNAVAILABLE");
@@ -338,6 +339,12 @@ export function createFrontendAuthController({
         return error;
     }
 
+    async function backendAuthError(response) {
+        const payload = await response?.json?.().catch(() => null);
+        return authRequestError(response?.status === 503 && /maintenance/i.test(String(payload?.detail || ""))
+            ? "MAINTENANCE" : "NETWORK_ERROR");
+    }
+
     async function bootstrapSupabaseAccount() {
         const accessToken = await sessionController.getAccessToken();
         if (!accessToken) throw authRequestError("SESSION_EXPIRED");
@@ -346,7 +353,7 @@ export function createFrontendAuthController({
             headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (response?.status === 401) throw authRequestError("SESSION_EXPIRED");
-        if (!response?.ok) throw authRequestError("NETWORK_ERROR");
+        if (!response?.ok) throw await backendAuthError(response);
         const payload = typeof response?.json === "function"
             ? await response.json().catch(() => null)
             : null;
@@ -487,8 +494,11 @@ export function createFrontendAuthController({
         if (state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified) {
             throw authRequestError("ALREADY_AUTHENTICATED");
         }
+        if (state.status === AUTH_SESSION_STATES.SESSION_EXPIRED) {
+            await sessionController.signOut();
+        }
         if (state.status === AUTH_SESSION_STATES.BOOTSTRAPPING || state.sessionPresent) {
-            throw authRequestError("AUTHENTICATION_IN_PROGRESS");
+            throw authRequestError(state.errorCode || "AUTHENTICATION_IN_PROGRESS");
         }
         const result = await otpRequest(email, captchaToken);
         setState({
@@ -512,7 +522,7 @@ export function createFrontendAuthController({
         }
         if (!(state.status === AUTH_SESSION_STATES.AUTHENTICATED && state.principalVerified)) {
             setState({ interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED }, "OTP_SESSION_MISSING");
-            throw authRequestError("SESSION_EXPIRED");
+            throw authRequestError(state.errorCode || "SESSION_EXPIRED");
         }
         setState({
             interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
