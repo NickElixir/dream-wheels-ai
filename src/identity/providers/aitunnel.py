@@ -1,9 +1,14 @@
 """AI Tunnel Chat Completions adapter with the existing strict identity contract."""
 
 import base64
+import json
 from typing import Any
 
-from src.identity.prompts import VEHICLE_IDENTITY_JSON_SCHEMA, VEHICLE_IDENTITY_PROMPT
+from src.identity.prompts import (
+    PROMPT_VERSION,
+    VEHICLE_IDENTITY_JSON_SCHEMA,
+    VEHICLE_IDENTITY_PROMPT,
+)
 from src.identity.providers.base import VehicleIdentityProviderInvalidResponseError
 from src.identity.providers.openai import OpenAIVehicleIdentityResolver
 from src.vision.image_normalization import NormalizedImage
@@ -12,15 +17,26 @@ from src.vision.image_normalization import NormalizedImage
 class AITunnelVehicleIdentityResolver(OpenAIVehicleIdentityResolver):
     provider_name = "aitunnel"
     endpoint = "https://api.aitunnel.ru/v1/chat/completions"
+    prompt_version = f"{PROMPT_VERSION}:aitunnel-explicit-schema-v1"
 
     def _payload(self, image: NormalizedImage) -> dict[str, Any]:
         image_data = base64.b64encode(image.bytes).decode("ascii")
+        system_prompt = (
+            VEHICLE_IDENTITY_PROMPT
+            + "\nReturn exactly one JSON object, never a root array or a list of candidates."
+            " The root object must contain all four keys: status, primary, alternatives,"
+            " abstention_reason. Put the primary candidate inside primary and alternative"
+            " candidates only inside alternatives. Include every required field even when"
+            " its value is null. Do not wrap the object in Markdown or explanatory text."
+            "\nThe complete JSON Schema for your response is:\n"
+            + json.dumps(VEHICLE_IDENTITY_JSON_SCHEMA, separators=(",", ":"), sort_keys=True)
+        )
         return {
             "model": self.model,
             "stream": False,
             "max_tokens": 2048,
             "messages": [
-                {"role": "system", "content": VEHICLE_IDENTITY_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
                     "content": [

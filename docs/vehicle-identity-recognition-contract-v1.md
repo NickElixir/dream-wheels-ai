@@ -128,3 +128,12 @@ Completion/reasoning token counts are included only when bounded nonnegative JSO
 integers; malformed counts become `unavailable`. Refusal text, content and other
 response values remain excluded. An incomplete response is still nonretryable and
 is never parsed or applied as a vehicle proposal.
+
+AI Tunnel prompt revision `:aitunnel-explicit-schema-v1` includes the complete
+canonical JSON Schema in its system message as well as `response_format`. It
+explicitly requires a root object with `status`, `primary`, `alternatives` and
+`abstention_reason`, never a root array. Both schema representations come from
+the same schema constant. This reinforces the provider instruction; it does not
+guarantee compliance. Local schema/semantic validation remains authoritative:
+arrays, including a one-element array containing an otherwise valid resolution,
+are rejected without conversion. OpenAI's prompt and prompt version are unchanged.

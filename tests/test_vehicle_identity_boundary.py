@@ -123,6 +123,20 @@ def test_complete_schema_and_semantics_are_accepted(resolver, image, status):
     assert result.status == status
 
 
+@pytest.mark.parametrize("nonempty", [False, True])
+def test_root_arrays_are_never_unwrapped_or_applied(resolver, image, nonempty):
+    root = [resolution()] if nonempty else []
+    with pytest.raises(VehicleIdentityProviderInvalidResponseError) as error:
+        resolver._parse_response(
+            envelope(resolver, json.dumps(root)),
+            image=image,
+            provider_request_id=None,
+            latency_ms=1,
+        )
+    assert error.value.retryable is False
+    assert '"path": [], "rule": "type", "actual_type": "list"' in str(error.value)
+
+
 @pytest.mark.parametrize("case", ["extra_key", "semantic", "json", "metadata"])
 def test_logger_exception_never_contains_provider_payload(resolver, image, caplog, case):
     marker = "PRIVATE_RESPONSE_MARKER_938"
