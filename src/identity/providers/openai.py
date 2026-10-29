@@ -57,6 +57,7 @@ def _transport_failure_kind(exc: BaseException) -> str:
 class OpenAIVehicleIdentityResolver:
     provider_name = "openai"
     endpoint = _RESPONSES_URL
+    prompt_version = PROMPT_VERSION
 
     def __init__(
         self,
@@ -231,7 +232,7 @@ class OpenAIVehicleIdentityResolver:
                 metadata=VehicleResolutionMetadata(
                     provider=self.provider_name,
                     model=self.model,
-                    prompt_version=PROMPT_VERSION,
+                    prompt_version=self.prompt_version,
                     resolver_version=RESOLVER_VERSION,
                     provider_request_id=provider_request_id or provider_response.get("id"),
                     latency_ms=latency_ms,
