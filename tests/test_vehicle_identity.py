@@ -159,6 +159,8 @@ def _aitunnel_resolver():
 
 
 def test_aitunnel_payload_uses_chat_vision_and_strict_schema() -> None:
+    from src.identity.prompts import VEHICLE_IDENTITY_JSON_SCHEMA, VEHICLE_IDENTITY_PROMPT
+
     resolver = _aitunnel_resolver()
     image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
     payload = resolver._payload(image)
@@ -169,6 +171,24 @@ def test_aitunnel_payload_uses_chat_vision_and_strict_schema() -> None:
     assert payload["messages"][1]["content"][1]["image_url"]["url"].startswith(
         "data:image/jpeg;base64,"
     )
+    system_prompt = payload["messages"][0]["content"]
+    assert system_prompt.startswith(VEHICLE_IDENTITY_PROMPT)
+    assert "never a root array" in system_prompt
+    schema_text = system_prompt.split("The complete JSON Schema for your response is:\n", 1)[1]
+    assert json.loads(schema_text) == payload["response_format"]["json_schema"]["schema"]
+    assert json.loads(schema_text) == VEHICLE_IDENTITY_JSON_SCHEMA
+
+
+def test_openai_prompt_remains_unchanged_and_aitunnel_revision_is_separate() -> None:
+    from src.identity.prompts import PROMPT_VERSION, VEHICLE_IDENTITY_PROMPT
+
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    resolver = OpenAIVehicleIdentityResolver(
+        api_key="fake", model="test", timeout_sec=1, max_retries=0
+    )
+    assert resolver._payload(image)["input"][0]["content"][0]["text"] == VEHICLE_IDENTITY_PROMPT
+    assert resolver.prompt_version == PROMPT_VERSION
+    assert _aitunnel_resolver().prompt_version == f"{PROMPT_VERSION}:aitunnel-explicit-schema-v1"
 
 
 def test_aitunnel_parses_valid_identity_without_mislabeling_cost() -> None:
@@ -208,6 +228,7 @@ def test_aitunnel_parses_valid_identity_without_mislabeling_cost() -> None:
     assert result.metadata.provider == "aitunnel"
     assert result.metadata.model == "qwen3.8-flash"
     assert result.metadata.provider_request_id == "chat-123"
+    assert result.metadata.prompt_version == resolver.prompt_version
     assert result.metadata.estimated_cost is None
 
 
