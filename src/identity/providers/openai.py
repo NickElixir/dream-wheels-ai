@@ -159,9 +159,17 @@ class OpenAIVehicleIdentityResolver:
             raise VehicleIdentityProviderInvalidResponseError(
                 f"{self.provider_name} returned invalid JSON"
             ) from None
-        if not _WIRE_VALIDATOR.is_valid(wire_payload):
+        violations = _schema_diagnostics(wire_payload)
+        if violations:
+            request_id = provider_request_id or provider_response.get("id")
+            request_hash = (
+                hashlib.sha256(request_id.encode()).hexdigest()[:16]
+                if isinstance(request_id, str)
+                else "unavailable"
+            )
             raise VehicleIdentityProviderInvalidResponseError(
-                f"{self.provider_name} structured vehicle identity violates JSON schema"
+                f"{self.provider_name} structured vehicle identity violates JSON schema "
+                f"request_id_hash={request_hash} violations={json.dumps(violations)}"
             )
         try:
             payload = ProviderVehicleResolution.model_validate(wire_payload)
@@ -226,3 +234,54 @@ def _estimated_cost_usd(response: dict[str, Any], model: str) -> float | None:
     return (
         (input_tokens - cached_tokens) * 0.15 + cached_tokens * 0.075 + output_tokens * 0.60
     ) / 1_000_000
+
+
+_DIAGNOSTIC_FIELDS = frozenset(
+    {
+        "status",
+        "primary",
+        "alternatives",
+        "abstention_reason",
+        "make",
+        "model",
+        "year",
+        "year_start",
+        "year_end",
+        "confidence",
+        "source",
+    }
+)
+
+
+def _schema_diagnostics(payload: Any) -> list[dict[str, Any]]:
+    """Only schema-owned field names and validator keywords may enter diagnostics."""
+    diagnostics: list[dict[str, Any]] = []
+
+    def collect(error: Any) -> None:
+        if len(diagnostics) >= 8:
+            return
+        if error.context:
+            for child in error.context:
+                collect(child)
+            return
+        item: dict[str, Any] = {
+            "path": [
+                part if isinstance(part, int) or part in _DIAGNOSTIC_FIELDS else "[field]"
+                for part in error.absolute_path
+            ],
+            "rule": error.validator,
+            "actual_type": type(error.instance).__name__,
+        }
+        if error.validator == "required" and isinstance(error.instance, dict):
+            item["missing"] = [
+                field
+                for field in error.validator_value
+                if field in _DIAGNOSTIC_FIELDS and field not in error.instance
+            ]
+        diagnostics.append(item)
+
+    for error in _WIRE_VALIDATOR.iter_errors(payload):
+        collect(error)
+        if len(diagnostics) >= 8:
+            break
+    return diagnostics

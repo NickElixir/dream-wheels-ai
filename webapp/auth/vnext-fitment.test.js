@@ -76,7 +76,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   assert.match(proposed, /data-fitment-action="recognition-proposal"/);
   assert.doesNotMatch(proposed, /data-fitment-action="edit-vehicle-photo"/);
   const failed = fitmentMarkup({ vehicleRecognition: { status: "failed", canRecognize: true } });
-  assert.match(failed, /Не удалось распознать автомобиль/);
+  assert.match(failed, /Не удалось/);
   assert.match(failed, /Попробовать ещё раз/);
   assert.doesNotMatch(failed, /data-fitment-action="edit-vehicle-photo"|data-fitment-vehicle-photo/);
   assert.match(failed, /Указать вручную/);

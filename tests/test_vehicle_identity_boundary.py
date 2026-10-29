@@ -264,3 +264,33 @@ def test_truncated_http_body_preserves_status_classification(resolver, image, st
             assert error.value.error_code == "vehicle_identity_provider_request_rejected"
 
     asyncio.run(run())
+
+
+def test_schema_diagnostics_only_exposes_schema_fields(resolver, image, caplog):
+    marker = "PRIVATE_RESPONSE_MARKER_938"
+    payload = resolution()
+    del payload["primary"]["year"]
+    payload["primary"]["confidence"] = marker
+    payload[marker] = marker
+    raw = json.loads(envelope(resolver, json.dumps(payload)))
+    raw["id"] = marker
+    with caplog.at_level(logging.ERROR):
+        try:
+            resolver._parse_response(
+                json.dumps(raw), image=image, provider_request_id=marker, latency_ms=1
+            )
+        except VehicleIdentityProviderInvalidResponseError:
+            logging.getLogger(__name__).exception("Recognition failed")
+    assert marker not in caplog.text
+    assert '"missing": ["year"]' in caplog.text
+    assert '"confidence"' in caplog.text
+    assert '"rule": "type"' in caplog.text
+    assert "request_id_hash=" in caplog.text
+
+
+def test_schema_diagnostics_is_bounded():
+    from src.identity.providers.openai import _schema_diagnostics
+
+    payload = resolution()
+    payload["alternatives"] = [{} for _ in range(100)]
+    assert len(_schema_diagnostics(payload)) == 8

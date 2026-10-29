@@ -102,3 +102,9 @@ Only 429, 500/502/503/504 and transport timeout/network failures are retryable.
 Other HTTP errors fail immediately with `retryable=false`; 401/403 retain their
 configuration-error classification. Test coverage is in
 `tests/test_vehicle_identity_boundary.py` for both adapters.
+
+Schema-rejection diagnostics contain at most eight violations: schema-owned field
+paths, rule keywords, JSON value types and missing required field names. Request IDs
+are correlated by a SHA-256 prefix instead of logging untrusted header/body values.
+Provider response values, unknown property names and validator exception chains are
+not included. These diagnostics do not relax validation or trigger retries.
