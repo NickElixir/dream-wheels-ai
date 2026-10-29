@@ -950,3 +950,14 @@ for (const locale of ["ru", "en"]) test(`Vehicle save readiness preserves the vi
   }
   assert.doesNotMatch(fitmentMarkup({ ...base, vehicleSaveReady: true, vehicleForm: { ...base.vehicleForm, market: "EU" } }), /data-fitment-action="save-vehicle"[^>]*disabled/);
 });
+
+
+test("unavailable recognition photo shows one explanation and keeps recovery actions", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = fitmentMarkup({ locale, vehicleRecognition: { status: "failed", canRecognize: true, photoUnavailable: true, message: "Duplicate photo failure explanation" } });
+    assert.doesNotMatch(markup, /Duplicate photo failure explanation/);
+    assert.match(markup, /id="fitment-recognition-title"/);
+    assert.match(markup, /data-fitment-action="recognize-vehicle"/);
+    assert.match(markup, /data-fitment-action="edit-vehicle"/);
+  }
+});
