@@ -233,6 +233,68 @@ def test_aitunnel_rejects_incomplete_refused_and_invalid_identity(response) -> N
         )
 
 
+@pytest.mark.parametrize(
+    "response,reason",
+    [
+        ([], "response_not_object"),
+        ({}, "choices_missing_or_invalid"),
+        ({"choices": []}, "choices_empty"),
+        ({"choices": [None]}, "choice_not_object"),
+        ({"choices": [{}]}, "message_missing_or_invalid"),
+        ({"choices": [{"message": {"refusal": "PRIVATE"}}]}, "refusal"),
+        ({"choices": [{"message": {}, "finish_reason": "length"}]}, "finish_length"),
+        ({"choices": [{"message": {}, "finish_reason": "PRIVATE"}]}, "finish_missing_or_other"),
+        ({"choices": [{"message": {}, "finish_reason": "stop"}]}, "content_missing_or_nontext"),
+        ({"choices": [{"message": {"content": " "}, "finish_reason": "stop"}]}, "content_empty"),
+    ],
+)
+def test_aitunnel_envelope_failure_reason_is_safe_and_nonretryable(response, reason, caplog):
+    import logging
+
+    from src.identity.providers.base import VehicleIdentityProviderInvalidResponseError
+
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    if isinstance(response, dict):
+        response["PRIVATE"] = "PRIVATE"
+        response["usage"] = {
+            "completion_tokens": {"PRIVATE": "PRIVATE"},
+            "completion_tokens_details": {"reasoning_tokens": "PRIVATE"},
+        }
+    with caplog.at_level(logging.ERROR):
+        try:
+            _aitunnel_resolver()._parse_response(
+                json.dumps(response), image=image, provider_request_id=None, latency_ms=1
+            )
+        except VehicleIdentityProviderInvalidResponseError as exc:
+            assert exc.retryable is False
+            assert f"reason={reason}" in str(exc)
+            logging.getLogger(__name__).exception("Recognition failed")
+        else:
+            pytest.fail("invalid envelope accepted")
+    assert "PRIVATE" not in caplog.text
+    assert "input_value" not in caplog.text
+
+
+def test_aitunnel_incomplete_response_reports_only_bounded_token_counts():
+    from src.identity.providers.base import VehicleIdentityProviderInvalidResponseError
+
+    response = {
+        "choices": [{"finish_reason": "length", "message": {"content": "PRIVATE"}}],
+        "usage": {
+            "completion_tokens": 2048,
+            "completion_tokens_details": {"reasoning_tokens": 1800},
+        },
+    }
+    with pytest.raises(VehicleIdentityProviderInvalidResponseError) as error:
+        _aitunnel_resolver()._output_text(response)
+    assert "reason=finish_length completion_tokens=2048 reasoning_tokens=1800" in str(error.value)
+    response["usage"]["completion_tokens"] = True
+    response["usage"]["completion_tokens_details"]["reasoning_tokens"] = 10**30
+    with pytest.raises(VehicleIdentityProviderInvalidResponseError) as error:
+        _aitunnel_resolver()._output_text(response)
+    assert "completion_tokens=unavailable reasoning_tokens=unavailable" in str(error.value)
+
+
 def test_aitunnel_selection_uses_dedicated_key_and_respects_disabled_flag(monkeypatch) -> None:
     import src.identity.service as service
     from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
