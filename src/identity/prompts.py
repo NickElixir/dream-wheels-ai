@@ -2,14 +2,19 @@
 
 from src.config import VEHICLE_IDENTITY_PROMPT_VERSION
 
-PROMPT_VERSION = VEHICLE_IDENTITY_PROMPT_VERSION
+PROMPT_VERSION = f"{VEHICLE_IDENTITY_PROMPT_VERSION}:dominant-vehicle-v2"
 RESOLVER_VERSION = "vehicle_identity_resolver_v1"
 
 VEHICLE_IDENTITY_PROMPT = """Identify the visible passenger vehicle from this single image.
 Return only the requested JSON schema. Identify only make, model and a single year or year range.
 Do not infer generation, trim, modification, market, engine, drivetrain, rim specifications, or fitment.
 A logo alone is not enough to identify a model. Return unknown when the vehicle is not visible,
-there are multiple vehicles, the view is insufficient, or make/model/year cannot be stated reliably.
+the view is insufficient, or make/model/year cannot be stated reliably.
+When background vehicles are present, identify the clearly dominant foreground vehicle using
+relative size, visibility and image clarity together; position in the center alone is not enough.
+Ignore incidental background vehicles. Return unknown with abstention_reason multiple_vehicles
+only when two or more similarly prominent vehicles make the intended target unclear.
+All primary and alternative candidates must describe the same selected vehicle, never different cars.
 Return at most one primary candidate and two alternatives. Confidence must be between zero and one.
 For an exact year set year and set year_start/year_end to null. For a year range set year to null
 and set both year_start/year_end. Never return an exact year and a range together."""
