@@ -6259,14 +6259,22 @@ async function recognizeFitmentVehicle() {
     const controller = new AbortController();
     const current = () => {
         const matches = token === state.fitmentRecognitionToken && jobId === state.fitmentJobId && revision === state.fitmentOverview?.vehicle_revision;
-        if (!matches) controller.abort();
+        if (!matches) {
+            controller.abort();
+            if (state.fitmentRecognition === loadingState) {
+                state.fitmentRecognition = { status: "idle", candidates: [], workspaceOpen: false };
+                if (jobId === state.fitmentJobId) renderFitment();
+            }
+            if (state.fitmentRecognitionController === controller) state.fitmentRecognitionController = null;
+        }
         return matches;
     };
     state.fitmentRecognitionController = controller;
     setFitmentEditor("");
     state.fitmentActiveSection = "vehicle";
     state.fitmentActiveStep = 1;
-    state.fitmentRecognition = { status: "loading", candidates: [], workspaceOpen: true };
+    const loadingState = { status: "loading", candidates: [], workspaceOpen: true };
+    state.fitmentRecognition = loadingState;
     persistFitmentNavigationContext();
     renderFitment();
     focusFitmentWorkspace("vehicle");
