@@ -133,3 +133,23 @@ for (const replacement of ['none','new-operation']) test(`stale loading releases
  if(replacement==='none'){assert.equal(state.fitmentRecognition.status,'idle');assert.equal(state.fitmentRecognitionController,null);}
  else {assert.equal(state.fitmentRecognition.marker,'new');assert.equal(state.fitmentRecognition.status,'loading');assert.equal(state.fitmentRecognitionController.signal.aborted,false);}
 });
+
+test('ambiguous provider outcome recovers with the same key and blocks a second click',async()=>{
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const posts=[];let resume;
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:x=>x,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),waitForRecognitionRecovery:()=>new Promise(resolve=>{resume=resolve;}),authenticatedFetch:async(url,options)=>{
+  if(url==='/photo')return {ok:true,status:200,blob:async()=>new Blob(['photo'])};
+  posts.push(options.headers);
+  return posts.length===1?{ok:false,status:503,clone:()=>({json:async()=>({detail:{code:'recognition_pending_or_uncertain'}})})}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:{make:'BMW',model:'3 Series'}}})};
+ }});
+ context.waitForRecognitionRecovery=()=>new Promise(resolve=>{resume=resolve;});
+ const task=context.recognizeFitmentVehicle();
+ while(!resume)await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.fitmentRecognition.status,'loading');
+ await context.recognizeFitmentVehicle();assert.equal(posts.length,1);
+ resume();await task;
+ assert.equal(posts.length,2);
+ assert.equal(posts[0]['X-Vehicle-Recognition-Request-Id'],posts[1]['X-Vehicle-Recognition-Request-Id']);
+ assert.equal(posts[1]['X-Vehicle-Recognition-Recovery'],'true');
+ assert.equal(state.fitmentRecognition.status,'proposed');
+});

@@ -112,6 +112,8 @@ async def resolve_once(
                     raise HTTPException(503, detail={"code": "recognition_state_unavailable"})
             except RedisError:
                 raise HTTPException(503, detail={"code": "recognition_state_unavailable"}) from None
+        else:
+            error.recognition_pending = True
         raise
 
     try:

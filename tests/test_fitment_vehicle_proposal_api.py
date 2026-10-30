@@ -217,3 +217,15 @@ def test_proposal_provider_failure_is_retryable_without_writes(proposal_context,
     response = request()
     assert response.status_code == 503
     assert response.json()["detail"]["retryable"] is True
+
+
+def test_guarded_ambiguous_failure_returns_pending_code(proposal_context, monkeypatch):
+    async def pending_guard(**_kwargs):
+        error = VehicleIdentityProviderError("safe transport failure")
+        error.recognition_pending = True
+        raise error
+
+    monkeypatch.setattr(identity_api, "resolve_once", pending_guard)
+    response = request(headers={"X-Vehicle-Recognition-Request-Id": "transport-key"})
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "recognition_pending_or_uncertain"

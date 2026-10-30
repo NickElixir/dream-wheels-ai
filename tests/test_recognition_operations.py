@@ -237,3 +237,32 @@ def test_failure_cannot_replace_new_owner(monkeypatch):
         assert list(store.values.values()) == ["new-owner-state"]
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("kind", ["timeout", "connection", "dns", "response_body", None])
+def test_ambiguous_transport_failure_is_marked_pending(monkeypatch, kind):
+    from src.identity.providers.base import VehicleIdentityProviderError
+
+    async def scenario():
+        store = MemoryRedis()
+        monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+        calls = 0
+
+        async def resolve():
+            nonlocal calls
+            calls += 1
+            error = VehicleIdentityProviderError("safe transport failure")
+            error.failure_kind = kind
+            raise error
+
+        args = dict(user_id=1, request_id="transport", fingerprint="photo", resolve=resolve)
+        with pytest.raises(VehicleIdentityProviderError) as first:
+            await operations.resolve_once(**args)
+        assert first.value.recognition_pending is True
+        for _ in range(2):
+            with pytest.raises(HTTPException) as recovery:
+                await operations.resolve_once(**args, existing_only=True)
+            assert recovery.value.detail["code"] == "recognition_pending_or_uncertain"
+        assert calls == 1
+
+    asyncio.run(scenario())

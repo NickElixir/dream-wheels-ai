@@ -169,7 +169,9 @@ async def resolve_fitment_vehicle_proposal(
         raise HTTPException(
             status_code=503,
             detail={
-                "code": "vehicle_provider_rate_limited"
+                "code": "recognition_pending_or_uncertain"
+                if getattr(exc, "recognition_pending", False)
+                else "vehicle_provider_rate_limited"
                 if getattr(exc, "failure_kind", None) == "rate_limit"
                 else "vehicle_provider_timeout"
                 if getattr(exc, "failure_kind", None) == "timeout"
