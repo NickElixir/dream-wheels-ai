@@ -55,8 +55,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/identity", tags=["identity"])
 
-IDENTITY_RATE_LIMIT = 20
-IDENTITY_RATE_WINDOW_SEC = 60 * 60
+IDENTITY_RATE_LIMIT = 100
+IDENTITY_RATE_WINDOW_SEC = 24 * 60 * 60
+# New namespace avoids reusing a counter with the previous one-hour TTL.
+IDENTITY_RATE_SCOPE = "identity_resolve_daily_v1"
 
 
 class IdentityResolveResponse(BaseModel):
@@ -111,7 +113,7 @@ async def resolve_fitment_vehicle_proposal(
     if int(row["vehicle_revision"]) != expected_vehicle_revision:
         raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
     await enforce_rate_limit(
-        scope="identity_resolve",
+        scope=IDENTITY_RATE_SCOPE,
         identifier=principal.user_id,
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,
@@ -167,7 +169,9 @@ async def resolve_fitment_vehicle_proposal(
         raise HTTPException(
             status_code=503,
             detail={
-                "code": "vehicle_provider_timeout"
+                "code": "vehicle_provider_rate_limited"
+                if getattr(exc, "failure_kind", None) == "rate_limit"
+                else "vehicle_provider_timeout"
                 if getattr(exc, "failure_kind", None) == "timeout"
                 else "vehicle_provider_unavailable",
                 "retryable": exc.retryable,
@@ -771,7 +775,7 @@ async def resolve_identity(
         )
     owner_user_id = principal.user_id
     await enforce_rate_limit(
-        scope="identity_resolve",
+        scope=IDENTITY_RATE_SCOPE,
         identifier=owner_user_id,
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,

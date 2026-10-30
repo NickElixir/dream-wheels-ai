@@ -280,17 +280,17 @@ function vehicleRecognition(model) {
   const recognition = model.vehicleRecognition || {};
   if (recognition.status === "loading") {
     const ru = localeOf(model) === "ru";
-    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем модель" : "Identifying the model"}</h2>${loadingStatus(recognition.slow ? (ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual") : "")}</section>`;
+    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 class="vnext-fitment__recognition-heading" id="fitment-recognition-title" tabindex="-1"><span class="vnext-spinner" aria-hidden="true"></span><span>${ru ? "Определяем автомобиль" : "Identifying the vehicle"}</span></h2>${recognition.slow ? `<p role="status">${ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual"}</p>` : ""}</section>`;
   }
   const ru = localeOf(model) === "ru";
   const multiple = recognition.abstentionReason === "multiple_vehicles";
-  const heading = multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
+  const heading = recognition.rateLimited ? (ru ? "Распознавание временно недоступно" : "Recognition temporarily unavailable") : multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
   const candidates = (recognition.candidates || []).map((item, index) => {
     const identity = [item.make, item.model].filter(Boolean).join(" ");
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));
     return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
   }).join("");
-  const failureMessage = multiple ? (ru ? "Используйте фото нужной машины отдельно или укажите модель вручную" : "Use a separate photo of the car or enter the model manually") : "";
+  const failureMessage = recognition.rateLimited ? (recognition.localRateLimited ? (ru ? "Не удалось выполнить распознавание, т.к. лимит нашего приложения исчерпан. Обратитесь в поддержку." : "Recognition could not be completed because our application limit has been reached. Contact support.") : (ru ? "Сервис распознавания перегружен. Попробуйте позже" : "The recognition service is overloaded. Try again later")) : multiple ? (ru ? "Используйте фото нужной машины отдельно или укажите модель вручную" : "Use a separate photo of the car or enter the model manually") : "";
   const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : ["failed", "uncertain"].includes(recognition.status)
     ? `${failureMessage && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(failureMessage)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
     : `<div class="vnext-fitment__variant-list">${candidates}</div>`;
@@ -567,6 +567,9 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     root.fitmentFocusIntent = null;
     if (kind) beginFitmentFormFocus(root, kind);
     else { target = intent.action === "check" ? root.querySelector(".vnext-fitment__verdict h2") : root.querySelector("#fitment-standard-title"); move = true; }
+  } else if (root.fitmentWorkspaceAction === "recognize-vehicle" && model.vehicleRecognition?.status === "loading") {
+    target = root.querySelector("#fitment-recognition-title");
+    move = true;
   } else if (root.fitmentWorkspaceAction && !fitmentFormAction(root.fitmentWorkspaceAction) && previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !root.fitmentFormFocusIntent) {
     target = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="manual-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
     move = true;

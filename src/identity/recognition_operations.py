@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from redis.exceptions import RedisError
 
 from src import redis_client
+from src.identity.providers.base import VehicleIdentityProviderError
 from src.identity.schemas import VehicleIdentityResolution
 
 RETENTION_SECONDS = 900
@@ -42,19 +43,77 @@ async def resolve_once(
             operation = json.loads(raw)
             if (
                 not isinstance(operation, dict)
-                or operation.get("status") not in {"pending", "completed"}
+                or operation.get("status") not in {"pending", "completed", "failed"}
                 or not isinstance(operation.get("fingerprint"), str)
             ):
                 raise ValueError("invalid operation")
             if operation["fingerprint"] != fingerprint:
                 raise HTTPException(409, detail={"code": "recognition_request_conflict"})
+            if operation["status"] == "failed":
+                failure = operation["error"]
+                allowed_codes = {
+                    "vehicle_identity_provider_unavailable",
+                    "vehicle_identity_provider_configuration_error",
+                    "vehicle_identity_provider_invalid_response",
+                    "vehicle_identity_provider_request_rejected",
+                }
+                if (
+                    not isinstance(failure, dict)
+                    or failure.get("code") not in allowed_codes
+                    or type(failure.get("retryable")) is not bool
+                    or failure.get("kind") not in {"rate_limit", "http_response", "terminal"}
+                ):
+                    raise ValueError("invalid failure")
+                error = VehicleIdentityProviderError("Stored recognition failure")
+                error.error_code = failure["code"]
+                error.retryable = failure["retryable"]
+                error.failure_kind = failure["kind"]
+                raise error
             if operation["status"] == "completed":
                 return VehicleIdentityResolution.model_validate(operation["result"])
             raise HTTPException(409, detail={"code": "recognition_pending_or_uncertain"})
+    except VehicleIdentityProviderError:
+        raise
     except (RedisError, RuntimeError, ValueError, KeyError, TypeError, ValidationError) as exc:
         raise HTTPException(503, detail={"code": "recognition_state_unavailable"}) from exc
-    result = await resolve()
-    # Provider failure or process interruption leaves the marker in place: no hidden retry.
+    try:
+        result = await resolve()
+    except VehicleIdentityProviderError as error:
+        # A received HTTP rejection or validated local rejection has a known outcome.
+        # Transport ambiguity/process interruption retains pending; never call again.
+        if getattr(error, "http_status", None) is not None or not error.retryable:
+            kind = (
+                "rate_limit"
+                if getattr(error, "failure_kind", None) == "rate_limit"
+                else "http_response"
+                if getattr(error, "http_status", None) is not None
+                else "terminal"
+            )
+            try:
+                saved = await client.eval(
+                    "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('SET',KEYS[1],ARGV[2],'EX',ARGV[3]) else return false end",
+                    1,
+                    key,
+                    pending,
+                    json.dumps(
+                        {
+                            "fingerprint": fingerprint,
+                            "status": "failed",
+                            "error": {
+                                "code": error.error_code,
+                                "retryable": error.retryable,
+                                "kind": kind,
+                            },
+                        }
+                    ),
+                    RETENTION_SECONDS,
+                )
+                if not saved:
+                    raise HTTPException(503, detail={"code": "recognition_state_unavailable"})
+            except RedisError:
+                raise HTTPException(503, detail={"code": "recognition_state_unavailable"}) from None
+        raise
+
     try:
         saved = await client.eval(
             "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('SET',KEYS[1],ARGV[2],'EX',ARGV[3]) else return false end",

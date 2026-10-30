@@ -178,3 +178,62 @@ def test_recovery_never_claims_expired_operation(monkeypatch):
     assert error.value.status_code == 503
     assert store.values == {}
     resolve.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kind,retryable", [("rate_limit", True), ("http_response", True), ("terminal", False)]
+)
+def test_known_failure_replays_without_another_provider_call(monkeypatch, kind, retryable):
+    from src.identity.providers.base import VehicleIdentityProviderError
+
+    async def scenario():
+        store = MemoryRedis()
+        monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+        calls = 0
+
+        async def resolve():
+            nonlocal calls
+            calls += 1
+            error = VehicleIdentityProviderError("private-provider-marker")
+            error.retryable = retryable
+            error.failure_kind = kind
+            if kind != "terminal":
+                error.http_status = 429 if kind == "rate_limit" else 503
+            raise error
+
+        args = dict(user_id=1, request_id="known-error", fingerprint="photo", resolve=resolve)
+        with pytest.raises(VehicleIdentityProviderError):
+            await operations.resolve_once(**args)
+        for existing_only in (True, False):
+            with pytest.raises(VehicleIdentityProviderError) as replay:
+                await operations.resolve_once(**args, existing_only=existing_only)
+            assert replay.value.retryable is retryable
+            assert replay.value.failure_kind == kind
+        assert calls == 1
+        assert "private-provider-marker" not in str(store.values)
+
+    asyncio.run(scenario())
+
+
+def test_failure_cannot_replace_new_owner(monkeypatch):
+    from src.identity.providers.base import VehicleIdentityProviderError
+
+    async def scenario():
+        store = MemoryRedis()
+        monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+
+        async def resolve():
+            key = next(iter(store.values))
+            store.values[key] = "new-owner-state"
+            error = VehicleIdentityProviderError("safe")
+            error.http_status = 429
+            raise error
+
+        with pytest.raises(HTTPException) as failed:
+            await operations.resolve_once(
+                user_id=1, request_id="owner", fingerprint="photo", resolve=resolve
+            )
+        assert failed.value.status_code == 503
+        assert list(store.values.values()) == ["new-owner-state"]
+
+    asyncio.run(scenario())

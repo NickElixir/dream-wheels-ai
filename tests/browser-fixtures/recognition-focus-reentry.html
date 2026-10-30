@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recognition focus reentry QA</title>
+<link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/fitment.css?recognition-inline-spinner">
+<style>main{max-width:1000px;margin:auto;padding:24px} .vnext-fitment__object{min-height:650px}</style>
+<main><p>Local focus regression: no network or model calls.</p><div id="fixture"></div></main>
+<script type="module">
+import {createFitmentView,refreshFitmentView} from '../../webapp/vnext/views/fitment.js';
+const model={jobId:'focus-fixture',activeSection:'vehicle',vehicleTitle:'BMW 3 Series',vehicleRecognition:{status:'failed',canRecognize:true}};
+const root=createFitmentView(model,{action(action){if(action!=='recognize-vehicle')return;model.vehicleRecognition={status:'loading',slow:true,canRecognize:true};refreshFitmentView(root,model);setTimeout(()=>{model.vehicleRecognition={status:'proposed',canRecognize:true,candidates:[{make:'BMW',model:'3 Series',year_start:2019,year_end:2022}]};refreshFitmentView(root,model);},5000);}});
+document.querySelector('#fixture').replaceWith(root);
+</script></html>

@@ -6336,7 +6336,7 @@ async function recognizeFitmentVehicle() {
         if (!response.ok) {
             const failure = await response.json().catch(() => ({}));
             const error = new Error("vehicle_recognition_failed");
-            error.code = failure?.detail?.code || "vehicle_provider_unavailable";
+            error.code = response.status === 429 ? "recognition_rate_limited" : failure?.detail?.code || "vehicle_provider_unavailable";
             throw error;
         }
         const result = await response.json();
@@ -6349,7 +6349,7 @@ async function recognizeFitmentVehicle() {
             : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (!current()) return;
-        state.fitmentRecognition = { status: "failed", requestId, timedOut: controller.signal.aborted || error.code === "vehicle_provider_timeout", candidates: [], photoUnavailable: !photoLoaded, message: controller.signal.aborted ? (locale === "ru" ? "Не удалось получить результат. Повтор запустит новую попытку." : "Could not get the result. Retrying starts a new attempt.") : !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "recognition_state_unavailable" ? (locale === "ru" ? "Не удалось восстановить результат. Укажите автомобиль вручную или начните новую попытку." : "Could not recover the result. Enter the car manually or start a new attempt.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: "failed", requestId, timedOut: controller.signal.aborted || error.code === "vehicle_provider_timeout", candidates: [], photoUnavailable: !photoLoaded, rateLimited: ["recognition_rate_limited", "vehicle_provider_rate_limited"].includes(error.code), localRateLimited: error.code === "recognition_rate_limited", message: controller.signal.aborted ? (locale === "ru" ? "Не удалось получить результат. Повтор запустит новую попытку." : "Could not get the result. Retrying starts a new attempt.") : !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "recognition_state_unavailable" ? (locale === "ru" ? "Не удалось восстановить результат. Укажите автомобиль вручную или начните новую попытку." : "Could not recover the result. Enter the car manually or start a new attempt.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         clearTimeout(deadlineTimer);
         clearTimeout(slowTimer);
