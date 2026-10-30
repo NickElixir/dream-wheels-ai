@@ -81,7 +81,7 @@ async def _completed_result(monkeypatch):
 
     args = dict(user_id=1, request_id="click", fingerprint="photo", resolve=resolve)
     await operations.resolve_once(**args)
-    assert await operations.resolve_once(**args) == {"safe": "result"}
+    assert await operations.resolve_once(**args, existing_only=True) == {"safe": "result"}
     assert calls == 1
     await operations.resolve_once(**{**args, "user_id": 2})
     await operations.resolve_once(**{**args, "request_id": "new-click"})
@@ -157,3 +157,24 @@ async def _late_completion(monkeypatch):
         )
     assert error.value.status_code == 503
     assert list(store.values.values()) == ["new-owner-result"]
+
+
+def test_recovery_never_claims_expired_operation(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    store = MemoryRedis()
+    monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+    resolve = AsyncMock()
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(
+            operations.resolve_once(
+                user_id=1,
+                request_id="expired",
+                fingerprint="photo",
+                existing_only=True,
+                resolve=resolve,
+            )
+        )
+    assert error.value.status_code == 503
+    assert store.values == {}
+    resolve.assert_not_called()

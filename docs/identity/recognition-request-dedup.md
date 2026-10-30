@@ -28,3 +28,5 @@ Acceptance: concurrent duplicate -> one provider call; changed fingerprint ->409
 completed replay ->same result; unavailable Redis ->no call; process interruption
 marker survives; new explicit key ->new attempt. Then cold/warm live staging tests,
 RU/EN error states and Telegram. Local controlled tests do not replace this E2E.
+
+Pending UI offers Check result using the same click ID and recovery header. Recovery requests are existing-only: an expired/missing key returns 503 and never claims or calls the provider. A completed operation returns its result; pending stays pending. Unavailable recovery exposes a manual/new-attempt path.

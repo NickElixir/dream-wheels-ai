@@ -6239,9 +6239,11 @@ function closeFitmentView() {
     setView(originView);
 }
 
-async function recognizeFitmentVehicle() {
+async function recognizeFitmentVehicle(recover = false) {
     if (fitmentMutationsLocked()) return;
-    if (!state.fitmentOverview || ["loading", "uncertain"].includes(state.fitmentRecognition.status)) return;
+    if (!state.fitmentOverview || state.fitmentRecognition.status === "loading" || state.fitmentRecognition.status === "uncertain" && !recover) return;
+    const requestId = recover ? state.fitmentRecognition.requestId : makeIdempotencyKey();
+    if (!requestId) return;
     const jobId = state.fitmentJobId;
     const revision = state.fitmentOverview.vehicle_revision;
     const token = ++state.fitmentRecognitionToken;
@@ -6279,7 +6281,7 @@ async function recognizeFitmentVehicle() {
         if (identity.init_data) body.append("init_data", identity.init_data);
         if (identity.telegram_user_id != null) body.append("telegram_user_id", String(identity.telegram_user_id));
         const response = await authenticatedFetch(apiUrl(`/identity/fitment/${jobId}/vehicle-proposal`), {
-            method: "POST", headers: { ...withAuthHeaders(), "X-Vehicle-Recognition-Request-Id": makeIdempotencyKey() }, body, signal: controller.signal,
+            method: "POST", headers: { ...withAuthHeaders(), "X-Vehicle-Recognition-Request-Id": requestId, "X-Vehicle-Recognition-Recovery": String(recover) }, body, signal: controller.signal,
         });
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         if (response.status === 401) {
@@ -6303,7 +6305,7 @@ async function recognizeFitmentVehicle() {
             : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: error.code === "recognition_pending_or_uncertain" ? "uncertain" : "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: error.code === "recognition_pending_or_uncertain" ? "uncertain" : "failed", requestId, candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : recover && error.code === "recognition_state_unavailable" ? (locale === "ru" ? "Не удалось восстановить результат. Укажите автомобиль вручную или начните новую попытку." : "Could not recover the result. Enter the car manually or start a new attempt.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
@@ -9923,6 +9925,7 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
         else if (action === "recognize-vehicle") void recognizeFitmentVehicle();
+        else if (action === "recover-recognition") void recognizeFitmentVehicle(true);
         else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
         else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }

@@ -20,6 +20,7 @@ async def resolve_once(
     user_id: int,
     request_id: str,
     fingerprint: str,
+    existing_only: bool = False,
     resolve: Callable[[], Awaitable[VehicleIdentityResolution]],
 ) -> VehicleIdentityResolution:
     """Never reclaim an uncertain operation automatically within its retention window."""
@@ -29,7 +30,11 @@ async def resolve_once(
     pending = json.dumps({"fingerprint": fingerprint, "status": "pending", "owner": uuid4().hex})
     try:
         client = redis_client.get_client()
-        claimed = await client.set(key, pending, nx=True, ex=RETENTION_SECONDS)
+        claimed = (
+            False
+            if existing_only
+            else await client.set(key, pending, nx=True, ex=RETENTION_SECONDS)
+        )
         if not claimed:
             raw = await client.get(key)
             if not raw:

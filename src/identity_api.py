@@ -85,6 +85,7 @@ async def resolve_fitment_vehicle_proposal(
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
     x_vehicle_recognition_request_id: Annotated[str | None, Header()] = None,
+    x_vehicle_recognition_recovery: Annotated[bool, Header()] = False,
 ) -> FitmentVehicleProposalResponse:
     """Recognize an owned job's local photo without persisting or creating a render."""
     preflight_auth_credentials(
@@ -146,10 +147,13 @@ async def resolve_fitment_vehicle_proposal(
             resolution = await resolve_once(
                 user_id=principal.user_id,
                 request_id=x_vehicle_recognition_request_id,
+                existing_only=x_vehicle_recognition_recovery,
                 fingerprint=fingerprint,
                 resolve=lambda: resolver.resolve(normalized),
             )
         else:
+            if x_vehicle_recognition_recovery:
+                raise HTTPException(400, detail={"code": "recognition_request_id_required"})
             resolution = await resolver.resolve(normalized)
     except VehicleIdentityProviderError as exc:
         logger.exception(
