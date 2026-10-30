@@ -414,7 +414,7 @@ def test_aitunnel_transport_and_auth_errors(monkeypatch, status, expected) -> No
 def test_dominant_vehicle_prompt_is_versioned_and_preserves_target_ambiguity() -> None:
     from src.identity.prompts import PROMPT_VERSION, VEHICLE_IDENTITY_PROMPT
 
-    assert PROMPT_VERSION.endswith(":dominant-vehicle-v2")
+    assert PROMPT_VERSION.endswith(":dominant-vehicle-v3-optional-year")
     assert "Ignore incidental background vehicles" in VEHICLE_IDENTITY_PROMPT
     assert "similarly prominent vehicles" in VEHICLE_IDENTITY_PROMPT
     assert "same selected vehicle, never different cars" in VEHICLE_IDENTITY_PROMPT

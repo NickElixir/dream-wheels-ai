@@ -181,6 +181,16 @@ async def resolve_fitment_vehicle_proposal(
         raise HTTPException(status_code=409, detail={"code": "fitment_context_unavailable"})
     if int(current["vehicle_revision"]) != expected_vehicle_revision:
         raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    logger.info(
+        "Fitment vehicle proposal completed job_id=%s user_id=%s server_call_id=%s click_hash=%s status=%s abstention_reason=%s prompt_version=%s",
+        job_id,
+        principal.user_id,
+        server_call_id,
+        click_hash,
+        resolution.status.value,
+        resolution.abstention_reason.value if resolution.abstention_reason else "none",
+        resolution.metadata.prompt_version,
+    )
     return FitmentVehicleProposalResponse(
         job_id=str(job_id), vehicle_revision=expected_vehicle_revision, vehicle=resolution
     )
