@@ -2,22 +2,24 @@
 
 from src.config import VEHICLE_IDENTITY_PROMPT_VERSION
 
-PROMPT_VERSION = f"{VEHICLE_IDENTITY_PROMPT_VERSION}:dominant-vehicle-v2"
+PROMPT_VERSION = f"{VEHICLE_IDENTITY_PROMPT_VERSION}:dominant-vehicle-v3-optional-year"
 RESOLVER_VERSION = "vehicle_identity_resolver_v1"
 
 VEHICLE_IDENTITY_PROMPT = """Identify the visible passenger vehicle from this single image.
 Return only the requested JSON schema. Identify only make, model and a single year or year range.
 Do not infer generation, trim, modification, market, engine, drivetrain, rim specifications, or fitment.
 A logo alone is not enough to identify a model. Return unknown when the vehicle is not visible,
-the view is insufficient, or make/model/year cannot be stated reliably.
+the view is insufficient, or make/model cannot be stated reliably.
 When background vehicles are present, identify the clearly dominant foreground vehicle using
 relative size, visibility and image clarity together; position in the center alone is not enough.
 Ignore incidental background vehicles. Return unknown with abstention_reason multiple_vehicles
 only when two or more similarly prominent vehicles make the intended target unclear.
 All primary and alternative candidates must describe the same selected vehicle, never different cars.
-Return at most one primary candidate and two alternatives. Confidence must be between zero and one.
+Return one primary candidate and at most one alternative for the user to choose between. Confidence must be between zero and one.
 For an exact year set year and set year_start/year_end to null. For a year range set year to null
-and set both year_start/year_end. Never return an exact year and a range together."""
+and set both year_start/year_end. Never return an exact year and a range together.
+If make and model are identifiable but the year is uncertain, set year, year_start and year_end
+to null. Do not reject an identifiable make/model solely because its year is uncertain."""
 
 _CANDIDATE_BASE_PROPERTIES = {
     "make": {"type": "string", "minLength": 1, "maxLength": 120},
@@ -47,14 +49,31 @@ _YEAR_RANGE_CANDIDATE_SCHEMA = {
     },
     "required": ["make", "model", "year", "year_start", "year_end", "confidence", "source"],
 }
-_CANDIDATE_SCHEMA = {"anyOf": [_EXACT_YEAR_CANDIDATE_SCHEMA, _YEAR_RANGE_CANDIDATE_SCHEMA]}
+_UNKNOWN_YEAR_CANDIDATE_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        **_CANDIDATE_BASE_PROPERTIES,
+        "year": {"type": "null"},
+        "year_start": {"type": "null"},
+        "year_end": {"type": "null"},
+    },
+    "required": ["make", "model", "year", "year_start", "year_end", "confidence", "source"],
+}
+_CANDIDATE_SCHEMA = {
+    "anyOf": [
+        _EXACT_YEAR_CANDIDATE_SCHEMA,
+        _YEAR_RANGE_CANDIDATE_SCHEMA,
+        _UNKNOWN_YEAR_CANDIDATE_SCHEMA,
+    ]
+}
 VEHICLE_IDENTITY_JSON_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
         "status": {"enum": ["resolved", "ambiguous", "unknown"]},
         "primary": {"anyOf": [_CANDIDATE_SCHEMA, {"type": "null"}]},
-        "alternatives": {"type": "array", "items": _CANDIDATE_SCHEMA, "maxItems": 2},
+        "alternatives": {"type": "array", "items": _CANDIDATE_SCHEMA, "maxItems": 1},
         "abstention_reason": {
             "anyOf": [
                 {
