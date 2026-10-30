@@ -30,3 +30,5 @@ marker survives; new explicit key ->new attempt. Then cold/warm live staging tes
 RU/EN error states and Telegram. Local controlled tests do not replace this E2E.
 
 Pending UI offers Check result using the same click ID and recovery header. Recovery requests are existing-only: an expired/missing key returns 503 and never claims or calls the provider. A completed operation returns its result; pending stays pending. Unavailable recovery exposes a manual/new-attempt path.
+
+UX update: no manual Check result button. Pending/timeouts trigger existing-only polls every 10 seconds with the same ID and photo, bounded by a 120-second overall abort deadline. After 15 seconds a slow-response message appears. Abort on leaving uses the existing controller/token cleanup. No polling call can start the provider. Deadline ends in explicit manual/new-attempt recovery. Polls still consume the existing endpoint rate limit; 429 ends this attempt rather than bypassing it.

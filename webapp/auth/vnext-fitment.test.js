@@ -987,13 +987,11 @@ test("year range marks catalogue options without selecting or filtering years", 
   }
 });
 
-test("uncertain recognition remains a waiting workspace without immediate retry", () => {
+test("slow recognition stays one process without a manual status button", () => {
   for (const locale of ["ru", "en"]) {
-    const markup = fitmentMarkup({ locale, vehicleRecognition: { status: "uncertain", canRecognize: false, message: "Pending operation" } });
-    assert.match(markup, locale === "ru" ? /Ожидаем результат запроса/ : /Waiting for the request result/);
-    assert.match(markup, /data-fitment-action="recover-recognition"/);
-    assert.match(markup, /data-fitment-action="recognize-vehicle"[^>]*disabled/);
-    assert.match(markup, /Pending operation/);
-    assert.match(markup, /data-fitment-action="edit-vehicle"/);
+    const markup = fitmentMarkup({ locale, vehicleRecognition: { status: "loading", slow: true, canRecognize: false } });
+    assert.match(markup, locale === "ru" ? /больше времени, чем обычно/ : /taking longer than usual/);
+    assert.doesNotMatch(markup, /recover-recognition/);
+    assert.doesNotMatch(markup, /data-fitment-action="recognize-vehicle"[^>]*>[^<]*Попробовать/);
   }
 });

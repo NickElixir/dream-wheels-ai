@@ -6239,10 +6239,19 @@ function closeFitmentView() {
     setView(originView);
 }
 
-async function recognizeFitmentVehicle(recover = false) {
+function waitForRecognitionRecovery(signal) {
+    return new Promise((resolve, reject) => {
+        const abort = () => { clearTimeout(timer); signal.removeEventListener("abort", abort); reject(new Error("recognition_cancelled")); };
+        const timer = setTimeout(() => { signal.removeEventListener("abort", abort); resolve(); }, 10000);
+        signal.addEventListener("abort", abort, { once: true });
+        if (signal.aborted) abort();
+    });
+}
+
+async function recognizeFitmentVehicle() {
     if (fitmentMutationsLocked()) return;
-    if (!state.fitmentOverview || state.fitmentRecognition.status === "loading" || state.fitmentRecognition.status === "uncertain" && !recover) return;
-    const requestId = recover ? state.fitmentRecognition.requestId : makeIdempotencyKey();
+    if (!state.fitmentOverview || state.fitmentRecognition.status === "loading" || state.fitmentRecognition.status === "uncertain") return;
+    const requestId = makeIdempotencyKey();
     if (!requestId) return;
     const jobId = state.fitmentJobId;
     const revision = state.fitmentOverview.vehicle_revision;
@@ -6257,6 +6266,13 @@ async function recognizeFitmentVehicle(recover = false) {
     renderFitment();
     focusFitmentWorkspace("vehicle");
     let photoLoaded = false;
+    const deadlineTimer = setTimeout(() => controller.abort(), 120000);
+    const slowTimer = setTimeout(() => {
+        if (token === state.fitmentRecognitionToken && jobId === state.fitmentJobId) {
+            state.fitmentRecognition.slow = true;
+            renderFitment();
+        }
+    }, 15000);
     try {
         const job = fitmentContextJob();
         const url = job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle");
@@ -6280,9 +6296,22 @@ async function recognizeFitmentVehicle(recover = false) {
         const identity = getIdentityPayload({ includeTelegramUserId: true });
         if (identity.init_data) body.append("init_data", identity.init_data);
         if (identity.telegram_user_id != null) body.append("telegram_user_id", String(identity.telegram_user_id));
-        const response = await authenticatedFetch(apiUrl(`/identity/fitment/${jobId}/vehicle-proposal`), {
-            method: "POST", headers: { ...withAuthHeaders(), "X-Vehicle-Recognition-Request-Id": requestId, "X-Vehicle-Recognition-Recovery": String(recover) }, body, signal: controller.signal,
-        });
+        let response;
+        let recovery = false;
+        for (;;) {
+            response = await authenticatedFetch(apiUrl(`/identity/fitment/${jobId}/vehicle-proposal`), {
+                method: "POST", headers: { ...withAuthHeaders(), "X-Vehicle-Recognition-Request-Id": requestId, "X-Vehicle-Recognition-Recovery": String(recovery) }, body, signal: controller.signal,
+            });
+            if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
+            if (controller.signal.aborted) throw new Error("recognition_timeout");
+            if (response.ok || response.status === 401) break;
+            const failure = await response.clone().json().catch(() => ({}));
+            if (!["recognition_pending_or_uncertain", "vehicle_provider_timeout"].includes(failure?.detail?.code)) break;
+            recovery = true;
+            state.fitmentRecognition.slow = true;
+            renderFitment();
+            await waitForRecognitionRecovery(controller.signal);
+        }
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         if (response.status === 401) {
             state.fitmentRecognition = { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
@@ -6305,8 +6334,10 @@ async function recognizeFitmentVehicle(recover = false) {
             : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: error.code === "recognition_pending_or_uncertain" ? "uncertain" : "failed", requestId, candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : recover && error.code === "recognition_state_unavailable" ? (locale === "ru" ? "Не удалось восстановить результат. Укажите автомобиль вручную или начните новую попытку." : "Could not recover the result. Enter the car manually or start a new attempt.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: "failed", requestId, candidates: [], photoUnavailable: !photoLoaded, message: controller.signal.aborted ? (locale === "ru" ? "Не удалось получить результат. Повтор запустит новую попытку." : "Could not get the result. Retrying starts a new attempt.") : !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "recognition_state_unavailable" ? (locale === "ru" ? "Не удалось восстановить результат. Укажите автомобиль вручную или начните новую попытку." : "Could not recover the result. Enter the car manually or start a new attempt.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
+        clearTimeout(deadlineTimer);
+        clearTimeout(slowTimer);
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
             renderFitment();
@@ -9925,7 +9956,6 @@ window.dreamwheelsFitmentBridge = {
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
         else if (action === "recognize-vehicle") void recognizeFitmentVehicle();
-        else if (action === "recover-recognition") void recognizeFitmentVehicle(true);
         else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
         else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }
