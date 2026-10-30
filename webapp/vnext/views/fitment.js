@@ -280,28 +280,28 @@ function vehicleRecognition(model) {
   const recognition = model.vehicleRecognition || {};
   if (recognition.status === "loading") {
     const ru = localeOf(model) === "ru";
-    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем автомобиль по фото" : "Identifying the car from your photo"}</h2>${loadingStatus(ru ? "Ищем марку и модель" : "Finding the make and model")}<p>${ru ? "Комплектацию предложим уточнить после распознавания" : "We will ask you to confirm the version after identification"}</p></section>`;
+    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем модель" : "Identifying the model"}</h2>${loadingStatus(recognition.slow ? (ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual") : "")}</section>`;
   }
-  const heading = recognition.photoUnavailable ? (localeOf(model) === "ru" ? "Не удалось загрузить фото автомобиля" : "Could not load the vehicle photo") : recognition.status === "loading" ? uiText("fitment.recognizingTheVehicle", localeOf(model)) : recognition.status === "failed" ? uiText("fitment.unableToRecognizeTheVehicle", localeOf(model)) : uiText("fitment.recognizedFromThePhoto", localeOf(model));
+  const ru = localeOf(model) === "ru";
+  const multiple = recognition.abstentionReason === "multiple_vehicles";
+  const heading = multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
   const candidates = (recognition.candidates || []).map((item, index) => {
     const identity = [item.make, item.model].filter(Boolean).join(" ");
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));
     return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
   }).join("");
-  const failureMessage = recognition.abstentionReason === "multiple_vehicles"
-    ? (localeOf(model) === "ru" ? "На фото несколько автомобилей. Загрузите фото нужной машины отдельно" : "There are several cars in the photo. Upload a separate photo of the car you want to identify")
-    : recognition.message;
-  const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : recognition.status === "failed"
+  const failureMessage = multiple ? (ru ? "Используйте фото нужной машины отдельно или укажите модель вручную" : "Use a separate photo of the car or enter the model manually") : "";
+  const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : ["failed", "uncertain"].includes(recognition.status)
     ? `${failureMessage && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(failureMessage)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
-    : `<p>${esc(uiText("fitment.selectTheRecognizedVehicleToVerifyItsDetailsIn", localeOf(model)))}</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
-  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
+    : `<div class="vnext-fitment__variant-list">${candidates}</div>`;
+  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
 }
 
 export function activeWorkspaceKind(model = {}) {
   // Explicit branch intent wins over a retained proposal or required server step.
   if (model.activeSection === "rim" && model.rimEditing) return "rim-editor";
   const recognition = model.vehicleRecognition || {};
-  if (recognition.workspaceOpen !== false && ["loading", "proposed", "failed"].includes(recognition.status)
+  if (recognition.workspaceOpen !== false && ["loading", "proposed", "failed", "uncertain"].includes(recognition.status)
       && model.activeSection !== "rim") return "vehicle-recognition";
   if (model.vehicleEditing && (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing)
       && (model.activeSection === "vehicle" || !model.rimEditing)) return "vehicle-editor";

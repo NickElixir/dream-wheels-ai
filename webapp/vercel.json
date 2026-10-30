@@ -91,5 +91,6 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
-  ]
+  ],
+  "functions": { "api/backend-gateway.js": { "maxDuration": 90 } }
 }

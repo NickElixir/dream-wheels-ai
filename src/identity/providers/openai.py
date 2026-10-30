@@ -140,6 +140,7 @@ class OpenAIVehicleIdentityResolver:
                     f" elapsed_ms={int((time.monotonic() - attempt_started) * 1000)}"
                     f" attempt={attempt + 1} max_retries={self.max_retries}"
                 )
+                last_error.failure_kind = _transport_failure_kind(exc)
             except VehicleIdentityProviderError as exc:
                 if not exc.retryable:
                     raise

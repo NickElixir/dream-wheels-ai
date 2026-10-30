@@ -82,7 +82,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   assert.match(failed, /Указать вручную/);
   assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
   const pending = fitmentMarkup({ vehicleRecognition: { status: "loading", canRecognize: true } });
-  assert.match(pending, /Определяем автомобиль по фото/);
+  assert.match(pending, /Определяем модель/);
   assert.doesNotMatch(pending, /Распознаём автомобиль/);
   assert.match(pending, /data-fitment-action="recognize-vehicle"[^>]*disabled/);
 });
@@ -984,5 +984,14 @@ test("year range marks catalogue options without selecting or filtering years", 
     assert.doesNotMatch(markup, /value="2019" selected/);
     const changed = fitmentMarkup({ ...base, vehicleForm: { ...base.vehicleForm, model: "5 Series" } });
     assert.doesNotMatch(changed, /2019 —/);
+  }
+});
+
+test("slow recognition stays one process without a manual status button", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = fitmentMarkup({ locale, vehicleRecognition: { status: "loading", slow: true, canRecognize: false } });
+    assert.match(markup, locale === "ru" ? /больше времени, чем обычно/ : /taking longer than usual/);
+    assert.doesNotMatch(markup, /recover-recognition/);
+    assert.doesNotMatch(markup, /data-fitment-action="recognize-vehicle"[^>]*>[^<]*Попробовать/);
   }
 });
