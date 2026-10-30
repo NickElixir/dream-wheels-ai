@@ -6295,7 +6295,7 @@ async function recognizeFitmentVehicle() {
         const candidates = [resolution?.primary, ...(resolution?.alternatives || [])].filter(Boolean);
         state.fitmentRecognition = candidates.length
             ? { status: "proposed", candidates, revision, workspaceOpen: state.fitmentRecognition.workspaceOpen }
-            : { status: "failed", candidates: [], workspaceOpen: state.fitmentRecognition.workspaceOpen };
+            : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         state.fitmentRecognition = { status: "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
@@ -6315,7 +6315,7 @@ function useFitmentRecognitionProposal(index) {
     state.fitmentVehicleMarketEdited = false;
     state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: false };
     state.fitmentMarketResolution = { status: "idle", resolution: "", resolved_market: null, items: [] };
-    state.fitmentRecognition = { status: "applied", candidates: [], workspaceOpen: false };
+    state.fitmentRecognition = { status: "applied", candidates: [], workspaceOpen: false, yearHint: { make: proposal.make, model: proposal.model, start: proposal.year_start, end: proposal.year_end } };
     const contextVersion = beginFitmentCatalogueContextChange();
     setFitmentEditor("vehicle");
     setFitmentActiveSection("vehicle", { scroll: true });
@@ -9832,6 +9832,7 @@ function setVnextFitmentField(path, value) {
     } else if (path === "vehicle.make") {
         rememberFitmentVehicleCatalogueChain();
         state.fitmentCatalogueParentChange = { makeChanged: nextValue !== state.fitmentForm.vehicle.make, modelChanged: false };
+        if (state.fitmentForm.vehicle.make !== nextValue) delete state.fitmentRecognition?.yearHint;
         state.fitmentForm.vehicle.make = nextValue;
         const contextVersion = beginFitmentCatalogueContextChange();
         resetFitmentCatalogue("models", { status: nextValue ? "loading" : "idle" });
@@ -9842,6 +9843,7 @@ function setVnextFitmentField(path, value) {
     } else if (path === "vehicle.model") {
         rememberFitmentVehicleCatalogueChain();
         state.fitmentCatalogueParentChange = { makeChanged: false, modelChanged: nextValue !== state.fitmentForm.vehicle.model };
+        if (state.fitmentForm.vehicle.model !== nextValue) delete state.fitmentRecognition?.yearHint;
         state.fitmentForm.vehicle.model = nextValue;
         const contextVersion = beginFitmentCatalogueContextChange();
         resetFitmentCatalogue("years", { status: nextValue ? "loading" : "idle" });
@@ -11253,6 +11255,7 @@ function bindEvents() {
                     makeChanged: value !== state.fitmentForm.vehicle.make,
                     modelChanged: false,
                 };
+                if (state.fitmentForm.vehicle.make !== value) delete state.fitmentRecognition?.yearHint;
                 state.fitmentForm.vehicle.make = value;
                 const contextVersion = beginFitmentCatalogueContextChange();
                 resetFitmentCatalogue("models", { status: value ? "loading" : "idle" });
@@ -11269,6 +11272,7 @@ function bindEvents() {
                     makeChanged: false,
                     modelChanged: value !== state.fitmentForm.vehicle.model,
                 };
+                if (state.fitmentForm.vehicle.model !== value) delete state.fitmentRecognition?.yearHint;
                 state.fitmentForm.vehicle.model = value;
                 const contextVersion = beginFitmentCatalogueContextChange();
                 resetFitmentCatalogue("years", { status: value ? "loading" : "idle" });

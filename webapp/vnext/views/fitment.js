@@ -176,12 +176,20 @@ function rimSetupLabel(state, locale = applicationLocale()) {
 function catalogueField(model, kind, label, path, value, extra = {}) {
   const fieldState = model.catalogue?.states?.[kind] || {};
   const retry = fieldState.status === "failed" ? kind : "";
-  const options = model.catalogue?.[kind] || [];
+  const hint = model.vehicleRecognition?.yearHint;
+  const vehicle = model.vehicleForm || model.vehicle || {};
+  const hasYearHint = kind === "years" && hint && Number.isInteger(hint.start) && Number.isInteger(hint.end)
+    && hint.start <= hint.end && normalizedIdentity(hint.make) === normalizedIdentity(vehicle.make)
+    && normalizedIdentity(hint.model) === normalizedIdentity(vehicle.model);
+  const suffix = localeOf(model) === "ru" ? "по фото" : "from photo";
+  const options = (model.catalogue?.[kind] || []).map(option => hasYearHint && Number(option.value) >= hint.start && Number(option.value) <= hint.end
+    ? { ...option, label: `${option.label} — ${suffix}` } : option);
+  const yearMessage = hasYearHint ? (localeOf(model) === "ru" ? `По фото: ${hint.start}–${hint.end}. Уточните год` : `From photo: ${hint.start}–${hint.end}. Confirm the year`) : "";
   const disabled = !["selected", "loaded_unselected", "selection_required", "resolved_multiple"].includes(fieldState.status);
   return fieldWithCandidates(model, label, path, value, {
     options,
     disabled,
-    message: ["loading", "blocked"].includes(fieldState.status) ? "" : fieldState.message || "",
+    message: [fieldState.message && !["loading", "blocked"].includes(fieldState.status) ? fieldState.message : "", yearMessage].filter(Boolean).join(". "),
     placeholder: fieldState.status === "loading" ? (localeOf(model) === "ru" ? ({ makes: "Получаем список марок", models: "Получаем модели выбранной марки", years: "Получаем годы выпуска модели" }[kind] || fieldState.message) : fieldState.message) : fieldState.status === "blocked" ? fieldState.message || fieldState.placeholder : fieldState.placeholder,
     retry,
     error: model.fieldErrors?.[path] || "",
@@ -280,8 +288,11 @@ function vehicleRecognition(model) {
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));
     return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
   }).join("");
+  const failureMessage = recognition.abstentionReason === "multiple_vehicles"
+    ? (localeOf(model) === "ru" ? "На фото несколько автомобилей. Загрузите фото нужной машины отдельно" : "There are several cars in the photo. Upload a separate photo of the car you want to identify")
+    : recognition.message;
   const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : recognition.status === "failed"
-    ? `${recognition.message && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
+    ? `${failureMessage && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(failureMessage)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
     : `<p>${esc(uiText("fitment.selectTheRecognizedVehicleToVerifyItsDetailsIn", localeOf(model)))}</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
   return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
 }

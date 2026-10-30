@@ -961,3 +961,28 @@ test("unavailable recognition photo shows one explanation and keeps recovery act
     assert.match(markup, /data-fitment-action="edit-vehicle"/);
   }
 });
+
+
+test("multiple vehicles guidance follows locale and retains manual recovery", () => {
+  for (const locale of ["ru", "en"]) {
+    const markup = fitmentMarkup({ locale, vehicleRecognition: { status: "failed", abstentionReason: "multiple_vehicles", canRecognize: true } });
+    assert.match(markup, locale === "ru" ? /На фото несколько автомобилей/ : /There are several cars in the photo/);
+    assert.match(markup, /data-fitment-action="edit-vehicle"/);
+    assert.match(markup, /data-fitment-action="recognize-vehicle"/);
+    assert.doesNotMatch(markup, /recognition-proposal/);
+  }
+});
+
+
+test("year range marks catalogue options without selecting or filtering years", () => {
+  for (const locale of ["ru", "en"]) {
+    const base = { locale, vehicleEditing: true, vehicleForm: { make: "BMW", model: "3 Series", year: "" }, vehicleRecognition: { status: "applied", yearHint: { make: "BMW", model: "3 Series", start: 2019, end: 2022 } }, catalogue: { years: [2018, 2019, 2022, 2023].map(year => ({ value: year, label: String(year) })), states: { years: { status: "loaded_unselected" } } } };
+    const markup = fitmentMarkup(base);
+    assert.match(markup, locale === "ru" ? /2019 — по фото/ : /2019 — from photo/);
+    assert.match(markup, /value="2018"[^>]*>2018<\/option>/);
+    assert.match(markup, /value="2023"[^>]*>2023<\/option>/);
+    assert.doesNotMatch(markup, /value="2019" selected/);
+    const changed = fitmentMarkup({ ...base, vehicleForm: { ...base.vehicleForm, model: "5 Series" } });
+    assert.doesNotMatch(changed, /2019 —/);
+  }
+});

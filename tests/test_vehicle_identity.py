@@ -409,3 +409,13 @@ def test_aitunnel_transport_and_auth_errors(monkeypatch, status, expected) -> No
     assert len(calls) == 1
     assert calls[0][0] == "https://api.aitunnel.ru/v1/chat/completions"
     assert calls[0][1]["headers"]["Authorization"] == "Bearer test-aitunnel"
+
+
+def test_dominant_vehicle_prompt_is_versioned_and_preserves_target_ambiguity() -> None:
+    from src.identity.prompts import PROMPT_VERSION, VEHICLE_IDENTITY_PROMPT
+
+    assert PROMPT_VERSION.endswith(":dominant-vehicle-v2")
+    assert "Ignore incidental background vehicles" in VEHICLE_IDENTITY_PROMPT
+    assert "similarly prominent vehicles" in VEHICLE_IDENTITY_PROMPT
+    assert "same selected vehicle, never different cars" in VEHICLE_IDENTITY_PROMPT
+    assert "there are multiple vehicles," not in VEHICLE_IDENTITY_PROMPT
