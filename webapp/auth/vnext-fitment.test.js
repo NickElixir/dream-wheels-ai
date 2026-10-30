@@ -82,7 +82,7 @@ test("Vehicle recognition exposes proposals and failure recovery without gating 
   assert.match(failed, /Указать вручную/);
   assert.match(failed, /data-fitment-action="create-image"[^>]*>Создать изображение/);
   const pending = fitmentMarkup({ vehicleRecognition: { status: "loading", canRecognize: true } });
-  assert.match(pending, /Определяем автомобиль по фото/);
+  assert.match(pending, /Определяем модель/);
   assert.doesNotMatch(pending, /Распознаём автомобиль/);
   assert.match(pending, /data-fitment-action="recognize-vehicle"[^>]*disabled/);
 });

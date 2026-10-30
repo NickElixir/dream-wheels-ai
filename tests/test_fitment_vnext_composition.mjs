@@ -82,12 +82,12 @@ for (const [name, model, expected] of cases) test(`single Active Workspace: ${na
 test("recognition candidate uses its whole button and disappears after applying", () => {
   const recognition={status:"proposed",candidates:[{make:"Audi",model:"Q8",year_start:2018,year_end:2023}]};
   const markup=context.fitmentMarkup({vehicleRecognition:recognition});
-  assert.match(markup,/Распознавание автомобиля/);
-  assert.match(markup,/Распознано по фотографии/);
+  assert.doesNotMatch(markup,/Распознавание автомобиля/);
+  assert.match(markup,/Выберите модель/);
   assert.match(markup,/aria-label="Audi Q8 2018–2023"/);
   assert.doesNotMatch(markup,/Использовать|Предложено по фотографии/);
   const applied=context.fitmentMarkup({vehicleRecognition:{...recognition,status:"applied"},vehicleEditing:true});
-  assert.doesNotMatch(applied,/fitment-recognition-title|Распознано по фотографии/);
+  assert.doesNotMatch(applied,/fitment-recognition-title|Выберите модель/);
   assert.match(applied,/Укажите автомобиль/);
 });
 
@@ -110,7 +110,7 @@ test("ET accessible names contain the label once for confirmed, proposed and mis
 
 test("new workspace copy is translated in EN", () => {
   const markup=context.fitmentMarkup({locale:"en",vehicleRecognition:{status:"proposed",candidates:[{make:"Audi",model:"Q8",year:2020}]}});
-  assert.match(markup,/Vehicle recognition|Recognized from the photo/);
+  assert.match(markup,/Select the model/);
   assert.doesNotMatch(markup,/[А-Яа-яЁё]/);
   assert.match(context.fitmentMarkup({locale:"en",rimEditing:true}),/Wheel parameters/);
   assert.match(context.fitmentMarkup({locale:"en",nextAction:"select_vehicle_variant"}),/Vehicle version/);
