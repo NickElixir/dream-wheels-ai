@@ -26,6 +26,7 @@ from src.config import (
 )
 from src.identity.prompts import PROMPT_VERSION, RESOLVER_VERSION
 from src.identity.providers.base import VehicleIdentityProviderError
+from src.identity.recognition_operations import resolve_once
 from src.identity.schemas import (
     AbstentionReason,
     ResolutionStatus,
@@ -137,7 +138,19 @@ async def resolve_fitment_vehicle_proposal(
         click_hash,
     )
     try:
-        resolution = await get_vehicle_identity_resolver().resolve(normalized)
+        resolver = get_vehicle_identity_resolver()
+        if x_vehicle_recognition_request_id and len(x_vehicle_recognition_request_id) <= 128:
+            fingerprint = hashlib.sha256(
+                f"{job_id}:{expected_vehicle_revision}:".encode() + normalized.bytes
+            ).hexdigest()
+            resolution = await resolve_once(
+                user_id=principal.user_id,
+                request_id=x_vehicle_recognition_request_id,
+                fingerprint=fingerprint,
+                resolve=lambda: resolver.resolve(normalized),
+            )
+        else:
+            resolution = await resolver.resolve(normalized)
     except VehicleIdentityProviderError as exc:
         logger.exception(
             "❌ Fitment vehicle proposal failed job_id=%s user_id=%s error_code=%s server_call_id=%s click_hash=%s",
@@ -149,7 +162,12 @@ async def resolve_fitment_vehicle_proposal(
         )
         raise HTTPException(
             status_code=503,
-            detail={"code": "vehicle_provider_unavailable", "retryable": exc.retryable},
+            detail={
+                "code": "vehicle_provider_timeout"
+                if getattr(exc, "failure_kind", None) == "timeout"
+                else "vehicle_provider_unavailable",
+                "retryable": exc.retryable,
+            },
         ) from exc
     async with pool.acquire() as conn:
         current = await _fetch_fitment_job_row(conn, job_id=str(job_id), user_id=principal.user_id)

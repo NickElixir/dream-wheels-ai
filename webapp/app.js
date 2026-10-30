@@ -6287,7 +6287,12 @@ async function recognizeFitmentVehicle() {
             showFitmentAuthRequired();
             return;
         }
-        if (!response.ok) throw new Error(await parseApiError(response));
+        if (!response.ok) {
+            const failure = await response.json().catch(() => ({}));
+            const error = new Error("vehicle_recognition_failed");
+            error.code = failure?.detail?.code || "vehicle_provider_unavailable";
+            throw error;
+        }
         const result = await response.json();
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
         if (revision !== state.fitmentOverview?.vehicle_revision || result.vehicle_revision !== revision) throw new Error("vehicle_revision_conflict");
@@ -6298,7 +6303,7 @@ async function recognizeFitmentVehicle() {
             : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
