@@ -82,7 +82,7 @@ for (const [name, model, expected] of cases) test(`single Active Workspace: ${na
 test("recognition candidate uses its whole button and disappears after applying", () => {
   const recognition={status:"proposed",candidates:[{make:"Audi",model:"Q8",year_start:2018,year_end:2023}]};
   const markup=context.fitmentMarkup({vehicleRecognition:recognition});
-  assert.doesNotMatch(markup,/Распознавание автомобиля/);
+  assert.match(markup,/Распознавание автомобиля/);
   assert.match(markup,/Выберите модель/);
   assert.match(markup,/aria-label="Audi Q8 2018–2023"/);
   assert.doesNotMatch(markup,/Использовать|Предложено по фотографии/);

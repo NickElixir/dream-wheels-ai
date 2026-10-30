@@ -280,7 +280,7 @@ function vehicleRecognition(model) {
   const recognition = model.vehicleRecognition || {};
   if (recognition.status === "loading") {
     const ru = localeOf(model) === "ru";
-    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем модель" : "Identifying the model"}</h2>${loadingStatus(recognition.slow ? (ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual") : "")}</section>`;
+    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем модель" : "Identifying the model"}</h2>${loadingStatus(recognition.slow ? (ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual") : "")}</section>`;
   }
   const ru = localeOf(model) === "ru";
   const multiple = recognition.abstentionReason === "multiple_vehicles";
@@ -294,7 +294,7 @@ function vehicleRecognition(model) {
   const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : ["failed", "uncertain"].includes(recognition.status)
     ? `${failureMessage && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(failureMessage)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
     : `<div class="vnext-fitment__variant-list">${candidates}</div>`;
-  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
+  return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
 }
 
 export function activeWorkspaceKind(model = {}) {
