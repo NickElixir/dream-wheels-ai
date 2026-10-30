@@ -165,3 +165,14 @@ version for OpenAI, AI Tunnel and mock. AI Tunnel additionally appends
 vehicle despite incidental background cars, limits output to one primary and one
 optional alternative, and permits an unknown year through three explicit nulls.
 This relaxes neither local validation nor user confirmation of catalog data.
+
+## Recognition request quota
+
+Recognition endpoints share a per-user limit of 100 HTTP requests per 24-hour
+fixed window, including existing-operation recovery. The window begins with the
+first request, not calendar midnight; subsequent requests do not extend it.
+The daily quota uses `identity_resolve_daily_v1` so a previous hourly counter cannot
+supply an incorrect TTL after rollout. Asset-upload and other quotas are unchanged.
+On application HTTP 429 the UI says: “Не удалось выполнить распознавание, т.к.
+лимит нашего приложения исчерпан. Обратитесь в поддержку.” Manual entry remains
+available. Provider HTTP 429 is a separate failure and retains its overload message.

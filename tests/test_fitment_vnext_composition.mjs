@@ -351,3 +351,18 @@ test('copy keeps the screen renderable when a key is missing', () => {
 test('PCD unknown copy uses grammatical Russian', () => {
   assert.equal(copy('fitment.verdict.unknown.pcd', 'ru'), 'Не хватает данных о разболтовке.');
 });
+
+test("recognition spinner precedes heading and keeps delay text separate", () => {
+  const markup=context.fitmentMarkup({vehicleRecognition:{status:"loading",slow:true}});
+  assert.match(markup,/recognition-heading[^>]*>[\s\S]*vnext-spinner[\s\S]*Определяем автомобиль[\s\S]*<\/h2>/);
+  assert.match(markup,/<p role="status">Это занимает больше времени, чем обычно<\/p>/);
+});
+
+test("rate limits are not presented as model identification failures", () => {
+  for (const localRateLimited of [true,false]) {
+    const markup=context.fitmentMarkup({vehicleRecognition:{status:"failed",canRecognize:true,rateLimited:true,localRateLimited}});
+    assert.match(markup,localRateLimited ? /лимит нашего приложения исчерпан\. Обратитесь в поддержку\./ : /Сервис распознавания перегружен/);
+    assert.doesNotMatch(markup,/Не удалось определить модель/);
+    assert.match(markup,/Указать вручную/);
+  }
+});

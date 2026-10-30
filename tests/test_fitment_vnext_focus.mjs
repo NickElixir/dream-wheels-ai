@@ -96,6 +96,27 @@ test("loading → proposal redraw restores the same recognition heading instead 
   assert.equal(focused,true);
 });
 
+for (const reducedMotion of [false, true]) {
+  for (const previousWorkspace of ["none", "vehicle-recognition"]) {
+    test(`explicit recognition focuses and scrolls on entry/reentry (${previousWorkspace}, reduced=${reducedMotion})`, () => {
+      const scrolls = [];
+      let focused = 0;
+      const heading = {tagName:"H2", setAttribute(){}, focus(options){assert.equal(options.preventScroll,true);focused++;}, getBoundingClientRect(){return {top:1000,bottom:1040};}, scrollIntoView(options){scrolls.push(options);}};
+      const root = {className:"vnext-fitment", fitmentWorkspaceKind:previousWorkspace, fitmentWorkspaceAction:"recognize-vehicle", querySelector(selector){return selector === "#fitment-recognition-title" ? heading : null;}, replaceChildren(){}};
+      const context = {innerHeight:600, matchMedia:()=>({matches:reducedMotion}), document:{createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+      runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+      context.refresh(root,{vehicleRecognition:{status:"loading"}});
+      assert.equal(focused,1);
+      assert.equal(scrolls.length,1);
+      assert.equal(scrolls[0].behavior,reducedMotion ? "auto" : "smooth");
+      assert.equal(scrolls[0].block,"center");
+      root.fitmentWorkspaceAction = null;
+      context.refresh(root,{vehicleRecognition:{status:"loading",slow:true}});
+      assert.equal(scrolls.length,1,"background redraw must not scroll again");
+    });
+  }
+}
+
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, baseUiText: copy, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }
