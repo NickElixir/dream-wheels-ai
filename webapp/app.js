@@ -6241,7 +6241,7 @@ function closeFitmentView() {
 
 async function recognizeFitmentVehicle() {
     if (fitmentMutationsLocked()) return;
-    if (!state.fitmentOverview || state.fitmentRecognition.status === "loading") return;
+    if (!state.fitmentOverview || ["loading", "uncertain"].includes(state.fitmentRecognition.status)) return;
     const jobId = state.fitmentJobId;
     const revision = state.fitmentOverview.vehicle_revision;
     const token = ++state.fitmentRecognitionToken;
@@ -6303,7 +6303,7 @@ async function recognizeFitmentVehicle() {
             : { status: "failed", candidates: [], abstentionReason: resolution?.abstention_reason, workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } catch (error) {
         if (token !== state.fitmentRecognitionToken || jobId !== state.fitmentJobId) return;
-        state.fitmentRecognition = { status: "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
+        state.fitmentRecognition = { status: error.code === "recognition_pending_or_uncertain" ? "uncertain" : "failed", candidates: [], photoUnavailable: !photoLoaded, message: !photoLoaded ? (locale === "ru" ? "Не удалось загрузить фото автомобиля. Попробуйте ещё раз." : "Could not load the vehicle photo. Try again.") : error.code === "vehicle_provider_timeout" ? (locale === "ru" ? "Распознавание заняло слишком много времени. Попробуйте ещё раз." : "Recognition took too long. Try again.") : error.code === "recognition_pending_or_uncertain" ? (locale === "ru" ? "Предыдущий запрос ещё выполняется или его результат неизвестен. Подождите перед повтором." : "The previous request is still running or its outcome is unknown. Wait before trying again.") : "", workspaceOpen: state.fitmentRecognition.workspaceOpen };
     } finally {
         if (token === state.fitmentRecognitionToken) {
             state.fitmentRecognitionController = null;
@@ -9735,7 +9735,7 @@ function vnextFitmentSnapshot() {
         vehicleRecognition: {
             ...(state.fitmentRecognition?.revision !== undefined && state.fitmentRecognition.revision !== overview?.vehicle_revision
                 ? { status: "idle", candidates: [] } : state.fitmentRecognition),
-            canRecognize: Boolean(state.fitmentOverview && (job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle"))),
+            canRecognize: state.fitmentRecognition?.status !== "uncertain" && Boolean(state.fitmentOverview && (job?.assets?.car_original?.download_url || fitmentPreviewAsset(job, "vehicle"))),
         },
         vehicleEditing: Boolean(state.fitmentVehicleEditing),
         activeSection: state.fitmentActiveSection,

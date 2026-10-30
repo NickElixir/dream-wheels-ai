@@ -150,6 +150,12 @@ def test_repeated_transport_requests_share_click_hash_but_have_distinct_calls(
         async def get(self, key):
             return values.get(key)
 
+        async def eval(self, script, count, key, expected, result, ttl):
+            if values.get(key) != expected:
+                return None
+            values[key] = result
+            return "OK"
+
     monkeypatch.setattr(recognition_operations.redis_client, "get_client", lambda: Store())
     marker = "PRIVATE_CLICK_MARKER"
     with caplog.at_level(logging.INFO):

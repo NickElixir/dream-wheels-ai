@@ -19,6 +19,12 @@ class MemoryRedis:
     async def get(self, key):
         return self.values.get(key)
 
+    async def eval(self, script, count, key, expected, result, ttl):
+        if self.values.get(key) != expected:
+            return None
+        self.values[key] = result
+        return "OK"
+
 
 def test_pending_duplicate_does_not_call_provider(monkeypatch):
     asyncio.run(_pending_duplicate(monkeypatch))
@@ -98,3 +104,56 @@ def test_unavailable_guard_does_not_call_provider(monkeypatch):
         )
     assert error.value.status_code == 503
     resolve.assert_not_called()
+
+
+def test_corrupt_state_fails_closed(monkeypatch):
+    asyncio.run(_corrupt_state(monkeypatch))
+
+
+async def _corrupt_state(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    store = MemoryRedis()
+    monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+    import hashlib
+
+    key = operations.redis_client.key(f"recognition:1:{hashlib.sha256(b'click').hexdigest()}")
+    for value in [
+        "not-json",
+        "[]",
+        "{}",
+        '{"status":"completed","fingerprint":"photo","result":{}}',
+    ]:
+        store.values[key] = value
+        resolve = AsyncMock()
+        with pytest.raises(HTTPException) as error:
+            await operations.resolve_once(
+                user_id=1, request_id="click", fingerprint="photo", resolve=resolve
+            )
+        assert error.value.status_code == 503
+        resolve.assert_not_called()
+
+
+def test_late_completion_cannot_replace_new_owner(monkeypatch):
+    asyncio.run(_late_completion(monkeypatch))
+
+
+async def _late_completion(monkeypatch):
+    from unittest.mock import Mock
+
+    store = MemoryRedis()
+    monkeypatch.setattr(operations.redis_client, "get_client", lambda: store)
+
+    async def resolve():
+        key = next(iter(store.values))
+        store.values[key] = "new-owner-result"
+        result = Mock()
+        result.model_dump.return_value = {}
+        return result
+
+    with pytest.raises(HTTPException) as error:
+        await operations.resolve_once(
+            user_id=1, request_id="click", fingerprint="photo", resolve=resolve
+        )
+    assert error.value.status_code == 503
+    assert list(store.values.values()) == ["new-owner-result"]
