@@ -8112,6 +8112,8 @@ async function ensureOriginalDisplayUrl(job, { force = false } = {}) {
     if (state.renderAssetSignedLoadingByJob[job.job_id]) return "";
     const authIdentity = originalDisplayAuthIdentity();
     state.renderAssetSignedLoadingByJob[job.job_id] = true;
+    state.renderAssetErrorsByJob[job.job_id] = { ...(state.renderAssetErrorsByJob[job.job_id] || {}), car_original: false };
+    notifyRenderBridge();
     try {
         const response = await authenticatedFetch(apiUrl(`/jobs/${encodeURIComponent(job.job_id)}/assets/${kind}/signed-url`, { includeIdentity: !hasBearerFrontendAuth() }), { headers: withAuthHeaders() });
         if (!response.ok) throw new Error("Asset signing unavailable");
