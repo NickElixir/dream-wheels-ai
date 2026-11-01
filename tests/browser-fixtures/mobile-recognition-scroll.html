@@ -1,0 +1,31 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mobile recognition scroll QA</title>
+<script type="module">
+if(!new URLSearchParams(location.search).has('frame')){
+ document.body.innerHTML='<h1>Мобильная прокрутка: локальная проверка</h1><p>Модель и API не вызываются. Стенд имитирует игнорирование preventScroll.</p><output id="report">Нажмите «Определить по фото» внутри стенда</output><br><button id="run">Запустить локальную проверку</button><br><iframe title="390px mobile shell" src="?frame&revision=3" style="width:390px;height:700px;border:1px solid"></iframe>';
+ document.querySelector('#run').onclick=()=>document.querySelector('iframe').contentWindow.postMessage('run',location.origin);
+ addEventListener('message',event=>{if(event.source===document.querySelector('iframe').contentWindow)document.querySelector('#report').textContent=event.data;});
+}else{
+ for(const href of ['../../webapp/style.css','../../webapp/vnext/styles/tokens.css','../../webapp/vnext/styles/foundation.css','../../webapp/vnext/styles/fitment.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link);}
+ document.body.innerHTML='<main id="app" style="padding:16px"></main><nav style="padding:20px">Главная · Создать · История</nav>';
+ const {createFitmentView,refreshFitmentView}=await import('../../webapp/vnext/views/fitment.js?mobile-scroll-v3');
+ const model={jobId:'local-scroll',vehicleTitle:'BMW 3 Series',vehicleRecognition:{status:'idle',canRecognize:true}};
+ let before;
+ const nativeFocus=HTMLElement.prototype.focus;
+ const nativeScroll=Element.prototype.scrollIntoView;
+ HTMLElement.prototype.focus=function(options){nativeFocus.call(this,options);if(this.id==='fitment-recognition-title'){document.querySelector('#app').scrollTop+=200;}};
+ Element.prototype.scrollIntoView=function(options){
+ const position=document.querySelector('#app').scrollTop;
+ parent.postMessage(`${position===before?'PASS':'FAIL'}: перед ${options.behavior} #app.scrollTop=${position}, ожидалось ${before}; window.scrollY=${scrollY}`,'*');
+ nativeScroll.call(this,options);
+ };
+ const root=createFitmentView(model,{action(action){if(action!=='recognize-vehicle')return;before=document.querySelector('#app').scrollTop;model.vehicleRecognition={status:'loading',canRecognize:true};refreshFitmentView(root,model);}});
+ document.querySelector('#app').append(root);
+ addEventListener('message',event=>{
+  if(event.source!==parent||event.origin!==location.origin||event.data!=='run')return;
+  model.vehicleRecognition={status:'idle',canRecognize:true};refreshFitmentView(root,model);
+  document.querySelector('#app').scrollTop=0;
+  root.querySelector('[data-fitment-action="recognize-vehicle"]').click();
+ });
+ const style=document.createElement('style');style.textContent='.vnext-fitment__object{min-height:650px}';document.head.append(style);
+}
+</script></html>
