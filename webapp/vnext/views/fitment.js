@@ -418,13 +418,17 @@ function focusWorkflowTarget(root, target, scroll = false) {
   if (!target || target.disabled) return;
   if (!/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(target.tagName)) target.setAttribute?.("tabindex", "-1");
   root.fitmentFocusAnchor = target;
-  root.fitmentRestoringFocus = true;
-  target.focus({ preventScroll: true });
-  root.fitmentRestoringFocus = false;
   const bounds = target.getBoundingClientRect?.();
   const viewportTop = globalThis.visualViewport?.offsetTop || 0;
   const viewportBottom = viewportTop + (globalThis.visualViewport?.height || globalThis.innerHeight || 900);
-  if (scroll && bounds && (bounds.top < viewportTop + 64 || bounds.bottom > viewportBottom - 80)) {
+  const needsScroll = scroll && bounds && (bounds.top < viewportTop + 64 || bounds.bottom > viewportBottom - 80);
+  const startY = globalThis.scrollY;
+  root.fitmentRestoringFocus = true;
+  target.focus({ preventScroll: true });
+  root.fitmentRestoringFocus = false;
+  // Older WebViews may ignore preventScroll. Undo that jump before animating.
+  if (needsScroll && Number.isFinite(startY) && globalThis.scrollY !== startY) globalThis.scrollTo?.({ top: startY, behavior: "instant" });
+  if (needsScroll) {
     target.scrollIntoView?.({ behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
   }
 }

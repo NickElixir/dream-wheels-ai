@@ -212,3 +212,12 @@ test("variant application waits for the request before moving to Summary",()=>{
   assert.equal(focused,"#fitment-standard-title");
   assert.equal(root.fitmentFocusIntent,null);
 });
+
+test("WebView ignoring preventScroll restores position before smooth scrolling",()=>{
+ const events=[];
+ const context={scrollY:100,innerHeight:600,matchMedia:()=>({matches:false}),scrollTo(options){events.push(["restore",options.top]);context.scrollY=options.top;}};
+ const heading={tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){context.scrollY=800;events.push(["focus"]);},scrollIntoView(options){events.push(["scroll",options.behavior]);}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading,true);
+ assert.deepEqual(events,[["focus"],["restore",100],["scroll","smooth"]]);
+});
