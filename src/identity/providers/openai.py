@@ -109,18 +109,24 @@ class OpenAIVehicleIdentityResolver:
                         headers={"Authorization": f"Bearer {self.api_key}"},
                         json=payload,
                     ) as response:
-                        if response.status in {429, 500, 502, 503, 504}:
-                            raise VehicleIdentityProviderError(
-                                f"{self.provider_name} temporary response status={response.status}"
-                            )
-                        if response.status in {401, 403}:
-                            raise VehicleIdentityProviderConfigurationError(
-                                f"{self.provider_name} authentication response status={response.status}"
-                            )
                         if response.status >= 400:
-                            raise VehicleIdentityProviderRequestError(
-                                f"{self.provider_name} response status={response.status}"
+                            if response.status in {401, 403}:
+                                error = VehicleIdentityProviderConfigurationError(
+                                    f"{self.provider_name} authentication response status={response.status}"
+                                )
+                            elif response.status in {429, 500, 502, 503, 504}:
+                                error = VehicleIdentityProviderError(
+                                    f"{self.provider_name} temporary response status={response.status}"
+                                )
+                            else:
+                                error = VehicleIdentityProviderRequestError(
+                                    f"{self.provider_name} response status={response.status}"
+                                )
+                            error.http_status = response.status
+                            error.failure_kind = (
+                                "rate_limit" if response.status == 429 else "http_response"
                             )
+                            raise error
                         phase = "reading_body"
                         body = await response.text()
                         return self._parse_response(
@@ -140,6 +146,7 @@ class OpenAIVehicleIdentityResolver:
                     f" elapsed_ms={int((time.monotonic() - attempt_started) * 1000)}"
                     f" attempt={attempt + 1} max_retries={self.max_retries}"
                 )
+                last_error.failure_kind = _transport_failure_kind(exc)
             except VehicleIdentityProviderError as exc:
                 if not exc.retryable:
                     raise

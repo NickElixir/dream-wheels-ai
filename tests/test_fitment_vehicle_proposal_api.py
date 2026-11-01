@@ -30,17 +30,17 @@ def test_proposal_requires_auth_before_database_access(monkeypatch):
 
 
 def test_recognition_retains_own_quota_after_create_uploads(monkeypatch, proposal_context):
-    quotas = {"identity_resolve": 0, "create_assets": 10}
+    quotas = {"identity_resolve_daily_v1": 0, "create_assets": 10}
 
     async def limit(**kwargs):
-        assert kwargs["scope"] == "identity_resolve"
-        assert kwargs["limit"] == 20
-        assert kwargs["window_sec"] == 3600
+        assert kwargs["scope"] == "identity_resolve_daily_v1"
+        assert kwargs["limit"] == 100
+        assert kwargs["window_sec"] == 86400
         quotas[kwargs["scope"]] += 1
 
     monkeypatch.setattr(identity_api, "enforce_rate_limit", limit)
     assert request().status_code == 200
-    assert quotas == {"identity_resolve": 1, "create_assets": 10}
+    assert quotas == {"identity_resolve_daily_v1": 1, "create_assets": 10}
 
 
 @pytest.fixture
@@ -126,16 +126,37 @@ def test_proposal_is_owned_revision_bound_and_noncanonical(proposal_context):
     assert primary["year"] is None
     assert primary["year_start"] == 2020
     assert "generation" not in primary and "market" not in primary
-    assert calls == [(JOB_ID, 77), "identity_resolve", "provider", (JOB_ID, 77)]
+    assert calls == [(JOB_ID, 77), "identity_resolve_daily_v1", "provider", (JOB_ID, 77)]
     assert row == {"fitment_available": True, "vehicle_revision": 10}
 
 
 def test_repeated_transport_requests_share_click_hash_but_have_distinct_calls(
-    proposal_context, caplog
+    proposal_context, caplog, monkeypatch
 ):
     import logging
     import re
 
+    from src.identity import recognition_operations
+
+    values = {}
+
+    class Store:
+        async def set(self, key, value, **kwargs):
+            if kwargs.get("nx") and key in values:
+                return False
+            values[key] = value
+            return True
+
+        async def get(self, key):
+            return values.get(key)
+
+        async def eval(self, script, count, key, expected, result, ttl):
+            if values.get(key) != expected:
+                return None
+            values[key] = result
+            return "OK"
+
+    monkeypatch.setattr(recognition_operations.redis_client, "get_client", lambda: Store())
     marker = "PRIVATE_CLICK_MARKER"
     with caplog.at_level(logging.INFO):
         for _ in range(2):
@@ -196,3 +217,15 @@ def test_proposal_provider_failure_is_retryable_without_writes(proposal_context,
     response = request()
     assert response.status_code == 503
     assert response.json()["detail"]["retryable"] is True
+
+
+def test_guarded_ambiguous_failure_returns_pending_code(proposal_context, monkeypatch):
+    async def pending_guard(**_kwargs):
+        error = VehicleIdentityProviderError("safe transport failure")
+        error.recognition_pending = True
+        raise error
+
+    monkeypatch.setattr(identity_api, "resolve_once", pending_guard)
+    response = request(headers={"X-Vehicle-Recognition-Request-Id": "transport-key"})
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "recognition_pending_or_uncertain"

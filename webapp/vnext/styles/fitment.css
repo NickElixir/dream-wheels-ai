@@ -125,6 +125,8 @@
 .vnext-fitment__comparison-table col:nth-child(4) { width: 30%; }
 .vnext-fitment__comparison-table th, .vnext-fitment__comparison-table td { padding: 11px 6px; border-bottom: 1px solid var(--vnext-border); text-align: left; overflow-wrap: anywhere; vertical-align: top; font-weight: 400; line-height: 1.4; }
 .vnext-fitment__comparison-table th { color: var(--vnext-text-secondary); }
+.vnext-fitment__comparison-table tbody td:nth-child(2),
+.vnext-fitment__comparison-table tbody td:nth-child(3) { color: var(--vnext-text); font-weight: 600; }
 .vnext-fitment__comparison-table th:first-child { padding-left: 0; }
 .vnext-fitment__comparison-table thead { font-size: 12px; }
 .vnext-fitment__comparison-table tbody tr:focus { outline: 1px solid var(--vnext-border-strong); outline-offset: -1px; background: var(--vnext-surface-elevated); }
@@ -372,3 +374,6 @@ button.vnext-fitment__configuration-row:focus-visible { outline: 2px solid var(-
 .vnext-fitment__verdict--unknown h2 { color: var(--vnext-text); }
 
 .vnext-fitment .vnext-button--primary:disabled { background: var(--vnext-surface); color: var(--vnext-text-subtle); border-color: var(--vnext-border); opacity: 1; }
+
+.vnext-fitment__recognition-heading { display: flex; align-items: center; gap: 10px; }
+.vnext-fitment__recognition-heading .vnext-spinner { flex: 0 0 20px; }

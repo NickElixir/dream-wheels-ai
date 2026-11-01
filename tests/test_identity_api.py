@@ -92,7 +92,10 @@ def test_identity_resolve_returns_quick_proposal_without_job_or_queue(monkeypatc
             calls.append(("execute", query, args))
             return "UPDATE 1"
 
-    async def fake_enforce_rate_limit(**_kwargs):
+    async def fake_enforce_rate_limit(**kwargs):
+        assert kwargs["scope"] == "identity_resolve_daily_v1"
+        assert kwargs["limit"] == 100
+        assert kwargs["window_sec"] == 86400
         calls.append(("rate_limit", None))
 
     async def fake_require_auth_principal(_conn, **_kwargs):
@@ -480,7 +483,7 @@ def test_create_job_from_assets_without_identity_and_queues(monkeypatch, legacy_
 @pytest.mark.parametrize("recognition_count", [0, 21])
 def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch, recognition_count):
     calls = []
-    quotas = {"identity_resolve": recognition_count, "create_assets": 0}
+    quotas = {"identity_resolve_daily_v1": recognition_count, "create_assets": 0}
 
     class Conn:
         def transaction(self):
@@ -540,7 +543,7 @@ def test_create_asset_upload_never_calls_vehicle_or_url_resolver(monkeypatch, re
         },
     )
     assert response.status_code == 200, response.text
-    assert quotas == {"identity_resolve": recognition_count, "create_assets": 1}
+    assert quotas == {"identity_resolve_daily_v1": recognition_count, "create_assets": 1}
     assert "vehicle" not in response.json()
     assert any("status = 'resolved'" in query for query in calls)
     assert "car_original" in calls and "rim_original" in calls

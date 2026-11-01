@@ -2,8 +2,9 @@
 
 ## Scope
 
-Visual identity resolves only vehicle `make`, `model`, and one `year` or an inclusive
-`year_start`/`year_end` range. It never resolves generation, modification, market,
+Visual identity resolves only vehicle `make`, `model`, and, when reliable, one
+`year` or an inclusive `year_start`/`year_end` range. An identifiable make/model
+may be returned without a year. It never resolves generation, modification, market,
 engine, drivetrain, trim, wheel technical specifications, or fitment compatibility.
 
 ## Response
@@ -13,16 +14,35 @@ engine, drivetrain, trim, wheel technical specifications, or fitment compatibili
 ```json
 {
   "status": "resolved | ambiguous | unknown",
-  "primary": {"make": "Lexus", "model": "RX", "year": 2020, "confidence": 0.89, "source": "vlm_visual"},
+  "primary": {"make": "Lexus", "model": "RX", "year": 2020, "year_start": null, "year_end": null, "confidence": 0.89, "source": "vlm_visual"},
   "alternatives": [],
   "abstention_reason": null,
   "metadata": {}
 }
 ```
 
-`primary` is required for `resolved` and `ambiguous`; `alternatives` has at most two
-items. `unknown` has no candidates and must include an abstention reason. Confidence
-is always in `[0, 1]`. A candidate uses either `year` or `year_start` plus `year_end`.
+The provider root object requires all four fields: `status`, `primary`,
+`alternatives`, and `abstention_reason`. `metadata` is added by the application,
+not returned by the model. Additional provider properties are rejected.
+
+`primary` is non-null for `resolved` and `ambiguous`; `alternatives` has at most one
+item, for at most two candidates total. A second candidate is optional; every
+candidate describes the same selected vehicle. `unknown` has `primary: null`, an
+empty `alternatives` array and a non-null abstention reason.
+
+Every candidate requires all seven fields: `make`, `model`, `year`, `year_start`,
+`year_end`, `confidence`, and `source`. `source` is `vlm_visual`; confidence is a JSON
+number in `[0, 1]`. Year fields use exactly one of these representations:
+
+- Exact year: integer `year`, with `year_start` and `year_end` explicitly null.
+- Inclusive range: `year: null`, with both bounds integers and `year_start <= year_end`.
+- Unknown year: `year`, `year_start`, and `year_end` all explicitly null.
+
+Integer years are bounded to 1886–2100. Missing fields, string/boolean years,
+partial ranges, a year combined with a range, and extra properties are rejected
+without coercion. Uncertainty about year alone must not cause rejection of an
+identifiable make/model. The user selects an exact catalog year before saving;
+a missing year is never inferred from the range or silently filled in.
 
 Supported abstention reasons: `vehicle_not_visible`, `multiple_vehicles`,
 `image_too_blurry`, `vehicle_too_occluded`, `unsupported_view`, `make_uncertain`,
@@ -73,7 +93,9 @@ VEHICLE_IDENTITY_ENABLED=true
 VEHICLE_IDENTITY_PROVIDER=aitunnel
 VEHICLE_IDENTITY_MODEL=qwen3.8-flash
 VEHICLE_IDENTITY_AITUNNEL_API_KEY=<secret in Render>
-VEHICLE_IDENTITY_TIMEOUT_SEC=30
+# Staging pilot only; leave unset elsewhere until accepted.
+VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT=none
+VEHICLE_IDENTITY_TIMEOUT_SEC=60
 VEHICLE_IDENTITY_MAX_RETRIES=0
 ```
 
@@ -136,4 +158,36 @@ explicitly requires a root object with `status`, `primary`, `alternatives` and
 the same schema constant. This reinforces the provider instruction; it does not
 guarantee compliance. Local schema/semantic validation remains authoritative:
 arrays, including a one-element array containing an otherwise valid resolution,
-are rejected without conversion. OpenAI's prompt and prompt version are unchanged.
+are rejected without conversion.
+
+The shared prompt revision is now `:dominant-vehicle-v3-optional-year`, appended to
+`VEHICLE_IDENTITY_PROMPT_VERSION`. It changes the common instruction and metadata
+version for OpenAI, AI Tunnel and mock. AI Tunnel additionally appends
+`:aitunnel-explicit-schema-v1`. The common instruction selects a clearly dominant
+vehicle despite incidental background cars, limits output to one primary and one
+optional alternative, and permits an unknown year through three explicit nulls.
+This relaxes neither local validation nor user confirmation of catalog data.
+
+## Recognition request quota
+
+Recognition endpoints share a per-user limit of 100 HTTP requests per 24-hour
+fixed window, including existing-operation recovery. The window begins with the
+first request, not calendar midnight; subsequent requests do not extend it.
+The daily quota uses `identity_resolve_daily_v1` so a previous hourly counter cannot
+supply an incorrect TTL after rollout. Asset-upload and other quotas are unchanged.
+On application HTTP 429 the UI says: “Не удалось выполнить распознавание, т.к.
+лимит нашего приложения исчерпан. Обратитесь в поддержку.” Manual entry remains
+available. Provider HTTP 429 is a separate failure and retains its overload message.
+
+
+### Reasoning and technical failures
+
+AI Tunnel reasoning effort is optional and provider-specific. An unset value omits
+`reasoning` from the request, preserving the provider default. The staging pilot
+sets `VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT=none`, forwarding
+`reasoning: {"effort":"none"}`. OpenAI payloads are unaffected. Allowed configured
+values are none/minimal/low/medium/high/xhigh/max; unsupported values fail as a
+configuration error. Strict schema validation and MAX_RETRIES=0 remain required
+for the live pilot. An empty/invalid provider response is a technical failure,
+not a successful unknown result. The UI displays temporary service unavailability;
+a genuine valid unknown result retains the model-not-identified state.

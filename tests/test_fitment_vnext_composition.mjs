@@ -83,11 +83,11 @@ test("recognition candidate uses its whole button and disappears after applying"
   const recognition={status:"proposed",candidates:[{make:"Audi",model:"Q8",year_start:2018,year_end:2023}]};
   const markup=context.fitmentMarkup({vehicleRecognition:recognition});
   assert.match(markup,/Распознавание автомобиля/);
-  assert.match(markup,/Распознано по фотографии/);
+  assert.match(markup,/Выберите модель/);
   assert.match(markup,/aria-label="Audi Q8 2018–2023"/);
   assert.doesNotMatch(markup,/Использовать|Предложено по фотографии/);
   const applied=context.fitmentMarkup({vehicleRecognition:{...recognition,status:"applied"},vehicleEditing:true});
-  assert.doesNotMatch(applied,/fitment-recognition-title|Распознано по фотографии/);
+  assert.doesNotMatch(applied,/fitment-recognition-title|Выберите модель/);
   assert.match(applied,/Укажите автомобиль/);
 });
 
@@ -110,7 +110,7 @@ test("ET accessible names contain the label once for confirmed, proposed and mis
 
 test("new workspace copy is translated in EN", () => {
   const markup=context.fitmentMarkup({locale:"en",vehicleRecognition:{status:"proposed",candidates:[{make:"Audi",model:"Q8",year:2020}]}});
-  assert.match(markup,/Vehicle recognition|Recognized from the photo/);
+  assert.match(markup,/Select the model/);
   assert.doesNotMatch(markup,/[А-Яа-яЁё]/);
   assert.match(context.fitmentMarkup({locale:"en",rimEditing:true}),/Wheel parameters/);
   assert.match(context.fitmentMarkup({locale:"en",nextAction:"select_vehicle_variant"}),/Vehicle version/);
@@ -350,4 +350,36 @@ test('copy keeps the screen renderable when a key is missing', () => {
 
 test('PCD unknown copy uses grammatical Russian', () => {
   assert.equal(copy('fitment.verdict.unknown.pcd', 'ru'), 'Не хватает данных о разболтовке.');
+});
+
+test("recognition spinner precedes heading and keeps delay text separate", () => {
+  const markup=context.fitmentMarkup({vehicleRecognition:{status:"loading",slow:true}});
+  assert.match(markup,/recognition-heading[^>]*>[\s\S]*vnext-spinner[\s\S]*Определяем автомобиль[\s\S]*<\/h2>/);
+  assert.match(markup,/<p role="status">Это занимает больше времени, чем обычно<\/p>/);
+});
+
+test("rate limits are not presented as model identification failures", () => {
+  for (const localRateLimited of [true,false]) {
+    const markup=context.fitmentMarkup({vehicleRecognition:{status:"failed",canRecognize:true,rateLimited:true,localRateLimited}});
+    assert.match(markup,localRateLimited ? /лимит нашего приложения исчерпан\. Обратитесь в поддержку\./ : /Сервис распознавания перегружен/);
+    assert.doesNotMatch(markup,/Не удалось определить модель/);
+    assert.match(markup,/Указать вручную/);
+  }
+});
+
+test("provider unavailability has technical copy while a successful unknown keeps model copy", () => {
+  for (const locale of ["ru", "en"]) {
+    assert.equal(copy("fitment.vehicle.recognitionUnavailable",locale),locale === "ru" ? "Сервис распознавания временно недоступен" : "Vehicle recognition service is temporarily unavailable");
+    const unavailable = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,providerUnavailable:true}});
+    assert.ok(unavailable.includes(copy("fitment.vehicle.recognitionUnavailable",locale)));
+    assert.doesNotMatch(unavailable,new RegExp(locale === "ru" ? "Не удалось определить модель" : "Could not identify the model"));
+
+    const unknown = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,abstentionReason:"vehicle_not_resolved"}});
+    assert.ok(unknown.includes(locale === "ru" ? "Не удалось определить модель" : "Could not identify the model"));
+    assert.doesNotMatch(unknown,locale === "ru" ? /Сервис распознавания временно недоступен/ : /Vehicle recognition service is temporarily unavailable/);
+
+    const limited = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,providerUnavailable:true,rateLimited:true,localRateLimited:false}});
+    assert.ok(limited.includes(locale === "ru" ? "Распознавание временно недоступно" : "Recognition temporarily unavailable"));
+    assert.doesNotMatch(limited,new RegExp(locale === "ru" ? "Сервис распознавания временно недоступен" : "Vehicle recognition service is temporarily unavailable"));
+  }
 });

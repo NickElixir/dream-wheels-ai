@@ -381,3 +381,27 @@ def test_transport_failure_categories_never_use_exception_text():
         (TimeoutError("PRIVATE"), "timeout"),
     ]:
         assert _transport_failure_kind(error) == expected
+
+
+def test_identifiable_vehicle_without_year_is_accepted(resolver, image):
+    payload = resolution()
+    payload["primary"].update(year=None, year_start=None, year_end=None)
+    result = resolver._parse_response(
+        envelope(resolver, json.dumps(payload)), image=image, provider_request_id=None, latency_ms=1
+    )
+    assert result.primary.make == "BMW"
+    assert result.primary.year is None
+    assert result.primary.year_start is None
+
+
+def test_more_than_two_choices_is_rejected(resolver, image):
+    payload = resolution()
+    payload["status"] = "ambiguous"
+    payload["alternatives"] = [candidate(), candidate()]
+    with pytest.raises(VehicleIdentityProviderInvalidResponseError):
+        resolver._parse_response(
+            envelope(resolver, json.dumps(payload)),
+            image=image,
+            provider_request_id=None,
+            latency_ms=1,
+        )

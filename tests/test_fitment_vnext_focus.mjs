@@ -96,6 +96,27 @@ test("loading → proposal redraw restores the same recognition heading instead 
   assert.equal(focused,true);
 });
 
+for (const reducedMotion of [false, true]) {
+  for (const previousWorkspace of ["none", "vehicle-recognition"]) {
+    test(`explicit recognition focuses and scrolls on entry/reentry (${previousWorkspace}, reduced=${reducedMotion})`, () => {
+      const scrolls = [];
+      let focused = 0;
+      const heading = {tagName:"H2", setAttribute(){}, focus(options){assert.equal(options.preventScroll,true);focused++;}, getBoundingClientRect(){return {top:1000,bottom:1040};}, scrollIntoView(options){scrolls.push(options);}};
+      const root = {className:"vnext-fitment", fitmentWorkspaceKind:previousWorkspace, fitmentWorkspaceAction:"recognize-vehicle", querySelector(selector){return selector === "#fitment-recognition-title" ? heading : null;}, replaceChildren(){}};
+      const context = {innerHeight:600, matchMedia:()=>({matches:reducedMotion}), document:{createElement:()=>({childNodes:[],querySelectorAll:()=>[]})}};
+      runInCopyContext(`${source}\nglobalThis.refresh=refreshFitmentView;`,context);
+      context.refresh(root,{vehicleRecognition:{status:"loading"}});
+      assert.equal(focused,1);
+      assert.equal(scrolls.length,1);
+      assert.equal(scrolls[0].behavior,reducedMotion ? "auto" : "smooth");
+      assert.equal(scrolls[0].block,"center");
+      root.fitmentWorkspaceAction = null;
+      context.refresh(root,{vehicleRecognition:{status:"loading",slow:true}});
+      assert.equal(scrolls.length,1,"background redraw must not scroll again");
+    });
+  }
+}
+
 function runInCopyContext(script, context = {}, ...options) {
   return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, uiText: copy, baseUiText: copy, applicationLocale, localeOf, escapeCopy, unknownVerdictSubtitle }), ...options);
 }
@@ -190,4 +211,61 @@ test("variant application waits for the request before moving to Summary",()=>{
   context.refresh(root,{vehicleVariantApplying:false,nextAction:"run_standard_check",vehicleVariantPickerOpen:false});
   assert.equal(focused,"#fitment-standard-title");
   assert.equal(root.fitmentFocusIntent,null);
+});
+
+test("WebView ignoring preventScroll restores position before smooth scrolling",()=>{
+ const events=[];
+ const context={scrollY:100,innerHeight:600,matchMedia:()=>({matches:false}),scrollTo(options){events.push(["restore",options.top]);context.scrollY=options.top;}};
+ const heading={tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){context.scrollY=800;events.push(["focus"]);},scrollIntoView(options){events.push(["scroll",options.behavior]);}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading,true);
+ assert.deepEqual(events,[["focus"],["restore",100],["scroll","smooth"]]);
+});
+
+
+test("WebView focus restores nested mobile scroll container before animation",()=>{
+ const events=[];
+ const scroller={scrollTop:100,scrollLeft:0,parentElement:null,scrollTo(options){events.push(["restore-container",options.top]);this.scrollTop=options.top;this.scrollLeft=options.left;}};
+ const context={scrollY:0,innerHeight:600,matchMedia:()=>({matches:false})};
+ const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){scroller.scrollTop=800;events.push(["focus"]);},scrollIntoView(options){events.push(["scroll",options.behavior,scroller.scrollTop]);}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading,true);
+ assert.deepEqual(events,[["focus"],["restore-container",100],["scroll","smooth",100]]);
+});
+
+for (const reduced of [false, true]) {
+ test(`clipped mobile target restores nested position (reduced=${reduced})`,()=>{
+  const events=[];
+  const scroller={scrollTop:100,scrollLeft:0,clientTop:0,clientHeight:200,parentElement:null,getBoundingClientRect:()=>({top:100,bottom:300}),scrollTo(options){this.scrollTop=options.top;events.push("restore");}};
+  const context={scrollY:0,innerHeight:900,getComputedStyle:()=>({overflowY:"auto"}),matchMedia:()=>({matches:reduced})};
+  const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:400,bottom:440}),focus(){scroller.scrollTop=300;},scrollIntoView(options){events.push(options.behavior);}};
+  runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+  context.focusTarget({},heading,true);
+  assert.deepEqual(events,["restore",reduced?"auto":"smooth"]);
+  assert.equal(scroller.scrollTop,100);
+ });
+}
+
+test("background focus restoration preserves container position without navigation",()=>{
+ const scroller={scrollTop:300,scrollLeft:5,parentElement:null,scrollTo(options){this.scrollTop=options.top;this.scrollLeft=options.left;}};
+ const context={scrollY:100,innerHeight:600,scrollTo(options){context.scrollY=options.top;}};
+ const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){scroller.scrollTop=800;scroller.scrollLeft=30;context.scrollY=500;},scrollIntoView(){assert.fail("background redraw must not navigate");}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading);
+ assert.equal(scroller.scrollTop,300);
+ assert.equal(scroller.scrollLeft,5);
+ assert.equal(context.scrollY,100);
+});
+
+
+test("runtime recognition action publishes only its own loading redraw",()=>{
+ const app=fs.readFileSync(path.join(ROOT,"webapp/app.js"),"utf8");
+ const bridge=app.slice(app.indexOf("window.dreamwheelsFitmentBridge = {"));
+ const method=bridge.match(/    action\(action, value = ""\) \{[\s\S]*?\n    \},\n\};/)[0].replace(/,\n\};$/, "");
+ let redraws=0,starts=0;
+ const context={fitmentMutationsLocked:()=>false,clearFitmentEntryIntent(){},notifyFitmentBridge(){redraws++;},recognizeFitmentVehicle(){starts++;context.notifyFitmentBridge();}};
+ vm.runInNewContext(`globalThis.bridge=({${method}})`,context);
+ context.bridge.action("recognize-vehicle");
+ assert.equal(starts,1);
+ assert.equal(redraws,1,"a redundant redraw removes the smooth-scroll target before the first frame");
 });

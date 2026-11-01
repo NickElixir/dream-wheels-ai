@@ -6,7 +6,8 @@ import test from 'node:test';
 import {copy} from '../webapp/vnext/copy.mjs';
 const source=fs.readFileSync(new URL('../webapp/app.js',import.meta.url),'utf8');
 function runtime(names,extra={}){
- const context=vm.createContext({uiCopy:copy,locale:'ru',state:{},...extra});
+ const context=vm.createContext({setTimeout,clearTimeout,uiCopy:copy,locale:'ru',state:{},...extra});
+ if(names.includes("recognizeFitmentVehicle")) vm.runInContext(extractFunction(source,"waitForRecognitionRecovery"),context);
  for(const name of names)vm.runInContext(extractFunction(source,name),context);
  return context;
 }
@@ -102,4 +103,76 @@ test('photo download failure never invokes recognition and has its own error sta
  const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
  const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/jobs/A/assets/car_original/download'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),authenticatedFetch:async()=>{requests++;return {ok:false,status:503};}});
  await context.recognizeFitmentVehicle();assert.equal(requests,1);assert.equal(state.fitmentRecognition.photoUnavailable,true);assert.match(state.fitmentRecognition.message,/загрузить фото/);
+});
+
+for (const language of ['ru','en']) test(`provider unavailability is classified separately from a valid unknown (${language})`,async()=>{
+ const calls=[];
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{locale:language,state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),waitForRecognitionRecovery:()=>{throw new Error('unavailability must not enter recovery');},authenticatedFetch:async(url,options)=>{
+  calls.push({url,options});
+  return url==='/photo'?{ok:true,status:200,blob:async()=>new Blob(['photo'])}:{ok:false,status:503,clone:()=>({json:async()=>({detail:{code:'vehicle_provider_unavailable'}})}),json:async()=>({detail:{code:'vehicle_provider_unavailable'}})};
+ }});
+ await context.recognizeFitmentVehicle();
+ assert.equal(calls.length,2);
+ assert.equal(state.fitmentRecognition.providerUnavailable,true);
+ assert.equal(state.fitmentRecognition.photoUnavailable,false);
+ assert.equal(state.fitmentRecognition.timedOut,false);
+ assert.equal(state.fitmentRecognition.rateLimited,false);
+ assert.equal(state.fitmentRecognition.status,'failed');
+
+ const unknownState={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const unknownContext=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{locale:language,state:unknownState,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),authenticatedFetch:async url=>url==='/photo'?{ok:true,status:200,blob:async()=>new Blob(['photo'])}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:null,alternatives:[],abstention_reason:'vehicle_not_resolved'}})} });
+ await unknownContext.recognizeFitmentVehicle();
+ assert.equal(unknownState.fitmentRecognition.status,'failed');
+ assert.equal(unknownState.fitmentRecognition.abstentionReason,'vehicle_not_resolved');
+ assert.equal(unknownState.fitmentRecognition.providerUnavailable,undefined);
+});
+
+test('old recognition revision cannot poll or mutate the new state',async()=>{
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:10},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ let finish;let calls=0;const timers=[];
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,FormData,setTimeout:(fn)=>{timers.push(fn);return timers.length;},clearTimeout(){},fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:x=>x,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),authenticatedFetch:async()=>{calls++;if(calls===1)return {ok:true,status:200,blob:async()=>new Blob(['photo'])};return new Promise(resolve=>{finish=resolve;});}});
+ const task=context.recognizeFitmentVehicle();
+ while(!finish)await new Promise(resolve=>setImmediate(resolve));
+ state.fitmentOverview.vehicle_revision=11;state.fitmentRecognition={status:'idle',marker:'new'};
+ timers[1]();
+ finish({ok:false,status:409,clone:()=>({json:async()=>({detail:{code:'recognition_pending_or_uncertain'}})})});
+ await task;
+ assert.equal(calls,2);assert.equal(state.fitmentRecognition.marker,'new');assert.equal(state.fitmentRecognition.status,'idle');
+});
+
+for (const replacement of ['none','new-operation']) test(`stale loading releases only its own state (${replacement})`,async()=>{
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:10},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ let finish;let calls=0;const timers=[];
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,FormData,setTimeout:(fn)=>{timers.push(fn);return timers.length;},clearTimeout(){},fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:x=>x,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),authenticatedFetch:async()=>{calls++;if(calls===1)return {ok:true,status:200,blob:async()=>new Blob(['photo'])};return new Promise(resolve=>{finish=resolve;});}});
+ const task=context.recognizeFitmentVehicle();
+ while(!finish)await new Promise(resolve=>setImmediate(resolve));
+ state.fitmentOverview.vehicle_revision=11;
+ if(replacement==='new-operation'){state.fitmentRecognition={status:'loading',marker:'new'};state.fitmentRecognitionController=new AbortController();state.fitmentRecognitionToken++;}
+ timers[1]();
+ finish({ok:false,status:409,clone:()=>({json:async()=>({detail:{code:'recognition_pending_or_uncertain'}})})});
+ await task;
+ assert.equal(calls,2);
+ if(replacement==='none'){assert.equal(state.fitmentRecognition.status,'idle');assert.equal(state.fitmentRecognitionController,null);}
+ else {assert.equal(state.fitmentRecognition.marker,'new');assert.equal(state.fitmentRecognition.status,'loading');assert.equal(state.fitmentRecognitionController.signal.aborted,false);}
+});
+
+test('ambiguous provider outcome recovers with the same key and blocks a second click',async()=>{
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const posts=[];let resume;
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:x=>x,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),waitForRecognitionRecovery:()=>new Promise(resolve=>{resume=resolve;}),authenticatedFetch:async(url,options)=>{
+  if(url==='/photo')return {ok:true,status:200,blob:async()=>new Blob(['photo'])};
+  posts.push(options.headers);
+  return posts.length===1?{ok:false,status:503,clone:()=>({json:async()=>({detail:{code:'recognition_pending_or_uncertain'}})})}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:{make:'BMW',model:'3 Series'}}})};
+ }});
+ context.waitForRecognitionRecovery=()=>new Promise(resolve=>{resume=resolve;});
+ const task=context.recognizeFitmentVehicle();
+ while(!resume)await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.fitmentRecognition.status,'loading');
+ await context.recognizeFitmentVehicle();assert.equal(posts.length,1);
+ resume();await task;
+ assert.equal(posts.length,2);
+ assert.equal(posts[0]['X-Vehicle-Recognition-Request-Id'],posts[1]['X-Vehicle-Recognition-Request-Id']);
+ assert.equal(posts[1]['X-Vehicle-Recognition-Recovery'],'true');
+ assert.equal(state.fitmentRecognition.status,'proposed');
 });

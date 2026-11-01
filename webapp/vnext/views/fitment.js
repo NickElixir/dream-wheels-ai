@@ -176,12 +176,20 @@ function rimSetupLabel(state, locale = applicationLocale()) {
 function catalogueField(model, kind, label, path, value, extra = {}) {
   const fieldState = model.catalogue?.states?.[kind] || {};
   const retry = fieldState.status === "failed" ? kind : "";
-  const options = model.catalogue?.[kind] || [];
+  const hint = model.vehicleRecognition?.yearHint;
+  const vehicle = model.vehicleForm || model.vehicle || {};
+  const hasYearHint = kind === "years" && hint && Number.isInteger(hint.start) && Number.isInteger(hint.end)
+    && hint.start <= hint.end && normalizedIdentity(hint.make) === normalizedIdentity(vehicle.make)
+    && normalizedIdentity(hint.model) === normalizedIdentity(vehicle.model);
+  const suffix = localeOf(model) === "ru" ? "по фото" : "from photo";
+  const options = (model.catalogue?.[kind] || []).map(option => hasYearHint && Number(option.value) >= hint.start && Number(option.value) <= hint.end
+    ? { ...option, label: `${option.label} — ${suffix}` } : option);
+  const yearMessage = hasYearHint ? (localeOf(model) === "ru" ? `По фото: ${hint.start}–${hint.end}. Уточните год` : `From photo: ${hint.start}–${hint.end}. Confirm the year`) : "";
   const disabled = !["selected", "loaded_unselected", "selection_required", "resolved_multiple"].includes(fieldState.status);
   return fieldWithCandidates(model, label, path, value, {
     options,
     disabled,
-    message: ["loading", "blocked"].includes(fieldState.status) ? "" : fieldState.message || "",
+    message: [fieldState.message && !["loading", "blocked"].includes(fieldState.status) ? fieldState.message : "", yearMessage].filter(Boolean).join(". "),
     placeholder: fieldState.status === "loading" ? (localeOf(model) === "ru" ? ({ makes: "Получаем список марок", models: "Получаем модели выбранной марки", years: "Получаем годы выпуска модели" }[kind] || fieldState.message) : fieldState.message) : fieldState.status === "blocked" ? fieldState.message || fieldState.placeholder : fieldState.placeholder,
     retry,
     error: model.fieldErrors?.[path] || "",
@@ -272,17 +280,20 @@ function vehicleRecognition(model) {
   const recognition = model.vehicleRecognition || {};
   if (recognition.status === "loading") {
     const ru = localeOf(model) === "ru";
-    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><h2 id="fitment-recognition-title" tabindex="-1">${ru ? "Определяем автомобиль по фото" : "Identifying the car from your photo"}</h2>${loadingStatus(ru ? "Ищем марку и модель" : "Finding the make and model")}<p>${ru ? "Комплектацию предложим уточнить после распознавания" : "We will ask you to confirm the version after identification"}</p></section>`;
+    return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-busy="true" aria-labelledby="fitment-recognition-title"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 class="vnext-fitment__recognition-heading" id="fitment-recognition-title" tabindex="-1"><span class="vnext-spinner" aria-hidden="true"></span><span>${ru ? "Определяем автомобиль" : "Identifying the vehicle"}</span></h2>${recognition.slow ? `<p role="status">${ru ? "Это занимает больше времени, чем обычно" : "This is taking longer than usual"}</p>` : ""}</section>`;
   }
-  const heading = recognition.photoUnavailable ? (localeOf(model) === "ru" ? "Не удалось загрузить фото автомобиля" : "Could not load the vehicle photo") : recognition.status === "loading" ? uiText("fitment.recognizingTheVehicle", localeOf(model)) : recognition.status === "failed" ? uiText("fitment.unableToRecognizeTheVehicle", localeOf(model)) : uiText("fitment.recognizedFromThePhoto", localeOf(model));
+  const ru = localeOf(model) === "ru";
+  const multiple = recognition.abstentionReason === "multiple_vehicles";
+  const heading = recognition.rateLimited ? (ru ? "Распознавание временно недоступно" : "Recognition temporarily unavailable") : multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.providerUnavailable ? uiText("fitment.vehicle.recognitionUnavailable", localeOf(model)) : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
   const candidates = (recognition.candidates || []).map((item, index) => {
     const identity = [item.make, item.model].filter(Boolean).join(" ");
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));
     return `<button type="button" class="vnext-fitment__choice" data-fitment-action="recognition-proposal" data-value="${index}" aria-label="${esc(`${identity} ${year}`)}"><span class="vnext-fitment__choice-copy"><strong>${esc(identity)}</strong><small>${esc(year)}</small></span><span class="vnext-fitment__variant-cue" aria-hidden="true">›</span></button>`;
   }).join("");
-  const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : recognition.status === "failed"
-    ? `${recognition.message && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(recognition.message)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
-    : `<p>${esc(uiText("fitment.selectTheRecognizedVehicleToVerifyItsDetailsIn", localeOf(model)))}</p><div class="vnext-fitment__variant-list">${candidates}</div>`;
+  const failureMessage = recognition.rateLimited ? (recognition.localRateLimited ? (ru ? "Не удалось выполнить распознавание, т.к. лимит нашего приложения исчерпан. Обратитесь в поддержку." : "Recognition could not be completed because our application limit has been reached. Contact support.") : (ru ? "Сервис распознавания перегружен. Попробуйте позже" : "The recognition service is overloaded. Try again later")) : multiple ? (ru ? "Используйте фото нужной машины отдельно или укажите модель вручную" : "Use a separate photo of the car or enter the model manually") : "";
+  const content = recognition.status === "loading" ? loadingStatus(uiText("fitment.recognizingTheVehicle", localeOf(model))) : ["failed", "uncertain"].includes(recognition.status)
+    ? `${failureMessage && !recognition.photoUnavailable ? `<p role="alert" data-fitment-focus-key="error:vehicle-recognition">${esc(failureMessage)}</p>` : ""}<div class="vnext-fitment__paired-actions">${button(uiText("dashboard.tryAgain", localeOf(model)), "recognize-vehicle", { disabled: !recognition.canRecognize })}${button(uiText("fitment.enterManually", localeOf(model)), "edit-vehicle")}</div>`
+    : `<div class="vnext-fitment__variant-list">${candidates}</div>`;
   return `<section class="vnext-fitment__recognition" data-fitment-workspace="vehicle" aria-labelledby="fitment-recognition-title"${recognition.status === "loading" ? ' aria-busy="true"' : ""}><div class="vnext-fitment__section-heading"><p class="vnext-eyebrow">${esc(uiText("fitment.vehicleRecognition", localeOf(model)))}</p><h2 id="fitment-recognition-title" tabindex="-1">${heading}</h2></div>${content}</section>`;
 }
 
@@ -290,7 +301,7 @@ export function activeWorkspaceKind(model = {}) {
   // Explicit branch intent wins over a retained proposal or required server step.
   if (model.activeSection === "rim" && model.rimEditing) return "rim-editor";
   const recognition = model.vehicleRecognition || {};
-  if (recognition.workspaceOpen !== false && ["loading", "proposed", "failed"].includes(recognition.status)
+  if (recognition.workspaceOpen !== false && ["loading", "proposed", "failed", "uncertain"].includes(recognition.status)
       && model.activeSection !== "rim") return "vehicle-recognition";
   if (model.vehicleEditing && (model.nextAction !== "select_vehicle_variant" || model.manualVehicleEditing)
       && (model.activeSection === "vehicle" || !model.rimEditing)) return "vehicle-editor";
@@ -407,13 +418,33 @@ function focusWorkflowTarget(root, target, scroll = false) {
   if (!target || target.disabled) return;
   if (!/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(target.tagName)) target.setAttribute?.("tabindex", "-1");
   root.fitmentFocusAnchor = target;
-  root.fitmentRestoringFocus = true;
-  target.focus({ preventScroll: true });
-  root.fitmentRestoringFocus = false;
   const bounds = target.getBoundingClientRect?.();
   const viewportTop = globalThis.visualViewport?.offsetTop || 0;
   const viewportBottom = viewportTop + (globalThis.visualViewport?.height || globalThis.innerHeight || 900);
-  if (scroll && bounds && (bounds.top < viewportTop + 64 || bounds.bottom > viewportBottom - 80)) {
+  let visibleTop = viewportTop + 64;
+  let visibleBottom = viewportBottom - 80;
+  const startY = globalThis.scrollY;
+  const scrollParents = [];
+  for (let node = target.parentElement; node; node = node.parentElement) {
+    scrollParents.push({ node, top: node.scrollTop, left: node.scrollLeft });
+    const overflow = globalThis.getComputedStyle?.(node)?.overflowY;
+    if (/(auto|scroll|hidden|clip)/.test(overflow || "")) {
+      const parentBounds = node.getBoundingClientRect();
+      visibleTop = Math.max(visibleTop, parentBounds.top + node.clientTop);
+      visibleBottom = Math.min(visibleBottom, parentBounds.top + node.clientTop + node.clientHeight);
+    }
+  }
+  const needsScroll = scroll && bounds && (bounds.top < visibleTop || bounds.bottom > visibleBottom);
+  root.fitmentRestoringFocus = true;
+  target.focus({ preventScroll: true });
+  root.fitmentRestoringFocus = false;
+  // Mobile #app scrolls independently of the window; focus can move either.
+  for (const { node, top, left } of scrollParents) {
+    if (node.scrollTop !== top || node.scrollLeft !== left) node.scrollTo({ top, left, behavior: "instant" });
+  }
+  // Older WebViews may ignore preventScroll. Undo that jump before animating.
+  if (Number.isFinite(startY) && globalThis.scrollY !== startY) globalThis.scrollTo?.({ top: startY, behavior: "instant" });
+  if (needsScroll) {
     target.scrollIntoView?.({ behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
   }
 }
@@ -556,6 +587,9 @@ export function refreshFitmentView(root, model, callbacks = root.fitmentCallback
     root.fitmentFocusIntent = null;
     if (kind) beginFitmentFormFocus(root, kind);
     else { target = intent.action === "check" ? root.querySelector(".vnext-fitment__verdict h2") : root.querySelector("#fitment-standard-title"); move = true; }
+  } else if (root.fitmentWorkspaceAction === "recognize-vehicle" && model.vehicleRecognition?.status === "loading") {
+    target = root.querySelector("#fitment-recognition-title");
+    move = true;
   } else if (root.fitmentWorkspaceAction && !fitmentFormAction(root.fitmentWorkspaceAction) && previousWorkspace !== undefined && previousWorkspace !== nextWorkspace && !root.fitmentFormFocusIntent) {
     target = nextWorkspace === "none" ? root.querySelector('[data-fitment-action="reselect-vehicle"], [data-fitment-action="manual-rim"]') : root.querySelector("[data-fitment-workspace] h2[tabindex]");
     move = true;

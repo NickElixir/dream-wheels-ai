@@ -607,3 +607,17 @@ test("original recovery region exists while both images fail and throughout retr
     assert.equal((markup.match(/data-asset-media="original"/g)||[]).length,1);
   }
 });
+
+test("retrying source metadata clears stale unavailable while request is pending",async()=>{
+ const app=runtime();app.setAuth(true);const owned=job("A");app.state.renderHistory=[owned];app.state.renderDetailJobId="A";
+ app.state.renderAssetErrorsByJob.A={car_original:true};
+ let finish;
+ app.setFetch(()=>new Promise(resolve=>{finish=resolve;}));
+ const task=app.ensureOriginalDisplayUrl(owned,{force:true});
+ assert.equal(app.state.renderAssetErrorsByJob.A.car_original,false);
+ assert.equal(app.bridge.snapshot("result").originalLoading,true);
+ finish({ok:true,json:async()=>({kind:"car_original",url:"https://project.supabase.co/storage/v1/object/sign/raw/test?token=fixture",expires_at:new Date(Date.now()+600_000).toISOString()})});
+ await task;
+ assert.equal(app.bridge.snapshot("result").originalLoading,false);
+ assert.equal(app.state.renderAssetErrorsByJob.A.car_original,false);
+});

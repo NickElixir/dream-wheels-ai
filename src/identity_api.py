@@ -26,6 +26,7 @@ from src.config import (
 )
 from src.identity.prompts import PROMPT_VERSION, RESOLVER_VERSION
 from src.identity.providers.base import VehicleIdentityProviderError
+from src.identity.recognition_operations import resolve_once
 from src.identity.schemas import (
     AbstentionReason,
     ResolutionStatus,
@@ -54,8 +55,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/identity", tags=["identity"])
 
-IDENTITY_RATE_LIMIT = 20
-IDENTITY_RATE_WINDOW_SEC = 60 * 60
+IDENTITY_RATE_LIMIT = 100
+IDENTITY_RATE_WINDOW_SEC = 24 * 60 * 60
+# New namespace avoids reusing a counter with the previous one-hour TTL.
+IDENTITY_RATE_SCOPE = "identity_resolve_daily_v1"
 
 
 class IdentityResolveResponse(BaseModel):
@@ -84,6 +87,7 @@ async def resolve_fitment_vehicle_proposal(
     telegram_user_id: Annotated[int | None, Form()] = None,
     authorization: Annotated[str | None, Header()] = None,
     x_vehicle_recognition_request_id: Annotated[str | None, Header()] = None,
+    x_vehicle_recognition_recovery: Annotated[bool, Header()] = False,
 ) -> FitmentVehicleProposalResponse:
     """Recognize an owned job's local photo without persisting or creating a render."""
     preflight_auth_credentials(
@@ -109,7 +113,7 @@ async def resolve_fitment_vehicle_proposal(
     if int(row["vehicle_revision"]) != expected_vehicle_revision:
         raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
     await enforce_rate_limit(
-        scope="identity_resolve",
+        scope=IDENTITY_RATE_SCOPE,
         identifier=principal.user_id,
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,
@@ -137,7 +141,22 @@ async def resolve_fitment_vehicle_proposal(
         click_hash,
     )
     try:
-        resolution = await get_vehicle_identity_resolver().resolve(normalized)
+        resolver = get_vehicle_identity_resolver()
+        if x_vehicle_recognition_request_id and len(x_vehicle_recognition_request_id) <= 128:
+            fingerprint = hashlib.sha256(
+                f"{job_id}:{expected_vehicle_revision}:".encode() + normalized.bytes
+            ).hexdigest()
+            resolution = await resolve_once(
+                user_id=principal.user_id,
+                request_id=x_vehicle_recognition_request_id,
+                existing_only=x_vehicle_recognition_recovery,
+                fingerprint=fingerprint,
+                resolve=lambda: resolver.resolve(normalized),
+            )
+        else:
+            if x_vehicle_recognition_recovery:
+                raise HTTPException(400, detail={"code": "recognition_request_id_required"})
+            resolution = await resolver.resolve(normalized)
     except VehicleIdentityProviderError as exc:
         logger.exception(
             "❌ Fitment vehicle proposal failed job_id=%s user_id=%s error_code=%s server_call_id=%s click_hash=%s",
@@ -149,7 +168,16 @@ async def resolve_fitment_vehicle_proposal(
         )
         raise HTTPException(
             status_code=503,
-            detail={"code": "vehicle_provider_unavailable", "retryable": exc.retryable},
+            detail={
+                "code": "recognition_pending_or_uncertain"
+                if getattr(exc, "recognition_pending", False)
+                else "vehicle_provider_rate_limited"
+                if getattr(exc, "failure_kind", None) == "rate_limit"
+                else "vehicle_provider_timeout"
+                if getattr(exc, "failure_kind", None) == "timeout"
+                else "vehicle_provider_unavailable",
+                "retryable": exc.retryable,
+            },
         ) from exc
     async with pool.acquire() as conn:
         current = await _fetch_fitment_job_row(conn, job_id=str(job_id), user_id=principal.user_id)
@@ -159,6 +187,16 @@ async def resolve_fitment_vehicle_proposal(
         raise HTTPException(status_code=409, detail={"code": "fitment_context_unavailable"})
     if int(current["vehicle_revision"]) != expected_vehicle_revision:
         raise HTTPException(status_code=409, detail={"code": "vehicle_revision_conflict"})
+    logger.info(
+        "Fitment vehicle proposal completed job_id=%s user_id=%s server_call_id=%s click_hash=%s status=%s abstention_reason=%s prompt_version=%s",
+        job_id,
+        principal.user_id,
+        server_call_id,
+        click_hash,
+        resolution.status.value,
+        resolution.abstention_reason.value if resolution.abstention_reason else "none",
+        resolution.metadata.prompt_version,
+    )
     return FitmentVehicleProposalResponse(
         job_id=str(job_id), vehicle_revision=expected_vehicle_revision, vehicle=resolution
     )
@@ -739,7 +777,7 @@ async def resolve_identity(
         )
     owner_user_id = principal.user_id
     await enforce_rate_limit(
-        scope="identity_resolve",
+        scope=IDENTITY_RATE_SCOPE,
         identifier=owner_user_id,
         limit=IDENTITY_RATE_LIMIT,
         window_sec=IDENTITY_RATE_WINDOW_SEC,
