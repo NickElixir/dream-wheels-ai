@@ -221,3 +221,38 @@ test("WebView ignoring preventScroll restores position before smooth scrolling",
  context.focusTarget({},heading,true);
  assert.deepEqual(events,[["focus"],["restore",100],["scroll","smooth"]]);
 });
+
+
+test("WebView focus restores nested mobile scroll container before animation",()=>{
+ const events=[];
+ const scroller={scrollTop:100,scrollLeft:0,parentElement:null,scrollTo(options){events.push(["restore-container",options.top]);this.scrollTop=options.top;this.scrollLeft=options.left;}};
+ const context={scrollY:0,innerHeight:600,matchMedia:()=>({matches:false})};
+ const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){scroller.scrollTop=800;events.push(["focus"]);},scrollIntoView(options){events.push(["scroll",options.behavior,scroller.scrollTop]);}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading,true);
+ assert.deepEqual(events,[["focus"],["restore-container",100],["scroll","smooth",100]]);
+});
+
+for (const reduced of [false, true]) {
+ test(`clipped mobile target restores nested position (reduced=${reduced})`,()=>{
+  const events=[];
+  const scroller={scrollTop:100,scrollLeft:0,clientTop:0,clientHeight:200,parentElement:null,getBoundingClientRect:()=>({top:100,bottom:300}),scrollTo(options){this.scrollTop=options.top;events.push("restore");}};
+  const context={scrollY:0,innerHeight:900,getComputedStyle:()=>({overflowY:"auto"}),matchMedia:()=>({matches:reduced})};
+  const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:400,bottom:440}),focus(){scroller.scrollTop=300;},scrollIntoView(options){events.push(options.behavior);}};
+  runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+  context.focusTarget({},heading,true);
+  assert.deepEqual(events,["restore",reduced?"auto":"smooth"]);
+  assert.equal(scroller.scrollTop,100);
+ });
+}
+
+test("background focus restoration preserves container position without navigation",()=>{
+ const scroller={scrollTop:300,scrollLeft:5,parentElement:null,scrollTo(options){this.scrollTop=options.top;this.scrollLeft=options.left;}};
+ const context={scrollY:100,innerHeight:600,scrollTo(options){context.scrollY=options.top;}};
+ const heading={parentElement:scroller,tagName:"H2",setAttribute(){},getBoundingClientRect:()=>({top:1000,bottom:1040}),focus(){scroller.scrollTop=800;scroller.scrollLeft=30;context.scrollY=500;},scrollIntoView(){assert.fail("background redraw must not navigate");}};
+ runInCopyContext(`${source}\nglobalThis.focusTarget=focusWorkflowTarget;`,context);
+ context.focusTarget({},heading);
+ assert.equal(scroller.scrollTop,300);
+ assert.equal(scroller.scrollLeft,5);
+ assert.equal(context.scrollY,100);
+});

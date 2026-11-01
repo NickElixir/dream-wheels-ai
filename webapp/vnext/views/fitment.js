@@ -421,13 +421,29 @@ function focusWorkflowTarget(root, target, scroll = false) {
   const bounds = target.getBoundingClientRect?.();
   const viewportTop = globalThis.visualViewport?.offsetTop || 0;
   const viewportBottom = viewportTop + (globalThis.visualViewport?.height || globalThis.innerHeight || 900);
-  const needsScroll = scroll && bounds && (bounds.top < viewportTop + 64 || bounds.bottom > viewportBottom - 80);
+  let visibleTop = viewportTop + 64;
+  let visibleBottom = viewportBottom - 80;
   const startY = globalThis.scrollY;
+  const scrollParents = [];
+  for (let node = target.parentElement; node; node = node.parentElement) {
+    scrollParents.push({ node, top: node.scrollTop, left: node.scrollLeft });
+    const overflow = globalThis.getComputedStyle?.(node)?.overflowY;
+    if (/(auto|scroll|hidden|clip)/.test(overflow || "")) {
+      const parentBounds = node.getBoundingClientRect();
+      visibleTop = Math.max(visibleTop, parentBounds.top + node.clientTop);
+      visibleBottom = Math.min(visibleBottom, parentBounds.top + node.clientTop + node.clientHeight);
+    }
+  }
+  const needsScroll = scroll && bounds && (bounds.top < visibleTop || bounds.bottom > visibleBottom);
   root.fitmentRestoringFocus = true;
   target.focus({ preventScroll: true });
   root.fitmentRestoringFocus = false;
+  // Mobile #app scrolls independently of the window; focus can move either.
+  for (const { node, top, left } of scrollParents) {
+    if (node.scrollTop !== top || node.scrollLeft !== left) node.scrollTo({ top, left, behavior: "instant" });
+  }
   // Older WebViews may ignore preventScroll. Undo that jump before animating.
-  if (needsScroll && Number.isFinite(startY) && globalThis.scrollY !== startY) globalThis.scrollTo?.({ top: startY, behavior: "instant" });
+  if (Number.isFinite(startY) && globalThis.scrollY !== startY) globalThis.scrollTo?.({ top: startY, behavior: "instant" });
   if (needsScroll) {
     target.scrollIntoView?.({ behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
   }
