@@ -256,3 +256,16 @@ test("background focus restoration preserves container position without navigati
  assert.equal(scroller.scrollLeft,5);
  assert.equal(context.scrollY,100);
 });
+
+
+test("runtime recognition action publishes only its own loading redraw",()=>{
+ const app=fs.readFileSync(path.join(ROOT,"webapp/app.js"),"utf8");
+ const bridge=app.slice(app.indexOf("window.dreamwheelsFitmentBridge = {"));
+ const method=bridge.match(/    action\(action, value = ""\) \{[\s\S]*?\n    \},\n\};/)[0].replace(/,\n\};$/, "");
+ let redraws=0,starts=0;
+ const context={fitmentMutationsLocked:()=>false,clearFitmentEntryIntent(){},notifyFitmentBridge(){redraws++;},recognizeFitmentVehicle(){starts++;context.notifyFitmentBridge();}};
+ vm.runInNewContext(`globalThis.bridge=({${method}})`,context);
+ context.bridge.action("recognize-vehicle");
+ assert.equal(starts,1);
+ assert.equal(redraws,1,"a redundant redraw removes the smooth-scroll target before the first frame");
+});
