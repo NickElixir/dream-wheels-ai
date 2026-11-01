@@ -9,7 +9,10 @@ from src.identity.prompts import (
     VEHICLE_IDENTITY_JSON_SCHEMA,
     VEHICLE_IDENTITY_PROMPT,
 )
-from src.identity.providers.base import VehicleIdentityProviderInvalidResponseError
+from src.identity.providers.base import (
+    VehicleIdentityProviderConfigurationError,
+    VehicleIdentityProviderInvalidResponseError,
+)
 from src.identity.providers.openai import OpenAIVehicleIdentityResolver
 from src.vision.image_normalization import NormalizedImage
 
@@ -18,6 +21,32 @@ class AITunnelVehicleIdentityResolver(OpenAIVehicleIdentityResolver):
     provider_name = "aitunnel"
     endpoint = "https://api.aitunnel.ru/v1/chat/completions"
     prompt_version = f"{PROMPT_VERSION}:aitunnel-explicit-schema-v1"
+
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        timeout_sec: float,
+        max_retries: int,
+        reasoning_effort: str | None = None,
+    ) -> None:
+        if reasoning_effort is not None and reasoning_effort not in {
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        }:
+            raise VehicleIdentityProviderConfigurationError(
+                "Unsupported AI Tunnel reasoning effort"
+            )
+        super().__init__(
+            api_key=api_key, model=model, timeout_sec=timeout_sec, max_retries=max_retries
+        )
+        self.reasoning_effort = reasoning_effort
 
     def _payload(self, image: NormalizedImage) -> dict[str, Any]:
         image_data = base64.b64encode(image.bytes).decode("ascii")
@@ -31,7 +60,7 @@ class AITunnelVehicleIdentityResolver(OpenAIVehicleIdentityResolver):
             "\nThe complete JSON Schema for your response is:\n"
             + json.dumps(VEHICLE_IDENTITY_JSON_SCHEMA, separators=(",", ":"), sort_keys=True)
         )
-        return {
+        payload = {
             "model": self.model,
             "stream": False,
             "max_tokens": 2048,
@@ -59,6 +88,10 @@ class AITunnelVehicleIdentityResolver(OpenAIVehicleIdentityResolver):
                 },
             },
         }
+
+        if self.reasoning_effort is not None:
+            payload["reasoning"] = {"effort": self.reasoning_effort}
+        return payload
 
     def _output_text(self, response: dict[str, Any]) -> str:
         if not isinstance(response, dict):

@@ -79,6 +79,10 @@ export const COPY = {
     "ru": "Определить по фото",
     "en": "Identify from photo"
   },
+  "fitment.vehicle.recognitionUnavailable": {
+    "ru": "Сервис распознавания временно недоступен",
+    "en": "Vehicle recognition service is temporarily unavailable"
+  },
   "fitment.vehicle.changeModel": {
     "ru": "Изменить модель",
     "en": "Change model"

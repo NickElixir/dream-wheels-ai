@@ -93,7 +93,9 @@ VEHICLE_IDENTITY_ENABLED=true
 VEHICLE_IDENTITY_PROVIDER=aitunnel
 VEHICLE_IDENTITY_MODEL=qwen3.8-flash
 VEHICLE_IDENTITY_AITUNNEL_API_KEY=<secret in Render>
-VEHICLE_IDENTITY_TIMEOUT_SEC=30
+# Staging pilot only; leave unset elsewhere until accepted.
+VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT=none
+VEHICLE_IDENTITY_TIMEOUT_SEC=60
 VEHICLE_IDENTITY_MAX_RETRIES=0
 ```
 
@@ -176,3 +178,16 @@ supply an incorrect TTL after rollout. Asset-upload and other quotas are unchang
 On application HTTP 429 the UI says: “Не удалось выполнить распознавание, т.к.
 лимит нашего приложения исчерпан. Обратитесь в поддержку.” Manual entry remains
 available. Provider HTTP 429 is a separate failure and retains its overload message.
+
+
+### Reasoning and technical failures
+
+AI Tunnel reasoning effort is optional and provider-specific. An unset value omits
+`reasoning` from the request, preserving the provider default. The staging pilot
+sets `VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT=none`, forwarding
+`reasoning: {"effort":"none"}`. OpenAI payloads are unaffected. Allowed configured
+values are none/minimal/low/medium/high/xhigh/max; unsupported values fail as a
+configuration error. Strict schema validation and MAX_RETRIES=0 remain required
+for the live pilot. An empty/invalid provider response is a technical failure,
+not a successful unknown result. The UI displays temporary service unavailability;
+a genuine valid unknown result retains the model-not-identified state.

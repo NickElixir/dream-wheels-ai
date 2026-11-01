@@ -105,6 +105,29 @@ test('photo download failure never invokes recognition and has its own error sta
  await context.recognizeFitmentVehicle();assert.equal(requests,1);assert.equal(state.fitmentRecognition.photoUnavailable,true);assert.match(state.fitmentRecognition.message,/загрузить фото/);
 });
 
+for (const language of ['ru','en']) test(`provider unavailability is classified separately from a valid unknown (${language})`,async()=>{
+ const calls=[];
+ const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const context=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{locale:language,state,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),waitForRecognitionRecovery:()=>{throw new Error('unavailability must not enter recovery');},authenticatedFetch:async(url,options)=>{
+  calls.push({url,options});
+  return url==='/photo'?{ok:true,status:200,blob:async()=>new Blob(['photo'])}:{ok:false,status:503,clone:()=>({json:async()=>({detail:{code:'vehicle_provider_unavailable'}})}),json:async()=>({detail:{code:'vehicle_provider_unavailable'}})};
+ }});
+ await context.recognizeFitmentVehicle();
+ assert.equal(calls.length,2);
+ assert.equal(state.fitmentRecognition.providerUnavailable,true);
+ assert.equal(state.fitmentRecognition.photoUnavailable,false);
+ assert.equal(state.fitmentRecognition.timedOut,false);
+ assert.equal(state.fitmentRecognition.rateLimited,false);
+ assert.equal(state.fitmentRecognition.status,'failed');
+
+ const unknownState={fitmentJobId:'A',fitmentOverview:{vehicle_revision:3},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
+ const unknownContext=runtime(['recognizeFitmentVehicle','makeIdempotencyKey'],{locale:language,state:unknownState,AbortController,FormData,fitmentMutationsLocked:()=>false,setFitmentEditor(){},persistFitmentNavigationContext(){},renderFitment(){},focusFitmentWorkspace(){},fitmentContextJob:()=>({assets:{car_original:{download_url:'/photo'}}}),apiUrl:url=>url,withAuthHeaders:()=>({}),getIdentityPayload:()=>({}),authenticatedFetch:async url=>url==='/photo'?{ok:true,status:200,blob:async()=>new Blob(['photo'])}:{ok:true,status:200,json:async()=>({vehicle_revision:3,vehicle:{primary:null,alternatives:[],abstention_reason:'vehicle_not_resolved'}})} });
+ await unknownContext.recognizeFitmentVehicle();
+ assert.equal(unknownState.fitmentRecognition.status,'failed');
+ assert.equal(unknownState.fitmentRecognition.abstentionReason,'vehicle_not_resolved');
+ assert.equal(unknownState.fitmentRecognition.providerUnavailable,undefined);
+});
+
 test('old recognition revision cannot poll or mutate the new state',async()=>{
  const state={fitmentJobId:'A',fitmentOverview:{vehicle_revision:10},fitmentRecognition:{status:'idle'},fitmentRecognitionToken:0};
  let finish;let calls=0;const timers=[];

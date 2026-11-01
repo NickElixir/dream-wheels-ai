@@ -284,7 +284,7 @@ function vehicleRecognition(model) {
   }
   const ru = localeOf(model) === "ru";
   const multiple = recognition.abstentionReason === "multiple_vehicles";
-  const heading = recognition.rateLimited ? (ru ? "Распознавание временно недоступно" : "Recognition temporarily unavailable") : multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
+  const heading = recognition.rateLimited ? (ru ? "Распознавание временно недоступно" : "Recognition temporarily unavailable") : multiple ? (ru ? "На фото несколько автомобилей" : "There are several cars in the photo") : recognition.photoUnavailable ? (ru ? "Не удалось загрузить фото" : "Could not load the photo") : recognition.timedOut ? (ru ? "Не удалось получить результат" : "Could not get the result") : recognition.providerUnavailable ? uiText("fitment.vehicle.recognitionUnavailable", localeOf(model)) : recognition.status === "failed" ? (ru ? "Не удалось определить модель" : "Could not identify the model") : (ru ? "Выберите модель" : "Select the model");
   const candidates = (recognition.candidates || []).map((item, index) => {
     const identity = [item.make, item.model].filter(Boolean).join(" ");
     const year = item.year || (item.year_start && item.year_end ? `${item.year_start}–${item.year_end}` : uiText("fitment.yearUndetermined", localeOf(model)));

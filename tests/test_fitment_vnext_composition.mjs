@@ -366,3 +366,20 @@ test("rate limits are not presented as model identification failures", () => {
     assert.match(markup,/Указать вручную/);
   }
 });
+
+test("provider unavailability has technical copy while a successful unknown keeps model copy", () => {
+  for (const locale of ["ru", "en"]) {
+    assert.equal(copy("fitment.vehicle.recognitionUnavailable",locale),locale === "ru" ? "Сервис распознавания временно недоступен" : "Vehicle recognition service is temporarily unavailable");
+    const unavailable = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,providerUnavailable:true}});
+    assert.ok(unavailable.includes(copy("fitment.vehicle.recognitionUnavailable",locale)));
+    assert.doesNotMatch(unavailable,new RegExp(locale === "ru" ? "Не удалось определить модель" : "Could not identify the model"));
+
+    const unknown = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,abstentionReason:"vehicle_not_resolved"}});
+    assert.ok(unknown.includes(locale === "ru" ? "Не удалось определить модель" : "Could not identify the model"));
+    assert.doesNotMatch(unknown,locale === "ru" ? /Сервис распознавания временно недоступен/ : /Vehicle recognition service is temporarily unavailable/);
+
+    const limited = context.fitmentMarkup({locale,vehicleRecognition:{status:"failed",canRecognize:true,providerUnavailable:true,rateLimited:true,localRateLimited:false}});
+    assert.ok(limited.includes(locale === "ru" ? "Распознавание временно недоступно" : "Recognition temporarily unavailable"));
+    assert.doesNotMatch(limited,new RegExp(locale === "ru" ? "Сервис распознавания временно недоступен" : "Vehicle recognition service is temporarily unavailable"));
+  }
+});
