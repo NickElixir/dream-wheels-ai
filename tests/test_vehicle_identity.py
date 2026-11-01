@@ -419,3 +419,52 @@ def test_dominant_vehicle_prompt_is_versioned_and_preserves_target_ambiguity() -
     assert "similarly prominent vehicles" in VEHICLE_IDENTITY_PROMPT
     assert "same selected vehicle, never different cars" in VEHICLE_IDENTITY_PROMPT
     assert "there are multiple vehicles," not in VEHICLE_IDENTITY_PROMPT
+
+
+def test_aitunnel_reasoning_is_omitted_by_default_and_none_changes_only_reasoning():
+    from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
+
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    original = _aitunnel_resolver()._payload(image)
+    configured = AITunnelVehicleIdentityResolver(
+        api_key="test",
+        model="qwen3.8-flash",
+        timeout_sec=60,
+        max_retries=0,
+        reasoning_effort="none",
+    )._payload(image)
+    assert "reasoning" not in original
+    assert configured.pop("reasoning") == {"effort": "none"}
+    assert configured == original
+
+
+def test_aitunnel_reasoning_selection_is_provider_specific(monkeypatch):
+    import src.identity.service as service
+    from src.identity.providers.openai import OpenAIVehicleIdentityResolver
+
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_ENABLED", True)
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_PROVIDER", "aitunnel")
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT", "none")
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_MAX_RETRIES", 0)
+    resolver = service.get_vehicle_identity_resolver()
+    assert resolver.reasoning_effort == "none"
+    assert resolver.max_retries == 0
+    monkeypatch.setattr(service, "VEHICLE_IDENTITY_PROVIDER", "openai")
+    resolver = service.get_vehicle_identity_resolver()
+    assert isinstance(resolver, OpenAIVehicleIdentityResolver)
+    image = normalize_image(_png_bytes(), max_image_edge=500, max_pixels=1_000_000)
+    assert "reasoning" not in resolver._payload(image)
+
+
+def test_aitunnel_rejects_unsupported_reasoning_effort_without_request():
+    from src.identity.providers.aitunnel import AITunnelVehicleIdentityResolver
+    from src.identity.providers.base import VehicleIdentityProviderConfigurationError
+
+    with pytest.raises(VehicleIdentityProviderConfigurationError):
+        AITunnelVehicleIdentityResolver(
+            api_key="test",
+            model="qwen3.8-flash",
+            timeout_sec=60,
+            max_retries=0,
+            reasoning_effort="invalid",
+        )

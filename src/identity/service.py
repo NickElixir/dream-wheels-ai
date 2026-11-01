@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from src.config import (
     VEHICLE_IDENTITY_AITUNNEL_API_KEY,
+    VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT,
     VEHICLE_IDENTITY_ENABLED,
     VEHICLE_IDENTITY_MAX_RETRIES,
     VEHICLE_IDENTITY_MODEL,
@@ -39,6 +40,7 @@ def get_vehicle_identity_resolver() -> VehicleIdentityResolver:
     if VEHICLE_IDENTITY_PROVIDER == "aitunnel":
         return AITunnelVehicleIdentityResolver(
             api_key=VEHICLE_IDENTITY_AITUNNEL_API_KEY,
+            reasoning_effort=VEHICLE_IDENTITY_AITUNNEL_REASONING_EFFORT,
             model=VEHICLE_IDENTITY_MODEL,
             timeout_sec=VEHICLE_IDENTITY_TIMEOUT_SEC,
             max_retries=VEHICLE_IDENTITY_MAX_RETRIES,
