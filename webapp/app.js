@@ -9972,7 +9972,12 @@ window.dreamwheelsFitmentBridge = {
         if (action === "back") closeFitmentView();
         else if (action === "reload") void loadFitmentOverview(state.fitmentJobId);
         else if (action === "login") openAuthDialog();
-        else if (action === "recognize-vehicle") void recognizeFitmentVehicle();
+        else if (action === "recognize-vehicle") {
+            // Recognition publishes its loading state before the first await.
+            // A second redraw here removes the target of the in-flight scroll.
+            void recognizeFitmentVehicle();
+            return;
+        }
         else if (action === "recognition-proposal") useFitmentRecognitionProposal(Number(value));
         else if (action === "retry-catalogue") retryFitmentCatalogue(value);
         else if (action === "toggle-source") { state.fitmentSourceOpen = !state.fitmentSourceOpen; notifyFitmentBridge(); }
