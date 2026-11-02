@@ -76,9 +76,11 @@ export function renderIndex(source, buildSha) {
   const withRobots = withoutTelegramWebsiteLogin.replace('<head>', '<head>\n    <meta name="robots" content="noindex, nofollow">');
   const withDeploymentConfig = withRobots.replace(
     '<script src="/auth/harness-config.js"></script>',
-    '<script src="/deployment-config.js"></script>\n    <script src="/auth/harness-config.js"></script>',
+    `<script src="/deployment-config.js?v=${buildSha}"></script>\n    <script src="/auth/harness-config.js?v=${buildSha}"></script>`,
   );
-  return withDeploymentConfig.replaceAll('__BUILD_ID__', buildSha);
+  return withDeploymentConfig
+    .replace('<script src="/auth/app-auth.bundle.js"></script>', `<script src="/auth/app-auth.bundle.js?v=${buildSha}"></script>`)
+    .replaceAll('__BUILD_ID__', buildSha);
 }
 
 export function renderDeploymentConfig(config) {

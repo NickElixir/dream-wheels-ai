@@ -56,11 +56,12 @@ test('generated auth config uses the direct production analytics endpoint and co
   assert.doesNotMatch(text, /SERVICE_ROLE|BOT_TOKEN|SECRET|PRIVATE_KEY/u);
 });
 
-test('built HTML has noindex metadata, build stamp, and deployment config before auth config', () => {
-  const html = renderIndex('<html data-app-build="__BUILD_ID__"><head></head><body><script src="/auth/harness-config.js"></script><script src="/app.js?v=__BUILD_ID__"></script></body></html>', sha);
+test('built HTML has noindex metadata and build-versioned config/auth scripts', () => {
+  const html = renderIndex('<html data-app-build="__BUILD_ID__"><head></head><body><script src="/auth/harness-config.js"></script><script src="/auth/app-auth.bundle.js"></script><script src="/app.js?v=__BUILD_ID__"></script></body></html>', sha);
   assert.match(html, /<meta name="robots" content="noindex, nofollow">/u);
   assert.match(html, new RegExp(`data-app-build="${sha}"`, 'u'));
-  assert.ok(html.indexOf('/deployment-config.js') < html.indexOf('/auth/harness-config.js'));
+  assert.ok(html.indexOf(`/deployment-config.js?v=${sha}`) < html.indexOf(`/auth/harness-config.js?v=${sha}`));
+  assert.match(html, new RegExp(`/auth/app-auth\\.bundle\\.js\\?v=${sha}`, 'u'));
   assert.doesNotMatch(html, /__BUILD_ID__/u);
 });
 

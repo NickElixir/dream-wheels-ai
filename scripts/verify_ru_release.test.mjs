@@ -43,7 +43,10 @@ function mockFetch(options = {}) {
     }
     if (url.pathname === '/' && url.origin === siteOrigin) {
       const telegramMarkup = options.telegramMarkup ?? '';
-      return new Response(`<meta name="robots" content="noindex, nofollow"><script src="/deployment-config.js"></script>${sha}${telegramMarkup}`);
+      const deploymentScript = options.deploymentScript ?? `<script src="/deployment-config.js?v=${sha}"></script>`;
+      const harnessScript = options.harnessScript ?? `<script src="/auth/harness-config.js?v=${sha}"></script>`;
+      const bundleScript = options.bundleScript ?? `<script src="/auth/app-auth.bundle.js?v=${sha}"></script>`;
+      return new Response(`<meta name="robots" content="noindex, nofollow">${deploymentScript}${harnessScript}${bundleScript}${sha}${telegramMarkup}`);
     }
     if (url.pathname === '/health') {
       return Response.json({
@@ -94,7 +97,7 @@ test('verifies site metadata, gateway identity/build, upstream health, CORS and 
     assert.equal(report.gatewaySHA, gatewaySha);
     assert.deepEqual(report.revisionHeaders, { 'x-gateway-revision': 'rev-123' });
     assert.deepEqual(Object.keys(report.checks.html), [
-      'buildStamp', 'deploymentConfigLoaded', 'noIndex', 'noTelegramDomains', 'noTelegramAuthButton',
+      'buildStamp', 'deploymentConfigLoaded', 'harnessConfigVersioned', 'authBundleVersioned', 'noIndex', 'noTelegramDomains', 'noTelegramAuthButton',
     ]);
     assert.deepEqual(report.checks.protectedAuthBoundary, { missingToken: '401', untrustedOrigin: '403' });
     assert.deepEqual(requested.map(({ method, url }) => [method, new URL(url).pathname]), [
@@ -102,6 +105,10 @@ test('verifies site metadata, gateway identity/build, upstream health, CORS and 
       ['GET', '/upstream-health'], ['OPTIONS', '/api/backend/auth/me'], ['GET', '/api/backend/auth/me'], ['GET', '/api/backend/auth/me'],
     ]);
     assert.ok(requested.every(({ headers }) => !headers.has('authorization')));
+    assert.ok(requested.filter(({ method, url }) => method === 'GET' && !new URL(url).pathname.endsWith('/auth/me'))
+      .every(({ headers }) => headers.get('cache-control') === 'no-cache'));
+    const configRequest = requested.find(({ url }) => new URL(url).pathname === '/deployment-config.js');
+    assert.equal(new URL(configRequest.url).searchParams.get('v'), sha);
     assert.equal(requested.find(({ method }) => method === 'OPTIONS').headers.get('access-control-request-method'), 'GET');
     assert.doesNotMatch(JSON.stringify(report), /publishable|turnstile|bearer|secret/iu);
   }));
@@ -127,6 +134,9 @@ test('fails closed for deployment config and HTML safety mismatches', async (t) 
     ['deployment environment', { configEnvironment: 'production' }, /deployment environment/u],
     ['deployment API target', { configApiBaseUrl: 'https://evil.example/api/backend' }, /deployment API target/u],
     ['Telegram website login flag', { telegramLoginEnabled: true }, /Telegram login/u],
+    ['deployment config cache key', { deploymentScript: '<script src="/deployment-config.js"></script>' }, /HTML is missing release markers/u],
+    ['auth harness cache key', { harnessScript: '<script src="/auth/harness-config.js"></script>' }, /HTML is missing release markers/u],
+    ['auth bundle cache key', { bundleScript: '<script src="/auth/app-auth.bundle.js"></script>' }, /HTML is missing release markers/u],
     ['Telegram domain', { telegramMarkup: '<a href="https://telegram.org">x</a>' }, /HTML is missing release markers/u],
     ['Telegram auth button', { telegramMarkup: '<button data-auth-telegram></button>' }, /HTML is missing release markers/u],
   ];
