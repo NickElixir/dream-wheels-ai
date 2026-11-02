@@ -40,6 +40,26 @@ const SUPABASE_AUTH_EVENTS = new Set([
     "USER_UPDATED",
 ]);
 
+const TIMEWEB_API_ORIGIN = "https://dream-wheels-ai-prod-vnext.onrender.com";
+
+export function backendApiUrl(path) {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const hostname = globalThis.location?.hostname || "";
+    const configured = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.apiBaseUrl;
+    if (hostname === "app.dream-wheels.ru" && typeof configured === "string") {
+        try {
+            const url = new URL(configured);
+            if (url.origin === TIMEWEB_API_ORIGIN && !url.username && !url.password
+                && url.pathname === "/" && !url.search && !url.hash) {
+                return `${TIMEWEB_API_ORIGIN}${normalizedPath}`;
+            }
+        } catch {
+            // Fall back to the existing same-origin Vercel gateway.
+        }
+    }
+    return `/api/backend${normalizedPath}`;
+}
+
 const defaultSessionController = Object.freeze({
     initializeAuthSession,
     getAccessToken: getSupabaseAccessToken,
@@ -223,7 +243,7 @@ export function createFrontendAuthController({
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            const response = await fetchImpl("/api/backend/auth/me", {
+            const response = await fetchImpl(backendApiUrl("/auth/me"), {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             if (!probeStillCurrent()) return getState();
@@ -348,7 +368,7 @@ export function createFrontendAuthController({
     async function bootstrapSupabaseAccount() {
         const accessToken = await sessionController.getAccessToken();
         if (!accessToken) throw authRequestError("SESSION_EXPIRED");
-        const response = await fetchImpl("/api/backend/auth/bootstrap", {
+        const response = await fetchImpl(backendApiUrl("/auth/bootstrap"), {
             method: "POST",
             headers: { Authorization: `Bearer ${accessToken}` },
         });

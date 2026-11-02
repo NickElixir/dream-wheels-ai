@@ -78,6 +78,7 @@ const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.
 const TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS = 12 * 1000;
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
+const TIMEWEB_API_ORIGIN = "https://dream-wheels-ai-prod-vnext.onrender.com";
 const PRICING_VERSION = "credits-v1";
 const PHOTO_CONSENT_VERSION = "2026-06-08";
 const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
@@ -304,6 +305,8 @@ function t(path, { sentence = false } = {}) {
 }
 
 function resolveApiBaseUrl() {
+    const deploymentApiBaseUrl = configuredDeploymentApiBaseUrl();
+    if (deploymentApiBaseUrl) return deploymentApiBaseUrl;
     if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;
 
     const params = new URLSearchParams(window.location.search);
@@ -321,12 +324,27 @@ function resolveApiBaseUrl() {
     return storedMode === "local" ? LOCAL_API_BASE_URL : LOCAL_API_BASE_URL;
 }
 
+function configuredDeploymentApiBaseUrl() {
+    if (window.location.hostname !== "app.dream-wheels.ru") return "";
+    const configured = window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.apiBaseUrl;
+    if (typeof configured !== "string") return "";
+    try {
+        const url = new URL(configured);
+        return url.origin === TIMEWEB_API_ORIGIN && !url.username && !url.password
+            && url.pathname === "/" && !url.search && !url.hash
+            ? TIMEWEB_API_ORIGIN
+            : "";
+    } catch {
+        return "";
+    }
+}
+
 function isLocalBrowser() {
     return ["localhost", "127.0.0.1"].includes(window.location.hostname);
 }
 
 function shouldUseBrowserApiProxy() {
-    return !isLocalBrowser();
+    return !isLocalBrowser() && !configuredDeploymentApiBaseUrl();
 }
 
 function appendSearchParams(url, params) {

@@ -4,7 +4,31 @@ import { readFile } from "node:fs/promises";
 import {
     AUTH_SESSION_STATES,
 } from "./supabase-client.js";
-import { createFrontendAuthController } from "./app-auth.js";
+import { backendApiUrl, createFrontendAuthController } from "./app-auth.js";
+
+test("backend auth requests use the direct Render API only on the configured Timeweb host", () => {
+    const oldLocation = globalThis.location;
+    const oldDeploymentConfig = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+    try {
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = { apiBaseUrl: "https://dream-wheels-ai-prod-vnext.onrender.com" };
+        globalThis.location = { hostname: "app.dream-wheels.ru" };
+        assert.equal(backendApiUrl("/auth/me"), "https://dream-wheels-ai-prod-vnext.onrender.com/auth/me");
+        globalThis.location = { hostname: "preview.example" };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.location = { hostname: "app.dream-wheels.ru" };
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = { apiBaseUrl: "https://evil.example" };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            apiBaseUrl: "https://user@dream-wheels-ai-prod-vnext.onrender.com",
+        };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+    } finally {
+        if (oldLocation === undefined) delete globalThis.location;
+        else globalThis.location = oldLocation;
+        if (oldDeploymentConfig === undefined) delete globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+        else globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = oldDeploymentConfig;
+    }
+});
 
 function fakeSessionController({ sessionPresent = false, userId = "user-1", accessToken = "opaque-test-token", refreshAccessToken = "refreshed-test-token", onRefresh = null } = {}) {
     let currentAccessToken = accessToken;

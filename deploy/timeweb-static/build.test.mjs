@@ -1,0 +1,89 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  artifactEntries,
+  copyPublicTree,
+  deploymentConfig,
+  isPublicTreePath,
+  productionApiBaseUrl,
+  renderDeploymentConfig,
+  renderHarnessConfig,
+  renderIndex,
+  resolveBuildSha,
+} from './build.mjs';
+
+const sha = 'a'.repeat(40);
+
+test('build identifier must be a full commit SHA', () => {
+  assert.equal(resolveBuildSha({ APP_BUILD_SHA: sha }, 'b'.repeat(40)), sha);
+  assert.equal(resolveBuildSha({}, 'b'.repeat(40)), 'b'.repeat(40));
+  assert.throws(() => resolveBuildSha({ APP_BUILD_SHA: 'latest' }, sha), /40-character/u);
+});
+
+test('deployment config points API calls at production Render', () => {
+  assert.deepEqual(deploymentConfig(), { apiBaseUrl: productionApiBaseUrl });
+  assert.match(renderDeploymentConfig(deploymentConfig()), /__DREAM_WHEELS_DEPLOYMENT_CONFIG__/u);
+  assert.match(renderDeploymentConfig(deploymentConfig()), /dream-wheels-ai-prod-vnext\.onrender\.com/u);
+});
+
+test('generated auth config uses the direct production analytics endpoint and contains no server env', () => {
+  const text = renderHarnessConfig({
+    supabase: { url: 'https://sample.supabase.co', publishableKey: 'sb_publishable_public' },
+    auth: { analyticsEndpoint: `${productionApiBaseUrl}/analytics/events`, turnstileSiteKey: 'public-site-key' },
+  });
+  assert.match(text, /https:\/\/dream-wheels-ai-prod-vnext\.onrender\.com\/analytics\/events/u);
+  assert.doesNotMatch(text, /SERVICE_ROLE|BOT_TOKEN|SECRET|PRIVATE_KEY/u);
+});
+
+test('built HTML has noindex metadata, build stamp, and deployment config before auth config', () => {
+  const html = renderIndex('<html data-app-build="__BUILD_ID__"><head></head><body><script src="/auth/harness-config.js"></script><script src="/app.js?v=__BUILD_ID__"></script></body></html>', sha);
+  assert.match(html, /<meta name="robots" content="noindex, nofollow">/u);
+  assert.match(html, new RegExp(`data-app-build="${sha}"`, 'u'));
+  assert.ok(html.indexOf('/deployment-config.js') < html.indexOf('/auth/harness-config.js'));
+  assert.doesNotMatch(html, /__BUILD_ID__/u);
+});
+
+test('artifact copy plan includes runtime files and excludes server and development trees', () => {
+  assert.deepEqual(artifactEntries, [
+    'index.html', 'app.js', 'style.css', 'startup.js', 'app-route.mjs', 'favicon.ico', 'favicon.svg', 'cover.jpg',
+    'auth/harness-config.js', 'auth/app-auth.bundle.js', 'assets/', 'vnext/',
+  ]);
+  assert.ok(!artifactEntries.some((entry) => /(?:api|lib|scripts|tests|package|\.env)/u.test(entry)));
+});
+
+test('recursive public tree filter rejects metadata, tests, secrets, dependencies, and symlink candidates', async () => {
+  assert.equal(isPublicTreePath('fonts/ibm-plex-sans.woff2', 'assets'), true);
+  assert.equal(isPublicTreePath('api/legacy-navigation.js', 'assets'), false);
+  assert.equal(isPublicTreePath('api/legacy-navigation.js', 'vnext'), true);
+  for (const rejected of ['.env', '.env.production', 'README.md', 'package.json', 'tests/example.js', 'button.test.js', 'node_modules/lib/index.js', 'lib/server.js', 'scripts/build.js']) {
+    assert.equal(isPublicTreePath(rejected, 'assets'), false, rejected);
+  }
+
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'timeweb-static-filter-'));
+  try {
+    const source = path.join(temp, 'assets');
+    await fs.mkdir(path.join(source, 'fonts'), { recursive: true });
+    await fs.mkdir(path.join(source, 'tests'));
+    await fs.writeFile(path.join(source, 'fonts/runtime.woff2'), 'font');
+    await fs.writeFile(path.join(source, 'tests/private.fixture'), 'fixture');
+    await fs.writeFile(path.join(source, '.env'), 'secret');
+    await fs.writeFile(path.join(temp, 'outside.js'), 'private');
+    await fs.symlink(path.join(temp, 'outside.js'), path.join(source, 'linked.js'));
+    await fs.writeFile(path.join(source, 'package.json'), '{}');
+    await fs.writeFile(path.join(source, 'README.md'), 'private');
+    await fs.writeFile(path.join(source, 'runtime.js'), 'window.runtime = true;');
+    const output = path.join(temp, 'output');
+    await copyPublicTree(source, output, 'assets');
+    assert.equal(await fs.readFile(path.join(output, 'runtime.js'), 'utf8'), 'window.runtime = true;');
+    await assert.rejects(fs.access(path.join(output, 'tests/private.fixture')));
+    await assert.rejects(fs.access(path.join(output, '.env')));
+    await assert.rejects(fs.access(path.join(output, 'linked.js')));
+    await assert.rejects(fs.access(path.join(output, 'package.json')));
+    await assert.rejects(fs.access(path.join(output, 'README.md')));
+  } finally {
+    await fs.rm(temp, { recursive: true, force: true });
+  }
+});
