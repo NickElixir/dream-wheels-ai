@@ -4,7 +4,67 @@ import { readFile } from "node:fs/promises";
 import {
     AUTH_SESSION_STATES,
 } from "./supabase-client.js";
-import { createFrontendAuthController } from "./app-auth.js";
+import { backendApiUrl, createFrontendAuthController } from "./app-auth.js";
+
+test("backend auth requests use the RU production Deno gateway only on the configured Timeweb host", () => {
+    const oldLocation = globalThis.location;
+    const oldDeploymentConfig = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+    try {
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-production", environment: "production",
+            apiBaseUrl: "https://gateway.dreamwheels.deno.net/api/backend",
+        };
+        globalThis.location = { hostname: "app.dream-wheels.ru" };
+        assert.equal(backendApiUrl("/auth/me"), "https://gateway.dreamwheels.deno.net/api/backend/auth/me");
+        globalThis.location = { hostname: "preview.example" };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.location = { hostname: "app.dream-wheels.ru" };
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = { apiBaseUrl: "https://evil.example" };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-production", environment: "production",
+            apiBaseUrl: "https://user@gateway.dreamwheels.deno.net/api/backend",
+        };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+    } finally {
+        if (oldLocation === undefined) delete globalThis.location;
+        else globalThis.location = oldLocation;
+        if (oldDeploymentConfig === undefined) delete globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+        else globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = oldDeploymentConfig;
+    }
+});
+
+test("backend auth requests use Deno only for the exact test deployment config", () => {
+    const oldLocation = globalThis.location;
+    const oldDeploymentConfig = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+    try {
+        globalThis.location = { hostname: "app-test.dream-wheels.ru" };
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-test",
+            apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
+            environment: "test",
+        };
+        assert.equal(backendApiUrl("/auth/me"), "https://gateway-test.dreamwheels.deno.net/api/backend/auth/me");
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__.apiBaseUrl = "https://evil.example/api/backend";
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-test",
+            apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
+            environment: "test",
+        };
+        globalThis.location = { hostname: "app.dream-wheels.ru" };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
+        };
+        assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
+    } finally {
+        if (oldLocation === undefined) delete globalThis.location;
+        else globalThis.location = oldLocation;
+        if (oldDeploymentConfig === undefined) delete globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
+        else globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = oldDeploymentConfig;
+    }
+});
 
 function fakeSessionController({ sessionPresent = false, userId = "user-1", accessToken = "opaque-test-token", refreshAccessToken = "refreshed-test-token", onRefresh = null } = {}) {
     let currentAccessToken = accessToken;

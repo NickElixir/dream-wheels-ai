@@ -12,10 +12,16 @@ PROXY_HELPER_JS = (ROOT / "webapp" / "lib" / "backend-proxy.js").read_text(encod
 
 def test_ci_covers_release_branches() -> None:
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    assert "branches: [main, staging]" in ci
-    for branch_pattern in ("'feature/**'", "'fix/**'", "'e2e/**'", "'docs/**'"):
-        assert branch_pattern in ci
-    assert "branches: [dev]" not in ci
+    import yaml
+
+    triggers = yaml.load(ci, Loader=yaml.BaseLoader)["on"]
+    assert triggers["pull_request"] in (
+        None,
+        "",
+    )  # Every base, including nested infrastructure PRs.
+    assert {"feature/**", "fix/**", "e2e/**", "docs/**", "chore/**"} <= set(
+        triggers["push"]["branches"]
+    )
 
 
 def test_frontend_deploy_workflow_is_ci_gated_and_quota_safe() -> None:
@@ -97,8 +103,11 @@ def test_frontend_vercel_configs_disable_native_git_deployments() -> None:
 
 
 def test_deployed_webapp_uses_runtime_backend_proxy_only() -> None:
-    assert "onrender.com" not in APP_JS
-    assert "onrender.com" not in json.dumps(VERCEL_JSON)
+    # The shared bundle has fixed Deno endpoints for explicitly profiled RU
+    # Timeweb hosts; Vercel continues to use its same-origin runtime proxy.
+    assert 'window.location.hostname === "app.dream-wheels.ru"' in APP_JS
+    assert 'window.location.hostname === "app-test.dream-wheels.ru"' in APP_JS
+    assert "gateway.dreamwheels.deno.net" not in json.dumps(VERCEL_JSON)
     assert 'const WEBSITE_PROXY_BASE_URL = "/api/backend";' in APP_JS
     assert "if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;" in APP_JS
     assert 'authenticatedFetch(apiUrl("/identity/assets")' in APP_JS

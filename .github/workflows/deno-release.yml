@@ -1,0 +1,108 @@
+name: Release RU API gateway
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        options: [ru-test, ru-production]
+        required: true
+      commit:
+        description: Exact 40-character reviewed source SHA
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: deno-release-${{ inputs.profile }}
+  cancel-in-progress: false
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      app: ${{ steps.source.outputs.app }}
+      environment: ${{ steps.source.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: source
+        env:
+          PROFILE: ${{ inputs.profile }}
+          REQUESTED_SHA: ${{ inputs.commit }}
+        run: |
+          [[ "$REQUESTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          case "$PROFILE" in
+            ru-test) branch=staging; app=gateway-test; environment=test ;;
+            ru-production) branch=main; app=gateway; environment=production ;;
+            *) exit 1 ;;
+          esac
+          test "$GITHUB_REF_NAME" = "$branch"
+          git fetch --no-tags origin "$branch"
+          git merge-base --is-ancestor "$REQUESTED_SHA" "origin/$branch"
+          echo "sha=$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+  ci:
+    needs: source
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.source.outputs.sha }}
+    permissions:
+      contents: read
+  deploy:
+    needs: [source, ci]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.profile }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - name: Stamp public gateway metadata
+        env:
+          SOURCE_SHA: ${{ needs.source.outputs.sha }}
+          GATEWAY_ENVIRONMENT: ${{ needs.source.outputs.environment }}
+        run: |
+          printf 'GATEWAY_BUILD_SHA=%s\nGATEWAY_ENVIRONMENT=%s\n' "$SOURCE_SHA" "$GATEWAY_ENVIRONMENT" > "$RUNNER_TEMP/gateway-release.env"
+      - name: Configure existing app and deploy exact gateway source
+        working-directory: deploy/gateway
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          GATEWAY_APP: ${{ needs.source.outputs.app }}
+        run: |
+          test -n "$DENO_DEPLOY_TOKEN"
+          deno run -A --node-modules-dir=auto jsr:@deno/deploy@0.0.9908 env load "$RUNNER_TEMP/gateway-release.env" --replace --non-secrets GATEWAY_BUILD_SHA GATEWAY_ENVIRONMENT --org dreamwheels --app "$GATEWAY_APP" --non-interactive --json
+          deno run -A --node-modules-dir=auto jsr:@deno/deploy@0.0.9908 --org dreamwheels --app "$GATEWAY_APP" --prod --non-interactive --json > "$RUNNER_TEMP/gateway-deployment.json"
+      - name: Verify served gateway metadata and upstream
+        env:
+          GATEWAY_APP: ${{ needs.source.outputs.app }}
+          EXPECTED_SHA: ${{ needs.source.outputs.sha }}
+          EXPECTED_ENVIRONMENT: ${{ needs.source.outputs.environment }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          base = 'https://' + os.environ['GATEWAY_APP'] + '.dreamwheels.deno.net'
+          with urllib.request.urlopen(base + '/health', timeout=20) as r:
+              health = json.load(r)
+          assert health.get('ok') is True
+          assert health.get('build') == os.environ['EXPECTED_SHA']
+          assert health.get('environment') == os.environ['EXPECTED_ENVIRONMENT']
+          with urllib.request.urlopen(base + '/upstream-health', timeout=65) as r:
+              upstream = json.load(r)
+          assert upstream.get('ok') is True and upstream.get('upstreamStatus') == 200
+          print(json.dumps({'gateway':base, 'health':health, 'upstream':upstream}))
+          PY
+      - name: Preserve deployment revision for rollback
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-${{ inputs.profile }}-${{ needs.source.outputs.sha }}
+          path: ${{ runner.temp }}/gateway-deployment.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Remove temporary environment file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gateway-release.env"

@@ -40,6 +40,38 @@ const SUPABASE_AUTH_EVENTS = new Set([
     "USER_UPDATED",
 ]);
 
+const TIMEWEB_PRODUCTION_API_BASE_URL = "https://gateway.dreamwheels.deno.net/api/backend";
+const DENO_TEST_API_BASE_URL = "https://gateway-test.dreamwheels.deno.net/api/backend";
+
+export function backendApiUrl(path) {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const hostname = globalThis.location?.hostname || "";
+    const configured = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.apiBaseUrl;
+    if (typeof configured === "string") {
+        try {
+            const url = new URL(configured);
+            if (hostname === "app.dream-wheels.ru"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-production"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "production"
+                && configured === TIMEWEB_PRODUCTION_API_BASE_URL
+                && url.origin === "https://gateway.dreamwheels.deno.net"
+                && !url.username && !url.password && url.pathname === "/api/backend" && !url.search && !url.hash) {
+                return `${TIMEWEB_PRODUCTION_API_BASE_URL}${normalizedPath}`;
+            }
+            if (hostname === "app-test.dream-wheels.ru"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-test"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "test"
+                && configured === DENO_TEST_API_BASE_URL && url.origin === "https://gateway-test.dreamwheels.deno.net"
+                && !url.username && !url.password && url.pathname === "/api/backend" && !url.search && !url.hash) {
+                return `${DENO_TEST_API_BASE_URL}${normalizedPath}`;
+            }
+        } catch {
+            // Fall back to the existing same-origin Vercel gateway.
+        }
+    }
+    return `/api/backend${normalizedPath}`;
+}
+
 const defaultSessionController = Object.freeze({
     initializeAuthSession,
     getAccessToken: getSupabaseAccessToken,
@@ -51,7 +83,7 @@ const defaultSessionController = Object.freeze({
 
 function configuredHostIsAllowed(hostname = "") {
     if (["localhost", "127.0.0.1"].includes(hostname)) return true;
-    if (["dreamwheels.pro", "app.dreamwheels.pro", "dream-wheels-ai-webapp.vercel.app",
+    if (["dreamwheels.pro", "app.dreamwheels.pro", "app.dream-wheels.ru", "app-test.dream-wheels.ru", "dream-wheels-ai-webapp.vercel.app",
         "dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app"].includes(hostname)) return true;
     if (hostname === "dream-wheels-ai-webapp-staging.vercel.app") return true;
     return /^dream-wheels-ai-webapp-git-feature-auth-v11-integration-[a-z0-9-]+\.vercel\.app$/u.test(hostname);
@@ -223,7 +255,7 @@ export function createFrontendAuthController({
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            const response = await fetchImpl("/api/backend/auth/me", {
+            const response = await fetchImpl(backendApiUrl("/auth/me"), {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             if (!probeStillCurrent()) return getState();
@@ -348,7 +380,7 @@ export function createFrontendAuthController({
     async function bootstrapSupabaseAccount() {
         const accessToken = await sessionController.getAccessToken();
         if (!accessToken) throw authRequestError("SESSION_EXPIRED");
-        const response = await fetchImpl("/api/backend/auth/bootstrap", {
+        const response = await fetchImpl(backendApiUrl("/auth/bootstrap"), {
             method: "POST",
             headers: { Authorization: `Bearer ${accessToken}` },
         });
