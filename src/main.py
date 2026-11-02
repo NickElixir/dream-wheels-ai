@@ -146,9 +146,9 @@ async def release_health() -> dict[str, object]:
 # чтобы preview Mini App в Telegram Web работал без отдельного фикса.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[WEBAPP_URL, "https://web.telegram.org"],
+    allow_origins=[WEBAPP_URL, "https://web.telegram.org", "https://app.dream-wheels.ru"],
     allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,
     max_age=600,
