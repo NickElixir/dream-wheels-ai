@@ -7,12 +7,12 @@ PORT=${PORT:-10000}
 maintenance=$(printf '%s' "${APP_MAINTENANCE:-false}" | tr '[:upper:]' '[:lower:]')
 bot_enabled=$(printf '%s' "${BOT_ENABLED:-true}" | tr '[:upper:]' '[:lower:]')
 if [ "$maintenance" = "true" ] || [ "$bot_enabled" != "true" ]; then
-    exec uvicorn src.main:app --host 0.0.0.0 --port "$PORT"
+    exec uvicorn src.main:app --host 0.0.0.0 --port "$PORT" --no-access-log
 fi
 
 echo "Запускаем бэкенд FastAPI на порту $PORT..."
 # uvicorn ищет ASGI-app по dotted path: <module>:<attr>
-uvicorn src.main:app --host 0.0.0.0 --port $PORT &
+uvicorn src.main:app --host 0.0.0.0 --port "$PORT" --no-access-log &
 
 echo "Запускаем Telegram-бота..."
 python -m src.bot &

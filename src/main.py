@@ -49,11 +49,13 @@ from src.generation import (
 )
 from src.image_fetch import fetch_image_bytes
 from src.payment_timeout import payment_timeout_loop
+from src.request_context import RequestContextMiddleware, install_request_id_log_context
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(name)s - %(levelname)s - request_id=%(request_id)s - %(message)s",
 )
+install_request_id_log_context()
 logger = logging.getLogger(__name__)
 
 # Подавить INFO-логи httpx/httpcore — каждый запрос содержит BOT_TOKEN в URL
@@ -108,7 +110,12 @@ async def lifespan(app: FastAPI):
             await redis_client.close_client()
 
 
-app = FastAPI(title="Dream Wheels MVP", lifespan=lifespan)
+class CorrelatedFastAPI(FastAPI):
+    def build_middleware_stack(self):
+        return RequestContextMiddleware(super().build_middleware_stack())
+
+
+app = CorrelatedFastAPI(title="Dream Wheels MVP", lifespan=lifespan)
 
 
 @app.middleware("http")
