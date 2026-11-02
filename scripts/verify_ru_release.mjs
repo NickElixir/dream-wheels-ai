@@ -41,7 +41,7 @@ async function get(url, { timeoutMs = 15_000 } = {}) {
     method: 'GET',
     redirect: 'error',
     signal: AbortSignal.timeout(timeoutMs),
-    headers: { accept: 'application/json,text/html,*/*' },
+    headers: { accept: 'application/json,text/html,*/*', 'cache-control': 'no-cache' },
   });
   if (!response.ok) throw new Error(`HTTP ${response.status} for ${new URL(url).pathname}`);
   return response;
@@ -66,7 +66,9 @@ export async function verifyRelease({ profile, sha, gatewaySha: suppliedGatewayS
   if (version.environment !== expected.environment) throw new Error('version.json environment does not match');
   if (version.apiBaseUrl !== expected.apiBaseUrl) throw new Error('version.json API target does not match profile');
 
-  const configResponse = await get(new URL('/deployment-config.js', site));
+  const deploymentConfigUrl = new URL('/deployment-config.js', site);
+  deploymentConfigUrl.searchParams.set('v', sha.toLowerCase());
+  const configResponse = await get(deploymentConfigUrl);
   const configText = await configResponse.text();
   const config = parseDeploymentConfig(configText);
   if (config.profile !== profile) throw new Error('deployment profile does not match');
@@ -78,7 +80,9 @@ export async function verifyRelease({ profile, sha, gatewaySha: suppliedGatewayS
   const html = await htmlResponse.text();
   const htmlChecks = {
     buildStamp: html.includes(sha.toLowerCase()),
-    deploymentConfigLoaded: /<script src="\/deployment-config\.js"><\/script>/u.test(html),
+    deploymentConfigLoaded: html.includes(`<script src="/deployment-config.js?v=${sha.toLowerCase()}"></script>`),
+    harnessConfigVersioned: html.includes(`<script src="/auth/harness-config.js?v=${sha.toLowerCase()}"></script>`),
+    authBundleVersioned: html.includes(`<script src="/auth/app-auth.bundle.js?v=${sha.toLowerCase()}"></script>`),
     noIndex: /<meta name="robots" content="noindex, nofollow">/u.test(html),
     noTelegramDomains: !/(?:telegram\.org|t\.me)/iu.test(html),
     noTelegramAuthButton: !/(?:data-auth-telegram|auth-dialog-telegram)/iu.test(html),
@@ -162,7 +166,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   let report;
   try {
     const args = parseArgs(process.argv.slice(2));
-    report = await verifyRelease({ ...args, gatewaySha: args['gateway-sha'] });
+    report = await verifyRelease(args);
   } catch (error) {
     report = { ok: false, error: error instanceof Error ? error.message : 'verification failed' };
     process.exitCode = 1;
