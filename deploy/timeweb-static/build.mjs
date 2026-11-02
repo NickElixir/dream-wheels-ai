@@ -7,7 +7,7 @@ import { publicConfig } from '../../webapp/scripts/build-public-config.mjs';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const webappRoot = path.join(repositoryRoot, 'webapp');
 export const outputRoot = path.join(repositoryRoot, 'dist/timeweb');
-export const productionApiBaseUrl = 'https://dream-wheels-ai-prod-vnext.onrender.com';
+export const productionApiBaseUrl = 'https://gateway.dreamwheels.deno.net/api/backend';
 export const denoTestApiBaseUrl = 'https://gateway-test.dreamwheels.deno.net/api/backend';
 
 const rootFiles = [
@@ -34,21 +34,33 @@ export function isPublicTreePath(relativePath, treeName) {
 }
 
 export function resolveBuildSha(env, gitSha) {
-  const sha = env.APP_BUILD_SHA || gitSha;
-  if (!/^[a-f0-9]{40}$/iu.test(sha || '')) {
+  const suppliedSha = env.APP_BUILD_SHA;
+  if (suppliedSha && !/^[a-f0-9]{40}$/iu.test(suppliedSha)) {
     throw new Error('APP_BUILD_SHA must be a full 40-character commit SHA');
   }
+  if (gitSha && !/^[a-f0-9]{40}$/iu.test(gitSha)) {
+    throw new Error('Git build SHA must be a full 40-character commit SHA');
+  }
+  if (suppliedSha && gitSha && suppliedSha.toLowerCase() !== gitSha.toLowerCase()) {
+    throw new Error('APP_BUILD_SHA must match the checked-out Git commit SHA');
+  }
+  const sha = suppliedSha || gitSha;
+  if (!sha) throw new Error('APP_BUILD_SHA is required when Git metadata is unavailable');
   return sha.toLowerCase();
 }
 
 export function deploymentConfig(env = {}) {
-  if (env.TIMEWEB_API_TARGET === undefined || env.TIMEWEB_API_TARGET === '') {
-    return { apiBaseUrl: productionApiBaseUrl, websiteTelegramLoginEnabled: false };
+  const profile = env.TIMEWEB_PROFILE;
+  if (Object.hasOwn(env, 'TIMEWEB_API_TARGET')) {
+    throw new Error('TIMEWEB_API_TARGET is no longer supported; set TIMEWEB_PROFILE');
   }
-  if (env.TIMEWEB_API_TARGET === 'deno-test') {
-    return { apiBaseUrl: denoTestApiBaseUrl, environment: 'test', websiteTelegramLoginEnabled: false };
+  if (profile === 'ru-test') {
+    return { profile, apiBaseUrl: denoTestApiBaseUrl, environment: 'test', websiteTelegramLoginEnabled: false };
   }
-  throw new Error('TIMEWEB_API_TARGET must be deno-test when set');
+  if (profile === 'ru-production') {
+    return { profile, apiBaseUrl: productionApiBaseUrl, environment: 'production', websiteTelegramLoginEnabled: false };
+  }
+  throw new Error('TIMEWEB_PROFILE is required and must be ru-test or ru-production');
 }
 
 export function renderIndex(source, buildSha) {
@@ -101,7 +113,12 @@ async function copyFile(source, destination) {
 
 export async function build({ env = process.env, root = repositoryRoot, output = outputRoot } = {}) {
   const appRoot = path.join(root, 'webapp');
-  const gitSha = env.APP_BUILD_SHA ? '' : execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  let gitSha = '';
+  try {
+    gitSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  } catch {
+    // Static build contexts may omit .git; APP_BUILD_SHA remains the trusted source stamp.
+  }
   const buildSha = resolveBuildSha(env, gitSha);
   const deployConfig = deploymentConfig(env);
 
@@ -123,7 +140,7 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   await fs.writeFile(path.join(output, 'index.html'), html);
   await fs.writeFile(path.join(output, '404.html'), html);
   await fs.writeFile(path.join(output, 'deployment-config.js'), renderDeploymentConfig(deployConfig));
-  await fs.writeFile(path.join(output, 'version.json'), `${JSON.stringify({ build: buildSha }, null, 2)}\n`);
+  await fs.writeFile(path.join(output, 'version.json'), `${JSON.stringify({ build: buildSha, profile: deployConfig.profile, environment: deployConfig.environment, apiBaseUrl: deployConfig.apiBaseUrl }, null, 2)}\n`);
   await fs.writeFile(path.join(output, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
   console.log(`Built static Timeweb artifact at ${output} (${buildSha})`);
 }

@@ -1,11 +1,10 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net=0.0.0.0:8000,dream-wheels-ai-prod-vnext.onrender.com:443 main.ts",
-    "start": "deno run --allow-net=0.0.0.0:8000,dream-wheels-ai-prod-vnext.onrender.com:443 main.ts",
+    "dev": "deno run --watch --allow-env=GATEWAY_BUILD_SHA,GATEWAY_ENVIRONMENT --allow-net=0.0.0.0:8000,dream-wheels-ai-prod-vnext.onrender.com:443 main.ts",
+    "start": "deno run --allow-env=GATEWAY_BUILD_SHA,GATEWAY_ENVIRONMENT --allow-net=0.0.0.0:8000,dream-wheels-ai-prod-vnext.onrender.com:443 main.ts",
     "check": "deno fmt --check && deno lint && deno check main.ts handler_test.ts && deno test"
   },
   "deploy": {
-    "org": "dreamwheels",
-    "app": "gateway-test"
+    "org": "dreamwheels"
   }
 }

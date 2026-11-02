@@ -40,7 +40,7 @@ const SUPABASE_AUTH_EVENTS = new Set([
     "USER_UPDATED",
 ]);
 
-const TIMEWEB_API_ORIGIN = "https://dream-wheels-ai-prod-vnext.onrender.com";
+const TIMEWEB_PRODUCTION_API_BASE_URL = "https://gateway.dreamwheels.deno.net/api/backend";
 const DENO_TEST_API_BASE_URL = "https://gateway-test.dreamwheels.deno.net/api/backend";
 
 export function backendApiUrl(path) {
@@ -50,11 +50,16 @@ export function backendApiUrl(path) {
     if (typeof configured === "string") {
         try {
             const url = new URL(configured);
-            if (hostname === "app.dream-wheels.ru" && url.origin === TIMEWEB_API_ORIGIN
-                && !url.username && !url.password && url.pathname === "/" && !url.search && !url.hash) {
-                return `${TIMEWEB_API_ORIGIN}${normalizedPath}`;
+            if (hostname === "app.dream-wheels.ru"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-production"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "production"
+                && configured === TIMEWEB_PRODUCTION_API_BASE_URL
+                && url.origin === "https://gateway.dreamwheels.deno.net"
+                && !url.username && !url.password && url.pathname === "/api/backend" && !url.search && !url.hash) {
+                return `${TIMEWEB_PRODUCTION_API_BASE_URL}${normalizedPath}`;
             }
             if (hostname === "app-test.dream-wheels.ru"
+                && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-test"
                 && globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "test"
                 && configured === DENO_TEST_API_BASE_URL && url.origin === "https://gateway-test.dreamwheels.deno.net"
                 && !url.username && !url.password && url.pathname === "/api/backend" && !url.search && !url.hash) {

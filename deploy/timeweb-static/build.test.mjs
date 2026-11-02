@@ -20,24 +20,31 @@ import {
 const sha = 'a'.repeat(40);
 
 test('build identifier must be a full commit SHA', () => {
-  assert.equal(resolveBuildSha({ APP_BUILD_SHA: sha }, 'b'.repeat(40)), sha);
+  assert.equal(resolveBuildSha({ APP_BUILD_SHA: sha }, sha.toUpperCase()), sha);
   assert.equal(resolveBuildSha({}, 'b'.repeat(40)), 'b'.repeat(40));
+  assert.throws(() => resolveBuildSha({ APP_BUILD_SHA: sha }, 'b'.repeat(40)), /match/u);
+  assert.equal(resolveBuildSha({ APP_BUILD_SHA: sha }, ''), sha);
+  assert.throws(() => resolveBuildSha({}, ''), /required when Git metadata/u);
   assert.throws(() => resolveBuildSha({ APP_BUILD_SHA: 'latest' }, sha), /40-character/u);
 });
 
-test('deployment config points API calls at production Render', () => {
-  assert.deepEqual(deploymentConfig(), { apiBaseUrl: productionApiBaseUrl, websiteTelegramLoginEnabled: false });
-  assert.match(renderDeploymentConfig(deploymentConfig()), /__DREAM_WHEELS_DEPLOYMENT_CONFIG__/u);
-  assert.match(renderDeploymentConfig(deploymentConfig()), /dream-wheels-ai-prod-vnext\.onrender\.com/u);
+test('named RU profiles map to their fixed API targets', () => {
+  assert.deepEqual(deploymentConfig({ TIMEWEB_PROFILE: 'ru-production' }), {
+    profile: 'ru-production', apiBaseUrl: productionApiBaseUrl, environment: 'production', websiteTelegramLoginEnabled: false,
+  });
+  assert.deepEqual(deploymentConfig({ TIMEWEB_PROFILE: 'ru-test' }), {
+    profile: 'ru-test', apiBaseUrl: denoTestApiBaseUrl, environment: 'test', websiteTelegramLoginEnabled: false,
+  });
+  assert.match(renderDeploymentConfig(deploymentConfig({ TIMEWEB_PROFILE: 'ru-production' })), /gateway\.dreamwheels\.deno\.net\/api\/backend/u);
+  assert.throws(() => deploymentConfig({ TIMEWEB_PROFILE: 'ru-production', TIMEWEB_API_TARGET: 'deno-test' }), /TIMEWEB_API_TARGET is no longer supported/u);
+  assert.throws(() => deploymentConfig({ TIMEWEB_PROFILE: 'unknown' }), /TIMEWEB_PROFILE/u);
 });
 
-test('Deno gateway is available only through the explicit test build target', () => {
-  assert.deepEqual(deploymentConfig({ TIMEWEB_API_TARGET: 'deno-test' }), {
-    apiBaseUrl: denoTestApiBaseUrl,
-    environment: 'test',
-    websiteTelegramLoginEnabled: false,
-  });
-  assert.throws(() => deploymentConfig({ TIMEWEB_API_TARGET: 'https://evil.example' }), /must be deno-test/u);
+test('build profile is required and legacy API target is rejected', () => {
+  assert.throws(() => deploymentConfig(), /TIMEWEB_PROFILE is required/u);
+  assert.throws(() => deploymentConfig({ TIMEWEB_PROFILE: '' }), /TIMEWEB_PROFILE is required/u);
+  assert.throws(() => deploymentConfig({ TIMEWEB_API_TARGET: 'deno-test' }), /TIMEWEB_API_TARGET is no longer supported/u);
+  assert.throws(() => deploymentConfig({ TIMEWEB_PROFILE: 'ru-test', TIMEWEB_API_TARGET: '' }), /TIMEWEB_API_TARGET is no longer supported/u);
 });
 
 test('generated auth config uses the direct production analytics endpoint and contains no server env', () => {
@@ -45,7 +52,7 @@ test('generated auth config uses the direct production analytics endpoint and co
     supabase: { url: 'https://sample.supabase.co', publishableKey: 'sb_publishable_public' },
     auth: { analyticsEndpoint: `${productionApiBaseUrl}/analytics/events`, turnstileSiteKey: 'public-site-key' },
   });
-  assert.match(text, /https:\/\/dream-wheels-ai-prod-vnext\.onrender\.com\/analytics\/events/u);
+  assert.match(text, /https:\/\/gateway\.dreamwheels\.deno\.net\/api\/backend\/analytics\/events/u);
   assert.doesNotMatch(text, /SERVICE_ROLE|BOT_TOKEN|SECRET|PRIVATE_KEY/u);
 });
 

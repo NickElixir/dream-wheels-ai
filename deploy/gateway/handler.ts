@@ -46,16 +46,6 @@ const methods = (...values: string[]) => new Set(values);
 const ROUTES: RouteRule[] = [
   { pattern: /^\/auth\/me$/, methods: methods("GET") },
   { pattern: /^\/auth\/bootstrap$/, methods: methods("POST") },
-  {
-    pattern: /^\/auth\/telegram\/nonce$/,
-    methods: methods("GET"),
-    auth: false,
-  },
-  {
-    pattern: /^\/auth\/telegram\/verify-id-token$/,
-    methods: methods("POST"),
-    auth: false,
-  },
   { pattern: /^\/analytics\/events$/, methods: methods("POST"), auth: false },
   { pattern: /^\/jobs$/, methods: methods("GET", "POST") },
   { pattern: /^\/jobs\/from-assets$/, methods: methods("POST") },
@@ -115,6 +105,7 @@ function corsHeaders(origin: string | null): Headers {
     headers.set("Access-Control-Allow-Methods", CORS_METHODS);
     headers.set("Access-Control-Allow-Headers", CORS_HEADERS);
     headers.set("Access-Control-Max-Age", "600");
+    headers.set("Access-Control-Expose-Headers", "X-Request-Id");
   }
   return headers;
 }
@@ -148,9 +139,13 @@ function matchRoute(path: string, method: string): RouteRule | null {
   ) ?? null;
 }
 
-function forwardHeaders(request: Request): Headers {
+function forwardHeaders(request: Request, requestId: string): Headers {
   const headers = new Headers();
   for (const name of FORWARDED_REQUEST_HEADERS) {
+    if (name === "x-request-id") {
+      headers.set(name, requestId);
+      continue;
+    }
     const value = request.headers.get(name);
     if (value !== null) headers.set(name, value);
   }
@@ -252,44 +247,94 @@ function responseWithDeadline(
 export async function handle(
   request: Request,
   fetcher: typeof fetch = fetch,
+  metadata: { environment?: string; build?: string } = {},
 ): Promise<Response> {
+  const started = performance.now();
+  const suppliedRequestId = request.headers.get("X-Request-Id") || "";
+  const requestId = /^[A-Za-z0-9._:-]{1,64}$/.test(suppliedRequestId)
+    ? suppliedRequestId
+    : crypto.randomUUID();
+  let routeTemplate = "unmatched";
+  const requestUrl = new URL(request.url);
+  if (requestUrl.pathname === "/health") routeTemplate = "/health";
+  else if (requestUrl.pathname === "/upstream-health") {
+    routeTemplate = "/upstream-health";
+  } else {
+    const candidate = safeBackendPath(requestUrl.pathname);
+    if (candidate) {
+      const matched = ROUTES.find((route) => route.pattern.test(candidate));
+      if (matched) {
+        routeTemplate = matched.pattern.source.replaceAll("\\/", "/");
+      }
+    }
+  }
+  const method = /^[A-Z]{1,16}$/.test(request.method)
+    ? request.method
+    : "OTHER";
   const url = new URL(request.url);
   const origin = request.headers.get("Origin");
   const cors = corsHeaders(origin);
 
+  let response: Response;
   if (url.pathname === "/health" || url.pathname === "/upstream-health") {
     if (request.method !== "GET") {
-      return new Response("Method not allowed", {
+      response = new Response("Method not allowed", {
         status: 405,
         headers: { ...Object.fromEntries(cors), Allow: "GET" },
       });
-    }
-    if (url.pathname === "/health") {
-      return Response.json({ ok: true, service: "deno-test" }, {
+    } else if (url.pathname === "/health") {
+      response = Response.json({
+        ok: true,
+        service: "dream-wheels-gateway",
+        environment: metadata.environment ?? "test",
+        build: metadata.build ?? "unknown",
+      }, {
         headers: cors,
       });
+    } else {
+      const started = performance.now();
+      try {
+        const upstreamResponse = await fetcher(UPSTREAM_HEALTH, {
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          redirect: "error",
+        });
+        await upstreamResponse.body?.cancel();
+        response = Response.json({
+          ok: upstreamResponse.ok,
+          upstreamStatus: upstreamResponse.status,
+          elapsedMs: Math.round(performance.now() - started),
+        }, { status: upstreamResponse.ok ? 200 : 502, headers: cors });
+      } catch {
+        response = Response.json({
+          ok: false,
+          error: "upstream_unavailable",
+          elapsedMs: Math.round(performance.now() - started),
+        }, { status: 502, headers: cors });
+      }
     }
-    const started = performance.now();
-    try {
-      const response = await fetcher(UPSTREAM_HEALTH, {
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        redirect: "error",
-      });
-      await response.body?.cancel();
-      return Response.json({
-        ok: response.ok,
-        upstreamStatus: response.status,
-        elapsedMs: Math.round(performance.now() - started),
-      }, { status: response.ok ? 200 : 502, headers: cors });
-    } catch {
-      return Response.json({
-        ok: false,
-        error: "upstream_unavailable",
-        elapsedMs: Math.round(performance.now() - started),
-      }, { status: 502, headers: cors });
-    }
+  } else {
+    response = await proxyRequest(request, fetcher, url, cors, requestId);
   }
 
+  response.headers.set("X-Request-Id", requestId);
+  console.log(JSON.stringify({
+    requestId,
+    method,
+    routeTemplate,
+    status: response.status,
+    durationMs: Math.round(performance.now() - started),
+  }));
+  return response;
+}
+
+async function proxyRequest(
+  request: Request,
+  fetcher: typeof fetch,
+  url: URL,
+  cors: Headers,
+  requestId: string,
+): Promise<Response> {
+  const origin = request.headers.get("Origin");
   const path = safeBackendPath(url.pathname);
   if (!path) return jsonError(404, "not_found", cors);
   if (origin && !ALLOWED_ORIGINS.has(origin)) {
@@ -340,7 +385,7 @@ export async function handle(
     REQUEST_TIMEOUT_MS,
   );
   try {
-    const headers = forwardHeaders(request);
+    const headers = forwardHeaders(request, requestId);
     let body: ReadableStream<Uint8Array> | null = null;
     if (request.method !== "GET" && request.method !== "HEAD") {
       body = request.body ? boundedBody(request.body, controller) : null;

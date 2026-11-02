@@ -10,7 +10,8 @@ Dream Wheels AI is a Telegram Mini App and bot for virtual wheel fitting: a user
 - Telegram Mini App frontend in `webapp/` and `python-telegram-bot`
 - Supabase Postgres and Storage
 - Upstash Redis for queue, sessions and rate limits
-- Render for backend/worker deployment; Vercel for WebApp hosting
+- Render for backend/worker deployment; Vercel and Timeweb for parallel WebApp hosting
+- RU environments, Deno routing, release and rollback: [canonical RU pipeline](docs/ru-release-pipeline.md)
 - External image-generation provider behind a backend adapter
 - GitHub Actions, Ruff, pytest and pre-commit
 

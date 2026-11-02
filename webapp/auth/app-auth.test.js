@@ -6,20 +6,24 @@ import {
 } from "./supabase-client.js";
 import { backendApiUrl, createFrontendAuthController } from "./app-auth.js";
 
-test("backend auth requests use the direct Render API only on the configured Timeweb host", () => {
+test("backend auth requests use the RU production Deno gateway only on the configured Timeweb host", () => {
     const oldLocation = globalThis.location;
     const oldDeploymentConfig = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__;
     try {
-        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = { apiBaseUrl: "https://dream-wheels-ai-prod-vnext.onrender.com" };
+        globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-production", environment: "production",
+            apiBaseUrl: "https://gateway.dreamwheels.deno.net/api/backend",
+        };
         globalThis.location = { hostname: "app.dream-wheels.ru" };
-        assert.equal(backendApiUrl("/auth/me"), "https://dream-wheels-ai-prod-vnext.onrender.com/auth/me");
+        assert.equal(backendApiUrl("/auth/me"), "https://gateway.dreamwheels.deno.net/api/backend/auth/me");
         globalThis.location = { hostname: "preview.example" };
         assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
         globalThis.location = { hostname: "app.dream-wheels.ru" };
         globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = { apiBaseUrl: "https://evil.example" };
         assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
         globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
-            apiBaseUrl: "https://user@dream-wheels-ai-prod-vnext.onrender.com",
+            profile: "ru-production", environment: "production",
+            apiBaseUrl: "https://user@gateway.dreamwheels.deno.net/api/backend",
         };
         assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
     } finally {
@@ -36,6 +40,7 @@ test("backend auth requests use Deno only for the exact test deployment config",
     try {
         globalThis.location = { hostname: "app-test.dream-wheels.ru" };
         globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-test",
             apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
             environment: "test",
         };
@@ -43,6 +48,7 @@ test("backend auth requests use Deno only for the exact test deployment config",
         globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__.apiBaseUrl = "https://evil.example/api/backend";
         assert.equal(backendApiUrl("/auth/me"), "/api/backend/auth/me");
         globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = {
+            profile: "ru-test",
             apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
             environment: "test",
         };

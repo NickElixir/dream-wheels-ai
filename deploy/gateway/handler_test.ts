@@ -10,13 +10,40 @@ const assert: (condition: unknown, message: string) => void = (
 };
 
 Deno.test("local health does not contact upstream", async () => {
-  const response = await handle(new Request("http://localhost/health"), () => {
-    throw new Error("Unexpected network call");
-  });
+  const response = await handle(
+    new Request("http://localhost/health"),
+    () => {
+      throw new Error("Unexpected network call");
+    },
+    { environment: "production", build: "abc123" },
+  );
+  const body = await response.json();
   assert(
-    response.status === 200 && (await response.json()).ok,
+    response.status === 200 && body.ok &&
+      body.service === "dream-wheels-gateway" &&
+      body.environment === "production" && body.build === "abc123",
     "Health failed",
   );
+  assert(response.headers.get("X-Request-Id") !== null, "Request id missing");
+});
+
+Deno.test("valid request ids are forwarded and unsafe values are replaced", async () => {
+  const forwarded = await handle(
+    new Request("https://gateway.test/health", {
+      headers: { "X-Request-Id": "trace-123" },
+    }),
+  );
+  assert(
+    forwarded.headers.get("X-Request-Id") === "trace-123",
+    "Valid id changed",
+  );
+  const sanitized = await handle(
+    new Request("https://gateway.test/health?token=secret", {
+      headers: { "X-Request-Id": "bad id" },
+    }),
+  );
+  const id = sanitized.headers.get("X-Request-Id") || "";
+  assert(/^[0-9a-f-]{36}$/i.test(id), "Unsafe id was not replaced");
 });
 
 Deno.test("upstream health uses fixed destination and does not forward credentials", async () => {
@@ -136,34 +163,28 @@ Deno.test("preflight validates route, origin, method and requested headers witho
   assert(rejected.status === 403, "Untrusted origin was allowed");
 });
 
-Deno.test("protected routes require bearer while explicitly public auth and analytics routes pass through", async () => {
+Deno.test("protected routes require bearer; removed Telegram auth routes stay unavailable", async () => {
   const denied = await handle(
     new Request(`https://gateway.test/api/backend/jobs?limit=10`, {
       headers: { Origin: origin },
     }),
   );
   assert(denied.status === 401, "Protected route did not require bearer");
-  for (
-    const [path, method] of [["/auth/telegram/nonce", "GET"], [
-      "/analytics/events",
-      "POST",
-    ]]
-  ) {
-    const response = await handle(
-      new Request(`https://gateway.test/api/backend${path}`, {
-        method,
-        headers: { Origin: origin },
-      }),
-      (input) => {
-        assert(
-          String(input).includes(path),
-          "Expected public route not forwarded",
-        );
-        return Promise.resolve(new Response("ok"));
-      },
-    );
-    assert(response.status === 200, `Expected public route ${path} to pass`);
-  }
+  const removed = await handle(
+    new Request(
+      "https://gateway.test/api/backend/auth/telegram/nonce",
+      { headers: { Origin: origin } },
+    ),
+  );
+  assert(removed.status === 404, "Removed Telegram auth route passed through");
+  const analytics = await handle(
+    new Request(
+      "https://gateway.test/api/backend/analytics/events",
+      { method: "POST", headers: { Origin: origin } },
+    ),
+    () => Promise.resolve(new Response("ok")),
+  );
+  assert(analytics.status === 200, "Analytics route should remain public");
 });
 
 Deno.test("rejects admin, unknown, traversal, encoded separator and arbitrary paths", async () => {

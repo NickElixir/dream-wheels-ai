@@ -83,7 +83,7 @@ const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.
 const TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS = 12 * 1000;
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
-const TIMEWEB_API_ORIGIN = "https://dream-wheels-ai-prod-vnext.onrender.com";
+const TIMEWEB_PRODUCTION_API_BASE_URL = "https://gateway.dreamwheels.deno.net/api/backend";
 const DENO_TEST_API_BASE_URL = "https://gateway-test.dreamwheels.deno.net/api/backend";
 const PRICING_VERSION = "credits-v1";
 const PHOTO_CONSENT_VERSION = "2026-06-08";
@@ -336,9 +336,13 @@ function configuredDeploymentApiBaseUrl() {
     try {
         const url = new URL(configured);
         const safeUrl = !url.username && !url.password && !url.search && !url.hash;
-        if (window.location.hostname === "app.dream-wheels.ru" && safeUrl
-            && url.origin === TIMEWEB_API_ORIGIN && url.pathname === "/") return TIMEWEB_API_ORIGIN;
+        if (window.location.hostname === "app.dream-wheels.ru"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-production" && safeUrl
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "production"
+            && configured === TIMEWEB_PRODUCTION_API_BASE_URL
+            && url.origin === "https://gateway.dreamwheels.deno.net" && url.pathname === "/api/backend") return TIMEWEB_PRODUCTION_API_BASE_URL;
         if (window.location.hostname === "app-test.dream-wheels.ru"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-test"
             && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "test" && safeUrl
             && configured === DENO_TEST_API_BASE_URL && url.origin === "https://gateway-test.dreamwheels.deno.net"
             && url.pathname === "/api/backend") return DENO_TEST_API_BASE_URL;
