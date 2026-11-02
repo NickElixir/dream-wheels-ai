@@ -7,6 +7,7 @@ import {
   artifactEntries,
   copyPublicTree,
   deploymentConfig,
+  denoTestApiBaseUrl,
   isPublicTreePath,
   productionApiBaseUrl,
   renderDeploymentConfig,
@@ -27,6 +28,14 @@ test('deployment config points API calls at production Render', () => {
   assert.deepEqual(deploymentConfig(), { apiBaseUrl: productionApiBaseUrl });
   assert.match(renderDeploymentConfig(deploymentConfig()), /__DREAM_WHEELS_DEPLOYMENT_CONFIG__/u);
   assert.match(renderDeploymentConfig(deploymentConfig()), /dream-wheels-ai-prod-vnext\.onrender\.com/u);
+});
+
+test('Deno gateway is available only through the explicit test build target', () => {
+  assert.deepEqual(deploymentConfig({ TIMEWEB_API_TARGET: 'deno-test' }), {
+    apiBaseUrl: denoTestApiBaseUrl,
+    environment: 'test',
+  });
+  assert.throws(() => deploymentConfig({ TIMEWEB_API_TARGET: 'https://evil.example' }), /must be deno-test/u);
 });
 
 test('generated auth config uses the direct production analytics endpoint and contains no server env', () => {

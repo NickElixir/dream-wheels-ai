@@ -79,6 +79,7 @@ const TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS = 12 * 1000;
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
 const TIMEWEB_API_ORIGIN = "https://dream-wheels-ai-prod-vnext.onrender.com";
+const DENO_TEST_API_BASE_URL = "https://gateway-test.dreamwheels.deno.net/api/backend";
 const PRICING_VERSION = "credits-v1";
 const PHOTO_CONSENT_VERSION = "2026-06-08";
 const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
@@ -325,15 +326,18 @@ function resolveApiBaseUrl() {
 }
 
 function configuredDeploymentApiBaseUrl() {
-    if (window.location.hostname !== "app.dream-wheels.ru") return "";
     const configured = window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.apiBaseUrl;
     if (typeof configured !== "string") return "";
     try {
         const url = new URL(configured);
-        return url.origin === TIMEWEB_API_ORIGIN && !url.username && !url.password
-            && url.pathname === "/" && !url.search && !url.hash
-            ? TIMEWEB_API_ORIGIN
-            : "";
+        const safeUrl = !url.username && !url.password && !url.search && !url.hash;
+        if (window.location.hostname === "app.dream-wheels.ru" && safeUrl
+            && url.origin === TIMEWEB_API_ORIGIN && url.pathname === "/") return TIMEWEB_API_ORIGIN;
+        if (window.location.hostname === "app-test.dream-wheels.ru"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "test" && safeUrl
+            && configured === DENO_TEST_API_BASE_URL && url.origin === "https://gateway-test.dreamwheels.deno.net"
+            && url.pathname === "/api/backend") return DENO_TEST_API_BASE_URL;
+        return "";
     } catch {
         return "";
     }

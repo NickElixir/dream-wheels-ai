@@ -19,6 +19,7 @@ function apiRouting(hostname, config, apiBaseUrl) {
         state: { apiBaseUrl },
         WEBSITE_PROXY_BASE_URL: "/api/backend",
         TIMEWEB_API_ORIGIN: "https://dream-wheels-ai-prod-vnext.onrender.com",
+        DENO_TEST_API_BASE_URL: "https://gateway-test.dreamwheels.deno.net/api/backend",
         LOCAL_API_BASE_URL: "http://127.0.0.1:10000",
         API_MODE_STORAGE_KEY: "dreamWheelsApiMode",
         localStorage: { getItem: () => "", setItem() {} },
@@ -50,4 +51,27 @@ test("Vercel, unknown hosts, and invalid configured origins retain the same-orig
     assert.equal(invalid.configuredDeploymentApiBaseUrl(), "");
     assert.equal(invalid.shouldUseBrowserApiProxy(), true);
     assert.equal(invalid.apiUrl("/auth/me"), "/api/backend/auth/me");
+});
+
+test("Deno gateway is selected only by the exact test deployment config", () => {
+    const config = {
+        apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend",
+        environment: "test",
+    };
+    const routes = apiRouting("app-test.dream-wheels.ru", config, config.apiBaseUrl);
+    assert.equal(routes.configuredDeploymentApiBaseUrl(), config.apiBaseUrl);
+    assert.equal(routes.apiUrl("/jobs/job-1"), "https://gateway-test.dreamwheels.deno.net/api/backend/jobs/job-1");
+
+    for (const invalidConfig of [
+        { ...config, apiBaseUrl: "https://evil.example/api/backend" },
+        { ...config, apiBaseUrl: "https://gateway-test.dreamwheels.deno.net/api/backend.evil" },
+        { ...config, apiBaseUrl: "https://user@gateway-test.dreamwheels.deno.net/api/backend" },
+        { apiBaseUrl: config.apiBaseUrl },
+    ]) {
+        const invalid = apiRouting("app-test.dream-wheels.ru", invalidConfig, "/api/backend");
+        assert.equal(invalid.configuredDeploymentApiBaseUrl(), "");
+        assert.equal(invalid.apiUrl("/jobs/job-1"), "/api/backend/jobs/job-1");
+    }
+    const wrongHost = apiRouting("app.dream-wheels.ru", config, "/api/backend");
+    assert.equal(wrongHost.configuredDeploymentApiBaseUrl(), "");
 });

@@ -8,6 +8,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const webappRoot = path.join(repositoryRoot, 'webapp');
 export const outputRoot = path.join(repositoryRoot, 'dist/timeweb');
 export const productionApiBaseUrl = 'https://dream-wheels-ai-prod-vnext.onrender.com';
+export const denoTestApiBaseUrl = 'https://gateway-test.dreamwheels.deno.net/api/backend';
 
 const rootFiles = [
   'index.html', 'app.js', 'style.css', 'startup.js', 'app-route.mjs',
@@ -40,8 +41,14 @@ export function resolveBuildSha(env, gitSha) {
   return sha.toLowerCase();
 }
 
-export function deploymentConfig() {
-  return { apiBaseUrl: productionApiBaseUrl };
+export function deploymentConfig(env = {}) {
+  if (env.TIMEWEB_API_TARGET === undefined || env.TIMEWEB_API_TARGET === '') {
+    return { apiBaseUrl: productionApiBaseUrl };
+  }
+  if (env.TIMEWEB_API_TARGET === 'deno-test') {
+    return { apiBaseUrl: denoTestApiBaseUrl, environment: 'test' };
+  }
+  throw new Error('TIMEWEB_API_TARGET must be deno-test when set');
 }
 
 export function renderIndex(source, buildSha) {
@@ -90,12 +97,13 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   const appRoot = path.join(root, 'webapp');
   const gitSha = env.APP_BUILD_SHA ? '' : execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const buildSha = resolveBuildSha(env, gitSha);
+  const deployConfig = deploymentConfig(env);
 
   execFileSync('npm', ['ci'], { cwd: appRoot, stdio: 'inherit' });
   execFileSync('npm', ['run', 'build'], { cwd: appRoot, stdio: 'inherit' });
 
   const config = publicConfig(env);
-  config.auth.analyticsEndpoint = `${productionApiBaseUrl}/analytics/events`;
+  config.auth.analyticsEndpoint = `${deployConfig.apiBaseUrl}/analytics/events`;
 
   await fs.rm(output, { recursive: true, force: true });
   await fs.mkdir(output, { recursive: true });
@@ -108,7 +116,7 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   const html = renderIndex(await fs.readFile(path.join(appRoot, 'index.html'), 'utf8'), buildSha);
   await fs.writeFile(path.join(output, 'index.html'), html);
   await fs.writeFile(path.join(output, '404.html'), html);
-  await fs.writeFile(path.join(output, 'deployment-config.js'), renderDeploymentConfig(deploymentConfig()));
+  await fs.writeFile(path.join(output, 'deployment-config.js'), renderDeploymentConfig(deployConfig));
   await fs.writeFile(path.join(output, 'version.json'), `${JSON.stringify({ build: buildSha }, null, 2)}\n`);
   await fs.writeFile(path.join(output, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
   console.log(`Built static Timeweb artifact at ${output} (${buildSha})`);

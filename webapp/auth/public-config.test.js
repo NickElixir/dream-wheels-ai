@@ -12,14 +12,16 @@ test('public config pins the target project and excludes all server credentials'
   assert.throws(() => publicConfig({ ...production, SUPABASE_PUBLISHABLE_KEY: 'sb_secret_forbidden' }));
   assert.throws(() => publicConfig({ ...production, TURNSTILE_SITE_KEY: '' }));
 });
-test('approved production and staging domains allow the reviewed auth flow', () => {
+test('approved production, staging, and test domains allow the reviewed auth flow', () => {
   const old = globalThis.location;
   try {
-    for (const hostname of ['app.dreamwheels.pro', 'app.dream-wheels.ru', 'dream-wheels-ai-webapp.vercel.app', 'dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app', 'dream-wheels-ai-webapp-staging.vercel.app']) {
+    for (const hostname of ['app.dreamwheels.pro', 'app.dream-wheels.ru', 'app-test.dream-wheels.ru', 'dream-wheels-ai-webapp.vercel.app', 'dream-wheels-ai-webapp-nicks-projects-bd58cb33.vercel.app', 'dream-wheels-ai-webapp-staging.vercel.app']) {
       globalThis.location = { hostname };
       assert.equal(isMainWebAppAuthEnabled({ mainWebAppEnabled: true }), true);
     }
     globalThis.location = { hostname: 'untrusted.example' };
+    assert.equal(isMainWebAppAuthEnabled({ mainWebAppEnabled: true }), false);
+    globalThis.location = { hostname: 'another-test.dream-wheels.ru' };
     assert.equal(isMainWebAppAuthEnabled({ mainWebAppEnabled: true }), false);
   } finally { globalThis.location = old; }
 });
