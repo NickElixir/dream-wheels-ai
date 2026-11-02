@@ -106,6 +106,18 @@ def validate_rollback_ancestry(sha: str, current_sha: str, *, cwd: Path = REPO_R
         ) from error
 
 
+def validate_rollback_object(sha: str, *, cwd: Path = REPO_ROOT) -> None:
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as error:
+        raise ReleaseError("rollback commit is not available in the verified repository") from error
+
+
 def release_env(profile: str, environ: dict[str, str]) -> dict[str, str]:
     prefix = RELEASES[profile]["environment_prefix"]
     required = {
@@ -398,6 +410,7 @@ def run_release(
     legacy_verifier: Callable[..., dict[str, Any]] = verify_legacy_live_version,
     ancestry_validator: Callable[[str, str], None] = validate_git_commit,
     rollback_ancestry_validator: Callable[[str, str], None] = validate_rollback_ancestry,
+    rollback_object_validator: Callable[[str], None] = validate_rollback_object,
     poller: Callable[..., dict[str, Any]] = wait_for_exact_deploy,
     gateway_validator: Callable[[str, str], dict[str, Any]] = verify_gateway_ready,
 ) -> dict[str, Any]:
@@ -406,7 +419,8 @@ def run_release(
     sha = validate_sha(sha)
     gateway_sha = validate_sha(gateway_sha)
     target = RELEASES[profile]
-    ancestry_validator(sha, target["branch"])
+    if not rollback:
+        ancestry_validator(sha, target["branch"])
     if not apply:
         gateway_report = {
             "ok": None,
@@ -427,19 +441,20 @@ def run_release(
         if artifact_manifest is not None:
             validate_artifact_manifest(artifact_manifest, profile, sha, rollback_snapshot)
         expected_sha = str(rollback_snapshot["prior_commit_sha"]).lower()
+        legacy_rollback = "TIMEWEB_PROFILE" not in rollback_snapshot["prior_managed_envs"]
         if sha != expected_sha:
             raise ReleaseError(
                 "rollback SHA must match the previous commit in the supplied snapshot"
             )
+        rollback_object_validator(sha)
         current_sha = str(field(app, "commit_sha") or "").lower()
         if current_sha == sha:
             raise ReleaseError("the requested rollback SHA is already the app's reported commit")
-        if current_sha:
+        if current_sha and not legacy_rollback:
             rollback_ancestry_validator(sha, current_sha)
         planned_envs = build_rollback_envs(field(app, "envs") or {}, rollback_snapshot)
         branch_name = rollback_snapshot.get("prior_branch_name") or target["branch"]
         auto_deploy = rollback_snapshot.get("prior_is_auto_deploy")
-        legacy_rollback = "TIMEWEB_PROFILE" not in rollback_snapshot["prior_managed_envs"]
         mode = "rollback"
     else:
         if str(field(app, "commit_sha") or "").lower() == sha:
