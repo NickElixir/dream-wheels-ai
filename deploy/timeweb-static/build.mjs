@@ -43,10 +43,10 @@ export function resolveBuildSha(env, gitSha) {
 
 export function deploymentConfig(env = {}) {
   if (env.TIMEWEB_API_TARGET === undefined || env.TIMEWEB_API_TARGET === '') {
-    return { apiBaseUrl: productionApiBaseUrl };
+    return { apiBaseUrl: productionApiBaseUrl, websiteTelegramLoginEnabled: false };
   }
   if (env.TIMEWEB_API_TARGET === 'deno-test') {
-    return { apiBaseUrl: denoTestApiBaseUrl, environment: 'test' };
+    return { apiBaseUrl: denoTestApiBaseUrl, environment: 'test', websiteTelegramLoginEnabled: false };
   }
   throw new Error('TIMEWEB_API_TARGET must be deno-test when set');
 }
@@ -55,7 +55,13 @@ export function renderIndex(source, buildSha) {
   if (!source.includes('<head>') || !source.includes('<script src="/auth/harness-config.js"></script>')) {
     throw new Error('Unexpected webapp index structure');
   }
-  const withRobots = source.replace('<head>', '<head>\n    <meta name="robots" content="noindex, nofollow">');
+  const withoutTelegramWebsiteLogin = source
+    .replace(/\s*<link\s+rel="preconnect"\s+href="https:\/\/oauth\.telegram\.org">/gu, '')
+    .replace(/\s*<link\s+rel="dns-prefetch"\s+href="\/\/oauth\.telegram\.org">/gu, '')
+    .replace(/\s*<script\s+src="https:\/\/telegram\.org\/js\/telegram-web-app\.js"><\/script>/gu, '')
+    .replace(/\s*<div class="auth-dialog-divider" data-auth-email-alternative data-auth-initial-only aria-hidden="true"><span>или<\/span><\/div>/gu, '')
+    .replace(/\s*<button type="button" class="ghost-button auth-dialog-telegram" data-auth-telegram data-auth-initial-only>[\s\S]*?<\/button>/gu, '');
+  const withRobots = withoutTelegramWebsiteLogin.replace('<head>', '<head>\n    <meta name="robots" content="noindex, nofollow">');
   const withDeploymentConfig = withRobots.replace(
     '<script src="/auth/harness-config.js"></script>',
     '<script src="/deployment-config.js"></script>\n    <script src="/auth/harness-config.js"></script>',

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import {
   artifactEntries,
   copyPublicTree,
@@ -25,7 +26,7 @@ test('build identifier must be a full commit SHA', () => {
 });
 
 test('deployment config points API calls at production Render', () => {
-  assert.deepEqual(deploymentConfig(), { apiBaseUrl: productionApiBaseUrl });
+  assert.deepEqual(deploymentConfig(), { apiBaseUrl: productionApiBaseUrl, websiteTelegramLoginEnabled: false });
   assert.match(renderDeploymentConfig(deploymentConfig()), /__DREAM_WHEELS_DEPLOYMENT_CONFIG__/u);
   assert.match(renderDeploymentConfig(deploymentConfig()), /dream-wheels-ai-prod-vnext\.onrender\.com/u);
 });
@@ -34,6 +35,7 @@ test('Deno gateway is available only through the explicit test build target', ()
   assert.deepEqual(deploymentConfig({ TIMEWEB_API_TARGET: 'deno-test' }), {
     apiBaseUrl: denoTestApiBaseUrl,
     environment: 'test',
+    websiteTelegramLoginEnabled: false,
   });
   assert.throws(() => deploymentConfig({ TIMEWEB_API_TARGET: 'https://evil.example' }), /must be deno-test/u);
 });
@@ -53,6 +55,41 @@ test('built HTML has noindex metadata, build stamp, and deployment config before
   assert.match(html, new RegExp(`data-app-build="${sha}"`, 'u'));
   assert.ok(html.indexOf('/deployment-config.js') < html.indexOf('/auth/harness-config.js'));
   assert.doesNotMatch(html, /__BUILD_ID__/u);
+});
+
+test('Timeweb HTML removes website Telegram login while retaining email auth', async () => {
+  const source = await fs.readFile(new URL('../../webapp/index.html', import.meta.url), 'utf8');
+  const html = renderIndex(source, sha);
+  assert.doesNotMatch(html, /telegram\.org/u);
+  assert.doesNotMatch(html, /data-auth-telegram/u);
+  assert.doesNotMatch(html, /class="auth-dialog-divider"/u);
+  assert.match(html, /data-auth-email-form/u);
+  assert.match(html, /data-auth-email\b/u);
+  assert.match(html, /data-auth-send/u);
+});
+
+test('disabled website Telegram login short-circuits resource warmup before network or script access', async () => {
+  const app = await fs.readFile(new URL('../../webapp/app.js', import.meta.url), 'utf8');
+  const warmupStart = app.indexOf('function warmWebsiteLoginResources() {');
+  const warmupEnd = app.indexOf('\n\nwarmWebsiteLoginResources();', warmupStart);
+  assert.ok(warmupStart >= 0 && warmupEnd > warmupStart);
+  let requests = 0;
+  let scripts = 0;
+  const context = {
+    Promise,
+    fetch() { requests += 1; },
+    document: { createElement() { scripts += 1; } },
+  };
+  vm.runInNewContext(`
+    const WEBSITE_TELEGRAM_LOGIN_ENABLED = false;
+    function isWebsiteTelegramLoginEnabled() { return WEBSITE_TELEGRAM_LOGIN_ENABLED; }
+    ${app.slice(warmupStart, warmupEnd)}
+    warmWebsiteLoginResources();
+  `, context);
+  assert.equal(requests, 0);
+  assert.equal(scripts, 0);
+  assert.match(app, /function loadTelegramLoginLibrary\(\) \{\s*if \(!isWebsiteTelegramLoginEnabled\(\)\) return Promise\.reject/u);
+  assert.match(app, /async function fetchWebsiteLoginNonce\(\{ force = false \} = \{\}\) \{\s*if \(!isWebsiteTelegramLoginEnabled\(\)\) throw/u);
 });
 
 test('artifact copy plan includes runtime files and excludes server and development trees', () => {
