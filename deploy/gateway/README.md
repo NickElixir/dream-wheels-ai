@@ -1,7 +1,8 @@
 # Diagnostic API gateway
 
-Temporary Deno Deploy connectivity probe. This is not a production proxy. No
-credentials, database access, frontend changes, or DNS changes are required.
+Temporary Deno Deploy connectivity probe and allowlisted API gateway for an
+isolated frontend test. Not yet approved for production traffic. No credentials,
+database access, frontend changes, or DNS changes are required.
 
 ## Local checks
 
@@ -71,3 +72,28 @@ before shutting down. This experiment is temporary, not a long-term dependency.
 - https://deno.com/blog/cloudflare
 - https://docs.deno.com/deploy/getting_started/
 - https://docs.deno.com/runtime/reference/cli/deploy/
+
+## API gateway test
+
+`/api/backend/*` proxies only explicit application route/method combinations to
+the fixed production Render origin. Protected routes require a Bearer header;
+Render remains responsible for token validation and access control. The gateway
+never authenticates a user merely because a header is present.
+
+CORS permits only exact configured origins including app-test.dream-wheels.ru.
+OPTIONS is answered locally. Cookies and browser Origin are not forwarded to
+Render. Multipart bodies and asset responses are streamed. Requests are limited
+to 25 MiB and a 60 second upstream deadline. Backend redirects are rejected. No
+response caching, Set-Cookie forwarding, arbitrary destinations, or admin
+routes. No token/body logging.
+
+Deploy updates from this directory, not from repository root:
+
+```sh
+deno run -A jsr:@deno/deploy@0.0.9908 --org dreamwheels --app gateway-test --prod
+```
+
+This only updates the existing test app. Keychain storage may be unavailable;
+complete browser authentication for each run. Keep actual API tokens out of
+commands and chat. The Timeweb test frontend is a separate deployment pinned to
+its own commit; default production frontend routing remains unchanged.
