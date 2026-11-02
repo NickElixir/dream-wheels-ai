@@ -182,7 +182,7 @@ class TestTimewebRelease(unittest.TestCase):
             )
         self.ancestry.assert_called_once_with(TEST_SHA, "main")
 
-    def test_rollback_restores_old_profile_environment_and_preserves_unrelated_keys(self):
+    def test_snapshot_authorizes_legacy_sha_outside_current_branch_history(self):
         api = ApiStub(
             self.app(
                 sha=TEST_SHA,
@@ -210,6 +210,8 @@ class TestTimewebRelease(unittest.TestCase):
                 "TURNSTILE_SITE_KEY": "0x_old_public",
             },
         }
+        rollback_ancestry = Mock()
+        rollback_object = Mock()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "snapshot.json"
             path.write_text(json.dumps(snapshot_data))
@@ -224,7 +226,8 @@ class TestTimewebRelease(unittest.TestCase):
                 rollback=True,
                 snapshot_path=path,
                 ancestry_validator=self.ancestry,
-                rollback_ancestry_validator=Mock(),
+                rollback_ancestry_validator=rollback_ancestry,
+                rollback_object_validator=rollback_object,
                 verifier=Mock(return_value={"ok": True}),
                 legacy_verifier=Mock(return_value={"ok": True}),
                 gateway_validator=Mock(return_value={"ok": True}),
@@ -237,6 +240,9 @@ class TestTimewebRelease(unittest.TestCase):
         self.assertEqual(patch["commit_sha"], PRIOR_SHA)
         self.assertFalse(patch["is_auto_deploy"])
         self.assertEqual(api.updated[1][1], {"is_auto_deploy": True})
+        self.ancestry.assert_not_called()
+        rollback_ancestry.assert_not_called()
+        rollback_object.assert_called_once_with(PRIOR_SHA)
 
     def test_invalid_rollback_snapshot_fails_before_mutation(self):
         api = ApiStub(self.app())

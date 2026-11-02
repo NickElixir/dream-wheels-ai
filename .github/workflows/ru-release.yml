@@ -77,17 +77,22 @@ jobs:
           else
             release_branch=main
           fi
-          git fetch --no-tags origin staging main
-          git cat-file -e "$REQUESTED_SHA^{commit}"
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          git cat-file -e "$REQUESTED_SHA^{commit}" || {
+            echo "requested commit is not present in this checkout; ensure it is retained by a repository ref" >&2
+            exit 1
+          }
           if ! [[ "$REQUESTED_GATEWAY_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
             echo "gateway_sha must be a full 40-character SHA" >&2
             exit 1
           fi
           git cat-file -e "$REQUESTED_GATEWAY_SHA^{commit}"
-          git merge-base --is-ancestor "$REQUESTED_SHA" "origin/$release_branch" || {
-            echo "requested commit is not contained in $release_branch" >&2
-            exit 1
-          }
+          if [[ "$OPERATION" == "release" ]]; then
+            git merge-base --is-ancestor "$REQUESTED_SHA" "origin/$release_branch" || {
+              echo "requested commit is not contained in $release_branch" >&2
+              exit 1
+            }
+          fi
           git merge-base --is-ancestor "$REQUESTED_GATEWAY_SHA" "origin/$release_branch" || {
             echo "gateway_sha is not contained in $release_branch" >&2
             exit 1
@@ -129,11 +134,11 @@ jobs:
           echo "gateway_sha=$(git rev-parse "$REQUESTED_GATEWAY_SHA")" >> "$GITHUB_OUTPUT"
 
   ci:
-    name: CI gate for selected SHA
+    name: CI gate for selected source or rollback tooling
     needs: validate-source
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ needs.validate-source.outputs.sha }}
+      ref: ${{ inputs.operation == 'rollback' && github.sha || needs.validate-source.outputs.sha }}
     permissions:
       contents: read
 
@@ -287,6 +292,13 @@ jobs:
         with:
           ref: ${{ needs.validate-source.outputs.sha }}
           fetch-depth: 0
+          path: source
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          path: control
 
       - uses: actions/setup-python@v6
         with:
@@ -297,10 +309,15 @@ jobs:
           node-version: "24.x"
 
       - name: Install pinned official Timeweb SDK
-        run: python -m pip install -r scripts/requirements-timeweb.txt
+        run: python -m pip install -r control/scripts/requirements-timeweb.txt
 
       - name: Fetch selected branch refs used by the SHA gate
-        run: git fetch --no-tags origin staging main
+        env:
+          REQUESTED_SHA: ${{ needs.validate-source.outputs.sha }}
+        working-directory: control
+        run: |
+          git fetch --no-tags origin staging main
+          git fetch --no-tags ../source "$REQUESTED_SHA"
 
       - name: Download immutable artifact manifest
         uses: actions/download-artifact@v4
@@ -324,7 +341,7 @@ jobs:
         shell: bash
         run: |
           if [[ "$OPERATION" == "rollback" ]]; then
-            python scripts/timeweb_release.py \
+            python control/scripts/timeweb_release.py \
               --profile "$TIMEWEB_PROFILE" \
               --sha "$REQUESTED_SHA" \
               --gateway-sha "$TIMEWEB_GATEWAY_SHA" \
@@ -332,7 +349,7 @@ jobs:
               --rollback-snapshot .timeweb-rollback/timeweb-release-snapshot.json \
               --apply
           else
-            python scripts/timeweb_release.py \
+            python control/scripts/timeweb_release.py \
               --profile "$TIMEWEB_PROFILE" \
               --sha "$REQUESTED_SHA" \
               --gateway-sha "$TIMEWEB_GATEWAY_SHA" \
