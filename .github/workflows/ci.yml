@@ -2,13 +2,15 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, staging]
   push:
     branches:
+      - main
+      - staging
       - 'feature/**'
       - 'fix/**'
       - 'e2e/**'
       - 'docs/**'
+      - 'chore/**'
   workflow_call:
     inputs:
       ref:
@@ -35,6 +37,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24.x"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.6
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
@@ -76,7 +82,20 @@ jobs:
         run: npm --prefix webapp test
 
       - name: Webapp auth harness bundle
-        run: npm --prefix webapp run build && git diff --exit-code -- webapp/auth/harness.bundle.js
+        run: npm --prefix webapp run build && git diff --exit-code -- webapp/auth/harness.bundle.js webapp/auth/app-auth.bundle.js
+
+      - name: Timeweb static builder tests
+        run: node --test deploy/timeweb-static/build.test.mjs
+
+      - name: RU release verifier tests
+        run: node --test scripts/verify_ru_release.test.mjs
+
+      - name: Timeweb release orchestration tests
+        run: python scripts/test_timeweb_release.py
+
+      - name: Deno gateway checks and tests
+        working-directory: deploy/gateway
+        run: deno task check
 
   qa-context-integration:
     runs-on: ubuntu-latest

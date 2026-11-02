@@ -228,3 +228,10 @@ __marimo__/
 .vercel
 .env*.local
 webapp/node_modules/
+
+# Local JS tooling
+node_modules/
+
+# Release snapshots stay in private Actions artifacts, never Git.
+.timeweb-rollback/
+timeweb-release-snapshot.json

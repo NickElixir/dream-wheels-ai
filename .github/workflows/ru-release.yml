@@ -1,0 +1,368 @@
+name: RU frontend release
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Timeweb app and environment
+        type: choice
+        options: [ru-test, ru-production]
+        required: true
+      operation:
+        description: Deploy a reviewed SHA or restore a prior release snapshot
+        type: choice
+        options: [release, rollback]
+        default: release
+        required: true
+      commit:
+        description: Full source SHA on staging (test) or main (production)
+        type: string
+        required: true
+      gateway_sha:
+        description: Full SHA reported by the already deployed profile gateway
+        type: string
+        required: true
+      production_tested_sha:
+        description: Manual staging test evidence SHA included in this production SHA
+        type: string
+        required: false
+      snapshot_run_id:
+        description: Prior release workflow run ID (rollback only)
+        type: string
+        required: false
+      snapshot_sha:
+        description: SHA of the release run that uploaded the rollback snapshot
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: timeweb-ru-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  validate-source:
+    name: Validate selected source ancestry
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      branch: ${{ steps.source.outputs.branch }}
+      gateway_sha: ${{ steps.source.outputs.gateway_sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require the exact SHA on the profile branch
+        id: source
+        env:
+          REQUESTED_SHA: ${{ inputs.commit }}
+          REQUESTED_GATEWAY_SHA: ${{ inputs.gateway_sha }}
+          PRODUCTION_TESTED_SHA: ${{ inputs.production_tested_sha }}
+          PROFILE: ${{ inputs.profile }}
+          OPERATION: ${{ inputs.operation }}
+          SNAPSHOT_RUN_ID: ${{ inputs.snapshot_run_id }}
+          SNAPSHOT_SHA: ${{ inputs.snapshot_sha }}
+        run: |
+          if ! [[ "$REQUESTED_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+            echo "commit must be a full 40-character SHA" >&2
+            exit 1
+          fi
+          if [[ "$PROFILE" == "ru-test" ]]; then
+            release_branch=staging
+          else
+            release_branch=main
+          fi
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          git cat-file -e "$REQUESTED_SHA^{commit}" || {
+            echo "requested commit is not present in this checkout; ensure it is retained by a repository ref" >&2
+            exit 1
+          }
+          if ! [[ "$REQUESTED_GATEWAY_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+            echo "gateway_sha must be a full 40-character SHA" >&2
+            exit 1
+          fi
+          git cat-file -e "$REQUESTED_GATEWAY_SHA^{commit}"
+          if [[ "$OPERATION" == "release" ]]; then
+            git merge-base --is-ancestor "$REQUESTED_SHA" "origin/$release_branch" || {
+              echo "requested commit is not contained in $release_branch" >&2
+              exit 1
+            }
+          fi
+          git merge-base --is-ancestor "$REQUESTED_GATEWAY_SHA" "origin/$release_branch" || {
+            echo "gateway_sha is not contained in $release_branch" >&2
+            exit 1
+          }
+          if [[ "$PROFILE" == "ru-production" && "$OPERATION" == "release" ]]; then
+            if ! [[ "$PRODUCTION_TESTED_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+              echo "production release requires production_tested_sha from manual staging acceptance" >&2
+              exit 1
+            fi
+            git cat-file -e "$PRODUCTION_TESTED_SHA^{commit}"
+            git merge-base --is-ancestor "$PRODUCTION_TESTED_SHA" origin/staging || {
+              echo "production_tested_sha is not contained in staging" >&2
+              exit 1
+            }
+            git merge-base --is-ancestor "$PRODUCTION_TESTED_SHA" "$REQUESTED_SHA" || {
+              echo "production SHA does not contain the manually tested source SHA" >&2
+              exit 1
+            }
+            git diff --exit-code "$PRODUCTION_TESTED_SHA" "$REQUESTED_SHA" -- webapp deploy scripts || {
+              echo "Runtime/build source changed after the accepted test release" >&2
+              exit 1
+            }
+            TESTED_SHA="$PRODUCTION_TESTED_SHA" python3 - <<'PYVERIFY'
+          import json, os, urllib.request
+          with urllib.request.urlopen('https://app-test.dream-wheels.ru/version.json', timeout=20) as response:
+              version = json.load(response)
+          if version.get('build') != os.environ['TESTED_SHA'].lower() or version.get('profile') != 'ru-test':
+              raise SystemExit('Accepted source is not the currently served RU test release')
+          PYVERIFY
+          fi
+          if [[ "$OPERATION" == "rollback" ]]; then
+            if ! [[ "$SNAPSHOT_RUN_ID" =~ ^[0-9]+$ ]] || ! [[ "$SNAPSHOT_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+              echo "rollback requires snapshot_run_id and the full SHA of its release run" >&2
+              exit 1
+            fi
+          fi
+          echo "sha=$(git rev-parse "$REQUESTED_SHA")" >> "$GITHUB_OUTPUT"
+          echo "branch=$release_branch" >> "$GITHUB_OUTPUT"
+          echo "gateway_sha=$(git rev-parse "$REQUESTED_GATEWAY_SHA")" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: CI gate for selected source or rollback tooling
+    needs: validate-source
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ inputs.operation == 'rollback' && github.sha || needs.validate-source.outputs.sha }}
+    permissions:
+      contents: read
+
+  build-artifact:
+    name: Build immutable frontend artifact
+    needs: [validate-source, ci]
+    runs-on: ubuntu-latest
+    env:
+      APP_RELEASE_PROFILE: ${{ inputs.profile }}
+      APP_RELEASE_OPERATION: ${{ inputs.operation }}
+      APP_BUILD_SHA: ${{ needs.validate-source.outputs.sha }}
+      TIMEWEB_RU_TEST_SUPABASE_URL: ${{ vars.TIMEWEB_RU_TEST_SUPABASE_URL }}
+      TIMEWEB_RU_TEST_SUPABASE_PUBLISHABLE_KEY: ${{ vars.TIMEWEB_RU_TEST_SUPABASE_PUBLISHABLE_KEY }}
+      TIMEWEB_RU_TEST_TURNSTILE_SITE_KEY: ${{ vars.TIMEWEB_RU_TEST_TURNSTILE_SITE_KEY }}
+      TIMEWEB_RU_PRODUCTION_SUPABASE_URL: ${{ vars.TIMEWEB_RU_PRODUCTION_SUPABASE_URL }}
+      TIMEWEB_RU_PRODUCTION_SUPABASE_PUBLISHABLE_KEY: ${{ vars.TIMEWEB_RU_PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+      TIMEWEB_RU_PRODUCTION_TURNSTILE_SITE_KEY: ${{ vars.TIMEWEB_RU_PRODUCTION_TURNSTILE_SITE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate-source.outputs.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+
+      - name: Download prior settings snapshot for rollback build
+        if: inputs.operation == 'rollback'
+        uses: actions/download-artifact@v4
+        with:
+          name: timeweb-release-snapshot-${{ inputs.profile }}-${{ inputs.snapshot_sha }}
+          run-id: ${{ inputs.snapshot_run_id }}
+          github-token: ${{ github.token }}
+          path: .timeweb-rollback
+
+      - name: Select build environment without logging values
+        shell: bash
+        env:
+          REQUESTED_PROFILE: ${{ inputs.profile }}
+          REQUESTED_SHA: ${{ needs.validate-source.outputs.sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          profile = os.environ["REQUESTED_PROFILE"]
+          operation = os.environ["APP_RELEASE_OPERATION"]
+          values = {}
+          if operation == "rollback":
+              snapshot = json.loads(Path(".timeweb-rollback/timeweb-release-snapshot.json").read_text())
+              if snapshot.get("profile") != profile:
+                  raise SystemExit("rollback snapshot profile mismatch")
+              managed = snapshot.get("prior_managed_envs", {})
+              for name in ("TIMEWEB_PROFILE", "TIMEWEB_API_TARGET", "SUPABASE_URL", "EXPECTED_SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "TURNSTILE_SITE_KEY"):
+                  if name in managed:
+                      values[name] = managed[name]
+          else:
+              prefix = "TIMEWEB_RU_TEST" if profile == "ru-test" else "TIMEWEB_RU_PRODUCTION"
+              url = os.environ.get(f"{prefix}_SUPABASE_URL", "")
+              key = os.environ.get(f"{prefix}_SUPABASE_PUBLISHABLE_KEY", "")
+              turnstile = os.environ.get(f"{prefix}_TURNSTILE_SITE_KEY", "")
+              if not all((url, key, turnstile)):
+                  raise SystemExit("required public GitHub Actions variables are missing")
+              values.update({
+                  "TIMEWEB_PROFILE": profile,
+                  "SUPABASE_URL": url,
+                  "EXPECTED_SUPABASE_URL": url,
+                  "SUPABASE_PUBLISHABLE_KEY": key,
+                  "TURNSTILE_SITE_KEY": turnstile,
+              })
+          values["APP_BUILD_SHA"] = os.environ["REQUESTED_SHA"]
+          if not values.get("SUPABASE_URL") or not values.get("SUPABASE_PUBLISHABLE_KEY") or not values.get("TURNSTILE_SITE_KEY"):
+              raise SystemExit("rollback snapshot lacks the public settings required to reproduce its artifact")
+          if values.get("TIMEWEB_PROFILE") not in (None, profile):
+              raise SystemExit("rollback artifact profile mismatch")
+          if values.get("TIMEWEB_API_TARGET") not in (None, "", "deno-test"):
+              raise SystemExit("rollback snapshot contains an unsupported legacy API target")
+          if not re.fullmatch(r"https://[a-z0-9]+\.supabase\.co", values["SUPABASE_URL"]):
+              raise SystemExit("Supabase URL must be a project origin")
+          if not re.fullmatch(r"[A-Za-z0-9._-]+", values["SUPABASE_PUBLISHABLE_KEY"]):
+              raise SystemExit("publishable key contains unsupported characters")
+          if not re.fullmatch(r"[A-Za-z0-9_-]+", values["TURNSTILE_SITE_KEY"]):
+              raise SystemExit("Turnstile site key contains unsupported characters")
+          for name, value in values.items():
+              if not isinstance(value, str) or "\n" in value or "\r" in value:
+                  raise SystemExit("build environment value is not a single safe line")
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+                  output.write(f"{name}={value}\n")
+          PY
+
+      - name: Build static artifact from the selected source SHA
+        run: node deploy/timeweb-static/build.mjs
+
+      - name: Write and verify artifact manifest
+        env:
+          EXPECTED_API_BASE_URL: ${{ inputs.profile == 'ru-test' && 'https://gateway-test.dreamwheels.deno.net/api/backend' || 'https://gateway.dreamwheels.deno.net/api/backend' }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const source = fs.readFileSync('dist/timeweb/deployment-config.js', 'utf8');
+          const match = source.match(/Object\.freeze\((\{[^;]+\})\);/u);
+          if (!match) throw new Error('Unexpected deployment config output');
+          const config = JSON.parse(match[1]);
+          const isLegacyRollback = process.env.APP_RELEASE_OPERATION === 'rollback'
+            && !Object.hasOwn(config, 'profile');
+          if (!isLegacyRollback && config.apiBaseUrl !== process.env.EXPECTED_API_BASE_URL) {
+            throw new Error('Artifact API target does not match the release profile');
+          }
+          if (!isLegacyRollback && config.profile !== process.env.APP_RELEASE_PROFILE) {
+            throw new Error('Artifact profile does not match the selected release profile');
+          }
+          fs.writeFileSync('dist/timeweb-release-manifest.json', `${JSON.stringify({
+            profile: process.env.APP_RELEASE_PROFILE,
+            commit: process.env.APP_BUILD_SHA,
+            api_base_url: config.apiBaseUrl,
+            builder_profile: config.profile ?? null,
+            created_at: new Date().toISOString(),
+          }, null, 2)}\n`);
+          NODE
+
+      - name: Upload immutable frontend artifact and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeweb-${{ inputs.profile }}-${{ needs.validate-source.outputs.sha }}
+          path: |
+            dist/timeweb/
+            dist/timeweb-release-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  timeweb-release:
+    name: Update and deploy existing Timeweb app
+    needs: [validate-source, ci, build-artifact]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.profile }}
+    env:
+      TIMEWEB_PROFILE: ${{ inputs.profile }}
+      TIMEWEB_CLOUD_TOKEN: ${{ secrets.TIMEWEB_CLOUD_TOKEN }}
+      TIMEWEB_GATEWAY_SHA: ${{ needs.validate-source.outputs.gateway_sha }}
+      TIMEWEB_RU_TEST_SUPABASE_URL: ${{ vars.TIMEWEB_RU_TEST_SUPABASE_URL }}
+      TIMEWEB_RU_TEST_SUPABASE_PUBLISHABLE_KEY: ${{ vars.TIMEWEB_RU_TEST_SUPABASE_PUBLISHABLE_KEY }}
+      TIMEWEB_RU_TEST_TURNSTILE_SITE_KEY: ${{ vars.TIMEWEB_RU_TEST_TURNSTILE_SITE_KEY }}
+      TIMEWEB_RU_PRODUCTION_SUPABASE_URL: ${{ vars.TIMEWEB_RU_PRODUCTION_SUPABASE_URL }}
+      TIMEWEB_RU_PRODUCTION_SUPABASE_PUBLISHABLE_KEY: ${{ vars.TIMEWEB_RU_PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+      TIMEWEB_RU_PRODUCTION_TURNSTILE_SITE_KEY: ${{ vars.TIMEWEB_RU_PRODUCTION_TURNSTILE_SITE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate-source.outputs.sha }}
+          fetch-depth: 0
+          path: source
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          path: control
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+
+      - name: Install pinned official Timeweb SDK
+        run: python -m pip install -r control/scripts/requirements-timeweb.txt
+
+      - name: Fetch selected branch refs used by the SHA gate
+        env:
+          REQUESTED_SHA: ${{ needs.validate-source.outputs.sha }}
+        working-directory: control
+        run: |
+          git fetch --no-tags origin staging main
+          git fetch --no-tags ../source "$REQUESTED_SHA"
+
+      - name: Download immutable artifact manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: timeweb-${{ inputs.profile }}-${{ needs.validate-source.outputs.sha }}
+          path: .timeweb-artifact
+
+      - name: Download matching release snapshot for rollback
+        if: inputs.operation == 'rollback'
+        uses: actions/download-artifact@v4
+        with:
+          name: timeweb-release-snapshot-${{ inputs.profile }}-${{ inputs.snapshot_sha }}
+          run-id: ${{ inputs.snapshot_run_id }}
+          github-token: ${{ github.token }}
+          path: .timeweb-rollback
+
+      - name: Deploy exact commit or explicit rollback
+        env:
+          REQUESTED_SHA: ${{ needs.validate-source.outputs.sha }}
+          OPERATION: ${{ inputs.operation }}
+        shell: bash
+        run: |
+          if [[ "$OPERATION" == "rollback" ]]; then
+            python control/scripts/timeweb_release.py \
+              --profile "$TIMEWEB_PROFILE" \
+              --sha "$REQUESTED_SHA" \
+              --gateway-sha "$TIMEWEB_GATEWAY_SHA" \
+              --artifact-manifest .timeweb-artifact/timeweb-release-manifest.json \
+              --rollback-snapshot .timeweb-rollback/timeweb-release-snapshot.json \
+              --apply
+          else
+            python control/scripts/timeweb_release.py \
+              --profile "$TIMEWEB_PROFILE" \
+              --sha "$REQUESTED_SHA" \
+              --gateway-sha "$TIMEWEB_GATEWAY_SHA" \
+              --artifact-manifest .timeweb-artifact/timeweb-release-manifest.json \
+              --snapshot-out timeweb-release-snapshot.json \
+              --apply
+          fi
+
+      - name: Keep the restricted managed-settings snapshot for future rollback
+        if: always() && inputs.operation == 'release' && hashFiles('timeweb-release-snapshot.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeweb-release-snapshot-${{ inputs.profile }}-${{ needs.validate-source.outputs.sha }}
+          path: timeweb-release-snapshot.json
+          if-no-files-found: error
+          retention-days: 30

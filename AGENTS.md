@@ -111,6 +111,7 @@ macOS quirk: GUI-приложения, включая VSCode, не читают 
 
 - `CONTRIBUTING.md` - code style, logging, branching, security.
 - `README.md` - stack, architecture, deploy, rollback.
+- `docs/ru-release-pipeline.md` - canonical Timeweb/Deno profiles, shared-production test boundary, exact-SHA releases and rollback.
 - `migrations/README.md` - database migration strategy.
 - `.env.example` - env vars.
 - `docs/TEAM_HANDOFF_CHECKLIST.md` - team handoff.

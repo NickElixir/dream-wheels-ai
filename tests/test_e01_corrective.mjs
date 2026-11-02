@@ -47,7 +47,7 @@ test('Telegram login network/provider errors refresh dashboard, wallet and auth 
  for(const network of [true,false]){
   let attempts=0;
   const state={websiteLoginPending:false};const message={textContent:'',dataset:{}};
-  const context=runtime(['setAccountPresentation','loginWithTelegram','refreshAccountPresentation','setAuthDialogMessage'],{state,console:{warn(){}},document:{querySelector:selector=>selector==='[data-auth-message]'?message:null},
+  const context=runtime(['isWebsiteTelegramLoginEnabled','setAccountPresentation','loginWithTelegram','refreshAccountPresentation','setAuthDialogMessage'],{state,WEBSITE_TELEGRAM_LOGIN_ENABLED:true,console:{warn(){}},document:{querySelector:selector=>selector==='[data-auth-message]'?message:null},
    getPreparedTelegramLoginResources(){attempts++;throw network?new TypeError('network unavailable'):new Error('provider rejected');},updateWebsiteAuthUi(){},setWalletMessage(value){state.walletMessage=value;},invalidateWebsiteLoginNonce(){},warmWebsiteLoginResources(){},renderAccountSettings(){},renderAccountLinkDialog(){},updateAccountBlock(){}});
   assert.equal(await context.loginWithTelegram(),false);assert.equal(attempts,1);assert.equal(state.websiteLoginPending,false);
   context.setAuthDialogMessage(state.websiteLoginError,true);assert.match(state.websiteLoginError,/[А-Яа-яЁё]/u);

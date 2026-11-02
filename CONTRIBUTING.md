@@ -176,3 +176,10 @@ feature/* -> staging -> main
 - ❌ Коммитить большие бинарники (есть pre-commit hook на 500КБ)
 - ❌ Изменения схемы БД без миграции
 - ❌ Pushing secret в чат / Slack / GitHub issue
+
+## RU frontend releases
+
+For Timeweb/Deno environments, exact-source releases, no-VPN acceptance and
+rollback, follow [docs/ru-release-pipeline.md](docs/ru-release-pipeline.md).
+`app-test` shares production API/data and is not an isolated staging environment.
+Provider-specific `chore/*` experiment branches are not permanent release sources.

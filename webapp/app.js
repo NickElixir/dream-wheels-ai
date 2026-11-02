@@ -13,6 +13,11 @@ import { buildFitmentRimReadiness } from "./vnext/fitment-readiness.mjs";
 const tg = window.Telegram?.WebApp;
 const HAS_TG = Boolean(tg && typeof tg.expand === "function" && tg.platform && tg.platform !== "unknown");
 const APP_BUILD_ID = document.documentElement.dataset.appBuild || "unknown";
+const WEBSITE_TELEGRAM_LOGIN_ENABLED = globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.websiteTelegramLoginEnabled !== false;
+
+function isWebsiteTelegramLoginEnabled() {
+    return WEBSITE_TELEGRAM_LOGIN_ENABLED;
+}
 
 function tgSupports(version) {
     if (!HAS_TG) return false;
@@ -78,6 +83,8 @@ const TELEGRAM_LOGIN_SCRIPT_URL = "https://oauth.telegram.org/js/telegram-login.
 const TELEGRAM_LOGIN_LIBRARY_TIMEOUT_MS = 12 * 1000;
 const WEBSITE_LOGIN_NONCE_RETRY_DELAYS_MS = [0, 350, 1000];
 const WEBSITE_PROXY_BASE_URL = "/api/backend";
+const TIMEWEB_PRODUCTION_API_BASE_URL = "https://gateway.dreamwheels.deno.net/api/backend";
+const DENO_TEST_API_BASE_URL = "https://gateway-test.dreamwheels.deno.net/api/backend";
 const PRICING_VERSION = "credits-v1";
 const PHOTO_CONSENT_VERSION = "2026-06-08";
 const PHOTO_CONSENT_STORAGE_KEY = "dreamWheelsPhotoConsentVersion";
@@ -304,6 +311,8 @@ function t(path, { sentence = false } = {}) {
 }
 
 function resolveApiBaseUrl() {
+    const deploymentApiBaseUrl = configuredDeploymentApiBaseUrl();
+    if (deploymentApiBaseUrl) return deploymentApiBaseUrl;
     if (!isLocalBrowser()) return WEBSITE_PROXY_BASE_URL;
 
     const params = new URLSearchParams(window.location.search);
@@ -321,12 +330,34 @@ function resolveApiBaseUrl() {
     return storedMode === "local" ? LOCAL_API_BASE_URL : LOCAL_API_BASE_URL;
 }
 
+function configuredDeploymentApiBaseUrl() {
+    const configured = window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.apiBaseUrl;
+    if (typeof configured !== "string") return "";
+    try {
+        const url = new URL(configured);
+        const safeUrl = !url.username && !url.password && !url.search && !url.hash;
+        if (window.location.hostname === "app.dream-wheels.ru"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-production" && safeUrl
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "production"
+            && configured === TIMEWEB_PRODUCTION_API_BASE_URL
+            && url.origin === "https://gateway.dreamwheels.deno.net" && url.pathname === "/api/backend") return TIMEWEB_PRODUCTION_API_BASE_URL;
+        if (window.location.hostname === "app-test.dream-wheels.ru"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.profile === "ru-test"
+            && window.__DREAM_WHEELS_DEPLOYMENT_CONFIG__?.environment === "test" && safeUrl
+            && configured === DENO_TEST_API_BASE_URL && url.origin === "https://gateway-test.dreamwheels.deno.net"
+            && url.pathname === "/api/backend") return DENO_TEST_API_BASE_URL;
+        return "";
+    } catch {
+        return "";
+    }
+}
+
 function isLocalBrowser() {
     return ["localhost", "127.0.0.1"].includes(window.location.hostname);
 }
 
 function shouldUseBrowserApiProxy() {
-    return !isLocalBrowser();
+    return !isLocalBrowser() && !configuredDeploymentApiBaseUrl();
 }
 
 function appendSearchParams(url, params) {
@@ -1602,7 +1633,7 @@ function renderAccountSettings() {
     };
     container.innerHTML = [
         renderRow("supabase", identities.email || { linked: false }),
-        renderRow("telegram", identities.telegram || { linked: false }),
+        ...(isWebsiteTelegramLoginEnabled() ? [renderRow("telegram", identities.telegram || { linked: false })] : []),
         state.accountSettingsNotice
             ? `<div class="account-settings-note">${escapeHtml(state.accountSettingsNotice)}</div>`
             : "",
@@ -1807,6 +1838,7 @@ async function verifyAccountLinkEmailOtp() {
 }
 
 async function startTelegramAccountLink() {
+    if (!isWebsiteTelegramLoginEnabled()) return;
     resetAccountLinkFlow("telegram");
     state.accountLinkBusy = true;
     setAccountPresentation("accountLinkStatus", "account.link.preparing");
@@ -2361,6 +2393,7 @@ function renderAuthDialog() {
     const descriptionLine2 = document.querySelector("[data-auth-description-line2]");
     const telegramAlternative = document.querySelector("[data-auth-telegram]");
     const emailAlternative = document.querySelectorAll("[data-auth-email-alternative]");
+    if (telegramAlternative) telegramAlternative.hidden = !isWebsiteTelegramLoginEnabled();
     const initialOnly = document.querySelectorAll("[data-auth-initial-only]");
     const backButton = document.querySelector("[data-auth-back-to-otp]");
     const restoredAvatar = document.querySelector("[data-auth-restored-avatar]");
@@ -2613,6 +2646,7 @@ function apiUrl(path, { includeIdentity = false, params = null } = {}) {
 }
 
 function loadTelegramLoginLibrary() {
+    if (!isWebsiteTelegramLoginEnabled()) return Promise.reject(new Error("Telegram website login is disabled"));
     if (window.Telegram?.Login) return Promise.resolve(window.Telegram.Login);
     if (state.websiteLoginLibraryPromise) return state.websiteLoginLibraryPromise;
 
@@ -2663,6 +2697,7 @@ function hasFreshWebsiteLoginNonce() {
 }
 
 async function fetchWebsiteLoginNonce({ force = false } = {}) {
+    if (!isWebsiteTelegramLoginEnabled()) throw new Error("Telegram website login is disabled");
     if (!force && hasFreshWebsiteLoginNonce()) return state.websiteLoginNonce;
     if (!force && state.websiteLoginNoncePromise) return state.websiteLoginNoncePromise;
 
@@ -2706,6 +2741,7 @@ function getPreparedTelegramLoginResources() {
 }
 
 function warmWebsiteLoginResources() {
+    if (!isWebsiteTelegramLoginEnabled()) return Promise.resolve();
     if (HAS_TG || state.websiteAuth) return Promise.resolve();
     if (state.websiteLoginWarmupPending) return state.websiteLoginWarmupPromise || Promise.resolve();
     state.websiteLoginWarmupPending = true;
@@ -2723,6 +2759,7 @@ function warmWebsiteLoginResources() {
 warmWebsiteLoginResources();
 
 async function loginWithTelegram({ preparedResources = null } = {}) {
+    if (!isWebsiteTelegramLoginEnabled()) return false;
     if (state.websiteLoginPending) return;
     state.websiteLoginPending = true;
     state.websiteLoginError = "";
@@ -2794,6 +2831,7 @@ async function loginWithTelegram({ preparedResources = null } = {}) {
 }
 
 function startAuthDialogTelegramLogin() {
+    if (!isWebsiteTelegramLoginEnabled()) return;
     if (state.authDialogBusy || state.websiteLoginPending) return;
     const resources = getPreparedTelegramLoginResources();
     if (!resources) {
