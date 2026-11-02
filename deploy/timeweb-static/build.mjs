@@ -88,7 +88,7 @@ async function copyFile(source, destination) {
 
 export async function build({ env = process.env, root = repositoryRoot, output = outputRoot } = {}) {
   const appRoot = path.join(root, 'webapp');
-  const gitSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const gitSha = env.APP_BUILD_SHA ? '' : execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const buildSha = resolveBuildSha(env, gitSha);
 
   execFileSync('npm', ['ci'], { cwd: appRoot, stdio: 'inherit' });
