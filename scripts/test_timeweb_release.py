@@ -11,9 +11,12 @@ from timeweb_release import (
     ReleaseError,
     TimewebSDKError,
     build_target_envs,
+    inspect_timeweb_app,
+    make_parser,
     read_snapshot,
     run_release,
     timeweb_app_payload,
+    timeweb_create_deploy,
     update_timeweb_app_settings,
     validate_artifact_manifest,
 )
@@ -51,17 +54,21 @@ class ApiStub:
         self.update_app_settings(app_id, settings)
         return SimpleNamespace(status_code=204, raw_data=b"")
 
-    def create_deploy(self, app_id, request):
+    def create_deploy_with_http_info(self, app_id, request, *, _preload_content):
+        assert _preload_content is False
         values = request if isinstance(request, dict) else request.dict(exclude_none=True)
         deploy = {"id": len(self.deployed) + 1, "commit_sha": values["commit_sha"]}
         self.deployed.append((app_id, values))
         self.deploys.append({**deploy, "ended_at": "done"})
         self.app["commit_sha"] = values["commit_sha"]
         self.app["status"] = "active"
-        return {"deploy": deploy}
+        return SimpleNamespace(status_code=201, raw_data=json.dumps({"deploy": deploy}).encode())
 
-    def get_app_deploys(self, app_id, limit, offset):
-        return {"deploys": list(self.deploys)}
+    def get_app_deploys_with_http_info(self, app_id, limit, offset, *, _preload_content):
+        assert _preload_content is False
+        return SimpleNamespace(
+            status_code=200, raw_data=json.dumps({"deploys": list(self.deploys)}).encode()
+        )
 
 
 class TestTimewebRelease(unittest.TestCase):
@@ -153,6 +160,7 @@ class TestTimewebRelease(unittest.TestCase):
     def test_pinned_sdk_raw_app_method_avoids_nested_provider_model_validation(self):
         import timeweb_cloud_api
         from pydantic import ValidationError
+        from timeweb_cloud_api.models.create_deploy_request import CreateDeployRequest
         from timeweb_cloud_api.models.update_settings import UpdateSettings
 
         app = {
@@ -215,6 +223,37 @@ class TestTimewebRelease(unittest.TestCase):
         client.request = Mock(return_value=NoContentResponse())
         update_timeweb_app_settings(api, 281549, update_request)
 
+        deployment = {
+            "id": 42,
+            "app_id": 281549,
+            "commit_sha": TEST_SHA,
+            "started_at": "2026-11-03T10:00:00Z",
+            "ended_at": None,
+            "status": "running",
+            "commit_msg": "release",
+        }
+        deploy_body = json.dumps({"deploy": deployment}).encode()
+
+        class DeployResponse:
+            status = 201
+            data = deploy_body
+
+            @staticmethod
+            def getheader(name):
+                return "application/json"
+
+            @staticmethod
+            def getheaders():
+                return {"content-type": "application/json"}
+
+        client.request = Mock(side_effect=lambda *args, **kwargs: DeployResponse())
+        deploy_request = CreateDeployRequest(commit_sha=TEST_SHA)
+        with self.assertRaises(ValidationError) as raised:
+            api.create_deploy(281549, deploy_request)
+        self.assertEqual(tuple(raised.exception.errors()[0]["loc"]), ("status",))
+        raw_deploy = timeweb_create_deploy(api, 281549, deploy_request, TEST_SHA)
+        self.assertEqual(raw_deploy["id"], 42)
+
     def test_raw_app_response_enforces_fixed_id_type_and_env_shape(self):
         invalid_apps = (
             {**self.app(), "id": 99},
@@ -235,6 +274,30 @@ class TestTimewebRelease(unittest.TestCase):
                         public_values=PUBLIC_VALUES,
                         ancestry_validator=self.ancestry,
                     )
+
+    def test_inspect_returns_only_safe_app_and_deploy_fields(self):
+        api = ApiStub(self.app())
+        api.deploys = [
+            {
+                "id": 42,
+                "commit_sha": TEST_SHA,
+                "started_at": "2026-11-03T10:00:00Z",
+                "ended_at": None,
+                "status": "unmodeled",
+                "envs": {"SENSITIVE": "never-return"},
+            }
+        ]
+        report = inspect_timeweb_app(api, "ru-test")
+        self.assertEqual(report["app"]["commit_sha"], PRIOR_SHA)
+        self.assertEqual(report["deployments"][0]["id"], 42)
+        self.assertEqual(report["deployments"][0]["status"], "unmodeled")
+        self.assertNotIn("SENSITIVE", json.dumps(report))
+
+    def test_inspect_cli_needs_only_profile(self):
+        args = make_parser().parse_args(["--profile", "ru-test", "--inspect"])
+        self.assertTrue(args.inspect)
+        self.assertIsNone(args.sha)
+        self.assertIsNone(args.gateway_sha)
 
     def app(self, profile="ru-test", sha=PRIOR_SHA, envs=None):
         release = RELEASES[profile]
