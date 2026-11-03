@@ -7,6 +7,7 @@ from unittest.mock import Mock
 from timeweb_release import (
     RELEASES,
     ReleaseError,
+    TimewebSDKError,
     build_target_envs,
     read_snapshot,
     run_release,
@@ -60,6 +61,30 @@ class TestTimewebRelease(unittest.TestCase):
     @staticmethod
     def factories(**values):
         return values
+
+    def test_sdk_diagnostics_include_only_stage_class_status_and_schema_field_names(self):
+        secret = "never-print-this-token-or-response-body"
+
+        class HttpError(Exception):
+            status = 413
+
+            def __str__(self):
+                return secret
+
+            def errors(self):
+                return [
+                    {"loc": ("app", "envs"), "input": secret, "msg": secret},
+                    {"loc": ("app", "commit_sha"), "input": secret, "msg": secret},
+                ]
+
+        diagnostic = TimewebSDKError("read app settings", HttpError())
+        message = str(diagnostic)
+        self.assertIn("read app settings", message)
+        self.assertIn("HttpError", message)
+        self.assertIn("HTTP 413", message)
+        self.assertIn("app.commit_sha", message)
+        self.assertIn("app.envs", message)
+        self.assertNotIn(secret, message)
 
     def app(self, profile="ru-test", sha=PRIOR_SHA, envs=None):
         release = RELEASES[profile]
