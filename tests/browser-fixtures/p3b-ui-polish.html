@@ -10,9 +10,9 @@ import {createAppShell} from "${new URL('../../webapp/vnext/shell/app-shell.js',
 const scenario=new URLSearchParams(location.search).get('scenario')||'result';
 document.documentElement.lang=locale;
 const asset=path=>new URL('../../webapp/assets/'+path,location.href).href;
-const job={job_id:'qa-completed',status:'completed',created_at:new Date().toISOString(),render_input_snapshot:{rim:{brand:'Tech Line',model:'TL901',sku:'2481081',wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:108,center_bore_mm:63.4,offset_et_mm:45}},vehicle_identity:{is_user_confirmed:true},output_image_url:asset('demo-render-zeekr-xtrike.jpg')};
+const job={job_id:'qa-completed',status:'completed',created_at:new Date().toISOString(),render_input_snapshot:{rim:{brand:'Tech Line',model:'TL901',sku:'2481081',wheel_diameter_in:19,wheel_width_j:8.5,bolt_count:5,pcd_mm:108,center_bore_mm:63.4,offset_et_mm:45}},vehicle_identity:{is_user_confirmed:true},output_image_url:asset('demo-render-zeekr-xtrike-blurred.jpg')};
 const projected=vnextRenderJob(job);
-const result={...projected,title:'ZEEKR 007',originalUrl:asset('demo-vehicle-zeekr.jpg'),resultUrl:asset('demo-render-zeekr-xtrike.jpg'),canDownload:true,canFitment:scenario!=='result-no-fitment'};
+const result={...projected,title:'ZEEKR 007',originalUrl:asset('demo-vehicle-zeekr-blurred.jpg'),resultUrl:asset('demo-render-zeekr-xtrike-blurred.jpg'),canDownload:true,canFitment:scenario!=='result-no-fitment'};
 let content,activeView='renders',title=uiCopy('page.renderResult',locale);
 window.qaActions=[];
 if(scenario.startsWith('result')||scenario==='loading'||scenario==='portrait'){

@@ -356,17 +356,22 @@ def test_render_cta_remains_outside_fitment_result_workspace() -> None:
 
 
 def test_guest_demo_pair_uses_distinct_local_assets() -> None:
-    assert 'const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";' in APP_JS
+    assert (
+        'const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr-blurred.jpg";' in APP_JS
+    )
     assert 'const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";' in APP_JS
-    assert 'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";' in APP_JS
+    assert (
+        'const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike-blurred.jpg";'
+        in APP_JS
+    )
     assert "rim_original: GUEST_DEMO_RIM_ASSET_URL" in APP_JS
     assert "result: GUEST_DEMO_RESULT_ASSET_URL" in APP_JS
     assert 'model: "007"' in APP_JS
     assert 'model: "10-Spoke"' in APP_JS
     for filename in [
-        "demo-vehicle-zeekr.jpg",
+        "demo-vehicle-zeekr-blurred.jpg",
         "demo-rim-xtrike.png",
-        "demo-render-zeekr-xtrike.jpg",
+        "demo-render-zeekr-xtrike-blurred.jpg",
     ]:
         assert (ROOT / "webapp" / "assets" / filename).is_file()
 

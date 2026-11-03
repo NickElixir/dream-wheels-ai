@@ -5,7 +5,7 @@
 <body><main><nav><select aria-label="Ошибка" id="failure"><option value="original">Оригинал</option><option value="result">Результат</option><option value="rim_original">Фото диска</option><option value="all">Все фото</option></select><select aria-label="Язык" id="language"><option value="ru">RU</option><option value="en">EN</option></select><button id="reset">Вернуть ошибку</button><small>Локальная демонстрация: управляемая ошибка загрузки, генерация не запускается</small></nav><h1>Результат</h1><div id="view"></div><p id="qa-status" role="status"></p></main>
 <script type="module">
 import {createRenderView,refreshRenderView} from '../../webapp/vnext/views/render.js';
-const urls={original:new URL('../../webapp/assets/demo-vehicle-zeekr.jpg',location.href).href,result:new URL('../../webapp/assets/demo-render-zeekr-xtrike.jpg',location.href).href,rim_original:new URL('../../webapp/assets/demo-rim-xtrike.png',location.href).href};
+const urls={original:new URL('../../webapp/assets/demo-vehicle-zeekr-blurred.jpg',location.href).href,result:new URL('../../webapp/assets/demo-render-zeekr-xtrike-blurred.jpg',location.href).href,rim_original:new URL('../../webapp/assets/demo-rim-xtrike.png',location.href).href};
 const fields={original:['originalFailed','originalLoading','originalUrl'],result:['resultFailed','resultLoading','resultUrl'],rim_original:['wheelFailed','wheelLoading','wheelUrl']};
 let model,root,revision=0;
 const status=document.querySelector('#qa-status');
