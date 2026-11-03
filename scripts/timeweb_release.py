@@ -135,45 +135,47 @@ def sdk_schema_type_value(error: Exception) -> str | None:
     return values.pop() if len(values) == 1 else None
 
 
-def safe_json_type_diagnostic(value: Any) -> str:
-    if isinstance(value, str):
-        return value if re.fullmatch(r"[a-z][a-z0-9_-]{0,39}", value) else "string"
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "boolean"
-    if isinstance(value, int | float):
-        return "number"
-    if isinstance(value, list):
-        return "array"
-    if isinstance(value, dict):
-        return "object"
-    return "unknown"
-
-
-def read_raw_app_type_diagnostic(api: Any, app_id: int) -> str | None:
-    """Retry a read-only app lookup without SDK model validation; expose only app.type."""
-    getter = getattr(api, "get_app_with_http_info", None)
-    if not callable(getter):
-        return None
+def timeweb_app_payload(
+    api: Any, stage: str, method_name: str, app_id: int, *args: Any
+) -> dict[str, Any]:
+    """Read app JSON without validating unrelated nested SDK models."""
+    method = getattr(api, f"{method_name}_with_http_info", None)
+    if not callable(method):
+        raise ReleaseError("Timeweb SDK raw app response method is unavailable")
+    response = call_timeweb(stage, method, app_id, *args, _preload_content=False)
+    if field(response, "status_code") != 200:
+        raise ReleaseError("Timeweb returned an unsuccessful app response")
+    raw_data = field(response, "raw_data")
     try:
-        response = getter(app_id, _preload_content=False)
-        if field(response, "status_code") != 200:
-            return None
-        raw_data = field(response, "raw_data")
         if isinstance(raw_data, bytes):
             raw_data = raw_data.decode("utf-8")
         if not isinstance(raw_data, str):
-            return None
+            raise ValueError
         payload = json.loads(raw_data)
-    except Exception:
-        return None
-    if not isinstance(payload, dict) or not isinstance(payload.get("app"), dict):
-        return None
-    app = payload["app"]
-    if "type" not in app:
-        return None
-    return safe_json_type_diagnostic(app["type"])
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise ReleaseError("Timeweb returned an unreadable app response") from error
+    app = payload.get("app") if isinstance(payload, dict) else None
+    if not isinstance(app, dict):
+        raise ReleaseError("Timeweb app response has an unsupported shape")
+    if str(app.get("id")) != str(app_id):
+        raise ReleaseError("Timeweb returned an app ID different from the fixed profile mapping")
+    if app.get("type") != "frontend":
+        raise ReleaseError("Timeweb target is not a frontend app")
+    envs = app.get("envs")
+    if envs is not None and not isinstance(envs, dict):
+        raise ReleaseError("Timeweb app envs have an unsupported shape")
+    return app
+
+
+def update_timeweb_app_settings(api: Any, app_id: int, settings: Any) -> None:
+    """Apply settings through the SDK and verify HTTP success without parsing its body."""
+    method = getattr(api, "update_app_settings_with_http_info", None)
+    if not callable(method):
+        raise ReleaseError("Timeweb SDK raw app settings method is unavailable")
+    response = call_timeweb("update app settings", method, app_id, settings, _preload_content=False)
+    status = field(response, "status_code")
+    if not isinstance(status, int) or isinstance(status, bool) or not 200 <= status < 300:
+        raise ReleaseError("Timeweb did not confirm the app settings update")
 
 
 def safe_sdk_error_message(
@@ -516,7 +518,7 @@ def wait_for_exact_deploy(
         deployment = next(
             (item for item in deployments if str(field(item, "id")) == str(deploy_id)), None
         )
-        app = field(call_timeweb("read app status", api.get_app, app_id), "app")
+        app = timeweb_app_payload(api, "read app status", "get_app", app_id)
         app_status = field(app, "status")
         current_sha = str(field(app, "commit_sha") or "").lower()
         if app_status in FAILURE_APP_STATES:
@@ -596,22 +598,7 @@ def run_release(
     else:
         gateway_report = None
     app_id = target["app_id"]
-    try:
-        app_response = call_timeweb("read app settings", api.get_app, app_id)
-    except TimewebSDKError as error:
-        if error.schema_fields in {("app.type",), ("type",)}:
-            type_diagnostic = read_raw_app_type_diagnostic(api, app_id)
-            raise ReleaseError(
-                safe_sdk_error_message(
-                    error.stage,
-                    error.exception_class,
-                    error.http_status,
-                    error.schema_fields,
-                    type_diagnostic,
-                )
-            ) from None
-        raise
-    app = field(app_response, "app")
+    app = timeweb_app_payload(api, "read app settings", "get_app", app_id)
     snapshot = make_snapshot(profile, app)
 
     if rollback:
@@ -686,12 +673,7 @@ def run_release(
         "commit_sha": sha,
         "is_auto_deploy": False,
     }
-    call_timeweb(
-        "update app settings",
-        api.update_app_settings,
-        app_id,
-        update_settings_factory(**settings_values),
-    )
+    update_timeweb_app_settings(api, app_id, update_settings_factory(**settings_values))
     created = field(
         call_timeweb(
             "start deploy",
