@@ -61,9 +61,14 @@ class TimewebSDKError(ReleaseError):
         self.exception_class = type(error).__name__
         self.http_status = sdk_http_status(error)
         self.schema_fields = sdk_schema_fields(error)
+        self.schema_type_value = sdk_schema_type_value(error)
         super().__init__(
             safe_sdk_error_message(
-                self.stage, self.exception_class, self.http_status, self.schema_fields
+                self.stage,
+                self.exception_class,
+                self.http_status,
+                self.schema_fields,
+                self.schema_type_value,
             )
         )
 
@@ -105,8 +110,37 @@ def sdk_schema_fields(error: Exception) -> tuple[str, ...]:
     return tuple(sorted(fields))
 
 
+def sdk_schema_type_value(error: Exception) -> str | None:
+    """Expose only a simple enum-like value for a type-only validation failure."""
+    errors_method = getattr(error, "errors", None)
+    if not callable(errors_method):
+        return None
+    try:
+        issues = errors_method()
+    except Exception:
+        return None
+    if not isinstance(issues, list | tuple) or not issues:
+        return None
+    values: set[str] = set()
+    for issue in issues:
+        if not isinstance(issue, dict):
+            return None
+        location = tuple(str(part) for part in issue.get("loc", ()))
+        if location not in {("type",), ("app", "type")}:
+            return None
+        value = issue.get("input")
+        if not isinstance(value, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,39}", value):
+            return None
+        values.add(value)
+    return values.pop() if len(values) == 1 else None
+
+
 def safe_sdk_error_message(
-    stage: str, exception_class: str, status: int | None, schema_fields: tuple[str, ...] = ()
+    stage: str,
+    exception_class: str,
+    status: int | None,
+    schema_fields: tuple[str, ...] = (),
+    schema_type_value: str | None = None,
 ) -> str:
     suffix = f", HTTP {status}" if status is not None else ""
     advice = {
@@ -119,7 +153,10 @@ def safe_sdk_error_message(
     if status is not None and 500 <= status <= 599:
         advice = "; retry after checking Timeweb service status"
     field_advice = f"; schema fields: {', '.join(schema_fields)}" if schema_fields else ""
-    return f"Timeweb SDK {stage} failed ({exception_class}{suffix}){advice}{field_advice}"
+    type_advice = f"; schema type value: {schema_type_value}" if schema_type_value else ""
+    return (
+        f"Timeweb SDK {stage} failed ({exception_class}{suffix}){advice}{field_advice}{type_advice}"
+    )
 
 
 def call_timeweb(stage: str, function: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:

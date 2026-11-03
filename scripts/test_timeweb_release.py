@@ -86,6 +86,39 @@ class TestTimewebRelease(unittest.TestCase):
         self.assertIn("app.envs", message)
         self.assertNotIn(secret, message)
 
+    def test_sdk_diagnostics_include_simple_value_for_type_only_validation(self):
+        class ValidationError(Exception):
+            def errors(self):
+                return [{"loc": ("app", "type"), "input": "frontend_payg"}]
+
+        diagnostic = TimewebSDKError("read app settings", ValidationError())
+        self.assertIn("schema type value: frontend_payg", str(diagnostic))
+
+    def test_sdk_diagnostics_never_include_type_value_with_other_fields_or_unsafe_shape(self):
+        class ValidationError(Exception):
+            def __init__(self, issues):
+                self.issues = issues
+
+            def errors(self):
+                return self.issues
+
+        unsafe_inputs = (
+            [{"loc": ("app", "type"), "input": "https://token.example/secret"}],
+            [
+                {"loc": ("app", "type"), "input": "frontend_payg"},
+                {"loc": ("app", "envs"), "input": "sensitive-value"},
+            ],
+            [
+                {"loc": ("app", "type"), "input": "frontend_payg"},
+                {"loc": ("app", "type"), "input": "backend"},
+            ],
+        )
+        for issues in unsafe_inputs:
+            with self.subTest(issues=issues):
+                diagnostic = TimewebSDKError("read app settings", ValidationError(issues))
+                self.assertNotIn("schema type value:", str(diagnostic))
+                self.assertNotIn("sensitive-value", str(diagnostic))
+
     def app(self, profile="ru-test", sha=PRIOR_SHA, envs=None):
         release = RELEASES[profile]
         return {
