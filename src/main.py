@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ASGIApp
 
 from src import (
     analytics_api,
@@ -111,7 +112,7 @@ async def lifespan(app: FastAPI):
 
 
 class CorrelatedFastAPI(FastAPI):
-    def build_middleware_stack(self):
+    def build_middleware_stack(self) -> ASGIApp:
         return RequestContextMiddleware(super().build_middleware_stack())
 
 

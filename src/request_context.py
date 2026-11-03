@@ -119,6 +119,8 @@ class RequestContextMiddleware:
         try:
             await self.app(scope, receive, send_with_request_id)
         finally:
-            if not completion_logged:
-                log_completion(response_status or 500)
-            request_id_context.reset(token)
+            try:
+                if not completion_logged:
+                    log_completion(response_status or 500)
+            finally:
+                request_id_context.reset(token)
