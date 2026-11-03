@@ -53,6 +53,82 @@ class ReleaseError(RuntimeError):
     """A release could not be safely prepared or verified."""
 
 
+class TimewebSDKError(ReleaseError):
+    """An SDK call failed; retain only its stage, class name, and HTTP status."""
+
+    def __init__(self, stage: str, error: Exception):
+        self.stage = stage
+        self.exception_class = type(error).__name__
+        self.http_status = sdk_http_status(error)
+        self.schema_fields = sdk_schema_fields(error)
+        super().__init__(
+            safe_sdk_error_message(
+                self.stage, self.exception_class, self.http_status, self.schema_fields
+            )
+        )
+
+
+def sdk_http_status(error: Exception) -> int | None:
+    response = getattr(error, "response", None)
+    candidates = (
+        getattr(error, "status", None),
+        getattr(error, "status_code", None),
+        getattr(response, "status", None),
+        getattr(response, "status_code", None),
+        getattr(error, "code", None),
+    )
+    for candidate in candidates:
+        try:
+            status = int(candidate)
+        except (TypeError, ValueError):
+            continue
+        if 100 <= status <= 599:
+            return status
+    return None
+
+
+def sdk_schema_fields(error: Exception) -> tuple[str, ...]:
+    errors_method = getattr(error, "errors", None)
+    if not callable(errors_method):
+        return ()
+    try:
+        issues = errors_method()
+    except Exception:
+        return ()
+    fields: set[str] = set()
+    for issue in issues if isinstance(issues, list | tuple) else ():
+        location = issue.get("loc", ()) if isinstance(issue, dict) else ()
+        parts = [str(part) for part in location]
+        field_path = ".".join(parts)
+        if field_path and re.fullmatch(r"[A-Za-z0-9_.\[\]-]{1,160}", field_path):
+            fields.add(field_path)
+    return tuple(sorted(fields))
+
+
+def safe_sdk_error_message(
+    stage: str, exception_class: str, status: int | None, schema_fields: tuple[str, ...] = ()
+) -> str:
+    suffix = f", HTTP {status}" if status is not None else ""
+    advice = {
+        401: "; check the configured token is valid",
+        403: "; check token access to the mapped app",
+        404: "; check the mapped app exists in the configured account",
+        413: "; check the request schema and environment payload size",
+        429: "; retry after the provider rate limit clears",
+    }.get(status, "")
+    if status is not None and 500 <= status <= 599:
+        advice = "; retry after checking Timeweb service status"
+    field_advice = f"; schema fields: {', '.join(schema_fields)}" if schema_fields else ""
+    return f"Timeweb SDK {stage} failed ({exception_class}{suffix}){advice}{field_advice}"
+
+
+def call_timeweb(stage: str, function: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    try:
+        return function(*args, **kwargs)
+    except Exception as error:
+        raise TimewebSDKError(stage, error) from None
+
+
 def field(obj: Any, name: str, default: Any = None) -> Any:
     if isinstance(obj, dict):
         return obj.get(name, default)
@@ -351,11 +427,18 @@ def wait_for_exact_deploy(
 ) -> dict[str, Any]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        deployments = field(api.get_app_deploys(app_id, limit=100, offset=0), "deploys", []) or []
+        deployments = (
+            field(
+                call_timeweb("list deployments", api.get_app_deploys, app_id, limit=100, offset=0),
+                "deploys",
+                [],
+            )
+            or []
+        )
         deployment = next(
             (item for item in deployments if str(field(item, "id")) == str(deploy_id)), None
         )
-        app = field(api.get_app(app_id), "app")
+        app = field(call_timeweb("read app status", api.get_app, app_id), "app")
         app_status = field(app, "status")
         current_sha = str(field(app, "commit_sha") or "").lower()
         if app_status in FAILURE_APP_STATES:
@@ -385,11 +468,15 @@ def make_sdk_client(token: str) -> tuple[Any, Any, Any]:
         raise ReleaseError(
             f"Timeweb SDK is unavailable; install the pinned SDK at {SDK_COMMIT}"
         ) from error
-    configuration = timeweb_cloud_api.Configuration(
-        host="https://api.timeweb.cloud", access_token=token
-    )
-    client = timeweb_cloud_api.ApiClient(configuration)
-    return timeweb_cloud_api.AppsApi(client), UpdateSettings, CreateDeployRequest
+    try:
+        configuration = timeweb_cloud_api.Configuration(
+            host="https://api.timeweb.cloud", access_token=token
+        )
+        client = timeweb_cloud_api.ApiClient(configuration)
+        api = timeweb_cloud_api.AppsApi(client)
+    except Exception as error:
+        raise TimewebSDKError("initialize client", error) from None
+    return api, UpdateSettings, CreateDeployRequest
 
 
 def run_release(
@@ -431,7 +518,7 @@ def run_release(
     else:
         gateway_report = None
     app_id = target["app_id"]
-    app = field(api.get_app(app_id), "app")
+    app = field(call_timeweb("read app settings", api.get_app, app_id), "app")
     snapshot = make_snapshot(profile, app)
 
     if rollback:
@@ -506,8 +593,21 @@ def run_release(
         "commit_sha": sha,
         "is_auto_deploy": False,
     }
-    api.update_app_settings(app_id, update_settings_factory(**settings_values))
-    created = field(api.create_deploy(app_id, deploy_request_factory(commit_sha=sha)), "deploy")
+    call_timeweb(
+        "update app settings",
+        api.update_app_settings,
+        app_id,
+        update_settings_factory(**settings_values),
+    )
+    created = field(
+        call_timeweb(
+            "start deploy",
+            api.create_deploy,
+            app_id,
+            deploy_request_factory(commit_sha=sha),
+        ),
+        "deploy",
+    )
     deploy_id = field(created, "id")
     if deploy_id is None:
         raise ReleaseError(
@@ -527,7 +627,12 @@ def run_release(
         else verifier(profile, sha, gateway_sha=gateway_sha)
     )
     if auto_deploy is not None:
-        api.update_app_settings(app_id, update_settings_factory(is_auto_deploy=auto_deploy))
+        call_timeweb(
+            "restore automatic deploy setting",
+            api.update_app_settings,
+            app_id,
+            update_settings_factory(is_auto_deploy=auto_deploy),
+        )
     return {**report, "deployment": deploy_report, "live_verification": live_report}
 
 
