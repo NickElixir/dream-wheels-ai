@@ -227,9 +227,9 @@ const FEEDBACK_REASONS = [
     { code: "image_quality", label: "Качество изображения" },
     { code: "other", label: "Другое" },
 ];
-const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr.jpg";
+const GUEST_DEMO_VEHICLE_ASSET_URL = "/assets/demo-vehicle-zeekr-blurred.jpg";
 const GUEST_DEMO_RIM_ASSET_URL = "/assets/demo-rim-xtrike.png";
-const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike.jpg";
+const GUEST_DEMO_RESULT_ASSET_URL = "/assets/demo-render-zeekr-xtrike-blurred.jpg";
 const ANALYTICS_VISITOR_STORAGE_KEY = "dreamWheelsAnalyticsVisitor";
 const ANALYTICS_ATTRIBUTION_STORAGE_KEY = "dreamWheelsAnalyticsAttribution";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
