@@ -97,7 +97,7 @@ test('verifies site metadata, gateway identity/build, upstream health, CORS and 
     assert.equal(report.gatewaySHA, gatewaySha);
     assert.deepEqual(report.revisionHeaders, { 'x-gateway-revision': 'rev-123' });
     assert.deepEqual(Object.keys(report.checks.html), [
-      'buildStamp', 'deploymentConfigLoaded', 'harnessConfigVersioned', 'authBundleVersioned', 'noIndex', 'noTelegramDomains', 'noTelegramAuthButton',
+      'buildStamp', 'deploymentConfigLoaded', 'harnessConfigVersioned', 'authBundleVersioned', 'noIndex', 'noTelegramResources', 'noTelegramAuthButton',
     ]);
     assert.deepEqual(report.checks.protectedAuthBoundary, { missingToken: '401', untrustedOrigin: '403' });
     assert.deepEqual(requested.map(({ method, url }) => [method, new URL(url).pathname]), [
@@ -128,6 +128,12 @@ test('fails closed for each mismatched website version field', async (t) => {
   }
 });
 
+test('allows a support link without loading Telegram resources or login', async () => withMock({
+  telegramMarkup: '<a href="https://t.me/dreamwheelsai" target="_blank">Support</a>',
+}, async () => {
+  assert.equal((await verifyRelease({ profile: 'ru-test', sha, gatewaySha })).ok, true);
+}));
+
 test('fails closed for deployment config and HTML safety mismatches', async (t) => {
   const cases = [
     ['deployment profile', { configProfile: 'ru-production' }, /deployment profile/u],
@@ -137,7 +143,7 @@ test('fails closed for deployment config and HTML safety mismatches', async (t) 
     ['deployment config cache key', { deploymentScript: '<script src="/deployment-config.js"></script>' }, /HTML is missing release markers/u],
     ['auth harness cache key', { harnessScript: '<script src="/auth/harness-config.js"></script>' }, /HTML is missing release markers/u],
     ['auth bundle cache key', { bundleScript: '<script src="/auth/app-auth.bundle.js"></script>' }, /HTML is missing release markers/u],
-    ['Telegram domain', { telegramMarkup: '<a href="https://telegram.org">x</a>' }, /HTML is missing release markers/u],
+    ['Telegram SDK', { telegramMarkup: '<script src="https://telegram.org/js/telegram-web-app.js"></script>' }, /HTML is missing release markers/u],
     ['Telegram auth button', { telegramMarkup: '<button data-auth-telegram></button>' }, /HTML is missing release markers/u],
   ];
   for (const [name, options, error] of cases) {
