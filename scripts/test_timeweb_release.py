@@ -9,6 +9,7 @@ from timeweb_release import (
     ReleaseError,
     TimewebSDKError,
     build_target_envs,
+    read_raw_app_type_diagnostic,
     read_snapshot,
     run_release,
     validate_artifact_manifest,
@@ -118,6 +119,48 @@ class TestTimewebRelease(unittest.TestCase):
                 diagnostic = TimewebSDKError("read app settings", ValidationError(issues))
                 self.assertNotIn("schema type value:", str(diagnostic))
                 self.assertNotIn("sensitive-value", str(diagnostic))
+
+    def test_raw_app_type_diagnostic_reads_only_type_and_sanitizes_unusual_values(self):
+        class Response:
+            status_code = 200
+            raw_data = b'{"app":{"type":"frontend_payg","envs":{"SECRET":"hidden"}}}'
+
+        class Api:
+            def get_app_with_http_info(self, app_id, _preload_content):
+                return Response()
+
+        self.assertEqual(read_raw_app_type_diagnostic(Api(), 281549), "frontend_payg")
+        Response.raw_data = b'{"app":{"type":"secret value"}}'
+        self.assertEqual(read_raw_app_type_diagnostic(Api(), 281549), "string")
+
+    def test_release_reports_raw_type_only_after_sdk_type_validation_failure(self):
+        class ValidationError(Exception):
+            def errors(self):
+                return [{"loc": ("app", "type")}]
+
+        class Api:
+            def get_app(self, app_id):
+                raise ValidationError()
+
+            def get_app_with_http_info(self, app_id, _preload_content):
+                class Response:
+                    status_code = 200
+                    raw_data = b'{"app":{"type":"frontend_payg"}}'
+
+                return Response()
+
+        with self.assertRaisesRegex(ReleaseError, "schema type value: frontend_payg"):
+            run_release(
+                api=Api(),
+                update_settings_factory=self.factories,
+                deploy_request_factory=self.factories,
+                profile="ru-test",
+                sha=TEST_SHA,
+                gateway_sha=GATEWAY_SHA,
+                apply=False,
+                public_values=PUBLIC_VALUES,
+                ancestry_validator=self.ancestry,
+            )
 
     def app(self, profile="ru-test", sha=PRIOR_SHA, envs=None):
         release = RELEASES[profile]
