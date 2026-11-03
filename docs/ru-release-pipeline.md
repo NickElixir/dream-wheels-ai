@@ -89,6 +89,11 @@ Frontend `version.json` and gateway `/health` identify deployed components.
 Empty static-host runtime logs are not evidence that backend requests succeeded.
 Never ask users to export HAR with sensitive data; sanitize bodies as well as headers.
 
+The pinned Timeweb Python SDK incorrectly models the API's string `provider.type`
+as a nested model. Release tooling therefore uses its raw-response transport for
+app reads/settings updates, with explicit app-ID, frontend-type and env-shape
+checks. Do not remove those checks or log raw responses to diagnose SDK failures.
+
 ## Rollback and maintenance
 
 Before release, record each app's previous commit and build environment. Roll back

@@ -1,7 +1,9 @@
+import importlib.util
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from timeweb_release import (
@@ -9,9 +11,10 @@ from timeweb_release import (
     ReleaseError,
     TimewebSDKError,
     build_target_envs,
-    read_raw_app_type_diagnostic,
     read_snapshot,
     run_release,
+    timeweb_app_payload,
+    update_timeweb_app_settings,
     validate_artifact_manifest,
 )
 
@@ -33,14 +36,20 @@ class ApiStub:
         self.deployed = []
         self.deploys = []
 
-    def get_app(self, app_id):
+    def get_app_with_http_info(self, app_id, *, _preload_content):
         assert str(app_id) in {str(value["app_id"]) for value in RELEASES.values()}
-        return {"app": self.app}
+        assert _preload_content is False
+        return SimpleNamespace(status_code=200, raw_data=json.dumps({"app": self.app}).encode())
 
     def update_app_settings(self, app_id, settings):
         self.updated.append((app_id, settings))
         values = settings if isinstance(settings, dict) else settings.dict(exclude_none=True)
         self.app.update(values)
+
+    def update_app_settings_with_http_info(self, app_id, settings, *, _preload_content):
+        assert _preload_content is False
+        self.update_app_settings(app_id, settings)
+        return SimpleNamespace(status_code=204, raw_data=b"")
 
     def create_deploy(self, app_id, request):
         values = request if isinstance(request, dict) else request.dict(exclude_none=True)
@@ -120,79 +129,103 @@ class TestTimewebRelease(unittest.TestCase):
                 self.assertNotIn("schema type value:", str(diagnostic))
                 self.assertNotIn("sensitive-value", str(diagnostic))
 
-    def test_raw_app_type_diagnostic_reads_only_type_and_sanitizes_unusual_values(self):
-        class Response:
-            status_code = 200
-            raw_data = b'{"app":{"type":"frontend_payg","envs":{"SECRET":"hidden"}}}'
-
-        class Api:
-            def get_app_with_http_info(self, app_id, _preload_content):
-                return Response()
-
-        self.assertEqual(read_raw_app_type_diagnostic(Api(), 281549), "frontend_payg")
-        Response.raw_data = b'{"app":{"type":"secret value"}}'
-        self.assertEqual(read_raw_app_type_diagnostic(Api(), 281549), "string")
-
-    def test_release_reports_raw_type_only_after_sdk_type_validation_failure(self):
-        class ValidationError(Exception):
-            def __init__(self, location):
-                self.location = location
-
-            def errors(self):
-                return [{"loc": self.location}]
-
-        class Api:
-            def get_app(self, app_id):
-                raise ValidationError(("type",))
-
-            def get_app_with_http_info(self, app_id, _preload_content):
-                class Response:
-                    status_code = 200
-                    raw_data = b'{"app":{"type":"frontend_payg"}}'
-
-                return Response()
-
-        with self.assertRaisesRegex(ReleaseError, "schema type value: frontend_payg"):
-            run_release(
-                api=Api(),
+    def test_raw_app_response_uses_frontend_type_without_validating_nested_models(self):
+        app = self.app()
+        app["framework"] = {"type": "another"}
+        with tempfile.TemporaryDirectory() as directory:
+            report = run_release(
+                api=ApiStub(app),
                 update_settings_factory=self.factories,
                 deploy_request_factory=self.factories,
                 profile="ru-test",
                 sha=TEST_SHA,
                 gateway_sha=GATEWAY_SHA,
                 apply=False,
+                snapshot_path=Path(directory) / "snapshot.json",
                 public_values=PUBLIC_VALUES,
                 ancestry_validator=self.ancestry,
             )
+        self.assertTrue(report["ok"])
 
-    def test_release_reports_raw_type_for_nested_and_unprefixed_sdk_locations(self):
-        class ValidationError(Exception):
-            def __init__(self, location):
-                self.location = location
+    @unittest.skipUnless(
+        importlib.util.find_spec("timeweb_cloud_api"), "pinned Timeweb SDK is not installed"
+    )
+    def test_pinned_sdk_raw_app_method_avoids_nested_provider_model_validation(self):
+        import timeweb_cloud_api
+        from pydantic import ValidationError
+        from timeweb_cloud_api.models.update_settings import UpdateSettings
 
-            def errors(self):
-                return [{"loc": self.location}]
+        app = {
+            "id": 281549,
+            "type": "frontend",
+            "status": "active",
+            "provider": {"id": 1, "type": "github"},
+            "framework": {"type": "another"},
+            "repository": {"id": 1},
+            "envs": {"KEEP": "value"},
+            "branch_name": "staging",
+            "is_auto_deploy": True,
+            "commit_sha": PRIOR_SHA,
+            "configuration": {},
+            "disk_status": {},
+        }
+        response_body = json.dumps({"app": app}).encode()
+        config = timeweb_cloud_api.Configuration(
+            host="https://api.timeweb.cloud", access_token="test-only-dummy"
+        )
+        client = timeweb_cloud_api.ApiClient(config)
+        api = timeweb_cloud_api.AppsApi(client)
 
-        class Api:
-            def __init__(self, location):
-                self.location = location
+        class MockResponse:
+            status = 200
+            data = response_body
 
-            def get_app(self, app_id):
-                raise ValidationError(self.location)
+            @staticmethod
+            def getheader(name):
+                return "application/json"
 
-            def get_app_with_http_info(self, app_id, **kwargs):
-                class Response:
-                    status_code = 200
-                    raw_data = b'{"app":{"type":"frontend_payg"}}'
+            @staticmethod
+            def getheaders():
+                return {"content-type": "application/json"}
 
-                assert kwargs == {"_preload_content": False}
-                return Response()
+        client.request = Mock(side_effect=lambda *args, **kwargs: MockResponse())
+        with self.assertRaises(ValidationError) as raised:
+            api.get_app(281549)
+        self.assertEqual(tuple(raised.exception.errors()[0]["loc"]), ("type",))
 
-        for location in (("app", "type"), ("type",)):
-            with self.subTest(location=location):
-                with self.assertRaisesRegex(ReleaseError, "schema type value: frontend_payg"):
+        parsed_app = timeweb_app_payload(api, "read app settings", "get_app", 281549)
+        self.assertEqual(parsed_app["provider"]["type"], "github")
+        self.assertEqual(parsed_app["type"], "frontend")
+        update_request = UpdateSettings(envs={"UPDATED": "value"})
+        with self.assertRaises(ValidationError):
+            api.update_app_settings(281549, update_request)
+
+        class NoContentResponse:
+            status = 204
+            data = b""
+
+            @staticmethod
+            def getheader(name):
+                return None
+
+            @staticmethod
+            def getheaders():
+                return {}
+
+        client.request = Mock(return_value=NoContentResponse())
+        update_timeweb_app_settings(api, 281549, update_request)
+
+    def test_raw_app_response_enforces_fixed_id_type_and_env_shape(self):
+        invalid_apps = (
+            {**self.app(), "id": 99},
+            {**self.app(), "type": "backend"},
+            {**self.app(), "envs": ["invalid"]},
+        )
+        for app in invalid_apps:
+            with self.subTest(app_id=app["id"], app_type=app["type"]):
+                with self.assertRaises(ReleaseError):
                     run_release(
-                        api=Api(location),
+                        api=ApiStub(app),
                         update_settings_factory=self.factories,
                         deploy_request_factory=self.factories,
                         profile="ru-test",
