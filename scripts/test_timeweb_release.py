@@ -135,12 +135,15 @@ class TestTimewebRelease(unittest.TestCase):
 
     def test_release_reports_raw_type_only_after_sdk_type_validation_failure(self):
         class ValidationError(Exception):
+            def __init__(self, location):
+                self.location = location
+
             def errors(self):
-                return [{"loc": ("app", "type")}]
+                return [{"loc": self.location}]
 
         class Api:
             def get_app(self, app_id):
-                raise ValidationError()
+                raise ValidationError(("type",))
 
             def get_app_with_http_info(self, app_id, _preload_content):
                 class Response:
@@ -161,6 +164,44 @@ class TestTimewebRelease(unittest.TestCase):
                 public_values=PUBLIC_VALUES,
                 ancestry_validator=self.ancestry,
             )
+
+    def test_release_reports_raw_type_for_nested_and_unprefixed_sdk_locations(self):
+        class ValidationError(Exception):
+            def __init__(self, location):
+                self.location = location
+
+            def errors(self):
+                return [{"loc": self.location}]
+
+        class Api:
+            def __init__(self, location):
+                self.location = location
+
+            def get_app(self, app_id):
+                raise ValidationError(self.location)
+
+            def get_app_with_http_info(self, app_id, **kwargs):
+                class Response:
+                    status_code = 200
+                    raw_data = b'{"app":{"type":"frontend_payg"}}'
+
+                assert kwargs == {"_preload_content": False}
+                return Response()
+
+        for location in (("app", "type"), ("type",)):
+            with self.subTest(location=location):
+                with self.assertRaisesRegex(ReleaseError, "schema type value: frontend_payg"):
+                    run_release(
+                        api=Api(location),
+                        update_settings_factory=self.factories,
+                        deploy_request_factory=self.factories,
+                        profile="ru-test",
+                        sha=TEST_SHA,
+                        gateway_sha=GATEWAY_SHA,
+                        apply=False,
+                        public_values=PUBLIC_VALUES,
+                        ancestry_validator=self.ancestry,
+                    )
 
     def app(self, profile="ru-test", sha=PRIOR_SHA, envs=None):
         release = RELEASES[profile]

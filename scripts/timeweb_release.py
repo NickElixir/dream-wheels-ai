@@ -599,7 +599,7 @@ def run_release(
     try:
         app_response = call_timeweb("read app settings", api.get_app, app_id)
     except TimewebSDKError as error:
-        if error.schema_fields == ("app.type",):
+        if error.schema_fields in {("app.type",), ("type",)}:
             type_diagnostic = read_raw_app_type_diagnostic(api, app_id)
             raise ReleaseError(
                 safe_sdk_error_message(
