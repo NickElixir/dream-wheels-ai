@@ -10,7 +10,7 @@ import {createRenderView,refreshRenderView} from '../../webapp/vnext/views/rende
 const source=await (await fetch('../../webapp/app.js')).text();
 const fn=name=>{const start=source.indexOf(`function ${name}(`);return source.slice(start,source.indexOf('\n}',start)+2);};
 const title=(job,locale,kind)=>new Function('job','locale',`${fn('accountTryOnTitle')}\n${fn('homeRenderTitle')}\n${fn('historyGalleryTitle')}\nreturn ${kind}(job);`)(job,locale);
-const image=new URL('../../webapp/assets/demo-vehicle-zeekr.jpg',location.href).href;
+const image=new URL('../../webapp/assets/demo-vehicle-zeekr-blurred.jpg',location.href).href;
 function render(){
  const locale=document.querySelector('#language').value,screen=document.querySelector('#screen').value,variant=document.querySelector('#variant').value;
  document.documentElement.lang=locale;

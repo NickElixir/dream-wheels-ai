@@ -8,8 +8,8 @@ for(const [width,height]of [[1440,1000],[1280,900],[1024,900],[768,900],[390,844
  if(scenario==='result43'&&width<=760)continue;
  const p=await b.newPage({viewport:{width,height},locale:locale==='ru'?'ru-RU':'en-US'}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
  await p.route('**/*',r=>new URL(r.request().url()).origin==='http://127.0.0.1:8779'?r.continue():r.fulfill({status:200,contentType:'application/json',body:'{}'}));
- if(scenario==='result43') await p.route('**/demo-render-zeekr-xtrike.jpg', r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#12191f"/></svg>'}));
- if(scenario==='portrait') await p.route('**/demo-render-zeekr-xtrike.jpg', r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="600"><rect width="300" height="600" fill="#12191f"/></svg>'}));
+ if(scenario==='result43') await p.route('**/demo-render-zeekr-xtrike-blurred.jpg', r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#12191f"/></svg>'}));
+ if(scenario==='portrait') await p.route('**/demo-render-zeekr-xtrike-blurred.jpg', r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="600"><rect width="300" height="600" fill="#12191f"/></svg>'}));
  await p.goto('http://127.0.0.1:8779/tests/browser-fixtures/p3b-ui-polish.html?scenario='+scenario);try{await p.waitForFunction(()=>window.qaReady,{},{timeout:10000});}catch(e){throw Error(JSON.stringify({width,locale,scenario,errors}));}
  await p.locator('img').evaluateAll(es=>Promise.all(es.map(e=>e.complete?Promise.resolve():new Promise(r=>{e.onload=r;e.onerror=r}))));
  const overflow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),broken=await p.locator('img').evaluateAll(es=>es.filter(e=>!e.naturalWidth).length);

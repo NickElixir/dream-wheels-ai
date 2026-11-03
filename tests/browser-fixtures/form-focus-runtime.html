@@ -21,7 +21,7 @@ syncApplicationAuthWall=()=>{};hasFrontendAuth=()=>true;hasBearerFrontendAuth=()
 state.applicationAuthRequired=false;state.frontendAuthState={status:'ANONYMOUS',protectedApiReady:true};
 loadRenderHistory=async()=>{};loadFitmentCheckHistory=async()=>{};refreshFitmentCheckCurrentness=async()=>{};
 const qaOriginalFetch=window.fetch.bind(window);
-const qaImage=new URL('../../webapp/assets/demo-vehicle-zeekr.jpg',location.href).href;
+const qaImage=new URL('../../webapp/assets/demo-vehicle-zeekr-blurred.jpg',location.href).href;
 const qaWheel=new URL('../../webapp/assets/demo-rim-xtrike.png',location.href).href;
 let qaFlowTrace=[];
 let qaOverview,qaObsolete=[],qaPending=[],qaDelay=false,qaRequests=[],qaSaveFailure=false;
@@ -37,7 +37,7 @@ window.fetch=async(url,options={})=>{
  if(path.endsWith('/vehicle-variants')){const body={outcome:'multiple',vehicle_revision:qaOverview.vehicle_revision,variants:[qaVariant('520d'),qaVariant('530d')]};if(qaDelay)return new Promise(resolve=>qaPending.push(fail=>resolve(fail?new Response('{}',{status:503}):qaJson(body))));return qaJson(body);}
  if(path.endsWith('/fitment')&&options.method==='PATCH'){if(qaSaveFailure){qaSaveFailure=false;return new Response(JSON.stringify({detail:'Local save error'}),{status:503});}const payload=JSON.parse(options.body);qaRequests.push({path,vehicleFields:payload.vehicle?.confirmed_fields||[],wheelOnly:!payload.vehicle});if(payload.vehicle){if(payload.vehicle.confirmed_fields?.length!==4)return new Response('{}',{status:422});const {confirmed_fields,...vehicle}=payload.vehicle;qaOverview={...qaOverview,vehicle:{...qaOverview.vehicle,...vehicle,is_user_confirmed:true},vehicle_revision:qaOverview.vehicle_revision+1,vehicle_state:'confirmed_ready',modification_state:'none',selected_modification:null,next_action:{kind:'select_vehicle_variant'}};}else{qaOverview={...qaOverview,rim_revision:qaOverview.rim_revision+1};}const reply=qaJson(qaOverview);if(qaDelay)return new Promise(resolve=>qaPending.push(fail=>resolve(fail?new Response('{}',{status:503}):reply)));return reply;}
  if(path.endsWith('/fitment'))return qaJson(qaOverview);
- if(path.endsWith('/signed-url')){qaRequests.push(path);return new Promise(resolve=>qaPending.push(fail=>resolve(fail?new Response('{}',{status:503}):qaJson({kind:'car_original',url:'https://dream-wheels-ai-webapp-staging.vercel.app/assets/demo-vehicle-zeekr.jpg',expires_at:new Date(Date.now()+3600000).toISOString()}))));}
+ if(path.endsWith('/signed-url')){qaRequests.push(path);return new Promise(resolve=>qaPending.push(fail=>resolve(fail?new Response('{}',{status:503}):qaJson({kind:'car_original',url:'https://dream-wheels-ai-webapp-staging.vercel.app/assets/demo-vehicle-zeekr-blurred.jpg',expires_at:new Date(Date.now()+3600000).toISOString()}))));}
  if(path.includes('/assets/')){qaRequests.push(path);return new Promise(resolve=>qaPending.push(async fail=>resolve(fail?new Response('',{status:503}):await qaOriginalFetch(qaImage))));}
  throw Error('Unexpected local request: '+path);
 };

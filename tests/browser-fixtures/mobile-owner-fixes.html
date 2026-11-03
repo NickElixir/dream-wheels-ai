@@ -13,7 +13,7 @@ let content,title,activeView,model;
 if(screen==='home'){
 content=createDashboardView({locale,authenticated:false,latest:null,recent:[],expiry:[]},{});title=copy('nav.dashboard',locale);activeView='dashboard';
 }else if(screen==='processing'){
-content=createRenderView('processing',{locale,status:'queued',title:'Примерка #48',carUrl:asset('demo-vehicle-zeekr.jpg'),wheelUrl:asset('demo-rim-xtrike.png')},{});title=copy('page.renderProcessing',locale);activeView='render-detail';
+content=createRenderView('processing',{locale,status:'queued',title:'Примерка #48',carUrl:asset('demo-vehicle-zeekr-blurred.jpg'),wheelUrl:asset('demo-rim-xtrike.png')},{});title=copy('page.renderProcessing',locale);activeView='render-detail';
 }else if(screen==='account'){
 // Run the production account renderer against local identities, without auth/API calls.
 content=document.createElement('section');content.className='account-settings-panel';content.innerHTML='<div data-account-settings-content></div>';document.querySelector('#fixture').append(content);
@@ -21,7 +21,7 @@ const sourceUrl=new URL('../../webapp/app.js',location.href),source=(await(await
 const module=URL.createObjectURL(new Blob([source,`\nstate.accountState={identities:{email:{linked:true},telegram:{linked:true,display:'@test_account'}}};state.accountStateLoading=false;locale='${locale}';renderAccountSettings();`],{type:'text/javascript'}));await import(module);URL.revokeObjectURL(module);
 title=copy('account.settings',locale);activeView='settings';
 }else{
-model={locale,overview:{vehicle_state:'confirmed_ready',modification_state:'confirmed'},nextAction:'run_standard_check',vehicleTitle:'BMW 5 Series',vehiclePreview:asset('demo-vehicle-zeekr.jpg'),rimPreview:asset('demo-rim-xtrike.png'),vehicleEditing:false,vehicleForm:{make:'BMW',model:'5 Series',year:2024,market:'EU'},vehicleSaveReady:true,catalogue:{makes:[{value:'BMW',label:'BMW'}],models:[{value:'5 Series',label:'5 Series'}],years:[{value:'2024',label:'2024'}],states:{}},vehicleVariants:[{label:'520d xDrive',technical:'2020–2024'}],selectedVehicleVariant:0};
+model={locale,overview:{vehicle_state:'confirmed_ready',modification_state:'confirmed'},nextAction:'run_standard_check',vehicleTitle:'BMW 5 Series',vehiclePreview:asset('demo-vehicle-zeekr-blurred.jpg'),rimPreview:asset('demo-rim-xtrike.png'),vehicleEditing:false,vehicleForm:{make:'BMW',model:'5 Series',year:2024,market:'EU'},vehicleSaveReady:true,catalogue:{makes:[{value:'BMW',label:'BMW'}],models:[{value:'5 Series',label:'5 Series'}],years:[{value:'2024',label:'2024'}],states:{}},vehicleVariants:[{label:'520d xDrive',technical:'2020–2024'}],selectedVehicleVariant:0};
 const refresh=()=>refreshFitmentView(content,model);
 content=createFitmentView(model,{action(action){if(action==='edit-vehicle'){model.vehicleEditing=true;model.rimEditing=false;refresh();}if(action==='save-vehicle'){model.saving=true;refresh();setTimeout(()=>{model.saving=false;model.vehicleEditing=false;model.nextAction='select_vehicle_variant';refresh();},100);} },setField(path,value){model.vehicleForm[path.split('.')[1]]=value;model.vehicleSaveReady=['make','model','year'].every(key=>model.vehicleForm[key]);refresh();}});
 window.qaRedraw=()=>{for(let i=0;i<5;i++)refresh();};title=copy('fitment.compatibilityCheck',locale);activeView='fitment';
