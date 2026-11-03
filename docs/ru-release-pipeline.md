@@ -58,6 +58,20 @@ Production environment reviewers and account permissions remain separate control
 
 ## Verification and release evidence
 
+Rollout checkpoint, 2026-11-03: both Deno gateways and the served RU test frontend
+use source `ac55a1bbadce1e878021770f69141bb672641cbe`. Agent-side RU test verification
+passed version/config/HTML, gateway/upstream health, CORS and unauthenticated
+boundaries; renewed Android/MacBook no-VPN acceptance is pending. Timeweb run
+`41635188518` started a successful deployment but failed parsing the SDK deploy
+response afterward; panel and served metadata confirmed the resulting version.
+Do not interpret that workflow failure as an automatic rollback.
+
+Render backend `b9c62e09f7b3089ff0619299315543f6b05c7448` is live (deployment
+`dep-dbkss8c9v7es73f9dg30`); `/health` returned 200 with `X-Request-Id`.
+`autoDeployTrigger=checksPass` was enabled and confirmed through the Render API.
+The first backend release used a manual trigger; automatic triggering has not
+yet been demonstrated. Production Timeweb promotion remains pending acceptance.
+
 1. CI: Python lint/test, browser auth tests, builder/profile tests, gateway
    type/lint/tests, release verifier tests.
 2. Build exact SHA; preserve artifact and manifest (SHA/profile/API target).

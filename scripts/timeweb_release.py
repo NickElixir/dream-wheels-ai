@@ -46,6 +46,7 @@ MANAGED_ENV_KEYS = frozenset(
     (*PUBLIC_ENV_KEYS, "TIMEWEB_PROFILE", "APP_BUILD_SHA", "TIMEWEB_API_TARGET")
 )
 FAILURE_APP_STATES = frozenset({"failure", "startup_error", "no_paid", "paused"})
+APP_STATES = FAILURE_APP_STATES | frozenset({"active", "deploy", "new", "reboot"})
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -139,22 +140,8 @@ def timeweb_app_payload(
     api: Any, stage: str, method_name: str, app_id: int, *args: Any
 ) -> dict[str, Any]:
     """Read app JSON without validating unrelated nested SDK models."""
-    method = getattr(api, f"{method_name}_with_http_info", None)
-    if not callable(method):
-        raise ReleaseError("Timeweb SDK raw app response method is unavailable")
-    response = call_timeweb(stage, method, app_id, *args, _preload_content=False)
-    if field(response, "status_code") != 200:
-        raise ReleaseError("Timeweb returned an unsuccessful app response")
-    raw_data = field(response, "raw_data")
-    try:
-        if isinstance(raw_data, bytes):
-            raw_data = raw_data.decode("utf-8")
-        if not isinstance(raw_data, str):
-            raise ValueError
-        payload = json.loads(raw_data)
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
-        raise ReleaseError("Timeweb returned an unreadable app response") from error
-    app = payload.get("app") if isinstance(payload, dict) else None
+    payload = timeweb_json_payload(api, stage, method_name, app_id, *args, accepted_statuses={200})
+    app = payload.get("app")
     if not isinstance(app, dict):
         raise ReleaseError("Timeweb app response has an unsupported shape")
     if str(app.get("id")) != str(app_id):
@@ -165,6 +152,138 @@ def timeweb_app_payload(
     if envs is not None and not isinstance(envs, dict):
         raise ReleaseError("Timeweb app envs have an unsupported shape")
     return app
+
+
+def timeweb_json_payload(
+    api: Any,
+    stage: str,
+    method_name: str,
+    app_id: int,
+    *args: Any,
+    accepted_statuses: set[int],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    method = getattr(api, f"{method_name}_with_http_info", None)
+    if not callable(method):
+        raise ReleaseError("Timeweb SDK raw response method is unavailable")
+    response = call_timeweb(stage, method, app_id, *args, **kwargs, _preload_content=False)
+    if field(response, "status_code") not in accepted_statuses:
+        raise ReleaseError(f"Timeweb returned an unsuccessful response during {stage}")
+    raw_data = field(response, "raw_data")
+    try:
+        if isinstance(raw_data, bytes):
+            raw_data = raw_data.decode("utf-8")
+        if not isinstance(raw_data, str):
+            raise ValueError
+        payload = json.loads(raw_data)
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise ReleaseError(f"Timeweb returned an unreadable response during {stage}") from error
+    if not isinstance(payload, dict):
+        raise ReleaseError(f"Timeweb response has an unsupported shape during {stage}")
+    return payload
+
+
+def timeweb_deploys_payload(
+    api: Any, app_id: int, *, limit: int, offset: int
+) -> list[dict[str, Any]]:
+    payload = timeweb_json_payload(
+        api,
+        "list deployments",
+        "get_app_deploys",
+        app_id,
+        limit=limit,
+        offset=offset,
+        accepted_statuses={200},
+    )
+    deployments = payload.get("deploys")
+    if deployments is None:
+        return []
+    if not isinstance(deployments, list) or any(not isinstance(item, dict) for item in deployments):
+        raise ReleaseError("Timeweb deployment list has an unsupported shape")
+    return deployments
+
+
+def timeweb_create_deploy(api: Any, app_id: int, request: Any, sha: str) -> dict[str, Any]:
+    payload = timeweb_json_payload(
+        api,
+        "start deploy",
+        "create_deploy",
+        app_id,
+        request,
+        accepted_statuses={201},
+    )
+    deployment = payload.get("deploy")
+    if not isinstance(deployment, dict) or deployment.get("id") is None:
+        raise ReleaseError(
+            "Timeweb accepted a deploy request without a monitorable deploy ID; inspect the app before retrying"
+        )
+    deploy_sha = str(deployment.get("commit_sha") or "").lower()
+    if deploy_sha and deploy_sha != sha:
+        raise ReleaseError("Timeweb deployment record reports a different commit SHA")
+    return deployment
+
+
+def inspect_timeweb_app(api: Any, profile: str) -> dict[str, Any]:
+    if profile not in RELEASES:
+        raise ReleaseError("profile must be ru-test or ru-production")
+    app_id = RELEASES[profile]["app_id"]
+    app = timeweb_app_payload(api, "read app settings", "get_app", app_id)
+    deployments = timeweb_deploys_payload(api, app_id, limit=10, offset=0)
+    return {
+        "ok": True,
+        "profile": profile,
+        "app_id": app_id,
+        "app": {
+            "status": field(app, "status") if field(app, "status") in APP_STATES else "unknown",
+            "commit_sha": safe_sha_value(field(app, "commit_sha")),
+            "branch_name": safe_branch_value(field(app, "branch_name")),
+        },
+        "deployments": [
+            {
+                "id": safe_deploy_id(item.get("id")),
+                "commit_sha": safe_sha_value(item.get("commit_sha")),
+                "finished": bool(item.get("ended_at")),
+                "status": safe_deploy_status(item.get("status")),
+            }
+            for item in deployments
+        ],
+    }
+
+
+def safe_sha_value(value: Any) -> str | None:
+    if isinstance(value, str) and re.fullmatch(r"[a-fA-F0-9]{40}", value):
+        return value.lower()
+    return None
+
+
+def safe_branch_value(value: Any) -> str:
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9._/-]{1,128}", value):
+        return value
+    return "unknown"
+
+
+def safe_deploy_id(value: Any) -> str | int | None:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,80}", value):
+        return value
+    return None
+
+
+def safe_deploy_status(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value if re.fullmatch(r"[A-Za-z0-9_-]{1,40}", value) else "string"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int | float):
+        return "number"
+    if isinstance(value, dict):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    return "unknown"
 
 
 def update_timeweb_app_settings(api: Any, app_id: int, settings: Any) -> None:
@@ -507,14 +626,7 @@ def wait_for_exact_deploy(
 ) -> dict[str, Any]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        deployments = (
-            field(
-                call_timeweb("list deployments", api.get_app_deploys, app_id, limit=100, offset=0),
-                "deploys",
-                [],
-            )
-            or []
-        )
+        deployments = timeweb_deploys_payload(api, app_id, limit=100, offset=0)
         deployment = next(
             (item for item in deployments if str(field(item, "id")) == str(deploy_id)), None
         )
@@ -674,15 +786,7 @@ def run_release(
         "is_auto_deploy": False,
     }
     update_timeweb_app_settings(api, app_id, update_settings_factory(**settings_values))
-    created = field(
-        call_timeweb(
-            "start deploy",
-            api.create_deploy,
-            app_id,
-            deploy_request_factory(commit_sha=sha),
-        ),
-        "deploy",
-    )
+    created = timeweb_create_deploy(api, app_id, deploy_request_factory(commit_sha=sha), sha)
     deploy_id = field(created, "id")
     if deploy_id is None:
         raise ReleaseError(
@@ -702,11 +806,8 @@ def run_release(
         else verifier(profile, sha, gateway_sha=gateway_sha)
     )
     if auto_deploy is not None:
-        call_timeweb(
-            "restore automatic deploy setting",
-            api.update_app_settings,
-            app_id,
-            update_settings_factory(is_auto_deploy=auto_deploy),
+        update_timeweb_app_settings(
+            api, app_id, update_settings_factory(is_auto_deploy=auto_deploy)
         )
     return {**report, "deployment": deploy_report, "live_verification": live_report}
 
@@ -714,11 +815,14 @@ def run_release(
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", choices=sorted(RELEASES), required=True)
+    parser.add_argument("--sha", help="full commit SHA on staging (test) or main (production)")
     parser.add_argument(
-        "--sha", required=True, help="full commit SHA on staging (test) or main (production)"
+        "--gateway-sha", help="full SHA reported by the matching served Deno gateway"
     )
     parser.add_argument(
-        "--gateway-sha", required=True, help="full SHA reported by the matching served Deno gateway"
+        "--inspect",
+        action="store_true",
+        help="read the mapped app and recent deploy records without changing settings",
     )
     parser.add_argument(
         "--apply",
@@ -747,14 +851,24 @@ def make_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = make_parser().parse_args()
     try:
-        if not 30 <= args.timeout_seconds <= 3600:
+        if not args.inspect and not 30 <= args.timeout_seconds <= 3600:
             raise ReleaseError("timeout must be between 30 and 3600 seconds")
+        if args.inspect and (
+            args.apply
+            or args.rollback_snapshot is not None
+            or args.snapshot_out is not None
+            or args.artifact_manifest is not None
+        ):
+            raise ReleaseError("--inspect cannot be combined with --apply or rollback")
         token = os.environ.get("TIMEWEB_CLOUD_TOKEN")
         if not token:
-            raise ReleaseError(
-                "TIMEWEB_CLOUD_TOKEN is required for the read-only app snapshot and release"
-            )
+            raise ReleaseError("TIMEWEB_CLOUD_TOKEN is required for app inspection and release")
         api, update_factory, deploy_factory = make_sdk_client(token)
+        if args.inspect:
+            print(json.dumps(inspect_timeweb_app(api, args.profile), ensure_ascii=False))
+            return 0
+        if not args.sha or not args.gateway_sha:
+            raise ReleaseError("release requires --sha and --gateway-sha")
         is_rollback = args.rollback_snapshot is not None
         public_values = None if is_rollback else release_env(args.profile, dict(os.environ))
         snapshot_path = args.rollback_snapshot or args.snapshot_out
