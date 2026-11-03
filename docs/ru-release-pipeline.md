@@ -132,3 +132,39 @@ before dispatching another operation. Artifacts/snapshots are retained 30 days.
 
 Render automatic deployment policy: `autoDeployTrigger=checksPass`; CI runs on
 main/staging pushes as well as PRs. Reference: https://render.com/docs/deploys .
+
+## Deferred gateway alternative
+
+Owner decision on 2026-11-03: retain Deno for the current rollout. Evaluate a
+Cloudflare Worker separately before Deno's end-of-service window. Require Android
+and MacBook no-VPN tests, responses above 16 KiB, uploads and image downloads;
+do not replace the working gateway solely on a small health response.
+
+## Next phase: frontend loading optimization
+
+Owner approved on 2026-11-03; start after the Deno/Timeweb rollout and no-VPN
+acceptance. Necessary test requests remain authorized. Do not change hosting as
+part of this optimization.
+
+1. Record baseline HAR/resource timing on Android and MacBook: cold cache and
+   repeat visit, logged out and with a restored session. Count Timeweb HTTP
+   requests separately from Deno, Supabase and Turnstile. Source-graph estimates
+   (roughly 40–50 requests) are not measured browser results.
+2. Bundle JS/CSS with explicit cache keys and split non-home routes so history,
+   wallet, fitment and help code loads when needed. Preserve auth bootstrap,
+   routing, saved drafts and error recovery; retain the separate Vercel build.
+3. Resize/compress images, provide appropriate WebP/AVIF variants where useful,
+   and defer below-the-fold pictures. Do not lazy-load the primary visible image.
+4. Cache immutable versioned assets; keep HTML and runtime configuration current.
+   Avoid re-downloading unchanged modules on repeat visits.
+5. Show the home shell without waiting for account/API requests; preserve clear
+   timeout/retry states and avoid flashes of legacy UI.
+6. Compare before/after evidence on the same devices/networks. Initial target:
+   15–25 cold-load Timeweb requests, subject to baseline validation; report actual
+   transferred bytes and startup time rather than promising unmeasured speedups.
+   Require email login/session/history/balance/upload regression checks. Paid
+   generation remains a separately authorized acceptance test.
+
+Deliver as a separate PR/release with artifact SHA and rollback. Estimate costs
+from measured per-visit requests using the current provider tariff; do not equate
+one page view to one billed request or attribute all traffic to agent tests.
