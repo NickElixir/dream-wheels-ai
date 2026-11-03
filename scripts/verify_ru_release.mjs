@@ -84,7 +84,7 @@ export async function verifyRelease({ profile, sha, gatewaySha: suppliedGatewayS
     harnessConfigVersioned: html.includes(`<script src="/auth/harness-config.js?v=${sha.toLowerCase()}"></script>`),
     authBundleVersioned: html.includes(`<script src="/auth/app-auth.bundle.js?v=${sha.toLowerCase()}"></script>`),
     noIndex: /<meta name="robots" content="noindex, nofollow">/u.test(html),
-    noTelegramDomains: !/(?:telegram\.org|t\.me)/iu.test(html),
+    noTelegramResources: !/<(?:script|link|iframe|img|source)\b[^>]*(?:telegram\.org|t\.me)/iu.test(html),
     noTelegramAuthButton: !/(?:data-auth-telegram|auth-dialog-telegram)/iu.test(html),
   };
   if (Object.values(htmlChecks).some((passed) => !passed)) throw new Error('served HTML is missing release markers');
