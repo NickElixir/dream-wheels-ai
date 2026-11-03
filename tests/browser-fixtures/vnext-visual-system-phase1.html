@@ -28,9 +28,9 @@
   const view = params.get("view") || "dashboard";
   const fitmentState = params.get("fitmentState") || "select_vehicle_variant";
   const feedback = params.get("feedback") || "liked";
-  const vehicle = "/webapp/assets/demo-vehicle-zeekr.jpg";
+  const vehicle = "/webapp/assets/demo-vehicle-zeekr-blurred.jpg";
   const wheel = "/webapp/assets/demo-rim-xtrike.png";
-  const result = "/webapp/assets/demo-render-zeekr-xtrike.jpg";
+  const result = "/webapp/assets/demo-render-zeekr-xtrike-blurred.jpg";
   const dashboardJob = { jobId: "qa", title: "Zeekr 001", subtitle: "Сегодня, 12:30", status: "completed", canOpen: true, imageUrl: result };
   const fitmentModel = () => {
     const editingVehicle = fitmentState === "complete_vehicle_details";

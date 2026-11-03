@@ -8,7 +8,7 @@ fs.mkdirSync(out,{recursive:true});
  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000},locale:'ru-RU'});
  const errors=[],requests=[],checks=[];let overview,checkStatus='queued',delayPatch=false,releasePatch,checkCounter=0,launchFailure=false;
  const jobId='11111111-1111-4111-8111-111111111111';
- const job={job_id:jobId,status:'completed',fitment_available:true,created_at:'2026-10-03T00:00:00Z',result_url:base+'/assets/demo-vehicle-zeekr.jpg',assets:{car_original:{download_url:base+'/assets/demo-vehicle-zeekr.jpg'},rim_original:{download_url:base+'/assets/demo-rim-xtrike.png'},result:{url:base+'/assets/demo-vehicle-zeekr.jpg'}}};
+ const job={job_id:jobId,status:'completed',fitment_available:true,created_at:'2026-10-03T00:00:00Z',result_url:base+'/assets/demo-vehicle-zeekr-blurred.jpg',assets:{car_original:{download_url:base+'/assets/demo-vehicle-zeekr-blurred.jpg'},rim_original:{download_url:base+'/assets/demo-rim-xtrike.png'},result:{url:base+'/assets/demo-vehicle-zeekr-blurred.jpg'}}};
  await page.route('**/app.js?*',r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(repo+'/webapp/app.js','utf8')+'\nwindow.__qa={state,setView,renderFitment,renderDashboard,buildDefaultDemoFitmentOverview,fitmentFormFromOverview,openFitmentView,runFitmentCheck,setVnextFitmentField,saveVnextFitment,vnextFitmentSnapshot,notifyFitmentBridge,clearFitmentCheckPolling,loadFitmentOverview};'}));
  await page.route('**/auth/app-auth.bundle.js',r=>r.fulfill({body:''}));await page.route('https://telegram.org/**',r=>r.fulfill({body:''}));
  await page.route('**/*',async r=>{let p=new URL(r.request().url()).pathname;if(p.startsWith('/api/backend'))p=p.slice(12);if(!['/jobs','/identity','/cabinet','/fitment','/account','/analytics'].some(x=>p.startsWith(x)))return r.fallback();
@@ -25,7 +25,7 @@ fs.mkdirSync(out,{recursive:true});
   else if(p.startsWith('/fitment/checks/'))body={id:'execution-'+checkCounter,execution_status:checkStatus,retry_mode:'retryable'};
   else if(p==='/cabinet')body={balance:31,credit_packages:[],payments:[],user:{id:77}};
   else if(p.includes('rim-source/resolve')){status=422;body={detail:{code:'no_data'}};}
-  else if(p.includes('signed-url'))body={url:base+'/assets/demo-vehicle-zeekr.jpg',expires_at:'2099-10-01T00:00:00Z'};
+  else if(p.includes('signed-url'))body={url:base+'/assets/demo-vehicle-zeekr-blurred.jpg',expires_at:'2099-10-01T00:00:00Z'};
   await r.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
  });
  page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push(m.text());});
