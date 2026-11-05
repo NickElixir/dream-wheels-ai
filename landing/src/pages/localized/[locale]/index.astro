@@ -1,0 +1,8 @@
+---
+import LandingPage from '../../../components/LandingPage.astro';
+export function getStaticPaths() {
+  return (['ru', 'en'] as const).map(locale => ({ params: { locale }, props: { locale } }));
+}
+const { locale } = Astro.props;
+---
+<LandingPage locale={locale} />
