@@ -55,3 +55,13 @@ Measure cold and warm loads before bundling or cache changes: requests to Timewe
 - GitHub mapping variables are configured. DNS remains unchanged.
 - Provider defaults require explicit Cache-Control: no-cache and disabling SPA fallback. The manual configure operation changes only the two newly approved app IDs, snapshots prior settings, enables gzip/zstd and adds test-only X-Robots-Tag.
 - The pinned SDK lacks the reverse_proxy mutation. The operation uses the same PATCH /api/v1/apps/{id} and reverse_proxy schema as the official public Timeweb panel client (common-cloud.ad6824a47dfcc6b1.js / cloud.0ed7ccedba1c1f05.js), authenticated only inside Actions. Never print request headers or token values.
+
+## Verification checkpoint — 2026-11-06
+
+Both app configurations were applied successfully by manual workflow runs 42120310407 (test) and 42120326818 (production candidate). Their pre-change snapshots are retained in those runs. Public DNS is unchanged.
+
+The live verifier passed for both technical origins on exact source f6ae3bf42a825b5e2e732961c13dc1af2761088b: root/catalog page checksums, language/canonical/robots policy, application links, HTML revalidation and 265 static resource HTTP/MIME checks per site. `/catalog` returns 308 to `/catalog/`; an unknown route returns HTTP 404 with the bridge page. Catalog vehicle selection was verified in the deployed browser.
+
+Owner no-VPN acceptance has NOT passed: MacBook screenshot reports DNS_PROBE_FINISHED_NO_INTERNET. Do not switch RU DNS based on server checks. Public DNS resolves the test technical hostname to 178.209.127.53, the same IP as app.dream-wheels.ru. A direct-IP HTTPS request with the correct hostname and normal certificate verification returns the expected test version. This does not establish browser/mobile network availability; compare the existing application and the new hostname on the same MacBook, and the new hostname on Android mobile Internet. No system DNS/VPN settings were changed by this task.
+
+Next: resolve this network acceptance failure, obtain successful owner no-VPN acceptance and explicit DNS switch confirmation, attach the RU hostnames to the production candidate and apply the saved rollback-aware DNS plan. Keep EN Vercel unchanged. Request-limit configuration remains optional and should be revisited after rollout.
