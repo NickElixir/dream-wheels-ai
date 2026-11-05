@@ -1,12 +1,11 @@
 ---
 const supportUrl = 'https://t.me/dreamwheelsai';
-import { getDictionary, getLocalizedUrl } from '../i18n';
+import { getDictionary, getNavigationUrl } from '../i18n';
 import type { Locale } from '../i18n';
-import { domainI18nEnabled } from '../i18n/config';
 interface Props { locale: Locale; preview?: boolean; }
 const { locale, preview = false } = Astro.props;
 const copy = getDictionary(locale);
-const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
+const local = (pathname: string) => getNavigationUrl(locale, pathname, preview);
 const legalBaseUrl = locale === 'en' ? 'https://legal.dreamwheels.pro/en/legal' : 'https://dream-wheels-ai-legal.vercel.app/legal';
 const agreementPath = locale === 'en' ? 'terms' : 'offer';
 ---

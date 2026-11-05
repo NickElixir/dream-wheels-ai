@@ -1,12 +1,12 @@
 import type { Locale } from './types.js';
 
 export const localeDomains: Record<Locale, string> = {
-  ru: 'https://колесамечты.рф',
+  ru: 'https://www.dream-wheels.ru',
   en: 'https://dreamwheels.pro',
 };
 
 const localeHosts = {
-  ru: new URL(localeDomains.ru).hostname,
+  ru: new URL(localeDomains.ru).hostname.replace(/^www\./, ''),
   en: new URL(localeDomains.en).hostname,
 };
 

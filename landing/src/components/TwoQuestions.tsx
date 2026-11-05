@@ -8,7 +8,7 @@ const questions = [
     product: 'Race Ready Technology CSS3347',
     specs: '8,5/19" 5x108 ET45 DIA63,4 MK/M',
     image: {
-      src: '/assets/two-questions/how-it-looks/zeekr-001-race-ready-v2.png',
+      src: '/assets/two-questions/how-it-looks/zeekr-001-race-ready-v2.webp',
       width: 2048,
       height: 2048,
     },
@@ -17,7 +17,7 @@ const questions = [
     id: 'parameters',
     index: 'SYSTEM 02',
     image: {
-      src: '/assets/two-questions/parameters/workshop-fitment-vertical.png',
+      src: '/assets/two-questions/parameters/workshop-fitment-vertical.webp',
       width: 1122,
       height: 1402,
     },

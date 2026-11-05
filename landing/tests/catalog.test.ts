@@ -1,16 +1,45 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getVariant, getVariantsForVehicle, vehicles, wheels } from '../src/data/catalog';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { getVariant, getVariantsForVehicle, getWheel, getWheelSku, showcaseVariants, wheelSkus, vehicles, wheels } from '../src/data/catalog';
 import { getAppTargetFromUrl } from '../src/lib/attribution';
 import { sanitizeFavoriteIds, toggleFavoriteIds } from '../src/lib/favorites';
 
-test('catalog contains five vehicles with three mock variants each', () => {
+test('catalog has thirty explicit previews, six per vehicle, with unconfirmed fitment', () => {
   assert.equal(vehicles.length, 5);
-  assert.equal(wheels.length, 3);
+  assert.equal(wheels.length, 22);
+  assert.equal(wheelSkus.length, 68);
+  assert.equal(showcaseVariants.length, 30);
+  assert.equal(new Set(showcaseVariants.map((item) => item.id)).size, 30);
   for (const vehicle of vehicles) {
-    assert.equal(getVariantsForVehicle(vehicle.id).length, 3);
-    assert.equal(getVariantsForVehicle(vehicle.id).every((variant) => variant.isMock), true);
+    const variants = getVariantsForVehicle(vehicle.id);
+    assert.equal(variants.length, 6);
+    assert.equal(new Set(variants.map((item) => item.wheelId)).size, 6);
   }
+  for (const variant of showcaseVariants) {
+    assert.equal(variant.isMock, false);
+    assert.equal(variant.compatibility.status, 'unknown');
+    assert.ok(variant.skuIds.length);
+    assert.ok(getWheel(variant.wheelId));
+    for (const id of variant.skuIds) assert.equal(getWheelSku(id)?.wheelId, variant.wheelId);
+    assert.ok(existsSync(resolve('public', variant.image.src.slice(1))));
+    assert.ok(variant.image.srcSet);
+  }
+  for (const wheel of wheels) assert.ok(existsSync(resolve('public', wheel.thumbnail.src.slice(1))));
+});
+
+test('selected corrected assets and SKU specifications stay linked', () => {
+  const gle = showcaseVariants.find((item) => item.id === '6c25143191fe3361')!;
+  const sku = getWheelSku(gle.skuIds[0])!;
+  assert.equal(sku.sku, 'S087057');
+  assert.equal(sku.diameter, 22);
+  assert.equal(sku.width, 10);
+  assert.equal(sku.et, 55);
+  assert.equal(sku.dia, 66.6);
+  const component = readFileSync('src/components/MiniCatalog.tsx', 'utf8');
+  assert.equal(component.includes('OZ<br />Superturismo'), false);
+  assert.equal(component.includes('QA_WHEEL_CELLS'), false);
 });
 
 test('invalid variant ids never resolve to a factual catalog result', () => {

@@ -10,7 +10,6 @@ import Faq from './Faq';
 import SiteFooter from './SiteFooter.astro';
 import { getDictionary } from '../i18n';
 import type { Locale } from '../i18n';
-import { domainI18nEnabled } from '../i18n/config';
 interface Props { locale: Locale; preview?: boolean; }
 const { locale, preview = false } = Astro.props;
 const copy = getDictionary(locale);
@@ -21,7 +20,7 @@ const copy = getDictionary(locale);
   <main>
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-media" aria-label={copy.hero.imageAlt}>
-        <Picture src={heroImage} widths={[640, 960, 1280, 1600, 1920]} sizes="100vw" formats={['avif', 'webp']} fallbackFormat="jpg" alt={copy.hero.imageAlt} loading="eager" fetchpriority="high" />
+        <Picture src={heroImage} widths={[640, 960, 1280, 1600, 1920]} sizes="(max-width: 760px) 1210px, 100vw" formats={['avif', 'webp']} fallbackFormat="jpg" alt={copy.hero.imageAlt} loading="eager" fetchpriority="high" />
         <div class="hero-media-shade" aria-hidden="true"></div>
         <div class="hero-caption"><span>{copy.hero.slogan[0]}<br />{copy.hero.slogan[1]}<br />{copy.hero.slogan[2]}</span></div>
       </div>
@@ -36,8 +35,8 @@ const copy = getDictionary(locale);
     </section>
     <TwoQuestions locale={locale} />
     <HowItWorks locale={locale} />
-    <BeforeAfter locale={locale} preview={preview && !domainI18nEnabled} client:load />
-    <Faq locale={locale} client:load />
+    <BeforeAfter locale={locale} preview={preview} client:visible />
+    <Faq locale={locale} client:visible />
   </main>
   <SiteFooter locale={locale} preview={preview} />
   <script>

@@ -1,4 +1,5 @@
 ---
 import CatalogPage from '../components/CatalogPage.astro';
+import { buildLocale } from '../i18n/config';
 ---
-<CatalogPage locale="ru" />
+<CatalogPage locale={buildLocale} />

@@ -8,6 +8,12 @@ export { getLocaleFromHostname, localeDomains, localePreviewPrefixes } from './d
 export const dictionaries: Record<Locale, Dictionary> = { ru, en };
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale];
 
+const publicQueryKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'market'];
+
+export function getNavigationUrl(locale: Locale, pathname: string, preview = false): string {
+  return preview ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
+}
+
 export function getPreviewLocale(pathname: string): Locale | undefined {
   if (pathname === '/en' || pathname.startsWith('/en/')) return 'en';
   if (pathname === '/ru' || pathname.startsWith('/ru/')) return 'ru';
@@ -35,8 +41,12 @@ export function resolveLocale({ hostname, pathname = '/', search = '', domainRou
 
 export function getLocalizedUrl({ locale, pathname, search = '', preview = false }: { locale: Locale; pathname: string; search?: string; preview?: boolean }): string {
   const normalized = stripPreviewPrefix(pathname).replace(/^\/?/, '/');
-  const query = new URLSearchParams(search);
-  query.delete('locale');
+  const incoming = new URLSearchParams(search);
+  const query = new URLSearchParams();
+  for (const key of publicQueryKeys) {
+    const value = incoming.get(key);
+    if (value) query.set(key, value);
+  }
   const suffix = query.size ? `?${query.toString()}` : '';
   const targetPath = preview ? `${localePreviewPrefixes[locale]}${normalized}` : normalized;
   return `${preview ? '' : localeDomains[locale]}${targetPath}${suffix}`;

@@ -1,0 +1,105 @@
+.catalog-sku-label { display: grid; gap: 0.5rem; margin-block: 1rem; max-width: 100%; color: inherit; }
+.catalog-sku-label select { width: 100%; min-width: 0; max-width: 100%; padding: 0.65rem; font: inherit; color: #eef3f1; background: #152124; border: 1px solid #344246; border-radius: 0.5rem; }
+.catalog-sku-label select:focus-visible { outline: 2px solid #c0e823; outline-offset: 3px; }
+.wheel-cell > span:last-child { overflow-wrap: anywhere; }
+.wheel-cell:focus-visible, .vehicle-row:focus-visible, .favorite-button:focus-visible { outline: 2px solid #c0e823; outline-offset: 3px; }
+@media (min-width: 1181px) { .catalog-shell .wheel-carousel { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+.catalog-page .catalog-page-heading { padding-block: 16px 24px; }
+.catalog-page .catalog-page-heading h1 { font-weight: var(--weight-strong); }
+.catalog-page .catalog-page-heading p { max-width: 65ch; margin-top: 10px; }
+.catalog-page .catalog-grid { grid-template-columns: minmax(180px, 19%) minmax(0, 1fr); gap: 30px; }
+.catalog-page .vehicle-row { width: 100%; height: 46px; border: 1px solid transparent; }
+.catalog-page .vehicle-row.is-active { border-color: #758087; background: #263137; }
+.catalog-page .vehicle-row span { font-size: 13px; }
+.catalog-page .wheel-carousel { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.catalog-page .wheel-cell { grid-template-rows: auto 1fr; font-size: 12px; line-height: 1.2; }
+.catalog-page .wheel-image { aspect-ratio: 1.2; height: auto; }
+.catalog-page .wheel-cell.is-active .wheel-image { outline: 1px solid #dbe2e6; outline-offset: -1px; background-image: radial-gradient(ellipse, #52626a 0%, #1a272e 68%, #111b20 100%); }
+.catalog-page .garage-plane { margin-top: 18px; }
+.catalog-page .garage-image { display: block; width: 100%; height: clamp(265px, 33vh, 410px); object-fit: cover; object-position: center 63%; }
+.catalog-missing { background: transparent; border: 0; color: #eff3f5; text-decoration: underline; padding: 12px 0; cursor: pointer; }
+.catalog-result-actions { display: grid; grid-template-columns: 2fr 3fr; gap: 22px; align-items: center; padding: 14px 22px; background: #111b20; border-radius: 0 0 9px 9px; }
+.catalog-result-actions h2, .catalog-pilot h2 { margin: 0 0 5px; font-size: clamp(17px, 1.55vw, 24px); line-height: 1.1; }
+.catalog-result-actions small, .catalog-pilot small { color: #b4bfc5; }
+.catalog-result-actions > div:last-child { text-align: center; border-left: 1px solid #3d484e; padding-left: 22px; }
+.catalog-primary { display: inline-flex; gap: 9px; align-items: center; justify-content: center; width: min(100%, 420px); min-height: var(--control-height); margin-bottom: 5px; border: 0; border-radius: var(--control-radius); background: #eff3f5; color: #10181d; font: inherit; font-weight: var(--weight-strong); cursor: pointer; }
+.catalog-primary + small { display: block; }
+.catalog-page .catalog-bottom-specs { margin-top: 8px; border: 1px solid #35434a; background: #182328; border-radius: 8px; padding: 8px 16px; }
+.catalog-bottom-specs summary { cursor: pointer; }
+.catalog-page .status-check { background: #dce4e8; }
+.catalog-pilot { display: grid; grid-template-columns: 1.1fr .9fr 1.4fr; gap: 22px; align-items: center; margin-top: 18px; padding: 18px 24px; border: 1px solid #39474e; border-radius: 12px; background: linear-gradient(150deg, #202c31, #121c20); }
+.catalog-pilot p { margin: 7px 0; color: #c4cdd1; }
+.catalog-demo { display: flex; align-items: center; gap: 10px; padding: 8px; background: #253238; border-radius: 8px; }
+.catalog-demo img { object-fit: contain; flex: none; }
+.catalog-pilot-fields { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+.catalog-pilot input { flex: 1 1 110px; min-width: 0; width: 100%; }
+.catalog-pilot input, .catalog-pilot button, .catalog-preview-dialog button { font: inherit; padding: 8px 10px; color: #eff3f5; border: 1px solid #76858d; border-radius: 7px; background: #1b272d; }
+.catalog-pilot button, .catalog-preview-dialog button { cursor: pointer; }
+.catalog-preview-dialog { width: min(450px, calc(100% - 32px)); color: #eff3f5; background: #182328; border: 1px solid #758087; border-radius: 12px; padding: 22px; }
+.catalog-preview-dialog::backdrop { background: #000a; }
+.catalog-page :is(button, a, summary, input, select):focus-visible { outline: 2px solid #eff3f5; outline-offset: 3px; }
+@media (max-width: 900px) {
+  .catalog-page .catalog-grid, .catalog-pilot { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .catalog-page .vehicle-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catalog-page .wheel-carousel { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; gap: 12px; padding: 4px; }
+  .catalog-page .garage-image { height: auto; }
+  .catalog-result-actions { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
+  .catalog-result-actions > div:last-child { border-left: 0; padding-left: 0; }
+  .catalog-primary { width: 100%; }
+}
+@media (min-width: 901px) {
+  main.catalog-page { padding-top: 63px; }
+  .catalog-page .garage-image { height: clamp(300px, 33vh, 410px); object-position: center 68%; }
+}
+.catalog-pilot input[type="tel"] { flex-basis: 139px; }
+
+/* Compact catalog details: each article retains its own specifications. */
+.catalog-spec-list { display: grid; gap: 8px; margin-top: 12px; }
+.catalog-spec-row { padding: 12px 16px; border: 1px solid #344249; border-radius: 8px; background: linear-gradient(#202c31, #141f24); }
+.catalog-article { display: block; color: #aebbc2; font-size: 12px; margin: 7px 0 4px; padding-inline: 2px; overflow-wrap: anywhere; }
+.catalog-spec-values { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); margin: 0; }
+.catalog-spec-values > div { padding-inline: 12px; border-left: 1px solid #344249; }
+.catalog-spec-values > div:first-child { padding-left: 0; border: 0; }
+.catalog-spec-values dt { color: #9caab2; font-size: 12px; }
+.catalog-spec-values dd { margin: 3px 0 0; font-weight: var(--weight-strong); font-size: 17px; }
+.catalog-pilot input { font-size: 13px; }
+.catalog-primary { margin-bottom: 0; }
+.catalog-page .vehicle-label, .catalog-page .wheel-label { font-size: 17px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+@media(max-width: 600px) {
+ .catalog-spec-row { padding: 12px 8px; }
+ .catalog-spec-values > div { padding-inline: 5px; }
+ .catalog-spec-values dd { font-size: 13px; }
+ .catalog-spec-values dt { font-size: 10px; }
+}
+
+.catalog-pilot > div:first-child h2 { font-size: clamp(23px, 1.9vw, 28px); line-height: 1.15; }
+
+.catalog-pilot form h2 { font-size: 20px; font-weight: 600; line-height: 1.2; }
+
+.catalog-pilot .catalog-pilot-notice { font-size: 13px; line-height: 1.4; }
+
+.catalog-primary { transition: background-color 150ms ease, transform 150ms ease; }
+.catalog-primary:hover { background: #fff; }
+.catalog-primary:active { transform: translateY(1px); }
+.catalog-pilot button, .catalog-preview-dialog button { min-height: var(--control-height); border-radius: var(--control-radius); }
+.catalog-pilot button:hover, .catalog-preview-dialog button:hover { background: #26353d; }
+
+/* Give the demo action the full card width; size its label by that width. */
+.catalog-demo { display: grid; grid-template-columns: 74px minmax(0, 1fr); container-type: inline-size; }
+.catalog-demo > div { min-width: 0; }
+.catalog-demo button { grid-column: 1 / -1; width: 100%; white-space: nowrap; font-size: clamp(12px, 6cqi, 16px); line-height: 1.2; }
+.catalog-primary { white-space: nowrap; font-size: clamp(13px, 1.3vw, 18px); }
+
+/* The sidebar keeps readable labels while the catalog remains two-column. */
+@media (min-width: 901px) { .catalog-page .vehicle-list { grid-template-columns: minmax(0, 1fr); } }
+.catalog-page .vehicle-row { min-height: 50px; height: auto; padding-block: 7px; }
+.catalog-page .vehicle-row img { flex: 0 0 58px; width: 58px; }
+.catalog-page .vehicle-row span { min-width: 0; overflow-wrap: normal; }
+.catalog-primary.button-lime, .catalog-demo .button-lime { color: #101500; font-weight: 600; border-color: rgba(255,255,255,.18); background: linear-gradient(180deg, #cdf02b 0%, #b9dc1b 50%, #9fc50f 100%); }
+.catalog-primary.button-lime:hover, .catalog-demo .button-lime:hover { background: linear-gradient(180deg, #dafb36 0%, #c8ec22 50%, #add313 100%); }
+.catalog-primary.button-lime:active, .catalog-demo .button-lime:active { background: linear-gradient(180deg, #bddf18, #a9ce0c); }
+
+.catalog-demo .catalog-demo-try { background: #eff3f5; color: #172125; border-color: #dce4e8; font-weight: 600; }
+.catalog-demo .catalog-demo-try:hover { background: #fff; }
+.catalog-demo .catalog-demo-try:active { background: #dce4e8; }

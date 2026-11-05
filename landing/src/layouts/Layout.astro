@@ -10,8 +10,7 @@ const copy = getDictionary(locale);
 const title = page === 'catalog' ? copy.meta.catalogTitle : copy.meta.landingTitle;
 const description = page === 'catalog' ? copy.meta.catalogDescription : copy.meta.landingDescription;
 const publicPath = page === 'catalog' ? '/catalog' : '/';
-// The current production domain still serves RU. Preview variants are not indexable until domain cutover.
-const canonical = preview ? getCanonicalUrl(locale, publicPath) : `https://dreamwheels.pro${publicPath}`;
+const canonical = getCanonicalUrl(locale, publicPath);
 ---
 
 <!doctype html>
@@ -29,13 +28,13 @@ const canonical = preview ? getCanonicalUrl(locale, publicPath) : `https://dream
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <link rel="canonical" href={canonical} />
-    {preview && !domainI18nEnabled && <meta name="robots" content="noindex,follow" />}
+    {preview && <meta name="robots" content="noindex,follow" />}
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="ru" href={getLocalizedUrl({ locale: 'ru', pathname: publicPath })} />}
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="en" href={getLocalizedUrl({ locale: 'en', pathname: publicPath })} />}
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="x-default" href={getLocalizedUrl({ locale: 'en', pathname: publicPath })} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=Inter+Tight:ital,wght@0,500;0,600;1,500;1,600&display=swap&subset=cyrillic,latin" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,500&family=Inter+Tight:wght@500&display=swap" rel="stylesheet" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
   </head>

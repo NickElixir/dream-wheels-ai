@@ -1,26 +1,39 @@
 ---
-import { getDictionary, getLocalizedUrl } from '../i18n';
+import { getDictionary, getLocalizedUrl, getNavigationUrl } from '../i18n';
 import type { Locale } from '../i18n';
-import { domainI18nEnabled } from '../i18n/config';
 interface Props { locale: Locale; preview?: boolean; page: 'landing' | 'catalog'; }
 const { locale, preview = false, page } = Astro.props;
 const copy = getDictionary(locale).nav;
-const local = (pathname: string) => preview && !domainI18nEnabled ? getLocalizedUrl({ locale, pathname, preview: true }) : pathname;
+const isCatalog = page === 'catalog';
+const local = (pathname: string) => getNavigationUrl(locale, pathname, preview);
+const links = [
+  { label: locale === 'ru' ? 'Главная' : 'Home', href: local('/'), home: true },
+  { label: copy.catalog, href: local('/catalog'), catalog: true },
+  { label: copy.howItWorks, href: `${local('/')}#how-it-works` },
+  { label: copy.faq, href: `${local('/')}#faq` },
+];
 const otherLocale: Locale = locale === 'ru' ? 'en' : 'ru';
 const otherPath = page === 'catalog' ? '/catalog' : '/';
-const otherHref = getLocalizedUrl({ locale: otherLocale, pathname: otherPath, preview: !domainI18nEnabled });
+const otherHref = getLocalizedUrl({ locale: otherLocale, pathname: otherPath, preview });
 ---
-<header class="site-header">
+<header class:list={["site-header", { "catalog-header": isCatalog }]}>
   <a class="wordmark" href={local('/')} aria-label={copy.homeLabel}>{copy.brand}</a>
   <nav class="main-nav" aria-label={copy.navigationLabel}>
-    <a href={local('/catalog')} data-catalog-link>{copy.catalog}</a>
-    <a href={`${local('/')}#how-it-works`}>{copy.howItWorks}</a>
-    <a href={`${local('/')}#faq`}>{copy.faq}</a>
+    {links.map((link) => (
+      <a href={link.href} data-catalog-link={link.catalog || undefined} aria-current={(isCatalog ? link.catalog : link.home) ? 'page' : undefined}>{link.label}</a>
+    ))}
   </nav>
   <div class="header-actions">
-    <nav class="language-switch" aria-label={copy.languageLabel} data-domain-i18n={domainI18nEnabled}>
+      <details class="catalog-mobile-menu">
+        <summary>{locale === 'ru' ? 'Меню' : 'Menu'}</summary>
+        <nav aria-label={copy.navigationLabel}>
+          {links.map((link) => (
+            <a href={link.href} aria-current={(isCatalog ? link.catalog : link.home) ? 'page' : undefined}>{link.label}</a>
+          ))}
+        </nav>
+      </details>
+    <nav class="language-switch" aria-label={copy.languageLabel} data-locale-preview={preview}>
       {locale === 'ru' ? <span aria-current="true">RU</span> : <a href={otherHref} data-language-target="ru">RU</a>}
-      <span aria-hidden="true">|</span>
       {locale === 'en' ? <span aria-current="true">EN</span> : <a href={otherHref} data-language-target="en">EN</a>}
     </nav>
     <a class="button button-graphite button-tactile action-type login-link" href="https://dreamwheels.pro/app/new" data-login-link>{copy.login}</a>
@@ -29,8 +42,151 @@ const otherHref = getLocalizedUrl({ locale: otherLocale, pathname: otherPath, pr
 <script>
   import { getLocalizedUrl } from '../i18n';
   document.querySelectorAll<HTMLAnchorElement>('[data-language-target]').forEach((link) => {
-    const locale = link.dataset.languageTarget === 'en' ? 'en' : 'ru';
-    const preview = link.closest('[data-domain-i18n]')?.getAttribute('data-domain-i18n') !== 'true';
-    link.href = getLocalizedUrl({ locale, pathname: window.location.pathname, search: window.location.search, preview }) + window.location.hash;
+    const update = () => {
+      const locale = link.dataset.languageTarget === 'en' ? 'en' : 'ru';
+      const preview = link.closest('[data-locale-preview]')?.getAttribute('data-locale-preview') === 'true';
+      link.href = getLocalizedUrl({ locale, pathname: window.location.pathname, search: window.location.search, preview }) + window.location.hash;
+    };
+    update();
+    link.addEventListener('click', update);
+    window.addEventListener('hashchange', update);
+    window.addEventListener('popstate', update);
+  });
+  document.querySelectorAll<HTMLDetailsElement>('.catalog-mobile-menu').forEach((menu) => {
+    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => { menu.open = false; }));
+    menu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
   });
 </script>
+
+
+<style>
+  .site-header { gap: 24px; }
+  .site-header .main-nav { font-size: 14px; letter-spacing: -.01em; }
+  .site-header .header-actions { gap: 16px; }
+  .site-header .login-link { min-height: var(--control-height); border-radius: var(--control-radius); font-size: 13px; font-weight: 600; }
+
+  .site-header .main-nav {
+    gap: 8px;
+  }
+
+  .site-header .main-nav a,
+  .catalog-mobile-menu summary,
+  .catalog-mobile-menu nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--control-height);
+    padding: 0 14px;
+    color: #e8edf0;
+    border: 1px solid #2d3a41;
+    border-radius: var(--control-radius);
+    background:
+      repeating-linear-gradient(115deg, #fff1 0 1px, transparent 1px 5px),
+      linear-gradient(#253138, #151f24);
+    background-blend-mode: soft-light, normal;
+    box-shadow: inset 0 1px #ffffff0d, 0 2px 3px #0005;
+    text-decoration: none;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .site-header .main-nav a:hover,
+  .catalog-mobile-menu summary:hover,
+  .catalog-mobile-menu nav a:hover {
+    color: #fff;
+    border-color: #697780;
+    background: linear-gradient(#304049, #1e2c33);
+  }
+
+  .site-header .main-nav a[aria-current="page"],
+  .catalog-mobile-menu nav a[aria-current="page"] {
+    border-color: #829198;
+    background: linear-gradient(#344149, #253036);
+  }
+
+  .site-header .main-nav a:active,
+  .catalog-mobile-menu summary:active,
+  .catalog-mobile-menu nav a:active {
+    box-shadow: inset 0 1px 3px #0007;
+  }
+
+  .site-header .main-nav a:focus-visible,
+  .catalog-mobile-menu summary:focus-visible,
+  .catalog-mobile-menu nav a:focus-visible {
+    color: #fff;
+    outline: 2px solid #eff3f5;
+    outline-offset: 2px;
+    text-decoration: none;
+  }
+
+  .catalog-mobile-menu { display: none; }
+  .site-header .language-switch { gap: 2px; padding: 3px; border: 1px solid #344249; border-radius: 8px; background: linear-gradient(#1d292f, #111b20); box-shadow: inset 0 1px #ffffff0b; }
+  .site-header .language-switch > :is(a, span) { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 36px; border-radius: 5px; text-decoration: none; }
+  .site-header .language-switch [aria-current] { background: #3c4a52; color: #f4f7f8; box-shadow: inset 0 1px #ffffff18, 0 1px 3px #0005; }
+  .site-header .language-switch a:focus-visible { outline: 2px solid #eff3f5; outline-offset: 2px; }
+
+
+  @media (max-width: 900px) {
+    .site-header { gap: 8px; }
+    .site-header .header-actions { gap: 8px; }
+    .site-header .main-nav {
+      display: none;
+    }
+
+    .site-header .header-actions {
+      margin-left: auto;
+    }
+
+    .catalog-mobile-menu {
+      display: block;
+      position: relative;
+      font-size: 13px;
+    }
+
+    .catalog-mobile-menu summary {
+      padding-inline: 9px;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .catalog-mobile-menu summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .catalog-mobile-menu nav {
+      position: absolute;
+      z-index: 1;
+      top: calc(100% + 8px);
+      right: -56px;
+      display: grid;
+      gap: 6px;
+      width: max-content;
+      min-width: 150px;
+      padding: 6px;
+      border: 1px solid #2d3a41;
+      border-radius: 8px;
+      background: #10191e;
+      box-shadow: 0 10px 24px #0008;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .site-header .wordmark { font-size: 13px; letter-spacing: -.02em; }
+    .site-header .header-actions { gap: 5px; }
+    .site-header .login-link { min-width: 54px; padding-inline: 8px; font-size: 12px; }
+    .site-header .language-switch { font-size: 11px; }
+    .site-header .language-switch > :is(a, span) { min-width: 27px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header .main-nav a,
+    .catalog-mobile-menu summary,
+    .catalog-mobile-menu nav a {
+      transition: none;
+    }
+  }
+</style>

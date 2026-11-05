@@ -91,7 +91,7 @@ export default function BeforeAfter({ locale, preview = false }: { locale: Local
       </div>
       <div class="before-after-actions">
         <a class="button button-lime button-tactile before-after-primary" href={getAppTarget()} data-app-target onClick={() => trackEvent('primary_cta_clicked', { source: 'monjaro_slider' })}>{copy.cta}</a>
-        <a class="before-after-catalog-link" href={preview ? getLocalizedUrl({ locale, pathname: '/catalog', preview: true }) : '/catalog'} onClick={() => trackEvent('catalog_clicked', { source: 'monjaro_slider' })}>{copy.catalog} <span aria-hidden="true">→</span></a>
+        <a class="before-after-catalog-link" href={preview ? getLocalizedUrl({ locale, pathname: '/catalog', preview: true }) : '/catalog'} onClick={() => trackEvent('catalog_clicked', { source: 'monjaro_slider' })}>{copy.catalog}</a>
       </div>
     </section>
   );
