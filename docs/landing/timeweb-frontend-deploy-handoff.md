@@ -12,7 +12,7 @@
 
 Репозиторий NickElixir/dream-wheels-ai. Исходная ветка feature/landing-two-domain-routing, коммит 2e0b10e (feat: complete bilingual landing and catalog release) теперь отправлен в GitHub. Эта ветка содержит старую историю WebApp; не сливать её целиком поверх актуального приложения.
 
-От актуальной staging be73ef0 создана отдельная ветка feature/landing-release-sync: точная копия landing/ и документации релиза из 2e0b10e, без старых изменений WebApp. Использовать её PR как путь включения лендинга в staging/main. PR/CI-статус см. в передаче из исходного чата. Нельзя считать main/staging обновлёнными до merge.
+От актуальной staging be73ef0 создана отдельная ветка feature/landing-release-sync: точная копия landing/ и документации релиза из 2e0b10e, без старых изменений WebApp. Использовать её PR как путь включения лендинга в staging/main. PR: https://github.com/NickElixir/dream-wheels-ai/pull/335 (base staging, head feature/landing-release-sync). Состояние CI проверять в PR. Нельзя считать main/staging обновлёнными до merge.
 
 Production Vercel: проект dream-wheels-ai-landing, prj_Zc70ETVBZ3exQfLrcFg4vNkTNNiV. Текущий релиз dpl_CcC1exNP5kJGhdJMjVRFqruW9et8; откат dpl_FTMYnwd5Qc4GjwE4FHt6UMJRn2tY.
 
