@@ -1,0 +1,23 @@
+{
+  "purpose": "Read-only rollback reference; DNS not changed",
+  "checked_date_moscow": "2026-11-06",
+  "resolver": "Cloudflare DNS over HTTPS",
+  "records": [
+    {
+      "name": "dream-wheels.ru",
+      "type": "A",
+      "ttl": 600,
+      "value": "216.198.79.1"
+    },
+    {
+      "name": "www.dream-wheels.ru",
+      "type": "CNAME",
+      "ttl": 600,
+      "value": "aef97379b8e88c90.vercel-dns-017.com."
+    }
+  ],
+  "candidate_app_id": 283505,
+  "candidate_technical_origin": "https://nickelixir-dream-wheels-ai-774d.twc1.net",
+  "candidate_ip": "178.209.127.53",
+  "switch_authorized": false
+}
