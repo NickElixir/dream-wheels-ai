@@ -34,12 +34,69 @@ def validate_target(app: dict, app_id: int) -> None:
         raise ReleaseError("Unexpected environment variables in the isolated landing app")
 
 
+def provision_app(api, profile: str, sha: str) -> dict:
+    """Create only an owner-approved isolated Moscow request-priced frontend."""
+    from timeweb_cloud_api.models.create_app_v2 import CreateAppV2
+
+    name = "dream-wheels-landing-" + ("test" if profile == "landing-ru-test" else "production")
+    response = api.get_apps_with_http_info(_preload_content=False)
+    if response.status_code != 200:
+        raise ReleaseError("Cannot inspect existing apps before creation")
+    payload = json.loads(response.raw_data)
+    existing = [app for app in payload.get("apps", []) if app.get("name") == name]
+    if len(existing) > 1:
+        raise ReleaseError("Duplicate landing app names; inspect before retrying")
+    if existing:
+        validate_target(existing[0], int(existing[0]["id"]))
+        return {"ok": True, "created": False, "app_id": existing[0]["id"], "name": name}
+    source = timeweb_app_payload(api, "read frontend source template", "get_app", 281549)
+    presets = timeweb_json_payload(
+        api, "read request preset", "get_apps_presets", 281549, accepted_statuses={200}
+    )
+    preset = next(
+        (item for item in presets.get("frontend_presets", []) if item.get("id") == 2801), {}
+    )
+    if (
+        preset.get("location") != "ru-3"
+        or preset.get("price") != 1
+        or preset.get("disk") != 2048
+        or preset.get("description") != "Frontend app request preset MSK"
+    ):
+        raise ReleaseError("Approved request preset changed; review pricing before creation")
+    model = CreateAppV2(
+        provider_id=source["provider"]["id"],
+        repository_id=source["repository"]["id"],
+        type="frontend",
+        language="javascript",
+        framework="another",
+        env_version="24",
+        build_cmd=BUILD_COMMAND,
+        index_dir=INDEX_DIR,
+        branch_name="staging" if profile == "landing-ru-test" else "main",
+        commit_sha=sha,
+        is_auto_deploy=False,
+        name=name,
+        comment="RU static landing",
+        preset_id=2801,
+        project_id=560747,
+        envs={"TIMEWEB_LANDING_PROFILE": profile, "LANDING_BUILD_SHA": sha},
+    )
+    result = timeweb_json_payload(
+        api, "create approved landing frontend", "create_app_v2", model, accepted_statuses={201}
+    )
+    app = result.get("app", {})
+    if not isinstance(app.get("id"), int):
+        raise ReleaseError("Creation response lacks app ID; inspect inventory before retrying")
+    return {"ok": True, "created": True, "app_id": app["id"], "name": name}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", choices=PROFILES)
     parser.add_argument("--sha")
     parser.add_argument("--inventory", action="store_true")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--create-approved", action="store_true")
     args = parser.parse_args()
     if args.inventory:
         api, _, _ = make_sdk_client(os.environ["TIMEWEB_CLOUD_TOKEN"])
@@ -66,6 +123,10 @@ def main() -> None:
     if args.profile not in PROFILES or not args.sha:
         raise ReleaseError("Release profile and SHA are required")
     sha = validate_sha(args.sha)
+    if args.create_approved:
+        api, _, _ = make_sdk_client(os.environ["TIMEWEB_CLOUD_TOKEN"])
+        print(json.dumps(provision_app(api, args.profile, sha)))
+        return
     prefix = "LANDING_RU_TEST" if args.profile == "landing-ru-test" else "LANDING_RU_PRODUCTION"
     try:
         app_id = int(os.environ[f"{prefix}_APP_ID"])
