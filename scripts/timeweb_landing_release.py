@@ -186,6 +186,8 @@ def main() -> None:
     snapshot_file.write_text(json.dumps(snapshot, indent=2) + "\n")
     snapshot_file.chmod(0o600)
     if args.configure:
+        if app.get("commit_sha") != sha:
+            raise ReleaseError("Landing source changed before configuration")
         if app_id not in {283503, 283505}:
             raise ReleaseError("Configuration restricted to the two approved landing apps")
         proxy = {
@@ -218,7 +220,13 @@ def main() -> None:
             current = timeweb_app_payload(
                 api, "wait for landing web-server config", "get_app", app_id
             )
-            if current.get("status") == "active" and current.get("reverse_proxy") == proxy:
+            effective = current.get("reverse_proxy") or {}
+            configured = effective.get("spa_fallback") is False and any(
+                header.get("name", "").lower() == "cache-control"
+                and header.get("value") == "no-cache"
+                for header in effective.get("headers", [])
+            )
+            if current.get("status") == "active" and configured:
                 print(json.dumps({"ok": True, "app_id": app_id, "configured": True}))
                 return
             if current.get("status") in {"failure", "startup_error", "no_paid", "paused"}:
