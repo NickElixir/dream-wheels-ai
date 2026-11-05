@@ -104,10 +104,38 @@ def main() -> None:
         presets = timeweb_json_payload(
             api, "read frontend presets", "get_apps_presets", 281549, accepted_statuses={200}
         )
+        landing_apps = []
+        for landing_id in (283503, 283505):
+            landing = timeweb_app_payload(api, "read created landing status", "get_app", landing_id)
+            public = {
+                key: landing.get(key)
+                for key in ("id", "name", "status", "ip", "commit_sha", "build_cmd", "index_dir")
+            }
+            public["field_names"] = sorted(landing)
+            public["domains"] = [
+                item
+                if isinstance(item, str)
+                else {
+                    key: item.get(key)
+                    for key in (
+                        "id",
+                        "domain",
+                        "fqdn",
+                        "name",
+                        "type",
+                        "is_technical",
+                        "is_technical_domain",
+                    )
+                    if key in item
+                }
+                for item in landing.get("domains", [])
+            ]
+            landing_apps.append(public)
         print(
             json.dumps(
                 {
                     "ok": True,
+                    "landing_apps": landing_apps,
                     "source_template": {
                         "provider_id": (source.get("provider") or {}).get("id"),
                         "repository_id": (source.get("repository") or {}).get("id"),
