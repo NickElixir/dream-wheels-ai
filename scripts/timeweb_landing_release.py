@@ -4,6 +4,8 @@ import argparse
 import json
 import os
 import subprocess
+import time
+import urllib.request
 from pathlib import Path
 
 from timeweb_release import (
@@ -97,6 +99,7 @@ def main() -> None:
     parser.add_argument("--inventory", action="store_true")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--create-approved", action="store_true")
+    parser.add_argument("--configure", action="store_true")
     args = parser.parse_args()
     if args.inventory:
         api, _, _ = make_sdk_client(os.environ["TIMEWEB_CLOUD_TOKEN"])
@@ -104,10 +107,38 @@ def main() -> None:
         presets = timeweb_json_payload(
             api, "read frontend presets", "get_apps_presets", 281549, accepted_statuses={200}
         )
+        landing_apps = []
+        for landing_id in (283503, 283505):
+            landing = timeweb_app_payload(api, "read created landing status", "get_app", landing_id)
+            public = {
+                key: landing.get(key)
+                for key in ("id", "name", "status", "ip", "commit_sha", "build_cmd", "index_dir")
+            }
+            public["field_names"] = sorted(landing)
+            public["domains"] = [
+                item
+                if isinstance(item, str)
+                else {
+                    key: item.get(key)
+                    for key in (
+                        "id",
+                        "domain",
+                        "fqdn",
+                        "name",
+                        "type",
+                        "is_technical",
+                        "is_technical_domain",
+                    )
+                    if key in item
+                }
+                for item in landing.get("domains", [])
+            ]
+            landing_apps.append(public)
         print(
             json.dumps(
                 {
                     "ok": True,
+                    "landing_apps": landing_apps,
                     "source_template": {
                         "provider_id": (source.get("provider") or {}).get("id"),
                         "repository_id": (source.get("repository") or {}).get("id"),
@@ -154,6 +185,54 @@ def main() -> None:
     snapshot_file = ROOT / "landing-release-snapshot.json"
     snapshot_file.write_text(json.dumps(snapshot, indent=2) + "\n")
     snapshot_file.chmod(0o600)
+    if args.configure:
+        if app.get("commit_sha") != sha:
+            raise ReleaseError("Landing source changed before configuration")
+        if app_id not in {283503, 283505}:
+            raise ReleaseError("Configuration restricted to the two approved landing apps")
+        proxy = {
+            "spa_fallback": False,
+            "redirects": [],
+            "headers": [{"operation": "set", "name": "Cache-Control", "value": "no-cache"}],
+            "compression": {"enabled": True, "algorithms": ["gzip", "zstd"]},
+        }
+        if args.profile == "landing-ru-test":
+            proxy["headers"].append(
+                {"operation": "set", "name": "X-Robots-Tag", "value": "noindex, nofollow"}
+            )
+        snapshot["reverse_proxy"] = app.get("reverse_proxy")
+        snapshot_file.write_text(json.dumps(snapshot, indent=2) + "\n")
+        request = urllib.request.Request(
+            f"https://api.timeweb.cloud/api/v1/apps/{app_id}",
+            data=json.dumps({"reverse_proxy": proxy}).encode(),
+            headers={
+                "Authorization": "Bearer " + os.environ["TIMEWEB_CLOUD_TOKEN"],
+                "Content-Type": "application/json",
+            },
+            method="PATCH",
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            if response.status != 200:
+                raise ReleaseError("Landing web-server configuration was rejected")
+            response.read()
+        deadline = time.monotonic() + 600
+        while time.monotonic() < deadline:
+            current = timeweb_app_payload(
+                api, "wait for landing web-server config", "get_app", app_id
+            )
+            effective = current.get("reverse_proxy") or {}
+            configured = effective.get("spa_fallback") is False and any(
+                header.get("name", "").lower() == "cache-control"
+                and header.get("value") == "no-cache"
+                for header in effective.get("headers", [])
+            )
+            if current.get("status") == "active" and configured:
+                print(json.dumps({"ok": True, "app_id": app_id, "configured": True}))
+                return
+            if current.get("status") in {"failure", "startup_error", "no_paid", "paused"}:
+                raise ReleaseError("Landing configuration deploy did not become active")
+            time.sleep(10)
+        raise ReleaseError("Landing web-server configuration did not converge")
     if not args.apply:
         print(json.dumps({"ok": True, "dry_run": True, "app_id": app_id, "sha": sha}))
         return

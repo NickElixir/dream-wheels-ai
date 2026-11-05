@@ -46,3 +46,12 @@ Keep prior source SHA and sanitized provider settings snapshot. Redeploy the pre
 ## Deferred optimization
 
 Measure cold and warm loads before bundling or cache changes: requests to Timeweb separately from API/gateway calls, transferred bytes, fonts, LCP and cache hits. Optimize stable hashed resources and image sizes after acceptance. Keep authentication/session/history/balance/upload regression checks in the WebApp pipeline. No new CDN is part of this migration.
+
+## Created application inventory (2026-11-06)
+
+- Test: 283503, https://nickelixir-dream-wheels-ai-5b0e.twc1.net
+- Production candidate: 283505, https://nickelixir-dream-wheels-ai-774d.twc1.net
+- Both initially built from f6ae3bf42a825b5e2e732961c13dc1af2761088b on preset 2801.
+- GitHub mapping variables are configured. DNS remains unchanged.
+- Provider defaults require explicit Cache-Control: no-cache and disabling SPA fallback. The manual configure operation changes only the two newly approved app IDs, snapshots prior settings, enables gzip/zstd and adds test-only X-Robots-Tag.
+- The pinned SDK lacks the reverse_proxy mutation. The operation uses the same PATCH /api/v1/apps/{id} and reverse_proxy schema as the official public Timeweb panel client (common-cloud.ad6824a47dfcc6b1.js / cloud.0ed7ccedba1c1f05.js), authenticated only inside Actions. Never print request headers or token values.

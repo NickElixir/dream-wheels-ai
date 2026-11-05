@@ -10,7 +10,7 @@ on:
     inputs:
       operation:
         type: choice
-        options: [inventory, release, provision]
+        options: [inventory, release, provision, configure]
         default: release
         required: true
       profile:
@@ -75,7 +75,7 @@ jobs:
           retention-days: 30
   deploy:
     needs: build
-    if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+    if: github.event_name == 'workflow_dispatch' && (github.ref_name == 'main' || inputs.operation == 'inventory')
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -101,6 +101,8 @@ jobs:
         run: |
           if [[ "$OPERATION" == inventory ]]; then
             python scripts/timeweb_landing_release.py --inventory
+          elif [[ "$OPERATION" == configure ]]; then
+            python scripts/timeweb_landing_release.py --profile "$PROFILE" --sha "$SOURCE" --configure
           elif [[ "$OPERATION" == provision ]]; then
             python scripts/timeweb_landing_release.py --profile "$PROFILE" --sha "$SOURCE" --create-approved
           else
