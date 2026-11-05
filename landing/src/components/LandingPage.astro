@@ -10,6 +10,7 @@ import Faq from './Faq';
 import SiteFooter from './SiteFooter.astro';
 import { getDictionary } from '../i18n';
 import type { Locale } from '../i18n';
+import { getStaticAppTarget } from '../lib/attribution';
 interface Props { locale: Locale; preview?: boolean; }
 const { locale, preview = false } = Astro.props;
 const copy = getDictionary(locale);
@@ -29,7 +30,7 @@ const copy = getDictionary(locale);
         <p class="hero-subtitle">{copy.hero.subtitle[0]}<br />{copy.hero.subtitle[1]}</p>
       </div>
       <div class="hero-actions">
-        <a class="button button-lime button-tactile action-type hero-cta" href="https://dreamwheels.pro/app/new" data-primary-cta>{copy.hero.cta}</a>
+        <a class="button button-lime button-tactile action-type hero-cta" href={getStaticAppTarget()} data-primary-cta>{copy.hero.cta}</a>
         <span class="hero-cta-note">{copy.hero.helper}</span>
       </div>
     </section>

@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "test": "tsx --test tests/*.test.ts",
-    "build:domains": "tsx scripts/build-domains.mjs"
+    "build:domains": "tsx scripts/build-domains.mjs",
+    "build:timeweb": "tsx ../deploy/timeweb-landing/build.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^5.1.0",

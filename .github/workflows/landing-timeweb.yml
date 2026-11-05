@@ -1,0 +1,109 @@
+name: Landing Timeweb release
+
+on:
+  pull_request:
+    paths: ['landing/**', 'deploy/timeweb-landing/**', 'scripts/*landing*', '.github/workflows/landing-timeweb.yml']
+  push:
+    branches: [staging]
+    paths: ['landing/**', 'deploy/timeweb-landing/**', 'scripts/*landing*', '.github/workflows/landing-timeweb.yml']
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [inventory, release]
+        default: release
+        required: true
+      profile:
+        type: choice
+        options: [landing-ru-test, landing-ru-production]
+        required: true
+      commit:
+        description: Full reviewed source SHA
+        required: true
+      accepted_test_sha:
+        description: Owner-accepted test SHA (production only)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landing-timeweb-${{ inputs.profile || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.commit || github.sha }}
+          fetch-depth: 0
+      - name: Validate release ancestry
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          SOURCE: ${{ inputs.commit }}
+          PROFILE: ${{ inputs.profile }}
+          ACCEPTED: ${{ inputs.accepted_test_sha }}
+        run: |
+          [[ "$SOURCE" =~ ^[a-f0-9]{40}$ ]]
+          branch=staging
+          if [[ "$PROFILE" == 'landing-ru-production' ]]; then
+            branch=main
+            test "$ACCEPTED" = "$SOURCE"
+          fi
+          git merge-base --is-ancestor "$SOURCE" "origin/$branch"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+      - run: npm ci --prefix landing
+      - run: npm --prefix landing run check
+      - run: npm --prefix landing test
+      - run: node --test deploy/timeweb-landing/build.test.mjs scripts/verify_landing_release.test.mjs tests/test_new_application_route.mjs
+      - run: python3 scripts/test_timeweb_landing_release.py
+      - name: Build RU artifact
+        env:
+          TIMEWEB_LANDING_PROFILE: ${{ inputs.profile || 'landing-ru-test' }}
+        run: npm --prefix landing run build:timeweb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: landing-${{ inputs.profile || 'landing-ru-test' }}-${{ inputs.commit || github.sha }}
+          path: dist/landing-timeweb
+          retention-days: 30
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TIMEWEB_CLOUD_TOKEN: ${{ secrets.TIMEWEB_CLOUD_TOKEN }}
+      LANDING_RU_TEST_APP_ID: ${{ vars.LANDING_RU_TEST_APP_ID }}
+      LANDING_RU_TEST_URL: ${{ vars.LANDING_RU_TEST_URL }}
+      LANDING_RU_PRODUCTION_APP_ID: ${{ vars.LANDING_RU_PRODUCTION_APP_ID }}
+      LANDING_RU_PRODUCTION_URL: ${{ vars.LANDING_RU_PRODUCTION_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r scripts/requirements-timeweb.txt
+      - name: Release only the mapped landing app
+        env:
+          PROFILE: ${{ inputs.profile }}
+          SOURCE: ${{ inputs.commit }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          if [[ "$OPERATION" == inventory ]]; then
+            python scripts/timeweb_landing_release.py --inventory
+          else
+            python scripts/timeweb_landing_release.py --profile "$PROFILE" --sha "$SOURCE" --apply
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: landing-rollback-${{ inputs.profile }}-${{ inputs.commit }}
+          path: landing-release-snapshot.json
+          retention-days: 30
