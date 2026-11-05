@@ -10,7 +10,7 @@ on:
     inputs:
       operation:
         type: choice
-        options: [inventory, release]
+        options: [inventory, release, provision]
         default: release
         required: true
       profile:
@@ -45,12 +45,15 @@ jobs:
           SOURCE: ${{ inputs.commit }}
           PROFILE: ${{ inputs.profile }}
           ACCEPTED: ${{ inputs.accepted_test_sha }}
+          OPERATION: ${{ inputs.operation }}
         run: |
           [[ "$SOURCE" =~ ^[a-f0-9]{40}$ ]]
           branch=staging
           if [[ "$PROFILE" == 'landing-ru-production' ]]; then
             branch=main
-            test "$ACCEPTED" = "$SOURCE"
+            if [[ "$OPERATION" == release ]]; then
+              test "$ACCEPTED" = "$SOURCE"
+            fi
           fi
           git merge-base --is-ancestor "$SOURCE" "origin/$branch"
       - uses: actions/setup-node@v4
@@ -98,6 +101,8 @@ jobs:
         run: |
           if [[ "$OPERATION" == inventory ]]; then
             python scripts/timeweb_landing_release.py --inventory
+          elif [[ "$OPERATION" == provision ]]; then
+            python scripts/timeweb_landing_release.py --profile "$PROFILE" --sha "$SOURCE" --create-approved
           else
             python scripts/timeweb_landing_release.py --profile "$PROFILE" --sha "$SOURCE" --apply
           fi
