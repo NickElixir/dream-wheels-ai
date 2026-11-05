@@ -1,6 +1,6 @@
 # RU landing on Timeweb: release and rollback
 
-Status: implementation prepared; no landing cloud application or production DNS switch yet.
+Status: release tooling merged in PR #336/#337. WebApp `/new` test accepted by owner without VPN and published to RU production (workflow 42111679768, source c6a78c619ec5a0ada2fa227c3e7fb76170defe8f). Owner approved both isolated landing apps on the Moscow request preset and a total 20 RUB deployment/diagnostic budget. Landing application creation and production DNS switch remain pending.
 
 ## Boundaries
 
