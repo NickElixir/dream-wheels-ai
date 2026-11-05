@@ -1,0 +1,96 @@
+---
+import { getDictionary } from '../i18n';
+import type { Locale } from '../i18n';
+interface Props { locale: Locale; }
+const copy = getDictionary(Astro.props.locale).howItWorks;
+const source = {
+  src: '/assets/how-it-works/zeekr-source-normalized.png',
+  width: 2048,
+  height: 2048,
+  alt: copy.sourceAlt,
+};
+
+const wheel = {
+  src: '/assets/how-it-works/css3347-cutout.png',
+  width: 1254,
+  height: 1254,
+  alt: 'Race Ready Technology CSS3347',
+};
+
+const result = {
+  src: '/assets/how-it-works/zeekr-result-normalized.png',
+  width: 2048,
+  height: 2048,
+  alt: copy.resultAlt,
+};
+
+const vortex = {
+  src: '/assets/how-it-works/dream-wheels-vortex-transparent.png',
+  width: 1122,
+  height: 1402,
+  alt: copy.vortexAlt,
+};
+---
+
+<section class="how-it-works" id="how-it-works" aria-label={copy.sectionLabel}>
+  <article class="how-it-works__stage how-it-works__stage--photo">
+    <img class="how-it-works__image" src={source.src} width={source.width} height={source.height} alt={source.alt} loading="lazy" decoding="async" />
+    <div class="how-it-works__shade" aria-hidden="true"></div>
+    <div class="how-it-works__caption">
+      <strong class="how-it-works__vehicle-name">Zeekr 001</strong>
+      <p>{copy.photo}</p>
+      <span>01 / PHOTO</span>
+    </div>
+  </article>
+
+  <span class="how-it-works__connector how-it-works__plus how-it-works__plus--photo-wheel" aria-hidden="true">+</span>
+
+  <article class="how-it-works__stage how-it-works__stage--wheel">
+    <div class="how-it-works__wheel-stack">
+      <div class="how-it-works__object-card how-it-works__wheel-card">
+        <img class="how-it-works__wheel" src={wheel.src} width={wheel.width} height={wheel.height} alt={wheel.alt} loading="lazy" decoding="async" />
+      </div>
+      <div class="how-it-works__wheel-card-copy">
+        <strong>Race Ready CSS3347</strong>
+        <small>8,5/19&quot; 5x108 ET45 DIA63,4 MK/M</small>
+      </div>
+      <div class="how-it-works__wheel-details">
+        <div class="how-it-works__caption">
+          <p>{copy.wheel}</p>
+          <span>02 / WHEEL</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <span class="how-it-works__connector how-it-works__plus" aria-hidden="true">+</span>
+
+  <article class="how-it-works__stage how-it-works__stage--try-on">
+    <div class="how-it-works__try-on-stack">
+      <div class="how-it-works__object-card how-it-works__process-card">
+        <img class="how-it-works__vortex" src={vortex.src} width={vortex.width} height={vortex.height} alt={vortex.alt} loading="lazy" decoding="async" />
+      </div>
+      <div class="how-it-works__process-label">
+        <strong>Dream Wheels AI</strong>
+        <small>DIFFUSION MODEL</small>
+      </div>
+      <div class="how-it-works__caption">
+        <p>{copy.visualize}</p>
+        <span>03 / VISUAL TRY-ON</span>
+      </div>
+    </div>
+  </article>
+
+  <svg class="how-it-works__connector how-it-works__arrow" viewBox="0 0 46 24" aria-hidden="true" focusable="false">
+    <path d="M0 9.5h33V0l13 12-13 12v-9.5H0z" />
+  </svg>
+
+  <article class="how-it-works__stage how-it-works__stage--result">
+    <img class="how-it-works__image" src={result.src} width={result.width} height={result.height} alt={result.alt} loading="lazy" decoding="async" />
+    <div class="how-it-works__shade" aria-hidden="true"></div>
+    <div class="how-it-works__caption">
+      <p>{copy.result}</p>
+      <span>04 / RESULT</span>
+    </div>
+  </article>
+</section>

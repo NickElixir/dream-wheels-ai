@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/backend/(.*)",
+      "destination": "https://dream-wheels-ai-webapp.vercel.app/api/backend/$1"
+    },
+    {
+      "source": "/app",
+      "destination": "https://dream-wheels-ai-webapp.vercel.app/app"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "https://dream-wheels-ai-webapp.vercel.app/app/$1"
+    },
+    {
+      "source": "/t",
+      "destination": "https://dream-wheels-ai-webapp.vercel.app/t"
+    },
+    {
+      "source": "/t/(.*)",
+      "destination": "https://dream-wheels-ai-webapp.vercel.app/t/$1"
+    }
+  ]
+}
