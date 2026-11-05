@@ -1,5 +1,6 @@
 const APP_ROUTE_VIEWS = Object.freeze({
     "/": "dashboard", "/create": "create", "/history": "renders",
+    "/new": "create",
     "/balance": "wallet", "/account": "settings", "/help": "support",
     "/help/photos": "photo-guide", "/documents": "docs",
     "/app": "dashboard",

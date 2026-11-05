@@ -66,6 +66,14 @@ test('CTA keeps supported attribution parameters and drops unrelated query value
   assert.equal(target.searchParams.has('debug'), false);
 });
 
+test('Timeweb CTA uses the existing application origin and short new route', () => {
+  const target = new URL(getAppTargetFromUrl('https://landing-test.dream-wheels.ru/?utm_source=test&token=private', undefined, 'timeweb'));
+  assert.equal(target.origin, 'https://app.dream-wheels.ru');
+  assert.equal(target.pathname, '/new');
+  assert.equal(target.search, '?utm_source=test');
+  assert.equal(new URL(getAppTargetFromUrl('https://landing-test.dream-wheels.ru/', '/', 'timeweb')).pathname, '/');
+});
+
 test('future RU domain hands off to the app on the same host', () => {
   const target = new URL(getAppTargetFromUrl('https://колесамечты.рф/catalog?utm_source=test'));
   assert.equal(target.hostname, new URL('https://колесамечты.рф').hostname);

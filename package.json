@@ -1,5 +1,8 @@
 {
   "name": "dream-wheels-static-deploy",
   "private": true,
-  "scripts": {"build": "node deploy/timeweb-static/build.mjs"}
+  "scripts": {
+    "build": "node deploy/timeweb-static/build.mjs",
+    "build:landing:timeweb": "npm ci --prefix landing && npm run build:timeweb --prefix landing"
+  }
 }

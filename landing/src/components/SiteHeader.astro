@@ -1,6 +1,7 @@
 ---
 import { getDictionary, getLocalizedUrl, getNavigationUrl } from '../i18n';
 import type { Locale } from '../i18n';
+import { getLoginTarget } from '../lib/attribution';
 interface Props { locale: Locale; preview?: boolean; page: 'landing' | 'catalog'; }
 const { locale, preview = false, page } = Astro.props;
 const copy = getDictionary(locale).nav;
@@ -36,7 +37,7 @@ const otherHref = getLocalizedUrl({ locale: otherLocale, pathname: otherPath, pr
       {locale === 'ru' ? <span aria-current="true">RU</span> : <a href={otherHref} data-language-target="ru">RU</a>}
       {locale === 'en' ? <span aria-current="true">EN</span> : <a href={otherHref} data-language-target="en">EN</a>}
     </nav>
-    <a class="button button-graphite button-tactile action-type login-link" href="https://dreamwheels.pro/app/new" data-login-link>{copy.login}</a>
+    <a class="button button-graphite button-tactile action-type login-link" href={getLoginTarget()} data-login-link>{copy.login}</a>
   </div>
 </header>
 <script>
