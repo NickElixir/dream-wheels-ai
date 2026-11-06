@@ -73,3 +73,11 @@ The owner subsequently confirmed that both the application and landing work with
 Prepared DNS switch (NOT applied): attach dream-wheels.ru and www.dream-wheels.ru to Timeweb app 283505, replace apex A 216.198.79.1 with 178.209.127.53, and replace www CNAME aef97379b8e88c90.vercel-dns-017.com. with nickelixir-dream-wheels-ai-774d.twc1.net.; retain TTL 600 and canonical www with apex redirect. Provider domain attachment may automatically update DNS, so it belongs to the explicitly approved switch step, not read-only preparation.
 
 Before applying, recheck conflicting A/AAAA/CNAME records at the DNS provider. After applying, verify TLS for both hostnames, apex redirect, root/catalog/assets, old app/t links and EN Vercel read-only. Rollback records remain in dns-before-timeweb-20261106.json. Await the owner's explicit DNS switch confirmation; do not treat the successful network test as that confirmation.
+
+## Public DNS switch — 2026-11-06
+
+Owner authorized the switch and explicitly confirmed deletion of the old www CNAME. Timeweb domain attachment added apex A (record 96093039) and www A (96093041), both 178.209.127.53 with TTL 600. Deleted only old www CNAME 95252797 pointing to aef97379b8e88c90.vercel-dns-017.com. No application/API/EN DNS records changed.
+
+Configured native host redirect dream-wheels.ru → www.dream-wheels.ru, code 308, retaining Cache-Control no-cache, compression and disabled SPA fallback. Provider rebuild of f6ae3bf42a825b5e2e732961c13dc1af2761088b succeeded. HTTPS for www initially returned a TLS internal alert during certificate propagation, then returned the expected production version with normal certificate verification. Apex /catalog/?utm_source=check returns 308 to the identical path/query on https://www.dream-wheels.ru. EN dreamwheels.pro still responds from Vercel; app.dream-wheels.ru still reports c6a78c619ec5a0ada2fa227c3e7fb76170defe8f.
+
+Rollback: restore apex A 216.198.79.1; remove Timeweb www A before restoring old www CNAME (never coexist A and CNAME at www). Restore TTL 600. Preserve Timeweb artifacts/app IDs for diagnosis. Before rerunning the generic configure operation, preserve the native host redirect: that operation currently writes an empty redirects list.
