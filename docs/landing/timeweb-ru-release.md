@@ -65,3 +65,11 @@ The live verifier passed for both technical origins on exact source f6ae3bf42a82
 Owner no-VPN acceptance has NOT passed: MacBook screenshot reports DNS_PROBE_FINISHED_NO_INTERNET. Do not switch RU DNS based on server checks. Public DNS resolves the test technical hostname to 178.209.127.53, the same IP as app.dream-wheels.ru. A direct-IP HTTPS request with the correct hostname and normal certificate verification returns the expected test version. This does not establish browser/mobile network availability; compare the existing application and the new hostname on the same MacBook, and the new hostname on Android mobile Internet. No system DNS/VPN settings were changed by this task.
 
 Next: resolve this network acceptance failure, obtain successful owner no-VPN acceptance and explicit DNS switch confirmation, attach the RU hostnames to the production candidate and apply the saved rollback-aware DNS plan. Keep EN Vercel unchanged. Request-limit configuration remains optional and should be revisited after rollout.
+
+## Owner network acceptance — 2026-11-06
+
+The owner subsequently confirmed that both the application and landing work without VPN on Android and MacBook. The earlier failed screenshot is retained as diagnostic history; the network acceptance gate is now passed. Production candidate still serves f6ae3bf42a825b5e2e732961c13dc1af2761088b with profile landing-ru-production.
+
+Prepared DNS switch (NOT applied): attach dream-wheels.ru and www.dream-wheels.ru to Timeweb app 283505, replace apex A 216.198.79.1 with 178.209.127.53, and replace www CNAME aef97379b8e88c90.vercel-dns-017.com. with nickelixir-dream-wheels-ai-774d.twc1.net.; retain TTL 600 and canonical www with apex redirect. Provider domain attachment may automatically update DNS, so it belongs to the explicitly approved switch step, not read-only preparation.
+
+Before applying, recheck conflicting A/AAAA/CNAME records at the DNS provider. After applying, verify TLS for both hostnames, apex redirect, root/catalog/assets, old app/t links and EN Vercel read-only. Rollback records remain in dns-before-timeweb-20261106.json. Await the owner's explicit DNS switch confirmation; do not treat the successful network test as that confirmation.
