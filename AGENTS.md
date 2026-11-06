@@ -40,6 +40,17 @@ bash scripts/install-agent-skills.sh
 
 Если несколько skills подходят, выбрать основной домен и подключать второй только для конкретного риска: payments + data-storage для платежной миграции, telegram-webapp + payments для UI оплаты, runtime-release + review для релизного review.
 
+## Cursor Cloud specific instructions
+
+Boot-скрипт окружения поднимает локальные Postgres, Redis, API и статику Mini App. Не направлять `DATABASE_URL` или `REDIS_URL` на production Supabase/Upstash.
+
+- Python 3.12: `.venv` из `requirements-dev.txt`. Node берётся из базового образа; `npm ci --prefix webapp` нужен до `pytest` (Acorn для structural-тестов). Deno 2.9.6 установлен в `/usr/local/bin`.
+- API: `http://127.0.0.1:10000` (`/health`, `/health/full`). Mini App: `http://127.0.0.1:5173`.
+- Флаги boot: `WORKER_ENABLED=false`, `BOT_ENABLED=false`, `PAYMENT_TIMEOUT_ENABLED=false`. Postgres 16 слушает unix-сокет; роль `ubuntu`, база `dreamwheels`, DSN `postgresql://ubuntu@/dreamwheels?host=/var/run/postgresql`. Redis: `redis://127.0.0.1:6379/0`.
+- Автоматически применяется только `migrations/0001_initial.sql`. `0003` и `0030` требуют каталог Supabase Storage. `0007` не проходит на пустой Postgres после канонического `credit_ledger` из `0005`. Остальной rollout ручной, как в `migrations/README.md`.
+- Если `.env` отсутствует, boot записывает эти локальные значения и не перезаписывает существующий файл. Процесс API получает переменные напрямую: приложение `.env` само не читает.
+- Проверки: `ruff check .`, `ruff format --check .`, `pytest -q`, `deno task check` в `deploy/gateway`.
+
 ## Codex Cloud
 
 Если задача длинная, хорошо ограничена по scope и не требует production-write действий, рекомендовать Codex Cloud из VSCode Codex extension. Хорошие кандидаты: рефакторинг, тесты, review, поиск regressions, документация, подготовка миграции без применения в prod.
