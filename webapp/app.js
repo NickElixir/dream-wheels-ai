@@ -2217,6 +2217,7 @@ function authErrorMessage(code) {
         AUTHENTICATION_IN_PROGRESS: t("auth.authenticationInProgress"),
         MAINTENANCE: t("auth.maintenance"),
         NETWORK_ERROR: t("auth.finishFailed"),
+        AUTH_FINALIZATION_TIMEOUT: t("auth.finishTimeout"),
         SESSION_EXPIRED: t("auth.sessionExpiredTitle"),
     }[code] || t("auth.providerError");
 }
