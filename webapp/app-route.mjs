@@ -16,10 +16,10 @@ const APP_ROUTE_VIEWS = Object.freeze({
 });
 
 const APP_TOP_LEVEL_PATHS = Object.freeze({
-    dashboard: "/app",
-    renders: "/app/history",
-    wallet: "/app/wallet",
-    settings: "/app/settings",
+    dashboard: "/",
+    renders: "/history",
+    wallet: "/balance",
+    settings: "/account",
 });
 
 export const APP_ROUTE_QUERY_KEYS = Object.freeze([
@@ -72,13 +72,15 @@ export function isApplicationRoute(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
     if (!url) return false;
     const pathname = normalizedPathname(url.pathname);
-    return pathname === "/app" || pathname.startsWith("/app/") || pathname !== "/" && Boolean(routeMatch(pathname));
+    return pathname === "/app" || pathname.startsWith("/app/") || Boolean(routeMatch(pathname));
 }
 
 export function safeApplicationReturnPath(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
-    const path = normalizedPathname(url?.pathname || "");
-    if (!url || !routeMatch(path)) return null;
+    const originalPath = normalizedPathname(url?.pathname || "");
+    const match = routeMatch(originalPath);
+    if (!url || !match) return null;
+    const path = canonicalApplicationPath(originalPath, match);
     const query = new URLSearchParams();
     APP_ROUTE_QUERY_KEYS.forEach((key) => {
         const value = url.searchParams.get(key);
@@ -97,7 +99,8 @@ export function applicationTopLevelReturnPath(view, input = globalThis.location,
 
 export function applicationRouteContext(input = globalThis.location, currentOrigin) {
     const url = safeApplicationUrl(input, currentOrigin);
-    const path = normalizedPathname(url?.pathname || "");
+    const originalPath = normalizedPathname(url?.pathname || "");
+    const path = canonicalApplicationPath(originalPath, routeMatch(originalPath));
     const returnPath = safeApplicationReturnPath(input, currentOrigin);
     if (!url || !returnPath) return null;
     return {
@@ -109,7 +112,7 @@ export function applicationRouteContext(input = globalThis.location, currentOrig
     };
 }
 
-const WEB_PATHS = Object.freeze({dashboard:"/",create:"/create",renders:"/history",wallet:"/balance",settings:"/account",support:"/help","photo-guide":"/help/photos",docs:"/documents"});
+const WEB_PATHS = Object.freeze({dashboard:"/",create:"/new",renders:"/history",wallet:"/balance",settings:"/account",support:"/help","photo-guide":"/help/photos",docs:"/documents"});
 function routeMatch(path) {
     if (APP_ROUTE_VIEWS[path]) return {view:APP_ROUTE_VIEWS[path]};
     const match = path.match(/^\/try-ons\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/compatibility)?$/i);
@@ -124,4 +127,13 @@ export function webRoutePath(view, jobId, input = globalThis.location) {
     if (!path) return null;
     const url = locationFrom(input, input?.origin || globalThis.location?.origin);
     return url ? safeApplicationReturnPath(new URL(path + url.search, url.origin), url.origin) : null;
+}
+
+// Guest support/documentation stays available; product work requires the usual Auth Gate.
+export function applicationRouteRequiresAuth(route) {
+    return Boolean(route && ["dashboard", "create", "renders", "wallet", "settings", "render-detail", "fitment"].includes(route.view));
+}
+function canonicalApplicationPath(path, match) {
+    if (!match || !path.startsWith("/app") && path !== "/create") return path;
+    return WEB_PATHS[match.view] || path;
 }

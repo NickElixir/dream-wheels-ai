@@ -59,7 +59,7 @@ test('CTA keeps supported attribution parameters and drops unrelated query value
       'https://dreamwheels.pro/?utm_source=telegram&utm_campaign=summer&market=ru&debug=true',
     ),
   );
-  assert.equal(target.pathname, '/app/new');
+  assert.equal(target.pathname, '/new');
   assert.equal(target.searchParams.get('utm_source'), 'telegram');
   assert.equal(target.searchParams.get('utm_campaign'), 'summer');
   assert.equal(target.searchParams.get('market'), 'ru');
@@ -74,9 +74,18 @@ test('Timeweb CTA uses the existing application origin and short new route', () 
   assert.equal(new URL(getAppTargetFromUrl('https://landing-test.dream-wheels.ru/', '/', 'timeweb')).pathname, '/');
 });
 
-test('future RU domain hands off to the app on the same host', () => {
+test('RU domain hands off to its application subdomain', () => {
   const target = new URL(getAppTargetFromUrl('https://колесамечты.рф/catalog?utm_source=test'));
-  assert.equal(target.hostname, new URL('https://колесамечты.рф').hostname);
-  assert.equal(target.pathname, '/app/new');
+  assert.equal(target.hostname, 'app.dream-wheels.ru');
+  assert.equal(target.pathname, '/new');
   assert.equal(target.searchParams.get('utm_source'), 'test');
+});
+
+test('RU and EN catalog links use their application subdomain and retain only marketing query', () => {
+  for (const [host, app] of [['www.dream-wheels.ru', 'app.dream-wheels.ru'], ['dreamwheels.pro', 'app.dreamwheels.pro']]) {
+    const target = new URL(getAppTargetFromUrl(`https://${host}/catalog?utm_source=landing&token=secret`));
+    assert.equal(target.hostname, app);
+    assert.equal(target.pathname, '/new');
+    assert.equal(target.search, '?utm_source=landing');
+  }
 });

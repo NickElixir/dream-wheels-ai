@@ -168,7 +168,7 @@ test("Legacy website success and fail returns select Wallet without an early cab
     app.state.payments = [{ invoiceId: 53, amount: 100, credits: 3, status: "pending", createdAtMs: Date.now() }];
     app.handlePaymentReturn();
     assert.equal(app.state.view, "wallet");
-    assert.equal(app.location.pathname, "/app/wallet");
+    assert.equal(app.location.pathname, "/balance");
     assert.equal(app.location.search, "");
     assert.equal(app.state.paymentReturnState, paymentState);
     assert.equal(app.state.balance, 25);

@@ -6,6 +6,6 @@ test('new and legacy create links open the same view and keep approved auth-retu
   for (const path of ['/new', '/new/', '/app/new', '/create']) {
     const url = new URL(`${path}?utm_source=landing&token=private`, 'https://app.dream-wheels.ru');
     assert.equal(applicationRouteContext(url, url.origin)?.view, 'create');
-    assert.equal(safeApplicationReturnPath(url, url.origin), `${path.replace(/\/$/u, '')}?utm_source=landing`);
+    assert.equal(safeApplicationReturnPath(url, url.origin), '/new?utm_source=landing');
   }
 });

@@ -1,19 +1,19 @@
 const attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'market'];
-const ruDomain = new URL('https://колесамечты.рф').hostname;
+const ruHosts = new Set(['dream-wheels.ru', 'www.dream-wheels.ru', new URL('https://колесамечты.рф').hostname]);
 const timeweb = import.meta.env?.PUBLIC_LANDING_HOSTING === 'timeweb';
 
 export function getStaticAppTarget() {
-  return timeweb ? 'https://app.dream-wheels.ru/new' : 'https://dreamwheels.pro/app/new';
+  return timeweb ? 'https://app.dream-wheels.ru/new' : 'https://app.dreamwheels.pro/new';
 }
 
 export function getLoginTarget() {
-  return timeweb ? 'https://app.dream-wheels.ru/' : getStaticAppTarget();
+  return timeweb ? 'https://app.dream-wheels.ru/' : 'https://app.dreamwheels.pro/';
 }
 
 export function getAppTargetFromUrl(currentUrl: string, path?: string, hosting = timeweb ? 'timeweb' : 'vercel') {
   const current = new URL(currentUrl);
-  const targetOrigin = hosting === 'timeweb' ? 'https://app.dream-wheels.ru' : current.hostname === ruDomain || current.hostname === `www.${ruDomain}` ? current.origin : 'https://dreamwheels.pro';
-  const target = new URL(path ?? (hosting === 'timeweb' ? '/new' : '/app/new'), targetOrigin);
+  const targetOrigin = hosting === 'timeweb' ? 'https://app.dream-wheels.ru' : ruHosts.has(current.hostname) ? 'https://app.dream-wheels.ru' : 'https://app.dreamwheels.pro';
+  const target = new URL(path ?? '/new', targetOrigin);
   attributionKeys.forEach((key) => {
     const value = current.searchParams.get(key);
     if (value) target.searchParams.set(key, value);

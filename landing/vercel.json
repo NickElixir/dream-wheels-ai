@@ -21,5 +21,47 @@
       "source": "/t/(.*)",
       "destination": "https://dream-wheels-ai-webapp.vercel.app/t/$1"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/app",
+      "destination": "https://app.dreamwheels.pro/",
+      "permanent": false
+    },
+    {
+      "source": "/app/new",
+      "destination": "https://app.dreamwheels.pro/new",
+      "permanent": false
+    },
+    {
+      "source": "/app/history",
+      "destination": "https://app.dreamwheels.pro/history",
+      "permanent": false
+    },
+    {
+      "source": "/app/wallet",
+      "destination": "https://app.dreamwheels.pro/balance",
+      "permanent": false
+    },
+    {
+      "source": "/app/settings",
+      "destination": "https://app.dreamwheels.pro/account",
+      "permanent": false
+    },
+    {
+      "source": "/app/support",
+      "destination": "https://app.dreamwheels.pro/help",
+      "permanent": false
+    },
+    {
+      "source": "/app/photo-guide",
+      "destination": "https://app.dreamwheels.pro/help/photos",
+      "permanent": false
+    },
+    {
+      "source": "/app/docs",
+      "destination": "https://app.dreamwheels.pro/documents",
+      "permanent": false
+    }
   ]
 }
