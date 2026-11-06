@@ -83,6 +83,15 @@ export function renderIndex(source, buildSha) {
     .replaceAll('__BUILD_ID__', buildSha);
 }
 
+// app.js is versioned in HTML; its routing dependency must use the same release
+// URL so a returning browser cannot combine the new auth policy with old exports.
+export function renderAppScript(source, buildSha) {
+  if (!/^[a-f0-9]{40}$/u.test(buildSha)) throw new Error('Invalid routing build SHA');
+  const dependency = '"./app-route.mjs"';
+  if (!source.includes(dependency)) throw new Error('Routing dependency missing');
+  return source.replace(dependency, `"./app-route.mjs?v=${buildSha}"`);
+}
+
 export function renderDeploymentConfig(config) {
   const serialized = JSON.stringify(config).replaceAll('<', '\\u003c');
   return `globalThis.__DREAM_WHEELS_DEPLOYMENT_CONFIG__ = Object.freeze(${serialized});\n`;
@@ -133,6 +142,7 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   await fs.rm(output, { recursive: true, force: true });
   await fs.mkdir(output, { recursive: true });
   for (const file of rootFiles) await copyFile(path.join(appRoot, file), path.join(output, file));
+  await fs.writeFile(path.join(output, 'app.js'), renderAppScript(await fs.readFile(path.join(appRoot, 'app.js'), 'utf8'), buildSha));
   for (const file of authFiles) await copyFile(path.join(appRoot, 'auth', file), path.join(output, 'auth', file));
   await fs.writeFile(path.join(output, 'auth/harness-config.js'), renderHarnessConfig(config));
   await copyPublicTree(path.join(appRoot, 'assets'), path.join(output, 'assets'), 'assets');
