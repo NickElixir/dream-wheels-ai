@@ -1,6 +1,17 @@
 # RU landing on Timeweb: release and rollback
 
-Status: release tooling merged in PR #336/#337. WebApp `/new` test accepted by owner without VPN and published to RU production (workflow 42111679768, source c6a78c619ec5a0ada2fa227c3e7fb76170defe8f). Owner approved both isolated landing apps on the Moscow request preset and a total 20 RUB deployment/diagnostic budget. Landing application creation and production DNS switch remain pending.
+Status: RU landing migration is complete. Public HTTPS, apex-to-www redirect and all 265 static resources passed verification. The owner confirmed the public landing works without VPN on Android and MacBook. The sections below include historical checkpoints; they do not override this current baseline.
+
+## Production baseline — accepted 2026-11-06
+
+- Public origin: https://www.dream-wheels.ru; apex redirects with HTTP 308, preserving path/query.
+- Timeweb production app 283505; profile landing-ru-production; source f6ae3bf42a825b5e2e732961c13dc1af2761088b.
+- Test app 283503; profile landing-ru-test; same landing source SHA.
+- Apex and www A records: 178.209.127.53, TTL 600. Old www Vercel CNAME removed.
+- Static output dist/landing-timeweb, local fonts, no-cache, compression, SPA fallback disabled. Production indexable; test noindex.
+- EN dreamwheels.pro remains on Vercel. WebApp app.dream-wheels.ru remains separate, source c6a78c619ec5a0ada2fa227c3e7fb76170defe8f at rollout. API/Deno/payments unchanged by landing migration.
+- Request limits remain unset by owner preference. Optimization is deferred.
+- Rollback records: dns-before-timeweb-20261106.json and the Public DNS switch section below.
 
 ## Boundaries
 
@@ -29,7 +40,7 @@ The build publishes an explicit allowlist only: public pages, catalog assets, co
 5. Configure the provider's web server to revalidate HTML (`Cache-Control: no-cache`), enable compression, and serve real directory pages. Initially use revalidation for all files; unversioned public image URLs must not be immutable. Do not configure an index.html SPA fallback for all landing paths.
 6. Verify `/catalog` normalization, MIME types, fonts, unknown-path 404 and the legacy bridges on the actual provider. Static legacy bridges preserve path/query/hash for `/app/**` and `/t/**`, with `/app/new` mapped to `/new`. Arbitrary legacy dynamic paths require a custom 404 bridge or a verified native redirect rule. Do not claim these work until tested on Timeweb.
 
-The manual workflow releases only an explicitly mapped existing landing application. It never creates paid resources or changes DNS. Its sanitized pre-change settings snapshot is retained as an artifact for rollback.
+The manual workflow releases only an explicitly mapped existing landing application. The release operation does not create resources or change DNS. The separate manual provision operation creates only explicitly owner-approved applications. Its sanitized pre-change settings snapshot is retained as an artifact for rollback.
 
 ## Acceptance and production switch
 
@@ -56,7 +67,7 @@ Measure cold and warm loads before bundling or cache changes: requests to Timewe
 - Provider defaults require explicit Cache-Control: no-cache and disabling SPA fallback. The manual configure operation changes only the two newly approved app IDs, snapshots prior settings, enables gzip/zstd and adds test-only X-Robots-Tag.
 - The pinned SDK lacks the reverse_proxy mutation. The operation uses the same PATCH /api/v1/apps/{id} and reverse_proxy schema as the official public Timeweb panel client (common-cloud.ad6824a47dfcc6b1.js / cloud.0ed7ccedba1c1f05.js), authenticated only inside Actions. Never print request headers or token values.
 
-## Verification checkpoint — 2026-11-06
+## Historical pre-switch verification checkpoint — 2026-11-06
 
 Both app configurations were applied successfully by manual workflow runs 42120310407 (test) and 42120326818 (production candidate). Their pre-change snapshots are retained in those runs. Public DNS is unchanged.
 
@@ -65,3 +76,21 @@ The live verifier passed for both technical origins on exact source f6ae3bf42a82
 Owner no-VPN acceptance has NOT passed: MacBook screenshot reports DNS_PROBE_FINISHED_NO_INTERNET. Do not switch RU DNS based on server checks. Public DNS resolves the test technical hostname to 178.209.127.53, the same IP as app.dream-wheels.ru. A direct-IP HTTPS request with the correct hostname and normal certificate verification returns the expected test version. This does not establish browser/mobile network availability; compare the existing application and the new hostname on the same MacBook, and the new hostname on Android mobile Internet. No system DNS/VPN settings were changed by this task.
 
 Next: resolve this network acceptance failure, obtain successful owner no-VPN acceptance and explicit DNS switch confirmation, attach the RU hostnames to the production candidate and apply the saved rollback-aware DNS plan. Keep EN Vercel unchanged. Request-limit configuration remains optional and should be revisited after rollout.
+
+## Historical technical-origin acceptance — 2026-11-06
+
+The owner subsequently confirmed that both the application and landing work without VPN on Android and MacBook. The earlier failed screenshot is retained as diagnostic history; the network acceptance gate is now passed. Production candidate still serves f6ae3bf42a825b5e2e732961c13dc1af2761088b with profile landing-ru-production.
+
+Prepared DNS switch (NOT applied): attach dream-wheels.ru and www.dream-wheels.ru to Timeweb app 283505, replace apex A 216.198.79.1 with 178.209.127.53, and replace www CNAME aef97379b8e88c90.vercel-dns-017.com. with nickelixir-dream-wheels-ai-774d.twc1.net.; retain TTL 600 and canonical www with apex redirect. Provider domain attachment may automatically update DNS, so it belongs to the explicitly approved switch step, not read-only preparation.
+
+Before applying, recheck conflicting A/AAAA/CNAME records at the DNS provider. After applying, verify TLS for both hostnames, apex redirect, root/catalog/assets, old app/t links and EN Vercel read-only. Rollback records remain in dns-before-timeweb-20261106.json. Await the owner's explicit DNS switch confirmation; do not treat the successful network test as that confirmation.
+
+## Public DNS switch — 2026-11-06
+
+Owner authorized the switch and explicitly confirmed deletion of the old www CNAME. Timeweb domain attachment added apex A (record 96093039) and www A (96093041), both 178.209.127.53 with TTL 600. Deleted only old www CNAME 95252797 pointing to aef97379b8e88c90.vercel-dns-017.com. No application/API/EN DNS records changed.
+
+Configured native host redirect dream-wheels.ru → www.dream-wheels.ru, code 308, retaining Cache-Control no-cache, compression and disabled SPA fallback. Provider rebuild of f6ae3bf42a825b5e2e732961c13dc1af2761088b succeeded. HTTPS for www initially returned a TLS internal alert during certificate propagation, then returned the expected production version with normal certificate verification. Apex /catalog/?utm_source=check returns 308 to the identical path/query on https://www.dream-wheels.ru. EN dreamwheels.pro still responds from Vercel; app.dream-wheels.ru still reports c6a78c619ec5a0ada2fa227c3e7fb76170defe8f.
+
+Rollback: restore apex A 216.198.79.1; remove Timeweb www A before restoring old www CNAME (never coexist A and CNAME at www). Restore TTL 600. Preserve Timeweb artifacts/app IDs for diagnosis. Before rerunning the generic configure operation, preserve the native host redirect: that operation currently writes an empty redirects list.
+
+Final public verification passed: https://www.dream-wheels.ru root/catalog checksums, metadata/indexability, application links, cache policy and all 265 static resource status/MIME checks. Apex HTTPS returns 308 to www; catalog HTTPS returns 200. The public domain switch is complete. The owner subsequently confirmed the public domain works without VPN on both Android and MacBook. Request limits remain unset per the earlier owner preference; revisit after rollout.
