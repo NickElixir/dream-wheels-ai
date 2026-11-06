@@ -2029,8 +2029,6 @@ function syncApplicationAuthWall() {
 function initializeApplicationRoute() {
     if (HAS_TG || !isApplicationRoute(window.location)) return;
     state.applicationRoute = applicationRouteContext(window.location);
-    state.applicationAuthRequired = applicationRouteRequiresAuth(state.applicationRoute);
-
     if (!state.applicationRoute && window.history?.replaceState) {
         window.history.replaceState({}, "", "/");
         state.applicationRoute = applicationRouteContext(window.location);
@@ -2051,6 +2049,9 @@ function initializeApplicationRoute() {
             state.applicationRoute = applicationRouteContext(window.location) || state.applicationRoute;
         }
     }
+    // Decide access only after fallback and canonicalization selected the final screen.
+    state.applicationAuthRequired = applicationRouteRequiresAuth(state.applicationRoute);
+    if (!state.applicationAuthRequired) restoreWebRoute();
 }
 
 async function bootstrapAuthenticatedApplication() {

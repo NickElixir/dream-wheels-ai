@@ -40,3 +40,9 @@ New root-auth-gate.test.js executes the actual initial route setup with mocked b
 Review local branch feature/root-subdomain-auth, then CI/PR approval separately. No merge/push/deploy was performed by this task. Test RU and EN on isolated hosting: cold /new, existing session, new email account, cancellation, expired session, reload, account switch, callback and old links. Confirm old/new routes serve HTML on refresh, routes never start generation automatically and existing manual photo drafts still restore. No payment transaction is needed or authorized by this task.
 
 Catalog wheel/SKU transfer, pending handoff persistence and registration attribution remain separate Phase 02/03 work. Their SKU mapping awaits the owner's table; do not substitute the first SKU or change confirmed visual design.
+
+## Review blocker fixes — 2026-11-06
+
+Auth policy is now evaluated after fallback/canonicalization, so unknown /app/* entries that fall back to Dashboard require auth immediately. Public routes are restored synchronously at the end of route initialization, before auth, draft hydration or dashboard data can delay startup.
+
+Added lifecycle regression tests execute the actual DOMContentLoaded callback with actual route/auth-wall functions and mocked rendering/network boundaries. They cover unknown legacy fallback with pending auth, public help/documents with never-resolving auth, and public screens with never-resolving dashboard data. The tests fail against e095487 and pass with these fixes. Relevant Node suite: 304 passed; app.js syntax and diff checks passed. This remains mocked lifecycle coverage, not a real-browser/provider E2E claim. No production actions performed.
