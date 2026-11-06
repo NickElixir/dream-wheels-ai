@@ -1,6 +1,7 @@
 import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
+    applicationRouteRequiresAuth,
     webRoutePath,
     applicationTopLevelReturnPath,
     isApplicationRoute,
@@ -2028,24 +2029,18 @@ function syncApplicationAuthWall() {
 function initializeApplicationRoute() {
     if (HAS_TG || !isApplicationRoute(window.location)) return;
     state.applicationRoute = applicationRouteContext(window.location);
-    state.applicationAuthRequired = window.location.pathname.startsWith("/app")
-        || ["renders", "wallet", "settings", "render-detail", "fitment"].includes(state.applicationRoute?.view);
-    if (!state.applicationAuthRequired && state.applicationRoute) {
-        restoreWebRoute();
-        return;
-    }
     if (!state.applicationRoute && window.history?.replaceState) {
-        window.history.replaceState({}, "", "/app");
+        window.history.replaceState({}, "", "/");
         state.applicationRoute = applicationRouteContext(window.location);
     }
     state.applicationRoute = state.applicationRoute || {
-        path: "/app",
+        path: "/",
         view: "dashboard",
-        returnPath: "/app",
+        returnPath: "/",
         market: null,
         query: new URLSearchParams(),
     };
-    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/app";
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/";
     if (state.applicationAuthReturnPath) {
         const currentPath = `${window.location.pathname}${window.location.search}`;
         const paymentReturn = new URLSearchParams(window.location.search).get("payment");
@@ -2054,6 +2049,9 @@ function initializeApplicationRoute() {
             state.applicationRoute = applicationRouteContext(window.location) || state.applicationRoute;
         }
     }
+    // Decide access only after fallback and canonicalization selected the final screen.
+    state.applicationAuthRequired = applicationRouteRequiresAuth(state.applicationRoute);
+    if (!state.applicationAuthRequired) restoreWebRoute();
 }
 
 async function bootstrapAuthenticatedApplication() {
@@ -7642,7 +7640,7 @@ function setView(view, { refreshData = true } = {}) {
             // Navigation remains usable when WebView storage is unavailable.
         }
     }
-    if (state.applicationAuthRequired && window.location.pathname.startsWith("/app") && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
+    if (state.applicationAuthRequired && PERSISTED_TOP_LEVEL_VIEWS.has(view)) {
         const target = applicationTopLevelReturnPath(view, window.location);
         if (target && window.history?.replaceState) {
             const current = `${window.location.pathname}${window.location.search}`;
@@ -9361,7 +9359,8 @@ function paymentReturnContext() {
     }
     return {
         client_channel: "web",
-        return_to: applicationTopLevelReturnPath("wallet", window.location) || "/app/wallet",
+        // Preserve the existing payment API allowlist; legacy returns canonicalize after the callback.
+        return_to: (applicationTopLevelReturnPath("wallet", window.location) || "/balance").replace(/^\/balance(?=\?|$)/u, "/app/wallet"),
     };
 }
 
@@ -11850,7 +11849,7 @@ window.addEventListener("popstate", () => {
 
 function updateWebRouteAuth(route) {
     if (!route) return;
-    const required = route.path.startsWith("/app") || ["renders","wallet","settings","render-detail","fitment"].includes(route.view);
+    const required = applicationRouteRequiresAuth(route);
     if (!required) {
         if (typeof setApplicationShellVisible === "function") setApplicationShellVisible(true);
         const gate = document.querySelector("[data-application-auth-gate]");

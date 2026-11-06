@@ -35,6 +35,8 @@ test('artifact excludes dev/source and keeps distinct directory pages and a chec
 test('legacy bridge preserves query/hash without accepting a foreign redirect target', () => {
   const source = legacyBridge().match(/<script>([\s\S]*)<\/script>/u)[1];
   for (const [url, expected] of [
+    ['https://www.dream-wheels.ru/app/history?utm_source=x#photo', 'https://app.dream-wheels.ru/history?utm_source=x#photo'],
+    ['https://www.dream-wheels.ru/app?utm_source=x', 'https://app.dream-wheels.ru/?utm_source=x'],
     ['https://www.dream-wheels.ru/app/new?utm_source=x#photo', 'https://app.dream-wheels.ru/new?utm_source=x#photo'],
     ['https://www.dream-wheels.ru/t/start?x=1#hash', 'https://app.dream-wheels.ru/t/start?x=1#hash'],
     ['https://www.dream-wheels.ru/missing?next=https://evil.test', null],
