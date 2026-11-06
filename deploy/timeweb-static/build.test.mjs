@@ -14,6 +14,7 @@ import {
   renderDeploymentConfig,
   renderHarnessConfig,
   renderIndex,
+  renderAppScript,
   resolveBuildSha,
 } from './build.mjs';
 
@@ -140,4 +141,16 @@ test('recursive public tree filter rejects metadata, tests, secrets, dependencie
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
+});
+
+test('new app artifact requests the routing module with its release SHA', async () => {
+  const app = await fs.readFile(new URL('../../webapp/app.js', import.meta.url), 'utf8');
+  const first = renderAppScript(app, sha);
+  const nextSha = 'b'.repeat(40);
+  const next = renderAppScript(app, nextSha);
+  assert.ok(first.includes(`from "./app-route.mjs?v=${sha}"`));
+  assert.ok(next.includes(`from "./app-route.mjs?v=${nextSha}"`));
+  assert.ok(!next.includes(`from "./app-route.mjs?v=${sha}"`));
+  assert.throws(() => renderAppScript(app, 'invalid'), /Invalid routing build SHA/);
+  assert.throws(() => renderAppScript('unrelated', sha), /Routing dependency missing/);
 });
