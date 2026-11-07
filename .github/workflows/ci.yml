@@ -42,6 +42,21 @@ jobs:
         with:
           deno-version: 2.9.6
 
+      - name: Strict release workflow lint (actionlint 1.7.12)
+        run: |
+          lint_dir="$(mktemp -d)"
+          curl --fail --silent --show-error --location \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$lint_dir/actionlint.tar.gz"
+          printf '%s  %s\n' 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 "$lint_dir/actionlint.tar.gz" | sha256sum --check
+          tar -xzf "$lint_dir/actionlint.tar.gz" -C "$lint_dir" actionlint
+          "$lint_dir/actionlint" -shellcheck= -pyflakes= \
+            .github/workflows/ci.yml \
+            .github/workflows/deploy-frontends.yml \
+            .github/workflows/ru-release.yml \
+            .github/workflows/frontend-release-preflight.yml
+          rm -rf "$lint_dir"
+
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 

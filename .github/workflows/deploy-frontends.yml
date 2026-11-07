@@ -16,6 +16,16 @@ on:
         options: [preview, production]
         default: preview
         required: true
+      release_mode:
+        description: Full frozen-backend release or compatible frontend-only release
+        type: choice
+        options: [full, frontend-only]
+        default: full
+        required: true
+      tested_sha:
+        description: Full SHA accepted on RU test (required for frontend-only)
+        type: string
+        required: false
       deploy_admin:
         description: Also deploy the reviewed admin artifact in this production release
         type: boolean
@@ -180,12 +190,21 @@ jobs:
         env:
           REQUESTED_REF: ${{ inputs.ref }}
           DISPATCH_SHA: ${{ github.sha }}
+          RELEASE_MODE: ${{ inputs.release_mode }}
+          TESTED_SHA: ${{ inputs.tested_sha }}
+          DEPLOY_ADMIN: ${{ inputs.deploy_admin }}
         run: |
           test "$REQUESTED_REF" = "$DISPATCH_SHA"
-          git fetch origin main
+          git fetch origin main staging
           release_sha="$(git rev-parse HEAD)"
           test "$release_sha" = "$(git rev-parse origin/main)"
-          python3 scripts/check_release_backend.py "$release_sha"
+          if [ "$RELEASE_MODE" = "frontend-only" ]; then
+            test "$DEPLOY_ADMIN" = "false"
+            python3 -m scripts.check_frontend_release "$release_sha" --tested "$TESTED_SHA"
+          else
+            test "$RELEASE_MODE" = "full"
+            python3 scripts/check_release_backend.py "$release_sha"
+          fi
           echo "sha=$release_sha" >> "$GITHUB_OUTPUT"
 
   deploy-production:
@@ -201,6 +220,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ needs.verify-production-backend.outputs.sha }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -241,6 +261,14 @@ jobs:
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_WEBAPP_PRODUCTION_PROJECT_ID }}
         run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Recheck frontend-only compatibility immediately before publication
+        if: inputs.release_mode == 'frontend-only'
+        env:
+          TESTED_SHA: ${{ inputs.tested_sha }}
+        run: |
+          git fetch origin main staging
+          python3 -m scripts.check_frontend_release "$(git rev-parse HEAD)" --tested "$TESTED_SHA"
 
       - name: Deploy exactly one production artifact
         env:

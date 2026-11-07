@@ -8,6 +8,12 @@ on:
         type: choice
         options: [ru-test, ru-production]
         required: true
+      release_mode:
+        description: Standard release or compatible frontend-only production release
+        type: choice
+        options: [standard, frontend-only]
+        default: standard
+        required: true
       operation:
         description: Deploy a reviewed SHA or restore a prior release snapshot
         type: choice
@@ -64,6 +70,7 @@ jobs:
           REQUESTED_GATEWAY_SHA: ${{ inputs.gateway_sha }}
           PRODUCTION_TESTED_SHA: ${{ inputs.production_tested_sha }}
           PROFILE: ${{ inputs.profile }}
+          RELEASE_MODE: ${{ inputs.release_mode }}
           OPERATION: ${{ inputs.operation }}
           SNAPSHOT_RUN_ID: ${{ inputs.snapshot_run_id }}
           SNAPSHOT_SHA: ${{ inputs.snapshot_sha }}
@@ -128,6 +135,11 @@ jobs:
               echo "rollback requires snapshot_run_id and the full SHA of its release run" >&2
               exit 1
             fi
+          fi
+          if [[ "$RELEASE_MODE" == "frontend-only" ]]; then
+            test "$PROFILE" = "ru-production"
+            test "$OPERATION" = "release"
+            python3 -m scripts.check_frontend_release "$REQUESTED_SHA" --tested "$PRODUCTION_TESTED_SHA"
           fi
           echo "sha=$(git rev-parse "$REQUESTED_SHA")" >> "$GITHUB_OUTPUT"
           echo "branch=$release_branch" >> "$GITHUB_OUTPUT"
@@ -333,6 +345,16 @@ jobs:
           run-id: ${{ inputs.snapshot_run_id }}
           github-token: ${{ github.token }}
           path: .timeweb-rollback
+
+      - name: Recheck frontend-only compatibility before changing Timeweb settings
+        if: inputs.release_mode == 'frontend-only'
+        working-directory: control
+        env:
+          REQUESTED_SHA: ${{ needs.validate-source.outputs.sha }}
+          TESTED_SHA: ${{ inputs.production_tested_sha }}
+        run: |
+          git fetch origin main staging
+          python3 -m scripts.check_frontend_release "$REQUESTED_SHA" --tested "$TESTED_SHA"
 
       - name: Deploy exact commit or explicit rollback
         env:
