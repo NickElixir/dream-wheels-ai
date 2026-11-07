@@ -39,6 +39,9 @@ def main() -> None:
     version = fetch_json("https://app-test.dream-wheels.ru/version.json")
     if version.get("build") != args.tested or version.get("profile") != "ru-test":
         raise ValueError("Accepted staging source is not served by RU test")
+    en_version = fetch_json("https://dream-wheels-ai-webapp-staging.vercel.app/version.json")
+    if en_version.get("build") != args.tested:
+        raise ValueError("Accepted staging source is not served by Vercel staging")
     if not args.preflight:
         if git("rev-parse", "origin/main") != args.candidate:
             raise ValueError("Candidate is no longer current main")

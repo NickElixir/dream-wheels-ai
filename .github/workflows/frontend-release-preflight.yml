@@ -1,7 +1,7 @@
 name: Frontend-only release preflight
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened, edited]
 
@@ -12,7 +12,8 @@ jobs:
   compatibility:
     runs-on: ubuntu-latest
     steps:
-      # Execute the trusted base policy, not scripts supplied by the release PR.
+      # pull_request_target loads this job from the trusted base, not the PR merge.
+      # Never checkout or execute PR content; its Git tree is data only.
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.base.sha }}

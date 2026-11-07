@@ -295,7 +295,6 @@ jobs:
         with:
           ref: ${{ needs.verify-production-backend.outputs.sha }}
           fetch-depth: 0
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
