@@ -68,13 +68,13 @@ ${sourceBetween("function setView(", "function lastTelegramTopLevelView()")}; se
     setView("renders", { refreshData: false });
     assert.equal(operation.cancelled, true);
     assert.equal(state.repeatRenderPreparing, false);
-    assert.equal(window.location.pathname, "/app/history");
+    assert.equal(window.location.pathname, "/history");
     assert.equal(window.location.search, "?market=ru");
     assert.equal(state.applicationRoute.view, "renders");
-    assert.equal(state.applicationAuthReturnPath, "/app/history?market=ru");
+    assert.equal(state.applicationAuthReturnPath, "/history?market=ru");
 
     setView("fitment", { refreshData: false });
-    assert.equal(window.location.pathname, "/app/history");
+    assert.equal(window.location.pathname, "/history");
     assert.equal(state.applicationRoute.view, "renders");
 });
 

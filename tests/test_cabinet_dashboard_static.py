@@ -204,7 +204,8 @@ def test_payment_creation_sends_channel_aware_return_context() -> None:
     assert 'client_channel: "telegram"' in APP_JS
     assert 'return_to: "/t/"' in APP_JS
     assert 'client_channel: "web"' in APP_JS
-    assert 'safeApplicationReturnPath(window.location) || "/app"' in APP_JS
+    assert 'applicationTopLevelReturnPath("wallet", window.location) || "/balance"' in APP_JS
+    assert '.replace(/^\\/balance(?=\\?|$)/u, "/app/wallet")' in APP_JS
     assert "window.location.href" in APP_JS
 
 

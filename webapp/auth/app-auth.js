@@ -110,6 +110,8 @@ export function createFrontendAuthController({
     isTelegramMiniApp = () => false,
     hasLegacyWebsiteAuth = () => false,
     legacySignOut = null,
+    finalizationTimeoutMs = 20_000,
+    onFinalizationDiagnostic = (entry) => console.info("[DW] auth finalization", entry),
 } = {}) {
     let state = { ...DEFAULT_STATE };
     let initialized = false;
@@ -121,6 +123,13 @@ export function createFrontendAuthController({
     let suppressLegacyFallback = false;
     let verifiedSupabaseUserId = null;
     let authRevision = 0;
+    let activeProbe = null;
+
+    function cancelProbe() {
+        activeProbe?.cancel();
+        activeProbe = null;
+        reconciliationPromise = null;
+    }
     const listeners = new Set();
 
     function getState() {
@@ -149,6 +158,7 @@ export function createFrontendAuthController({
     }
 
     function setUnauthenticated(event = null) {
+        cancelProbe();
         authRevision += 1;
         verifiedSupabaseUserId = null;
         setState({
@@ -166,6 +176,7 @@ export function createFrontendAuthController({
     }
 
     function setSupabaseExpired(errorCode = "SESSION_EXPIRED", event = "SESSION_EXPIRED") {
+        cancelProbe();
         authRevision += 1;
         verifiedSupabaseUserId = null;
         setState({
@@ -226,9 +237,36 @@ export function createFrontendAuthController({
             return getState();
         }
 
+        cancelProbe();
+        const abortController = new AbortController();
+        let rejectPending;
+        const pending = new Promise((_, reject) => { rejectPending = reject; });
+        // A cancellation can precede the first await (synchronous auth listeners).
+        pending.catch(() => {});
+        let stageStarted = performance.now();
+        let stage = "session_token";
+        const diagnostic = (outcome) => {
+            try {
+                onFinalizationDiagnostic({ stage, outcome, duration_ms: Math.round(performance.now() - stageStarted) });
+            } catch { /* Diagnostics must never prevent sign-in. */ }
+        };
+        const attempt = {
+            userId: sessionController.getCurrentAuthUser?.()?.id || null,
+            cancel() {
+                rejectPending(authRequestError("AUTH_FINALIZATION_CANCELLED"));
+                abortController.abort();
+            },
+        };
+        activeProbe = attempt;
+        const timer = setTimeout(() => {
+            diagnostic("timeout");
+            rejectPending(authRequestError("AUTH_FINALIZATION_TIMEOUT"));
+            abortController.abort();
+        }, finalizationTimeoutMs);
+        const bounded = (operation) => Promise.race([pending, operation]);
         const sessionUserId = sessionController.getCurrentAuthUser?.()?.id || null;
         const probeRevision = authRevision;
-        const probeStillCurrent = () => authRevision === probeRevision
+        const probeStillCurrent = () => activeProbe === attempt && authRevision === probeRevision
             && (sessionController.getCurrentAuthUser?.()?.id || null) === sessionUserId;
         const wasVerifiedSupabase = state.status === AUTH_SESSION_STATES.AUTHENTICATED
             && state.authority === "supabase"
@@ -249,29 +287,37 @@ export function createFrontendAuthController({
         }
 
         try {
-            const accessToken = await sessionController.getAccessToken();
+            const accessToken = await bounded(sessionController.getAccessToken());
             if (!probeStillCurrent()) return getState();
             if (!accessToken) {
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            const response = await fetchImpl(backendApiUrl("/auth/me"), {
+            diagnostic("success");
+            stage = "auth_me";
+            stageStarted = performance.now();
+            const response = await bounded(fetchImpl(backendApiUrl("/auth/me"), {
                 headers: { Authorization: `Bearer ${accessToken}` },
-            });
+                signal: abortController.signal,
+            }));
             if (!probeStillCurrent()) return getState();
             if (response?.status === 401) {
                 setSupabaseExpired("SESSION_EXPIRED", "ME_REJECTED");
                 return getState();
             }
-            if (!response?.ok) throw await backendAuthError(response);
-            const payload = await response.json().catch(() => null);
+            if (!response?.ok) throw await bounded(backendAuthError(response));
+            const payload = await bounded(response.json().catch(() => null));
             if (!probeStillCurrent()) return getState();
             if (payload?.authenticated !== true || payload.authority !== "supabase") {
                 setSupabaseExpired("BACKEND_REJECTED", "ME_REJECTED");
                 return getState();
             }
-            const account = await bootstrapSupabaseAccount();
+            diagnostic("success");
+            stage = "auth_bootstrap";
+            stageStarted = performance.now();
+            const account = await bounded(bootstrapSupabaseAccount(accessToken, abortController.signal));
             if (!probeStillCurrent()) return getState();
+            diagnostic("success");
             verifiedSupabaseUserId = sessionUserId;
             setState({
                 status: AUTH_SESSION_STATES.AUTHENTICATED,
@@ -299,21 +345,26 @@ export function createFrontendAuthController({
                 principalVerified: false,
                 protectedApiReady: false,
                 sessionPresent: true,
-                errorCode: error?.code === "MAINTENANCE" ? "MAINTENANCE" : "NETWORK_ERROR",
+                errorCode: ["MAINTENANCE", "AUTH_FINALIZATION_TIMEOUT"].includes(error?.code) ? error.code : "NETWORK_ERROR",
                 interactionState: AUTH_INTERACTION_STATES.UNAUTHENTICATED,
                 authenticationSource: null,
                 account: null,
             }, "ME_UNAVAILABLE");
+            if (error?.code !== "AUTH_FINALIZATION_TIMEOUT") diagnostic("error");
+        } finally {
+            clearTimeout(timer);
+            if (activeProbe === attempt) activeProbe = null;
         }
         return getState();
     }
 
     function reconcile() {
         if (reconciliationPromise) return reconciliationPromise;
-        reconciliationPromise = probeCurrentUser().finally(() => {
-            reconciliationPromise = null;
+        const promise = probeCurrentUser().finally(() => {
+            if (reconciliationPromise === promise) reconciliationPromise = null;
         });
-        return reconciliationPromise;
+        reconciliationPromise = promise;
+        return promise;
     }
 
     function attachAuthListener() {
@@ -334,6 +385,7 @@ export function createFrontendAuthController({
             }
             if (hasVerifiedSupabasePrincipal && eventUserId && verifiedSupabaseUserId
                 && eventUserId !== verifiedSupabaseUserId) {
+                cancelProbe();
                 authRevision += 1;
                 verifiedSupabaseUserId = null;
                 setState({
@@ -345,11 +397,11 @@ export function createFrontendAuthController({
                 }, "AUTH_IDENTITY_CHANGED");
             }
             if (sessionState?.sessionPresent) {
-                if (reconciliationPromise && eventUserId && eventUserId !== verifiedSupabaseUserId) {
-                    void reconciliationPromise.then(() => reconcile(), () => reconcile());
-                } else {
-                    void reconcile();
+                if (activeProbe && activeProbe.userId !== eventUserId) {
+                    cancelProbe();
+                    authRevision += 1;
                 }
+                void reconcile();
             } else if (!hasLegacyWebsiteAuth()) {
                 setUnauthenticated(event);
             }
@@ -377,11 +429,11 @@ export function createFrontendAuthController({
             ? "MAINTENANCE" : "NETWORK_ERROR");
     }
 
-    async function bootstrapSupabaseAccount() {
-        const accessToken = await sessionController.getAccessToken();
+    async function bootstrapSupabaseAccount(accessToken, signal) {
         if (!accessToken) throw authRequestError("SESSION_EXPIRED");
         const response = await fetchImpl(backendApiUrl("/auth/bootstrap"), {
             method: "POST",
+            signal,
             headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (response?.status === 401) throw authRequestError("SESSION_EXPIRED");
@@ -547,8 +599,11 @@ export function createFrontendAuthController({
         let result;
         try {
             result = await otpVerify(email, otp);
+            const verificationRevision = authRevision;
             await reconcile();
+            if (authRevision !== verificationRevision) throw authRequestError("AUTH_FINALIZATION_CANCELLED");
         } catch (error) {
+            if (error?.code === "AUTH_FINALIZATION_CANCELLED") throw error;
             setState({ interactionState: AUTH_INTERACTION_STATES.OTP_REQUESTED }, "OTP_VERIFY_FAILED");
             throw error;
         }
@@ -564,6 +619,8 @@ export function createFrontendAuthController({
     }
 
     async function signOutCurrentAuthority() {
+        cancelProbe();
+        authRevision += 1;
         if (state.authority === "supabase" || normalizedSessionState(sessionController).sessionPresent) {
             await sessionController.signOut();
             suppressLegacyFallback = true;

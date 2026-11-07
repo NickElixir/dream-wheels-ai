@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {applicationRouteContext,isApplicationRoute,safeApplicationReturnPath,webRoutePath} from '../app-route.mjs';
+import {applicationRouteContext,applicationRouteRequiresAuth,isApplicationRoute,safeApplicationReturnPath,webRoutePath} from '../app-route.mjs';
 const origin='https://dreamwheels.example';
 const id='5b207d9b-aaaa-4444-8888-123456789abc';
 
 test('every approved screen has a reloadable same-origin route',()=>{
- const routes={dashboard:'/',create:'/create',renders:'/history',wallet:'/balance',settings:'/account',support:'/help','photo-guide':'/help/photos',docs:'/documents','render-detail':`/try-ons/${id}`,fitment:`/try-ons/${id}/compatibility`};
+ const routes={dashboard:'/',create:'/new',renders:'/history',wallet:'/balance',settings:'/account',support:'/help','photo-guide':'/help/photos',docs:'/documents','render-detail':`/try-ons/${id}`,fitment:`/try-ons/${id}/compatibility`};
  for(const [view,path] of Object.entries(routes)) {
   assert.equal(webRoutePath(view,id,new URL('/?market=ru&token=secret',origin)),path+'?market=ru');
   const context=applicationRouteContext(new URL(path,origin));
@@ -32,7 +32,7 @@ test('navigation pushes once and popstate restores route and scroll without push
  let popstate; const opened=[]; const positions=[];
  const scroller={scrollTop:240,scrollTo:({top})=>positions.push(top)};
  const window={location:new URL('/',origin),scrollY:0,history:{pushState(_,__,path){window.location=new URL(path,origin);opened.push(path);}},addEventListener(name,fn){if(name==='popstate')popstate=fn;}};
- const context={state,window,HAS_TG:false,applicationRouteContext,webRoutePath,URLSearchParams,requestAnimationFrame:fn=>fn(),document:{querySelector:()=>scroller},setView:view=>{state.view=view;},scheduleRenderHistoryPolling(){},loadAccountState(){},openRenderDetail:job=>{state.renderDetailJobId=job;state.view='render-detail';},openFitmentView:job=>{state.fitmentJobId=job;state.view='fitment';},isApplicationAuthSessionReady:()=>true};
+ const context={state,window,HAS_TG:false,applicationRouteContext,applicationRouteRequiresAuth,webRoutePath,URLSearchParams,requestAnimationFrame:fn=>fn(),document:{querySelector:()=>scroller},setView:view=>{state.view=view;},scheduleRenderHistoryPolling(){},loadAccountState(){},openRenderDetail:job=>{state.renderDetailJobId=job;state.view='render-detail';},openFitmentView:job=>{state.fitmentJobId=job;state.view='fitment';},isApplicationAuthSessionReady:()=>true};
  const api=runInNewContext(source.slice(source.indexOf('// Browser routes are independent'))+'\n({syncWebNavigation,restoreWebRoute})',context);
  api.syncWebNavigation('renders');api.syncWebNavigation('renders');
  assert.deepEqual(opened,['/history']);

@@ -29,7 +29,7 @@ export function publicHtml(html, config) {
 }
 
 export function legacyBridge() {
-  return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Переход в приложение</title></head><body><p><a href="https://app.dream-wheels.ru/">Открыть приложение</a></p><script>const u=new URL(location.href);if(/^\\/(?:app|t)(?:\\/|$)/.test(u.pathname)){const p=u.pathname==="/app/new"||u.pathname==="/app/new/"?"/new":u.pathname;location.replace("https://app.dream-wheels.ru"+p+u.search+u.hash);}</script></body></html>';
+  return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Переход в приложение</title></head><body><p><a href="https://app.dream-wheels.ru/">Открыть приложение</a></p><script>const u=new URL(location.href);if(/^\\/(?:app|t)(?:\\/|$)/.test(u.pathname)){const aliases={"/app":"/","/app/new":"/new","/app/history":"/history","/app/wallet":"/balance","/app/settings":"/account","/app/support":"/help","/app/photo-guide":"/help/photos","/app/docs":"/documents"};const p=aliases[u.pathname.replace(/\\/$/,"")]||u.pathname;location.replace("https://app.dream-wheels.ru"+p+u.search+u.hash);}</script></body></html>';
 }
 
 async function hashFiles(directory, relative = '') {

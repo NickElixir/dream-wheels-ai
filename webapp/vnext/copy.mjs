@@ -2023,6 +2023,7 @@ export const COPY = {
     "en": "You're already signed in. Sign out first to use another account."
   },
   "legacy.auth.maintenance": {"ru": "Приложение временно на обслуживании. Попробуйте позже.", "en": "The app is temporarily under maintenance. Please try again later."},
+  "legacy.auth.finishTimeout": {"ru": "Проверка входа заняла слишком много времени. Нажмите «Повторить» — новый код не нужен.", "en": "Sign-in verification took too long. Select Retry — no new code is needed."},
   "legacy.auth.finishFailed": {"ru": "Не удалось завершить вход. Попробуйте ещё раз.", "en": "Could not complete sign-in. Please try again."},
   "legacy.auth.finishing": {"ru": "Завершаем вход…", "en": "Completing sign-in…"},
   "legacy.auth.retrySession": {"ru": "Повторить", "en": "Retry"},
