@@ -743,3 +743,163 @@ test("a genuinely rejected session can explicitly request a new code", async () 
     assert.equal(auth.getState().sessionPresent,false);
     assert.equal(auth.getState().interactionState,'otp_requested');
 });
+
+for (const blockedStage of ["session_token", "auth_me", "me_body", "auth_bootstrap", "bootstrap_body", "error_body"]) {
+    test(`finalization deadline releases ${blockedStage}; retry uses saved session without OTP`, async () => {
+        const session = fakeSessionController({ sessionPresent: true });
+        const normalToken = session.getAccessToken;
+        let release;
+        const hung = new Promise((resolve) => { release = resolve; });
+        let block = true;
+        let otpCalls = 0;
+        const signals = [];
+        const diagnostics = [];
+        session.getAccessToken = () => block && blockedStage === "session_token" ? hung : normalToken();
+        const controller = createFrontendAuthController({
+            sessionController: session, integrationEnabled: () => true,
+            finalizationTimeoutMs: 15,
+            onFinalizationDiagnostic: (entry) => diagnostics.push(entry),
+            otpRequest: async () => { otpCalls++; }, otpVerify: async () => { otpCalls++; },
+            fetchImpl: async (url, init) => {
+                signals.push(init.signal);
+                const bootstrap = url.endsWith("/auth/bootstrap");
+                if (block && ((blockedStage === "auth_me" && !bootstrap)
+                    || (blockedStage === "auth_bootstrap" && bootstrap))) return hung;
+                if (block && blockedStage === "error_body") return { ok: false, status: 503, json: () => hung };
+                const response = bootstrap ? okBootstrapResponse() : okMeResponse();
+                if (block && ((blockedStage === "me_body" && !bootstrap)
+                    || (blockedStage === "bootstrap_body" && bootstrap))) response.json = () => hung;
+                return response;
+            },
+        });
+        await controller.initialize();
+        assert.equal(controller.getState().errorCode, "AUTH_FINALIZATION_TIMEOUT");
+        assert.equal(controller.getState().protectedApiReady, false);
+        assert.equal(controller.getState().sessionPresent, true);
+        assert.ok(signals.every((signal) => signal.aborted));
+        block = false;
+        await controller.probeCurrentUser();
+        assert.equal(controller.getState().protectedApiReady, true);
+        assert.equal(otpCalls, 0);
+        // Delayed SDK/body/fetch completion must not undo a successful retry.
+        release(blockedStage === "session_token" ? "old-token" : { ok: false, status: 401 });
+        await new Promise((resolve) => setImmediate(resolve));
+        assert.equal(controller.getState().protectedApiReady, true);
+        assert.equal(diagnostics.filter((entry) => entry.outcome === "timeout").length, 1);
+        assert.ok(diagnostics.every((entry) => Object.keys(entry).sort().join() === "duration_ms,outcome,stage"));
+        assert.ok(!/opaque-test-token|user@example|user-1/.test(JSON.stringify(diagnostics)));
+    });
+}
+
+test("account switch replaces a stuck probe immediately; old rejection cannot expire the new account", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    let release;
+    const hung = new Promise((resolve) => { release = resolve; });
+    let first = true;
+    const controller = createFrontendAuthController({
+        sessionController: session, integrationEnabled: () => true,
+        onFinalizationDiagnostic: () => {},
+        fetchImpl: async (url) => {
+            if (first) { first = false; return hung; }
+            return url.endsWith("/auth/me") ? okMeResponse() : okBootstrapResponse();
+        },
+    });
+    const initializing = controller.initialize();
+    await new Promise((resolve) => setImmediate(resolve));
+    session.emitAuthEvent("SIGNED_IN", "user-2");
+    await initializing;
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(controller.getState().protectedApiReady, true);
+    release({ ok: false, status: 401 });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(controller.getState().protectedApiReady, true);
+    assert.equal(controller.getCurrentAuthUser().id, "user-2");
+});
+
+test("sign-out cancels a hung finalization and ignores late success", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    let release;
+    const hung = new Promise((resolve) => { release = resolve; });
+    const controller = createFrontendAuthController({
+        sessionController: session, integrationEnabled: () => true,
+        onFinalizationDiagnostic: () => {}, fetchImpl: () => hung,
+    });
+    const initializing = controller.initialize();
+    await new Promise((resolve) => setImmediate(resolve));
+    await controller.signOut();
+    await initializing;
+    release(okMeResponse());
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(controller.getState().sessionPresent, false);
+    assert.equal(controller.getState().protectedApiReady, false);
+});
+
+test("successful finalization clears the deadline", async () => {
+    const diagnostics = [];
+    const controller = createFrontendAuthController({
+        sessionController: fakeSessionController({ sessionPresent: true }),
+        integrationEnabled: () => true, finalizationTimeoutMs: 10,
+        onFinalizationDiagnostic: (entry) => diagnostics.push(entry),
+        fetchImpl: async (url) => url.endsWith("/auth/me") ? okMeResponse() : okBootstrapResponse(),
+    });
+    await controller.initialize();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    assert.equal(controller.getState().protectedApiReady, true);
+    assert.deepEqual(diagnostics.map((entry) => entry.stage), ["session_token", "auth_me", "auth_bootstrap"]);
+    assert.ok(diagnostics.every((entry) => entry.outcome === "success"));
+});
+
+test("accepted OTP times out into a retryable saved session, then retry succeeds without resending OTP", async () => {
+    const session = fakeSessionController();
+    let otpRequests = 0;
+    let otpVerifications = 0;
+    let blocked = true;
+    const controller = createFrontendAuthController({
+        sessionController: session, integrationEnabled: () => true,
+        finalizationTimeoutMs: 15, onFinalizationDiagnostic: () => {},
+        otpRequest: async () => { otpRequests++; },
+        otpVerify: async () => {
+            otpVerifications++;
+            session.emitAuthEvent("SIGNED_IN", "new-user");
+            return { session: {} };
+        },
+        fetchImpl: async (url) => {
+            if (blocked) return new Promise(() => {});
+            return url.endsWith("/auth/me") ? okMeResponse() : okBootstrapResponse();
+        },
+    });
+    await controller.initialize();
+    await controller.requestEmailOtp("user@example.test");
+    await assert.rejects(controller.verifyEmailOtp("user@example.test", "123456"), { code: "AUTH_FINALIZATION_TIMEOUT" });
+    assert.equal(controller.getState().status, AUTH_SESSION_STATES.NETWORK_ERROR);
+    assert.equal(controller.getState().sessionPresent, true);
+    assert.equal(controller.getState().protectedApiReady, false);
+    blocked = false;
+    await controller.probeCurrentUser();
+    assert.equal(controller.getState().protectedApiReady, true);
+    assert.equal(otpRequests, 1);
+    assert.equal(otpVerifications, 1);
+});
+
+test("manual retry supersedes an in-flight probe even when fetch ignores abort", async () => {
+    const session = fakeSessionController({ sessionPresent: true });
+    let first = true;
+    let resolveOld;
+    const oldResponse = new Promise((resolve) => { resolveOld = resolve; });
+    const controller = createFrontendAuthController({
+        sessionController: session, integrationEnabled: () => true,
+        onFinalizationDiagnostic: () => {},
+        fetchImpl: async (url) => {
+            if (first) { first = false; return oldResponse; }
+            return url.endsWith("/auth/me") ? okMeResponse() : okBootstrapResponse();
+        },
+    });
+    const initializing = controller.initialize();
+    await new Promise((resolve) => setImmediate(resolve));
+    await controller.probeCurrentUser();
+    await initializing;
+    resolveOld({ ok: false, status: 401 });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(controller.getState().protectedApiReady, true);
+    assert.equal(controller.getState().errorCode, null);
+});
