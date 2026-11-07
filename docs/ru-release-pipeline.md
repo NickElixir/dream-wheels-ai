@@ -187,3 +187,11 @@ part of this optimization.
 Deliver as a separate PR/release with artifact SHA and rollback. Estimate costs
 from measured per-visit requests using the current provider tariff; do not equate
 one page view to one billed request or attribute all traffic to agent tests.
+
+## Compatible frontend-only releases
+
+For a reviewed UI-only release without restarting the active backend, follow
+[the frontend-only contract](frontend-only-release.md). Both hosting workflows
+support the opt-in mode; default behavior is unchanged. Use `[skip render]` on the
+actual main merge commit and verify the provider skips it. Do not change writer
+or payment flags, and retain the existing Deno revision.

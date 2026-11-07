@@ -1,0 +1,40 @@
+name: Frontend-only release preflight
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      # Execute the trusted base policy, not scripts supplied by the release PR.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate marked frontend-only candidate
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch origin main staging "$HEAD_SHA"
+          python3 - <<'PY'
+          import os, re, subprocess
+          if '[skip render]' not in os.environ['PR_TITLE']:
+              print('Ordinary release: full maintenance gate remains required')
+              raise SystemExit(0)
+          matches = re.findall(r'^Accepted-Staging-SHA: ([0-9a-f]{40})$', os.environ['PR_BODY'], re.M)
+          if len(matches) != 1:
+              raise SystemExit('Frontend-only PR requires exactly one Accepted-Staging-SHA line')
+          subprocess.run(['python3', '-m', 'scripts.check_frontend_release', os.environ['HEAD_SHA'],
+                          '--tested', matches[0], '--preflight'], check=True)
+          PY
