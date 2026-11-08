@@ -53,6 +53,7 @@ const applicationRouteContext = () => null;
 const isApplicationRoute = () => false;
 const safeApplicationReturnPath = () => null;
 ${source}
+state.draftOwner="account:42"; state.draftCredential="test"; draftCredentialMarker=()=>"test";
 notifyRenderBridge = () => {};
 notifyCreateBridge = () => {};
 renderRenders = () => {};

@@ -1,12 +1,26 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Catalog handoff — local acceptance</title>
 <link rel="stylesheet" href="../../webapp/style.css"><link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/approved-home-create.css">
-<style>body{margin:0;background:#080e10;color:#eef1f2}.qa-controls{padding:12px;font:14px sans-serif;display:flex;gap:12px;flex-wrap:wrap}.qa-controls button{padding:8px}#qa-status{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><nav class="qa-controls"><button id="reset">Восстановить конфликт</button><button id="reload-draft">Восстановить черновик</button><button id="switch-locale">RU / EN</button><label>Image mode <select id="qa-image-mode"><option value="normal">Normal</option><option value="slow">Delayed success</option><option value="error">Delayed error</option></select></label><button id="qa-finish">Завершить загрузку</button><label><input id="qa-redraw-loop" type="checkbox">Periodic redraw</label><span id="qa-status" role="status">Загрузка локального сценария</span></nav><main id="app"><section data-view="create"></section></main>
+<style>body{margin:0;background:#080e10;color:#eef1f2}.qa-controls{padding:12px;font:14px sans-serif;display:flex;gap:12px;flex-wrap:wrap}.qa-controls button{padding:8px}#qa-status{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><nav class="qa-controls"><button id="reset">Восстановить конфликт</button><button id="reload-draft">Восстановить черновик</button><button id="switch-locale">RU / EN</button><label>Image mode <select id="qa-image-mode"><option value="normal">Normal</option><option value="slow">Delayed success</option><option value="error">Delayed error</option></select></label><button id="qa-finish">Завершить загрузку</button><label><input id="qa-redraw-loop" type="checkbox">Periodic redraw</label><button id="qa-account-a">Account A</button><button id="qa-account-b">Account B</button><button id="qa-logout">Logout</button><button id="qa-legacy">Legacy draft</button><button id="qa-owner-error">Owner error</button><span id="qa-status" role="status">Загрузка локального сценария</span></nav><main id="app"><section data-view="create"></section></main>
 <script type="module">
-const source=(await(await fetch('../../webapp/app.js')).text()).replaceAll('from "./',`from "${location.origin}/webapp/`).replace('"dream-wheels-upload-draft"','"dream-wheels-catalog-local-qa"');
+const source=(await(await fetch('../../webapp/app.js')).text()).replaceAll('from "./',`from "${location.origin}/webapp/`).replace('"dream-wheels-upload-draft"','"dream-wheels-catalog-local-qa-v2"');
 const setup=`
 state.view="create";state.frontendAuthState={status:"AUTHENTICATED",principalVerified:true,protectedApiReady:true,authority:"supabase"};state.frontendAuthUser={id:"local-qa",email:"local@example.test"};
 const qaFetch=window.fetch.bind(window);let qaWrites=0;
 window.fetch=async(url,options={})=>{if(options.method && options.method!=="GET"){qaWrites++;throw Error("Local fixture blocks API writes");}return qaFetch(url,options);};
+let qaAccount="42",qaOwnerFailure=false;
+window.DreamWheelsAuth={getCurrentAuthUser:()=>qaAccount?{id:"local-qa-"+qaAccount}:null,authenticatedFetch:async(url,options)=>new URL(url,location).pathname.endsWith("/auth/me")?{ok:true,json:async()=>{const id=qaOwnerFailure?null:qaAccount;qaOwnerFailure=false;return {authenticated:true,account_id:id};}}:window.fetch(url,options)};
+async function qaSwitch(account){invalidateAccountDraft();qaAccount=account;state.frontendAuthState={status:account?"AUTHENTICATED":"UNAUTHENTICATED",principalVerified:Boolean(account),protectedApiReady:Boolean(account),authority:"supabase"};if(account && await resolveAccountDraftOwner())await hydrateFilesFromDraft();renderCreateInputs();}
+document.querySelector('#qa-account-a').onclick=()=>qaSwitch("42");
+document.querySelector('#qa-account-b').onclick=()=>qaSwitch("9");
+document.querySelector('#qa-logout').onclick=()=>{window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));return qaSwitch("");};
+document.querySelector('#qa-owner-error').onclick=async()=>{invalidateAccountDraft();qaOwnerFailure=true;await resolveAccountDraftOwner();renderCreateInputs();};
+document.querySelector('#qa-legacy').onclick=async()=>{
+ await qaSwitch("73");const scope=draftScope();await getAccountDraftStore().update(scope.owner,d=>({...d,car:null,wheel:null}),scope);
+ const legacyBlob=await(await qaFetch(location.origin+"/webapp/assets/photo-guide-car.jpg")).blob();const legacyBytes=await legacyBlob.arrayBuffer();
+ const db=await getAccountDraftStore().open();await new Promise((resolve,reject)=>{const tx=db.transaction(["files","legacy-draft-claims"],"readwrite");tx.objectStore("legacy-draft-claims").clear();const store=tx.objectStore("files");store.put({kind:"car",name:"old-private.jpg",bytes:legacyBytes,type:legacyBlob.type,size:legacyBlob.size});tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);});db.close();await qaSwitch("73");
+};
+bindDraftSessionBoundary();
+await resolveAccountDraftOwner();
 catalogHandoff.isReady=()=>true;
 let qaImageRequest=null;
 catalogHandoff.fetchImage=(url,options)=>{
@@ -26,6 +40,7 @@ window.dreamwheelsCreateBridge.snapshot=()=>{
 const {catalogEntries:qaCatalog}=await import(location.origin+"/webapp/vnext/catalog-data.mjs");
 const qaEntry=qaCatalog.find(e=>e.selectedSkuId);
 async function qaReset(){
+ if(!state.draftOwner)await qaSwitch("42");
  catalogHandoff.cancel();
  const entries=[];
  for(const [kind,path] of [["car","photo-guide-car.jpg"],["wheel","demo-rim-xtrike.png"]]){
@@ -43,7 +58,7 @@ const qaParams=new URLSearchParams(location.search);
 if(['ru','en'].includes(qaParams.get('qa_locale')))locale=qaParams.get('qa_locale');
 if(['image','timeout','storage','invalid','unavailable'].includes(qaParams.get('qa_error')))catalogHandoff.error=qaParams.get('qa_error');
 notifyCreateBridge();
-setInterval(()=>document.querySelector('#qa-status').textContent=JSON.stringify({wheel:state.catalogWheel?resolveCatalogSelection(state.catalogWheel)?.sku.sku:"manual",pending:Boolean(catalogHandoff.pending),car:state.files.car?.name,apiWrites:qaWrites}),100);
+setInterval(()=>document.querySelector('#qa-status').textContent=JSON.stringify({wheel:state.catalogWheel?resolveCatalogSelection(state.catalogWheel)?.sku.sku:"manual",pending:Boolean(catalogHandoff.pending),car:state.files.car?.name,owner:state.draftOwner,legacy:state.legacyDraftAvailable,apiWrites:qaWrites}),100);
 `;
 try { await import(URL.createObjectURL(new Blob([source+'\n'+setup],{type:'text/javascript'})));await import('../../webapp/vnext/bootstrap.js?catalog-qa=storage-1');window.dispatchEvent(new CustomEvent('dreamwheels:viewchange',{detail:{view:'create'}})); }
 catch(error){document.querySelector('#qa-status').textContent='FAIL: '+error.stack;}

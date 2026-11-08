@@ -89,6 +89,7 @@ function sourceEditor(snapshot, callbacks) {
   input.autocomplete = "url";
   input.placeholder = "https://";
   input.value = snapshot.rimProductUrl || "";
+  input.disabled = Boolean(snapshot.draftBlocked);
   const inputState = { savedValue: input.value, edited: false, wheel: snapshot.wheelReplacementToken };
   sourceInputState.set(input, inputState);
   input.addEventListener("input", () => {
@@ -98,7 +99,7 @@ function sourceEditor(snapshot, callbacks) {
   });
   input.setAttribute("aria-invalid", String(Boolean(snapshot.productUrlError)));
   field.append(caption, input);
-  const save = createButton({ label: uiText("create.saveLink", localeOf(snapshot)), variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting });
+  const save = createButton({ label: uiText("create.saveLink", localeOf(snapshot)), variant: "secondary", onClick: () => callbacks.saveRimProductUrl?.(input.value), disabled: snapshot.submitting || snapshot.draftBlocked });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     callbacks.saveRimProductUrl?.(input.value);
@@ -164,7 +165,10 @@ function catalogNotice(snapshot, callbacks) {
     if (warning) name.className = "vnext-create__catalog-name";
     name.textContent = handoff.selection.name;
     const sku = document.createElement("p");
-    sku.textContent = uiText("create.catalog.sku", locale, { value0: handoff.selection.sku.sku });
+    sku.className = "vnext-create__catalog-sku";
+    const skuLabel = document.createElement("strong");
+    skuLabel.textContent = uiText("create.catalog.sku", locale, { value0: "" }).trim();
+    sku.append(skuLabel, document.createTextNode(` ${handoff.selection.sku.sku}`));
     const description = document.createElement("p");
     description.textContent = uiText("create.catalog.description", locale);
     details.append(name, sku);
@@ -181,13 +185,50 @@ function catalogNotice(snapshot, callbacks) {
   if (handoff.selection) {
     const actions = document.createElement("div");
     actions.className = "vnext-create__catalog-actions";
-    const replace = createButton({ label: uiText(warning ? handoff.error === "storage" ? "create.catalog.retrySave" : "create.catalog.retry" : "create.catalog.replace", locale), disabled: handoff.busy || snapshot.submitting, onClick: callbacks.acceptCatalogWheel });
+    const replace = createButton({ label: uiText(warning ? handoff.error === "storage" ? "create.catalog.retrySave" : "create.catalog.retry" : "create.catalog.replace", locale), disabled: handoff.busy || snapshot.submitting || snapshot.draftBlocked, onClick: callbacks.acceptCatalogWheel });
     replace.dataset.createFocus = "catalog-replace";
-    const keep = createButton({ label: uiText("create.catalog.keep", locale), variant: "secondary", disabled: handoff.busy || snapshot.submitting, onClick: callbacks.keepCurrentWheel });
+    const keep = createButton({ label: uiText("create.catalog.keep", locale), variant: "secondary", disabled: handoff.busy || snapshot.submitting || snapshot.draftBlocked, onClick: callbacks.keepCurrentWheel });
     keep.dataset.createFocus = "catalog-keep";
     actions.append(replace, keep);
     box.append(actions);
   }
+  return box;
+}
+
+function accountDraftNotice(snapshot, callbacks) {
+  const locale = localeOf(snapshot);
+  if (!snapshot.draftLoading && !snapshot.draftError && !snapshot.legacyDraftAvailable && !snapshot.legacyDraftBusy) return null;
+  const box = document.createElement("section");
+  box.className = "vnext-create__draft-notice";
+  box.setAttribute("role", snapshot.draftError || snapshot.legacyDraftError ? "alert" : "status");
+  box.tabIndex = -1;
+  box.dataset.createFocus = "draft-status";
+  const title = document.createElement("strong");
+  title.textContent = uiText(snapshot.draftLoading ? "create.draft.loading" : snapshot.draftError ? snapshot.draftError === "blocked" ? "create.draft.blocked" : "create.draft.error" : "create.draft.legacyTitle", locale);
+  box.append(title);
+  if (snapshot.draftLoading) return box;
+  const actions = document.createElement("div");
+  actions.className = "vnext-create__draft-actions";
+  if (snapshot.draftError) {
+    const retry = createButton({ label: uiText("create.draft.retry", locale), variant: "secondary", onClick: callbacks.retryAccountDraft });
+    retry.dataset.createFocus = "draft-retry";
+    actions.append(retry);
+  } else {
+    const body = document.createElement("p");
+    body.textContent = uiText("create.draft.legacyBody", locale);
+    box.append(body);
+    if (snapshot.legacyDraftError) {
+      const error = document.createElement("p");
+      error.textContent = uiText("create.draft.legacyError", locale);
+      box.append(error);
+    }
+    const restore = createButton({ label: uiText(snapshot.legacyDraftBusy ? "create.draft.busy" : "create.draft.restore", locale), disabled: snapshot.legacyDraftBusy, onClick: callbacks.restoreLegacyDraft });
+    restore.dataset.createFocus = "draft-restore";
+    const dismiss = createButton({ label: uiText("create.draft.dismiss", locale), variant: "secondary", disabled: snapshot.legacyDraftBusy, onClick: callbacks.dismissLegacyDraft });
+    dismiss.dataset.createFocus = "draft-dismiss";
+    actions.append(restore, dismiss);
+  }
+  box.append(actions);
   return box;
 }
 
@@ -196,11 +237,13 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
   page.className = "vnext-create";
   createViewOwner.set(page, snapshot.draftOwnerKey);
 
+  const draftNotice = accountDraftNotice(snapshot, callbacks);
+  if (draftNotice) page.append(draftNotice);
   const pair = document.createElement("div");
   pair.className = "vnext-create__pair";
   const notice = catalogNotice(snapshot, callbacks);
   if (notice) pair.append(notice);
-  const disabled = snapshot.submitting || snapshot.catalogHandoff?.busy;
+  const disabled = snapshot.submitting || snapshot.catalogHandoff?.busy || snapshot.draftBlocked;
   const car = imageStage("car", snapshot.files?.car, callbacks, disabled, snapshot, localeOf(snapshot));
   const wheel = imageStage("wheel", snapshot.files?.wheel, callbacks, disabled, snapshot, localeOf(snapshot));
   if (snapshot.catalogWheel) {
@@ -259,7 +302,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
   const reason = snapshot.catalogHandoff?.selection || snapshot.catalogHandoff?.busy ? uiText("create.catalog.resolve", localeOf(snapshot)) : !snapshot.files?.car ? uiText("create.addACarPhoto", localeOf(snapshot))
     : !snapshot.files?.wheel ? uiText("create.addAWheelPhoto", localeOf(snapshot))
     : !snapshot.consentAccepted ? uiText("create.confirmConsentToProcessThePhotos", localeOf(snapshot)) : "";
-  actions.append(createButton({ label: uiText("create.createImage", localeOf(snapshot)), onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
+  actions.append(createButton({ label: uiText("create.createImage", localeOf(snapshot)), onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting || snapshot.draftBlocked) }));
   if (reason && snapshot.files?.car) {
     const hint = document.createElement("p");
     hint.className = "vnext-create__source-helper";
@@ -307,6 +350,7 @@ export function refreshCreateView(current, snapshot, callbacks, locale = applica
   if (focusKey) {
     const preferred = focusKey === "catalog-status" && !snapshot.catalogHandoff?.busy ? "catalog-replace" : focusKey;
     const target = next.querySelector(`[data-create-focus="${preferred}"]:not(:disabled)`)
+      || (focusKey.startsWith("draft-") ? next.querySelector('[data-create-focus="draft-status"]') || next.querySelector('[data-create-focus="photo-car"]:not(:disabled)') : null)
       || (focusKey.startsWith("catalog-") ? next.querySelector('[data-create-focus="catalog-status"]') || next.querySelector('[data-create-focus="photo-wheel"]:not(:disabled)') : null);
     target?.focus({ preventScroll: true });
   }

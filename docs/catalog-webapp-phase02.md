@@ -158,7 +158,7 @@ Neither catalog source parameters nor images nor fitment status were changed. Th
 
 Regression tests cover hydration/clear/repeated redraw/explicit replacement, complete guest startup with quota refusal and legacy routes, real negative Timeweb/WebApp/Astro build commands, and keyboard focus through loading/success/error. Local browser verification uses controlled auth/network and does not certify live OTP or hosting.
 
-The inherited shared photo draft database is still not fully owner-scoped: catalog metadata is filtered, but prior unscoped photos remain recoverable. These fixes do not claim otherwise. Do not clear or silently assign legacy photos to the next signed-in account. This requires a separate owner/migration/product decision before staging acceptance; no existing photo records were deleted or reassigned here.
+The follow-up owner-isolation implementation now stores both photos, URL and SKU under the canonical account returned by the additive `/auth/me.account_id` field. Unowned v1 records are retained and can be copied only after the approved explicit Restore choice; a transactional claim prevents another account importing them. Logout/account changes cancel operations and clear previews; local records remain. See [account draft isolation](account-draft-isolation.md) for architecture, tests, limitations and the required backend-first rollout. This follow-up needs independent review and isolated staging acceptance; it has not been deployed.
 
 ## Vercel slot correction
 

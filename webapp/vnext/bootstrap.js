@@ -85,6 +85,9 @@ function refreshMountedRender(locale = applicationLocale()) {
 function createCallbacks() {
   return {
     openAuth: legacyOpenAuth,
+    retryAccountDraft: () => window.dreamwheelsCreateBridge?.retryAccountDraft(),
+    restoreLegacyDraft: () => window.dreamwheelsCreateBridge?.restoreLegacyDraft(),
+    dismissLegacyDraft: () => window.dreamwheelsCreateBridge?.dismissLegacyDraft(),
     acceptCatalogWheel: () => window.dreamwheelsCreateBridge?.acceptCatalogWheel(),
     keepCurrentWheel: () => window.dreamwheelsCreateBridge?.keepCurrentWheel(),
     pickFile: (kind) => window.dreamwheelsCreateBridge?.pickFile(kind),

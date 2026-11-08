@@ -1,4 +1,15 @@
 export const COPY = {
+  "create.draft.blocked": {"ru":"Закройте старые вкладки приложения и попробуйте восстановить черновик ещё раз.","en":"Close older application tabs, then try restoring your draft again."},
+  "create.draft.loading": {"ru": "Восстанавливаем черновик аккаунта…", "en": "Restoring your account draft…"},
+  "create.draft.error": {"ru": "Не удалось открыть черновик аккаунта. Фотографии не изменены.", "en": "Could not open your account draft. Your photos have not been changed."},
+  "create.draft.retry": {"ru": "Повторить", "en": "Try again"},
+  "create.draft.legacyTitle": {"ru": "Найден старый черновик в этом браузере", "en": "An older draft was found in this browser"},
+  "create.draft.legacyBody": {"ru": "Черновик не привязан к аккаунту. Восстанавливайте его, только если это ваши фотографии.", "en": "This draft is not linked to an account. Restore it only if these are your photos."},
+  "create.draft.restore": {"ru": "Восстановить", "en": "Restore"},
+  "create.draft.dismiss": {"ru": "Не сейчас", "en": "Not now"},
+  "create.draft.legacyError": {"ru": "Не удалось восстановить черновик. Исходные фотографии сохранены.", "en": "Could not restore the draft. The original photos are kept."},
+  "create.draft.busy": {"ru": "Восстанавливаем…", "en": "Restoring…"},
+
   "create.catalog.errorTitle": {"ru":"Не удалось загрузить диск","en":"Could not load the wheel"},
   "create.catalog.saveErrorTitle": {"ru":"Не удалось сохранить выбор","en":"Could not save your selection"},
   "create.catalog.restoreErrorTitle": {"ru":"Не удалось восстановить выбор","en":"Could not restore your selection"},

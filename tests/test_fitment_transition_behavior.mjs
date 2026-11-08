@@ -1057,7 +1057,7 @@ test("failed legacy Fitment result offers retry only when the server permits it 
 test("public Create/Render/Fitment/Wallet bridge methods and snapshots preserve canonical state without network mutations", () => {
     const { api, calls } = pcdProjectionApi();
     const expected = {
-        Create: ["acceptCatalogWheel", "keepCurrentWheel", "snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
+        Create: ["dismissLegacyDraft", "restoreLegacyDraft", "retryAccountDraft", "acceptCatalogWheel", "keepCurrentWheel", "snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
         Render: ["snapshot", "prepareAssets", "assetError", "action"],
         Fitment: ["snapshot", "surfaceMounted", "setField", "setSourceUrl", "action"],
         Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "previousHistoryPage", "login"],

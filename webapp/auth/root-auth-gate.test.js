@@ -48,9 +48,10 @@ function lifecycle(path, {authPending = true, dashboardPending = false, storageF
   const context = {state, window, document, HAS_TG:false, URL, URLSearchParams, Event, captureCatalogHandoff, readCatalogHandoff, catalogHandoff, applicationRouteContext, applicationRouteRequiresAuth, isApplicationRoute, safeApplicationReturnPath,
     setView(view) {state.view = view;}, isApplicationAuthSessionReady:()=>false,
     initializeFrontendAuthBridge:()=>authPending ? new Promise(()=>{}) : Promise.resolve(),
+    resolveAccountDraftOwner:async()=>true,
     hydrateFilesFromDraft:async()=>{calls.drafts++;}, loadDashboardData:()=>{calls.dashboard++;return dashboardPending ? new Promise(()=>{}) : Promise.resolve();},
   };
-  for (const name of ['trackEvent','checkCurrentBuild','applyTranslations','initTelegram','updateWebsiteAuthUi','bindEvents','observeUiCopyRule','warmWebsiteLoginResources','handlePaymentReturn','syncEmailInput','setSelectedAmount','renderWallet','renderRenders','renderDashboard','renderAuthDialog','updateTopbarCaption','setMenuOpen','setMoreOpen','showCreateScreen','renderCreateInputs','refreshButtonsForCurrentView','loadCabinet','scheduleRenderHistoryPolling','clearRenderHistoryPolling','persistFitmentTransientDraft','clearApplicationSessionState']) context[name] = ()=>{};
+  for (const name of ['trackEvent','checkCurrentBuild','applyTranslations','initTelegram','updateWebsiteAuthUi','bindDraftSessionBoundary','bindEvents','observeUiCopyRule','warmWebsiteLoginResources','handlePaymentReturn','syncEmailInput','setSelectedAmount','renderWallet','renderRenders','renderDashboard','renderAuthDialog','updateTopbarCaption','setMenuOpen','setMoreOpen','showCreateScreen','renderCreateInputs','refreshButtonsForCurrentView','loadCabinet','scheduleRenderHistoryPolling','clearRenderHistoryPolling','persistFitmentTransientDraft','clearApplicationSessionState']) context[name] = ()=>{};
   const authFunctions = source.slice(source.indexOf('function isApplicationAuthGranted()'), source.indexOf('async function bootstrapAuthenticatedApplication()'));
   const startup = source.slice(source.indexOf('document.addEventListener("DOMContentLoaded", async () => {'), source.indexOf('// Browser routes are independent'));
   const routes = source.slice(source.indexOf('// Browser routes are independent'));

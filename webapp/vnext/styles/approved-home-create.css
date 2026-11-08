@@ -377,3 +377,21 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
   .vnext-create__catalog-actions { grid-column:1/-1; display:grid; grid-template-columns:1fr; margin:0; }
   .vnext-create__pair:has(.vnext-create__catalog-notice) .vnext-create__object--wheel { grid-row:3; }
 }
+
+/* Local draft recovery never exposes unowned photographs before consent. */
+.vnext-create__draft-notice {
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--vnext-border-strong);
+  border-radius: 14px;
+  background: var(--vnext-surface-elevated);
+  color: var(--vnext-text);
+}
+.vnext-create__draft-notice p { color: var(--vnext-text-secondary); margin: 10px 0 16px; }
+.vnext-create__draft-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+@media (max-width: 600px) {
+  .vnext-create__draft-notice { padding: 18px; }
+  .vnext-create__draft-actions > button { flex: 1 1 140px; }
+}
+
+.vnext-create__catalog-copy .vnext-create__catalog-sku strong { font-weight:650; color:var(--vnext-text); }
