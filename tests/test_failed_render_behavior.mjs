@@ -102,6 +102,7 @@ for (const scenario of ['success','asset-failure','left-screen']) {
       parseApiError:async()=> 'Asset unavailable',saveDraftFiles:async entries=>calls.push(['persist',entries.length]),
       resetCreateAssets:()=>calls.push(['reset']),renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
       setView:view=>{state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+    context.catalogHandoff={cancel(){}};
     vm.runInNewContext(fn('repeatRenderWithSavedPhotos'),context);
     await context.repeatRenderWithSavedPhotos('selected');
     assert.equal(state.repeatRenderPreparing,false);
@@ -130,6 +131,7 @@ test('leaving and returning cannot revive photo preparation; a new action can su
     fetch:async url=>({ok:true,blob:async()=>new Blob([url])}),saveDraftFiles:async()=>{persisted++;},
     resetCreateAssets:()=>{},renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
     setView:view=>{context.cancelPhotoPreparation();state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+  context.catalogHandoff={cancel(){}};
   vm.runInNewContext(fn('cancelPhotoPreparation')+'\n'+fn('repeatRenderWithSavedPhotos'),context);
   const first=context.repeatRenderWithSavedPhotos('selected');
   context.setView('wallet');context.setView('fitment');

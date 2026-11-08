@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -23,6 +24,36 @@ def test_pulled_environment_survives_until_build_and_is_always_cleaned(
     scripts.mkdir(parents=True)
     (tmp_path / "webapp/auth").mkdir()
     shutil.copy(ROOT / "webapp/scripts/build-public-config.mjs", scripts)
+    catalog_target = "production" if job_name == "deploy-production" else "staging"
+    data_root = ROOT / "landing/src/data"
+    destination = tmp_path / "landing/src/data"
+    destination.mkdir(parents=True)
+    for name in [
+        "catalog-storage",
+        "catalog-publications",
+        "catalog-asset-registry",
+        "catalog-reconciliation",
+        "catalog-primary-skus",
+    ]:
+        shutil.copy(data_root / f"{name}.json", destination)
+    guard = tmp_path / "scripts/catalog"
+    guard.mkdir(parents=True)
+    shutil.copy(ROOT / "scripts/catalog/verify-build.mjs", guard)
+    generated = tmp_path / "webapp/vnext"
+    generated.mkdir()
+    shutil.copy(ROOT / "webapp/vnext/catalog-data.mjs", generated)
+    storage_config = json.loads((data_root / "catalog-storage.json").read_text())
+    publications = json.loads((data_root / "catalog-publications.json").read_text())
+    origin = storage_config["targets"][catalog_target]["origin"]
+    manifest = {
+        "catalogAssetRegistry": json.loads((data_root / "catalog-asset-registry.json").read_text()),
+        "catalogStorageTarget": storage_config["targets"][catalog_target],
+        "catalogBucket": storage_config["bucket"],
+        "catalogPublication": publications[catalog_target],
+    }
+    (generated / "catalog-assets.mjs").write_text(
+        "".join(f"export const {key} = {json.dumps(value)};\n" for key, value in manifest.items())
+    )
     tools = tmp_path / "bin"
     tools.mkdir()
     cli = tools / "vercel"
@@ -44,7 +75,7 @@ elif sys.argv[1] == 'pull':
     folder.mkdir(exist_ok=True)
     (folder / f'.env.{target}.local').write_text(
         'BACKEND_URL=' + os.environ['TEST_BACKEND_URL'] + '\\n'
-        'SUPABASE_URL=https://testproject.supabase.co\\n'
+        'SUPABASE_URL=' + os.environ['TEST_SUPABASE_URL'] + '\\n'
         'SUPABASE_PUBLISHABLE_KEY=sb_publishable_test\\n'
         'TURNSTILE_SITE_KEY=test-site-key\\n'
     )
@@ -69,7 +100,10 @@ else:
         VERCEL_PROJECT_ID="test-project",
         STAGING_BACKEND_URL=workflow["env"]["STAGING_BACKEND_URL"],
         PRODUCTION_BACKEND_URL=workflow["env"]["PRODUCTION_BACKEND_URL"],
-        EXPECTED_SUPABASE_URL="https://testproject.supabase.co",
+        EXPECTED_SUPABASE_URL=origin,
+        TEST_SUPABASE_URL=origin,
+        CATALOG_BUILD_TARGET=catalog_target,
+        VERCEL_ENV="production" if catalog_target == "production" else "preview",
         TEST_BACKEND_URL=backend,
         TEST_BUILD_FAIL=str(int(build_fails)),
     )
@@ -77,7 +111,7 @@ else:
     result = subprocess.run(["bash", "-e", "-c", build["run"]], cwd=tmp_path, env=env)
     assert (result.returncode != 0) is build_fails
     config = (tmp_path / "webapp/auth/harness-config.js").read_text()
-    assert '"url":"https://testproject.supabase.co"' in config
+    assert f'"url":"{origin}"' in config
     assert "sb_publishable_test" in config
     cleanup = next(
         step for step in steps if step.get("name") == "Clean up pulled Vercel environment"

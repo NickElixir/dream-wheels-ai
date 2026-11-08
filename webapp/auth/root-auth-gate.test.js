@@ -1,3 +1,5 @@
+import {captureCatalogHandoff,readCatalogHandoff} from '../vnext/catalog-handoff.mjs';
+import {catalogEntries} from '../vnext/catalog-data.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -34,13 +36,16 @@ test('root is protected, public legacy support canonicalizes, Telegram entry sta
 // Run the actual DOMContentLoaded callback, route setup, restoration and auth wall
 // together. Only UI rendering/network boundaries are mocked; unresolved promises
 // deliberately hold startup at the original asynchronous boundaries.
-function lifecycle(path, {authPending = true, dashboardPending = false} = {}) {
+function lifecycle(path, {authPending = true, dashboardPending = false, storageFailure = false} = {}) {
   const state = {view:'dashboard', applicationAuthRequired:false, applicationAuthGateReady:false, frontendAuthState:{status:'ANONYMOUS'}};
   const shell = {hidden:false, toggleAttribute(_, hidden) {this.hidden = hidden;}};
-  const document = {addEventListener(name, fn) {if (name === 'DOMContentLoaded') this.start = fn;}, querySelector(selector) {return selector === '#app' || selector === '.desktop-sidebar' || selector === '.mobile-bottom-nav' ? shell : null;}};
+  const document = {documentElement:{lang:"ru"}, addEventListener(name, fn) {if (name === 'DOMContentLoaded') this.start = fn;}, querySelector(selector) {return selector === '#app' || selector === '.desktop-sidebar' || selector === '.mobile-bottom-nav' ? shell : null;}};
   const window = {location:new URL(path, 'https://app.dream-wheels.ru'), history:{replaceState(_, __, target) {window.location = new URL(target, window.location);}}, addEventListener() {}, dispatchEvent() {}};
-  const calls = {dashboard:0, drafts:0};
-  const context = {state, window, document, HAS_TG:false, URLSearchParams, Event, applicationRouteContext, applicationRouteRequiresAuth, isApplicationRoute, safeApplicationReturnPath,
+  const calls = {dashboard:0, drafts:0, failStorage:storageFailure};
+  const stored = new Map();
+  const storage = {getItem:k=>stored.get(k)||null,setItem(k,v){if(calls.failStorage)throw Error("quota");stored.set(k,v);},removeItem:k=>stored.delete(k)};
+  const catalogHandoff = {storage,pending:null,error:""};
+  const context = {state, window, document, HAS_TG:false, URL, URLSearchParams, Event, captureCatalogHandoff, readCatalogHandoff, catalogHandoff, applicationRouteContext, applicationRouteRequiresAuth, isApplicationRoute, safeApplicationReturnPath,
     setView(view) {state.view = view;}, isApplicationAuthSessionReady:()=>false,
     initializeFrontendAuthBridge:()=>authPending ? new Promise(()=>{}) : Promise.resolve(),
     hydrateFilesFromDraft:async()=>{calls.drafts++;}, loadDashboardData:()=>{calls.dashboard++;return dashboardPending ? new Promise(()=>{}) : Promise.resolve();},
@@ -49,11 +54,12 @@ function lifecycle(path, {authPending = true, dashboardPending = false} = {}) {
   const authFunctions = source.slice(source.indexOf('function isApplicationAuthGranted()'), source.indexOf('async function bootstrapAuthenticatedApplication()'));
   const startup = source.slice(source.indexOf('document.addEventListener("DOMContentLoaded", async () => {'), source.indexOf('// Browser routes are independent'));
   const routes = source.slice(source.indexOf('// Browser routes are independent'));
-  runInNewContext(authFunctions + '\n' + routes + '\n' + startup, context);
+  const capture = source.slice(source.indexOf('function initializeCatalogHandoff()'),source.indexOf('document.addEventListener("DOMContentLoaded", async () => {'));
+  runInNewContext(capture + '\n' + authFunctions + '\n' + routes + '\n' + startup, context);
   const pending = document.start();
   let error;
   pending.catch(value=>{error = value;});
-  return {state, window, shell, calls, error:()=>error};
+  return {state, window, shell, calls, storage, retry:()=>context.initializeCatalogHandoff(), error:()=>error};
 }
 
 test('unknown legacy fallback locks Dashboard before the pending auth promise', async () => {
@@ -64,7 +70,7 @@ test('unknown legacy fallback locks Dashboard before the pending auth promise', 
   assert.equal(app.state.applicationRoute.view, 'dashboard');
   assert.equal(app.state.applicationAuthRequired, true);
   assert.equal(app.shell.hidden, true);
-  assert.deepEqual(app.calls, {dashboard:0, drafts:0});
+  assert.equal(app.calls.dashboard,0);assert.equal(app.calls.drafts,0);
 });
 
 test('public screens are applied while auth never resolves', async () => {
@@ -75,7 +81,7 @@ test('public screens are applied while auth never resolves', async () => {
     assert.equal(app.state.view, view, path);
     assert.equal(app.state.applicationAuthRequired, false);
     assert.equal(app.shell.hidden, false);
-    assert.deepEqual(app.calls, {dashboard:0, drafts:0});
+    assert.equal(app.calls.dashboard,0);assert.equal(app.calls.drafts,0);
   }
 });
 
@@ -88,4 +94,15 @@ test('public screens stay selected while later dashboard data never resolves', a
     assert.equal(app.state.view, view);
     assert.equal(app.shell.hidden, false);
   }
+});
+
+for(const path of ['/new','/app/new'])test(`full guest bootstrap retains validated handoff through storage refusal: ${path}`,async()=>{
+ const pair=catalogEntries.find(e=>e.selectedSkuId);
+ const query=new URLSearchParams({catalog_variant:pair.variantId,catalog_sku:pair.selectedSkuId,catalog_locale:'ru',catalog_source:'catalog',token:'drop'});
+ const app=lifecycle(path+'?'+query,{storageFailure:true});await Promise.resolve();
+ assert.equal(app.error(),undefined);assert.equal(app.state.applicationAuthRequired,true);assert.equal(app.shell.hidden,true);
+ assert.equal(app.window.location.pathname,'/new');assert.equal(app.window.location.searchParams.get('catalog_sku'),pair.selectedSkuId);assert.equal(app.window.location.searchParams.has('token'),false);
+ assert.match(app.state.applicationAuthReturnPath,/catalog_sku=/);assert.equal(app.storage.getItem('dreamWheelsCatalogHandoff:v1'),null);
+ const reloaded=lifecycle(app.window.location.pathname+app.window.location.search,{storageFailure:true});await Promise.resolve();assert.equal(reloaded.window.location.searchParams.get('catalog_variant'),pair.variantId);
+ app.calls.failStorage=false;app.retry();assert.ok(app.storage.getItem('dreamWheelsCatalogHandoff:v1'));assert.equal(app.window.location.searchParams.has('catalog_variant'),false);
 });

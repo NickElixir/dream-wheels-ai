@@ -1,3 +1,4 @@
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "./vnext/catalog-handoff.mjs";
 import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
@@ -504,10 +505,13 @@ const state = {
     createScreen: "upload",
     photoConsentAccepted: loadPhotoConsent(),
     files: { car: null, wheel: null },
+    catalogWheel: null,
     previewUrls: { car: "", wheel: "" },
     createAssetDraftId: "",
     createJobDraftId: "",
     createInputVersion: 0,
+    wheelReplacementToken: 0,
+    catalogCaptureRetry: null,
     createIdempotencyKey: "",
     vnextCreateSourceEditing: false,
     rimProductUrl: "",
@@ -2040,7 +2044,7 @@ function initializeApplicationRoute() {
         market: null,
         query: new URLSearchParams(),
     };
-    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/";
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location, undefined, state.catalogCaptureRetry) || "/";
     if (state.applicationAuthReturnPath) {
         const currentPath = `${window.location.pathname}${window.location.search}`;
         const paymentReturn = new URLSearchParams(window.location.search).get("payment");
@@ -2062,6 +2066,9 @@ async function bootstrapAuthenticatedApplication() {
     const generation = applicationDataGeneration;
     const promise = (async () => {
         await hydrateFilesFromDraft();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        initializeCatalogHandoff();
+        if (!state.catalogCaptureRetry) await catalogHandoff.resume();
         renderCreateInputs();
         refreshButtonsForCurrentView();
         await loadDashboardData();
@@ -2092,6 +2099,8 @@ function isApplicationAuthSessionReady() {
 }
 
 function clearApplicationSessionState() {
+    catalogHandoff.cancel();
+    state.catalogWheel = null;
     applicationDataGeneration += 1;
     applicationDataPromise = null;
     state.applicationDataReady = false;
@@ -8749,8 +8758,11 @@ async function repeatRenderWithSavedPhotos(jobId) {
             { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
         ];
         if (!ownsScreen()) return;
+        catalogHandoff.cancel();
         await saveDraftFiles(entries, { isCurrent: ownsScreen, operation, productUrl: job.render_input_snapshot?.rim?.product_url || "" });
         if (!ownsScreen()) return;
+        state.catalogWheel = null;
+        state.wheelReplacementToken += 1;
         resetCreateAssets();
         state.files.car = carFile;
         state.files.wheel = wheelFile;
@@ -9467,7 +9479,10 @@ async function saveDraftFile(kind, file, bytes) {
             type: file.type,
             bytes,
         });
-        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value: "" });
+        if (kind === "wheel") {
+            tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value: "" });
+            tx.objectStore(DRAFT_STORE_NAME).delete("catalog-wheel");
+        }
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -9475,9 +9490,12 @@ async function saveDraftFile(kind, file, bytes) {
 }
 
 // Keep the two source photos together: a failed transaction preserves the old draft.
-async function saveDraftFiles(entries, { isCurrent = () => true, operation = null, productUrl = "" } = {}) {
+async function saveDraftFiles(entries, { isCurrent = () => true, operation = null, productUrl = "", catalog = null, requireStorage = false } = {}) {
     const db = await openDraftDb();
-    if (!db) return;
+    if (!db) {
+        if (requireStorage) throw new Error("Draft storage unavailable");
+        return;
+    }
     try {
         if (!isCurrent()) return;
         await new Promise((resolve, reject) => {
@@ -9490,6 +9508,7 @@ async function saveDraftFiles(entries, { isCurrent = () => true, operation = nul
             try {
                 entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
                 store.put({ kind: "product-url", value: productUrl });
+                store.put({ kind: "catalog-wheel", value: catalog });
             } catch (error) {
                 tx.abort();
                 reject(error);
@@ -9507,7 +9526,13 @@ async function loadDraftFile(kind) {
     const entry = await new Promise((resolve, reject) => {
         const tx = db.transaction(DRAFT_STORE_NAME, "readonly");
         const request = tx.objectStore(DRAFT_STORE_NAME).get(kind);
-        request.onsuccess = () => resolve(request.result || null);
+        request.onsuccess = () => {
+            if (kind !== "wheel" || !request.result) { resolve(request.result || null); return; }
+            const entry = request.result;
+            const metadata = tx.objectStore(DRAFT_STORE_NAME).get("catalog-wheel");
+            metadata.onsuccess = () => resolve({ ...entry, catalog: metadata.result?.value || null });
+            metadata.onerror = () => reject(metadata.error);
+        };
         request.onerror = () => reject(request.error);
     });
     db.close();
@@ -9517,6 +9542,7 @@ async function loadDraftFile(kind) {
         name: entry.name,
         size: entry.size,
         type: entry.type,
+        catalog: entry.catalog || null,
     };
 }
 
@@ -9526,7 +9552,10 @@ async function deleteDraftFile(kind) {
     await new Promise((resolve, reject) => {
         const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
         tx.objectStore(DRAFT_STORE_NAME).delete(kind);
-        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).delete("product-url");
+        if (kind === "wheel") {
+            tx.objectStore(DRAFT_STORE_NAME).delete("product-url");
+            tx.objectStore(DRAFT_STORE_NAME).delete("catalog-wheel");
+        }
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -9570,6 +9599,7 @@ async function hydrateFilesFromDraft() {
             const draft = await loadDraftFile(kind);
             if (draft) {
                 state.files[kind] = draft;
+                if (kind === "wheel") state.catalogWheel = draft.catalog?.owner === catalogDraftOwner() && resolveCatalogSelection(draft.catalog) ? draft.catalog : null;
                 renderPreviewFromFile(kind, draft);
             }
         } catch {
@@ -10354,6 +10384,10 @@ function vnextCreateSnapshot() {
         resultUrl: state.resultUrl,
         bothReady: Boolean(state.files.car?.blob && state.files.wheel?.blob),
         consentAccepted: state.photoConsentAccepted,
+        catalogHandoff: catalogHandoff.snapshot(),
+        catalogWheel: resolveCatalogSelection(state.catalogWheel),
+        wheelReplacementToken: state.wheelReplacementToken,
+        draftOwnerKey: `${applicationDataGeneration}:${catalogDraftOwner()}`,
         rimProductUrl: state.rimProductUrl,
         productUrlError: state.createProductUrlError,
         sourceEditing: state.vnextCreateSourceEditing,
@@ -10367,6 +10401,21 @@ function vnextCreateSnapshot() {
 
 window.dreamwheelsCreateBridge = {
     snapshot: vnextCreateSnapshot,
+    async acceptCatalogWheel() {
+        if (state.catalogCaptureRetry) {
+            initializeCatalogHandoff();
+            if (state.catalogCaptureRetry) { notifyCreateBridge(); return; }
+            await catalogHandoff.resume();
+        }
+        return catalogHandoff.accept();
+    },
+    keepCurrentWheel() {
+        catalogHandoff.dismiss();
+        if (!catalogHandoff.pending && state.catalogCaptureRetry) {
+            state.catalogCaptureRetry = null;
+            window.history.replaceState({}, "", safeApplicationReturnPath(window.location) || "/new");
+        }
+    },
     pickFile(kind) { document.querySelector(`input[data-input="${kind}"]`)?.click(); },
     clearFile(kind) { clearSelectedFile(kind); notifyCreateBridge(); },
     createImage() { return submitJob(); },
@@ -10560,6 +10609,7 @@ function resetFlow() {
     state.sharing = false;
     state.submitting = false;
     state.files = { car: null, wheel: null };
+    state.wheelReplacementToken += 1;
     state.rimProductUrl = "";
     state.createProductUrlSaveToken += 1;
     resetCreateAssets();
@@ -10771,7 +10821,7 @@ function createProductUrlValue(value) {
 
 
 async function submitJob() {
-    if (state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
+    if (catalogHandoff.pending || catalogHandoff.busy || state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
     const inputVersion = state.createInputVersion;
     const carFile = state.files.car;
     const wheelFile = state.files.wheel;
@@ -10854,7 +10904,7 @@ async function submitJob() {
             if (!state.createIdempotencyKey) state.createIdempotencyKey = makeIdempotencyKey();
             const payload = {
                 draft_id: renderDraftId, idempotency_key: state.createIdempotencyKey,
-                rim: { product_url: createProductUrlValue(state.rimProductUrl) || null, source: "user_input" },
+                rim: { ...catalogRimProposal(state.catalogWheel), product_url: createProductUrlValue(state.rimProductUrl) || null, source: "user_input" },
                 rim_user_confirmed: false,
             };
             if (identity.init_data) payload.init_data = identity.init_data;
@@ -11008,12 +11058,13 @@ function classifyGenerationError(message, language = locale) {
 }
 
 function handleFileSelected(kind, file) {
+    catalogHandoff.cancel();
     // Selecting a replacement cancels pending Create before its bytes are ready.
     state.createInputVersion += 1;
     void trackEvent("upload_started", { asset_kind: kind });
     file.arrayBuffer().then((buffer) => {
         resetCreateAssets();
-        if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
+        if (kind === "wheel") { state.wheelReplacementToken += 1; state.catalogWheel = null; state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
         state.files[kind] = {
             blob: new Blob([buffer], { type: file.type }),
             name: file.name,
@@ -11031,8 +11082,10 @@ function handleFileSelected(kind, file) {
 }
 
 function clearSelectedFile(kind) {
+    catalogHandoff.cancel();
+    if (kind === "wheel") state.catalogWheel = null;
     state.files[kind] = null;
-    if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
+    if (kind === "wheel") { state.wheelReplacementToken += 1; state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
     resetCreateAssets();
     revokePreviewUrl(kind);
     resetPreviewGeometry(kind);
@@ -11709,7 +11762,47 @@ function initializeFrontendAuthBridge() {
     return controller.initialize();
 }
 
+function catalogDraftOwner() {
+    return receiptEmailAccountKey();
+}
+
+const catalogHandoff = new CatalogHandoffController({
+    storage: { getItem: key => sessionStorage.getItem(key), setItem: (key, value) => sessionStorage.setItem(key, value), removeItem: key => sessionStorage.removeItem(key) },
+    current: () => ({ authenticated: !HAS_TG && isApplicationAuthSessionReady(),
+        owner: `${applicationDataGeneration}:${catalogDraftOwner()}`, account: catalogDraftOwner(), version: state.createInputVersion,
+        wheel: state.files.wheel, catalog: state.catalogWheel }),
+    async persist(file, metadata, options) {
+        const bytes = await file.blob.arrayBuffer();
+        if (!options.isCurrent()) return;
+        await saveDraftFiles([{ kind: "wheel", file, bytes }], { ...options, requireStorage: true, catalog: { ...metadata, owner: catalogDraftOwner() } });
+    },
+    apply(file, metadata) {
+        state.files.wheel = file;
+        state.catalogWheel = { ...metadata, owner: catalogDraftOwner() };
+        state.wheelReplacementToken += 1;
+        state.rimProductUrl = "";
+        state.createProductUrlSaveToken += 1;
+        resetCreateAssets();
+        renderPreviewFromFile("wheel", file);
+        renderCreateInputs();
+    },
+    publish: () => notifyCreateBridge(),
+});
+
+function initializeCatalogHandoff() {
+    if (HAS_TG) return;
+    const captured = captureCatalogHandoff(new URL(window.location.href), catalogHandoff.storage);
+    state.catalogCaptureRetry = captured?.error === "storage" ? captured.value : null;
+    if (state.catalogCaptureRetry) catalogHandoff.pending = captured.value;
+    if (captured?.error) catalogHandoff.error = captured.error;
+    else if (captured?.value) catalogHandoff.error = "";
+    if (captured?.cleanUrl) window.history.replaceState({}, "", captured.cleanUrl);
+    const pending = captured?.value || readCatalogHandoff(catalogHandoff.storage);
+    if (pending) { locale = pending.locale; document.documentElement.lang = locale; }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
+    initializeCatalogHandoff();
     void trackEvent("app_opened", { surface: HAS_TG ? "telegram" : "website" });
     if (HAS_TG && tg?.initData) void trackEvent("auth_completed", { auth_channel: "mini_app" });
     void checkCurrentBuild();
@@ -11798,8 +11891,9 @@ function syncWebNavigation(view, explicitJobId = "") {
     if (HAS_TG || restoringWebRoute || typeof window.location?.pathname !== "string") return;
     if (view === "wallet" && new URLSearchParams(window.location.search).has("payment")) return;
     const jobId = explicitJobId || (view === "fitment" ? state.fitmentJobId : state.renderDetailJobId);
-    const target = webRoutePath(view, jobId, window.location);
-    if (!target) return;
+    const path = webRoutePath(view, jobId, window.location);
+    if (!path) return;
+    const target = safeApplicationReturnPath(new URL(path, window.location.href), undefined, state.catalogCaptureRetry) || path;
     const current = window.location.pathname + window.location.search;
     if (current !== target) {
         webScrollPositions.set(current, document.querySelector("#app")?.scrollTop || window.scrollY || 0);
@@ -11814,7 +11908,7 @@ function restoreWebRoute() {
     const route = applicationRouteContext(window.location);
     if (!route) return false;
     state.applicationRoute = route;
-    state.applicationAuthReturnPath = route.returnPath;
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location, undefined, state.catalogCaptureRetry) || route.returnPath;
     updateWebRouteAuth(route);
     if (state.applicationAuthRequired && !isApplicationAuthSessionReady()) return true;
     restoringWebRoute = true;

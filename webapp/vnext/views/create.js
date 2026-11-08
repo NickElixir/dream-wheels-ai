@@ -2,6 +2,7 @@ import { copy as uiText, applicationLocale, localeOf } from "../copy.mjs";
 import { createButton } from "../ui/primitives.js";
 
 const sourceInputState = new WeakMap();
+const createViewOwner = new WeakMap();
 
 function imageStage(kind, file, callbacks, disabled, snapshot, locale = localeOf(snapshot)) {
   const article = document.createElement("article");
@@ -88,7 +89,7 @@ function sourceEditor(snapshot, callbacks) {
   input.autocomplete = "url";
   input.placeholder = "https://";
   input.value = snapshot.rimProductUrl || "";
-  const inputState = { savedValue: input.value, edited: false };
+  const inputState = { savedValue: input.value, edited: false, wheel: snapshot.wheelReplacementToken };
   sourceInputState.set(input, inputState);
   input.addEventListener("input", () => {
     inputState.edited = true;
@@ -126,13 +127,89 @@ function sourceEditor(snapshot, callbacks) {
   return form;
 }
 
+function catalogNotice(snapshot, callbacks) {
+  const handoff = snapshot.catalogHandoff || {};
+  if (!handoff.selection && !handoff.error) return null;
+  const locale = localeOf(snapshot);
+  const warning = Boolean(handoff.error && !handoff.busy);
+  const box = document.createElement("section");
+  box.className = `vnext-create__catalog-notice${warning ? " is-warning" : ""}`;
+  box.dataset.createFocus = "catalog-status";
+  box.tabIndex = -1;
+  box.setAttribute("role", "region");
+  box.setAttribute("aria-labelledby", "catalog-replace-title");
+  box.setAttribute("aria-busy", String(Boolean(handoff.busy)));
+  const details = document.createElement("div");
+  details.className = "vnext-create__catalog-copy";
+  const title = document.createElement("h2");
+  title.id = "catalog-replace-title";
+  const errorTitle = handoff.error === "storage" ? "create.catalog.saveErrorTitle" : handoff.error === "invalid" ? "create.catalog.restoreErrorTitle" : "create.catalog.errorTitle";
+  title.textContent = uiText(handoff.busy ? "create.catalog.loading" : warning ? errorTitle : "create.catalog.replaceTitle", locale);
+  if (warning) {
+    title.className = "vnext-create__catalog-warning-title";
+    const icon = document.createElement("span");
+    icon.className = "vnext-create__catalog-warning-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3v.1"/></svg>';
+    title.append(icon);
+  }
+  if (!warning) details.append(title);
+  if (handoff.selection) {
+    const image = document.createElement("img");
+    image.src = handoff.selection.thumbnail;
+    image.alt = handoff.selection.name;
+    image.width = image.height = 76;
+    box.append(image);
+    const name = document.createElement("p");
+    if (warning) name.className = "vnext-create__catalog-name";
+    name.textContent = handoff.selection.name;
+    const sku = document.createElement("p");
+    sku.textContent = uiText("create.catalog.sku", locale, { value0: handoff.selection.sku.sku });
+    const description = document.createElement("p");
+    description.textContent = uiText("create.catalog.description", locale);
+    details.append(name, sku);
+    if (!warning) details.append(description);
+  }
+  if (warning) details.append(title);
+  if (handoff.error) {
+    const error = document.createElement("p");
+    error.setAttribute("role", "alert");
+    error.textContent = uiText(`create.catalog.${handoff.error}`, locale);
+    details.append(error);
+  }
+  box.append(details);
+  if (handoff.selection) {
+    const actions = document.createElement("div");
+    actions.className = "vnext-create__catalog-actions";
+    const replace = createButton({ label: uiText(warning ? handoff.error === "storage" ? "create.catalog.retrySave" : "create.catalog.retry" : "create.catalog.replace", locale), disabled: handoff.busy || snapshot.submitting, onClick: callbacks.acceptCatalogWheel });
+    replace.dataset.createFocus = "catalog-replace";
+    const keep = createButton({ label: uiText("create.catalog.keep", locale), variant: "secondary", disabled: handoff.busy || snapshot.submitting, onClick: callbacks.keepCurrentWheel });
+    keep.dataset.createFocus = "catalog-keep";
+    actions.append(replace, keep);
+    box.append(actions);
+  }
+  return box;
+}
+
 export function createCreateView(snapshot = {}, callbacks = {}) {
   const page = document.createElement("section");
   page.className = "vnext-create";
+  createViewOwner.set(page, snapshot.draftOwnerKey);
 
   const pair = document.createElement("div");
   pair.className = "vnext-create__pair";
-  pair.append(imageStage("car", snapshot.files?.car, callbacks, snapshot.submitting, snapshot, localeOf(snapshot)), imageStage("wheel", snapshot.files?.wheel, callbacks, snapshot.submitting, snapshot, localeOf(snapshot)));
+  const notice = catalogNotice(snapshot, callbacks);
+  if (notice) pair.append(notice);
+  const disabled = snapshot.submitting || snapshot.catalogHandoff?.busy;
+  const car = imageStage("car", snapshot.files?.car, callbacks, disabled, snapshot, localeOf(snapshot));
+  const wheel = imageStage("wheel", snapshot.files?.wheel, callbacks, disabled, snapshot, localeOf(snapshot));
+  if (snapshot.catalogWheel) {
+    const label = document.createElement("p");
+    label.className = "vnext-create__catalog-selected";
+    label.textContent = `${snapshot.catalogWheel.name} — ${uiText("create.catalog.sku", localeOf(snapshot), { value0: snapshot.catalogWheel.sku.sku })}`;
+    wheel.append(label);
+  }
+  pair.append(car, wheel);
   page.append(pair, sourceEditor(snapshot, callbacks));
 
   if (snapshot.bothReady) {
@@ -179,7 +256,7 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 
   const actions = document.createElement("div");
   actions.className = "vnext-create__actions";
-  const reason = !snapshot.files?.car ? uiText("create.addACarPhoto", localeOf(snapshot))
+  const reason = snapshot.catalogHandoff?.selection || snapshot.catalogHandoff?.busy ? uiText("create.catalog.resolve", localeOf(snapshot)) : !snapshot.files?.car ? uiText("create.addACarPhoto", localeOf(snapshot))
     : !snapshot.files?.wheel ? uiText("create.addAWheelPhoto", localeOf(snapshot))
     : !snapshot.consentAccepted ? uiText("create.confirmConsentToProcessThePhotos", localeOf(snapshot)) : "";
   actions.append(createButton({ label: uiText("create.createImage", localeOf(snapshot)), onClick: callbacks.createImage, disabled: Boolean(reason || snapshot.submitting) }));
@@ -196,15 +273,17 @@ export function createCreateView(snapshot = {}, callbacks = {}) {
 }
 
 export function refreshCreateView(current, snapshot, callbacks, locale = applicationLocale()) {
+  const sameOwner = createViewOwner.get(current) === snapshot.draftOwnerKey;
   const values = new Map([...current.querySelectorAll("input[name]")]
     .filter((input) => {
       const state = sourceInputState.get(input);
+      if (!sameOwner || (state && state.wheel !== snapshot.wheelReplacementToken)) return false;
       return !state || state.edited || input.value !== state.savedValue;
     })
     .map((input) => [input.name, { value: input.value, savedValue: sourceInputState.get(input)?.savedValue }]));
   const focused = document.activeElement;
-  const focusName = current.contains(focused) ? focused.name : "";
-  const focusKey = current.contains(focused) ? focused.dataset?.createFocus : "";
+  const focusName = sameOwner && current.contains(focused) ? focused.name : "";
+  const focusKey = current.contains(focused) && createViewOwner.get(current) === snapshot.draftOwnerKey ? focused.dataset?.createFocus : "";
   const selection = focusName ? [focused.selectionStart, focused.selectionEnd] : null;
   const next = createCreateView(snapshot, callbacks);
   current.replaceWith(next);
@@ -225,6 +304,11 @@ export function refreshCreateView(current, snapshot, callbacks, locale = applica
       }
     }
   }
-  if (focusKey) next.querySelector(`[data-create-focus="${focusKey}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  if (focusKey) {
+    const preferred = focusKey === "catalog-status" && !snapshot.catalogHandoff?.busy ? "catalog-replace" : focusKey;
+    const target = next.querySelector(`[data-create-focus="${preferred}"]:not(:disabled)`)
+      || (focusKey.startsWith("catalog-") ? next.querySelector('[data-create-focus="catalog-status"]') || next.querySelector('[data-create-focus="photo-wheel"]:not(:disabled)') : null);
+    target?.focus({ preventScroll: true });
+  }
   return next;
 }

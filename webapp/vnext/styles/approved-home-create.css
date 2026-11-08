@@ -348,3 +348,32 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 
 @media(hover:hover) {
   .vnext-create .vnext-create__stage.is-ready:hover:not(:disabled) img { outline:1px solid var(--vnext-text); outline-offset:0; }}
+
+/* Catalog intent is a decision above both photos on desktop, before the wheel on mobile. */
+.vnext-create__catalog-notice { grid-column:1/-1; display:flex; align-items:center; gap:20px; padding:20px 24px; border:1px solid var(--vnext-border-strong); border-radius:12px; background:var(--vnext-surface-elevated); }
+.vnext-create__catalog-notice.is-warning { border-color:color-mix(in srgb,var(--vnext-warning) 60%,transparent); background:color-mix(in srgb,var(--vnext-warning) 7%,var(--vnext-surface-elevated)); }
+.vnext-create__catalog-copy .vnext-create__catalog-warning-title { display:flex; align-items:flex-start; gap:8px; color:var(--vnext-warning); }
+.vnext-create__catalog-notice.is-warning .vnext-create__catalog-copy .vnext-create__catalog-name { margin:0 0 4px; font-size:18px; line-height:1.35; font-weight:600; color:var(--vnext-text); }
+.vnext-create__catalog-notice.is-warning .vnext-create__catalog-warning-title { margin-top:12px; font-size:16px; }
+.vnext-create__catalog-warning-icon { order:-1; flex:0 0 20px; width:20px; height:20px; margin-top:2px; }
+.vnext-create__catalog-warning-icon svg { display:block; width:100%; height:100%; }
+.vnext-create__catalog-notice.is-warning .vnext-create__catalog-copy p { color:color-mix(in srgb,var(--vnext-text-secondary) 85%,var(--vnext-warning)); }
+.vnext-create__catalog-notice > img { flex:0 0 76px; width:76px; height:76px; object-fit:contain; border-radius:9px; background:#fff; }
+.vnext-create__catalog-copy { flex:1; min-width:0; }
+.vnext-create__catalog-copy h2 { font-size:18px; line-height:1.35; margin:0 0 6px; }
+.vnext-create__catalog-copy p { margin:3px 0; font-size:14px; line-height:1.5; color:var(--vnext-text-secondary); overflow-wrap:anywhere; }
+.vnext-create__catalog-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.vnext-create__catalog-actions .vnext-button { white-space:nowrap; }
+.vnext-create__catalog-selected { color:var(--vnext-text-secondary); font-size:14px; overflow-wrap:anywhere; }
+@media(min-width:701px) and (max-width:1200px) {
+  .vnext-create__catalog-notice { flex-wrap:wrap; }
+  .vnext-create__catalog-copy { flex-basis:calc(100% - 100px); }
+  .vnext-create__catalog-actions { margin-left:96px; justify-content:flex-start; }
+}
+@media(max-width:700px) {
+  .vnext-create__pair:has(.vnext-create__catalog-notice) .vnext-create__object--car { grid-row:1; }
+  .vnext-create__catalog-notice { grid-row:2; display:grid; grid-template-columns:56px minmax(0,1fr); gap:14px; padding:18px; }
+  .vnext-create__catalog-notice > img { width:56px; height:56px; align-self:start; }
+  .vnext-create__catalog-actions { grid-column:1/-1; display:grid; grid-template-columns:1fr; margin:0; }
+  .vnext-create__pair:has(.vnext-create__catalog-notice) .vnext-create__object--wheel { grid-row:3; }
+}

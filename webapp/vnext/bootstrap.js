@@ -85,6 +85,8 @@ function refreshMountedRender(locale = applicationLocale()) {
 function createCallbacks() {
   return {
     openAuth: legacyOpenAuth,
+    acceptCatalogWheel: () => window.dreamwheelsCreateBridge?.acceptCatalogWheel(),
+    keepCurrentWheel: () => window.dreamwheelsCreateBridge?.keepCurrentWheel(),
     pickFile: (kind) => window.dreamwheelsCreateBridge?.pickFile(kind),
     clearFile: (kind) => window.dreamwheelsCreateBridge?.clearFile(kind),
     createImage: () => window.dreamwheelsCreateBridge?.createImage(),

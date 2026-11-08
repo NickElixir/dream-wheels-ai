@@ -1,3 +1,4 @@
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "../vnext/catalog-handoff.mjs";
 import { copy, legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../vnext/fitment-display.mjs";
@@ -40,7 +41,7 @@ class TestElement {
 const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8").replace(/^import \{[\s\S]*?\} from "\.\/app-route\.mjs";\n\n/u, `const fitmentDisplayValue = ${fitmentDisplayValue.toString()};\nconst buildFitmentRimReadiness = ${buildFitmentRimReadiness.toString()};\n`).replace(/import \{ fitmentDisplayValue \} from "\.\/vnext\/fitment-display\.mjs";\nimport \{ buildFitmentRimReadiness \} from "\.\/vnext\/fitment-readiness\.mjs";\n\n/u, "");
 function runtime() {
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = { legacyTranslations, errorCopy, uiCopy:copy,
+  const context = { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal, legacyTranslations, errorCopy, uiCopy:copy,
     URL, URLSearchParams, Blob, FormData, console,
     document: { documentElement: { dataset: {} }, body: { classList: { add() {}, remove() {} }, appendChild() {} }, addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], createElement: () => ({ click() {}, remove() {}, set textContent(value) { this.innerHTML = String(value); } }) },
     window: { addEventListener() {}, Telegram: {}, location: { search: "" }, dispatchEvent() {}, scrollTo() {} },

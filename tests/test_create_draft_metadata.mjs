@@ -45,7 +45,7 @@ test('pair replacement persists source link in the same transaction as both phot
     const context={openDraftDb:async()=>db,DRAFT_STORE_NAME:'files'};
     vm.runInNewContext(fn('saveDraftFiles'),context);
     await context.saveDraftFiles([{kind:'car',file:{name:'car'}},{kind:'wheel',file:{name:'wheel'}}],{productUrl:'https://shop.example.test/saved'});
-    assert.deepEqual(writes.map(entry=>entry.kind),['car','wheel','product-url']);
+    assert.deepEqual(writes.map(entry=>entry.kind),['car','wheel','product-url','catalog-wheel']);
     assert.equal(writes[2].value,'https://shop.example.test/saved');
 });
 test('wheel replacement/removal clears its saved URL; car replacement does not', async () => {
@@ -56,9 +56,10 @@ test('wheel replacement/removal clears its saved URL; car replacement does not',
     await context.saveDraftFile('car',{},new ArrayBuffer(0));
     assert.equal(writes.length,1);
     await context.saveDraftFile('wheel',{},new ArrayBuffer(0));
-    assert.equal(writes.at(-1).kind,'product-url');assert.equal(writes.at(-1).value,'');
+    assert.equal(writes.at(-2).kind,'product-url');assert.equal(writes.at(-2).value,'');
+    assert.equal(writes.at(-1).deleted,'catalog-wheel');
     await context.deleteDraftFile('wheel');
-    assert.equal(writes.at(-1).deleted,'product-url');
+    assert.equal(writes.at(-2).deleted,'product-url');assert.equal(writes.at(-1).deleted,'catalog-wheel');
 });
 test('hydration restores saved URL and leaves newer in-memory URL intact', async () => {
     const db={transaction(){return {objectStore:()=>({get(){const request={};queueMicrotask(()=>{request.result={value:'https://shop.example.test/stored'};request.onsuccess();});return request;}})};},close(){}};
@@ -68,4 +69,16 @@ test('hydration restores saved URL and leaves newer in-memory URL intact', async
     await context.hydrateFilesFromDraft();assert.equal(state.rimProductUrl,'https://shop.example.test/stored');
     state.rimProductUrl='https://shop.example.test/newer';
     await context.hydrateFilesFromDraft();assert.equal(state.rimProductUrl,'https://shop.example.test/newer');
+});
+
+test('catalog selection commits wheel bytes and identity atomically without touching car', async () => {
+    const writes=[];
+    const db={transaction(){const tx={objectStore:()=>({put:entry=>writes.push(entry)})};queueMicrotask(()=>tx.oncomplete());return tx;},close(){}};
+    const context={openDraftDb:async()=>db,DRAFT_STORE_NAME:'files'};
+    vm.runInNewContext(fn('saveDraftFiles'),context);
+    const catalog={variantId:'pair',skuId:'sku',owner:'alice'};
+    await context.saveDraftFiles([{kind:'wheel',file:{name:'wheel'},bytes:new ArrayBuffer(1)}],{catalog,requireStorage:true});
+    assert.deepEqual(writes.map(x=>x.kind),['wheel','product-url','catalog-wheel']);assert.equal(writes.at(-1).value,catalog);
+    context.openDraftDb=async()=>null;
+    await assert.rejects(context.saveDraftFiles([],{requireStorage:true}),/storage unavailable/);
 });
