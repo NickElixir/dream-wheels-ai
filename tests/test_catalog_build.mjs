@@ -21,9 +21,10 @@ async function fixture(target){
 }
 test('hosting profiles pin catalog target; overrides cannot weaken production/preview checks',()=>{
  assert.equal(expectedCatalogTarget({VERCEL_ENV:'production'}),'production');assert.equal(expectedCatalogTarget({VERCEL_ENV:'preview'}),'staging');
+ assert.equal(expectedCatalogTarget({VERCEL_ENV:'preview',EXPECTED_SUPABASE_URL:'https://qmgyccghsbdpehiybjae.supabase.co'}),'production');
  assert.equal(expectedCatalogTarget({TIMEWEB_PROFILE:'ru-test'}),'production');
  assert.equal(expectedCatalogTarget({TIMEWEB_LANDING_PROFILE:'landing-ru-test'}),'staging');
- for(const env of [{VERCEL_ENV:'production',CATALOG_BUILD_TARGET:'staging'},{VERCEL_ENV:'preview',EXPECTED_SUPABASE_URL:'https://qmgyccghsbdpehiybjae.supabase.co'},{TIMEWEB_LANDING_PROFILE:'landing-ru-production',CATALOG_BUILD_TARGET:'staging'}])assert.throws(()=>expectedCatalogTarget(env),/disagree/);
+ for(const env of [{VERCEL_ENV:'production',CATALOG_BUILD_TARGET:'staging'},{VERCEL_ENV:'production',EXPECTED_SUPABASE_URL:'https://qmgyccghsbdpehiybjae.supabase.co',CATALOG_BUILD_TARGET:'staging'},{TIMEWEB_LANDING_PROFILE:'landing-ru-production',CATALOG_BUILD_TARGET:'staging'}])assert.throws(()=>expectedCatalogTarget(env),/disagree/);
 });
 for(const target of ['staging','production'])test(`generated ${target} bundle fails closed for the other environment`,async()=>{
  const temp=await fixture(target);
@@ -68,5 +69,23 @@ test('stale generated primary SKU cannot pass a frontend build even with a valid
   const source=await fs.readFile(file,'utf8');
   await fs.writeFile(file,source.replace(/"selectedSkuId": "[^"]+"/,'"selectedSkuId": "unapproved"'));
   assert.throws(()=>assertCatalogBuild({root:temp,env:{VERCEL_ENV:'production'}}),/primary SKU mappings/);
+ }finally{await fs.rm(temp,{recursive:true,force:true});}
+});
+
+for(const explicit of [false,true])test(`staging production slot accepts pinned staging catalog: explicit target=${explicit}`,async()=>{
+ const temp=await fixture('staging');
+ try{
+  await fs.mkdir(path.join(temp,'webapp/auth'));
+  await fs.copyFile(path.join(root,'webapp/scripts/build-public-config.mjs'),path.join(temp,'webapp/scripts/build-public-config.mjs'));
+  const env={...process.env,VERCEL_ENV:'production',EXPECTED_SUPABASE_URL:'https://hnawojlnfoaccinlgjyn.supabase.co',SUPABASE_URL:'https://hnawojlnfoaccinlgjyn.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_test',TURNSTILE_SITE_KEY:'local-test'};
+  delete env.TIMEWEB_PROFILE;delete env.TIMEWEB_LANDING_PROFILE;delete env.CATALOG_BUILD_TARGET;
+  if(explicit)env.CATALOG_BUILD_TARGET='staging';
+  assert.equal(expectedCatalogTarget(env),'staging');assert.equal(assertCatalogBuild({root:temp,env}),'staging');
+  execFileSync(process.execPath,['scripts/build-public-config.mjs'],{cwd:path.join(temp,'webapp'),env,stdio:'pipe'});
+  const config=await fs.readFile(path.join(temp,'webapp/auth/harness-config.js'),'utf8');
+  assert.ok(config.includes('https://hnawojlnfoaccinlgjyn.supabase.co'));assert.ok(!config.includes('qmgyccghsbdpehiybjae'));
+  const productionEnv={...env,EXPECTED_SUPABASE_URL:'https://qmgyccghsbdpehiybjae.supabase.co',SUPABASE_URL:'https://qmgyccghsbdpehiybjae.supabase.co',CATALOG_BUILD_TARGET:'production'};
+  assert.throws(()=>assertCatalogBuild({root:temp,env:productionEnv}),/deployment target/);
+  assert.throws(()=>execFileSync(process.execPath,['scripts/build-public-config.mjs'],{cwd:path.join(temp,'webapp'),env:productionEnv,stdio:'pipe'}),error=>/Catalog build mismatch: deployment target/.test(error.stderr?.toString()));
  }finally{await fs.rm(temp,{recursive:true,force:true});}
 });

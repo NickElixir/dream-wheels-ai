@@ -103,7 +103,7 @@ else:
         EXPECTED_SUPABASE_URL=origin,
         TEST_SUPABASE_URL=origin,
         CATALOG_BUILD_TARGET=catalog_target,
-        VERCEL_ENV="production" if catalog_target == "production" else "preview",
+        VERCEL_ENV="preview" if job_name == "deploy-preview" else "production",
         TEST_BACKEND_URL=backend,
         TEST_BUILD_FAIL=str(int(build_fails)),
     )

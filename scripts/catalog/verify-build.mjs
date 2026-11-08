@@ -7,8 +7,6 @@ const projects = Object.freeze({production:'qmgyccghsbdpehiybjae',staging:'hnawo
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export function expectedCatalogTarget(env = {}) {
     const required = [];
-    if (env.VERCEL_ENV === 'production') required.push('production');
-    if (env.VERCEL_ENV === 'preview') required.push('staging');
     if (env.TIMEWEB_PROFILE) {
         if (!['ru-test','ru-production'].includes(env.TIMEWEB_PROFILE)) throw Error('Unknown Timeweb catalog profile');
         // Both RU app profiles currently use production Auth/API/data.
@@ -23,6 +21,12 @@ export function expectedCatalogTarget(env = {}) {
         const target = known[env.EXPECTED_SUPABASE_URL.replace(/\/$/, '')];
         if (!target) throw Error('Unknown catalog deployment project');
         required.push(target);
+    }
+    // VERCEL_ENV identifies a slot within a project. The separate staging
+    // project also uses its production slot; the workflow's pinned data target wins.
+    if (!required.length) {
+        if (env.VERCEL_ENV === 'production') required.push('production');
+        if (env.VERCEL_ENV === 'preview') required.push('staging');
     }
     if (env.CATALOG_BUILD_TARGET) {
         if (!['staging','production'].includes(env.CATALOG_BUILD_TARGET)) throw Error('Invalid CATALOG_BUILD_TARGET');
