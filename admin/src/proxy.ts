@@ -1,37 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminAuthHeaders, checkAdminAuth } from "./lib/admin-auth";
 
 function unauthorized() {
   return new NextResponse("Authentication required", {
     status: 401,
     headers: {
       "WWW-Authenticate": 'Basic realm="Dream Wheels Admin"',
+      "Cache-Control": "private, no-store",
     },
   });
 }
 
 export function proxy(request: NextRequest) {
-  const username = process.env.ADMIN_USERNAME;
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (!username || !password) {
-    return new NextResponse("Admin auth is not configured", { status: 503 });
+  const status = checkAdminAuth(request.headers.get("authorization"));
+  if (status === 401) return unauthorized();
+  if (status !== 200) {
+    return new NextResponse("Admin auth is not configured", { status, headers: adminAuthHeaders(status) });
   }
-
-  const header = request.headers.get("authorization");
-  if (!header?.startsWith("Basic ")) {
-    return unauthorized();
-  }
-
-  const credentials = atob(header.slice("Basic ".length));
-  const separatorIndex = credentials.indexOf(":");
-  const providedUsername = credentials.slice(0, separatorIndex);
-  const providedPassword = credentials.slice(separatorIndex + 1);
-
-  if (providedUsername !== username || providedPassword !== password) {
-    return unauthorized();
-  }
-
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
 }
 
 export const config = {
