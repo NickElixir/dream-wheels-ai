@@ -393,9 +393,9 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
                 <tbody className="divide-y divide-neutral-900">
                   {recentJobs.map((job) => (
                     <tr key={job.id} className="text-neutral-300">
-                      <td className="px-4 py-3"><Link href={jobHref(job.id)} prefetch={false} aria-label={`View job ${job.id}`}>
+                      <td className="px-4 py-3">
                         <JobPreview url={job.has_result ? mediaPath(job.id, "result") : null} />
-                      </Link></td>
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs text-neutral-400">
                         <div className="flex items-center gap-2">{compactId(job.id)}<CopyId id={job.id} /></div>
                         <div className="my-2"><UserLabel username={job.username} telegramUserId={job.telegram_user_id || `User #${job.user_id}`} /></div>
