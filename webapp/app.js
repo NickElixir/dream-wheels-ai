@@ -464,6 +464,7 @@ const state = {
     accountLinkTurnstileWidget: null,
     accountMergeOpen: false,
     accountMergeBusy: false,
+    accountMergeOperation: null,
     accountMergeToken: null,
     accountMergeProvider: null,
     accountMergeStatus: "",
@@ -512,6 +513,7 @@ const state = {
     draftCredential: "",
     draftLoading: false,
     draftError: false,
+    draftRetryOperation: null,
     legacyDraftAvailable: false,
     legacyDraftBusy: false,
     legacyDraftError: false,
@@ -1655,23 +1657,27 @@ function renderAccountSettings() {
     ].join("");
 }
 
-async function loadAccountState({ silent = false } = {}) {
-    if (!isFrontendUserAuthenticated()) return;
+async function loadAccountState({ silent = false, isCurrent = () => true } = {}) {
+    if (!isFrontendUserAuthenticated() || !isCurrent()) return;
     state.accountStateLoading = !silent;
     state.accountStateError = "";
     state.accountStateErrorKey = "";
     renderAccountSettings();
     try {
         const response = await authenticatedFetch(accountRequestUrl("/auth/account"));
+        if (!isCurrent()) return;
         if (!response.ok) throw new Error(await parseApiError(response));
         const payload = await response.json();
+        if (!isCurrent()) return;
         state.accountState = payload;
         emitVNextDashboardChange();
     } catch (error) {
-        setAccountPresentation("accountStateError", "account.settings.loadFailed");
+        if (isCurrent()) setAccountPresentation("accountStateError", "account.settings.loadFailed");
     } finally {
-        state.accountStateLoading = false;
-        renderAccountSettings();
+        if (isCurrent()) {
+            state.accountStateLoading = false;
+            renderAccountSettings();
+        }
     }
 }
 
@@ -1771,6 +1777,7 @@ async function submitAccountLink(provider, proof) {
 }
 
 function showAccountMerge(result, provider) {
+    state.accountMergeOperation = null;
     state.accountLinkDialogOpen = false;
     state.accountMergeOpen = true;
     state.accountMergeBusy = false;
@@ -1887,8 +1894,26 @@ async function startTelegramAccountLink() {
     }
 }
 
+function cancelAccountMergeOperation() {
+    state.accountMergeOperation = null;
+    state.accountMergeBusy = false;
+    state.accountMergeOpen = false;
+    state.accountMergeToken = null;
+    state.accountMergeStatus = "";
+    state.accountMergeStatusKey = "";
+    const status = document.querySelector("[data-account-merge-status]");
+    if (status) { status.textContent = ""; delete status.dataset.tone; }
+    document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
+}
+
 async function confirmAccountMerge() {
     if (!state.accountMergeToken || state.accountMergeBusy) return;
+    const credential = draftCredentialMarker();
+    if (!credential) return;
+    const operation = { credential, token: state.accountMergeToken };
+    state.accountMergeOperation = operation;
+    const isCurrent = () => state.accountMergeOperation === operation
+        && state.accountMergeToken === operation.token && credential === draftCredentialMarker();
     state.accountMergeBusy = true;
     setAccountPresentation("accountMergeStatus", "account.merge.processing");
     const status = document.querySelector("[data-account-merge-status]");
@@ -1897,25 +1922,38 @@ async function confirmAccountMerge() {
         const response = await authenticatedFetch(accountRequestUrl("/auth/account/merge"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ merge_token: state.accountMergeToken }),
+            body: JSON.stringify({ merge_token: operation.token }),
         });
+        if (!isCurrent()) return;
         if (!response.ok) throw new Error(await parseApiError(response));
+        // This operation intentionally changes the canonical draft owner. Its
+        // session guard survives that reset, but not a real auth/tab boundary.
         invalidateAccountDraft();
         window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
-        if (await resolveAccountDraftOwner()) await hydrateFilesFromDraft();
-        await loadAccountState({ silent: true });
+        const resolved = await resolveAccountDraftOwner();
+        if (!isCurrent()) return;
+        if (resolved) {
+            await hydrateFilesFromDraft();
+            if (!isCurrent()) return;
+        }
+        await loadAccountState({ silent: true, isCurrent });
+        if (!isCurrent()) return;
         setAccountPresentation("accountSettingsNotice", "account.merge.success");
         state.accountMergeOpen = false;
         document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
         renderAccountSettings();
     } catch (_) {
+        if (!isCurrent()) return;
         setAccountPresentation("accountMergeStatus", "account.merge.failed");
         if (status) {
             status.textContent = state.accountMergeStatus;
             status.dataset.tone = "error";
         }
     } finally {
-        state.accountMergeBusy = false;
+        if (isCurrent()) {
+            state.accountMergeBusy = false;
+            state.accountMergeOperation = null;
+        }
     }
 }
 
@@ -2112,6 +2150,7 @@ function isApplicationAuthSessionReady() {
 }
 
 function clearApplicationSessionState() {
+    cancelAccountMergeOperation();
     invalidateAccountDraft();
     catalogHandoff.cancel();
     state.catalogWheel = null;
@@ -2153,6 +2192,7 @@ function getWebsiteAuthToken() {
 }
 
 function clearWebsiteAuthSession({ refreshUi = true } = {}) {
+    cancelAccountMergeOperation();
     if (state.draftOwner || state.draftLoading) invalidateAccountDraft();
     state.websiteAuth = null;
     sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
@@ -2631,6 +2671,7 @@ function handleFrontendAuthState(nextState, event = null) {
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
     const credential = draftCredentialMarker();
+    if (state.accountMergeOperation && credential !== state.accountMergeOperation.credential) cancelAccountMergeOperation();
     if ((state.draftOwner || state.draftLoading) && (!credential || credential !== state.draftCredential)) {
         invalidateAccountDraft();
         window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
@@ -3078,6 +3119,7 @@ function closeLogoutDialog() {
 }
 
 async function logoutCurrentFrontendAuthority() {
+    cancelAccountMergeOperation();
     invalidateAccountDraft();
     window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
     const controller = frontendAuthController();
@@ -9512,6 +9554,7 @@ function invalidateAccountDraft({ resetBootstrap = true } = {}) {
     state.draftEpoch += 1;
     state.draftAbort = null;
     state.draftOwner = null;
+    state.draftRetryOperation = null;
     state.draftCredential = "";
     state.draftLoading = false;
     state.draftError = false;
@@ -9661,7 +9704,7 @@ async function restoreLegacyAccountDraft() {
 function bindDraftSessionBoundary() {
     // No photos, identifiers or credentials are broadcast. A receiving tab must
     // verify its own session again, never adopt another tab's asserted owner.
-    const invalidate = () => { invalidateAccountDraft(); state.draftError = true; notifyCreateBridge(); };
+    const invalidate = () => { cancelAccountMergeOperation(); invalidateAccountDraft(); state.draftError = true; notifyCreateBridge(); };
     const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("dream-wheels-draft-session") : null;
     if (channel) channel.onmessage = invalidate;
     window.addEventListener("storage", event => {
@@ -10473,12 +10516,31 @@ function vnextCreateSnapshot() {
 window.dreamwheelsCreateBridge = {
     snapshot: vnextCreateSnapshot,
     async retryAccountDraft() {
+        const credential = draftCredentialMarker();
+        if (!credential) return;
         state.draftError = false;
-        if (await resolveAccountDraftOwner()) {
+        // Owner resolution can synchronously start a new draft epoch. Capture
+        // its scope before awaiting so another session cannot inherit this Retry.
+        const resolving = resolveAccountDraftOwner();
+        const epoch = state.draftEpoch;
+        const operation = {};
+        state.draftRetryOperation = operation;
+        const isCurrent = () => state.draftRetryOperation === operation
+            && epoch === state.draftEpoch && credential === draftCredentialMarker();
+        try {
+            const resolved = await resolving;
+            if (!isCurrent() || !resolved) return;
+            const scope = draftScope(isCurrent);
             await hydrateFilesFromDraft();
-            if (!state.draftError) await catalogHandoff.resume();
+            if (!scope.isCurrent()) return;
+            if (!state.draftError) {
+                await catalogHandoff.resume();
+                if (!scope.isCurrent()) return;
+            }
+            renderCreateInputs();
+        } finally {
+            if (state.draftRetryOperation === operation) state.draftRetryOperation = null;
         }
-        renderCreateInputs();
     },
     restoreLegacyDraft: () => restoreLegacyAccountDraft(),
     dismissLegacyDraft() {

@@ -63,6 +63,7 @@ function lifecycle() {
     refreshButtonsForCurrentView() {},
   };
   const names = [
+    "cancelAccountMergeOperation",
     "draftScope",
     "invalidateAccountDraft",
     "resolveAccountDraftOwner",

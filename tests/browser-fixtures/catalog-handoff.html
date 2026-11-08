@@ -1,6 +1,6 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Catalog handoff — local acceptance</title>
 <link rel="stylesheet" href="../../webapp/style.css"><link rel="stylesheet" href="../../webapp/vnext/styles/tokens.css"><link rel="stylesheet" href="../../webapp/vnext/styles/foundation.css"><link rel="stylesheet" href="../../webapp/vnext/styles/shell.css"><link rel="stylesheet" href="../../webapp/vnext/styles/surfaces.css"><link rel="stylesheet" href="../../webapp/vnext/styles/approved-home-create.css">
-<style>body{margin:0;background:#080e10;color:#eef1f2}.qa-controls{padding:12px;font:14px sans-serif;display:flex;gap:12px;flex-wrap:wrap}.qa-controls button{padding:8px}#qa-status{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><nav class="qa-controls"><button id="reset">Восстановить конфликт</button><button id="reload-draft">Восстановить черновик</button><button id="switch-locale">RU / EN</button><label>Image mode <select id="qa-image-mode"><option value="normal">Normal</option><option value="slow">Delayed success</option><option value="error">Delayed error</option></select></label><button id="qa-finish">Завершить загрузку</button><label><input id="qa-redraw-loop" type="checkbox">Periodic redraw</label><button id="qa-account-a">Account A</button><button id="qa-account-b">Account B</button><button id="qa-logout">Logout</button><button id="qa-legacy">Legacy draft</button><button id="qa-owner-error">Owner error</button><span id="qa-status" role="status">Загрузка локального сценария</span></nav><main id="app"><section data-view="create"></section></main>
+<style>body{margin:0;background:#080e10;color:#eef1f2}.qa-controls{padding:12px;font:14px sans-serif;display:flex;gap:12px;flex-wrap:wrap}.qa-controls button{padding:8px}#qa-status{white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body><nav class="qa-controls"><button id="reset">Восстановить конфликт</button><button id="reload-draft">Восстановить черновик</button><button id="switch-locale">RU / EN</button><label>Image mode <select id="qa-image-mode"><option value="normal">Normal</option><option value="slow">Delayed success</option><option value="error">Delayed error</option></select></label><button id="qa-finish">Завершить загрузку</button><label><input id="qa-redraw-loop" type="checkbox">Periodic redraw</label><button id="qa-account-a">Account A</button><button id="qa-account-b">Account B</button><button id="qa-logout">Logout</button><button id="qa-legacy">Legacy draft</button><button id="qa-owner-error">Owner error</button><button id="qa-race-retry">Retry race A → B</button><button id="qa-race-merge">Start merge race</button><button id="qa-race-finish" disabled>Finish delayed merge</button><span id="qa-race-status" role="status"></span><span id="qa-status" role="status">Загрузка локального сценария</span></nav><main id="app"><section data-view="create"></section></main>
 <script type="module">
 const source=(await(await fetch('../../webapp/app.js')).text()).replaceAll('from "./',`from "${location.origin}/webapp/`).replace('"dream-wheels-upload-draft"','"dream-wheels-catalog-local-qa-v2"');
 const setup=`
@@ -8,7 +8,12 @@ state.view="create";state.frontendAuthState={status:"AUTHENTICATED",principalVer
 const qaFetch=window.fetch.bind(window);let qaWrites=0;
 window.fetch=async(url,options={})=>{if(options.method && options.method!=="GET"){qaWrites++;throw Error("Local fixture blocks API writes");}return qaFetch(url,options);};
 let qaAccount="42",qaOwnerFailure=false;
-window.DreamWheelsAuth={getCurrentAuthUser:()=>qaAccount?{id:"local-qa-"+qaAccount}:null,authenticatedFetch:async(url,options)=>new URL(url,location).pathname.endsWith("/auth/me")?{ok:true,json:async()=>{const id=qaOwnerFailure?null:qaAccount;qaOwnerFailure=false;return {authenticated:true,account_id:id};}}:window.fetch(url,options)};
+window.DreamWheelsAuth={getCurrentAuthUser:()=>qaAccount?{id:"local-qa-"+qaAccount}:null,authenticatedFetch:async(url,options={})=>{
+ const path=new URL(url,location).pathname;
+ if(path.endsWith("/auth/me"))return {ok:true,json:async()=>{const id=qaOwnerFailure?null:qaAccount;qaOwnerFailure=false;return {authenticated:true,account_id:id};}};
+ if(options.method && options.method!=="GET")throw Error("Local fixture blocks backend mutations");
+ return {ok:true,status:200,json:async()=>({balance:0,items:[],payments:[],identities:{email:{linked:false},telegram:{linked:false}}})};
+}};
 async function qaSwitch(account){invalidateAccountDraft();qaAccount=account;state.frontendAuthState={status:account?"AUTHENTICATED":"UNAUTHENTICATED",principalVerified:Boolean(account),protectedApiReady:Boolean(account),authority:"supabase"};if(account && await resolveAccountDraftOwner())await hydrateFilesFromDraft();renderCreateInputs();}
 document.querySelector('#qa-account-a').onclick=()=>qaSwitch("42");
 document.querySelector('#qa-account-b').onclick=()=>qaSwitch("9");
@@ -53,6 +58,69 @@ async function qaReset(){
 document.querySelector('#reset').onclick=qaReset;
 document.querySelector('#reload-draft').onclick=async()=>{state.files={car:null,wheel:null};state.catalogWheel=null;await hydrateFilesFromDraft();await catalogHandoff.resume();renderCreateInputs();};
 document.querySelector('#switch-locale').onclick=()=>window.dispatchEvent(new CustomEvent('dreamwheels:localechange',{detail:{locale:locale==='ru'?'en':'ru'}}));
+// Controlled transport/storage timing; all application callbacks and renderer stay real.
+let qaBoundaryCount=0,qaRaceFinish=null;
+window.addEventListener("dreamwheels:draft-session-boundary",()=>qaBoundaryCount++);
+const qaRaceStatus=document.querySelector('#qa-race-status');
+const qaRaceAssert=(condition,message)=>{if(!condition)throw Error(message);};
+const qaWait=async condition=>{for(let i=0;i<500;i++){if(condition())return;await new Promise(resolve=>setTimeout(resolve,10));}throw Error('QA condition timed out');};
+async function qaSwitchReal(account){
+ qaAccount=account;state.applicationAuthRequired=true;
+ state.applicationRoute={view:'create',path:'/new',returnPath:'/new',query:new URLSearchParams()};
+ handleFrontendAuthState({status:'AUTHENTICATED',authority:'supabase',principalVerified:true,protectedApiReady:true});
+ return bootstrapAuthenticatedApplication();
+}
+async function qaRaceSeed(){
+ await qaSwitch('42');await qaReset();catalogHandoff.dismiss();
+ const store=getAccountDraftStore(),sample=(await store.read('account:42')).draft;
+ await store.update('account:9',()=>({...sample,owner:'account:9',wheel:{...sample.wheel,name:'B-existing-wheel.jpg'},catalog:null}));
+ return store;
+}
+document.querySelector('#qa-race-retry').onclick=async()=>{
+ qaRaceStatus.textContent='RUNNING: delayed Retry A → auth B';
+ let store,read;const held={};
+ try {
+  store=await qaRaceSeed();read=store.read.bind(store);await qaSwitchReal('9');
+  captureCatalogHandoff(new URL(location.origin+'/new?catalog_variant='+qaEntry.variantId+'&catalog_sku='+qaEntry.selectedSkuId+'&catalog_locale=ru&catalog_source=catalog'),catalogHandoff.storage);
+  await catalogHandoff.resume();
+  store.read=(owner,scope)=>owner==='account:42'?Promise.reject(Error('Controlled read failure')):read(owner,scope);
+  await qaSwitchReal('42');qaRaceAssert(state.draftError,'A must show storage error');
+  store.read=(owner,scope)=>new Promise((resolve,reject)=>{held[owner]=()=>read(owner,scope).then(resolve,reject);});
+  const retry=window.dreamwheelsCreateBridge.retryAccountDraft();await qaWait(()=>held['account:42']);
+  const switching=qaSwitchReal('9');await qaWait(()=>held['account:9']);
+  held['account:42']();await retry;
+  qaRaceAssert((await read('account:9')).draft.wheel.name==='B-existing-wheel.jpg','stale Retry replaced B in IndexedDB');
+  held['account:9']();await switching;
+  qaRaceAssert(state.files.wheel?.name==='B-existing-wheel.jpg' && Boolean(catalogHandoff.pending),'B lost wheel or replacement confirmation');
+  qaRaceStatus.textContent='PASS: B-existing-wheel.jpg retained in memory + IndexedDB; replacement still requires confirmation';
+ }catch(error){qaRaceStatus.textContent='FAIL: '+error.message;}
+ finally{if(store&&read)store.read=read;}
+};
+document.querySelector('#qa-race-merge').onclick=async()=>{
+ qaRaceStatus.textContent='RUNNING: merge A → auth B';
+ try {
+  await qaRaceSeed();await qaSwitchReal('42');
+  const controller=window.DreamWheelsAuth,native=controller.authenticatedFetch;
+  let release;controller.authenticatedFetch=(url,options)=>new URL(url,location).pathname.endsWith('/auth/account/merge')?new Promise(resolve=>{release=()=>resolve({ok:true});}):native(url,options);
+  state.accountMergeToken='local-qa-merge-A';state.accountMergeOpen=true;
+  const pending=confirmAccountMerge();await qaSwitchReal('9');
+  qaRaceFinish=async()=>{
+   try {
+    const input=document.querySelector('input[name="rim_product_url"]'),value=input.value,epoch=state.draftEpoch,boundaries=qaBoundaryCount;
+    qaRaceAssert(value.includes('B-unsaved'),'Type a B-unsaved URL before completing the delayed response');
+    release();await pending;
+    qaRaceAssert(state.draftEpoch===epoch,'stale merge invalidated B');
+    qaRaceAssert(document.querySelector('input[name="rim_product_url"]').value===value,'stale merge cleared B unsaved input');
+    qaRaceAssert(qaBoundaryCount===boundaries && state.accountSettingsNoticeKey!=='account.merge.success','stale merge broadcast or success notice');
+    qaRaceStatus.textContent='PASS: B unsaved URL, draft epoch and photos retained; no stale merge notice or broadcast';
+   }catch(error){qaRaceStatus.textContent='FAIL: '+error.message;}
+   finally{controller.authenticatedFetch=native;qaRaceFinish=null;document.querySelector('#qa-race-finish').disabled=true;}
+  };
+  document.querySelector('#qa-race-finish').disabled=false;
+  qaRaceStatus.textContent='WAITING: type https://B-unsaved.example/rim in the wheel link field, then Finish delayed merge';
+ }catch(error){qaRaceStatus.textContent='FAIL: '+error.message;}
+};
+document.querySelector('#qa-race-finish').onclick=()=>qaRaceFinish?.();
 await qaReset();
 const qaParams=new URLSearchParams(location.search);
 if(['ru','en'].includes(qaParams.get('qa_locale')))locale=qaParams.get('qa_locale');
