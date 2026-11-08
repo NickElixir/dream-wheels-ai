@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expectedCatalogTarget } from '../../scripts/catalog/verify-build.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 export const profiles = Object.freeze({
@@ -73,6 +74,10 @@ async function build() {
   let gitSha = '';
   try { gitSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(); } catch { /* Timeweb can omit .git. */ }
   const config = releaseSettings(process.env, gitSha);
+  const catalogTarget = expectedCatalogTarget(process.env);
+  execFileSync(path.join(root, 'landing/node_modules/.bin/tsx'), [path.join(root, 'landing/scripts/build-handoff.ts'), '--target', catalogTarget], {
+    cwd: root, stdio: 'inherit',
+  });
   const staging = path.join(root, 'landing/dist-timeweb-source');
   execFileSync(process.execPath, [path.join(root, 'landing/node_modules/astro/bin/astro.mjs'), 'build', '--outDir', staging], {
     cwd: path.join(root, 'landing'), stdio: 'inherit',

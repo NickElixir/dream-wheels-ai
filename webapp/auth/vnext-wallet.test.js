@@ -1,3 +1,4 @@
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "../vnext/catalog-handoff.mjs";
 import { legacyTranslations, errorCopy } from "../vnext/copy.mjs";
 import { copy as uiCopy } from "../vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../vnext/fitment-readiness.mjs";
@@ -21,7 +22,7 @@ function runtime({ telegram = false, pathname = "/app/wallet", search = "", appl
   const redirects = [];
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
   const location = new URL(`${pathname}${search}`, "https://example.test");
-  const context = { legacyTranslations, errorCopy,
+  const context = { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal, legacyTranslations, errorCopy,
     URL, URLSearchParams, Blob, FormData, console,
     applicationRouteContext, applicationTopLevelReturnPath, isApplicationRoute, safeApplicationReturnPath,
     applicationRoute,

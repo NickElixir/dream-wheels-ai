@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "bucket": "catalog-wheels",
+  "targets": {
+    "production": { "projectRef": "qmgyccghsbdpehiybjae", "origin": "https://qmgyccghsbdpehiybjae.supabase.co" },
+    "staging": { "projectRef": "hnawojlnfoaccinlgjyn", "origin": "https://hnawojlnfoaccinlgjyn.supabase.co" }
+  }
+}

@@ -1,3 +1,4 @@
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "../webapp/vnext/catalog-handoff.mjs";
 import { copy, legacyTranslations, errorCopy, unknownVerdictSubtitle } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
@@ -1056,7 +1057,7 @@ test("failed legacy Fitment result offers retry only when the server permits it 
 test("public Create/Render/Fitment/Wallet bridge methods and snapshots preserve canonical state without network mutations", () => {
     const { api, calls } = pcdProjectionApi();
     const expected = {
-        Create: ["snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
+        Create: ["dismissLegacyDraft", "restoreLegacyDraft", "retryAccountDraft", "acceptCatalogWheel", "keepCurrentWheel", "snapshot", "pickFile", "clearFile", "createImage", "handleGenerationError", "setConsent", "setSourceEditing", "saveRimProductUrl", "surfaceMounted"],
         Render: ["snapshot", "prepareAssets", "assetError", "action"],
         Fitment: ["snapshot", "surfaceMounted", "setField", "setSourceUrl", "action"],
         Wallet: ["snapshot", "selectPackage", "setReceiptEmail", "createPayment", "refreshPayment", "showMoreHistory", "previousHistoryPage", "login"],
@@ -2534,7 +2535,7 @@ test("P0-C1b same-value explicit Vehicle Save still sends Vehicle; Wheel stays i
 });
 
 function runInCopyContext(script, context = {}, ...options) {
-  return vm.runInNewContext(script, Object.assign(context, { copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
+  return vm.runInNewContext(script, Object.assign(context, { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal, copy, uiCopy: copy, legacyTranslations, errorCopy, unknownVerdictSubtitle }), ...options);
 }
 
 for (const userMoved of [false, true]) {

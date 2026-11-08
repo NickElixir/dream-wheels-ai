@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "workbookSha256": "a052d11809e650ccd0c722e5d1f2008b028eb22e9686237873f73e4dd3c3dd49",
+  "matrixSha256": "9345d27b589409feae875e6d23bfb3ffbf8581e35779cc8df044e6b23e57533b",
+  "registryDigest": "ef28544e5f3183fb8bd3a8ff90daf6a77d06a4a329333d358204198b9224144e",
+  "counts": {
+    "pairs": 30,
+    "images": 22,
+    "rows": 71,
+    "uniqueSkus": 68,
+    "multiSkuPairs": 14
+  },
+  "links": [
+    {
+      "variantId": "6c25143191fe3361",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-104597021630",
+      "design": "LS Forged FG14",
+      "skuId": "sku-97a737ed66a9",
+      "sku": "S087057",
+      "barcode": "104597021630",
+      "assetId": "wheel-image-104597021630",
+      "excelRow": 2,
+      "parameters": {
+        "width": 10,
+        "diameter": 22,
+        "pcd": "5×112",
+        "et": 55,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "69c3d06a077c2edb",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-125847429328",
+      "design": "КиК Элерон",
+      "skuId": "sku-7178795414ca",
+      "sku": "83889",
+      "barcode": "125847429328",
+      "assetId": "wheel-image-125847429328",
+      "excelRow": 3,
+      "parameters": {
+        "width": 9,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 53,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bb44a79557571e02",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-95044209621",
+      "design": "REPLAY MR208",
+      "skuId": "sku-1077b81efbff",
+      "sku": "083514-160060110",
+      "barcode": "95044209621",
+      "assetId": "wheel-image-95044209621",
+      "excelRow": 4,
+      "parameters": {
+        "width": 10,
+        "diameter": 21,
+        "pcd": "5×112",
+        "et": 54,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bb44a79557571e02",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-95044209621",
+      "design": "REPLAY MR208",
+      "skuId": "sku-261e98a6caf7",
+      "sku": "D07018",
+      "barcode": "95044209621",
+      "assetId": "wheel-image-95044209621",
+      "excelRow": 5,
+      "parameters": {
+        "width": 10,
+        "diameter": 21,
+        "pcd": "5×112",
+        "et": 54,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-99321f5e9742",
+      "sku": "351207AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 6,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 37,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-6183a664c230",
+      "sku": "351211AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 7,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 40,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-16ae08badc19",
+      "sku": "351215AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 8,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 50,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-eab9edd28d50",
+      "sku": "351217AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 9,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 50,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-2da5b9b375ce",
+      "sku": "351218AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 10,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 50,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-3d01f641bfaa",
+      "sku": "351232AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 11,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 43,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4404966c99f14316",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-992387d42c21",
+      "sku": "351233AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 12,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 43,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "a6cd3e5b9e54764c",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-100987003598",
+      "design": "LS FlowForming RC55",
+      "skuId": "sku-3c39d2ffb5cf",
+      "sku": "D83356",
+      "barcode": "100987003598",
+      "assetId": "wheel-image-100987003598",
+      "excelRow": 13,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 40,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "45cbda6ba70dbdff",
+      "vehicleId": "mercedes-gle",
+      "vehicle": "Mercedes-Benz GLE",
+      "designId": "wheel-109398868737",
+      "design": "СКАД Premium КР014",
+      "skuId": "sku-481536945a42",
+      "sku": "79387",
+      "barcode": "109398868737",
+      "assetId": "wheel-image-109398868737",
+      "excelRow": 14,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 39,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "5b95efe8197c5699",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-100309984417",
+      "design": "Replica FR BMW B495",
+      "skuId": "sku-484b58b8790a",
+      "sku": "20/63/26/878",
+      "barcode": "100309984417",
+      "assetId": "wheel-image-100309984417",
+      "excelRow": 15,
+      "parameters": {
+        "width": 9.5,
+        "diameter": 22,
+        "pcd": "5×112",
+        "et": 32,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "18c8e2d60950a73c",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-106265943070",
+      "design": "LS Forged FG05",
+      "skuId": "sku-2f597dcf3edd",
+      "sku": "S087344",
+      "barcode": "106265943070",
+      "assetId": "wheel-image-106265943070",
+      "excelRow": 16,
+      "parameters": {
+        "width": 9,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "34e08c0bff943b64",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-123881154785",
+      "design": "RST R2204FF",
+      "skuId": "sku-234d4bf5e142",
+      "sku": "RR2204FF-9522-666-5x112-32BLM",
+      "barcode": "123881154785",
+      "assetId": "wheel-image-123881154785",
+      "excelRow": 17,
+      "parameters": {
+        "width": 9.5,
+        "diameter": 22,
+        "pcd": "5×112",
+        "et": 32,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "0984b073fe9f162e",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-88731778597",
+      "design": "LEGE ARTIS Concept-B531",
+      "skuId": "sku-c561a5bf193c",
+      "sku": "9264822",
+      "barcode": "88731778597",
+      "assetId": "wheel-image-88731778597",
+      "excelRow": 18,
+      "parameters": {
+        "width": 10,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 40,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-fdb469605bb2",
+      "sku": "351187AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 19,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 30,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-001cf622fd7a",
+      "sku": "351188AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 20,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 30,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-2d3d0e7df5f5",
+      "sku": "351189AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 21,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 30,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-ea51d3e7138f",
+      "sku": "351190AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 22,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 30,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-783f5b8f5412",
+      "sku": "351191AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 23,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 33,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-7b42f92bf243",
+      "sku": "351193AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 24,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 33,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-e474574abd47",
+      "sku": "351199AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 25,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-62cd1df7f9cb",
+      "sku": "351200AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 26,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-f305728fa939",
+      "sku": "351201AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 27,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "844bf41bac0cd36b",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-093ee4c138ce",
+      "sku": "351202AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 28,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "5c5d69ee83aa2580",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-b16fd2018894",
+      "sku": "78998",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 29,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "5c5d69ee83aa2580",
+      "vehicleId": "bmw-x5",
+      "vehicle": "BMW X5",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-0c2006a245f9",
+      "sku": "79037",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 30,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×112",
+        "et": 35,
+        "dia": 66.6
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "e79497f343ce213d",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-120901095121",
+      "design": "Race Ready Technology CSSYA5640",
+      "skuId": "sku-8c8d29eb79f2",
+      "sku": "УТ000002608",
+      "barcode": "120901095121",
+      "assetId": "wheel-image-120901095121",
+      "excelRow": 31,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.4
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6b4714790a426f76",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-124130035944",
+      "design": "Race Ready Technology CSSYA2012",
+      "skuId": "sku-b25ae4ebcef4",
+      "sku": "УТС00009294",
+      "barcode": "124130035944",
+      "assetId": "wheel-image-124130035944",
+      "excelRow": 32,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 42,
+        "dia": 63.4
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "d3bfd8485ae2b070",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-85636297741",
+      "design": "Replica FR ZEEKR IVF-3166",
+      "skuId": "sku-63526ac89712",
+      "sku": "20/63/10/36",
+      "barcode": "85636297741",
+      "assetId": "wheel-image-85636297741",
+      "excelRow": 33,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 21,
+        "pcd": "5×108",
+        "et": 40,
+        "dia": 63.4
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "5183c31f51b0b709",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-120494859048",
+      "design": "СКАД Арика",
+      "skuId": "sku-065da36fb0f8",
+      "sku": "4622648",
+      "barcode": "120494859048",
+      "assetId": "wheel-image-120494859048",
+      "excelRow": 34,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "1993fa7d694e7934",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-126269312705",
+      "design": "КиК Клермон",
+      "skuId": "sku-84493082cd56",
+      "sku": "83642",
+      "barcode": "126269312705",
+      "assetId": "wheel-image-126269312705",
+      "excelRow": 35,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "1993fa7d694e7934",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-126269312705",
+      "design": "КиК Клермон",
+      "skuId": "sku-d420c9e23b20",
+      "sku": "83674",
+      "barcode": "126269312705",
+      "assetId": "wheel-image-126269312705",
+      "excelRow": 36,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "484cacf8a40572d3",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-115612627376",
+      "design": "СКАД Манчестер",
+      "skuId": "sku-f8698fdfcb6b",
+      "sku": "4020722",
+      "barcode": "115612627376",
+      "assetId": "wheel-image-115612627376",
+      "excelRow": 37,
+      "parameters": {
+        "width": 7.5,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "484cacf8a40572d3",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-115612627376",
+      "design": "СКАД Манчестер",
+      "skuId": "sku-d3ca96a8e8dc",
+      "sku": "4020727",
+      "barcode": "115612627376",
+      "assetId": "wheel-image-115612627376",
+      "excelRow": 38,
+      "parameters": {
+        "width": 7.5,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "484cacf8a40572d3",
+      "vehicleId": "zeekr-001",
+      "vehicle": "Zeekr 001",
+      "designId": "wheel-115612627376",
+      "design": "СКАД Манчестер",
+      "skuId": "sku-94e78e411559",
+      "sku": "4020748",
+      "barcode": "115612627376",
+      "assetId": "wheel-image-115612627376",
+      "excelRow": 39,
+      "parameters": {
+        "width": 7.5,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "792ca136780ef83e",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-ced16bcf7372",
+      "sku": "351167AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 40,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 46,
+        "dia": 63.4
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "e1f6708ea2835f8b",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-120901095121",
+      "design": "Race Ready Technology CSSYA5640",
+      "skuId": "sku-8c8d29eb79f2",
+      "sku": "УТ000002608",
+      "barcode": "120901095121",
+      "assetId": "wheel-image-120901095121",
+      "excelRow": 41,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.4
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "33238df57cd1b3f1",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-109398879950",
+      "design": "СКАД Premium КР014",
+      "skuId": "sku-1aa545c6b8fd",
+      "sku": "79435",
+      "barcode": "109398879950",
+      "assetId": "wheel-image-109398879950",
+      "excelRow": 42,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "33238df57cd1b3f1",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-109398879950",
+      "design": "СКАД Premium КР014",
+      "skuId": "sku-dd9c1500b4f1",
+      "sku": "79461",
+      "barcode": "109398879950",
+      "assetId": "wheel-image-109398879950",
+      "excelRow": 43,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "33238df57cd1b3f1",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-109398879950",
+      "design": "СКАД Premium КР014",
+      "skuId": "sku-847f75252830",
+      "sku": "79463",
+      "barcode": "109398879950",
+      "assetId": "wheel-image-109398879950",
+      "excelRow": 44,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 46,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4f647170520a9719",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-126269312705",
+      "design": "КиК Клермон",
+      "skuId": "sku-84493082cd56",
+      "sku": "83642",
+      "barcode": "126269312705",
+      "assetId": "wheel-image-126269312705",
+      "excelRow": 45,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "4f647170520a9719",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-126269312705",
+      "design": "КиК Клермон",
+      "skuId": "sku-d420c9e23b20",
+      "sku": "83674",
+      "barcode": "126269312705",
+      "assetId": "wheel-image-126269312705",
+      "excelRow": 46,
+      "parameters": {
+        "width": 8,
+        "diameter": 19,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "b53d7182a9c91b96",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-0fe0c261ccc6",
+      "sku": "79040",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 47,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 45,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "ac25fca85a337721",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-974d4908e333",
+      "sku": "29600BX",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 48,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 46,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "ac25fca85a337721",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-258f94ebcd8e",
+      "sku": "29699BX",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 49,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 48,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "ac25fca85a337721",
+      "vehicleId": "geely-cityray",
+      "vehicle": "Geely Atlas",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-966b927f66a6",
+      "sku": "29699SX",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 50,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×108",
+        "et": 48,
+        "dia": 63.35
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "84f83169b354f651",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-123388297342",
+      "design": "Replica FR Lixiang IVF-3164",
+      "skuId": "sku-331222c92d4b",
+      "sku": "20/63/10/31",
+      "barcode": "123388297342",
+      "assetId": "wheel-image-123388297342",
+      "excelRow": 51,
+      "parameters": {
+        "width": 9,
+        "diameter": 21,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-efbcd0bb7a83",
+      "sku": "351865AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 52,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-d1034d9d8ded",
+      "sku": "351866AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 53,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-1915d3b47d80",
+      "sku": "351867AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 54,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-c68ef165fecf",
+      "sku": "351868AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 55,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-677705fdb1cf",
+      "sku": "999505AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 56,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "847ad5c7512b9692",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-107192878785",
+      "design": "X'trike X-137",
+      "skuId": "sku-1432a1774abf",
+      "sku": "999507AZ",
+      "barcode": "107192878785",
+      "assetId": "wheel-image-107192878785",
+      "excelRow": 57,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "490c7bd1dfdfd15a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-120056032523",
+      "design": "Khomen Wheels KHW2101",
+      "skuId": "sku-7394881a0200",
+      "sku": "KHW210108GRF",
+      "barcode": "120056032523",
+      "assetId": "wheel-image-120056032523",
+      "excelRow": 58,
+      "parameters": {
+        "width": 9.5,
+        "diameter": 21,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "490c7bd1dfdfd15a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-120056032523",
+      "design": "Khomen Wheels KHW2101",
+      "skuId": "sku-b0b449240ee7",
+      "sku": "KHW210108GRT",
+      "barcode": "120056032523",
+      "assetId": "wheel-image-120056032523",
+      "excelRow": 59,
+      "parameters": {
+        "width": 9.5,
+        "diameter": 21,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "585f724620226cd5",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-115592534608",
+      "design": "СКАД Premium Kleemann",
+      "skuId": "sku-ba1932db0c83",
+      "sku": "83290",
+      "barcode": "115592534608",
+      "assetId": "wheel-image-115592534608",
+      "excelRow": 60,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "585f724620226cd5",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-115592534608",
+      "design": "СКАД Premium Kleemann",
+      "skuId": "sku-d56ea7373ed2",
+      "sku": "83291",
+      "barcode": "115592534608",
+      "assetId": "wheel-image-115592534608",
+      "excelRow": 61,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "585f724620226cd5",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-115592534608",
+      "design": "СКАД Premium Kleemann",
+      "skuId": "sku-565394133a3b",
+      "sku": "83293",
+      "barcode": "115592534608",
+      "assetId": "wheel-image-115592534608",
+      "excelRow": 62,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "585f724620226cd5",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-115592534608",
+      "design": "СКАД Premium Kleemann",
+      "skuId": "sku-7ae84bf5f78a",
+      "sku": "83294",
+      "barcode": "115592534608",
+      "assetId": "wheel-image-115592534608",
+      "excelRow": 63,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bae933d8afad6839",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-4997f6e2bf84",
+      "sku": "83296",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 64,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bae933d8afad6839",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-3bdb475c8ba1",
+      "sku": "83297",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 65,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bae933d8afad6839",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-4e508c3635d9",
+      "sku": "83299",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 66,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "bae933d8afad6839",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-111785217385",
+      "design": "СКАД Premium КР008",
+      "skuId": "sku-9601f4bd4448",
+      "sku": "83331",
+      "barcode": "111785217385",
+      "assetId": "wheel-image-111785217385",
+      "excelRow": 67,
+      "parameters": {
+        "width": 8.5,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6d5b0b6e3263654a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-69d96ae62b07",
+      "sku": "14112AK",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 68,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6d5b0b6e3263654a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-275275e1f1ce",
+      "sku": "14112GK",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 69,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6d5b0b6e3263654a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-794ea6579241",
+      "sku": "14112MK",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 70,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6d5b0b6e3263654a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-a53e920e86c9",
+      "sku": "14112SK",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 71,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.5
+      },
+      "fitmentStatus": "unknown"
+    },
+    {
+      "variantId": "6d5b0b6e3263654a",
+      "vehicleId": "li-auto-l7",
+      "vehicle": "Li Auto L7",
+      "designId": "wheel-118754944354",
+      "design": "X'trike X-141",
+      "skuId": "sku-422ac893c5e7",
+      "sku": "29612AX",
+      "barcode": "118754944354",
+      "assetId": "wheel-image-118754944354",
+      "excelRow": 72,
+      "parameters": {
+        "width": 8,
+        "diameter": 20,
+        "pcd": "5×120",
+        "et": 45.5,
+        "dia": 62.6
+      },
+      "fitmentStatus": "unknown"
+    }
+  ]
+}

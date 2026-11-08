@@ -176,3 +176,38 @@ test('failed URL save retains text with inline error; successful save adopts can
   view = refreshCreateView(view, {...ready, rimProductUrl: 'https://shop.test/canonical'}, {});
   assert.equal(view.find(n => n.name === 'rim_product_url').value, 'https://shop.test/canonical');
 });
+
+for(const value of ['https://typed.test/new',''])test(`wheel hydration and object URL recreation retain unsaved editor: ${value}`,()=>{
+ const snap={...ready,files:{car:photo,wheel:null},rimProductUrl:'https://saved.test/old',wheelReplacementToken:0};
+ let view=createCreateView(snap);let input=view.find(n=>n.name==='rim_product_url');input.value=value;input.dispatchEvent(new Event('input'));
+ for(let i=0;i<5;i++){view=refreshCreateView(view,{...snap,files:{car:photo,wheel:{previewUrl:`blob:hydrated-${i}`}}},{});assert.equal(view.find(n=>n.name==='rim_product_url').value,value);}
+ view=refreshCreateView(view,{...snap,wheelReplacementToken:1,rimProductUrl:''},{});assert.equal(view.find(n=>n.name==='rim_product_url').value,'');
+});
+
+const incoming={name:'Catalog wheel',thumbnail:'/wheel.webp',sku:{sku:'chosen'}};
+for(const result of ['success','error'])test(`catalog keyboard focus survives busy and ${result} redraws`,()=>{
+ const snap={...ready,draftOwnerKey:'alice',catalogHandoff:{selection:incoming}};let view=createCreateView(snap);view.find(n=>n.dataset.createFocus==='catalog-replace').focus();
+ for(let i=0;i<5;i++){view=refreshCreateView(view,{...snap,catalogHandoff:{selection:incoming,busy:true}},{});assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus==='catalog-status'));}
+ const completed={...snap,catalogHandoff:result==='success'?{}:{selection:incoming,error:'image'}};
+ for(let i=0;i<5;i++){view=refreshCreateView(view,completed,{});assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus===(result==='success'?'photo-wheel':'catalog-replace')));}
+});
+test('catalog completion does not steal outside focus or restore another owner intent',()=>{
+ const snap={...ready,draftOwnerKey:'alice',catalogHandoff:{selection:incoming,busy:true}};let view=createCreateView(snap);
+ const outside=document.createElement('button');outside.focus();view=refreshCreateView(view,{...snap,catalogHandoff:{}},{});assert.equal(document.activeElement,outside);
+ view=createCreateView(snap);const before=view.find(n=>n.dataset.createFocus==='catalog-status');before.focus();view=refreshCreateView(view,{...snap,draftOwnerKey:'bob'},{});assert.notEqual(document.activeElement,view.find(n=>n.dataset.createFocus==='catalog-status'));
+});
+
+test('legacy recovery is neutral and reveals no unowned image or filename',()=>{
+ let restored=0,dismissed=0;const view=createCreateView({draftOwnerKey:'A',legacyDraftAvailable:true},{restoreLegacyDraft:()=>restored++,dismissLegacyDraft:()=>dismissed++});
+ assert.match(view.allText,/Найден старый черновик/);assert.equal(view.find(n=>n.tagName==='img'),null);assert.doesNotMatch(view.allText,/private|\.jpg/);
+ view.find(n=>n.textContent==='Восстановить').listeners.click();view.find(n=>n.textContent==='Не сейчас').listeners.click();assert.equal(restored,1);assert.equal(dismissed,1);
+});
+test('legacy Enter focus survives copy, hydration, and successful completion',()=>{
+ const snap={draftOwnerKey:'A',legacyDraftAvailable:true};let view=createCreateView(snap);view.find(n=>n.dataset.createFocus==='draft-restore').focus();
+ view=refreshCreateView(view,{...snap,legacyDraftBusy:true,draftBlocked:true},{});assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus==='draft-status'));
+ view=refreshCreateView(view,{...snap,files:{car:photo},legacyDraftAvailable:false,legacyDraftBusy:true,draftBlocked:true},{});assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus==='draft-status'));
+ view=refreshCreateView(view,{draftOwnerKey:'A',files:{car:photo}},{});assert.equal(document.activeElement,view.find(n=>n.dataset.createFocus==='photo-car'));
+});
+test('unresolved owner blocks photos, URL save and render even with ready in-memory inputs',()=>{
+ const view=createCreateView({...ready,draftBlocked:true,draftError:true});for(const key of ['photo-car','stage-wheel','save-link'])assert.equal(view.find(n=>n.dataset.createFocus===key).disabled,true);assert.equal(view.find(n=>n.textContent==='Создать изображение').disabled,true);assert.equal(view.find(n=>n.name==='rim_product_url').disabled,true);assert(view.find(n=>n.dataset.createFocus==='draft-retry'));
+});
