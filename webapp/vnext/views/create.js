@@ -162,8 +162,10 @@ function catalogNotice(snapshot, callbacks) {
     image.width = image.height = 76;
     box.append(image);
     const name = document.createElement("p");
-    if (warning) name.className = "vnext-create__catalog-name";
-    name.textContent = handoff.selection.name;
+    name.className = "vnext-create__catalog-name";
+    const modelLabel = document.createElement("strong");
+    modelLabel.textContent = uiText("create.catalog.modelLabel", locale);
+    name.append(modelLabel, document.createTextNode(` ${handoff.selection.name}`));
     const sku = document.createElement("p");
     sku.className = "vnext-create__catalog-sku";
     const skuLabel = document.createElement("strong");

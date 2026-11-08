@@ -1,4 +1,5 @@
 export const COPY = {
+  "create.catalog.modelLabel": {"ru":"Модель","en":"Model"},
   "create.draft.blocked": {"ru":"Закройте старые вкладки приложения и попробуйте восстановить черновик ещё раз.","en":"Close older application tabs, then try restoring your draft again."},
   "create.draft.loading": {"ru": "Восстанавливаем черновик аккаунта…", "en": "Restoring your account draft…"},
   "create.draft.error": {"ru": "Не удалось открыть черновик аккаунта. Фотографии не изменены.", "en": "Could not open your account draft. Your photos have not been changed."},

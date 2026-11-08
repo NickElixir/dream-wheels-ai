@@ -353,7 +353,7 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
 .vnext-create__catalog-notice { grid-column:1/-1; display:flex; align-items:center; gap:20px; padding:20px 24px; border:1px solid var(--vnext-border-strong); border-radius:12px; background:var(--vnext-surface-elevated); }
 .vnext-create__catalog-notice.is-warning { border-color:color-mix(in srgb,var(--vnext-warning) 60%,transparent); background:color-mix(in srgb,var(--vnext-warning) 7%,var(--vnext-surface-elevated)); }
 .vnext-create__catalog-copy .vnext-create__catalog-warning-title { display:flex; align-items:flex-start; gap:8px; color:var(--vnext-warning); }
-.vnext-create__catalog-notice.is-warning .vnext-create__catalog-copy .vnext-create__catalog-name { margin:0 0 4px; font-size:18px; line-height:1.35; font-weight:600; color:var(--vnext-text); }
+.vnext-create__catalog-notice.is-warning .vnext-create__catalog-copy .vnext-create__catalog-name { margin:0 0 4px; font-size:18px; line-height:1.35; font-weight:400; color:var(--vnext-text); }
 .vnext-create__catalog-notice.is-warning .vnext-create__catalog-warning-title { margin-top:12px; font-size:16px; }
 .vnext-create__catalog-warning-icon { order:-1; flex:0 0 20px; width:20px; height:20px; margin-top:2px; }
 .vnext-create__catalog-warning-icon svg { display:block; width:100%; height:100%; }
@@ -394,4 +394,5 @@ body.vnext-surface-active [data-view="create"] > :not([data-vnext-create-root]) 
   .vnext-create__draft-actions > button { flex: 1 1 140px; }
 }
 
+.vnext-create__catalog-copy .vnext-create__catalog-name strong,
 .vnext-create__catalog-copy .vnext-create__catalog-sku strong { font-weight:650; color:var(--vnext-text); }
