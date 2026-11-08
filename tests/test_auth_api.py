@@ -64,6 +64,7 @@ def test_auth_me_resolves_supabase_bearer_to_safe_principal(monkeypatch):
         "authenticated": True,
         "authority": "supabase",
         "auth_channel": "supabase",
+        "account_id": "42",
     }
     assert calls == [
         {
@@ -115,6 +116,7 @@ def test_auth_me_keeps_legacy_telegram_bearer_compatible(monkeypatch):
         "authenticated": True,
         "authority": "telegram",
         "auth_channel": "website",
+        "account_id": "9",
     }
 
 
@@ -356,3 +358,20 @@ def test_verify_id_token_returns_backend_bearer_token(monkeypatch):
         "telegram_user_id": 123456789,
         "username": "dw-user",
     }
+
+
+@pytest.mark.parametrize(
+    ("authority", "channel"),
+    [("supabase", "supabase"), ("telegram", "website"), ("telegram", "mini_app")],
+)
+def test_auth_me_exposes_canonical_owner_independent_of_provider(monkeypatch, authority, channel):
+    from types import SimpleNamespace
+
+    async def principal(_conn, **_kwargs):
+        return SimpleNamespace(user_id=42, authority=authority, auth_channel=channel)
+
+    monkeypatch.setattr(auth_api.db, "get_pool", lambda: _FakePool())
+    monkeypatch.setattr(auth_api, "resolve_auth_principal", principal)
+    response = client.get("/auth/me", headers={"Authorization": "Bearer provider-credential"})
+    assert response.status_code == 200
+    assert response.json()["account_id"] == "42"

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { assertCatalogBuild } from '../../scripts/catalog/verify-build.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,6 +28,7 @@ export function publicConfig(env) {
 }
 
 if (process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === fs.realpathSync(fileURLToPath(import.meta.url))) {
+  assertCatalogBuild();
   const config = publicConfig(process.env);
   const target = new URL('../auth/harness-config.js', import.meta.url);
   fs.writeFileSync(target, `// Generated public config; no server credentials.\nglobalThis.__DREAM_WHEELS_SUPABASE_CONFIG__ = Object.freeze(${JSON.stringify(config.supabase)});\nglobalThis.__DREAM_WHEELS_AUTH_CONFIG__ = Object.freeze(${JSON.stringify(config.auth)});\n`);

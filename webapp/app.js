@@ -1,3 +1,5 @@
+import { AccountDraftStore } from "./vnext/account-drafts.mjs";
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "./vnext/catalog-handoff.mjs";
 import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
 import {
     applicationRouteContext,
@@ -462,6 +464,7 @@ const state = {
     accountLinkTurnstileWidget: null,
     accountMergeOpen: false,
     accountMergeBusy: false,
+    accountMergeOperation: null,
     accountMergeToken: null,
     accountMergeProvider: null,
     accountMergeStatus: "",
@@ -504,10 +507,23 @@ const state = {
     createScreen: "upload",
     photoConsentAccepted: loadPhotoConsent(),
     files: { car: null, wheel: null },
+    draftOwner: null,
+    draftEpoch: 0,
+    draftAbort: null,
+    draftCredential: "",
+    draftLoading: false,
+    draftError: false,
+    draftRetryOperation: null,
+    legacyDraftAvailable: false,
+    legacyDraftBusy: false,
+    legacyDraftError: false,
+    catalogWheel: null,
     previewUrls: { car: "", wheel: "" },
     createAssetDraftId: "",
     createJobDraftId: "",
     createInputVersion: 0,
+    wheelReplacementToken: 0,
+    catalogCaptureRetry: null,
     createIdempotencyKey: "",
     vnextCreateSourceEditing: false,
     rimProductUrl: "",
@@ -1641,23 +1657,27 @@ function renderAccountSettings() {
     ].join("");
 }
 
-async function loadAccountState({ silent = false } = {}) {
-    if (!isFrontendUserAuthenticated()) return;
+async function loadAccountState({ silent = false, isCurrent = () => true } = {}) {
+    if (!isFrontendUserAuthenticated() || !isCurrent()) return;
     state.accountStateLoading = !silent;
     state.accountStateError = "";
     state.accountStateErrorKey = "";
     renderAccountSettings();
     try {
         const response = await authenticatedFetch(accountRequestUrl("/auth/account"));
+        if (!isCurrent()) return;
         if (!response.ok) throw new Error(await parseApiError(response));
         const payload = await response.json();
+        if (!isCurrent()) return;
         state.accountState = payload;
         emitVNextDashboardChange();
     } catch (error) {
-        setAccountPresentation("accountStateError", "account.settings.loadFailed");
+        if (isCurrent()) setAccountPresentation("accountStateError", "account.settings.loadFailed");
     } finally {
-        state.accountStateLoading = false;
-        renderAccountSettings();
+        if (isCurrent()) {
+            state.accountStateLoading = false;
+            renderAccountSettings();
+        }
     }
 }
 
@@ -1757,6 +1777,7 @@ async function submitAccountLink(provider, proof) {
 }
 
 function showAccountMerge(result, provider) {
+    state.accountMergeOperation = null;
     state.accountLinkDialogOpen = false;
     state.accountMergeOpen = true;
     state.accountMergeBusy = false;
@@ -1873,8 +1894,26 @@ async function startTelegramAccountLink() {
     }
 }
 
+function cancelAccountMergeOperation() {
+    state.accountMergeOperation = null;
+    state.accountMergeBusy = false;
+    state.accountMergeOpen = false;
+    state.accountMergeToken = null;
+    state.accountMergeStatus = "";
+    state.accountMergeStatusKey = "";
+    const status = document.querySelector("[data-account-merge-status]");
+    if (status) { status.textContent = ""; delete status.dataset.tone; }
+    document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
+}
+
 async function confirmAccountMerge() {
     if (!state.accountMergeToken || state.accountMergeBusy) return;
+    const credential = draftCredentialMarker();
+    if (!credential) return;
+    const operation = { credential, token: state.accountMergeToken };
+    state.accountMergeOperation = operation;
+    const isCurrent = () => state.accountMergeOperation === operation
+        && state.accountMergeToken === operation.token && credential === draftCredentialMarker();
     state.accountMergeBusy = true;
     setAccountPresentation("accountMergeStatus", "account.merge.processing");
     const status = document.querySelector("[data-account-merge-status]");
@@ -1883,22 +1922,38 @@ async function confirmAccountMerge() {
         const response = await authenticatedFetch(accountRequestUrl("/auth/account/merge"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ merge_token: state.accountMergeToken }),
+            body: JSON.stringify({ merge_token: operation.token }),
         });
+        if (!isCurrent()) return;
         if (!response.ok) throw new Error(await parseApiError(response));
-        await loadAccountState({ silent: true });
+        // This operation intentionally changes the canonical draft owner. Its
+        // session guard survives that reset, but not a real auth/tab boundary.
+        invalidateAccountDraft();
+        window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
+        const resolved = await resolveAccountDraftOwner();
+        if (!isCurrent()) return;
+        if (resolved) {
+            await hydrateFilesFromDraft();
+            if (!isCurrent()) return;
+        }
+        await loadAccountState({ silent: true, isCurrent });
+        if (!isCurrent()) return;
         setAccountPresentation("accountSettingsNotice", "account.merge.success");
         state.accountMergeOpen = false;
         document.querySelector("[data-account-merge-dialog]")?.toggleAttribute("hidden", true);
         renderAccountSettings();
     } catch (_) {
+        if (!isCurrent()) return;
         setAccountPresentation("accountMergeStatus", "account.merge.failed");
         if (status) {
             status.textContent = state.accountMergeStatus;
             status.dataset.tone = "error";
         }
     } finally {
-        state.accountMergeBusy = false;
+        if (isCurrent()) {
+            state.accountMergeBusy = false;
+            state.accountMergeOperation = null;
+        }
     }
 }
 
@@ -2040,7 +2095,7 @@ function initializeApplicationRoute() {
         market: null,
         query: new URLSearchParams(),
     };
-    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location) || "/";
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location, undefined, state.catalogCaptureRetry) || "/";
     if (state.applicationAuthReturnPath) {
         const currentPath = `${window.location.pathname}${window.location.search}`;
         const paymentReturn = new URLSearchParams(window.location.search).get("payment");
@@ -2061,7 +2116,10 @@ async function bootstrapAuthenticatedApplication() {
     syncApplicationAuthWall();
     const generation = applicationDataGeneration;
     const promise = (async () => {
-        await hydrateFilesFromDraft();
+        if (await resolveAccountDraftOwner()) await hydrateFilesFromDraft();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        initializeCatalogHandoff();
+        if (!state.catalogCaptureRetry) await catalogHandoff.resume();
         renderCreateInputs();
         refreshButtonsForCurrentView();
         await loadDashboardData();
@@ -2092,6 +2150,10 @@ function isApplicationAuthSessionReady() {
 }
 
 function clearApplicationSessionState() {
+    cancelAccountMergeOperation();
+    invalidateAccountDraft();
+    catalogHandoff.cancel();
+    state.catalogWheel = null;
     applicationDataGeneration += 1;
     applicationDataPromise = null;
     state.applicationDataReady = false;
@@ -2130,6 +2192,8 @@ function getWebsiteAuthToken() {
 }
 
 function clearWebsiteAuthSession({ refreshUi = true } = {}) {
+    cancelAccountMergeOperation();
+    if (state.draftOwner || state.draftLoading) invalidateAccountDraft();
     state.websiteAuth = null;
     sessionStorage.removeItem(WEBSITE_AUTH_STORAGE_KEY);
     if (state.frontendAuthState?.authChannel === "website_telegram") {
@@ -2606,6 +2670,12 @@ function handleFrontendAuthState(nextState, event = null) {
     state.frontendAuthEvent = event;
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
+    const credential = draftCredentialMarker();
+    if (state.accountMergeOperation && credential !== state.accountMergeOperation.credential) cancelAccountMergeOperation();
+    if ((state.draftOwner || state.draftLoading) && (!credential || credential !== state.draftCredential)) {
+        invalidateAccountDraft();
+        window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
+    }
     state.frontendAuthSavedName = nextState.account?.savedName || state.frontendAuthSavedName || null;
     syncReceiptEmailForAuth();
     renderConfirmation();
@@ -2627,6 +2697,13 @@ function handleFrontendAuthState(nextState, event = null) {
     renderDashboard();
     if (nextState.status === "AUTHENTICATED" && nextState.principalVerified) {
         void loadAccountState({ silent: true });
+        if (nextState.protectedApiReady && !state.draftOwner && !state.draftLoading) {
+            void Promise.resolve().then(async () => {
+                if (!isApplicationAuthSessionReady()) return;
+                if (state.applicationAuthRequired) await bootstrapAuthenticatedApplication();
+                else if (await resolveAccountDraftOwner()) await hydrateFilesFromDraft();
+            }).catch(() => { /* Each owner-scoped request reports its own error. */ });
+        }
     }
     syncApplicationAuthWall();
 }
@@ -3042,6 +3119,9 @@ function closeLogoutDialog() {
 }
 
 async function logoutCurrentFrontendAuthority() {
+    cancelAccountMergeOperation();
+    invalidateAccountDraft();
+    window.dispatchEvent(new Event("dreamwheels:draft-session-boundary"));
     const controller = frontendAuthController();
     if (isSupabaseFrontendAuth() && controller) {
         await controller.signOut();
@@ -8710,12 +8790,13 @@ function cancelPhotoPreparation() {
 }
 
 async function repeatRenderWithSavedPhotos(jobId) {
-    if (state.repeatRenderPreparing) return;
+    if (state.repeatRenderPreparing || !state.draftOwner || state.draftError) return;
+    const draftSession = draftScope();
     void trackEvent("repeat_render_started", { source_job_id: jobId });
     const ownerView = state.view;
     const operation = { cancelled: false };
     state.repeatRenderOperation = operation;
-    const ownsScreen = () => !operation.cancelled && state.repeatRenderOperation === operation && state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
+    const ownsScreen = () => draftSession.isCurrent() && !operation.cancelled && state.repeatRenderOperation === operation && state.view === ownerView && (ownerView === "fitment" ? state.fitmentJobId === jobId : ownerView === "render-detail" ? state.renderDetailJobId === jobId : ownerView === "create" ? state.jobId === jobId : true);
     const message = (value) => {
         if (ownerView === "fitment") { state.fitmentMessage = value; notifyFitmentBridge(); }
         else { state.downloadNoticeByJob[jobId] = value; notifyRenderBridge(); }
@@ -8749,8 +8830,11 @@ async function repeatRenderWithSavedPhotos(jobId) {
             { kind: "wheel", file: wheelFile, bytes: await wheelFile.blob.arrayBuffer() },
         ];
         if (!ownsScreen()) return;
+        catalogHandoff.cancel();
         await saveDraftFiles(entries, { isCurrent: ownsScreen, operation, productUrl: job.render_input_snapshot?.rim?.product_url || "" });
         if (!ownsScreen()) return;
+        state.catalogWheel = null;
+        state.wheelReplacementToken += 1;
         resetCreateAssets();
         state.files.car = carFile;
         state.files.wheel = wheelFile;
@@ -9437,145 +9521,199 @@ function handlePaymentReturn() {
     }
 }
 
-function openDraftDb() {
-    return new Promise((resolve, reject) => {
-        if (!("indexedDB" in window)) {
-            resolve(null);
-            return;
-        }
-        const request = indexedDB.open(DRAFT_DB_NAME, 1);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(DRAFT_STORE_NAME)) {
-                db.createObjectStore(DRAFT_STORE_NAME, { keyPath: "kind" });
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+let accountDraftStore;
+let draftOwnerPromise = null;
+const dismissedLegacyOwners = new Set();
+function getAccountDraftStore() {
+    return accountDraftStore ||= new AccountDraftStore({ name: DRAFT_DB_NAME, legacyStore: DRAFT_STORE_NAME });
 }
 
-async function saveDraftFile(kind, file, bytes) {
-    const db = await openDraftDb();
-    if (!db) return;
-    await new Promise((resolve, reject) => {
-        const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
-        tx.objectStore(DRAFT_STORE_NAME).put({
-            kind,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            bytes,
-        });
-        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value: "" });
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+// Credentials are only an in-memory cancellation marker, never the persisted owner.
+function draftCredentialMarker() {
+    if (!hasFrontendAuth()) return "";
+    if (HAS_TG) return tg?.initData || "";
+    if (!isApplicationAuthSessionReady()) return "";
+    if (isSupabaseFrontendAuth()) return frontendAuthController()?.getCurrentAuthUser?.()?.id || "";
+    return getWebsiteAuthToken();
 }
 
-// Keep the two source photos together: a failed transaction preserves the old draft.
-async function saveDraftFiles(entries, { isCurrent = () => true, operation = null, productUrl = "" } = {}) {
-    const db = await openDraftDb();
-    if (!db) return;
-    try {
-        if (!isCurrent()) return;
-        await new Promise((resolve, reject) => {
-            const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
-            if (operation) operation.abortDraft = () => tx.abort();
-            const store = tx.objectStore(DRAFT_STORE_NAME);
-            tx.oncomplete = resolve;
-            tx.onerror = () => reject(tx.error);
-            tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
-            try {
-                entries.forEach(({ kind, file, bytes }) => store.put({ kind, name: file.name, size: file.size, type: file.type, bytes }));
-                store.put({ kind: "product-url", value: productUrl });
-            } catch (error) {
-                tx.abort();
-                reject(error);
-            }
-        });
-    } finally {
-        if (operation) operation.abortDraft = null;
-        db.close();
+function draftScope(isCurrent = () => true, operation = null) {
+    const owner = state.draftOwner, epoch = state.draftEpoch, credential = state.draftCredential;
+    return { owner, operation, signal: state.draftAbort?.signal,
+        isCurrent: () => Boolean(owner) && owner === state.draftOwner && epoch === state.draftEpoch
+            && credential === draftCredentialMarker() && isCurrent() };
+}
+
+function invalidateAccountDraft({ resetBootstrap = true } = {}) {
+    if (resetBootstrap) {
+        applicationDataGeneration += 1;
+        applicationDataPromise = null;
+        state.applicationDataReady = false;
     }
+    state.draftAbort?.abort();
+    state.draftEpoch += 1;
+    state.draftAbort = null;
+    state.draftOwner = null;
+    state.draftRetryOperation = null;
+    state.draftCredential = "";
+    state.draftLoading = false;
+    state.draftError = false;
+    state.legacyDraftAvailable = false;
+    state.legacyDraftBusy = false;
+    state.legacyDraftError = false;
+    draftOwnerPromise = null;
+    cancelPhotoPreparation();
+    catalogHandoff.cancel();
+    catalogHandoff.pending = null;
+    catalogHandoff.error = "";
+    state.files = { car: null, wheel: null };
+    state.catalogWheel = null;
+    state.rimProductUrl = "";
+    state.createProductUrlSaveToken += 1;
+    state.photoConsentAccepted = false;
+    state.wheelReplacementToken += 1;
+    for (const kind of ["car", "wheel"]) {
+        revokePreviewUrl(kind);
+        const image = document.querySelector(`[data-preview-img="${kind}"]`);
+        if (image) { image.onload = null; image.removeAttribute("src"); }
+        document.querySelector(`[data-preview="${kind}"]`)?.toggleAttribute("hidden", true);
+        document.querySelector(`[data-upload-zone="${kind}"]`)?.toggleAttribute("hidden", false);
+        const input = document.querySelector(`input[data-input="${kind}"]`);
+        if (input) input.value = "";
+    }
+    resetCreateAssets();
+    notifyCreateBridge();
 }
 
-async function loadDraftFile(kind) {
-    const db = await openDraftDb();
-    if (!db) return null;
-    const entry = await new Promise((resolve, reject) => {
-        const tx = db.transaction(DRAFT_STORE_NAME, "readonly");
-        const request = tx.objectStore(DRAFT_STORE_NAME).get(kind);
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
+function awaitDraftOwnerRequest(signal, request) {
+    return new Promise((resolve, reject) => {
+        const abort = () => reject(new DOMException("Draft owner request cancelled", "AbortError"));
+        if (signal.aborted) { abort(); return; }
+        signal.addEventListener("abort", abort, { once: true });
+        Promise.resolve().then(request).then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
     });
-    db.close();
-    if (!entry?.bytes) return null;
-    return {
-        blob: new Blob([entry.bytes], { type: entry.type }),
-        name: entry.name,
-        size: entry.size,
-        type: entry.type,
-    };
+}
+
+async function resolveAccountDraftOwner() {
+    const credential = draftCredentialMarker();
+    if (!credential) { if (state.draftOwner || state.draftLoading) invalidateAccountDraft(); return false; }
+    if (state.draftOwner && state.draftCredential === credential) return true;
+    if (draftOwnerPromise && state.draftCredential === credential) return draftOwnerPromise;
+    invalidateAccountDraft({ resetBootstrap: false });
+    state.draftCredential = credential;
+    const epoch = state.draftEpoch;
+    const controller = new AbortController();
+    state.draftAbort = controller;
+    state.draftLoading = true;
+    notifyCreateBridge();
+    const current = () => epoch === state.draftEpoch && credential === draftCredentialMarker();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    const promise = Promise.resolve().then(async () => {
+        try {
+            const result = await awaitDraftOwnerRequest(controller.signal, async () => {
+                const response = await authenticatedFetch(apiUrl("/auth/me", { params: getIdentitySearchParams() }), { headers: withAuthHeaders(), signal: controller.signal });
+                if (!response.ok) throw new Error("Draft owner unavailable");
+                return response.json();
+            });
+            if (!current() || controller.signal.aborted) return false;
+            if (!result.authenticated || typeof result.account_id !== "string" || !/^[1-9]\d{0,19}$/.test(result.account_id || "")) throw new Error("Verified draft owner unavailable");
+            state.draftOwner = `account:${result.account_id}`;
+            return true;
+        } catch {
+            if (current()) state.draftError = true;
+            return false;
+        } finally {
+            clearTimeout(timer);
+            if (current()) { state.draftLoading = false; notifyCreateBridge(); }
+            if (draftOwnerPromise === promise) draftOwnerPromise = null;
+        }
+    });
+    draftOwnerPromise = promise;
+    return promise;
+}
+
+function draftFileRecord(kind, file, bytes) {
+    return { kind, name: file.name, size: file.size, type: file.type, bytes };
+}
+
+async function saveDraftFile(kind, file, bytes, scope = draftScope()) {
+    return getAccountDraftStore().update(scope.owner, draft => ({ ...draft,
+        [kind]: draftFileRecord(kind, file, bytes),
+        ...(kind === "wheel" ? { productUrl: "", catalog: null } : {}),
+    }), scope);
+}
+
+async function saveDraftFiles(entries, { isCurrent = () => true, operation = null, productUrl = "", catalog = null } = {}) {
+    const scope = draftScope(isCurrent, operation);
+    return getAccountDraftStore().update(scope.owner, draft => {
+        for (const { kind, file, bytes } of entries) draft[kind] = draftFileRecord(kind, file, bytes);
+        return { ...draft, productUrl, catalog };
+    }, scope);
 }
 
 async function deleteDraftFile(kind) {
-    const db = await openDraftDb();
-    if (!db) return;
-    await new Promise((resolve, reject) => {
-        const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
-        tx.objectStore(DRAFT_STORE_NAME).delete(kind);
-        if (kind === "wheel") tx.objectStore(DRAFT_STORE_NAME).delete("product-url");
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+    const scope = draftScope();
+    if (!scope.owner) return;
+    return getAccountDraftStore().update(scope.owner, draft => ({ ...draft, [kind]: null,
+        ...(kind === "wheel" ? { productUrl: "", catalog: null } : {}),
+    }), scope).catch(() => { if (scope.isCurrent()) { state.draftError = true; notifyCreateBridge(); } });
 }
 
 async function persistCreateProductUrl(value, isCurrent = () => true) {
-    const db = await openDraftDb();
-    if (!db) throw new Error("Draft storage unavailable");
-    try {
-        if (!isCurrent()) return;
-        await new Promise((resolve, reject) => {
-            const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
-            tx.objectStore(DRAFT_STORE_NAME).put({ kind: "product-url", value });
-            tx.oncomplete = resolve;
-            tx.onerror = () => reject(tx.error);
-            tx.onabort = () => reject(tx.error || new Error("Draft transaction aborted"));
-        });
-    } finally { db.close(); }
+    const scope = draftScope(isCurrent);
+    return getAccountDraftStore().update(scope.owner, draft => ({ ...draft, productUrl: value }), scope);
 }
 
 async function hydrateFilesFromDraft() {
-    const urlToken = state.createProductUrlSaveToken;
+    const scope = draftScope(), version = state.createInputVersion, urlToken = state.createProductUrlSaveToken;
+    if (!scope.owner) return;
     try {
-        const db = await openDraftDb();
-        if (db) {
-            try {
-                const entry = await new Promise((resolve, reject) => {
-                    const request = db.transaction(DRAFT_STORE_NAME, "readonly").objectStore(DRAFT_STORE_NAME).get("product-url");
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-                if (urlToken === state.createProductUrlSaveToken && !state.rimProductUrl) state.rimProductUrl = createProductUrlValue(entry?.value || "") || "";
-            } finally { db.close(); }
+        const { draft, legacyAvailable } = await getAccountDraftStore().read(scope.owner, scope);
+        if (!scope.isCurrent() || version !== state.createInputVersion) return;
+        state.legacyDraftAvailable = legacyAvailable && !draft?.car && !draft?.wheel && !dismissedLegacyOwners.has(scope.owner);
+        if (!draft) return;
+        if (urlToken === state.createProductUrlSaveToken && !state.rimProductUrl) state.rimProductUrl = createProductUrlValue(draft.productUrl || "") || "";
+        for (const kind of ["car", "wheel"]) {
+            const entry = draft[kind];
+            if (state.files[kind]?.blob || !entry?.bytes) continue;
+            state.files[kind] = { blob: new Blob([entry.bytes], { type: entry.type }), name: entry.name, size: entry.size, type: entry.type };
+            if (kind === "wheel") state.catalogWheel = draft.catalog?.owner === scope.owner && resolveCatalogSelection(draft.catalog) ? draft.catalog : null;
+            renderPreviewFromFile(kind, state.files[kind]);
         }
-    } catch { /* Photos remain recoverable when optional metadata cannot be read. */ }
-
-    for (const kind of ["car", "wheel"]) {
-        if (state.files[kind]?.blob) continue;
-        try {
-            const draft = await loadDraftFile(kind);
-            if (draft) {
-                state.files[kind] = draft;
-                renderPreviewFromFile(kind, draft);
-            }
-        } catch {
-            // ignore
-        }
+    } catch (error) {
+        if (scope.isCurrent() && version === state.createInputVersion) state.draftError = error?.name === "DraftStorageBlockedError" ? "blocked" : true;
     }
+    finally { if (scope.isCurrent()) notifyCreateBridge(); }
+}
+
+async function restoreLegacyAccountDraft() {
+    const scope = draftScope();
+    if (!scope.owner || state.legacyDraftBusy || state.files.car || state.files.wheel) return;
+    state.legacyDraftBusy = true;
+    state.legacyDraftError = false;
+    notifyCreateBridge();
+    try {
+        await getAccountDraftStore().importLegacy(scope.owner, scope);
+        if (!scope.isCurrent()) return;
+        state.legacyDraftAvailable = false;
+        await hydrateFilesFromDraft();
+    } catch { if (scope.isCurrent()) state.legacyDraftError = true; }
+    finally { if (scope.isCurrent()) { state.legacyDraftBusy = false; renderCreateInputs(); } }
+}
+
+function bindDraftSessionBoundary() {
+    // No photos, identifiers or credentials are broadcast. A receiving tab must
+    // verify its own session again, never adopt another tab's asserted owner.
+    const invalidate = () => { cancelAccountMergeOperation(); invalidateAccountDraft(); state.draftError = true; notifyCreateBridge(); };
+    const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("dream-wheels-draft-session") : null;
+    if (channel) channel.onmessage = invalidate;
+    window.addEventListener("storage", event => {
+        if (event.key === "dreamWheelsDraftSessionBoundary" || /^sb-.*-auth-token$/.test(event.key || "")) invalidate();
+    });
+    window.addEventListener("dreamwheels:draft-session-boundary", () => {
+        channel?.postMessage({ changed: true });
+        try { localStorage.setItem("dreamWheelsDraftSessionBoundary", `${Date.now()}:${Math.random()}`); } catch { /* BroadcastChannel remains available. */ }
+    });
 }
 
 function revokePreviewUrl(kind) {
@@ -10354,6 +10492,16 @@ function vnextCreateSnapshot() {
         resultUrl: state.resultUrl,
         bothReady: Boolean(state.files.car?.blob && state.files.wheel?.blob),
         consentAccepted: state.photoConsentAccepted,
+        catalogHandoff: catalogHandoff.snapshot(),
+        catalogWheel: resolveCatalogSelection(state.catalogWheel),
+        wheelReplacementToken: state.wheelReplacementToken,
+        draftOwnerKey: `${state.draftEpoch}:${catalogDraftOwner()}`,
+        draftBlocked: !state.draftOwner || state.draftError || state.legacyDraftBusy,
+        draftLoading: state.draftLoading,
+        draftError: state.draftError,
+        legacyDraftAvailable: state.legacyDraftAvailable && !state.files.car && !state.files.wheel,
+        legacyDraftBusy: state.legacyDraftBusy,
+        legacyDraftError: state.legacyDraftError,
         rimProductUrl: state.rimProductUrl,
         productUrlError: state.createProductUrlError,
         sourceEditing: state.vnextCreateSourceEditing,
@@ -10367,7 +10515,56 @@ function vnextCreateSnapshot() {
 
 window.dreamwheelsCreateBridge = {
     snapshot: vnextCreateSnapshot,
-    pickFile(kind) { document.querySelector(`input[data-input="${kind}"]`)?.click(); },
+    async retryAccountDraft() {
+        const credential = draftCredentialMarker();
+        if (!credential) return;
+        state.draftError = false;
+        // Owner resolution can synchronously start a new draft epoch. Capture
+        // its scope before awaiting so another session cannot inherit this Retry.
+        const resolving = resolveAccountDraftOwner();
+        const epoch = state.draftEpoch;
+        const operation = {};
+        state.draftRetryOperation = operation;
+        const isCurrent = () => state.draftRetryOperation === operation
+            && epoch === state.draftEpoch && credential === draftCredentialMarker();
+        try {
+            const resolved = await resolving;
+            if (!isCurrent() || !resolved) return;
+            const scope = draftScope(isCurrent);
+            await hydrateFilesFromDraft();
+            if (!scope.isCurrent()) return;
+            if (!state.draftError) {
+                await catalogHandoff.resume();
+                if (!scope.isCurrent()) return;
+            }
+            renderCreateInputs();
+        } finally {
+            if (state.draftRetryOperation === operation) state.draftRetryOperation = null;
+        }
+    },
+    restoreLegacyDraft: () => restoreLegacyAccountDraft(),
+    dismissLegacyDraft() {
+        if (state.legacyDraftBusy) return;
+        dismissedLegacyOwners.add(state.draftOwner);
+        state.legacyDraftAvailable = false;
+        notifyCreateBridge();
+    },
+    async acceptCatalogWheel() {
+        if (state.catalogCaptureRetry) {
+            initializeCatalogHandoff();
+            if (state.catalogCaptureRetry) { notifyCreateBridge(); return; }
+            await catalogHandoff.resume();
+        }
+        return catalogHandoff.accept();
+    },
+    keepCurrentWheel() {
+        catalogHandoff.dismiss();
+        if (!catalogHandoff.pending && state.catalogCaptureRetry) {
+            state.catalogCaptureRetry = null;
+            window.history.replaceState({}, "", safeApplicationReturnPath(window.location) || "/new");
+        }
+    },
+    pickFile(kind) { if (!state.draftOwner || state.draftError || state.legacyDraftBusy) return; document.querySelector(`input[data-input="${kind}"]`)?.click(); },
     clearFile(kind) { clearSelectedFile(kind); notifyCreateBridge(); },
     createImage() { return submitJob(); },
     handleGenerationError() {
@@ -10531,7 +10728,7 @@ function refreshButtonsForCurrentView() {
             return;
         }
         const consentMissing = ready && !state.photoConsentAccepted;
-        const disabled = !ready || consentMissing || state.submitting;
+        const disabled = !ready || consentMissing || state.submitting || !state.draftOwner || state.draftError || state.legacyDraftBusy;
         setBackButton(null);
         setMainButton({
             text: locale === "ru" ? "Создать изображение" : "Create image",
@@ -10560,13 +10757,16 @@ function resetFlow() {
     state.sharing = false;
     state.submitting = false;
     state.files = { car: null, wheel: null };
+    state.wheelReplacementToken += 1;
     state.rimProductUrl = "";
     state.createProductUrlSaveToken += 1;
     resetCreateAssets();
     revokePreviewUrl("car");
     revokePreviewUrl("wheel");
-    void deleteDraftFile("car");
-    void deleteDraftFile("wheel");
+    const scope = draftScope();
+    if (scope.owner) void getAccountDraftStore().update(scope.owner,
+        draft => ({ ...draft, car: null, wheel: null, productUrl: "", catalog: null }), scope)
+        .catch(() => { if (scope.isCurrent()) { state.draftError = true; notifyCreateBridge(); } });
     state.jobId = null;
     state.resultUrl = null;
     state.resultDownloadUrl = null;
@@ -10771,7 +10971,8 @@ function createProductUrlValue(value) {
 
 
 async function submitJob() {
-    if (state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
+    if (!state.draftOwner || state.draftError || state.legacyDraftBusy) return;
+    if (catalogHandoff.pending || catalogHandoff.busy || state.submitting || !state.photoConsentAccepted || !state.files.car?.blob || !state.files.wheel?.blob) return;
     const inputVersion = state.createInputVersion;
     const carFile = state.files.car;
     const wheelFile = state.files.wheel;
@@ -10854,7 +11055,7 @@ async function submitJob() {
             if (!state.createIdempotencyKey) state.createIdempotencyKey = makeIdempotencyKey();
             const payload = {
                 draft_id: renderDraftId, idempotency_key: state.createIdempotencyKey,
-                rim: { product_url: createProductUrlValue(state.rimProductUrl) || null, source: "user_input" },
+                rim: { ...catalogRimProposal(state.catalogWheel), product_url: createProductUrlValue(state.rimProductUrl) || null, source: "user_input" },
                 rim_user_confirmed: false,
             };
             if (identity.init_data) payload.init_data = identity.init_data;
@@ -11008,31 +11209,40 @@ function classifyGenerationError(message, language = locale) {
 }
 
 function handleFileSelected(kind, file) {
+    if (!state.draftOwner || state.draftError || state.legacyDraftBusy) return;
+    const scope = draftScope();
+    catalogHandoff.cancel();
     // Selecting a replacement cancels pending Create before its bytes are ready.
     state.createInputVersion += 1;
     void trackEvent("upload_started", { asset_kind: kind });
-    file.arrayBuffer().then((buffer) => {
+    const version = state.createInputVersion;
+    file.arrayBuffer().then(async (buffer) => {
+        if (!scope.isCurrent() || version !== state.createInputVersion) return;
+        await saveDraftFile(kind, file, buffer, scope);
+        if (!scope.isCurrent() || version !== state.createInputVersion) return;
         resetCreateAssets();
-        if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
+        if (kind === "wheel") { state.wheelReplacementToken += 1; state.catalogWheel = null; state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
         state.files[kind] = {
             blob: new Blob([buffer], { type: file.type }),
             name: file.name,
             size: file.size,
             type: file.type,
         };
-        void saveDraftFile(kind, file, buffer);
         if (state.files.car?.blob && state.files.wheel?.blob) void trackEvent("upload_completed");
         renderPreviewFromFile(kind, state.files[kind]);
         renderCreateInputs();
         refreshButtonsForCurrentView();
         notifyCreateBridge();
-    });
+    }).catch(() => { if (scope.isCurrent() && version === state.createInputVersion) { state.draftError = true; notifyCreateBridge(); } });
     haptic("light");
 }
 
 function clearSelectedFile(kind) {
+    if (!state.draftOwner || state.draftError || state.legacyDraftBusy) return;
+    catalogHandoff.cancel();
+    if (kind === "wheel") state.catalogWheel = null;
     state.files[kind] = null;
-    if (kind === "wheel") { state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
+    if (kind === "wheel") { state.wheelReplacementToken += 1; state.rimProductUrl = ""; state.createProductUrlSaveToken += 1; }
     resetCreateAssets();
     revokePreviewUrl(kind);
     resetPreviewGeometry(kind);
@@ -11709,7 +11919,47 @@ function initializeFrontendAuthBridge() {
     return controller.initialize();
 }
 
+function catalogDraftOwner() {
+    return state.draftOwner;
+}
+
+const catalogHandoff = new CatalogHandoffController({
+    storage: { getItem: key => sessionStorage.getItem(key), setItem: (key, value) => sessionStorage.setItem(key, value), removeItem: key => sessionStorage.removeItem(key) },
+    current: () => ({ authenticated: !HAS_TG && isApplicationAuthSessionReady() && Boolean(state.draftOwner) && !state.draftError,
+        owner: `${applicationDataGeneration}:${catalogDraftOwner()}`, account: catalogDraftOwner(), version: state.createInputVersion,
+        wheel: state.files.wheel, catalog: state.catalogWheel }),
+    async persist(file, metadata, options) {
+        const bytes = await file.blob.arrayBuffer();
+        if (!options.isCurrent()) return;
+        await saveDraftFiles([{ kind: "wheel", file, bytes }], { ...options, requireStorage: true, catalog: { ...metadata, owner: catalogDraftOwner() } });
+    },
+    apply(file, metadata) {
+        state.files.wheel = file;
+        state.catalogWheel = { ...metadata, owner: catalogDraftOwner() };
+        state.wheelReplacementToken += 1;
+        state.rimProductUrl = "";
+        state.createProductUrlSaveToken += 1;
+        resetCreateAssets();
+        renderPreviewFromFile("wheel", file);
+        renderCreateInputs();
+    },
+    publish: () => notifyCreateBridge(),
+});
+
+function initializeCatalogHandoff() {
+    if (HAS_TG) return;
+    const captured = captureCatalogHandoff(new URL(window.location.href), catalogHandoff.storage);
+    state.catalogCaptureRetry = captured?.error === "storage" ? captured.value : null;
+    if (state.catalogCaptureRetry) catalogHandoff.pending = captured.value;
+    if (captured?.error) catalogHandoff.error = captured.error;
+    else if (captured?.value) catalogHandoff.error = "";
+    if (captured?.cleanUrl) window.history.replaceState({}, "", captured.cleanUrl);
+    const pending = captured?.value || readCatalogHandoff(catalogHandoff.storage);
+    if (pending) { locale = pending.locale; document.documentElement.lang = locale; }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
+    initializeCatalogHandoff();
     void trackEvent("app_opened", { surface: HAS_TG ? "telegram" : "website" });
     if (HAS_TG && tg?.initData) void trackEvent("auth_completed", { auth_channel: "mini_app" });
     void checkCurrentBuild();
@@ -11719,6 +11969,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     syncApplicationAuthWall();
     updateWebsiteAuthUi();
     bindEvents();
+    bindDraftSessionBoundary();
     observeUiCopyRule();
     warmWebsiteLoginResources();
     handlePaymentReturn();
@@ -11766,7 +12017,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    await hydrateFilesFromDraft();
+    if (await resolveAccountDraftOwner()) await hydrateFilesFromDraft();
     renderCreateInputs();
     refreshButtonsForCurrentView();
     await loadDashboardData();
@@ -11798,8 +12049,9 @@ function syncWebNavigation(view, explicitJobId = "") {
     if (HAS_TG || restoringWebRoute || typeof window.location?.pathname !== "string") return;
     if (view === "wallet" && new URLSearchParams(window.location.search).has("payment")) return;
     const jobId = explicitJobId || (view === "fitment" ? state.fitmentJobId : state.renderDetailJobId);
-    const target = webRoutePath(view, jobId, window.location);
-    if (!target) return;
+    const path = webRoutePath(view, jobId, window.location);
+    if (!path) return;
+    const target = safeApplicationReturnPath(new URL(path, window.location.href), undefined, state.catalogCaptureRetry) || path;
     const current = window.location.pathname + window.location.search;
     if (current !== target) {
         webScrollPositions.set(current, document.querySelector("#app")?.scrollTop || window.scrollY || 0);
@@ -11814,7 +12066,7 @@ function restoreWebRoute() {
     const route = applicationRouteContext(window.location);
     if (!route) return false;
     state.applicationRoute = route;
-    state.applicationAuthReturnPath = route.returnPath;
+    state.applicationAuthReturnPath = safeApplicationReturnPath(window.location, undefined, state.catalogCaptureRetry) || route.returnPath;
     updateWebRouteAuth(route);
     if (state.applicationAuthRequired && !isApplicationAuthSessionReady()) return true;
     restoringWebRoute = true;

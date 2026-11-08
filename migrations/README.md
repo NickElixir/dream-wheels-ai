@@ -157,3 +157,7 @@ writers и дождаться транзакций → согласованны�
 новый backend → frontend → разрешить writers. Старый backend не поддерживает
 бессрочные пакеты и может пересчитать баланс неправильно; простой rollback
 кода после cutover недопустим без совместимой версии учёта.
+
+## 0043 — shared public catalog wheel images
+
+`0043_catalog_wheels_public_read.sql` creates only `catalog-wheels`, with a restrictive client policy scoped to that bucket. Public URL reads are intended; browser listing/writes are denied even with the older permissive anon policy. Existing conflicting bucket settings abort the transaction. Apply first to approved staging, verify policies and public delivery, then publish/verify immutable objects using the separate trusted script. No service-role key belongs in frontend builds. See `docs/catalog-webapp-phase02.md` for the upload/activation sequence. Applying this migration or uploading live objects requires explicit approval; local preparation does not perform either operation.

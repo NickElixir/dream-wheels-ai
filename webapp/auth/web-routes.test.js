@@ -32,7 +32,7 @@ test('navigation pushes once and popstate restores route and scroll without push
  let popstate; const opened=[]; const positions=[];
  const scroller={scrollTop:240,scrollTo:({top})=>positions.push(top)};
  const window={location:new URL('/',origin),scrollY:0,history:{pushState(_,__,path){window.location=new URL(path,origin);opened.push(path);}},addEventListener(name,fn){if(name==='popstate')popstate=fn;}};
- const context={state,window,HAS_TG:false,applicationRouteContext,applicationRouteRequiresAuth,webRoutePath,URLSearchParams,requestAnimationFrame:fn=>fn(),document:{querySelector:()=>scroller},setView:view=>{state.view=view;},scheduleRenderHistoryPolling(){},loadAccountState(){},openRenderDetail:job=>{state.renderDetailJobId=job;state.view='render-detail';},openFitmentView:job=>{state.fitmentJobId=job;state.view='fitment';},isApplicationAuthSessionReady:()=>true};
+ const context={state,window,HAS_TG:false,URL,safeApplicationReturnPath,applicationRouteContext,applicationRouteRequiresAuth,webRoutePath,URLSearchParams,requestAnimationFrame:fn=>fn(),document:{querySelector:()=>scroller},setView:view=>{state.view=view;},scheduleRenderHistoryPolling(){},loadAccountState(){},openRenderDetail:job=>{state.renderDetailJobId=job;state.view='render-detail';},openFitmentView:job=>{state.fitmentJobId=job;state.view='fitment';},isApplicationAuthSessionReady:()=>true};
  const api=runInNewContext(source.slice(source.indexOf('// Browser routes are independent'))+'\n({syncWebNavigation,restoreWebRoute})',context);
  api.syncWebNavigation('renders');api.syncWebNavigation('renders');
  assert.deepEqual(opened,['/history']);
