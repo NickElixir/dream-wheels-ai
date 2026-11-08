@@ -120,3 +120,102 @@ else:
     assert steps.index(cleanup) > steps.index(build)
     subprocess.run(["bash", "-e", "-c", cleanup["run"]], cwd=tmp_path, env=env, check=True)
     assert not list((tmp_path / ".vercel").glob(".env.*.local"))
+
+
+@pytest.mark.parametrize("job_name", ["deploy-staging", "deploy-preview"])
+def test_staging_job_generates_catalog_and_public_config_from_real_source(
+    tmp_path: Path, job_name: str
+) -> None:
+    workflow = yaml.safe_load((ROOT / ".github/workflows/deploy-frontends.yml").read_text())
+    steps = workflow["jobs"][job_name]["steps"]
+    generate = next(step for step in steps if step.get("name") == "Generate staging catalog bundle")
+    backend = next(step for step in steps if "matching staging backend" in step.get("name", ""))
+    verify = next(step for step in steps if "environment before build" in step.get("name", ""))
+    assert steps.index(backend) < steps.index(generate) < steps.index(verify)
+    # The installer is the only substituted boundary; execute the real workflow
+    # generator/guard and the real config CLI in a disposable source tree.
+    for folder in (
+        "landing/scripts",
+        "webapp/scripts",
+        "webapp/vnext",
+        "webapp/auth",
+        "scripts/catalog",
+    ):
+        (tmp_path / folder).mkdir(parents=True, exist_ok=True)
+    shutil.copytree(ROOT / "landing/src/data", tmp_path / "landing/src/data")
+    shutil.copy(ROOT / "landing/scripts/build-handoff.ts", tmp_path / "landing/scripts")
+    shutil.copy(ROOT / "webapp/vnext/catalog-assets.mjs", tmp_path / "webapp/vnext")
+    shutil.copy(ROOT / "webapp/vnext/catalog-data.mjs", tmp_path / "webapp/vnext")
+    shutil.copy(ROOT / "webapp/scripts/build-public-config.mjs", tmp_path / "webapp/scripts")
+    shutil.copy(ROOT / "scripts/catalog/verify-build.mjs", tmp_path / "scripts/catalog")
+    (tmp_path / "landing/node_modules").symlink_to(
+        ROOT / "landing/node_modules", target_is_directory=True
+    )
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    npm = tools / "npm"
+    npm.write_text('#!/bin/sh\ntest "$*" = "ci --prefix landing"\n')
+    npm.chmod(0o700)
+    env = dict(os.environ, PATH=str(tools) + os.pathsep + os.environ["PATH"])
+    for name in (
+        "EXPECTED_SUPABASE_URL",
+        "CATALOG_BUILD_TARGET",
+        "TIMEWEB_PROFILE",
+        "TIMEWEB_LANDING_PROFILE",
+    ):
+        env.pop(name, None)
+    env["VERCEL_ENV"] = "production" if job_name == "deploy-staging" else "preview"
+    result = subprocess.run(
+        ["node", "scripts/catalog/verify-build.mjs"],
+        cwd=tmp_path,
+        env=dict(env, EXPECTED_SUPABASE_URL="https://hnawojlnfoaccinlgjyn.supabase.co"),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "deployment target" in result.stderr
+    subprocess.run(
+        ["bash", "-e", "-c", generate["run"]],
+        cwd=tmp_path,
+        env=dict(env, **generate["env"]),
+        check=True,
+    )
+    env.update(
+        EXPECTED_SUPABASE_URL="https://hnawojlnfoaccinlgjyn.supabase.co",
+        SUPABASE_URL="https://hnawojlnfoaccinlgjyn.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY="sb_publishable_local_test",
+        TURNSTILE_SITE_KEY="local-test",
+    )
+    subprocess.run(
+        ["node", "webapp/scripts/build-public-config.mjs"], cwd=tmp_path, env=env, check=True
+    )
+    generated = (tmp_path / "webapp/vnext/catalog-assets.mjs").read_text()
+    assert '"projectRef":"hnawojlnfoaccinlgjyn"' in generated
+    assert '"mode":"published"' in generated.replace(" ", "").replace("\n", "")
+    result = subprocess.run(
+        ["node", "scripts/catalog/verify-build.mjs"],
+        cwd=tmp_path,
+        env=dict(env, EXPECTED_SUPABASE_URL="https://qmgyccghsbdpehiybjae.supabase.co"),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "deployment target" in result.stderr
+
+
+def test_staging_backend_gate_is_pinned_and_rejects_old_or_unhealthy_backend() -> None:
+    from scripts.check_staging_backend import URL, verify_release
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/deploy-frontends.yml").read_text())
+    assert URL == workflow["env"]["STAGING_BACKEND_URL"] + "/health/release"
+    sha = "a" * 40
+    verify_release({"status": "ok", "commit": sha}, sha)
+    for payload in ({"status": "ok", "commit": "b" * 40}, {"status": "error", "commit": sha}, {}):
+        with pytest.raises(ValueError, match="deploy backend first"):
+            verify_release(payload, sha)
+    with pytest.raises(ValueError, match="full commit SHA"):
+        verify_release({"status": "ok", "commit": sha}, "staging")
+    assert not any(
+        step.get("name") == "Generate staging catalog bundle"
+        for step in workflow["jobs"]["deploy-production"]["steps"]
+    )
