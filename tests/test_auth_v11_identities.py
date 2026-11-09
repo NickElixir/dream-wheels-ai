@@ -348,3 +348,43 @@ def test_auth_v11_identity_creation_is_race_safe_when_database_is_available() ->
             await contender.close()
 
     asyncio.run(_with_temp_schema(run))
+
+
+def test_registration_touch_is_atomic_and_only_applies_to_new_accounts() -> None:
+    from datetime import UTC, datetime
+
+    async def exercise(conn, _schema, _database_url):
+        for migration in (*BASELINE_MIGRATIONS, TARGET_MIGRATION):
+            await _apply_sql(conn, migration)
+        await _apply_sql(conn, ROOT / "migrations" / "0044_registration_attribution.sql")
+        touch = {
+            "source": "catalog",
+            "locale": "ru",
+            "touched_at": datetime.now(UTC),
+            "utm": {"utm_campaign": "зима"},
+        }
+        new = await ensure_user_identity(
+            conn, provider="supabase", provider_subject=SUPABASE_SUBJECT, registration_touch=touch
+        )
+        assert (
+            await ensure_user_identity(
+                conn,
+                provider="supabase",
+                provider_subject=SUPABASE_SUBJECT,
+                registration_touch={**touch, "source": "landing"},
+            )
+            == new
+        )
+        existing = await ensure_user(conn, 42)
+        assert await ensure_user(conn, 42, registration_touch=touch) == existing
+        telegram = await ensure_user(conn, 43, registration_touch={**touch, "locale": "en"})
+        rows = await conn.fetch(
+            "SELECT account_id, source, locale, provider, utm->>'utm_campaign' AS campaign "
+            "FROM registration_attribution ORDER BY account_id"
+        )
+        assert [tuple(row) for row in rows] == [
+            (new, "catalog", "ru", "supabase", "зима"),
+            (telegram, "catalog", "en", "telegram", "зима"),
+        ]
+
+    asyncio.run(_with_temp_schema(exercise))

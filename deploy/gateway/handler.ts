@@ -10,7 +10,7 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 const CORS_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_HEADERS =
-  "authorization, content-type, accept, x-request-id, x-idempotency-key, x-vehicle-recognition-request-id, x-vehicle-recognition-recovery";
+  "authorization, content-type, accept, x-request-id, x-idempotency-key, x-vehicle-recognition-request-id, x-vehicle-recognition-recovery, x-registration-touch";
 const FORWARDED_REQUEST_HEADERS = [
   "authorization",
   "content-type",
@@ -19,6 +19,7 @@ const FORWARDED_REQUEST_HEADERS = [
   "x-idempotency-key",
   "x-vehicle-recognition-request-id",
   "x-vehicle-recognition-recovery",
+  "x-registration-touch",
 ];
 const HOP_HEADERS = new Set([
   "connection",

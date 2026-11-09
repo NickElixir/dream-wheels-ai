@@ -1,3 +1,4 @@
+import { captureRegistrationTouch, registrationTouchPayload } from "./registration-touch.mjs";
 import {
     AUTH_SESSION_STATES,
     getAccessToken as getSupabaseAccessToken,
@@ -10,6 +11,8 @@ import {
     subscribeToAuthChanges,
     verifyEmailOtp,
 } from "./supabase-client.js";
+
+captureRegistrationTouch();
 
 const DEFAULT_STATE = Object.freeze({
     status: AUTH_SESSION_STATES.BOOTSTRAPPING,
@@ -296,8 +299,9 @@ export function createFrontendAuthController({
             diagnostic("success");
             stage = "auth_me";
             stageStarted = performance.now();
+            const touch = registrationTouchPayload();
             const response = await bounded(fetchImpl(backendApiUrl("/auth/me"), {
-                headers: { Authorization: `Bearer ${accessToken}` },
+                headers: { Authorization: `Bearer ${accessToken}`, ...(touch ? { "X-Registration-Touch": touch } : {}) },
                 signal: abortController.signal,
             }));
             if (!probeStillCurrent()) return getState();

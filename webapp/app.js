@@ -1,3 +1,4 @@
+import { registrationTouchPayload } from "./auth/registration-touch.mjs";
 import { AccountDraftStore } from "./vnext/account-drafts.mjs";
 import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "./vnext/catalog-handoff.mjs";
 import { copy as uiCopy, errorCopy, legacyTranslations } from "./vnext/copy.mjs";
@@ -2863,7 +2864,7 @@ async function loginWithTelegram({ preparedResources = null } = {}) {
         const verifyResponse = await fetch(apiUrl("/auth/telegram/verify-id-token"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_token: loginResult.id_token, nonce_token: nonceToken }),
+            body: JSON.stringify({ id_token: loginResult.id_token, nonce_token: nonceToken, registration_touch: registrationTouchPayload() }),
         });
         if (!verifyResponse.ok) throw new Error(await parseApiError(verifyResponse));
         const verified = await verifyResponse.json();

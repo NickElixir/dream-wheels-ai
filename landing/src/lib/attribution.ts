@@ -23,5 +23,8 @@ export function getAppTargetFromUrl(currentUrl: string, path?: string, hosting =
 
 export function getAppTarget(path?: string) {
   if (typeof window === 'undefined') return path ? new URL(path, getStaticAppTarget()).toString() : getStaticAppTarget();
-  return getAppTargetFromUrl(window.location.href, path);
+  const target = new URL(getAppTargetFromUrl(window.location.href, path));
+  target.searchParams.set("registration_source", window.location.pathname.includes("/catalog") ? "catalog" : "landing");
+  target.searchParams.set("registration_locale", document.documentElement.lang === "ru" ? "ru" : "en");
+  return target.toString();
 }
