@@ -1,4 +1,5 @@
 import { Pool, type QueryResultRow } from "pg";
+import { queryReadOnly } from "@/lib/read-only-query";
 
 let pool: Pool | null = null;
 
@@ -26,6 +27,5 @@ export async function query<T extends QueryResultRow>(
   sql: string,
   params: unknown[] = [],
 ) {
-  const result = await getPool().query<T>(sql, params);
-  return result.rows;
+  return queryReadOnly<T>(await getPool().connect(), sql, params);
 }

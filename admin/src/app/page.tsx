@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { getDashboardData } from "@/lib/admin-data";
+import { CopyId, Refresh } from "@/components/job-controls";
+import { mediaPath } from "@/lib/job-media";
+import { JobPreview } from "@/components/job-preview";
+import { requireAdmin } from "@/lib/require-admin";
 
 type SearchParams = Promise<{
   status?: string;
@@ -122,15 +126,19 @@ function UserLabel({
 }
 
 export default async function Home({ searchParams }: { searchParams: SearchParams }) {
+  await requireAdmin();
   const resolvedSearchParams = await searchParams;
   const status = resolvedSearchParams.status || "all";
   const feedback = resolvedSearchParams.feedback || "all";
   const days = resolvedSearchParams.days || "14";
   const user = resolvedSearchParams.user?.trim() || "";
   const clearUserParams = new URLSearchParams();
+  const currentFilters = new URLSearchParams();
   for (const [key, existingValue] of Object.entries(resolvedSearchParams)) {
     if (existingValue && key !== "user") clearUserParams.set(key, existingValue);
+    if (existingValue && ["status", "feedback", "days", "user"].includes(key)) currentFilters.set(key, existingValue);
   }
+  const jobHref = (id: string) => `/jobs/${id}?${new URLSearchParams({ returnTo: `/?${currentFilters.toString()}` }).toString()}`;
   let dashboardData: Awaited<ReturnType<typeof getDashboardData>>;
 
   try {
@@ -141,7 +149,8 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
       user,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown dashboard error";
+    // Database exceptions may include connection details; never render them.
+    console.error("admin_dashboard_unavailable", { error_type: error instanceof Error ? error.name : "Unknown" });
 
     return (
       <main className="min-h-screen bg-black text-neutral-100">
@@ -156,7 +165,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               Check `DATABASE_URL` and database network access for this deployment.
             </p>
             <pre className="mt-4 overflow-x-auto bg-black p-3 font-mono text-xs text-red-100">
-              {message}
+              Dashboard data is temporarily unavailable. Please retry.
             </pre>
           </section>
         </div>
@@ -172,19 +181,18 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
 
   return (
     <main className="min-h-screen bg-black text-neutral-100">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-6 sm:px-8">
+      <div className="admin-container dashboard">
         <header className="flex flex-col gap-2 border-b border-neutral-800 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="text-sm text-neutral-500">Dream Wheels AI</div>
             <h1 className="text-3xl font-semibold text-white">Admin Stats</h1>
           </div>
-          <div className="text-sm text-neutral-500">
-            Last {days} days
-            {user ? ` · User ${user}` : ""} · {new Date().toLocaleString("en-US")}
+          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-400">
+            <span>Last updated {new Date().toLocaleString("en-GB", { timeZone: "UTC" })} UTC</span><Refresh />
           </div>
         </header>
 
-        <section className="flex flex-col gap-4 border border-neutral-800 bg-neutral-950 p-4">
+        <section className="dashboard-filters admin-panel">
           <form className="flex flex-col gap-2 sm:flex-row sm:items-center" action="/">
             <input type="hidden" name="status" value={status} />
             <input type="hidden" name="feedback" value={feedback} />
@@ -198,7 +206,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
                 name="user"
                 type="search"
                 defaultValue={user}
-                placeholder="@username or Telegram ID"
+                placeholder="Username, Telegram ID or User ID"
                 className="min-h-10 min-w-0 flex-1 border border-neutral-700 bg-black px-3 text-sm text-white outline-white placeholder:text-neutral-600"
               />
               <div className="flex gap-2">
@@ -219,6 +227,14 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               </div>
             </div>
           </form>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="sr-only">Window</span>
+            {dayOptions.map((option) => (
+              <FilterLink key={option} label={`${option}d`} param="days"
+                value={String(option)} current={days} searchParams={resolvedSearchParams} />
+            ))}
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-20 text-sm text-neutral-500">Status</span>
@@ -246,19 +262,6 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               />
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="w-20 text-sm text-neutral-500">Window</span>
-            {dayOptions.map((option) => (
-              <FilterLink
-                key={option}
-                label={`${option}d`}
-                param="days"
-                value={String(option)}
-                current={days}
-                searchParams={resolvedSearchParams}
-              />
-            ))}
-          </div>
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -278,29 +281,29 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
             sub={`${likeRate} like rate · ${summary.rated} rated`}
           />
           <MetricCard
-            label="Avg generation"
+            label="Avg completion time"
             value={formatDuration(summary.avgProcessingSeconds)}
             sub={`${summary.processing} processing · ${summary.queued} queued`}
           />
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-          <div className="border border-neutral-800 bg-neutral-950 p-4">
+        <section className="flex flex-col gap-6">
+          <div className="admin-panel p-4 daily-chart">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-medium text-white">Jobs By Day</h2>
               <span className="text-sm text-neutral-500">{jobsByDay.length} days</span>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="daily-bars">
               {jobsByDay.map((day) => (
-                <div key={day.day} className="grid grid-cols-[92px_1fr_54px] items-center gap-3">
-                  <div className="font-mono text-xs text-neutral-500">{day.day}</div>
-                  <div className="h-3 bg-neutral-900">
+                <div key={day.day} className="daily-bar" title={`${day.day}: ${day.total} jobs`}>
+                  <div className="font-mono text-xs text-neutral-400">{day.total}</div>
+                  <div className="daily-bar-track">
                     <div
-                      className="h-3 bg-neutral-200"
-                      style={{ width: `${Math.max((day.total / maxDaily) * 100, 2)}%` }}
+                      className="daily-bar-fill"
+                      style={{ height: `${Math.max((day.total / maxDaily) * 100, 2)}%` }}
                     />
                   </div>
-                  <div className="text-right font-mono text-sm text-white">{day.total}</div>
+                  <div className="font-mono text-xs text-neutral-400">{day.day.slice(5)}</div>
                 </div>
               ))}
               {jobsByDay.length === 0 ? (
@@ -323,11 +326,19 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-mono text-xs text-neutral-500">{compactId(job.id)}</div>
-                      <UserLabel username={job.username} telegramUserId={job.telegram_user_id} />
+                      <UserLabel username={job.username} telegramUserId={job.telegram_user_id || `User #${job.user_id}`} />
                     </div>
                     <span className={`border px-2 py-1 text-xs ${statusClass(job.status)}`}>
                       {job.status}
                     </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <JobPreview url={job.has_result ? mediaPath(job.id, "result") : null} />
+                    <div className="flex flex-col gap-2 text-xs text-neutral-400">
+                      <span>Car {job.has_car ? "attached" : "—"} · Wheel {job.has_wheel ? "attached" : "—"}</span>
+                      <CopyId id={job.id} />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm">
@@ -355,18 +366,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
 
                   <div className="flex items-center justify-between gap-3 text-xs text-neutral-500">
                     <span className="font-mono">{new Date(job.created_at).toLocaleString("en-US")}</span>
-                    {job.output_image_url ? (
-                      <a
-                        className="text-white underline underline-offset-4"
-                        href={job.output_image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        open
-                      </a>
-                    ) : (
-                      <span>—</span>
-                    )}
+                    <Link className="text-link" href={jobHref(job.id)} prefetch={false}>View job →</Link>
                   </div>
                 </article>
               ))}
@@ -381,23 +381,29 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-neutral-900 text-xs uppercase tracking-[0.08em] text-neutral-500">
                   <tr>
-                    <th className="px-4 py-3">Job</th>
-                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Preview</th>
+                    <th className="px-4 py-3">Job / User</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Feedback</th>
                     <th className="px-4 py-3">Time</th>
                     <th className="px-4 py-3">Created</th>
-                    <th className="px-4 py-3">Result</th>
+                    <th className="px-4 py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-900">
                   {recentJobs.map((job) => (
                     <tr key={job.id} className="text-neutral-300">
-                      <td className="px-4 py-3 font-mono text-xs text-neutral-400">
-                        {compactId(job.id)}
+                      <td className="px-4 py-3">
+                        <JobPreview url={job.has_result ? mediaPath(job.id, "result") : null} />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs">
-                        <UserLabel username={job.username} telegramUserId={job.telegram_user_id} />
+                      <td className="px-4 py-3 font-mono text-xs text-neutral-400">
+                        <div className="flex items-center gap-2">{compactId(job.id)}<CopyId id={job.id} /></div>
+                        <div className="my-2"><UserLabel username={job.username} telegramUserId={job.telegram_user_id || `User #${job.user_id}`} /></div>
+                        <div className="flex gap-2 whitespace-nowrap font-sans text-neutral-400" title="File references only; availability is checked when opened">
+                          <span className={job.has_car ? "" : "line-through"}>Car</span> ·
+                          <span className={job.has_wheel ? "" : "line-through"}>Wheel</span> ·
+                          <span className={job.has_result ? "" : "line-through"}>Result</span>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`border px-2 py-1 text-xs ${statusClass(job.status)}`}>
@@ -418,21 +424,12 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
                         {formatDuration(job.processing_seconds)}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-neutral-500">
-                        {new Date(job.created_at).toLocaleString("en-US")}
+                        <time dateTime={new Date(job.created_at).toISOString()} title={`${new Date(job.created_at).toISOString()} (UTC)`}>
+                          {new Date(job.created_at).toLocaleString("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </time>
                       </td>
                       <td className="px-4 py-3">
-                        {job.output_image_url ? (
-                          <a
-                            className="text-white underline underline-offset-4"
-                            href={job.output_image_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            open
-                          </a>
-                        ) : (
-                          <span className="text-neutral-600">—</span>
-                        )}
+                        <Link className="text-link whitespace-nowrap" href={jobHref(job.id)} prefetch={false}>View job →</Link>
                       </td>
                     </tr>
                   ))}
