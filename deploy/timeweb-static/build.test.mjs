@@ -104,7 +104,7 @@ test('disabled website Telegram login short-circuits resource warmup before netw
 test('artifact copy plan includes runtime files and excludes server and development trees', () => {
   assert.deepEqual(artifactEntries, [
     'index.html', 'app.js', 'style.css', 'startup.js', 'app-route.mjs', 'favicon.ico', 'favicon.svg', 'cover.jpg',
-    'auth/harness-config.js', 'auth/app-auth.bundle.js', 'assets/', 'vnext/',
+    'auth/harness-config.js', 'auth/app-auth.bundle.js', 'auth/registration-touch.mjs', 'assets/', 'vnext/',
   ]);
   assert.ok(!artifactEntries.some((entry) => /(?:api|lib|scripts|tests|package|\.env)/u.test(entry)));
 });

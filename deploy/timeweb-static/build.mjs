@@ -15,7 +15,7 @@ const rootFiles = [
   'index.html', 'app.js', 'style.css', 'startup.js', 'app-route.mjs',
   'favicon.ico', 'favicon.svg', 'cover.jpg',
 ];
-const authFiles = ['harness-config.js', 'app-auth.bundle.js'];
+const authFiles = ['harness-config.js', 'app-auth.bundle.js', 'registration-touch.mjs'];
 export const artifactEntries = Object.freeze([...rootFiles, ...authFiles.map((file) => `auth/${file}`), 'assets/', 'vnext/']);
 const deniedSegments = new Set(['node_modules', 'tests', 'test', '__tests__', 'lib', 'scripts']);
 

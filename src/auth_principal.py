@@ -190,6 +190,7 @@ async def _resolve_supabase_bearer_principal(
     conn: asyncpg.Connection,
     *,
     token: str,
+    registration_touch: dict | None = None,
 ) -> AuthPrincipal:
     try:
         claims = await verify_supabase_access_token(token)
@@ -208,6 +209,7 @@ async def _resolve_supabase_bearer_principal(
             conn,
             provider="supabase",
             provider_subject=str(claims.subject),
+            **({"registration_touch": registration_touch} if registration_touch else {}),
         )
     except Exception as exc:
         raise AuthPrincipalError("IDENTITY_RESOLUTION_FAILED") from exc
@@ -221,6 +223,7 @@ async def resolve_auth_principal(
     telegram_user_id: int | None,
     authorization: str | None = None,
     auth_name: str,
+    registration_touch: dict | None = None,
 ) -> AuthPrincipal:
     """Resolve Telegram or Supabase credentials to canonical ``users.id``.
 
@@ -236,7 +239,9 @@ async def resolve_auth_principal(
         if bearer is None:
             raise AuthPrincipalError("MISSING_CREDENTIALS")
         if _is_supabase_bearer_candidate(bearer):
-            return await _resolve_supabase_bearer_principal(conn, token=bearer)
+            return await _resolve_supabase_bearer_principal(
+                conn, token=bearer, registration_touch=registration_touch
+            )
         return await _resolve_legacy_bearer_principal(conn, token=bearer)
 
     if not init_data and telegram_user_id is None:

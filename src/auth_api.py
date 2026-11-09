@@ -25,6 +25,7 @@ from src.auth import (
 from src.auth_principal import AuthPrincipalError, require_auth_principal, resolve_auth_principal
 from src.config import TELEGRAM_AUTH_TOKEN_TTL_SEC, TELEGRAM_LOGIN_CLIENT_ID
 from src.credits_service import ensure_credit_account_state
+from src.registration_attribution import parse_registration_touch
 from src.users_service import ensure_user
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class TelegramLoginVerifyRequest(BaseModel):
     id_token: str
     nonce_token: str | None = None
+    registration_touch: str | None = None
 
 
 class TelegramLoginVerifyResponse(BaseModel):
@@ -115,9 +117,11 @@ class AccountMergeResponse(BaseModel):
 async def auth_me(
     init_data: Annotated[str | None, Query()] = None,
     telegram_user_id: Annotated[int | None, Query()] = None,
+    x_registration_touch: Annotated[str | None, Header()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ):
     """Return a minimal, provider-neutral authenticated-session probe."""
+    touch = parse_registration_touch(x_registration_touch)
     try:
         pool = db.get_pool()
         async with pool.acquire() as conn:
@@ -127,6 +131,7 @@ async def auth_me(
                 telegram_user_id=telegram_user_id,
                 authorization=authorization,
                 auth_name="auth me",
+                **({"registration_touch": touch} if touch else {}),
             )
     except AuthPrincipalError as exc:
         if exc.code == "IDENTITY_RESOLUTION_FAILED":
@@ -381,6 +386,11 @@ async def telegram_verify_id_token(request: TelegramLoginVerifyRequest):
                 conn,
                 telegram_user_id=auth_context.telegram_user_id,
                 username=auth_context.username,
+                **(
+                    {"registration_touch": touch}
+                    if (touch := parse_registration_touch(request.registration_touch))
+                    else {}
+                ),
             )
 
     return TelegramLoginVerifyResponse(

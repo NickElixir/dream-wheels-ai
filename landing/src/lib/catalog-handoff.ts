@@ -21,6 +21,8 @@ export function catalogHandoffUrl(currentUrl: string, variant: ShowcaseVariant, 
   target.searchParams.set('catalog_sku', sku.id);
   target.searchParams.set('catalog_locale', locale);
   target.searchParams.set('catalog_source', source);
+  target.searchParams.set('registration_source', 'catalog');
+  target.searchParams.set('registration_locale', locale);
   return target.toString();
 }
 
