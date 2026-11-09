@@ -1,6 +1,21 @@
 {
   "version": 1,
-  "production": null,
+  "production": {
+    "registryDigest": "ef28544e5f3183fb8bd3a8ff90daf6a77d06a4a329333d358204198b9224144e",
+    "projectRef": "qmgyccghsbdpehiybjae",
+    "bucket": "catalog-wheels",
+    "objectCount": 66,
+    "totalBytes": 6100683,
+    "mode": "published",
+    "uploaded": 66,
+    "verifiedAt": "2026-11-09T14:47:50.944Z",
+    "corsOrigins": [
+      "https://www.dream-wheels.ru",
+      "https://dreamwheels.pro",
+      "https://app.dream-wheels.ru",
+      "https://app.dreamwheels.pro"
+    ]
+  },
   "staging": {
     "registryDigest": "ef28544e5f3183fb8bd3a8ff90daf6a77d06a4a329333d358204198b9224144e",
     "projectRef": "hnawojlnfoaccinlgjyn",

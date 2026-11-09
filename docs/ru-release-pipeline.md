@@ -58,29 +58,19 @@ Production environment reviewers and account permissions remain separate control
 
 ## Verification and release evidence
 
-Rollout accepted, 2026-11-03: both Deno gateways and both served RU frontends
-use source `ac55a1bbadce1e878021770f69141bb672641cbe`. Agent-side test and production
-verification passed version/config/HTML, gateway/upstream health, CORS and
-unauthenticated boundaries. The owner confirmed both test and production work
-on Android and MacBook without VPN; the test build was reported as nearly instant.
-This is owner-reported acceptance, not a measured loading-time benchmark or a
-claim that paid generation was tested. Timeweb run
+Rollout checkpoint, 2026-11-03: both Deno gateways and the served RU test frontend
+use source `ac55a1bbadce1e878021770f69141bb672641cbe`. Agent-side RU test verification
+passed version/config/HTML, gateway/upstream health, CORS and unauthenticated
+boundaries; renewed Android/MacBook no-VPN acceptance is pending. Timeweb run
 `41635188518` started a successful deployment but failed parsing the SDK deploy
 response afterward; panel and served metadata confirmed the resulting version.
 Do not interpret that workflow failure as an automatic rollback.
-
-Production release [41638040018](https://github.com/NickElixir/dream-wheels-ai/actions/runs/41638040018)
-completed successfully, including live verification. Timeweb app **281247** is
-active on deployment `b0456e9e-87fe-404b-973e-5322e6232464`, using the production
-gateway. Its prior settings snapshot is retained in that run's artifacts for
-30 days. Test app **281549** remains available for future acceptance checks.
-Vercel remains parallel. No paid generation was run during release verification.
 
 Render backend `b9c62e09f7b3089ff0619299315543f6b05c7448` is live (deployment
 `dep-dbkss8c9v7es73f9dg30`); `/health` returned 200 with `X-Request-Id`.
 `autoDeployTrigger=checksPass` was enabled and confirmed through the Render API.
 The first backend release used a manual trigger; automatic triggering has not
-yet been demonstrated. Frontend production promotion and owner acceptance are complete.
+yet been demonstrated. Production Timeweb promotion remains pending acceptance.
 
 1. CI: Python lint/test, browser auth tests, builder/profile tests, gateway
    type/lint/tests, release verifier tests.

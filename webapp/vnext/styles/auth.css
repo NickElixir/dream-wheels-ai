@@ -329,11 +329,13 @@
   margin: 0;
 }
 
-.application-auth-gate-wordmark .brand-light {
+.application-auth-gate-wordmark .brand-light,
+[data-logout-dialog] .auth-dialog-wordmark .brand-light {
   color: var(--vnext-text);
 }
 
-.application-auth-gate-wordmark .brand-dim {
+.application-auth-gate-wordmark .brand-dim,
+[data-logout-dialog] .auth-dialog-wordmark .brand-dim {
   color: var(--vnext-text-subtle);
 }
 
