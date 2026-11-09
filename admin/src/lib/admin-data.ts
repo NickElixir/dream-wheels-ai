@@ -31,6 +31,10 @@ export type JobsByDay = {
 
 export type RecentJob = {
   id: string;
+  user_id: number;
+  has_car: boolean;
+  has_wheel: boolean;
+  has_result: boolean;
   status: JobStatus;
   feedback: string | null;
   output_image_url: string | null;
@@ -116,7 +120,8 @@ function buildWhere(filters: DashboardFilters) {
         SELECT 1
         FROM users uf
         WHERE uf.id = j.user_id
-          AND (uf.telegram_user_id::text ILIKE $${params.length}
+          AND (uf.id::text ILIKE $${params.length}
+            OR uf.telegram_user_id::text ILIKE $${params.length}
             OR uf.username ILIKE $${params.length})
       )`,
     );
@@ -153,7 +158,8 @@ function buildLedgerWhere(filters: DashboardFilters) {
   if (user) {
     params.push(`%${user}%`);
     clauses.push(
-      `(u.telegram_user_id::text ILIKE $${params.length}
+      `(u.id::text ILIKE $${params.length}
+        OR u.telegram_user_id::text ILIKE $${params.length}
         OR u.username ILIKE $${params.length})`,
     );
   }
@@ -255,7 +261,7 @@ export async function getDashboardData(filters: DashboardFilters) {
         COUNT(*) FILTER (WHERE rf.sentiment = 'disliked')::int AS dislikes,
         COUNT(*) FILTER (WHERE rf.sentiment IS NOT NULL)::int AS rated,
         ROUND(AVG(EXTRACT(EPOCH FROM (j.completed_at - j.created_at)))
-          FILTER (WHERE j.completed_at IS NOT NULL))::int AS "avgProcessingSeconds"
+          FILTER (WHERE j.status = 'completed' AND j.completed_at IS NOT NULL))::int AS "avgProcessingSeconds"
       FROM jobs j
       LEFT JOIN render_feedback rf
         ON rf.render_job_id = j.id
@@ -285,6 +291,10 @@ export async function getDashboardData(filters: DashboardFilters) {
       `
       SELECT
         j.id::text,
+        j.user_id,
+        (j.car_asset_id IS NOT NULL OR j.car_image_url IS NOT NULL) AS has_car,
+        (j.rim_asset_id IS NOT NULL OR j.wheel_image_url IS NOT NULL) AS has_wheel,
+        (j.result_asset_id IS NOT NULL OR j.output_image_url IS NOT NULL) AS has_result,
         j.status,
         CASE
           WHEN rf.sentiment IS NULL THEN NULL

@@ -112,6 +112,28 @@ jobs:
         working-directory: deploy/gateway
         run: deno task check
 
+  admin-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - name: Install admin dependencies
+        run: npm ci --prefix admin
+      - name: Admin unit and security tests
+        run: npm test --prefix admin
+      - name: Admin lint
+        run: npm run lint --prefix admin
+      - name: Admin TypeScript
+        run: npm run typecheck --prefix admin
+      - name: Admin production build (no database credentials)
+        run: npm run build --prefix admin
+
   qa-context-integration:
     runs-on: ubuntu-latest
     services:
