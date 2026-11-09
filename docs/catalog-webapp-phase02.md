@@ -163,3 +163,26 @@ The follow-up owner-isolation implementation now stores both photos, URL and SKU
 ## Vercel slot correction
 
 The separate WebApp staging project intentionally runs vercel build --prod. Its VERCEL_ENV=production means that project's production slot, not production application data. The catalog guard now resolves the pinned Timeweb profile / EXPECTED_SUPABASE_URL first and uses VERCEL_ENV only without those anchors. Explicit CATALOG_BUILD_TARGET must still agree; unknown Supabase projects, contradictory pinned profiles, stale manifests and staging assets for a production-pinned project are still rejected. Regression tests execute the actual public-config CLI with the staging production slot both with and without explicit staging target; Python workflow fixtures now reproduce the real --prod staging slot. No hosting settings or deployment changed.
+
+## Production release checklist
+
+- Staging acceptance for `aede5553a6d51df11b33785e234c65fe1f709a3b` includes
+  the 60-link RU/EN matrix and the operator's successful manual render #50
+  with KiK Clermont, SKU 83642. Smoke-test the logout wordmark on the release
+  candidate before promotion.
+- Production read-only preflight: the publication receipt is null. Public GET
+  for one original and both preview sizes returned `NoSuchBucket` in production
+  Supabase. Apply migration 0043 and publish the manifest's 66 immutable
+  objects only after production approval. Verify all byte sizes, MIME types,
+  hashes and RU/EN origins before activating the production receipt. Use the
+  publisher and receipt activation procedure above with `--target production`.
+- Review the release diff against current main, pin the candidate SHA, record
+  previous production versions for Render, both WebApps and both Landings, and
+  run the full release gates. Keep the frontend-only compatibility gate intact.
+- Roll out backend first and verify release health. Deploy the RU and EN WebApps
+  with the matching production manifest, then deploy the RU and EN Landings.
+  Verify the RU Timeweb and EN Vercel destinations before enabling the CTAs.
+- Smoke-test one real catalog CTA per locale, expected SKU and image, reload,
+  preserved car photo and no automatic render. If smoke fails, stop promotion
+  and restore the previous Landing first, then the affected WebApp as needed.
+  Retain the immutable Storage objects.
