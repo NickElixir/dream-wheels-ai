@@ -132,6 +132,9 @@ def test_staging_job_generates_catalog_and_public_config_from_real_source(
     backend = next(step for step in steps if "matching staging backend" in step.get("name", ""))
     verify = next(step for step in steps if "environment before build" in step.get("name", ""))
     assert steps.index(backend) < steps.index(generate) < steps.index(verify)
+    if not (ROOT / "landing/node_modules/.bin/tsx").is_file():
+        subprocess.run(["npm", "ci", "--prefix", "landing"], cwd=ROOT, check=True)
+
     # The installer is the only substituted boundary; execute the real workflow
     # generator/guard and the real config CLI in a disposable source tree.
     for folder in (
