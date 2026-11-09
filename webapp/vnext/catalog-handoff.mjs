@@ -55,7 +55,7 @@ export function catalogRimProposal(value) {
 
 // Owns only the incoming choice. The application owns photos, auth and durable draft transactions.
 export class CatalogHandoffController {
-    constructor({ storage, current, persist, apply, publish, fetchImage = fetch, now = Date.now, isReady = isCatalogStorageReady, verifyImage = verifyCatalogImage }) {
+    constructor({ storage, current, persist, apply, publish, fetchImage = (...args) => globalThis.fetch(...args), now = Date.now, isReady = isCatalogStorageReady, verifyImage = verifyCatalogImage }) {
         Object.assign(this, { storage, current, persist, apply, publish, fetchImage, now, isReady, verifyImage });
         this.pending = null;
         this.busy = false;
