@@ -1,5 +1,6 @@
 """Общие операции над пользователями."""
 
+import json
 from typing import Final
 
 import asyncpg
@@ -54,6 +55,7 @@ async def ensure_user_identity(
     provider: str,
     provider_subject: str,
     username: str | None = None,
+    registration_touch: dict | None = None,
 ) -> int:
     """Find or create a canonical user for an external identity atomically.
 
@@ -102,6 +104,7 @@ async def ensure_user_identity(
             )
             return int(user_id)
 
+        created = True
         if provider == "telegram":
             telegram_user_id = int(provider_subject)
             user_id = await conn.fetchval(
@@ -113,7 +116,8 @@ async def ensure_user_identity(
                 """,
                 telegram_user_id,
             )
-            if user_id is None:
+            created = user_id is None
+            if created:
                 user_id = await conn.fetchval(
                     """
                     INSERT INTO users (telegram_user_id, username)
@@ -153,6 +157,21 @@ async def ensure_user_identity(
         )
         if identity_user_id is None:
             raise IdentityConflictError("Identity is already owned by another user")
+        if created and registration_touch:
+            await conn.execute(
+                """
+                INSERT INTO registration_attribution
+                    (account_id, touched_at, source, locale, provider, utm)
+                VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+                ON CONFLICT (account_id) DO NOTHING
+                """,
+                user_id,
+                registration_touch["touched_at"],
+                registration_touch["source"],
+                registration_touch["locale"],
+                provider,
+                json.dumps(registration_touch["utm"]),
+            )
         return int(user_id)
 
 
@@ -160,6 +179,7 @@ async def ensure_user(
     conn: asyncpg.Connection,
     telegram_user_id: int,
     username: str | None = None,
+    registration_touch: dict | None = None,
 ) -> int:
     """Legacy Telegram boundary that also maintains the canonical identity."""
     return await ensure_user_identity(
@@ -167,4 +187,5 @@ async def ensure_user(
         provider="telegram",
         provider_subject=str(telegram_user_id),
         username=username,
+        **({"registration_touch": registration_touch} if registration_touch else {}),
     )
