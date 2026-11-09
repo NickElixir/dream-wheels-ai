@@ -777,4 +777,4 @@ export const catalogAssetRegistry = {
 };
 export const catalogStorageTarget = {"projectRef":"qmgyccghsbdpehiybjae","origin":"https://qmgyccghsbdpehiybjae.supabase.co"};
 export const catalogBucket = "catalog-wheels";
-export const catalogPublication = null;
+export const catalogPublication = {"registryDigest":"ef28544e5f3183fb8bd3a8ff90daf6a77d06a4a329333d358204198b9224144e","projectRef":"qmgyccghsbdpehiybjae","bucket":"catalog-wheels","objectCount":66,"totalBytes":6100683,"mode":"published","uploaded":66,"verifiedAt":"2026-11-09T14:47:50.944Z","corsOrigins":["https://www.dream-wheels.ru","https://dreamwheels.pro","https://app.dream-wheels.ru","https://app.dreamwheels.pro"]};
