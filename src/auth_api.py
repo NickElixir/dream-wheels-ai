@@ -52,6 +52,7 @@ class TelegramLoginNonceResponse(BaseModel):
 
 
 class AuthMeResponse(BaseModel):
+    account_id: str
     authenticated: bool = True
     authority: Literal["telegram", "supabase"]
     auth_channel: str
@@ -139,7 +140,11 @@ async def auth_me(
         logger.exception("❌ auth/me unavailable")
         raise HTTPException(status_code=500, detail="Authentication service unavailable") from exc
 
-    return AuthMeResponse(authority=principal.authority, auth_channel=principal.auth_channel)
+    return AuthMeResponse(
+        account_id=str(principal.user_id),
+        authority=principal.authority,
+        auth_channel=principal.auth_channel,
+    )
 
 
 def _account_link_http_error(exc: AccountLinkError) -> HTTPException:
