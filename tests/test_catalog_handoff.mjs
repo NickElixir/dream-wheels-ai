@@ -50,6 +50,16 @@ test('conflicting photo remains intact until confirmation; decline stays consume
 test('same pair and execution in durable draft consumes replay without downloading again',async()=>{
     const h=harness();h.context.wheel={};h.context.catalog=value();await h.controller.resume();assert.equal(h.applications(),0);assert.equal(h.store.getItem(HANDOFF_KEY),null);
 });
+test('default image fetch uses the browser global receiver',async t=>{
+    const fetchMock=t.mock.method(globalThis,'fetch',async function () {
+        assert.equal(this,globalThis);
+        return new Response(new Blob(['wheel'],{type:'image/webp'}));
+    });
+    const h=harness({fetchImage:undefined});
+    await h.controller.resume();
+    assert.equal(fetchMock.mock.callCount(),1);
+    assert.equal(h.applications(),1);
+});
 test('fetch failure preserves both current files and supports retry from saved intent',async()=>{
     const h=harness({fetchImage:async()=>{throw Error('offline');}});const wheel={};h.context.wheel=wheel;await h.controller.resume();await h.controller.accept();assert.equal(h.context.wheel,wheel);assert.equal(h.controller.error,'image');assert.ok(h.store.getItem(HANDOFF_KEY));
     h.controller.fetchImage=async()=>({ok:true,blob:async()=>new Blob(['ok'],{type:'image/webp'})});await h.controller.accept();assert.equal(h.applications(),1);
