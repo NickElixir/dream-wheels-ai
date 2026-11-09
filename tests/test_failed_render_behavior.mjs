@@ -102,6 +102,8 @@ for (const scenario of ['success','asset-failure','left-screen']) {
       parseApiError:async()=> 'Asset unavailable',saveDraftFiles:async entries=>calls.push(['persist',entries.length]),
       resetCreateAssets:()=>calls.push(['reset']),renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
       setView:view=>{state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+    context.catalogHandoff={cancel(){}};
+    context.state.draftOwner='account:42';context.draftScope=()=>({isCurrent:()=>true});
     vm.runInNewContext(fn('repeatRenderWithSavedPhotos'),context);
     await context.repeatRenderWithSavedPhotos('selected');
     assert.equal(state.repeatRenderPreparing,false);
@@ -110,14 +112,10 @@ for (const scenario of ['success','asset-failure','left-screen']) {
   });
 }
 
-test('draft photo pair aborts together if a write fails synchronously', async () => {
-  let writes=0, aborted=false, closed=false;
-  const tx={objectStore:()=>({put(){if(++writes===2)throw new Error('write failed');}}),abort(){aborted=true;}};
-  const context={openDraftDb:async()=>({transaction:()=>tx,close(){closed=true;}}),DRAFT_STORE_NAME:'draft'};
+test('pair persistence surfaces atomic storage failure without applying new photos', async () => {
+  const context={draftScope:()=>({owner:'account:42'}),getAccountDraftStore:()=>({update:async()=>{throw Error('write failed');}})};
   vm.runInNewContext(fn('saveDraftFiles'),context);
   await assert.rejects(context.saveDraftFiles([{kind:'car',file:{}},{kind:'wheel',file:{}}]),/write failed/);
-  assert.equal(aborted,true);
-  assert.equal(closed,true);
 });
 
 test('leaving and returning cannot revive photo preparation; a new action can succeed', async () => {
@@ -130,6 +128,8 @@ test('leaving and returning cannot revive photo preparation; a new action can su
     fetch:async url=>({ok:true,blob:async()=>new Blob([url])}),saveDraftFiles:async()=>{persisted++;},
     resetCreateAssets:()=>{},renderPreviewFromFile:()=>{},showCreateScreen:()=>{},renderCreateInputs:()=>{},
     setView:view=>{context.cancelPhotoPreparation();state.view=view;},notifyFitmentBridge:()=>{},notifyRenderBridge:()=>{}};
+  context.catalogHandoff={cancel(){}};
+  context.state.draftOwner='account:42';context.draftScope=()=>({isCurrent:()=>true});
   vm.runInNewContext(fn('cancelPhotoPreparation')+'\n'+fn('repeatRenderWithSavedPhotos'),context);
   const first=context.repeatRenderWithSavedPhotos('selected');
   context.setView('wallet');context.setView('fitment');
@@ -139,12 +139,12 @@ test('leaving and returning cannot revive photo preparation; a new action can su
   assert.equal(state.view,'create');assert.equal(persisted,1);
 });
 
-test('cancelled draft preparation after opening IndexedDB never starts a write', async () => {
-  let current=true, writes=0, closed=false;
-  const context={openDraftDb:async()=>{current=false;return {transaction(){writes++;},close(){closed=true;}}},DRAFT_STORE_NAME:'draft'};
+test('cancelled preparation carries its cancellation scope into storage', async () => {
+  let current=true,checked=false;
+  const context={draftScope:isCurrent=>({owner:'account:42',isCurrent}),getAccountDraftStore:()=>({update:async(owner,change,scope)=>{current=false;checked=true;assert.equal(scope.isCurrent(),false);}})};
   vm.runInNewContext(fn('saveDraftFiles'),context);
   await context.saveDraftFiles([{kind:'car',file:{}}],{isCurrent:()=>current});
-  assert.equal(writes,0);assert.equal(closed,true);
+  assert.equal(checked,true);
 });
 
 test('confirmed missing result offers retry for the same job', () => {

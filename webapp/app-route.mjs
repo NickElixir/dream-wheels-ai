@@ -75,7 +75,7 @@ export function isApplicationRoute(input = globalThis.location, currentOrigin) {
     return pathname === "/app" || pathname.startsWith("/app/") || Boolean(routeMatch(pathname));
 }
 
-export function safeApplicationReturnPath(input = globalThis.location, currentOrigin) {
+export function safeApplicationReturnPath(input = globalThis.location, currentOrigin, uncapturedCatalog = null) {
     const url = safeApplicationUrl(input, currentOrigin);
     const originalPath = normalizedPathname(url?.pathname || "");
     const match = routeMatch(originalPath);
@@ -86,6 +86,10 @@ export function safeApplicationReturnPath(input = globalThis.location, currentOr
         const value = url.searchParams.get(key);
         if (value !== null && value !== "") query.set(key, value);
     });
+    // Only the already validated capture may survive a failed durable write.
+    if (path === "/new" && uncapturedCatalog) {
+        for (const [key, value] of Object.entries({catalog_variant:uncapturedCatalog.variantId,catalog_sku:uncapturedCatalog.skuId,catalog_locale:uncapturedCatalog.locale,catalog_source:uncapturedCatalog.source})) query.set(key, value);
+    }
     const search = query.toString();
     return `${path}${search ? `?${search}` : ""}`;
 }

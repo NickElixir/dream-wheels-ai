@@ -63,6 +63,12 @@ jobs:
       - name: Install frontend test dependencies
         run: npm ci --prefix webapp
 
+      - name: Install Landing test dependencies
+        run: npm ci --prefix landing
+
+      - name: Landing tests and build
+        run: npm test --prefix landing && npm run check --prefix landing && npm run build --prefix landing
+
       - name: Ruff lint
         run: ruff check .
 
@@ -88,7 +94,7 @@ jobs:
         run: node --test tests/test_fitment_vnext_composition.mjs tests/test_fitment_vnext_focus.mjs tests/test_form_focus.mjs tests/test_startup.mjs tests/test_e01_i18n.mjs tests/test_e01_corrective.mjs tests/test_source_extract.mjs
 
       - name: Failed render behavioral tests
-        run: node --test tests/test_failed_render_behavior.mjs tests/test_create_draft_metadata.mjs
+        run: node --test tests/test_failed_render_behavior.mjs tests/test_create_draft_metadata.mjs tests/test_catalog_handoff.mjs tests/test_catalog_storage.mjs tests/test_catalog_storage_policy.mjs tests/test_catalog_build.mjs
 
       - name: Webapp boot behavior tests
         run: node --test tests/test_webapp_boot_behavior.mjs

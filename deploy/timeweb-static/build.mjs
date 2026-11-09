@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertCatalogBuild } from '../../scripts/catalog/verify-build.mjs';
 import { publicConfig } from '../../webapp/scripts/build-public-config.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -123,6 +124,7 @@ async function copyFile(source, destination) {
 }
 
 export async function build({ env = process.env, root = repositoryRoot, output = outputRoot } = {}) {
+  assertCatalogBuild({env,root});
   const appRoot = path.join(root, 'webapp');
   let gitSha = '';
   try {
@@ -133,8 +135,8 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   const buildSha = resolveBuildSha(env, gitSha);
   const deployConfig = deploymentConfig(env);
 
-  execFileSync('npm', ['ci'], { cwd: appRoot, stdio: 'inherit' });
-  execFileSync('npm', ['run', 'build'], { cwd: appRoot, stdio: 'inherit' });
+  execFileSync('npm', ['ci'], { cwd: appRoot, stdio: 'inherit', env: {...process.env,...env} });
+  execFileSync('npm', ['run', 'build'], { cwd: appRoot, stdio: 'inherit', env: {...process.env,...env} });
 
   const config = publicConfig(env);
   config.auth.analyticsEndpoint = `${deployConfig.apiBaseUrl}/analytics/events`;

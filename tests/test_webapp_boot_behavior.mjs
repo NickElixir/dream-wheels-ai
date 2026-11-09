@@ -1,3 +1,4 @@
+import { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal } from "../webapp/vnext/catalog-handoff.mjs";
 import { legacyTranslations, errorCopy } from "../webapp/vnext/copy.mjs";
 import { buildFitmentRimReadiness } from "../webapp/vnext/fitment-readiness.mjs";
 import { fitmentDisplayValue } from "../webapp/vnext/fitment-display.mjs";
@@ -35,11 +36,11 @@ function bootApi({ savedStorage = storage(), telegram = true, deployedBuild = "n
     const window = {
         addEventListener() {},
         Telegram: telegram ? { WebApp: { platform: "ios", expand() {} } } : {},
-        location: { search: "", reload() { reloads += 1; } },
+        location: { href: "https://app.dream-wheels.ru/new", search: "", reload() { reloads += 1; } },
         scrollTo() {},
     };
     const sessionStorage = savedSession;
-    const context = { legacyTranslations, errorCopy,
+    const context = { CatalogHandoffController, captureCatalogHandoff, readCatalogHandoff, resolveCatalogSelection, catalogRimProposal, legacyTranslations, errorCopy,
         URL, URLSearchParams, console, document, window,
         fetch: async () => ({ ok: true, async json() { return { build: deployedBuild }; } }),
         localStorage: savedStorage,

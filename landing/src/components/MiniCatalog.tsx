@@ -1,6 +1,8 @@
 import { useRef, useState } from 'preact/hooks';
-import { getVariant, getVariantsForVehicle, getVehicle, getWheel, getWheelSku, vehicles, wheels } from '../data/catalog';
+import { getVariant, getVariantsForVehicle, getVehicle, getWheel, vehicles, wheels } from '../data/catalog';
 import '../styles/catalog-data.css';
+import { catalogHandoffUrl, selectedCatalogSku, catalogThumbnail, isCatalogStorageReady } from '../lib/catalog-handoff';
+import { getAppTarget } from '../lib/attribution';
 import { trackEvent } from '../lib/analytics';
 import { getDictionary } from '../i18n';
 import type { Locale } from '../i18n';
@@ -33,7 +35,15 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
   const wheel = getWheel(activeWheelId) ?? wheels[0];
   const variant = getVariant(vehicle.id, activeWheelId) ?? variants[0];
   const wheelCells = variants.map((item) => getWheel(item.wheelId)).filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const skuOptions = (variant?.skuIds ?? []).map(getWheelSku).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const sku = variant ? selectedCatalogSku(variant) : null;
+  const handoffReady = Boolean(variant && sku && isCatalogStorageReady());
+  const tryOn = (source = 'catalog') => {
+    if (!variant || !handoffReady) return;
+    const target = catalogHandoffUrl(window.location.href, variant, locale, source);
+    if (!target) return;
+    trackEvent('primary_cta_clicked', { source, vehicle_id: vehicle.id, wheel_id: wheel.id, variant_id: variant.id, sku_id: selectedCatalogSku(variant)?.id });
+    window.location.assign(target);
+  };
   const selectVehicle = (next: string) => {
     const nextWheel = getVariantsForVehicle(next)[0]?.wheelId ?? wheels[0].id;
     setVehicleId(next); setWheelId(nextWheel); setStageKey(`${next}-${nextWheel}-${Date.now()}`);
@@ -56,7 +66,7 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
               <span>{item.displayName}</span>
             </button>)}
           </div>
-          <button class="catalog-missing" type="button" onClick={() => openPreview('try')}>{copy.ui.missingVehicle}</button>
+          <button class="catalog-missing" type="button" onClick={() => window.location.assign(getAppTarget())}>{copy.ui.missingVehicle}</button>
         </aside>
 
         <div class="catalog-main">
@@ -64,8 +74,8 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
           <div class="wheel-carousel" aria-label={copy.selectWheel}>
             {wheelCells.map((item) => {
               const selected = item.id === wheel.id;
-              return <button key={item.id} type="button" class={`wheel-cell ${selected ? 'is-active' : ''} ${item.thumbnail.src.endsWith('.jpg') ? 'is-jpeg' : 'is-cutout'}`} aria-pressed={selected} aria-label={item.displayName} onClick={() => selectWheel(item.id)}>
-                <span class="wheel-image"><img src={item.thumbnail.src} srcSet={item.thumbnail.srcSet} sizes="(max-width: 900px) calc((100vw - 64px) / 2), 160px" alt={`${copy.ui.wheelImage}: ${item.displayName}`} width="640" height="640" loading="lazy" onError={(event) => { event.currentTarget.src = '/assets/mock/wheel-fallback.svg'; }} /></span>
+              return <button key={item.id} type="button" class={`wheel-cell ${selected ? 'is-active' : ''} ${catalogThumbnail(item).src.endsWith('.jpg') ? 'is-jpeg' : 'is-cutout'}`} aria-pressed={selected} aria-label={item.displayName} onClick={() => selectWheel(item.id)}>
+                <span class="wheel-image"><img src={catalogThumbnail(item).src} srcSet={catalogThumbnail(item).srcSet} sizes="(max-width: 900px) calc((100vw - 64px) / 2), 160px" alt={`${copy.ui.wheelImage}: ${item.displayName}`} width="640" height="640" loading="lazy" onError={(event) => { event.currentTarget.src = '/assets/mock/wheel-fallback.svg'; }} /></span>
                 <span>{item.displayName}</span>
               </button>;
             })}
@@ -75,26 +85,26 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
           </div>
           <div class="catalog-result-actions">
             <div><h2>{wheel.displayName}</h2></div>
-            <div><button class="catalog-primary button-lime" type="button" onClick={() => openPreview('try')}>{tryLabel}</button></div>
+            <div><button class="catalog-primary button-lime" type="button" disabled={!handoffReady} onClick={() => tryOn()}>{tryLabel}</button></div>
           </div>
           <details class="catalog-bottom-specs">
             <summary>{copy.ui.specifications}</summary>
             <div class="catalog-spec-list">
-              {skuOptions.map((sku) => <div class="catalog-spec-item" key={sku.id}>
+              {sku && <div class="catalog-spec-item" key={sku.id}>
                 <div class="catalog-spec-row">
                 <dl class="catalog-spec-values">
                   {[[copy.diameter, number(sku.diameter, 'R')], [copy.width, number(sku.width, '', 'J')], ['PCD', sku.pcd ?? copy.noData], [copy.offset, number(sku.et, 'ET')], ['DIA', number(sku.dia)]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
                 </dl>
                 </div>
                 <p class="catalog-article">{copy.ui.skuPrefix}{sku.sku}</p>
-              </div>)}
+              </div>}
             </div>
           </details>
         </div>
       </div>
       <section class="catalog-pilot">
         <div><h2>{copy.ui.pilotTitle}</h2><p>{copy.ui.pilotDescription}</p></div>
-        <div><div class="catalog-demo"><img src={wheel.thumbnail.src} srcSet={wheel.thumbnail.srcSet} sizes="74px" alt="" width="74" height="74" loading="lazy" /><div><p>{wheel.displayName}</p></div><button class="catalog-demo-try" type="button" onClick={() => openPreview('try')}>{tryLabel}</button></div></div>
+        <div><div class="catalog-demo"><img src={catalogThumbnail(wheel).src} srcSet={catalogThumbnail(wheel).srcSet} sizes="74px" alt="" width="74" height="74" loading="lazy" /><div><p>{wheel.displayName}</p></div><button class="catalog-demo-try" type="button" disabled={!handoffReady} onClick={() => tryOn('catalog-product-card')}>{tryLabel}</button></div></div>
         <form aria-describedby="catalog-pilot-notice" onSubmit={(event) => { event.preventDefault(); openPreview('pilot'); }}>
           <h2>{copy.ui.requestTitle}</h2>
           <p id="catalog-pilot-notice" class="catalog-pilot-notice">{copy.ui.demoNotice}</p>
@@ -107,7 +117,7 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
       </section>
       <dialog ref={dialog} class="catalog-preview-dialog" aria-labelledby="catalog-preview-title">
         <h2 id="catalog-preview-title">{preview === 'try' ? (copy.ui.tryTitle) : (copy.ui.pilotDialogTitle)}</h2>
-        {preview === 'try' && <div class="catalog-demo"><img src={wheel.thumbnail.src} srcSet={wheel.thumbnail.srcSet} sizes="74px" width="74" height="74" alt="" /><strong>{wheel.displayName}</strong></div>}
+        {preview === 'try' && <div class="catalog-demo"><img src={catalogThumbnail(wheel).src} srcSet={catalogThumbnail(wheel).srcSet} sizes="74px" width="74" height="74" alt="" /><strong>{wheel.displayName}</strong></div>}
         <p>{preview === 'try' ? (copy.ui.tryPreview) : (copy.ui.pilotPreview)}</p>
         <form method="dialog"><button>{copy.ui.returnToCatalog}</button></form>
       </dialog>

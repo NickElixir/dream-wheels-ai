@@ -82,6 +82,17 @@ jobs:
         with:
           node-version: 24
 
+      - name: Verify matching staging backend before frontend publication
+        run: python3 scripts/check_staging_backend.py "$(git rev-parse HEAD)"
+
+      - name: Generate staging catalog bundle
+        env:
+          EXPECTED_SUPABASE_URL: https://hnawojlnfoaccinlgjyn.supabase.co
+        run: |
+          npm ci --prefix landing
+          ./landing/node_modules/.bin/tsx landing/scripts/build-handoff.ts --target staging
+          CATALOG_BUILD_TARGET=staging node scripts/catalog/verify-build.mjs
+
       - name: Install pinned Vercel CLI
         run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
 
@@ -334,6 +345,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Verify matching staging backend before frontend publication
+        run: python3 scripts/check_staging_backend.py "$(git rev-parse HEAD)"
+
+      - name: Generate staging catalog bundle
+        env:
+          EXPECTED_SUPABASE_URL: https://hnawojlnfoaccinlgjyn.supabase.co
+        run: |
+          npm ci --prefix landing
+          ./landing/node_modules/.bin/tsx landing/scripts/build-handoff.ts --target staging
+          CATALOG_BUILD_TARGET=staging node scripts/catalog/verify-build.mjs
 
       - name: Install pinned Vercel CLI
         run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}

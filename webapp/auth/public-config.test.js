@@ -33,12 +33,19 @@ test('CLI emits the real browser script without reusing staging URL in productio
   const { spawnSync } = await import('node:child_process');
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'dw-public-config-'));
   try {
-    await fs.mkdir(path.join(folder, 'scripts'));
-    await fs.mkdir(path.join(folder, 'auth'));
-    await fs.copyFile(new URL('../scripts/build-public-config.mjs', import.meta.url), path.join(folder, 'scripts/build.mjs'));
-    const run = spawnSync(process.execPath, [path.join(folder, 'scripts/build.mjs')], { env: { ...process.env, ...production }, encoding: 'utf8' });
+    await fs.mkdir(path.join(folder, 'webapp/scripts'),{recursive:true});
+    await fs.mkdir(path.join(folder, 'scripts/catalog'),{recursive:true});
+    await fs.mkdir(path.join(folder, 'landing/src/data'),{recursive:true});
+    await fs.mkdir(path.join(folder, 'webapp/vnext'),{recursive:true});
+    await fs.copyFile(new URL('../../scripts/catalog/verify-build.mjs',import.meta.url),path.join(folder,'scripts/catalog/verify-build.mjs'));
+    for(const name of ['catalog-storage','catalog-publications','catalog-asset-registry','catalog-reconciliation','catalog-primary-skus'])await fs.copyFile(new URL(`../../landing/src/data/${name}.json`,import.meta.url),path.join(folder,`landing/src/data/${name}.json`));
+    await fs.copyFile(new URL('../vnext/catalog-data.mjs',import.meta.url),path.join(folder,'webapp/vnext/catalog-data.mjs'));
+    await fs.copyFile(new URL('../vnext/catalog-assets.mjs',import.meta.url),path.join(folder,'webapp/vnext/catalog-assets.mjs'));
+    await fs.mkdir(path.join(folder, 'webapp/auth'));
+    await fs.copyFile(new URL('../scripts/build-public-config.mjs', import.meta.url), path.join(folder, 'webapp/scripts/build.mjs'));
+    const run = spawnSync(process.execPath, [path.join(folder, 'webapp/scripts/build.mjs')], { env: { ...process.env, ...production }, encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
-    const script = await fs.readFile(path.join(folder, 'auth/harness-config.js'), 'utf8');
+    const script = await fs.readFile(path.join(folder, 'webapp/auth/harness-config.js'), 'utf8');
     assert.ok(script.includes(production.SUPABASE_URL));
     assert.ok(!script.includes('hnawojlnfoaccinlgjyn'));
     assert.ok(!script.includes('must-never-export'));
