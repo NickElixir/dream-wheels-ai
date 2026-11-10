@@ -118,7 +118,9 @@ jobs:
               echo "production SHA does not contain the manually tested source SHA" >&2
               exit 1
             }
-            git diff --exit-code "$PRODUCTION_TESTED_SHA" "$REQUESTED_SHA" -- webapp deploy scripts || {
+            # The reviewed frontend_release_policy.py is release-control code; it is
+            # excluded from the runtime comparison and never enters the Timeweb artifact.
+            git diff --exit-code "$PRODUCTION_TESTED_SHA" "$REQUESTED_SHA" -- webapp deploy scripts ':(exclude)scripts/frontend_release_policy.py' || {
               echo "Runtime/build source changed after the accepted test release" >&2
               exit 1
             }

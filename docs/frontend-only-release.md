@@ -24,6 +24,10 @@ byte-identical to the tested SHA while `webapp/vercel.json` changes only its
 `buildCommand` from the public-config generator to that generator followed by the
 JS bundler. All other Vercel settings, including rewrites, headers and function
 limits, must compare equal; other scripts and build settings remain denied.
+The RU production promotion's accepted-source comparison excludes only
+`scripts/frontend_release_policy.py`, a reviewed release-control file that is not
+copied into the Timeweb frontend artifact. WebApp and deploy sources, plus all
+other scripts, must remain identical to the accepted staging SHA.
 Symlinks and submodules anywhere in the accepted or candidate Git tree are denied,
 including unchanged links whose targets changed outside the runtime directories.
 Rename detection is disabled to inspect both sides of moves. The allowlist includes
