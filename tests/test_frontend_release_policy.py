@@ -122,7 +122,9 @@ def test_release_workflows_keep_full_gate_and_recheck_before_publication():
         "Recheck frontend-only compatibility immediately before publication"
     ) < names.index("Deploy exactly one production artifact")
     ru = yaml.safe_load((root / ".github/workflows/ru-release.yml").read_text())
-    assert "scripts.check_frontend_release" in str(ru["jobs"]["validate-source"])
+    validate_source = str(ru["jobs"]["validate-source"])
+    assert "scripts.check_frontend_release" in validate_source
+    assert ":(exclude)scripts/frontend_release_policy.py" in validate_source
     names = [s.get("name", "") for s in ru["jobs"]["timeweb-release"]["steps"]]
     assert names.index(
         "Recheck frontend-only compatibility before changing Timeweb settings"
