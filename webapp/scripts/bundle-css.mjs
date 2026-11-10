@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { posix, join } from 'node:path';
 
-const stylesheetBlock = /(?:^    <link rel="stylesheet" href="\/(?:style\.css|vnext\/styles\/[\w-]+\.css)\?v=__BUILD_ID__(?:&surface=pr5)?">\n)+/mu;
+const stylesheetBlock = /(?:^    <link rel="stylesheet" href="\/(?:style\.css|vnext\/styles\/[\w-]+\.css)\?v=(?:__BUILD_ID__|[a-f0-9]{40})(?:&surface=pr5)?">\n)+/mu;
 
 export function bundleStartupCss(html, sourceRoot, outputRoot = sourceRoot) {
   const block = html.match(stylesheetBlock)?.[0];
