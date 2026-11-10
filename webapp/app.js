@@ -2123,7 +2123,10 @@ async function bootstrapAuthenticatedApplication() {
         if (!state.catalogCaptureRetry) await catalogHandoff.resume();
         renderCreateInputs();
         refreshButtonsForCurrentView();
-        await loadDashboardData();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        const dashboardData = loadDashboardData();
+        // A verified session and restored draft are enough to show Create.
+        if (state.applicationRoute?.view !== "create") await dashboardData;
         if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
         restoreWebRoute();
         state.applicationDataReady = true;
@@ -10419,11 +10422,32 @@ function vnextRenderSnapshot(surface) {
     };
 }
 
+let historyAssetObserver;
+
 function prepareVnextRenderAssets() {
+    historyAssetObserver?.disconnect();
     const jobs = state.view === "render-detail"
         ? state.renderHistory.filter((job) => job.job_id === state.renderDetailJobId)
         : state.view === "renders" ? state.renderHistory.slice(0, state.renderHistoryVisibleCount)
         : state.view === "create" && state.renderStatus === "completed" ? state.renderHistory.filter((job) => job.job_id === state.jobId) : [];
+    if (state.view === "renders" && typeof IntersectionObserver === "function") {
+        const generation = applicationDataGeneration;
+        const jobsById = new Map(jobs.map((job) => [job.job_id, job]));
+        const observer = new IntersectionObserver((entries) => {
+            for (const { target, isIntersecting } of entries) {
+                if (!isIntersecting || !target.isConnected || state.view !== "renders" || generation !== applicationDataGeneration) continue;
+                observer.unobserve(target);
+                const job = jobsById.get(target.dataset.rowJob);
+                if (!job) continue;
+                const kind = job.status === "completed" ? "result" : "original";
+                if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
+            }
+        }, { rootMargin: "200px" });
+        historyAssetObserver = observer;
+        for (const card of document.querySelectorAll(".vnext-history-card[data-row-job]")) observer.observe(card);
+        scheduleRenderHistoryPolling();
+        return;
+    }
     for (const job of jobs) {
         const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result", "rim_original"] : [job.status === "completed" ? "result" : "original"];
         for (const kind of kinds) if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
