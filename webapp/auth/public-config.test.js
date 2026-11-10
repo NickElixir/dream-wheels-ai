@@ -43,11 +43,29 @@ test('CLI emits the real browser script without reusing staging URL in productio
     await fs.copyFile(new URL('../vnext/catalog-assets.mjs',import.meta.url),path.join(folder,'webapp/vnext/catalog-assets.mjs'));
     await fs.mkdir(path.join(folder, 'webapp/auth'));
     await fs.copyFile(new URL('../scripts/build-public-config.mjs', import.meta.url), path.join(folder, 'webapp/scripts/build.mjs'));
+    for (const file of ['index.html', 'style.css', 'scripts/bundle-css.mjs']) {
+      await fs.copyFile(new URL(`../${file}`, import.meta.url), path.join(folder, 'webapp', file));
+    }
+    await fs.cp(new URL('../vnext/styles', import.meta.url), path.join(folder, 'webapp/vnext/styles'), { recursive: true });
     const run = spawnSync(process.execPath, [path.join(folder, 'webapp/scripts/build.mjs')], { env: { ...process.env, ...production }, encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
+    const html = await fs.readFile(path.join(folder, 'webapp/index.html'), 'utf8');
+    const links = [...html.matchAll(/rel="stylesheet" href="\/([^"]+)"/gu)];
+    assert.equal(links.length, 1);
+    assert.match(links[0][1], /^startup\.[a-f0-9]{16}\.css$/u);
+    const css = await fs.readFile(path.join(folder, 'webapp', links[0][1]), 'utf8');
+    assert.ok(css.includes('url("/assets/fonts/ibm-plex-sans-latin.woff2")'));
     const script = await fs.readFile(path.join(folder, 'webapp/auth/harness-config.js'), 'utf8');
     assert.ok(script.includes(production.SUPABASE_URL));
     assert.ok(!script.includes('hnawojlnfoaccinlgjyn'));
     assert.ok(!script.includes('must-never-export'));
+
+    await fs.copyFile(new URL('../index.html', import.meta.url), path.join(folder, 'webapp/index.html'));
+    const stagedIndex = await fs.readFile(path.join(folder, 'webapp/index.html'), 'utf8');
+    await fs.writeFile(path.join(folder, 'webapp/index.html'), stagedIndex.replaceAll('__BUILD_ID__', 'a'.repeat(40)));
+    const stampedRun = spawnSync(process.execPath, [path.join(folder, 'webapp/scripts/build.mjs')], { env: { ...process.env, ...production }, encoding: 'utf8' });
+    assert.equal(stampedRun.status, 0, stampedRun.stderr);
+    const stampedHtml = await fs.readFile(path.join(folder, 'webapp/index.html'), 'utf8');
+    assert.match(stampedHtml, /rel="stylesheet" href="\/startup\.[a-f0-9]{16}\.css"/u);
   } finally { await fs.rm(folder, { recursive: true, force: true }); }
 });

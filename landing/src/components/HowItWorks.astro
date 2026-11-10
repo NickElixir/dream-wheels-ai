@@ -4,37 +4,39 @@ import type { Locale } from '../i18n';
 interface Props { locale: Locale; }
 const copy = getDictionary(Astro.props.locale).howItWorks;
 const source = {
-  src: '/assets/how-it-works/zeekr-source-normalized.png',
+  src: '/assets/how-it-works/zeekr-source-normalized-960.avif',
+  srcset: [640, 960, 1600].map((width) => `/assets/how-it-works/zeekr-source-normalized-${width}.avif ${width}w`).join(', '),
   width: 2048,
   height: 2048,
   alt: copy.sourceAlt,
 };
 
 const wheel = {
-  src: '/assets/how-it-works/css3347-cutout.png',
-  width: 1254,
-  height: 1254,
+  src: '/assets/how-it-works/css3347-cutout.webp',
+  width: 768,
+  height: 768,
   alt: 'Race Ready Technology CSS3347',
 };
 
 const result = {
-  src: '/assets/how-it-works/zeekr-result-normalized.png',
+  src: '/assets/how-it-works/zeekr-result-normalized-960.avif',
+  srcset: [640, 960, 1600].map((width) => `/assets/how-it-works/zeekr-result-normalized-${width}.avif ${width}w`).join(', '),
   width: 2048,
   height: 2048,
   alt: copy.resultAlt,
 };
 
 const vortex = {
-  src: '/assets/how-it-works/dream-wheels-vortex-transparent.png',
-  width: 1122,
-  height: 1402,
+  src: '/assets/how-it-works/dream-wheels-vortex-transparent.webp',
+  width: 768,
+  height: 960,
   alt: copy.vortexAlt,
 };
 ---
 
 <section class="how-it-works" id="how-it-works" aria-label={copy.sectionLabel}>
   <article class="how-it-works__stage how-it-works__stage--photo">
-    <img class="how-it-works__image" src={source.src} width={source.width} height={source.height} alt={source.alt} loading="lazy" decoding="async" />
+    <img class="how-it-works__image" src={source.src} srcset={source.srcset} sizes="(max-width: 760px) 100vw, (max-width: 900px) and (orientation: portrait) 100vw, 24vw" width={source.width} height={source.height} alt={source.alt} loading="lazy" decoding="async" />
     <div class="how-it-works__shade" aria-hidden="true"></div>
     <div class="how-it-works__caption">
       <strong class="how-it-works__vehicle-name">Zeekr 001</strong>
@@ -86,7 +88,7 @@ const vortex = {
   </svg>
 
   <article class="how-it-works__stage how-it-works__stage--result">
-    <img class="how-it-works__image" src={result.src} width={result.width} height={result.height} alt={result.alt} loading="lazy" decoding="async" />
+    <img class="how-it-works__image" src={result.src} srcset={result.srcset} sizes="(max-width: 760px) 100vw, (max-width: 900px) and (orientation: portrait) 100vw, 24vw" width={result.width} height={result.height} alt={result.alt} loading="lazy" decoding="async" />
     <div class="how-it-works__shade" aria-hidden="true"></div>
     <div class="how-it-works__caption">
       <p>{copy.result}</p>

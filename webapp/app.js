@@ -2123,7 +2123,9 @@ async function bootstrapAuthenticatedApplication() {
         if (!state.catalogCaptureRetry) await catalogHandoff.resume();
         renderCreateInputs();
         refreshButtonsForCurrentView();
-        await loadDashboardData();
+        if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
+        if (state.applicationRoute?.view === "create") void loadCabinet({ silent: true });
+        else await loadDashboardData();
         if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
         restoreWebRoute();
         state.applicationDataReady = true;
@@ -2667,7 +2669,7 @@ function closeAuthDialog() {
 }
 
 function handleFrontendAuthState(nextState, event = null) {
-    state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    state.frontendAuthState = { ...state.frontendAuthState, verifiedDraftPrincipal: null, ...nextState };
     state.frontendAuthEvent = event;
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
@@ -9602,6 +9604,14 @@ async function resolveAccountDraftOwner() {
     if (draftOwnerPromise && state.draftCredential === credential) return draftOwnerPromise;
     invalidateAccountDraft({ resetBootstrap: false });
     state.draftCredential = credential;
+    const verifiedPrincipal = state.frontendAuthState?.verifiedDraftPrincipal;
+    if (verifiedPrincipal) state.frontendAuthState.verifiedDraftPrincipal = null;
+    if (verifiedPrincipal && state.frontendAuthState.authority === "supabase"
+        && verifiedPrincipal.subject === credential && typeof verifiedPrincipal.accountId === "string"
+        && /^[1-9]\d{0,19}$/.test(verifiedPrincipal.accountId)) {
+        state.draftOwner = `account:${verifiedPrincipal.accountId}`;
+        return true;
+    }
     const epoch = state.draftEpoch;
     const controller = new AbortController();
     state.draftAbort = controller;
@@ -10419,11 +10429,32 @@ function vnextRenderSnapshot(surface) {
     };
 }
 
+let historyAssetObserver;
+
 function prepareVnextRenderAssets() {
+    historyAssetObserver?.disconnect();
     const jobs = state.view === "render-detail"
         ? state.renderHistory.filter((job) => job.job_id === state.renderDetailJobId)
         : state.view === "renders" ? state.renderHistory.slice(0, state.renderHistoryVisibleCount)
         : state.view === "create" && state.renderStatus === "completed" ? state.renderHistory.filter((job) => job.job_id === state.jobId) : [];
+    if (state.view === "renders" && typeof IntersectionObserver === "function") {
+        const generation = applicationDataGeneration;
+        const jobsById = new Map(jobs.map((job) => [job.job_id, job]));
+        const observer = new IntersectionObserver((entries) => {
+            for (const { target, isIntersecting } of entries) {
+                if (!isIntersecting || !target.isConnected || state.view !== "renders" || generation !== applicationDataGeneration) continue;
+                observer.unobserve(target);
+                const job = jobsById.get(target.dataset.rowJob);
+                if (!job) continue;
+                const kind = job.status === "completed" ? "result" : "original";
+                if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
+            }
+        }, { rootMargin: "200px" });
+        historyAssetObserver = observer;
+        for (const card of document.querySelectorAll(".vnext-history-card[data-row-job]")) observer.observe(card);
+        scheduleRenderHistoryPolling();
+        return;
+    }
     for (const job of jobs) {
         const kinds = state.view === "render-detail" || state.view === "create" ? ["original", "result", "rim_original"] : [job.status === "completed" ? "result" : "original"];
         for (const kind of kinds) if (hasAssetSource(job, kind) && !assetUrlForJob(job, kind) && !hasAssetLoadError(job, kind)) void ensureAssetBlobUrl(job, kind);
@@ -12062,7 +12093,7 @@ function syncWebNavigation(view, explicitJobId = "") {
     state.applicationAuthReturnPath = target;
     updateWebRouteAuth(state.applicationRoute);
 }
-function restoreWebRoute() {
+function restoreWebRoute({ refreshData = false } = {}) {
     if (HAS_TG || new URLSearchParams(window.location.search).has("payment")) return false;
     const route = applicationRouteContext(window.location);
     if (!route) return false;
@@ -12076,7 +12107,7 @@ function restoreWebRoute() {
             void openFitmentView(route.jobId, {originView:"render-detail",suppressAutomaticResolver:true});
         } else if (route.jobId) openRenderDetail(route.jobId);
         else {
-            setView(route.view, {refreshData:false});
+            setView(route.view, { refreshData });
             if (route.view === "settings") void loadAccountState();
             if (route.view === "renders") scheduleRenderHistoryPolling();
         }
@@ -12092,7 +12123,7 @@ window.addEventListener("popstate", () => {
         renderApplicationAuthGate();
         return;
     }
-    restoreWebRoute();
+    restoreWebRoute({ refreshData: true });
     requestAnimationFrame(() => {
         const top = webScrollPositions.get(window.location.pathname + window.location.search) || 0;
         const scroller = document.querySelector("#app");

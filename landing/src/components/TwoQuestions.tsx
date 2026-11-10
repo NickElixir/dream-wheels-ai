@@ -8,7 +8,8 @@ const questions = [
     product: 'Race Ready Technology CSS3347',
     specs: '8,5/19" 5x108 ET45 DIA63,4 MK/M',
     image: {
-      src: '/assets/two-questions/how-it-looks/zeekr-001-race-ready-v2.webp',
+      src: '/assets/two-questions/how-it-looks/zeekr-001-race-ready-v2-960.avif',
+      srcSet: [640, 960, 1600].map((width) => `/assets/two-questions/how-it-looks/zeekr-001-race-ready-v2-${width}.avif ${width}w`).join(', '),
       width: 2048,
       height: 2048,
     },
@@ -17,7 +18,8 @@ const questions = [
     id: 'parameters',
     index: 'SYSTEM 02',
     image: {
-      src: '/assets/two-questions/parameters/workshop-fitment-vertical.webp',
+      src: '/assets/two-questions/parameters/workshop-fitment-vertical-960.avif',
+      srcSet: [640, 960, 1122].map((width) => `/assets/two-questions/parameters/workshop-fitment-vertical-${width}.avif ${width}w`).join(', '),
       width: 1122,
       height: 1402,
     },
@@ -33,6 +35,8 @@ export default function TwoQuestions({ locale }: { locale: Locale }) {
           <img
             class="two-question__image"
             src={question.image.src}
+            srcSet={question.image.srcSet}
+            sizes="(max-width: 760px) 100vw, (max-width: 900px) and (orientation: portrait) 100vw, 50vw"
             width={question.image.width}
             height={question.image.height}
             alt={copy.cards[index].imageAlt}

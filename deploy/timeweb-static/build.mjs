@@ -1,3 +1,4 @@
+import { bundleStartupCss } from '../../webapp/scripts/bundle-css.mjs';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -150,7 +151,8 @@ export async function build({ env = process.env, root = repositoryRoot, output =
   await copyPublicTree(path.join(appRoot, 'assets'), path.join(output, 'assets'), 'assets');
   await copyPublicTree(path.join(appRoot, 'vnext'), path.join(output, 'vnext'), 'vnext');
 
-  const html = renderIndex(await fs.readFile(path.join(appRoot, 'index.html'), 'utf8'), buildSha);
+  const { bundleStartupJs } = await import('../../webapp/scripts/bundle-js.mjs');
+  const html = await bundleStartupJs(renderIndex(bundleStartupCss(await fs.readFile(path.join(appRoot, 'index.html'), 'utf8'), appRoot, output), buildSha), appRoot, output);
   await fs.writeFile(path.join(output, 'index.html'), html);
   await fs.writeFile(path.join(output, '404.html'), html);
   await fs.writeFile(path.join(output, 'deployment-config.js'), renderDeploymentConfig(deployConfig));

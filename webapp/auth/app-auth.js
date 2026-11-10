@@ -145,6 +145,7 @@ export function createFrontendAuthController({
     }
 
     function setState(nextState, event = null) {
+        delete state.verifiedDraftPrincipal;
         state = { ...state, ...nextState };
         emit(event);
     }
@@ -334,6 +335,9 @@ export function createFrontendAuthController({
                 interactionState: AUTH_INTERACTION_STATES.AUTHENTICATED,
                 authenticationSource: "restored_session",
                 account,
+                ...(typeof payload.account_id === "string" && {
+                    verifiedDraftPrincipal: { subject: sessionUserId, accountId: payload.account_id },
+                }),
             }, "PRINCIPAL_VERIFIED");
         } catch (error) {
             if (!probeStillCurrent()) return getState();
