@@ -1,3 +1,4 @@
+import { bundleStartupCss } from './bundle-css.mjs';
 import fs from 'node:fs';
 import { assertCatalogBuild } from '../../scripts/catalog/verify-build.mjs';
 import path from 'node:path';
@@ -32,4 +33,7 @@ if (process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === fs.rea
   const config = publicConfig(process.env);
   const target = new URL('../auth/harness-config.js', import.meta.url);
   fs.writeFileSync(target, `// Generated public config; no server credentials.\nglobalThis.__DREAM_WHEELS_SUPABASE_CONFIG__ = Object.freeze(${JSON.stringify(config.supabase)});\nglobalThis.__DREAM_WHEELS_AUTH_CONFIG__ = Object.freeze(${JSON.stringify(config.auth)});\n`);
+  const appRoot = fileURLToPath(new URL('../', import.meta.url));
+  const index = path.join(appRoot, 'index.html');
+  fs.writeFileSync(index, bundleStartupCss(fs.readFileSync(index, 'utf8'), appRoot));
 }

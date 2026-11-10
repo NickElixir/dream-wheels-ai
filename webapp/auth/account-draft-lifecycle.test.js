@@ -371,7 +371,10 @@ test("Create restores the verified draft while Dashboard requests are still pend
     initializeCatalogHandoff() {},
     refreshButtonsForCurrentView() {},
     loadDashboardData() {
-      steps.push("dashboard");
+      assert.fail("Create should not load history");
+    },
+    loadCabinet() {
+      steps.push("cabinet");
       return new Promise(() => {});
     },
     restoreWebRoute() {
@@ -388,5 +391,26 @@ test("Create restores the verified draft while Dashboard requests are still pend
   assert.equal(await app.context.bootstrapAuthenticatedApplication(), true);
   assert.equal(app.state.draftOwner, "account:9");
   assert.equal(app.state.applicationDataReady, true);
-  assert.deepEqual(steps, ["handoff", "dashboard", "route"]);
+  assert.deepEqual(steps, ["handoff", "cabinet", "route"]);
+});
+
+test("draft owner reuses a matching verified principal once and verifies again after invalidation", async () => {
+  const app = lifecycle();
+  let requests = 0;
+  app.setMe(async () => {
+    requests++;
+    return { ok: true, json: async () => ({ authenticated: true, account_id: "10" }) };
+  });
+  app.setCredential("A");
+  app.state.frontendAuthState = {
+    authority: "supabase",
+    verifiedDraftPrincipal: { subject: "A", accountId: "9" },
+  };
+  assert.equal(await app.context.resolveAccountDraftOwner(), true);
+  assert.equal(app.state.draftOwner, "account:9");
+  assert.equal(requests, 0);
+  app.context.invalidateAccountDraft();
+  assert.equal(await app.context.resolveAccountDraftOwner(), true);
+  assert.equal(app.state.draftOwner, "account:10");
+  assert.equal(requests, 1);
 });

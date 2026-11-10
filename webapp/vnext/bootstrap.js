@@ -7,15 +7,24 @@ import { supportViewModel } from "./models/support.js";
 import { createAppShell, updateAppShellAuth } from "./shell/app-shell.js";
 import { createDashboardView } from "./views/dashboard.js";
 import { createCreateView, refreshCreateView } from "./views/create.js";
-import { createDocumentsView } from "./views/documents.js";
-import { createPhotoGuideView } from "./views/photo-guide.js";
-import { createSupportView } from "./views/support.js";
 import { createRenderView, refreshRenderView } from "./views/render.js";
-import { createFitmentView, refreshFitmentView } from "./views/fitment.js";
-import { createWalletView, refreshWalletView } from "./views/wallet.js";
 
 const migratedViews = new Set(["dashboard", "create", "support", "photo-guide", "docs", "renders", "render-detail", "fitment", "wallet", "settings"]);
 let mountedRoot = null;
+let createDocumentsView;
+let createPhotoGuideView;
+let createSupportView;
+let createFitmentView, refreshFitmentView;
+let createWalletView, refreshWalletView;
+const deferredViews = {
+  "docs": () => import("./views/documents.js").then((module) => { ({ createDocumentsView } = module); }),
+  "photo-guide": () => import("./views/photo-guide.js").then((module) => { ({ createPhotoGuideView } = module); }),
+  "support": () => import("./views/support.js").then((module) => { ({ createSupportView } = module); }),
+  "fitment": () => import("./views/fitment.js").then((module) => { ({ createFitmentView, refreshFitmentView } = module); }),
+  "wallet": () => import("./views/wallet.js").then((module) => { ({ createWalletView, refreshWalletView } = module); }),
+};
+const pendingViews = new Map();
+
 let mountedView = "";
 let mountedShell = null;
 let mountedCreateContent = null;
@@ -226,6 +235,18 @@ function restoreSurfaceFocus(host, previous) {
 function mountSurface(view, { force = false } = {}, locale = applicationLocale()) {
   const host = document.querySelector(`[data-view="${view}"]`);
   if (!host) return;
+  const load = deferredViews[view];
+  if (load) {
+    if (!pendingViews.has(view)) {
+      pendingViews.set(view, load().then(() => {
+        delete deferredViews[view];
+        if (!host.hidden) applyView(view);
+      }).catch((error) => {
+        console.error("[DW] Could not load WebApp view", view, error);
+      }).finally(() => pendingViews.delete(view)));
+    }
+    return;
+  }
   if (!force && mountedRoot === host && mountedView === view) {
     if (view === "create") renderCreate(locale);
     else if (view === "fitment") refreshMountedFitment();
