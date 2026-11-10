@@ -193,6 +193,74 @@ def test_dependencies_and_server_build_configs_blocked(path):
         check_paths([path])
 
 
+def test_exact_staging_build_invocation_change_is_allowed(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    def run(*args):
+        return subprocess.check_output(["git", *args], text=True).strip()
+
+    run("init", "-q")
+    run("config", "user.email", "test@example.invalid")
+    run("config", "user.name", "Test")
+    (tmp_path / "webapp/scripts").mkdir(parents=True)
+    vercel = tmp_path / "webapp/vercel.json"
+    vercel.write_text('{"buildCommand":"node scripts/build-public-config.mjs","rewrites":[]}')
+    for name in ("build-public-config.mjs", "bundle-css.mjs", "bundle-js.mjs"):
+        (tmp_path / "webapp/scripts" / name).write_text("accepted build script")
+    run("add", ".")
+    run("commit", "-qm", "accepted build")
+    tested = run("rev-parse", "HEAD")
+    vercel.write_text(
+        '{"buildCommand":"node scripts/build-public-config.mjs && node scripts/bundle-js.mjs","rewrites":[]}'
+    )
+    run("add", ".")
+    run("commit", "-qm", "build invocation only")
+    candidate = run("rev-parse", "HEAD")
+    check_paths(
+        [
+            "webapp/vercel.json",
+            "webapp/scripts/build-public-config.mjs",
+            "webapp/scripts/bundle-css.mjs",
+            "webapp/scripts/bundle-js.mjs",
+        ],
+        candidate=candidate,
+        tested=tested,
+    )
+
+
+@pytest.mark.parametrize("edit", ["rewrite", "script"])
+def test_build_exception_rejects_other_runtime_changes(tmp_path, monkeypatch, edit):
+    monkeypatch.chdir(tmp_path)
+
+    def run(*args):
+        return subprocess.check_output(["git", *args], text=True).strip()
+
+    run("init", "-q")
+    run("config", "user.email", "test@example.invalid")
+    run("config", "user.name", "Test")
+    (tmp_path / "webapp/scripts").mkdir(parents=True)
+    vercel = tmp_path / "webapp/vercel.json"
+    vercel.write_text('{"buildCommand":"node scripts/build-public-config.mjs","rewrites":[]}')
+    for name in ("build-public-config.mjs", "bundle-css.mjs", "bundle-js.mjs"):
+        (tmp_path / "webapp/scripts" / name).write_text("same")
+    run("add", ".")
+    run("commit", "-qm", "accepted build")
+    tested = run("rev-parse", "HEAD")
+    if edit == "rewrite":
+        vercel.write_text(
+            '{"buildCommand":"node scripts/build-public-config.mjs && node scripts/bundle-js.mjs","rewrites":[{"source":"/api/(.*)","destination":"/oops"}]}'
+        )
+        changed = "webapp/vercel.json"
+    else:
+        (tmp_path / "webapp/scripts/bundle-js.mjs").write_text("changed")
+        changed = "webapp/scripts/bundle-js.mjs"
+    run("add", ".")
+    run("commit", "-qm", "unsafe build change")
+    candidate = run("rev-parse", "HEAD")
+    with pytest.raises(ValueError):
+        check_paths([changed], candidate=candidate, tested=tested)
+
+
 @pytest.mark.parametrize("link_path", ["webapp/app.js", "docs/indirect.js"])
 def test_committed_symlink_cannot_supply_unaccepted_runtime(tmp_path, monkeypatch, link_path):
     monkeypatch.chdir(tmp_path)

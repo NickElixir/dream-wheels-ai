@@ -1,5 +1,6 @@
 """Fail-closed source policy for frontend-only production releases."""
 
+import json
 import re
 import subprocess
 from pathlib import PurePosixPath
@@ -24,6 +25,13 @@ CONTROL_FILES = frozenset(
         "scripts/check_frontend_release.py",
     }
 )
+BUILD_ONLY_SCRIPTS = frozenset(
+    {
+        "webapp/scripts/build-public-config.mjs",
+        "webapp/scripts/bundle-css.mjs",
+        "webapp/scripts/bundle-js.mjs",
+    }
+)
 
 
 def git(*args: str) -> str:
@@ -36,7 +44,34 @@ def validate_sha(sha: str) -> None:
     git("cat-file", "-e", f"{sha}^{{commit}}")
 
 
-def check_paths(paths: list[str]) -> None:
+def _blob(sha: str, path: str) -> str:
+    return subprocess.check_output(["git", "show", f"{sha}:{path}"], text=True)
+
+
+def _build_command_only_change(path: str, candidate: str, tested: str) -> bool:
+    try:
+        accepted = json.loads(_blob(tested, path))
+        proposed = json.loads(_blob(candidate, path))
+    except (json.JSONDecodeError, subprocess.CalledProcessError):
+        return False
+    if accepted.get("buildCommand") != "node scripts/build-public-config.mjs":
+        return False
+    if proposed.get("buildCommand") != (
+        "node scripts/build-public-config.mjs && node scripts/bundle-js.mjs"
+    ):
+        return False
+    accepted.pop("buildCommand", None)
+    proposed.pop("buildCommand", None)
+    return accepted == proposed
+
+
+def check_paths(
+    paths: list[str],
+    *,
+    candidate: str | None = None,
+    tested: str | None = None,
+    baseline: str | None = None,
+) -> None:
     for path in paths:
         if ".." in PurePosixPath(path).parts or path.startswith("/"):
             raise ValueError("Invalid changed path")
@@ -54,7 +89,6 @@ def check_paths(paths: list[str]) -> None:
                 "deno.json",
                 "deno.jsonc",
                 "deno.lock",
-                "vercel.json",
                 ".npmrc",
                 ".yarnrc.yml",
                 ".node-version",
@@ -74,13 +108,29 @@ def check_paths(paths: list[str]) -> None:
                     "eslint.config.",
                 )
             )
-            or path.startswith(("webapp/scripts/", "landing/scripts/"))
+            or (
+                path.startswith(("webapp/scripts/", "landing/scripts/"))
+                and not (
+                    path in BUILD_ONLY_SCRIPTS
+                    and candidate
+                    and tested
+                    and _blob(candidate, path) == _blob(tested, path)
+                )
+            )
         ):
             raise ValueError(
                 f"Dependency/server/build configuration requires a full release: {path}"
             )
+        if name == "vercel.json" and path != "webapp/vercel.json":
+            raise ValueError(f"Server/gateway change requires a full release: {path}")
         # Vercel's proxy is server-side, even though it lives under webapp.
-        if path.startswith(("webapp/api/", "webapp/lib/")) or path == "webapp/vercel.json":
+        if path.startswith(("webapp/api/", "webapp/lib/")):
+            raise ValueError(f"Server/gateway change requires a full release: {path}")
+        if path == "webapp/vercel.json" and not (
+            candidate
+            and (baseline or tested)
+            and _build_command_only_change(path, candidate, baseline or tested)
+        ):
             raise ValueError(f"Server/gateway change requires a full release: {path}")
         if not path.startswith(PREFIXES) and path not in CONTROL_FILES:
             raise ValueError(f"Unclassified change requires a full release: {path}")
@@ -101,5 +151,10 @@ def verify_sources(backend_sha: str, candidate: str, tested: str) -> None:
                 raise ValueError("Symlinks and submodules require a full release")
     # Disable rename detection so moves cannot hide either side of a backend edit.
     changes = git("diff", "--no-renames", "--name-only", backend_sha, candidate, "--")
-    check_paths(changes.splitlines() if changes else [])
+    check_paths(
+        changes.splitlines() if changes else [],
+        candidate=candidate,
+        tested=tested,
+        baseline=backend_sha,
+    )
     git("diff", "--exit-code", tested, candidate, "--", "webapp", "landing", "deploy")

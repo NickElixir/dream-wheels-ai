@@ -19,6 +19,11 @@ policy in `scripts/frontend_release_policy.py`. Unknown root files, backend,
 migrations, dependencies, gateway and Vercel server-proxy changes fail closed.
 Dependency manifests/locks and server/build configurations are explicitly denied,
 including nested package files and landing middleware/provider configuration.
+One narrowly scoped exception permits the accepted WebApp build scripts to remain
+byte-identical to the tested SHA while `webapp/vercel.json` changes only its
+`buildCommand` from the public-config generator to that generator followed by the
+JS bundler. All other Vercel settings, including rewrites, headers and function
+limits, must compare equal; other scripts and build settings remain denied.
 Symlinks and submodules anywhere in the accepted or candidate Git tree are denied,
 including unchanged links whose targets changed outside the runtime directories.
 Rename detection is disabled to inspect both sides of moves. The allowlist includes
