@@ -11,7 +11,6 @@ const title = page === 'catalog' ? copy.meta.catalogTitle : copy.meta.landingTit
 const description = page === 'catalog' ? copy.meta.catalogDescription : copy.meta.landingDescription;
 const publicPath = page === 'catalog' ? '/catalog' : '/';
 const canonical = getCanonicalUrl(locale, publicPath);
-const timeweb = import.meta.env.PUBLIC_LANDING_HOSTING === 'timeweb';
 ---
 
 <!doctype html>
@@ -33,11 +32,7 @@ const timeweb = import.meta.env.PUBLIC_LANDING_HOSTING === 'timeweb';
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="ru" href={getLocalizedUrl({ locale: 'ru', pathname: publicPath })} />}
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="en" href={getLocalizedUrl({ locale: 'en', pathname: publicPath })} />}
     {(preview || domainI18nEnabled) && <link rel="alternate" hreflang="x-default" href={getLocalizedUrl({ locale: 'en', pathname: publicPath })} />}
-    {timeweb ? <link rel="stylesheet" href="/fonts/timeweb/fonts.css" /> : <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,500&family=Inter+Tight:wght@500&display=swap" rel="stylesheet" />
-    </>}
+    <link rel="stylesheet" href="/fonts/timeweb/fonts.css" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>
   </head>

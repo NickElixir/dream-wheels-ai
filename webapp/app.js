@@ -2124,9 +2124,8 @@ async function bootstrapAuthenticatedApplication() {
         renderCreateInputs();
         refreshButtonsForCurrentView();
         if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
-        const dashboardData = loadDashboardData();
-        // A verified session and restored draft are enough to show Create.
-        if (state.applicationRoute?.view !== "create") await dashboardData;
+        if (state.applicationRoute?.view === "create") void loadCabinet({ silent: true });
+        else await loadDashboardData();
         if (generation !== applicationDataGeneration || !isApplicationAuthSessionReady()) return false;
         restoreWebRoute();
         state.applicationDataReady = true;
@@ -2670,7 +2669,7 @@ function closeAuthDialog() {
 }
 
 function handleFrontendAuthState(nextState, event = null) {
-    state.frontendAuthState = { ...state.frontendAuthState, ...nextState };
+    state.frontendAuthState = { ...state.frontendAuthState, verifiedDraftPrincipal: null, ...nextState };
     state.frontendAuthEvent = event;
     const currentUser = frontendAuthController()?.getCurrentAuthUser?.() || null;
     state.frontendAuthUser = currentUser;
@@ -9605,6 +9604,14 @@ async function resolveAccountDraftOwner() {
     if (draftOwnerPromise && state.draftCredential === credential) return draftOwnerPromise;
     invalidateAccountDraft({ resetBootstrap: false });
     state.draftCredential = credential;
+    const verifiedPrincipal = state.frontendAuthState?.verifiedDraftPrincipal;
+    if (verifiedPrincipal) state.frontendAuthState.verifiedDraftPrincipal = null;
+    if (verifiedPrincipal && state.frontendAuthState.authority === "supabase"
+        && verifiedPrincipal.subject === credential && typeof verifiedPrincipal.accountId === "string"
+        && /^[1-9]\d{0,19}$/.test(verifiedPrincipal.accountId)) {
+        state.draftOwner = `account:${verifiedPrincipal.accountId}`;
+        return true;
+    }
     const epoch = state.draftEpoch;
     const controller = new AbortController();
     state.draftAbort = controller;
@@ -12086,7 +12093,7 @@ function syncWebNavigation(view, explicitJobId = "") {
     state.applicationAuthReturnPath = target;
     updateWebRouteAuth(state.applicationRoute);
 }
-function restoreWebRoute() {
+function restoreWebRoute({ refreshData = false } = {}) {
     if (HAS_TG || new URLSearchParams(window.location.search).has("payment")) return false;
     const route = applicationRouteContext(window.location);
     if (!route) return false;
@@ -12100,7 +12107,7 @@ function restoreWebRoute() {
             void openFitmentView(route.jobId, {originView:"render-detail",suppressAutomaticResolver:true});
         } else if (route.jobId) openRenderDetail(route.jobId);
         else {
-            setView(route.view, {refreshData:false});
+            setView(route.view, { refreshData });
             if (route.view === "settings") void loadAccountState();
             if (route.view === "renders") scheduleRenderHistoryPolling();
         }
@@ -12116,7 +12123,7 @@ window.addEventListener("popstate", () => {
         renderApplicationAuthGate();
         return;
     }
-    restoreWebRoute();
+    restoreWebRoute({ refreshData: true });
     requestAnimationFrame(() => {
         const top = webScrollPositions.get(window.location.pathname + window.location.search) || 0;
         const scroller = document.querySelector("#app");
