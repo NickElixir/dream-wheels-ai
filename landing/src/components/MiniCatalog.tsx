@@ -9,11 +9,11 @@ import type { Locale } from '../i18n';
 
 const FALLBACK_IMAGE = '/assets/mock/vehicle-fallback.svg';
 const PROFILE_AVATARS: Record<string, string> = {
-  'zeekr-001': '/assets/mock/vehicle-avatars/zeekr-001-profile.png',
-  'bmw-x5': '/assets/mock/vehicle-avatars/bmw-x5-profile.png',
-  'mercedes-gle': '/assets/mock/vehicle-avatars/mercedes-gle-profile.png',
-  'li-auto-l7': '/assets/mock/vehicle-avatars/li-auto-l7-profile.png',
-  'geely-cityray': '/assets/mock/vehicle-avatars/geely-atlas-profile.png',
+  'zeekr-001': '/assets/mock/vehicle-avatars/zeekr-001-profile.webp',
+  'bmw-x5': '/assets/mock/vehicle-avatars/bmw-x5-profile.webp',
+  'mercedes-gle': '/assets/mock/vehicle-avatars/mercedes-gle-profile.webp',
+  'li-auto-l7': '/assets/mock/vehicle-avatars/li-auto-l7-profile.webp',
+  'geely-cityray': '/assets/mock/vehicle-avatars/geely-atlas-profile.webp',
 };
 
 export default function MiniCatalog({ locale }: { locale: Locale }) {
@@ -62,7 +62,7 @@ export default function MiniCatalog({ locale }: { locale: Locale }) {
           <span class="vehicle-label">{copy.selectVehicle}</span>
           <div class="vehicle-list">
             {vehicles.map((item) => <button key={item.id} type="button" class={`vehicle-row ${item.id === vehicle.id ? 'is-active' : ''}`} aria-pressed={item.id === vehicle.id} onClick={() => selectVehicle(item.id)}>
-              <img class="vehicle-avatar" src={PROFILE_AVATARS[item.id] ?? item.image.src} alt="" width="1672" height="941" loading="lazy" onError={(event) => { event.currentTarget.src = item.image.src || FALLBACK_IMAGE; }} />
+              <img class="vehicle-avatar" src={PROFILE_AVATARS[item.id] ?? item.image.src} alt="" width="256" height="144" loading="lazy" onError={(event) => { event.currentTarget.src = item.image.src || FALLBACK_IMAGE; }} />
               <span>{item.displayName}</span>
             </button>)}
           </div>

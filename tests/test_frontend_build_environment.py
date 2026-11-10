@@ -24,6 +24,10 @@ def test_pulled_environment_survives_until_build_and_is_always_cleaned(
     scripts.mkdir(parents=True)
     (tmp_path / "webapp/auth").mkdir()
     shutil.copy(ROOT / "webapp/scripts/build-public-config.mjs", scripts)
+    shutil.copy(ROOT / "webapp/scripts/bundle-css.mjs", scripts)
+    for name in ("index.html", "style.css"):
+        shutil.copy(ROOT / "webapp" / name, tmp_path / "webapp")
+    shutil.copytree(ROOT / "webapp/vnext/styles", tmp_path / "webapp/vnext/styles")
     catalog_target = "production" if job_name == "deploy-production" else "staging"
     data_root = ROOT / "landing/src/data"
     destination = tmp_path / "landing/src/data"
@@ -40,7 +44,7 @@ def test_pulled_environment_survives_until_build_and_is_always_cleaned(
     guard.mkdir(parents=True)
     shutil.copy(ROOT / "scripts/catalog/verify-build.mjs", guard)
     generated = tmp_path / "webapp/vnext"
-    generated.mkdir()
+    generated.mkdir(exist_ok=True)
     shutil.copy(ROOT / "webapp/vnext/catalog-data.mjs", generated)
     storage_config = json.loads((data_root / "catalog-storage.json").read_text())
     publications = json.loads((data_root / "catalog-publications.json").read_text())
@@ -150,6 +154,10 @@ def test_staging_job_generates_catalog_and_public_config_from_real_source(
     shutil.copy(ROOT / "webapp/vnext/catalog-assets.mjs", tmp_path / "webapp/vnext")
     shutil.copy(ROOT / "webapp/vnext/catalog-data.mjs", tmp_path / "webapp/vnext")
     shutil.copy(ROOT / "webapp/scripts/build-public-config.mjs", tmp_path / "webapp/scripts")
+    shutil.copy(ROOT / "webapp/scripts/bundle-css.mjs", tmp_path / "webapp/scripts")
+    for name in ("index.html", "style.css"):
+        shutil.copy(ROOT / "webapp" / name, tmp_path / "webapp")
+    shutil.copytree(ROOT / "webapp/vnext/styles", tmp_path / "webapp/vnext/styles")
     shutil.copy(ROOT / "scripts/catalog/verify-build.mjs", tmp_path / "scripts/catalog")
     (tmp_path / "landing/node_modules").symlink_to(
         ROOT / "landing/node_modules", target_is_directory=True

@@ -44,6 +44,10 @@ test('actual WebApp Vercel config and npm build commands reject active staging b
  const temp=await fixture('staging');
  try{
   await fs.copyFile(path.join(root,'webapp/scripts/build-public-config.mjs'),path.join(temp,'webapp/scripts/build-public-config.mjs'));
+  await fs.copyFile(path.join(root, 'webapp/scripts/bundle-css.mjs'), path.join(temp, 'webapp/scripts/bundle-css.mjs'));
+  await fs.copyFile(path.join(root, 'webapp/index.html'), path.join(temp, 'webapp/index.html'));
+  await fs.copyFile(path.join(root, 'webapp/style.css'), path.join(temp, 'webapp/style.css'));
+  await fs.cp(path.join(root, 'webapp/vnext/styles'), path.join(temp, 'webapp/vnext/styles'), { recursive: true });
   await fs.copyFile(path.join(root,'webapp/package.json'),path.join(temp,'webapp/package.json'));
   const env={...process.env,VERCEL_ENV:'production',CATALOG_BUILD_TARGET:'production'};delete env.EXPECTED_SUPABASE_URL;
   for(const [command,args] of [[process.execPath,['scripts/build-public-config.mjs']],['npm',['run','build']]])assert.throws(()=>execFileSync(command,args,{cwd:path.join(temp,'webapp'),env,stdio:'pipe'}),error=>/Catalog build mismatch: deployment target/.test(error.stderr?.toString()));
@@ -77,6 +81,10 @@ for(const explicit of [false,true])test(`staging production slot accepts pinned 
  try{
   await fs.mkdir(path.join(temp,'webapp/auth'));
   await fs.copyFile(path.join(root,'webapp/scripts/build-public-config.mjs'),path.join(temp,'webapp/scripts/build-public-config.mjs'));
+  await fs.copyFile(path.join(root, 'webapp/scripts/bundle-css.mjs'), path.join(temp, 'webapp/scripts/bundle-css.mjs'));
+  await fs.copyFile(path.join(root, 'webapp/index.html'), path.join(temp, 'webapp/index.html'));
+  await fs.copyFile(path.join(root, 'webapp/style.css'), path.join(temp, 'webapp/style.css'));
+  await fs.cp(path.join(root, 'webapp/vnext/styles'), path.join(temp, 'webapp/vnext/styles'), { recursive: true });
   const env={...process.env,VERCEL_ENV:'production',EXPECTED_SUPABASE_URL:'https://hnawojlnfoaccinlgjyn.supabase.co',SUPABASE_URL:'https://hnawojlnfoaccinlgjyn.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_test',TURNSTILE_SITE_KEY:'local-test'};
   delete env.TIMEWEB_PROFILE;delete env.TIMEWEB_LANDING_PROFILE;delete env.CATALOG_BUILD_TARGET;
   if(explicit)env.CATALOG_BUILD_TARGET='staging';
