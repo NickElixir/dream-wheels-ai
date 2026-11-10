@@ -357,3 +357,36 @@ test("a late failed file read cannot block a newer successful selection", async 
   assert.equal(app.state.files.car.name, "new");
   assert.equal(app.state.draftError, false);
 });
+
+test("Create restores the verified draft while Dashboard requests are still pending", async () => {
+  const app = lifecycle();
+  const steps = [];
+  app.setMe(async () => ({
+    ok: true,
+    json: async () => ({ authenticated: true, account_id: "9" }),
+  }));
+  Object.assign(app.context, {
+    isApplicationAuthSessionReady: () => true,
+    syncApplicationAuthWall() {},
+    initializeCatalogHandoff() {},
+    refreshButtonsForCurrentView() {},
+    loadDashboardData() {
+      steps.push("dashboard");
+      return new Promise(() => {});
+    },
+    restoreWebRoute() {
+      steps.push("route");
+    },
+  });
+  app.context.catalogHandoff.resume = async () => { steps.push("handoff"); };
+  app.state.applicationAuthRequired = true;
+  app.state.applicationRoute = { view: "create" };
+  vm.runInNewContext(
+    extractFunction(source, "bootstrapAuthenticatedApplication"),
+    app.context,
+  );
+  assert.equal(await app.context.bootstrapAuthenticatedApplication(), true);
+  assert.equal(app.state.draftOwner, "account:9");
+  assert.equal(app.state.applicationDataReady, true);
+  assert.deepEqual(steps, ["handoff", "dashboard", "route"]);
+});
