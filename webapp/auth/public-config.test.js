@@ -59,5 +59,13 @@ test('CLI emits the real browser script without reusing staging URL in productio
     assert.ok(script.includes(production.SUPABASE_URL));
     assert.ok(!script.includes('hnawojlnfoaccinlgjyn'));
     assert.ok(!script.includes('must-never-export'));
+
+    await fs.copyFile(new URL('../index.html', import.meta.url), path.join(folder, 'webapp/index.html'));
+    const stagedIndex = await fs.readFile(path.join(folder, 'webapp/index.html'), 'utf8');
+    await fs.writeFile(path.join(folder, 'webapp/index.html'), stagedIndex.replaceAll('__BUILD_ID__', 'a'.repeat(40)));
+    const stampedRun = spawnSync(process.execPath, [path.join(folder, 'webapp/scripts/build.mjs')], { env: { ...process.env, ...production }, encoding: 'utf8' });
+    assert.equal(stampedRun.status, 0, stampedRun.stderr);
+    const stampedHtml = await fs.readFile(path.join(folder, 'webapp/index.html'), 'utf8');
+    assert.match(stampedHtml, /rel="stylesheet" href="\/startup\.[a-f0-9]{16}\.css"/u);
   } finally { await fs.rm(folder, { recursive: true, force: true }); }
 });
