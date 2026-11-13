@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import ceil, floor
 
 from src.generation.base import GenerationProviderError
 
@@ -22,7 +23,7 @@ class OutputSize:
 
 
 def vehicle_output_size(width: int, height: int) -> OutputSize:
-    """Return the largest supported integer size preserving the vehicle ratio."""
+    """Preserve admissible input sizes; scale only outside the pixel bounds."""
     if width <= 0 or height <= 0:
         raise GenerationProviderError("provider_input_error", "Vehicle dimensions are invalid")
     ratio = width / height
@@ -31,27 +32,32 @@ def vehicle_output_size(width: int, height: int) -> OutputSize:
             "provider_input_error", "Vehicle aspect ratio exceeds Wan limits"
         )
 
-    scale = (MAX_OUTPUT_PIXELS / (width * height)) ** 0.5
-    if scale > 1:
-        scale = (MIN_OUTPUT_PIXELS / (width * height)) ** 0.5
-    scale = min(scale, 1.0 if width * height >= MIN_OUTPUT_PIXELS else scale)
-    out_width = max(1, round(width * scale))
-    out_height = max(1, round(height * scale))
-    while out_width * out_height > MAX_OUTPUT_PIXELS:
-        if out_width >= out_height:
-            out_width -= 1
-        else:
-            out_height -= 1
-    while out_width * out_height < MIN_OUTPUT_PIXELS:
-        next_width = out_width + 1
-        next_height = out_height + 1
-        if next_width * next_height > MAX_OUTPUT_PIXELS:
-            break
-        if abs(next_width / next_height - ratio) <= abs(out_width / out_height - ratio):
-            out_width, out_height = next_width, next_height
-        else:
-            break
-    return OutputSize(out_width, out_height)
+    pixels = width * height
+    if MIN_OUTPUT_PIXELS <= pixels <= MAX_OUTPUT_PIXELS:
+        return OutputSize(width, height)
+
+    target = MIN_OUTPUT_PIXELS if pixels < MIN_OUTPUT_PIXELS else MAX_OUTPUT_PIXELS
+    scale = (target / pixels) ** 0.5
+    # Independent round() can cross a pixel or 8:1 aspect boundary. Choose the
+    # closest valid integer neighbour instead of silently submitting an invalid size.
+    candidates = [
+        OutputSize(w, h)
+        for w in {max(1, floor(width * scale)), max(1, ceil(width * scale))}
+        for h in {max(1, floor(height * scale)), max(1, ceil(height * scale))}
+        if MIN_OUTPUT_PIXELS <= w * h <= MAX_OUTPUT_PIXELS
+        and max(w / h, h / w) <= MAX_OUTPUT_ASPECT
+    ]
+    if not candidates:
+        raise GenerationProviderError("provider_input_error", "No valid rounded output size")
+    return min(
+        candidates,
+        key=lambda size: (
+            abs(size.width / size.height - ratio),
+            abs(size.width * size.height - target),
+            size.width,
+            size.height,
+        ),
+    )
 
 
 def validate_explicit_output_size(width: int, height: int) -> None:
