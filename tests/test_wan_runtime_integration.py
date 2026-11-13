@@ -176,6 +176,7 @@ def test_successful_render_uses_wan_request_and_finalizes_once(monkeypatch):
     assert request.rim_reference_content_type == "image/png"
     assert request.edit_regions is None
     assert request.prompt_version == "P1_WHEEL_IDENTITY"
+    assert (request.output_width, request.output_height) == (1600, 1000)
     assert request.output_width * request.output_height <= 2048 * 2048
     assert request.output_width / request.output_height == pytest.approx(1.6, rel=0.01)
     assert metadata_pools[0][1:] == (JOB_ID, provider.result)
