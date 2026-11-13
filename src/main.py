@@ -48,6 +48,7 @@ from src.generation import (
     build_generation_request,
     inspect_image,
 )
+from src.generation.diagnostics import persist_generation_request, persist_generation_result
 from src.image_fetch import fetch_image_bytes
 from src.payment_timeout import payment_timeout_loop
 from src.request_context import RequestContextMiddleware, install_request_id_log_context
@@ -459,7 +460,17 @@ async def process_render_job(
     await _save_legacy_bot_inputs(pool, job_id, user_id, job_data)
     vehicle, rim_reference = await _load_generation_inputs(pool, job_id, job_data)
     request = build_generation_request(vehicle=vehicle, rim_reference=rim_reference)
-    result = await (provider or build_generation_provider()).edit(request)
+    active_provider = provider or build_generation_provider()
+    await persist_generation_request(
+        pool,
+        job_id=job_id,
+        user_id=user_id,
+        request=request,
+        vehicle=vehicle,
+        rim_reference=rim_reference,
+        model=active_provider.model,
+    )
+    result = await active_provider.edit(request)
     await _persist_generation_metadata(pool, job_id, result)
     candidate = await _upload_render_output_candidate(
         job_id,
@@ -479,6 +490,17 @@ async def process_render_job(
         return
 
     # Telemetry is independent of the committed result and credit outcome.
+    try:
+        await persist_generation_result(
+            pool,
+            job_id=job_id,
+            user_id=user_id,
+            request=request,
+            result=result,
+            candidate=candidate,
+        )
+    except Exception:
+        logger.exception("Generation diagnostics failed job_id=%s user_id=%s", job_id, user_id)
     try:
         async with pool.acquire() as conn:
             await analytics_api.record_system_event(
