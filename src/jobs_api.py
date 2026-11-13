@@ -718,7 +718,7 @@ def _snapshot_from_row(row, *, job_id: str) -> dict[str, object] | None:
     if raw_snapshot is None:
         return None
     if isinstance(raw_snapshot, dict):
-        return raw_snapshot
+        return {key: value for key, value in raw_snapshot.items() if key != "generation"}
     if isinstance(raw_snapshot, str):
         try:
             parsed_snapshot = json.loads(raw_snapshot)
@@ -730,7 +730,7 @@ def _snapshot_from_row(row, *, job_id: str) -> dict[str, object] | None:
             )
             return None
         if isinstance(parsed_snapshot, dict):
-            return parsed_snapshot
+            return {key: value for key, value in parsed_snapshot.items() if key != "generation"}
         logger.warning(
             "⚠️ Non-object render_input_snapshot for job_id=%s parsed_type=%s",
             job_id,

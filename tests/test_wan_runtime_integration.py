@@ -64,6 +64,7 @@ class FakePool:
 
 class FakeProvider:
     name = "alibaba_model_studio"
+    model = "wan2.7-image"
 
     def __init__(self, result=None, error=None):
         self.result = result

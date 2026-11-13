@@ -20,6 +20,64 @@ pytestmark = pytest.mark.skipif(not DSN, reason="Requires isolated TEST_RENDER_D
 JOB = "11111111-1111-4111-8111-111111111111"
 
 
+@pytest.mark.parametrize("legacy_snapshot", [None, '{"version":"legacy-v1"}'])
+def test_generation_evidence_is_write_once_and_preserves_existing_snapshot(
+    monkeypatch, legacy_snapshot
+):
+    import json
+    from dataclasses import replace
+
+    from src.generation.diagnostics import persist_generation_request, persist_generation_result
+    from tests.test_generation_diagnostics import inputs
+
+    async def run():
+        async with database(monkeypatch, status="processing") as pool:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "UPDATE jobs SET render_input_snapshot=$1::jsonb", legacy_snapshot
+                )
+            vehicle, rim, request = inputs()
+            kwargs = dict(
+                pool=pool,
+                job_id=JOB,
+                user_id=77,
+                request=request,
+                vehicle=vehicle,
+                rim_reference=rim,
+                model="wan2.7-image",
+            )
+            await persist_generation_request(**kwargs)
+            with pytest.raises(RuntimeError, match="intent cannot be recorded"):
+                await persist_generation_request(
+                    **{**kwargs, "request": replace(request, prompt_version="MUST_NOT_REPLACE")}
+                )
+            async with pool.acquire() as conn:
+                before = json.loads(await conn.fetchval("SELECT render_input_snapshot FROM jobs"))
+                assert (
+                    before["generation"]["request"]["generation_prompt_version"]
+                    == "P1_WHEEL_IDENTITY"
+                )
+                if legacy_snapshot:
+                    assert before["version"] == "legacy-v1"
+                await conn.execute("UPDATE jobs SET status='completed',credit_status='finalized'")
+            result = successful_result()
+            stored = replace(candidate(), width=1200, height=750)
+            await persist_generation_result(
+                pool, job_id=JOB, user_id=77, request=request, result=result, candidate=stored
+            )
+            with pytest.raises(RuntimeError, match="result diagnostics cannot be recorded"):
+                await persist_generation_result(
+                    pool, job_id=JOB, user_id=77, request=request, result=result, candidate=stored
+                )
+            async with pool.acquire() as conn:
+                after = json.loads(await conn.fetchval("SELECT render_input_snapshot FROM jobs"))
+                assert after["generation"]["request"] == before["generation"]["request"]
+                assert after["generation"]["result"]["provider_output_width"] == 1200
+                assert after["generation"]["result"]["stored_output_height"] == 750
+
+    asyncio.run(run())
+
+
 def candidate():
     return assets_service.AssetUpload(
         id=str(uuid.uuid4()),
@@ -108,6 +166,8 @@ async def database(monkeypatch, status="queued", credit_status="reserved"):
         monkeypatch.setattr(credits_service, "get_balance", balance)
         monkeypatch.setattr(main.analytics_api, "record_system_event", noop)
         monkeypatch.setattr(main, "_save_legacy_bot_inputs", noop)
+        monkeypatch.setattr(main, "persist_generation_request", noop)
+        monkeypatch.setattr(main, "persist_generation_result", noop)
         monkeypatch.setattr(main, "_load_generation_inputs", noop)
 
         # Inputs are irrelevant to finality; provider transport is isolated.
@@ -162,6 +222,8 @@ def test_concurrent_claim_and_late_refunded_result(monkeypatch):
             provider_calls = []
 
             class Provider:
+                model = "wan2.7-image"
+
                 async def edit(self, request):
                     provider_calls.append(request)
                     started.set()
