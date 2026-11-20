@@ -1,5 +1,9 @@
 # VLM preflight: Qwen3-VL-Plus, без repair generation
 
+Обновление: пользователь разрешил однократный тест, выполнены 3/3 calls.
+Фактический token-based estimate $0.0066916; итог и ограничения —
+`vlm-geometry-probe-results.md`. Ниже сохранён исходный preflight design.
+
 Статус: offline подготовка; платные VLM вызовы ещё не выполнялись.
 Модель для первого screening: **qwen3-vl-plus**, Singapore.
 Это text-output vision model, не qwen-image-3.0.
