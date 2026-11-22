@@ -1,5 +1,7 @@
 # MaSC: маски, контрольные пары и запуск
 
+**MaSC отложен. Текущий старт — [ImageCritic](imagecritic-windows-start.md).**
+
 **Для переноса на Windows основной документ —
 `wheel-masc-windows-plan.md` (на утверждение).**
 Ниже — историческая локальная схема подготовки на Mac, не готовый Windows handoff.
