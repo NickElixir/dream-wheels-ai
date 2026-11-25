@@ -65,6 +65,10 @@ class WanImageProvider:
     def name(self) -> str:
         return "alibaba_model_studio"
 
+    @property
+    def model(self) -> str:
+        return self._config.model
+
     async def edit(self, request: GenerationRequest) -> GenerationResult:
         self._validate_request(request)
         vehicle_uri = _encode_image(
